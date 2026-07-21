@@ -1,0 +1,86 @@
+###############################################################################
+# Atmospheric Complexity Framework (ACF)
+# .gitignore
+###############################################################################
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checker
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Linux
+*~
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Runtime
+output/
+tmp/
+temp/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Qt
+*.pro.user
+*.qrc.depends
+
+# Compiled Python
+*.pyo
+
+# Backup
+*.bak
+*.orig
+
+# Project files
+project/*.pdf
+project/*.docx
