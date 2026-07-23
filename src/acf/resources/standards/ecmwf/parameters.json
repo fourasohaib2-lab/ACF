@@ -1,0 +1,26 @@
+{
+  "t2m": {
+    "name": "2 metre temperature",
+    "standard_name": "air_temperature",
+    "unit": "K",
+    "category": "Temperature"
+  },
+  "u10": {
+    "name": "10 metre U wind component",
+    "standard_name": "eastward_wind",
+    "unit": "m s-1",
+    "category": "Wind"
+  },
+  "v10": {
+    "name": "10 metre V wind component",
+    "standard_name": "northward_wind",
+    "unit": "m s-1",
+    "category": "Wind"
+  },
+  "msl": {
+    "name": "Mean sea level pressure",
+    "standard_name": "air_pressure_at_mean_sea_level",
+    "unit": "Pa",
+    "category": "Pressure"
+  }
+}

@@ -1,0 +1,27 @@
+###############################################################################
+# Atmospheric Complexity Framework (ACF)
+# Configuration File
+###############################################################################
+
+application:
+  name: Atmospheric Complexity Framework
+  short_name: ACF
+  version: 0.1.0
+
+logging:
+  level: INFO
+  file: logs/acf.log
+
+gui:
+  theme: dark
+  language: en
+
+plugins:
+  enabled: true
+  directory: plugins
+
+data:
+  workspace: workspace
+
+system:
+  autosave: true

@@ -1,0 +1,18 @@
+{
+  "air_temperature": {
+    "name": "Air Temperature",
+    "units": "K"
+  },
+  "air_pressure": {
+    "name": "Air Pressure",
+    "units": "Pa"
+  },
+  "eastward_wind": {
+    "name": "Eastward Wind",
+    "units": "m s-1"
+  },
+  "northward_wind": {
+    "name": "Northward Wind",
+    "units": "m s-1"
+  }
+}

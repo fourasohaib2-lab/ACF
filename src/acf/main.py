@@ -1,22 +1,4 @@
-"""
-Atmospheric Complexity Framework (ACF)
-
-Main entry point.
-"""
-
-from acf.core.application import Application
-
-
-def main() -> None:
-    app = Application()
-
-    app.initialize()
-    app.start()
-
-    print(f"Status : {app.status()}")
-
-    app.stop()
-
+from acf.gui.app import run
 
 if __name__ == "__main__":
-    main()
+    run()

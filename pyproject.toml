@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,68 +8,34 @@ version = "0.1.0"
 description = "Atmospheric Complexity Framework"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Apache-2.0" }
 
 authors = [
-    { name = "Sohaib Foura" }
-]
-
-keywords = [
-    "meteorology",
-    "weather",
-    "forecast",
-    "climate",
-    "ai",
-    "science",
-    "nwp"
-]
-
-classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-    "Topic :: Scientific/Engineering",
+    {name="Sohaib Foura"}
 ]
 
 dependencies = [
-    "PySide6",
     "numpy",
+    "scipy",
     "pandas",
+    "xarray",
+    "netCDF4",
+    "cfgrib",
+    "eccodes",
     "matplotlib",
-    "rich",
-    "loguru",
-    "PyYAML",
+    "cartopy",
+    "pyproj",
+    "shapely",
+    "rasterio",
+    "h5py",
+    "PySide6",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "black",
-    "ruff",
-    "mypy",
-]
+[tool.setuptools]
+package-dir = {"" = "src"}
 
-[tool.black]
-line-length = 88
-target-version = ["py312"]
-
-[tool.ruff]
-line-length = 88
-target-version = "py312"
-
-[tool.ruff.lint]
-select = [
-    "E",
-    "F",
-    "I",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-ignore_missing_imports = true
+pythonpath = ["src"]
+testpaths = ["tests"]

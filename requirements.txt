@@ -1,0 +1,14 @@
+numpy
+scipy
+pandas
+xarray
+netCDF4
+cfgrib
+eccodes
+matplotlib
+cartopy
+pyproj
+shapely
+rasterio
+h5py
+PySide6
