@@ -1,130 +1,302 @@
 """
 Atmospheric Complexity Framework (ACF)
-Dataset
-=====================================
 
-Generic meteorological dataset.
+Dataset Core Object
+===================
+
+Internal representation of meteorological datasets.
 """
 
+
 from pathlib import Path
+from datetime import datetime
+from uuid import uuid4
+
 
 
 class Dataset:
-    """Generic meteorological dataset."""
+    """
+    Generic meteorological dataset.
+    """
+
 
     def __init__(
         self,
         name: str = "",
         filepath: Path | None = None,
         filetype: str = "",
+        source: str = "",
     ):
+
+
+        # Identity
+
+        self.id = str(
+            uuid4()
+        )
+
+
         self.name = name
+
+        self.source = source
+
+
+
+        # File information
+
         self.filepath = filepath
+
         self.filetype = filetype
 
+
+
+        # Data containers
+
         self.variables = {}
+
         self.dimensions = {}
 
-        # Métadonnées
+
+
+        # Metadata
+
         self.metadata = {}
 
-        # Alias de compatibilité
         self.attributes = self.metadata
 
-    # ======================================================
-    # Variables
-    # ======================================================
 
-    def add_variable(self, name: str, value=None):
+
+        # Quality control
+
+        self.validated = False
+
+        self.errors = []
+
+
+
+        # History
+
+        self.created = (
+            datetime.now()
+            .isoformat()
+        )
+
+
+        self.modified = self.created
+
+
+
+    ##################################################
+    # Variables
+    ##################################################
+
+
+    def add_variable(
+        self,
+        name: str,
+        value=None
+    ):
+
         self.variables[name] = value
 
-    def get_variable(self, name: str):
-        return self.variables.get(name)
+        self.touch()
 
-    def has_variable(self, name: str):
+
+
+    def get_variable(
+        self,
+        name: str
+    ):
+
+        return self.variables.get(
+            name
+        )
+
+
+
+    def has_variable(
+        self,
+        name: str
+    ):
+
         return name in self.variables
 
-    def remove_variable(self, name: str):
-        self.variables.pop(name, None)
 
-    # ======================================================
+
+    def remove_variable(
+        self,
+        name: str
+    ):
+
+        self.variables.pop(
+            name,
+            None
+        )
+
+        self.touch()
+
+
+
+    ##################################################
     # Dimensions
-    # ======================================================
+    ##################################################
 
-    def add_dimension(self, name: str, size: int):
+
+    def add_dimension(
+        self,
+        name: str,
+        size: int
+    ):
+
         self.dimensions[name] = size
 
-    def set_dimension(self, name: str, size: int):
-        self.dimensions[name] = size
+        self.touch()
 
-    def get_dimension(self, name: str):
-        return self.dimensions.get(name)
 
-    def has_dimension(self, name: str):
-        return name in self.dimensions
 
-    # ======================================================
+    def get_dimension(
+        self,
+        name: str
+    ):
+
+        return self.dimensions.get(
+            name
+        )
+
+
+
+    ##################################################
     # Metadata
-    # ======================================================
+    ##################################################
 
-    def set_metadata(self, name: str, value):
+
+    def set_metadata(
+        self,
+        name: str,
+        value
+    ):
+
         self.metadata[name] = value
 
-    def get_metadata(self, name: str):
-        return self.metadata.get(name)
+        self.touch()
 
-    def has_metadata(self, name: str):
-        return name in self.metadata
 
-    def remove_metadata(self, name: str):
-        self.metadata.pop(name, None)
 
-    # Compatibilité
+    def get_metadata(
+        self,
+        name: str
+    ):
 
-    def add_attribute(self, name: str, value):
-        self.set_metadata(name, value)
+        return self.metadata.get(
+            name
+        )
 
-    def get_attribute(self, name: str):
-        return self.get_metadata(name)
 
-    # ======================================================
-    # Informations
-    # ======================================================
+
+    ##################################################
+    # Validation
+    ##################################################
+
+
+    def validate(self):
+
+        self.errors = []
+
+
+        if not self.name:
+
+            self.errors.append(
+                "Dataset name missing"
+            )
+
+
+        if not self.variables:
+
+            self.errors.append(
+                "No variables found"
+            )
+
+
+        self.validated = (
+            len(self.errors) == 0
+        )
+
+
+        return self.validated
+
+
+
+    ##################################################
+    # Utilities
+    ##################################################
+
+
+    def touch(self):
+
+        self.modified = (
+            datetime.now()
+            .isoformat()
+        )
+
+
 
     @property
     def variable_names(self):
-        return list(self.variables.keys())
+
+        return list(
+            self.variables.keys()
+        )
+
+
 
     @property
     def dimension_names(self):
-        return list(self.dimensions.keys())
 
-    @property
-    def metadata_names(self):
-        return list(self.metadata.keys())
-
-    def summary(self):
-        return {
-            "name": self.name,
-            "filepath": str(self.filepath) if self.filepath else None,
-            "filetype": self.filetype,
-            "variables": self.variable_names,
-            "dimensions": self.dimension_names,
-            "metadata": self.metadata_names,
-        }
-
-    def __len__(self):
-        return len(self.variables)
-
-    def __contains__(self, item):
-        return item in self.variables
-
-    def __repr__(self):
-        return (
-            f"Dataset(name='{self.name}', "
-            f"filetype='{self.filetype}', "
-            f"variables={len(self.variables)}, "
-            f"dimensions={len(self.dimensions)}, "
-            f"metadata={len(self.metadata)})"
+        return list(
+            self.dimensions.keys()
         )
 
+
+
+    def summary(self):
+
+        return {
+
+            "id": self.id,
+
+            "name": self.name,
+
+            "source": self.source,
+
+            "filetype": self.filetype,
+
+            "variables": self.variable_names,
+
+            "dimensions": self.dimension_names,
+
+            "validated": self.validated,
+
+            "errors": self.errors,
+
+        }
+
+
+
+    def __len__(self):
+
+        return len(
+            self.variables
+        )
+
+
+
+    def __repr__(self):
+
+        return (
+
+            f"Dataset("
+            f"name='{self.name}', "
+            f"type='{self.filetype}', "
+            f"variables={len(self.variables)})"
+
+        )

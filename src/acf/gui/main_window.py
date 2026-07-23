@@ -1,3 +1,11 @@
+"""
+ACF Main Window
+
+Fenêtre principale du logiciel
+Atmospheric Complexity Framework
+"""
+
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QStatusBar,
@@ -7,52 +15,116 @@ from PySide6.QtWidgets import (
 from acf.dashboard.manager import DashboardManager
 from acf.gui.menu import MenuManager
 from acf.workspace.manager import WorkspaceManager
+from acf.data.manager import DataManager
+
 
 
 class MainWindow(QMainWindow):
 
+
     def __init__(self):
+
         super().__init__()
 
+
         # Workspace
+
         self.workspace = WorkspaceManager()
 
-        # Fenêtre
-        self.setWindowTitle("Atmospheric Complexity Framework")
-        self.resize(1600, 900)
 
-        # Menu
-        self.menu = MenuManager(self)
 
-        # Toolbar
-        self._create_toolbar()
+        # Scientific Data
 
-        # StatusBar
-        self._create_statusbar()
+        self.data = DataManager()
+
+
+
+        # Window
+
+        self.setWindowTitle(
+            "Atmospheric Complexity Framework"
+        )
+
+        self.resize(
+            1600,
+            900
+        )
+
+
 
         # Dashboard
-        self.dashboard = DashboardManager(self)
+
+        self.dashboard = DashboardManager(
+            self
+        )
+
         self.dashboard.initialize()
 
-    ##################################################
 
-    def _create_toolbar(self):
 
-        toolbar = QToolBar("Main Toolbar")
+        # Menu
 
-        self.addToolBar(toolbar)
+        self.menu = MenuManager(
+            self
+        )
 
-        toolbar.addAction("Open")
-        toolbar.addAction("Save")
-        toolbar.addAction("Run")
-        toolbar.addAction("Stop")
 
-    ##################################################
 
-    def _create_statusbar(self):
+        # Toolbar
+
+        self.create_toolbar()
+
+
+
+        # Status
+
+        self.create_statusbar()
+
+
+
+    ################################################
+
+
+    def create_toolbar(self):
+
+        toolbar = QToolBar(
+            "Main Toolbar"
+        )
+
+        self.addToolBar(
+            toolbar
+        )
+
+
+        toolbar.addAction(
+            "Open"
+        )
+
+        toolbar.addAction(
+            "Save"
+        )
+
+        toolbar.addAction(
+            "Run"
+        )
+
+        toolbar.addAction(
+            "Stop"
+        )
+
+
+
+    ################################################
+
+
+    def create_statusbar(self):
 
         status = QStatusBar()
 
-        status.showMessage("Ready")
+        status.showMessage(
+            "Ready"
+        )
 
-        self.setStatusBar(status)
+        self.setStatusBar(
+            status
+        )

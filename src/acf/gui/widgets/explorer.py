@@ -1,9 +1,6 @@
 """
-ACF Explorer Widget
-
-Projet + Datasets scientifiques
+ACF Explorer
 """
-
 
 from pathlib import Path
 
@@ -21,22 +18,24 @@ class ExplorerWidget(QTreeWidget):
 
         super().__init__()
 
-
         self.setHeaderLabel(
             "Workspace"
         )
 
+        self.setAnimated(
+            True
+        )
 
-        self.setAnimated(True)
+        self.setAlternatingRowColors(
+            True
+        )
 
-        self.setAlternatingRowColors(True)
 
 
+    ################################################
 
-    ##################################################
 
     def load_project(self, project):
-
 
         self.clear()
 
@@ -49,7 +48,7 @@ class ExplorerWidget(QTreeWidget):
 
         root = QTreeWidgetItem(
             [
-                "🌎 " + project.name
+                project.name
             ]
         )
 
@@ -71,14 +70,10 @@ class ExplorerWidget(QTreeWidget):
 
 
 
-    ##################################################
+    ################################################
 
-    def populate(
-        self,
-        parent,
-        path
-    ):
 
+    def populate(self,parent,path):
 
         path = Path(path)
 
@@ -90,28 +85,23 @@ class ExplorerWidget(QTreeWidget):
 
 
         for item in sorted(
-            path.iterdir(),
-            key=lambda x: (
-                x.is_file(),
-                x.name.lower()
-            )
+            path.iterdir()
         ):
 
 
+            node = QTreeWidgetItem(
+                [
+                    item.name
+                ]
+            )
+
+
+            parent.addChild(
+                node
+            )
+
+
             if item.is_dir():
-
-
-                node = QTreeWidgetItem(
-                    [
-                        "📁 " + item.name
-                    ]
-                )
-
-
-                parent.addChild(
-                    node
-                )
-
 
                 self.populate(
                     node,
@@ -119,34 +109,16 @@ class ExplorerWidget(QTreeWidget):
                 )
 
 
-            else:
+
+    ################################################
+    # DATASETS
+    ################################################
 
 
-                node = QTreeWidgetItem(
-                    [
-                        "📄 " + item.name
-                    ]
-                )
-
-
-                parent.addChild(
-                    node
-                )
-
-
-
-    ##################################################
-
-    def load_datasets(
+    def refresh_datasets(
         self,
         datasets
     ):
-
-
-        if not datasets:
-
-            return
-
 
 
         dataset_root = QTreeWidgetItem(
@@ -167,26 +139,13 @@ class ExplorerWidget(QTreeWidget):
 
             node = QTreeWidgetItem(
                 [
-                    "📊 " + dataset.name
+                    dataset.name
                 ]
             )
 
 
             dataset_root.addChild(
                 node
-            )
-
-
-
-            info = QTreeWidgetItem(
-                [
-                    "Type : " + dataset.filetype
-                ]
-            )
-
-
-            node.addChild(
-                info
             )
 
 
@@ -204,35 +163,44 @@ class ExplorerWidget(QTreeWidget):
 
 
 
-            for variable in dataset.variable_names:
-
-
-                var_node = QTreeWidgetItem(
-                    [
-                        "🔹 " + variable
-                    ]
-                )
+            for var in dataset.variable_names:
 
 
                 variables.addChild(
-                    var_node
+                    QTreeWidgetItem(
+                        [
+                            var
+                        ]
+                    )
                 )
 
 
 
-            node.setExpanded(
-                True
+            metadata = QTreeWidgetItem(
+                [
+                    "Metadata"
+                ]
             )
+
+
+            node.addChild(
+                metadata
+            )
+
+
+            dimensions = QTreeWidgetItem(
+                [
+                    "Dimensions"
+                ]
+            )
+
+
+            node.addChild(
+                dimensions
+            )
+
 
 
         dataset_root.setExpanded(
             True
         )
-
-
-
-    ##################################################
-
-    def clear_project(self):
-
-        self.clear()
