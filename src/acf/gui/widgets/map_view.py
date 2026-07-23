@@ -1,62 +1,248 @@
-from PySide6.QtCore import Qt
+"""
+ACF Scientific Map View
+
+Cartopy + Matplotlib engine
+"""
+
+
 from PySide6.QtWidgets import (
     QWidget,
-    QLabel,
     QVBoxLayout,
-    QSizePolicy,
 )
 
 
-class MapView(QWidget):
-    """
-    Main scientific map area.
+from matplotlib.backends.backend_qtagg import (
+    FigureCanvasQTAgg
+)
 
-    This widget will later host:
-      - Cartopy
-      - Matplotlib
-      - OpenGL
-      - Satellite imagery
-      - Radar
-      - GRIB / NetCDF rendering
-      - Interactive layers
-    """
+
+from matplotlib.figure import Figure
+
+
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+
+
+class MapCanvas(FigureCanvasQTAgg):
+
 
     def __init__(self):
+
+        self.figure = Figure(
+            figsize=(8,6)
+        )
+
+
+        self.ax = self.figure.add_subplot(
+            111,
+            projection=ccrs.PlateCarree()
+        )
+
+
+        super().__init__(
+            self.figure
+        )
+
+
+        self.draw_map()
+
+
+
+    ################################################
+
+
+    def draw_map(self):
+
+        self.ax.clear()
+
+
+
+        self.ax.set_global()
+
+
+
+        self.ax.add_feature(
+            cfeature.LAND
+        )
+
+
+        self.ax.add_feature(
+            cfeature.OCEAN
+        )
+
+
+        self.ax.add_feature(
+            cfeature.COASTLINE
+        )
+
+
+        self.ax.add_feature(
+            cfeature.BORDERS
+        )
+
+
+        self.ax.gridlines()
+
+
+
+        self.ax.set_title(
+            "ACF Atmospheric Map"
+        )
+
+
+        self.draw()
+
+
+
+    ################################################
+
+
+    def plot_field(
+        self,
+        longitude,
+        latitude,
+        values,
+        title=""
+    ):
+
+
+        self.ax.clear()
+
+
+
+        self.ax.coastlines()
+
+
+
+        mesh = self.ax.pcolormesh(
+            longitude,
+            latitude,
+            values,
+            transform=ccrs.PlateCarree()
+        )
+
+
+        self.figure.colorbar(
+            mesh,
+            ax=self.ax
+        )
+
+
+
+        self.ax.set_title(
+            title
+        )
+
+
+        self.draw()
+
+
+
+
+
+
+class MapView(QWidget):
+
+
+    def __init__(self):
+
         super().__init__()
 
-        self._build_ui()
 
-    def _build_ui(self):
+        self.canvas = None
 
-        layout = QVBoxLayout(self)
 
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        self.build()
 
-        self.placeholder = QLabel(
-            "🌍 Atmospheric Complexity Framework\n\n"
-            "Interactive Map Workspace"
+
+
+    ################################################
+
+
+    def build(self):
+
+        layout = QVBoxLayout(
+            self
         )
 
-        self.placeholder.setAlignment(Qt.AlignCenter)
 
-        self.placeholder.setSizePolicy(
-            QSizePolicy.Expanding,
-            QSizePolicy.Expanding,
+        layout.setContentsMargins(
+            0,0,0,0
         )
 
-        self.placeholder.setStyleSheet("""
-            background-color: #1e1e1e;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            border: none;
-        """)
 
-        layout.addWidget(self.placeholder)
+        self.canvas = MapCanvas()
+
+
+        layout.addWidget(
+            self.canvas
+        )
+
+
+
+    ################################################
+
 
     def clear(self):
-        self.placeholder.setText("")
 
-    def set_message(self, text: str):
-        self.placeholder.setText(text)
+        self.canvas.draw_map()
+
+
+
+    ################################################
+
+
+    def show_message(self,text):
+
+        print(
+            text
+        )
+
+
+
+    ################################################
+
+
+    def display_dataset(
+        self,
+        dataset,
+        variable
+    ):
+
+        """
+        Affiche une variable météo.
+        """
+
+        data = dataset.get_variable(
+            variable
+        )
+
+
+        if data is None:
+
+            return
+
+
+
+        try:
+
+            lon = data.coords["longitude"]
+
+            lat = data.coords["latitude"]
+
+
+
+            self.canvas.plot_field(
+                lon,
+                lat,
+                data,
+                variable
+            )
+
+
+        except Exception as error:
+
+            print(
+                error
+            )
