@@ -7,65 +7,72 @@ from acf.dashboard.dashboard import Dashboard
 
 class DashboardManager:
     """
-    Gestionnaire des dashboards ACF.
+    Gestionnaire du dashboard ACF.
     """
+
 
     def __init__(self, window=None):
 
         self.window = window
+
         self.dashboard = None
 
-        self._dashboards = {}
-        self.current_dashboard = None
 
-        if window is not None:
-            self.dashboard = Dashboard(window)
+        if window:
+
+            self.dashboard = Dashboard(
+                window
+            )
+
 
     ##################################################
 
     def initialize(self):
 
-        if self.dashboard is not None:
+        if self.dashboard:
+
             self.dashboard.initialize()
+
+
+
+    ##################################################
+
+    def get_panel(self, name):
+
+        if self.dashboard:
+
+            return self.dashboard.get_panel(
+                name
+            )
+
+        return None
+
+
+
+    ##################################################
+
+    def clear_project(self):
+
+        if self.dashboard:
+
+            self.dashboard.clear_project()
+
+
 
     ##################################################
 
     def refresh(self):
 
-        if self.dashboard is not None:
+        if self.dashboard:
+
             self.dashboard.refresh()
+
+
 
     ##################################################
 
     def shutdown(self):
 
-        if self.dashboard is not None:
+        if self.dashboard:
+
             self.dashboard.shutdown()
-
-    ##################################################
-    # API de gestion des dashboards
-    ##################################################
-
-    def register(self, name, dashboard):
-
-        self._dashboards[name] = dashboard
-
-    def unregister(self, name):
-
-        self._dashboards.pop(name, None)
-
-    def load(self, name):
-
-        if name not in self._dashboards:
-            raise ValueError(f"Dashboard '{name}' not found.")
-
-        self.current_dashboard = self._dashboards[name]
-        return self.current_dashboard
-
-    def current(self):
-
-        return self.current_dashboard
-
-    def available(self):
-
-        return sorted(self._dashboards.keys())

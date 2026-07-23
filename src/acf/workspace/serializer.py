@@ -1,39 +1,49 @@
 """
-Workspace Serializer
+ACF Project Serializer
 """
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from acf.workspace.project import Project
 
 
 class ProjectSerializer:
+    """
+    Sauvegarde et charge les projets ACF.
+    """
 
-    FILE_EXTENSION = ".acfproj"
+    @staticmethod
+    def save(project: Project):
 
-    @classmethod
-    def save(cls, project: Project):
+        project.touch()
 
-        if project.root_path is None:
-            raise ValueError("Project has no root path.")
+        data = asdict(project)
 
-        file = project.root_path / f"{project.name}{cls.FILE_EXTENSION}"
+        # Conversion Path -> str
+        data["root_path"] = str(project.root_path)
 
-        with open(file, "w", encoding="utf-8") as f:
+        filename = project.project_file
+
+        with open(filename, "w", encoding="utf-8") as f:
             json.dump(
-                project.to_dict(),
+                data,
                 f,
                 indent=4,
                 ensure_ascii=False,
             )
 
-    @classmethod
-    def load(cls, filename):
+    ########################################################
+
+    @staticmethod
+    def load(filename):
 
         filename = Path(filename)
 
         with open(filename, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        return Project.from_dict(data)
+        data["root_path"] = Path(data["root_path"])
+
+        return Project(**data)

@@ -1,4 +1,10 @@
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QWidget,
+    QLabel,
+    QVBoxLayout,
+    QListWidget,
+)
 
 
 class ChartPanel(QWidget):
@@ -8,10 +14,29 @@ class ChartPanel(QWidget):
 
         layout = QVBoxLayout(self)
 
-        title = QLabel("📈 Scientific Charts")
-        title.setStyleSheet("font-size:16px;font-weight:bold;")
+        title = QLabel("Scientific Charts")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size:18px;
+            font-weight:bold;
+        """)
+
+        charts = QListWidget()
+
+        charts.addItems([
+            "Temperature",
+            "Pressure",
+            "Wind Speed",
+            "Wind Direction",
+            "Humidity",
+            "Precipitation",
+            "Cloud Cover",
+            "CAPE",
+            "CIN",
+            "Lifted Index",
+            "Skew-T",
+            "Time Series",
+        ])
 
         layout.addWidget(title)
-        layout.addWidget(
-            QLabel("Charts will appear here.")
-        )
+        layout.addWidget(charts)
