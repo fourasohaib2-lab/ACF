@@ -1,14 +1,11 @@
 """
 ACF Scientific Map View
 
-Cartopy + Matplotlib engine
+Widget cartographique principal.
 """
 
 
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-)
+from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 
 from matplotlib.backends.backend_qtagg import (
@@ -16,139 +13,23 @@ from matplotlib.backends.backend_qtagg import (
 )
 
 
-from matplotlib.figure import Figure
-
-
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-
-
-
-class MapCanvas(FigureCanvasQTAgg):
-
-
-    def __init__(self):
-
-        self.figure = Figure(
-            figsize=(8,6)
-        )
-
-
-        self.ax = self.figure.add_subplot(
-            111,
-            projection=ccrs.PlateCarree()
-        )
-
-
-        super().__init__(
-            self.figure
-        )
-
-
-        self.draw_map()
-
-
-
-    ################################################
-
-
-    def draw_map(self):
-
-        self.ax.clear()
-
-
-
-        self.ax.set_global()
-
-
-
-        self.ax.add_feature(
-            cfeature.LAND
-        )
-
-
-        self.ax.add_feature(
-            cfeature.OCEAN
-        )
-
-
-        self.ax.add_feature(
-            cfeature.COASTLINE
-        )
-
-
-        self.ax.add_feature(
-            cfeature.BORDERS
-        )
-
-
-        self.ax.gridlines()
-
-
-
-        self.ax.set_title(
-            "ACF Atmospheric Map"
-        )
-
-
-        self.draw()
-
-
-
-    ################################################
-
-
-    def plot_field(
-        self,
-        longitude,
-        latitude,
-        values,
-        title=""
-    ):
-
-
-        self.ax.clear()
-
-
-
-        self.ax.coastlines()
-
-
-
-        mesh = self.ax.pcolormesh(
-            longitude,
-            latitude,
-            values,
-            transform=ccrs.PlateCarree()
-        )
-
-
-        self.figure.colorbar(
-            mesh,
-            ax=self.ax
-        )
-
-
-
-        self.ax.set_title(
-            title
-        )
-
-
-        self.draw()
-
-
-
+from acf.visualization.cartopy_renderer import (
+    CartopyRenderer
+)
 
 
 
 class MapView(QWidget):
-
+    """
+    Carte scientifique interactive ACF.
+    """
 
     def __init__(self):
 
         super().__init__()
 
+
+        self.renderer = CartopyRenderer()
 
         self.canvas = None
 
@@ -157,7 +38,7 @@ class MapView(QWidget):
 
 
 
-    ################################################
+    ##################################################
 
 
     def build(self):
@@ -172,7 +53,14 @@ class MapView(QWidget):
         )
 
 
-        self.canvas = MapCanvas()
+        figure, axis = (
+            self.renderer.create_map()
+        )
+
+
+        self.canvas = FigureCanvasQTAgg(
+            figure
+        )
 
 
         layout.addWidget(
@@ -181,68 +69,36 @@ class MapView(QWidget):
 
 
 
-    ################################################
+    ##################################################
 
 
     def clear(self):
 
-        self.canvas.draw_map()
+        self.renderer.clear()
 
 
 
-    ################################################
+    ##################################################
 
 
-    def show_message(self,text):
+    def refresh(self):
 
-        print(
-            text
-        )
+        if self.canvas:
 
-
-
-    ################################################
-
-
-    def display_dataset(
-        self,
-        dataset,
-        variable
-    ):
-
-        """
-        Affiche une variable météo.
-        """
-
-        data = dataset.get_variable(
-            variable
-        )
-
-
-        if data is None:
-
-            return
+            self.canvas.draw()
 
 
 
-        try:
-
-            lon = data.coords["longitude"]
-
-            lat = data.coords["latitude"]
+    ##################################################
 
 
+    def status(self):
 
-            self.canvas.plot_field(
-                lon,
-                lat,
-                data,
-                variable
-            )
+        return {
 
+            "widget": "MapView",
 
-        except Exception as error:
+            "renderer":
+                self.renderer.status()
 
-            print(
-                error
-            )
+        }
