@@ -1,92 +1,97 @@
 """
 ACF - Atmospheric Complexity Framework
-Boundary Layer Physics Module
+Model4D Physics Module
 
-Provides simplified atmospheric boundary layer calculations.
+Boundary Layer Physics
+
+Handles:
+- Planetary Boundary Layer (PBL)
+- Mixing height
+- Turbulent diffusion
+- Surface layer calculations
 """
 
 
-class BoundaryLayer:
-    """
-    Atmospheric boundary layer utilities.
+import math
 
-    The boundary layer is the lowest part of the atmosphere
-    influenced directly by surface interactions.
+
+class BoundaryLayerPhysics:
     """
+    Atmospheric boundary layer physics engine.
+    """
+
+    GRAVITY = 9.81
 
     @staticmethod
-    def friction_velocity(wind_speed, roughness_length=0.1):
+    def pbl_height(temperature_gradient: float) -> float:
         """
-        Estimate friction velocity.
+        Estimate planetary boundary layer height.
 
         Parameters
         ----------
-        wind_speed : float
-            Wind speed (m/s)
-        roughness_length : float
-            Surface roughness length (m)
+        temperature_gradient :
+            Stability gradient parameter
 
         Returns
         -------
         float
-            Friction velocity (m/s)
+            Boundary layer height (km)
         """
 
-        kappa = 0.41  # von Karman constant
+        if temperature_gradient < 0:
+            raise ValueError("Invalid temperature gradient")
+
+        return round(1000 * math.sqrt(temperature_gradient), 2)
+
+
+    @staticmethod
+    def mixing_length(height: float) -> float:
+        """
+        Calculate turbulent mixing length.
+
+        l = 0.1 * z
+        """
+
+        if height <= 0:
+            raise ValueError("Height must be positive")
+
+        return round(0.1 * height, 3)
+
+
+    @staticmethod
+    def turbulent_diffusion(wind_speed: float) -> float:
+        """
+        Estimate turbulent diffusion coefficient.
+        """
 
         if wind_speed < 0:
+            raise ValueError("Wind speed cannot be negative")
+
+        return round(0.4 * wind_speed, 3)
+
+
+    @staticmethod
+    def stability_parameter(temperature_difference: float) -> str:
+        """
+        Classify boundary layer stability.
+        """
+
+        if temperature_difference > 0.05:
+            return "stable"
+
+        if temperature_difference < -0.05:
+            return "unstable"
+
+        return "neutral"
+
+
+    @staticmethod
+    def friction_velocity(wind_speed: float) -> float:
+        """
+        Estimate friction velocity.
+        """
+
+        if wind_speed <= 0:
             raise ValueError("Wind speed must be positive")
 
-        if roughness_length <= 0:
-            raise ValueError("Roughness length must be positive")
-
-        return (kappa * wind_speed) / (
-            __import__("math").log(10 / roughness_length)
-        )
-
-    @staticmethod
-    def mixing_height(temperature, surface_temperature):
-        """
-        Estimate mixing layer height.
-
-        Parameters
-        ----------
-        temperature : float
-            Air temperature (K)
-        surface_temperature : float
-            Surface temperature (K)
-
-        Returns
-        -------
-        float
-            Mixing height (m)
-        """
-
-        if temperature <= 0 or surface_temperature <= 0:
-            raise ValueError("Temperature must be positive")
-
-        delta = surface_temperature - temperature
-
-        return max(0.0, delta * 100)
-
-    @staticmethod
-    def stability(surface_temperature, air_temperature):
-        """
-        Determine atmospheric stability.
-
-        Returns
-        -------
-        str
-            Stable / Neutral / Unstable
-        """
-
-        difference = surface_temperature - air_temperature
-
-        if difference > 2:
-            return "Unstable"
-
-        if difference < -2:
-            return "Stable"
-
-        return "Neutral"
-
+        return round(math.sqrt(0.0025 * wind_speed), 3)

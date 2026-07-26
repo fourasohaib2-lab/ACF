@@ -1,99 +1,102 @@
-from acf.model4d.physics.boundary_layer import BoundaryLayer
+import pytest
+
+from acf.model4d.physics.boundary_layer import BoundaryLayerPhysics
+
+
+def test_pbl_height():
+
+    value = BoundaryLayerPhysics.pbl_height(
+        0.25
+    )
+
+    assert value == 500.0
+
+
+
+def test_mixing_length():
+
+    value = BoundaryLayerPhysics.mixing_length(
+        100
+    )
+
+    assert value == 10.0
+
+
+
+def test_turbulent_diffusion():
+
+    value = BoundaryLayerPhysics.turbulent_diffusion(
+        5
+    )
+
+    assert value == 2.0
+
+
+
+def test_stable_layer():
+
+    result = BoundaryLayerPhysics.stability_parameter(
+        0.1
+    )
+
+    assert result == "stable"
+
+
+
+def test_unstable_layer():
+
+    result = BoundaryLayerPhysics.stability_parameter(
+        -0.1
+    )
+
+    assert result == "unstable"
+
+
+
+def test_neutral_layer():
+
+    result = BoundaryLayerPhysics.stability_parameter(
+        0
+    )
+
+    assert result == "neutral"
+
 
 
 def test_friction_velocity():
 
-    value = BoundaryLayer.friction_velocity(
-        wind_speed=10,
-        roughness_length=0.1
+    value = BoundaryLayerPhysics.friction_velocity(
+        4
     )
 
-    assert value > 0
+    assert value == 0.1
 
 
-def test_friction_invalid_wind():
 
-    try:
-        BoundaryLayer.friction_velocity(-1)
+def test_negative_gradient():
 
-        assert False
+    with pytest.raises(ValueError):
 
-    except ValueError:
-        assert True
-
-
-def test_mixing_height():
-
-    value = BoundaryLayer.mixing_height(
-        temperature=290,
-        surface_temperature=295
-    )
-
-    assert value == 500
-
-
-def test_mixing_zero():
-
-    value = BoundaryLayer.mixing_height(
-        temperature=300,
-        surface_temperature=295
-    )
-
-    assert value == 0
-
-
-def test_stability_unstable():
-
-    assert BoundaryLayer.stability(
-        300,
-        295
-    ) == "Unstable"
-
-
-def test_stability_stable():
-
-    assert BoundaryLayer.stability(
-        295,
-        300
-    ) == "Stable"
-
-
-def test_stability_neutral():
-
-    assert BoundaryLayer.stability(
-        300,
-        299
-    ) == "Neutral"
-
-
-def test_positive_temperature():
-
-    try:
-        BoundaryLayer.mixing_height(
-            -1,
-            300
+        BoundaryLayerPhysics.pbl_height(
+            -1
         )
 
-        assert False
-
-    except ValueError:
-        assert True
 
 
-def test_positive_roughness():
+def test_negative_wind():
 
-    try:
-        BoundaryLayer.friction_velocity(
-            10,
+    with pytest.raises(ValueError):
+
+        BoundaryLayerPhysics.turbulent_diffusion(
+            -5
+        )
+
+
+
+def test_zero_height():
+
+    with pytest.raises(ValueError):
+
+        BoundaryLayerPhysics.mixing_length(
             0
         )
-
-        assert False
-
-    except ValueError:
-        assert True
-
-
-def test_class_exists():
-
-    assert BoundaryLayer is not None
