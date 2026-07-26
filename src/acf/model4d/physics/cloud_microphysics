@@ -1,0 +1,150 @@
+"""
+ACF - Atmospheric Complexity Framework
+Cloud Microphysics Physics Module
+Sprint 8.31
+"""
+
+import math
+
+
+class CloudMicrophysicsPhysics:
+    """
+    Cloud microphysics parameterization.
+
+    Handles simplified atmospheric cloud processes:
+    - condensation
+    - evaporation
+    - freezing
+    - melting
+    - cloud water conversion
+    - precipitation formation
+    """
+
+    @staticmethod
+    def saturation_mixing_ratio(temperature, pressure):
+        """
+        Compute simplified saturation mixing ratio.
+
+        temperature : Kelvin
+        pressure : Pa
+
+        Returns kg/kg
+        """
+
+        if temperature <= 0 or pressure <= 0:
+            return 0.0
+
+        es = 610.78 * math.exp(
+            17.27 * (temperature - 273.15)
+            /
+            (temperature - 35.85)
+        )
+
+        return 0.622 * es / pressure
+
+
+    @staticmethod
+    def condensation(vapor_mixing_ratio, saturation_ratio):
+        """
+        Condensation amount.
+        """
+
+        if vapor_mixing_ratio <= saturation_ratio:
+            return 0.0
+
+        return vapor_mixing_ratio - saturation_ratio
+
+
+    @staticmethod
+    def evaporation(cloud_water, humidity_deficit):
+        """
+        Evaporation rate.
+        """
+
+        if cloud_water <= 0:
+            return 0.0
+
+        return min(cloud_water, humidity_deficit)
+
+
+    @staticmethod
+    def freezing(liquid_water, temperature):
+        """
+        Liquid water freezing below 0°C.
+        """
+
+        if temperature >= 273.15:
+            return 0.0
+
+        return liquid_water * abs(
+            temperature - 273.15
+        ) / 10
+
+
+    @staticmethod
+    def melting(ice_content, temperature):
+        """
+        Ice melting above freezing point.
+        """
+
+        if temperature <= 273.15:
+            return 0.0
+
+        return ice_content * (
+            temperature - 273.15
+        ) / 10
+
+
+    @staticmethod
+    def autoconversion(cloud_water):
+        """
+        Cloud droplets converted into rain.
+        """
+
+        threshold = 1e-3
+
+        if cloud_water <= threshold:
+            return 0.0
+
+        return (cloud_water - threshold) * 0.5
+
+
+    @staticmethod
+    def precipitation_rate(rain_water):
+        """
+        Simplified precipitation rate.
+        """
+
+        return max(
+            0.0,
+            rain_water * 1000
+        )
+
+
+    @staticmethod
+    def cloud_fraction(relative_humidity):
+        """
+        Estimate cloud fraction.
+        """
+
+        if relative_humidity <= 0:
+            return 0.0
+
+        if relative_humidity >= 100:
+            return 1.0
+
+        return relative_humidity / 100
+
+
+    @staticmethod
+    def mixed_phase_ratio(liquid, ice):
+        """
+        Liquid/ice phase partition.
+        """
+
+        total = liquid + ice
+
+        if total == 0:
+            return 0.0
+
+        return liquid / total
