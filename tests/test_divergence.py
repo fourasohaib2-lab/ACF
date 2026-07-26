@@ -28,3 +28,36 @@ def test_category():
     assert Divergence.category(1e-6) == "Weak"
     assert Divergence.category(2e-5) == "Moderate"
     assert Divergence.category(8e-5) == "Strong"
+from acf.model4d.operators.divergence import Divergence
+
+
+def test_horizontal():
+    assert Divergence.horizontal(2, 3) == 5
+
+
+def test_vertical():
+    assert Divergence.vertical(4) == 4
+
+
+def test_compute_2d():
+    assert Divergence.compute(2, 3) == 5
+
+
+def test_compute_3d():
+    assert Divergence.compute(2, 3, 4) == 9
+
+
+def test_negative():
+    assert Divergence.compute(-2, 2) == 0
+
+
+def test_zero():
+    assert Divergence.compute(0, 0, 0) == 0
+
+
+def test_single():
+    assert Divergence.compute(7) == 7
+
+
+def test_float():
+    assert Divergence.compute(1.5, 2.5, 3.0) == 7.0
