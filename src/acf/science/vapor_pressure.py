@@ -2,45 +2,48 @@
 Vapor Pressure
 ==============
 
-Calculation of vapor pressure.
-
-Formula
--------
-e = RH × es
+Formula:
+    e = q * p / (epsilon + q * (1 - epsilon))
 
 where:
-    e  : vapor pressure (hPa)
-    RH : relative humidity (0–1)
-    es : saturation vapor pressure (hPa)
+    e = vapor pressure (hPa)
+    q = specific humidity (kg/kg)
+    p = atmospheric pressure (hPa)
+    epsilon = 0.622 (molecular weight ratio)
 """
-
 
 class VaporPressure:
     """Vapor pressure calculator."""
-
+    
+    EPSILON = 0.622
+    
     @staticmethod
-    def calculate(relative_humidity: float,
-                  saturation_vapor_pressure: float) -> float:
+    def calculate(specific_humidity: float, pressure: float) -> float:
         """
         Calculate vapor pressure.
-
+        
         Parameters
         ----------
-        relative_humidity : float
-            Relative humidity (0-1)
-
-        saturation_vapor_pressure : float
-            Saturation vapor pressure (hPa)
-
+        specific_humidity : float
+            Specific humidity (kg/kg) in [0, 1]
+        pressure : float
+            Atmospheric pressure (hPa)
+            
         Returns
         -------
         float
             Vapor pressure (hPa)
         """
-        if not 0.0 <= relative_humidity <= 1.0:
-            raise ValueError(
-                "relative_humidity must be between 0 and 1."
-            )
-
-        return relative_humidity * saturation_vapor_pressure
-
+        if specific_humidity < 0.0 or specific_humidity > 1.0:
+            raise ValueError("Specific humidity must be in [0, 1]")
+        if pressure <= 0:
+            raise ValueError("Pressure must be positive")
+        
+        epsilon = VaporPressure.EPSILON
+        denominator = epsilon + specific_humidity * (1.0 - epsilon)
+        
+        # Éviter division par zéro
+        if denominator == 0:
+            return 0.0
+            
+        return specific_humidity * pressure / denominator

@@ -2,43 +2,32 @@
 Mixing Ratio
 ============
 
-Calculation of the mixing ratio.
-
-Formula
--------
-w = 0.622 * e / (p - e)
+Formula:
+    w = q / (1 - q)
 
 where:
-    w : mixing ratio (kg/kg)
-    e : vapor pressure (hPa)
-    p : atmospheric pressure (hPa)
+    w = mixing ratio (kg/kg)
+    q = specific humidity (kg/kg)
 """
-
 
 class MixingRatio:
     """Mixing ratio calculator."""
-
+    
     @staticmethod
-    def calculate(vapor_pressure: float, pressure: float) -> float:
+    def calculate(specific_humidity: float) -> float:
         """
-        Calculate the mixing ratio.
-
+        Calculate mixing ratio from specific humidity.
+        
         Parameters
         ----------
-        vapor_pressure : float
-            Vapor pressure (hPa)
-        pressure : float
-            Atmospheric pressure (hPa)
-
+        specific_humidity : float
+            Specific humidity (kg/kg) in [0, 1)
+            
         Returns
         -------
         float
             Mixing ratio (kg/kg)
         """
-        if vapor_pressure >= pressure:
-            raise ValueError(
-                "vapor_pressure must be smaller than pressure."
-            )
-
-        return 0.622 * vapor_pressure / (pressure - vapor_pressure)
-
+        if specific_humidity < 0.0 or specific_humidity >= 1.0:
+            raise ValueError("Specific humidity must be in [0, 1)")
+        return specific_humidity / (1.0 - specific_humidity)

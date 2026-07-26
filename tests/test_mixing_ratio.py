@@ -1,20 +1,22 @@
 from acf.science.mixing_ratio import MixingRatio
 
-import pytest
-
-
 def test_mixing_ratio():
-    w = MixingRatio.calculate(
-        vapor_pressure=20.0,
-        pressure=1000.0,
-    )
+    w = MixingRatio.calculate(0.00990)
+    assert round(w, 5) == 0.01
 
-    assert round(w, 5) == 0.01269
+def test_zero():
+    assert MixingRatio.calculate(0.0) == 0.0
 
+def test_invalid_negative():
+    try:
+        MixingRatio.calculate(-0.1)
+        assert False, "Should raise ValueError"
+    except ValueError:
+        pass
 
-def test_invalid_pressure():
-    with pytest.raises(ValueError):
-        MixingRatio.calculate(
-            vapor_pressure=1000.0,
-            pressure=1000.0,
-        )
+def test_invalid_one():
+    try:
+        MixingRatio.calculate(1.0)
+        assert False, "Should raise ValueError"
+    except ValueError:
+        pass

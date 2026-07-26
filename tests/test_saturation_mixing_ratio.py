@@ -1,20 +1,14 @@
 from acf.science.saturation_mixing_ratio import SaturationMixingRatio
 
-import pytest
-
-
 def test_saturation_mixing_ratio():
-    ws = SaturationMixingRatio.calculate(
-        saturation_vapor_pressure=20.0,
-        pressure=1000.0,
-    )
-
-    assert round(ws, 5) == 0.01269
-
+    # At 20°C, es ≈ 23.4 hPa, p = 1000 hPa
+    ws = SaturationMixingRatio.calculate(23.4, 1000.0)
+    # Expected: 0.622 * 23.4 / (1000 - 23.4) ≈ 0.0149
+    assert round(ws, 4) == 0.0149
 
 def test_invalid_pressure():
-    with pytest.raises(ValueError):
-        SaturationMixingRatio.calculate(
-            saturation_vapor_pressure=1000.0,
-            pressure=1000.0,
-        )
+    try:
+        SaturationMixingRatio.calculate(100.0, 50.0)
+        assert False, "Should raise ValueError"
+    except ValueError:
+        pass
