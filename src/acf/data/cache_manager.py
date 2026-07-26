@@ -4,8 +4,9 @@ Smart Dataset Cache Manager
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 
+datetime.now(UTC)
 
 @dataclass
 class CacheEntry:

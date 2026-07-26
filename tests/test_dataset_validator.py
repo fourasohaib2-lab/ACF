@@ -27,3 +27,28 @@ def test_validator():
     report = validator.validate(ds)
 
     assert report["valid"]
+from acf.data.engine.dataset_validator import DatasetValidator
+
+
+class DummyDataset:
+
+    name = "ERA5"
+
+    variables = ["t", "u", "v"]
+
+    dimensions = ["time", "latitude", "longitude"]
+
+    metadata = {}
+
+
+def test_validator():
+
+    validator = DatasetValidator()
+
+    valid, errors = validator.validate(DummyDataset())
+
+    assert valid
+
+    assert errors == []
+
+    assert validator.is_valid(DummyDataset())

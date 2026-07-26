@@ -2,8 +2,9 @@
 Artificial Intelligence Engine
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 
+datetime.now(UTC)
 
 class AIEngine:
     """
