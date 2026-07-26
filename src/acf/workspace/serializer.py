@@ -3,7 +3,6 @@ ACF Project Serializer
 """
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 from acf.workspace.project import Project
@@ -16,34 +15,39 @@ class ProjectSerializer:
 
     @staticmethod
     def save(project: Project):
+        """
+        Sauvegarde un projet ACF.
+        """
 
         project.touch()
 
-        data = asdict(project)
-
-        # Conversion Path -> str
-        data["root_path"] = str(project.root_path)
+        data = project.to_dict()
 
         filename = project.project_file
 
-        with open(filename, "w", encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as file:
+
             json.dump(
                 data,
-                f,
+                file,
                 indent=4,
                 ensure_ascii=False,
             )
 
-    ########################################################
+        return filename
+
+    ###########################################################
 
     @staticmethod
     def load(filename):
+        """
+        Charge un projet ACF.
+        """
 
         filename = Path(filename)
 
-        with open(filename, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        with open(filename, "r", encoding="utf-8") as file:
 
-        data["root_path"] = Path(data["root_path"])
+            data = json.load(file)
 
-        return Project(**data)
+        return Project.from_dict(data)
