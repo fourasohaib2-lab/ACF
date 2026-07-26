@@ -1,99 +1,111 @@
-from acf.model4d.physics.convection import Convection
-import pytest
+from acf.model4d.physics.convection import ConvectionPhysics
 
 
-def test_buoyancy_positive():
+def test_cape():
 
-    value = Convection.buoyancy(
-        temperature_parcel=300,
-        temperature_environment=290,
+    value = ConvectionPhysics.cape(
+        300,
+        290,
+        1000
     )
 
-    assert value > 0
+    assert round(value, 2) == 3.38
 
 
 
-def test_buoyancy_negative():
+def test_cin():
 
-    value = Convection.buoyancy(
-        temperature_parcel=280,
-        temperature_environment=290,
+    value = ConvectionPhysics.cin(
+        290,
+        300,
+        1000
     )
 
-    assert value < 0
-
-
-
-def test_buoyancy_invalid_temperature():
-
-    with pytest.raises(ValueError):
-        Convection.buoyancy(
-            300,
-            0
-        )
+    assert round(value, 2) == -3.27
 
 
 
 def test_convective_velocity():
 
-    value = Convection.convective_velocity(
-        buoyancy=0.5,
-        height=100
+    value = ConvectionPhysics.convective_velocity(
+        500
     )
 
-    assert round(value, 2) == 10.0
+    assert round(value, 2) == 31.62
 
 
 
-def test_zero_velocity():
+def test_zero_cape():
 
-    value = Convection.convective_velocity(
-        buoyancy=-1,
-        height=100
+    value = ConvectionPhysics.convective_velocity(
+        0
     )
 
-    assert value == 0.0
+    assert value == 0
+
+
+
+def test_convection_index():
+
+    value = ConvectionPhysics.convection_index(
+        1000,
+        -100
+    )
+
+    assert value == 1100
+
+
+
+def test_thunderstorm_probability():
+
+    value = ConvectionPhysics.thunderstorm_probability(
+        1250
+    )
+
+    assert value == 0.5
+
+
+
+def test_probability_limit():
+
+    value = ConvectionPhysics.thunderstorm_probability(
+        5000
+    )
+
+    assert value == 1.0
+
+
+
+def test_negative_cape():
+
+    value = ConvectionPhysics.cape(
+        280,
+        290,
+        1000
+    )
+
+    assert value == 0
 
 
 
 def test_negative_height():
 
-    with pytest.raises(ValueError):
-        Convection.convective_velocity(
-            1,
-            -10
-        )
-
-
-
-def test_instability():
-
-    value = Convection.instability_index(
+    value = ConvectionPhysics.cape(
         300,
-        280
+        290,
+        -10
     )
 
-    assert value == 20
+    assert value == 0
 
 
 
-def test_stable_layer():
+def test_cin_positive_case():
 
-    value = Convection.instability_index(
-        270,
-        280
+    value = ConvectionPhysics.cin(
+        300,
+        290,
+        1000
     )
 
-    assert value == -10
-
-
-
-def test_class_exists():
-
-    assert Convection is not None
-
-
-
-def test_gravity_constant():
-
-    assert Convection.GRAVITY == 9.81
+    assert value == 0

@@ -1,79 +1,173 @@
 """
 ACF - Atmospheric Complexity Framework
-Model4D Physics
-Convection Module
 
-Handles atmospheric convection calculations:
-- buoyancy
-- convective velocity
-- temperature instability
+Model4D Physics Module
+
+Convection Physics
+==================
+
+Module de physique atmosphérique pour :
+- CAPE (Convective Available Potential Energy)
+- CIN (Convective Inhibition)
+- vitesse verticale convective
+- indice de convection
+- probabilité d'orage
+
 """
 
+import math
 
-class Convection:
+
+class ConvectionPhysics:
     """
-    Atmospheric convection physics equations.
+    Classe de calculs physiques liés à la convection atmosphérique.
     """
 
-    GRAVITY = 9.81
 
     @staticmethod
-    def buoyancy(temperature_parcel, temperature_environment):
+    def cape(
+        temperature_parcel,
+        temperature_environment,
+        height
+    ):
         """
-        Calculate thermal buoyancy.
+        Calcule une approximation de la CAPE.
 
-        B = g * (Tp - Te) / Te
+        Formule simplifiée :
 
-        Parameters:
-            temperature_parcel (float): Parcel temperature K
-            temperature_environment (float): Environment temperature K
+        CAPE = g * ((Tp - Te) / Te) * z
 
-        Returns:
-            float: buoyancy acceleration
+        Paramètres:
+        ----------
+        temperature_parcel : float
+            Température de la parcelle d'air (K)
+
+        temperature_environment : float
+            Température environnementale (K)
+
+        height : float
+            Hauteur verticale (m)
+
+        Retour:
+        -------
+        float
+            CAPE en J/kg
         """
+
+        if height <= 0:
+            return 0.0
 
         if temperature_environment <= 0:
-            raise ValueError("Temperature must be positive")
+            return 0.0
 
-        return (
-            Convection.GRAVITY
-            * (temperature_parcel - temperature_environment)
-            / temperature_environment
+        g = 9.81
+
+        buoyancy = (
+            temperature_parcel -
+            temperature_environment
+        ) / temperature_environment
+
+        cape = g * buoyancy * height
+
+        return max(
+            0.0,
+            cape / 100
         )
 
 
     @staticmethod
-    def convective_velocity(buoyancy, height):
+    def cin(
+        temperature_parcel,
+        temperature_environment,
+        height
+    ):
         """
-        Estimate convective velocity.
+        Calcule une approximation de la CIN.
 
-        w = sqrt(2 * B * H)
-
-        Parameters:
-            buoyancy (float)
-            height (float)
-
-        Returns:
-            float: vertical velocity
+        Retour:
+        -------
+        float
+            CIN négative
         """
 
-        if height < 0:
-            raise ValueError("Height cannot be negative")
-
-        if buoyancy <= 0:
+        if height <= 0:
             return 0.0
 
-        return (2 * buoyancy * height) ** 0.5
+        if temperature_parcel >= temperature_environment:
+            return 0.0
+
+        g = 9.81
+
+        deficit = (
+            temperature_environment -
+            temperature_parcel
+        ) / temperature_environment
+
+        cin = -g * deficit * height
+
+        return cin / 100
 
 
     @staticmethod
-    def instability_index(surface_temperature, upper_temperature):
+    def convective_velocity(cape):
         """
-        Simple thermal instability index.
+        Estimation de la vitesse verticale convective.
 
-        I = Ts - Tu
+        Formule :
 
-        Positive value means unstable atmosphere.
+        w = sqrt(2 * CAPE)
+
+        Paramètre:
+        ----------
+        cape : float
+            CAPE en J/kg
+
+        Retour:
+        -------
+        float
+            vitesse verticale en m/s
         """
 
-        return surface_temperature - upper_temperature
+        if cape <= 0:
+            return 0.0
+
+        return math.sqrt(
+            2 * cape
+        )
+
+
+    @staticmethod
+    def convection_index(cape, cin):
+        """
+        Indice simplifié d'activité convective.
+
+        Plus CAPE est élevé et CIN faible,
+        plus la convection est importante.
+        """
+
+        return max(
+            0.0,
+            cape + abs(cin)
+        )
+
+
+    @staticmethod
+    def thunderstorm_probability(cape):
+        """
+        Estimation simplifiée de probabilité d'orage.
+
+        Retour:
+        -------
+        float
+            valeur entre 0 et 1
+        """
+
+        if cape <= 0:
+            return 0.0
+
+        probability = cape / 2500
+
+        return min(
+            1.0,
+            probability
+        )
