@@ -1,67 +1,172 @@
 """
 ACF - Atmospheric Complexity Framework
-Model4D Turbulence Physics Module
 
-Provides simplified atmospheric turbulence calculations:
-- Turbulent kinetic energy (TKE)
-- Dissipation rate
-- Mixing coefficient
-- Turbulence intensity
+Model4D Physics
+
+Turbulence Physics Module
+Sprint 8.30
 """
 
+import math
 
-class Turbulence:
+
+class TurbulencePhysics:
     """
-    Atmospheric turbulence parameterizations.
+    Atmospheric turbulence parameterization.
     """
+
 
     @staticmethod
-    def tke(u_prime, v_prime, w_prime):
+    def turbulent_kinetic_energy(
+        u_prime,
+        v_prime,
+        w_prime
+    ):
         """
-        Turbulent kinetic energy.
+        Compute turbulent kinetic energy.
 
-        TKE = 0.5 * (u'² + v'² + w'²)
-
-        Parameters:
-            u_prime: zonal turbulent velocity
-            v_prime: meridional turbulent velocity
-            w_prime: vertical turbulent velocity
+        TKE = 0.5 * (u'^2 + v'^2 + w'^2)
         """
+
+        if not all(
+            isinstance(value, (int, float))
+            for value in (
+                u_prime,
+                v_prime,
+                w_prime
+            )
+        ):
+            raise ValueError(
+                "Velocity fluctuations must be numeric"
+            )
+
         return 0.5 * (
             u_prime ** 2
-            + v_prime ** 2
-            + w_prime ** 2
+            +
+            v_prime ** 2
+            +
+            w_prime ** 2
         )
 
-    @staticmethod
-    def dissipation(tke_value, timescale):
-        """
-        Turbulent energy dissipation rate.
-
-        epsilon = TKE / timescale
-        """
-        if timescale <= 0:
-            raise ValueError("Timescale must be positive")
-
-        return tke_value / timescale
 
     @staticmethod
-    def mixing_length_coefficient(length_scale, velocity_scale):
+    def eddy_viscosity(
+        mixing_length,
+        velocity_gradient
+    ):
         """
-        Eddy diffusion coefficient.
+        Eddy viscosity coefficient.
 
-        K = L * V
+        Km = l² × du/dz
         """
-        return length_scale * velocity_scale
+
+        if mixing_length <= 0:
+            raise ValueError(
+                "Mixing length must be positive"
+            )
+
+        if velocity_gradient < 0:
+            raise ValueError(
+                "Velocity gradient must be positive"
+            )
+
+        return (
+            mixing_length ** 2
+            *
+            velocity_gradient
+        )
+
 
     @staticmethod
-    def intensity(tke_value, mean_velocity):
+    def mixing_length(
+        height,
+        surface_roughness
+    ):
+        """
+        Atmospheric mixing length.
+
+        l = k(z + z0)
+        """
+
+        if height <= 0:
+            raise ValueError(
+                "Height must be positive"
+            )
+
+        if surface_roughness < 0:
+            raise ValueError(
+                "Surface roughness invalid"
+            )
+
+        von_karman = 0.4
+
+        return (
+            von_karman
+            *
+            (
+                height
+                +
+                surface_roughness
+            )
+        )
+
+
+    @staticmethod
+    def turbulence_intensity(
+        tke,
+        mean_velocity
+    ):
         """
         Turbulence intensity.
 
-        I = sqrt(2*TKE/3) / U
-        """
-        if mean_velocity <= 0:
-            raise ValueError("Mean velocity must be positive")
+        ACF formulation:
 
-        return ((2 * tke_value / 3) ** 0.5) / mean_velocity
+        I = sqrt(TKE / (0.15 × U²))
+
+        Example:
+        TKE = 1.5
+        U = 10
+
+        I = 0.316
+        """
+
+        if tke < 0:
+            raise ValueError(
+                "TKE must be positive"
+            )
+
+        if mean_velocity <= 0:
+            raise ValueError(
+                "Mean velocity must be positive"
+            )
+
+        return math.sqrt(
+            tke
+            /
+            (
+                0.15
+                *
+                mean_velocity ** 2
+            )
+        )
+
+
+    @staticmethod
+    def stability_correction(
+        richardson_number
+    ):
+        """
+        Stability correction using Richardson number.
+
+        Ri > 0.25  -> stable
+        Ri < 0     -> unstable
+        otherwise  -> neutral
+        """
+
+        if richardson_number > 0.25:
+            return "stable"
+
+        if richardson_number < 0:
+            return "unstable"
+
+        return "neutral"

@@ -1,76 +1,111 @@
-from acf.model4d.physics.turbulence import Turbulence
+
+import pytest
+
+from acf.model4d.physics.turbulence import TurbulencePhysics
 
 
 def test_tke():
-    value = Turbulence.tke(
-        2,
+
+    value = TurbulencePhysics.turbulent_kinetic_energy(
+        1,
         1,
         1
     )
 
-    assert value == 3.0
+    assert round(value, 2) == 1.50
 
 
-def test_dissipation():
-    value = Turbulence.dissipation(
+
+def test_eddy_viscosity():
+
+    value = TurbulencePhysics.eddy_viscosity(
         10,
-        2
+        0.02
     )
 
-    assert value == 5
+    assert round(value, 2) == 2.00
 
 
-def test_dissipation_error():
-    try:
-        Turbulence.dissipation(10, 0)
-        assert False
-    except ValueError:
-        assert True
 
+def test_mixing_length():
 
-def test_mixing():
-    value = Turbulence.mixing_length_coefficient(
+    value = TurbulencePhysics.mixing_length(
         100,
-        2
+        0
     )
 
-    assert value == 200
+    assert round(value, 1) == 40.0
 
 
-def test_intensity():
-    value = Turbulence.intensity(
-        6,
+
+def test_turbulence_intensity():
+
+    value = TurbulencePhysics.turbulence_intensity(
+        1.5,
         10
     )
 
-    assert round(value, 3) == 0.2
+    assert round(value, 3) == 0.316
 
 
-def test_zero_tke():
-    assert Turbulence.tke(0, 0, 0) == 0
 
+def test_stable():
 
-def test_positive_values():
-    assert Turbulence.tke(1, 1, 1) > 0
-
-
-def test_large_scale():
-    assert Turbulence.mixing_length_coefficient(
-        1000,
-        5
-    ) == 5000
-
-
-def test_negative_velocity_error():
-    try:
-        Turbulence.intensity(5, -1)
-        assert False
-    except ValueError:
-        assert True
-
-
-def test_type():
-    assert isinstance(
-        Turbulence.tke(1, 2, 3),
-        float
+    result = TurbulencePhysics.stability_correction(
+        0.5
     )
+
+    assert result == "stable"
+
+
+
+def test_unstable():
+
+    result = TurbulencePhysics.stability_correction(
+        -0.2
+    )
+
+    assert result == "unstable"
+
+
+
+def test_neutral():
+
+    result = TurbulencePhysics.stability_correction(
+        0.1
+    )
+
+    assert result == "neutral"
+
+
+
+def test_invalid_height():
+
+    with pytest.raises(ValueError):
+
+        TurbulencePhysics.mixing_length(
+            0,
+            1
+        )
+
+
+
+def test_invalid_tke():
+
+    with pytest.raises(ValueError):
+
+        TurbulencePhysics.turbulence_intensity(
+            -1,
+            10
+        )
+
+
+
+def test_invalid_velocity():
+
+    with pytest.raises(ValueError):
+
+        TurbulencePhysics.turbulence_intensity(
+            1,
+            0
+        )
