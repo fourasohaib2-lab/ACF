@@ -1,116 +1,106 @@
-from acf.model4d.physics.cloud_dynamics import CloudDynamicsPhysics
+from acf.model4d.physics.atmospheric_dynamics import (
+    AtmosphericDynamicsPhysics
+)
 
 
-def test_updraft_velocity():
+def test_coriolis_parameter():
 
-    value = CloudDynamicsPhysics.updraft_velocity(
-        0.5,
-        1000
+    value = AtmosphericDynamicsPhysics.coriolis_parameter(
+        45
     )
 
-    assert round(value, 2) == 3.16
+    assert round(value, 6) == 0.000103
 
 
+def test_coriolis_force():
 
-def test_downdraft_velocity():
-
-    value = CloudDynamicsPhysics.downdraft_velocity(
-        0.5,
-        1000
-    )
-
-    assert round(value, 2) == -3.16
-
-
-
-def test_cloud_thickness():
-
-    value = CloudDynamicsPhysics.cloud_thickness(
-        5000,
-        1000
-    )
-
-    assert value == 4000
-
-
-
-def test_entrainment_rate():
-
-    value = CloudDynamicsPhysics.entrainment_rate(
-        1.5,
-        1
-    )
-
-    assert value == 0.5
-
-
-
-def test_detrainment_rate():
-
-    value = CloudDynamicsPhysics.detrainment_rate(
-        100,
-        20
-    )
-
-    assert value == 0.2
-
-
-
-def test_cloud_growth():
-
-    value = CloudDynamicsPhysics.cloud_growth(
-        100,
-        20
-    )
-
-    assert value == 120
-
-
-
-def test_precipitation_efficiency():
-
-    value = CloudDynamicsPhysics.precipitation_efficiency(
-        50,
-        100
-    )
-
-    assert value == 0.5
-
-
-
-def test_cloud_mass_flux():
-
-    value = CloudDynamicsPhysics.cloud_mass_flux(
-        1,
+    value = AtmosphericDynamicsPhysics.coriolis_force(
         10,
-        5
+        45
     )
 
-    assert value == 50
+    assert value == 0.001031
 
 
+def test_pressure_gradient_force():
 
-def test_invalid_cloud():
+    value = AtmosphericDynamicsPhysics.pressure_gradient_force(
+        100,
+        1,
+        1000
+    )
+
+    assert value == 0.1
+
+
+def test_geostrophic_wind():
+
+    value = AtmosphericDynamicsPhysics.geostrophic_wind(
+        0.01,
+        45
+    )
+
+    assert value > 0
+
+
+def test_horizontal_advection():
+
+    value = AtmosphericDynamicsPhysics.horizontal_advection(
+        10,
+        2
+    )
+
+    assert value == -20
+
+
+def test_divergence():
+
+    value = AtmosphericDynamicsPhysics.divergence(
+        1,
+        2
+    )
+
+    assert value == 3
+
+
+def test_vorticity():
+
+    value = AtmosphericDynamicsPhysics.vorticity(
+        5,
+        2
+    )
+
+    assert value == 3
+
+
+def test_potential_vorticity():
+
+    value = AtmosphericDynamicsPhysics.potential_vorticity(
+        10,
+        2
+    )
+
+    assert value == 5
+
+
+def test_rossby_number():
+
+    value = AtmosphericDynamicsPhysics.rossby_number(
+        10,
+        45,
+        100000
+    )
+
+    assert value > 0
+
+
+def test_invalid_latitude():
 
     try:
-        CloudDynamicsPhysics.cloud_thickness(
-            100,
-            500
+        AtmosphericDynamicsPhysics.coriolis_parameter(
+            100
         )
         assert False
-    except ValueError:
-        assert True
 
-
-
-def test_invalid_mass():
-
-    try:
-        CloudDynamicsPhysics.cloud_mass_flux(
-            -1,
-            10,
-            5
-        )
-        assert False
     except ValueError:
         assert True
