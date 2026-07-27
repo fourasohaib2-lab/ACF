@@ -1,96 +1,264 @@
 """
-ACF Model4D - Atmospheric Thermodynamics Module
+ACF - Atmospheric Complexity Framework
 
-Provides basic thermodynamic calculations
-for atmospheric 4D fields.
+Sprint 9.26
+Atmospheric Thermodynamics Engine
+
+Model4D Physics Core
 """
 
+from dataclasses import dataclass
+import math
 
-class Thermodynamics:
-    """
-    Thermodynamic operators for atmospheric modeling.
-    """
 
-    @staticmethod
-    def temperature_conversion(celsius):
-        """
-        Convert Celsius to Kelvin.
+# ============================================================
+# Constants
+# ============================================================
 
-        Parameters
-        ----------
-        celsius : float
-            Temperature in Celsius.
+RD = 287.05
+RV = 461.5
+CP = 1004.0
+G = 9.80665
+LV = 2.5e6
+P0 = 100000.0
 
-        Returns
-        -------
-        float
-            Temperature in Kelvin.
-        """
-        return celsius + 273.15
 
-    @staticmethod
-    def pressure_density(pressure, temperature, gas_constant=287.05):
-        """
-        Compute air density using ideal gas law.
+# ============================================================
+# State
+# ============================================================
 
-        rho = P / (R * T)
+@dataclass
+class ThermodynamicsState:
 
-        Parameters
-        ----------
-        pressure : float
-            Pressure in Pa.
+    temperature: float
+    pressure: float
+    specific_humidity: float
+    height: float = 0.0
 
-        temperature : float
-            Temperature in Kelvin.
 
-        gas_constant : float
-            Specific gas constant for dry air.
+# ============================================================
+# Engine
+# ============================================================
 
-        Returns
-        -------
-        float
-            Air density kg/m3.
-        """
-        return pressure / (gas_constant * temperature)
+class AtmosphericThermodynamics:
 
-    @staticmethod
-    def potential_temperature(temperature, pressure,
-                              reference_pressure=100000,
-                              exponent=0.2854):
-        """
-        Compute potential temperature.
 
-        theta = T * (P0/P)^k
+    def potential_temperature(self, state):
 
-        Parameters
-        ----------
-        temperature : float
-            Temperature in Kelvin.
+        theta = (
+            state.temperature *
+            (P0 / state.pressure)
+            ** (RD / CP)
+        )
 
-        pressure : float
-            Pressure in Pa.
+        return round(theta, 2)
 
-        Returns
-        -------
-        float
-            Potential temperature.
-        """
-        return temperature * (
-            reference_pressure / pressure
-        ) ** exponent
 
-    @staticmethod
-    def heat_index(value):
-        """
-        Classify atmospheric thermal intensity.
-        """
-        if value < 250:
-            return "Cold"
+    def virtual_temperature(self, state):
 
-        if value < 280:
-            return "Normal"
+        tv = (
+            state.temperature *
+            (1 + 0.61 *
+             state.specific_humidity)
+        )
 
-        if value < 310:
-            return "Warm"
+        return round(tv, 2)
 
-        return "Hot"
+
+    def air_density(self, state):
+
+        rho = (
+            state.pressure /
+            (
+                RD *
+                self.virtual_temperature(state)
+            )
+        )
+
+        return round(rho, 3)
+
+
+    def dry_static_energy(self, state):
+
+        s = (
+            CP *
+            state.temperature
+            +
+            G *
+            state.height
+        )
+
+        return round(s, 2)
+
+
+    def moist_static_energy(self, state):
+
+        mse = (
+            CP *
+            state.temperature
+            +
+            G *
+            state.height
+            +
+            LV *
+            state.specific_humidity
+        )
+
+        return round(mse, 2)
+
+
+    def enthalpy(self, state):
+
+        h = (
+            CP *
+            state.temperature
+            +
+            LV *
+            state.specific_humidity
+        )
+
+        return round(h, 2)
+
+
+    def internal_energy(self, state):
+
+        cv = CP - RD
+
+        u = cv * state.temperature
+
+        return round(u, 2)
+
+
+    def adiabatic_lapse_rate(self):
+
+        gamma = G / CP
+
+        return round(gamma, 5)
+
+
+    def moist_adiabatic_lapse_rate(self, state):
+
+        numerator = G / CP
+
+        denominator = (
+            1 +
+            (
+                LV ** 2 *
+                state.specific_humidity
+                /
+                (
+                    CP *
+                    RV *
+                    state.temperature ** 2
+                )
+            )
+        )
+
+        gamma = numerator / denominator
+
+        return round(gamma, 5)
+
+
+    def lifting_condensation_level(
+        self,
+        temperature_celsius,
+        dewpoint_celsius
+    ):
+
+        lcl = (
+            125 *
+            (
+                temperature_celsius -
+                dewpoint_celsius
+            )
+        )
+
+        return round(lcl, 2)
+
+
+    def brunt_vaisala_frequency(
+        self,
+        theta_gradient
+    ):
+
+        if theta_gradient <= 0:
+            return 0.0
+
+        value = math.sqrt(
+            G *
+            theta_gradient
+        )
+
+        return round(value, 4)
+
+
+    def convective_available_potential_energy(
+        self,
+        parcel_temperature,
+        environment_temperature,
+        height
+    ):
+
+        if parcel_temperature <= environment_temperature:
+            return 0.0
+
+
+        cape = (
+            G *
+            (
+                parcel_temperature -
+                environment_temperature
+            )
+            /
+            environment_temperature
+            *
+            height
+        )
+
+
+        return round(cape, 2)
+
+
+
+    def convective_inhibition(
+        self,
+        temperature_deficit,
+        height
+    ):
+
+        cin = (
+            -G *
+            temperature_deficit *
+            height
+        )
+
+        return round(cin, 2)
+
+
+
+    def stability_index(
+        self,
+        theta_surface,
+        theta_upper,
+        height_difference
+    ):
+
+        if height_difference == 0:
+            return 0.0
+
+
+        index = (
+            theta_upper -
+            theta_surface
+        ) / height_difference
+
+
+        return round(index, 5)
+
+
+
+# ============================================================
+# API compatibility
+# ============================================================
+
+Thermodynamics = AtmosphericThermodynamics

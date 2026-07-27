@@ -1,61 +1,255 @@
-from acf.model4d.physics.thermodynamics import Thermodynamics
+"""
+ACF - Atmospheric Complexity Framework
+
+Sprint 9.26
+Tests - Atmospheric Thermodynamics Engine
+"""
 
 
-def test_temperature_conversion():
-    assert Thermodynamics.temperature_conversion(0) == 273.15
+from acf.model4d.physics.thermodynamics import (
+    Thermodynamics,
+    ThermodynamicsState
+)
 
 
-def test_temperature_conversion_positive():
-    assert Thermodynamics.temperature_conversion(20) == 293.15
 
+# ============================================================
+# Test atmospheric state
+# ============================================================
 
-def test_density():
-    rho = Thermodynamics.pressure_density(
-        pressure=101325,
-        temperature=288.15
+def create_state():
+
+    return ThermodynamicsState(
+        temperature=300,
+        pressure=90000,
+        specific_humidity=0.012,
+        height=1000
     )
 
-    assert round(rho, 3) == 1.225
 
 
-def test_density_low_pressure():
-    rho = Thermodynamics.pressure_density(
-        pressure=80000,
-        temperature=280
+# ============================================================
+# Potential temperature
+# ============================================================
+
+def test_potential_temperature():
+
+    model = Thermodynamics()
+
+    theta = model.potential_temperature(
+        create_state()
+    )
+
+    assert theta > 300
+
+
+
+# ============================================================
+# Virtual temperature
+# ============================================================
+
+def test_virtual_temperature():
+
+    model = Thermodynamics()
+
+    tv = model.virtual_temperature(
+        create_state()
+    )
+
+    assert tv > 300
+
+
+
+# ============================================================
+# Density
+# ============================================================
+
+def test_air_density():
+
+    model = Thermodynamics()
+
+    rho = model.air_density(
+        create_state()
     )
 
     assert rho > 0
 
 
-def test_potential_temperature():
-    theta = Thermodynamics.potential_temperature(
-        temperature=280,
-        pressure=100000
+
+# ============================================================
+# Dry static energy
+# ============================================================
+
+def test_dry_static_energy():
+
+    model = Thermodynamics()
+
+    value = model.dry_static_energy(
+        create_state()
     )
 
-    assert theta == 280
+    assert value > 300000
 
 
-def test_potential_temperature_lower_pressure():
-    theta = Thermodynamics.potential_temperature(
-        temperature=280,
-        pressure=90000
+
+# ============================================================
+# Moist static energy
+# ============================================================
+
+def test_moist_static_energy():
+
+    model = Thermodynamics()
+
+    value = model.moist_static_energy(
+        create_state()
     )
 
-    assert theta > 280
+    assert value > 300000
 
 
-def test_heat_index_cold():
-    assert Thermodynamics.heat_index(240) == "Cold"
+
+# ============================================================
+# Enthalpy
+# ============================================================
+
+def test_enthalpy():
+
+    model = Thermodynamics()
+
+    value = model.enthalpy(
+        create_state()
+    )
+
+    assert value > 300000
 
 
-def test_heat_index_normal():
-    assert Thermodynamics.heat_index(270) == "Normal"
+
+# ============================================================
+# Internal energy
+# ============================================================
+
+def test_internal_energy():
+
+    model = Thermodynamics()
+
+    value = model.internal_energy(
+        create_state()
+    )
+
+    assert value > 200000
 
 
-def test_heat_index_warm():
-    assert Thermodynamics.heat_index(300) == "Warm"
+
+# ============================================================
+# Dry adiabatic lapse rate
+# ============================================================
+
+def test_adiabatic_lapse_rate():
+
+    model = Thermodynamics()
+
+    value = model.adiabatic_lapse_rate()
+
+    assert value > 0
 
 
-def test_heat_index_hot():
-    assert Thermodynamics.heat_index(320) == "Hot"
+
+# ============================================================
+# Moist lapse rate
+# ============================================================
+
+def test_moist_adiabatic_lapse_rate():
+
+    model = Thermodynamics()
+
+    value = model.moist_adiabatic_lapse_rate(
+        create_state()
+    )
+
+    assert value > 0
+
+
+
+# ============================================================
+# Lifting condensation level
+# ============================================================
+
+def test_lifting_condensation_level():
+
+    model = Thermodynamics()
+
+    value = model.lifting_condensation_level(
+        30,
+        20
+    )
+
+    assert value == 1250
+
+
+
+# ============================================================
+# Brunt Vaisala frequency
+# ============================================================
+
+def test_brunt_vaisala_frequency():
+
+    model = Thermodynamics()
+
+    value = model.brunt_vaisala_frequency(
+        0.01
+    )
+
+    assert value > 0
+
+
+
+# ============================================================
+# CAPE
+# ============================================================
+
+def test_cape():
+
+    model = Thermodynamics()
+
+    value = model.convective_available_potential_energy(
+        305,
+        295,
+        1000
+    )
+
+    assert value > 0
+
+
+
+# ============================================================
+# CIN
+# ============================================================
+
+def test_cin():
+
+    model = Thermodynamics()
+
+    value = model.convective_inhibition(
+        2,
+        1000
+    )
+
+    assert value < 0
+
+
+
+# ============================================================
+# Stability index
+# ============================================================
+
+def test_stability_index():
+
+    model = Thermodynamics()
+
+    value = model.stability_index(
+        300,
+        310,
+        1000
+    )
+
+    assert value == 0.01
