@@ -1,7 +1,9 @@
 """
-ACF - Atmospheric Complexity Framework
 Cloud Microphysics Physics Module
-Sprint 8.31
+Atmospheric Complexity Framework (ACF)
+
+Cloud droplets, condensation, ice processes,
+precipitation formation and cloud evolution.
 """
 
 import math
@@ -9,179 +11,200 @@ import math
 
 class CloudMicrophysicsPhysics:
     """
-    Cloud microphysics parameterization.
-
-    Processes:
-    - saturation mixing ratio
-    - condensation
-    - evaporation
-    - freezing
-    - melting
-    - autoconversion
-    - precipitation
-    - cloud fraction
-    - mixed phase partition
+    Cloud microphysics calculations.
     """
 
 
     @staticmethod
-    def saturation_mixing_ratio(temperature, pressure):
+    def saturation_vapor_pressure(
+        temperature
+    ):
         """
-        Calculate saturation mixing ratio.
+        Saturation vapor pressure.
 
-        Parameters
-        ----------
-        temperature : float
-            Temperature in Kelvin.
-
-        pressure : float
-            Atmospheric pressure in Pascal.
-
-        Returns
-        -------
-        float
-            Saturation mixing ratio (kg/kg)
+        Tetens formula.
+        Temperature in Celsius.
         """
 
-        if temperature <= 0 or pressure <= 0:
-            return 0.0
+        return round(
+            6.112 * math.exp(
+                (17.67 * temperature)
+                /
+                (temperature + 243.5)
+            ),
+            2
+        )
 
-        temperature_c = temperature - 273.15
 
-        # Magnus-Tetens saturation vapor pressure
-        es = 6.112 * math.exp(
-            (17.67 * temperature_c)
-            /
-            (temperature_c + 243.5)
-        ) * 100
+    @staticmethod
+    def condensation_rate(
+        vapor_pressure,
+        saturation_pressure,
+        coefficient
+    ):
+        """
+        Condensation rate.
+        """
 
-        # ACF reference calibration
-        # Matches reference atmosphere tests
         return (
-            0.622
+            coefficient
             *
-            es
-            /
-            (pressure - es)
+            (
+                vapor_pressure
+                -
+                saturation_pressure
+            )
+        )
+
+
+    @staticmethod
+    def cloud_water_content(
+        liquid_water,
+        air_volume
+    ):
+        """
+        Liquid water content.
+
+        LWC = water mass / air volume
+        """
+
+        return liquid_water / air_volume
+
+
+    @staticmethod
+    def droplet_growth_rate(
+        radius,
+        supersaturation
+    ):
+        """
+        Droplet diffusional growth.
+
+        Normalized ACF formulation.
+        """
+
+        return round(
+            radius
             *
-            1.0113
+            supersaturation
+            *
+            1e-6,
+            7
         )
 
 
     @staticmethod
-    def condensation(vapor_mixing_ratio, saturation_ratio):
+    def autoconversion_rate(
+        cloud_water,
+        threshold
+    ):
         """
-        Calculate excess vapor condensation.
+        Cloud water converted
+        into precipitation.
         """
-
-        if vapor_mixing_ratio <= saturation_ratio:
-            return 0.0
-
-        return vapor_mixing_ratio - saturation_ratio
-
-
-    @staticmethod
-    def evaporation(cloud_water, humidity_deficit):
-        """
-        Calculate evaporation of cloud water.
-        """
-
-        if cloud_water <= 0:
-            return 0.0
-
-        return min(
-            cloud_water,
-            humidity_deficit
-        )
-
-
-    @staticmethod
-    def freezing(liquid_water, temperature):
-        """
-        Calculate freezing of liquid water.
-        """
-
-        if temperature >= 273.15:
-            return 0.0
-
-        return liquid_water * (
-            (273.15 - temperature) / 10
-        )
-
-
-    @staticmethod
-    def melting(ice_content, temperature):
-        """
-        Calculate melting of ice particles.
-        """
-
-        if temperature <= 273.15:
-            return 0.0
-
-        return ice_content * (
-            (temperature - 273.15) / 10
-        )
-
-
-    @staticmethod
-    def autoconversion(cloud_water):
-        """
-        Cloud droplets conversion into rain droplets.
-        """
-
-        threshold = 1e-3
 
         if cloud_water <= threshold:
-            return 0.0
+            return 0
+
+        return round(
+            (
+                cloud_water
+                -
+                threshold
+            )
+            *
+            1e-2,
+            5
+        )
+
+
+    @staticmethod
+    def accretion_rate(
+        rain_water,
+        cloud_water,
+        coefficient
+    ):
+        """
+        Collision-coalescence growth.
+        """
 
         return (
-            cloud_water - threshold
-        ) * 0.5
+            coefficient
+            *
+            rain_water
+            *
+            cloud_water
+        )
 
 
     @staticmethod
-    def precipitation_rate(rain_water):
+    def ice_nucleation_rate(
+        temperature,
+        concentration
+    ):
         """
-        Estimate precipitation rate.
+        Ice crystal nucleation.
 
-        rain_water: kg/kg
-
-        Returns:
-            mm equivalent
+        Active below 0 Celsius.
         """
 
-        if rain_water <= 0:
-            return 0.0
+        if temperature >= 0:
+            return 0
 
-        return rain_water * 1000
+        return round(
+            abs(temperature)
+            *
+            concentration
+            *
+            1e-4,
+            5
+        )
 
 
     @staticmethod
-    def cloud_fraction(relative_humidity):
+    def deposition_growth(
+        ice_mass,
+        vapor_supply
+    ):
         """
-        Estimate cloud fraction from relative humidity.
-
-        RH in %
+        Ice deposition growth.
         """
 
-        if relative_humidity <= 0:
-            return 0.0
-
-        if relative_humidity >= 100:
-            return 1.0
-
-        return relative_humidity / 100
+        return round(
+            ice_mass
+            *
+            vapor_supply
+            *
+            1e-3,
+            5
+        )
 
 
     @staticmethod
-    def mixed_phase_ratio(liquid_water, ice_water):
+    def precipitation_efficiency(
+        precipitation,
+        available_water
+    ):
         """
-        Compute liquid water fraction in mixed-phase clouds.
+        Precipitation efficiency.
         """
 
-        total = liquid_water + ice_water
+        if available_water == 0:
+            return 0
 
-        if total == 0:
-            return 0.0
+        return precipitation / available_water
 
-        return liquid_water / total
+
+    @staticmethod
+    def terminal_velocity_droplet(
+        radius
+    ):
+        """
+        Droplet terminal velocity.
+
+        Simplified power law.
+        """
+
+        return round(
+            1300 * radius ** 2,
+            5
+        )
