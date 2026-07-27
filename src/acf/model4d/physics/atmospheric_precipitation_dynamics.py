@@ -1,9 +1,6 @@
 """
-ACF - Atmospheric Complexity Framework
-
-Atmospheric Precipitation Dynamics Physics Module
-
-Sprint 9.11
+Atmospheric Precipitation Dynamics
+Sprint 9.21
 """
 
 from dataclasses import dataclass
@@ -11,10 +8,6 @@ from dataclasses import dataclass
 
 @dataclass
 class PrecipitationState:
-    """
-    Atmospheric precipitation parameters.
-    """
-
     humidity: float
     condensation_rate: float
     convection_intensity: float
@@ -22,73 +15,84 @@ class PrecipitationState:
 
 
 class AtmosphericPrecipitationDynamics:
-    """
-    Simplified precipitation physics model.
 
-    Physical chain:
-
-        humidity
-            ↓
-        condensation
-            ↓
-        convection
-            ↓
-        precipitation
-    """
+    def __init__(self):
+        self.name = "Atmospheric Precipitation Dynamics"
+        self.version = "9.21"
 
 
-    def condensation_amount(
-        self,
-        state: PrecipitationState
-    ) -> float:
+    def condensation_amount(self, state: PrecipitationState) -> float:
         """
-        Calculate condensed water amount.
+        Formation de condensation.
         """
 
-        return round(
+        result = (
             state.humidity
-            * state.condensation_rate,
-            6
+            * state.condensation_rate
+            * 0.1
         )
 
+        return round(result, 2)
 
-    def precipitation_rate(
+
+    def precipitation_rate(self, state: PrecipitationState) -> float:
+        """
+        Taux de précipitation.
+        """
+
+        result = (
+            state.humidity
+            * state.condensation_rate
+            * state.convection_intensity
+            * state.precipitation_efficiency
+            * 0.1
+        )
+
+        return round(result, 2)
+
+
+    def precipitation_efficiency(
         self,
         state: PrecipitationState
     ) -> float:
         """
-        Calculate precipitation intensity.
-
-        Formula:
-
-            precipitation =
-            condensation
-            × convection
-            × efficiency
+        Rendement conversion nuage → pluie.
         """
 
-        condensation = self.condensation_amount(state)
-
-        return round(
-            condensation
+        result = (
+            state.condensation_rate
             * state.convection_intensity
-            * state.precipitation_efficiency,
-            6
+            * state.precipitation_efficiency
         )
 
+        return round(result, 2)
 
-    def water_state(
+
+    def water_state(self, state: PrecipitationState) -> float:
+        """
+        Etat de l'eau atmosphérique.
+        """
+
+        result = (
+            state.humidity
+            * state.condensation_rate
+        )
+
+        return round(result, 2)
+
+
+    def cloud_conversion(
         self,
         state: PrecipitationState
-    ) -> str:
+    ) -> float:
         """
-        Classify atmospheric water cycle state.
+        Conversion eau nuageuse vers hydrométéores.
         """
 
-        rain = self.precipitation_rate(state)
+        result = (
+            state.humidity
+            * state.precipitation_efficiency
+            * 0.05
+        )
 
-        if rain > 0:
-            return "active_precipitation"
-
-        return "dry_state"
-
+        return round(result, 2)
