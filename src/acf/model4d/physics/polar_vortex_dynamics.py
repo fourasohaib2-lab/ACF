@@ -1,105 +1,125 @@
 """
-ACF - Atmospheric Complexity Framework
-Polar Vortex Dynamics Physics Module
+ACF Model4D Physics
+Polar Vortex Dynamics Module
 
-Simulation simplifiée de la dynamique du vortex polaire :
-- vitesse du vortex
-- intensité du vortex
-- gradient thermique polaire
-- stabilité stratosphérique
-- déplacement du vortex
-- énergie cinétique
+Sprint 8.88
+
+Simulation conceptuelle :
+- vortex polaire stratosphérique
+- circulation zonale
+- stabilité du vortex
+- réchauffement stratosphérique soudain
+- transport polaire d'énergie
 """
 
-import math
+
+from dataclasses import dataclass
+from math import exp
 
 
-class PolarVortexDynamicsPhysics:
+@dataclass
+class PolarVortexState:
     """
-    Physics engine for polar vortex dynamics.
+    Etat du vortex polaire.
     """
 
-    @staticmethod
-    def vortex_speed(radius, angular_velocity):
+    wind_speed: float
+    temperature_gradient: float
+    stability_index: float
+    hemisphere: str = "north"
+
+
+class PolarVortexDynamics:
+    """
+    Modèle dynamique simplifié du vortex polaire.
+    """
+
+    def __init__(self):
+        self.name = "Polar Vortex Dynamics"
+        self.version = "8.88"
+
+    def calculate_vortex_strength(
+        self,
+        wind_speed: float,
+        temperature_gradient: float
+    ) -> float:
         """
-        Tangential vortex wind speed.
+        Calcule une intensité normalisée du vortex.
 
-        v = r * omega
+        Plus le gradient thermique et le vent zonal
+        sont élevés, plus le vortex est fort.
         """
-        return radius * angular_velocity
+
+        strength = (
+            wind_speed *
+            temperature_gradient
+        ) / 100.0
+
+        return round(strength, 4)
 
 
-    @staticmethod
-    def vortex_intensity(wind_speed):
+    def diagnose_stability(
+        self,
+        strength: float
+    ) -> str:
         """
-        Estimate vortex intensity.
-
-        proportional to wind speed squared.
+        Classification stabilité vortex.
         """
-        return round(wind_speed ** 2, 3)
+
+        if strength >= 5:
+            return "stable"
+
+        if strength >= 2:
+            return "moderate"
+
+        return "weak"
 
 
-    @staticmethod
-    def thermal_gradient(polar_temperature, midlatitude_temperature):
+    def sudden_stratospheric_warming_effect(
+        self,
+        temperature_increase: float
+    ) -> float:
         """
-        Temperature gradient between polar region and mid-latitudes.
+        Impact simplifié d'un SSW.
+
+        Une augmentation de température
+        réduit la force du vortex.
         """
-        return abs(midlatitude_temperature - polar_temperature)
+
+        reduction = exp(
+            -temperature_increase / 10
+        )
+
+        return round(reduction, 4)
 
 
-    @staticmethod
-    def stratospheric_stability(temperature_gradient):
+    def simulate(
+        self,
+        state: PolarVortexState
+    ) -> dict:
         """
-        Simple stability index.
+        Simulation complète.
         """
-        return round(temperature_gradient / 10, 3)
+
+        strength = self.calculate_vortex_strength(
+            state.wind_speed,
+            state.temperature_gradient
+        )
+
+        return {
+            "module": self.name,
+            "version": self.version,
+            "hemisphere": state.hemisphere,
+            "strength": strength,
+            "stability": self.diagnose_stability(
+                strength
+            )
+        }
 
 
-    @staticmethod
-    def vortex_displacement(initial_position, final_position):
-        """
-        Vortex movement distance.
-        """
-        return abs(final_position - initial_position)
+def create_polar_vortex_model():
+    """
+    Factory ACF.
+    """
 
-
-    @staticmethod
-    def kinetic_energy(mass, velocity):
-        """
-        KE = 1/2 m v²
-        """
-        return 0.5 * mass * velocity ** 2
-
-
-    @staticmethod
-    def angular_momentum(mass, radius, velocity):
-        """
-        L = m r v
-        """
-        return mass * radius * velocity
-
-
-    @staticmethod
-    def polar_warming_effect(stratospheric_temperature_change):
-        """
-        Sudden stratospheric warming indicator.
-        """
-        return round(stratospheric_temperature_change * 2, 3)
-
-
-    @staticmethod
-    def vortex_decay(initial_strength, decay_rate):
-        """
-        Exponential vortex weakening.
-
-        S = S0 * (1-rate)
-        """
-        return round(initial_strength * (1 - decay_rate), 3)
-
-
-    @staticmethod
-    def vortex_energy(mass, velocity):
-        """
-        Total simplified vortex kinetic energy.
-        """
-        return round(0.5 * mass * velocity ** 2, 3)
+    return PolarVortexDynamics()
