@@ -1,72 +1,117 @@
-
 from acf.model4d.physics.polar_vortex_dynamics import (
-    PolarVortexDynamicsPhysics
+    PolarVortexDynamics,
+    PolarVortexState
 )
 
 
-def test_vortex_speed():
-    assert PolarVortexDynamicsPhysics.vortex_speed(
-        10,
-        5
-    ) == 50
+def test_model_creation():
+
+    model = PolarVortexDynamics()
+
+    assert model.name == "Polar Vortex Dynamics"
 
 
-def test_vortex_intensity():
-    assert PolarVortexDynamicsPhysics.vortex_intensity(
+def test_strength():
+
+    model = PolarVortexDynamics()
+
+    value = model.calculate_vortex_strength(
+        50,
         20
-    ) == 400
+    )
+
+    assert value == 10
 
 
-def test_thermal_gradient():
-    assert PolarVortexDynamicsPhysics.thermal_gradient(
-        -50,
-        -20
-    ) == 30
+def test_stable_vortex():
+
+    model = PolarVortexDynamics()
+
+    assert (
+        model.diagnose_stability(6)
+        ==
+        "stable"
+    )
 
 
-def test_stratospheric_stability():
-    assert PolarVortexDynamicsPhysics.stratospheric_stability(
-        30
-    ) == 3
+def test_moderate_vortex():
+
+    model = PolarVortexDynamics()
+
+    assert (
+        model.diagnose_stability(3)
+        ==
+        "moderate"
+    )
 
 
-def test_vortex_displacement():
-    assert PolarVortexDynamicsPhysics.vortex_displacement(
-        100,
-        40
-    ) == 60
+def test_weak_vortex():
+
+    model = PolarVortexDynamics()
+
+    assert (
+        model.diagnose_stability(1)
+        ==
+        "weak"
+    )
 
 
-def test_kinetic_energy():
-    assert PolarVortexDynamicsPhysics.kinetic_energy(
-        10,
-        20
-    ) == 2000
+def test_ssw_effect():
 
+    model = PolarVortexDynamics()
 
-def test_angular_momentum():
-    assert PolarVortexDynamicsPhysics.angular_momentum(
-        10,
-        5,
-        4
-    ) == 200
-
-
-def test_polar_warming_effect():
-    assert PolarVortexDynamicsPhysics.polar_warming_effect(
-        15
-    ) == 30
-
-
-def test_vortex_decay():
-    assert PolarVortexDynamicsPhysics.vortex_decay(
-        100,
-        0.2
-    ) == 80
-
-
-def test_vortex_energy():
-    assert PolarVortexDynamicsPhysics.vortex_energy(
-        20,
+    result = model.sudden_stratospheric_warming_effect(
         10
-    ) == 1000
+    )
+
+    assert result < 1
+
+
+def test_simulation():
+
+    model = PolarVortexDynamics()
+
+    state = PolarVortexState(
+        wind_speed=40,
+        temperature_gradient=15
+    )
+
+    result = model.simulate(state)
+
+    assert (
+        result["module"]
+        ==
+        "Polar Vortex Dynamics"
+    )
+
+
+def test_hemisphere():
+
+    state = PolarVortexState(
+        wind_speed=30,
+        temperature_gradient=10,
+        hemisphere="south"
+    )
+
+    assert state.hemisphere == "south"
+
+
+def test_version():
+
+    model = PolarVortexDynamics()
+
+    assert model.version == "8.88"
+
+
+def test_factory():
+
+    from acf.model4d.physics.polar_vortex_dynamics import (
+        create_polar_vortex_model
+    )
+
+    model = create_polar_vortex_model()
+
+    assert isinstance(
+        model,
+        PolarVortexDynamics
+    )
