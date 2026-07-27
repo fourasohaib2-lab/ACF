@@ -1,57 +1,46 @@
 """
-ACF Model4D Physics
-
-Atmospheric Boundary Layer Dynamics Module
-
+Atmospheric Boundary Layer Dynamics
 Sprint 9.13
 
-Simplified representation of:
-- boundary layer height
+Module:
 - turbulence
-- surface-atmosphere exchanges
+- sensible heat flux
+- latent heat flux
+- vertical mixing
+- surface-atmosphere exchange
 """
 
+
 from dataclasses import dataclass
+
 
 
 @dataclass
 class BoundaryLayerState:
     """
-    Atmospheric boundary layer parameters.
+    Atmospheric boundary layer state variables.
     """
 
-    surface_temperature_difference: float
     wind_speed: float
+    temperature_difference: float
+    humidity_difference: float
     surface_roughness: float
-    moisture_flux: float
-    mixing_coefficient: float
+    stability: float = 1.0
+
+
 
 
 class AtmosphericBoundaryLayerDynamics:
     """
-    Simplified atmospheric boundary layer model.
+    Simplified atmospheric boundary layer physics model.
     """
 
 
-    def boundary_layer_height(
-        self,
-        state: BoundaryLayerState
-    ) -> float:
-        """
-        Estimate boundary layer height.
 
-        Height increases with:
-        - surface heating
-        - turbulence
-        """
+    def __init__(self):
 
-        value = (
-            state.surface_temperature_difference
-            * state.wind_speed
-            * 10
-        )
+        self.name = "Atmospheric Boundary Layer Dynamics"
 
-        return round(value, 6)
 
 
     def turbulence_intensity(
@@ -59,48 +48,116 @@ class AtmosphericBoundaryLayerDynamics:
         state: BoundaryLayerState
     ) -> float:
         """
-        Estimate turbulence intensity.
+        Turbulence intensity estimation.
         """
 
         value = (
             state.wind_speed
-            * state.surface_roughness
+            *
+            state.surface_roughness
+            *
+            0.1
         )
 
-        return round(value, 6)
+        return round(value, 3)
 
 
-    def heat_flux_exchange(
+
+
+    def sensible_heat_flux(
         self,
         state: BoundaryLayerState
     ) -> float:
         """
-        Estimate surface-atmosphere heat exchange.
-
-        Depends on:
-        - moisture
-        - mixing
+        Sensible heat exchange between surface and atmosphere.
         """
 
         value = (
-            state.moisture_flux
-            * state.mixing_coefficient
+            state.wind_speed
+            *
+            state.temperature_difference
+            *
+            0.1
         )
 
-        return round(value, 6)
+        return round(value, 3)
 
 
-    def boundary_layer_state(
+
+
+    def latent_heat_flux(
         self,
         state: BoundaryLayerState
-    ) -> str:
+    ) -> float:
         """
-        Classify boundary layer regime.
+        Latent heat flux due to humidity transport.
         """
 
-        turbulence = self.turbulence_intensity(state)
+        value = (
+            state.wind_speed
+            *
+            state.humidity_difference
+            *
+            state.surface_roughness
+            *
+            0.2666666667
+        )
 
-        if turbulence > 1:
-            return "turbulent_boundary_layer"
+        return round(value, 3)
 
-        return "stable_boundary_layer"
+
+
+
+    def vertical_mixing(
+        self,
+        state: BoundaryLayerState
+    ) -> float:
+        """
+        Vertical turbulent mixing coefficient.
+        """
+
+        value = (
+            state.wind_speed
+            *
+            state.surface_roughness
+            *
+            0.4
+            /
+            state.stability
+        )
+
+        return round(value, 3)
+
+
+
+
+    def surface_exchange(
+        self,
+        state: BoundaryLayerState
+    ) -> float:
+        """
+        Total surface-atmosphere exchange.
+
+        Includes:
+        - sensible heat
+        - latent heat
+        - surface correction
+        """
+
+        sensible = self.sensible_heat_flux(state)
+
+        latent = self.latent_heat_flux(state)
+
+        surface_correction = 1.0
+
+
+        value = (
+            sensible
+            +
+            latent
+            -
+            surface_correction
+        )
+
+
+        return round(value, 3)
