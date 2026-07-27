@@ -4,117 +4,61 @@ from acf.model4d.physics.atmospheric_convection_dynamics import (
 )
 
 
-def test_buoyancy():
-    model = AtmosphericConvectionDynamics()
-
-    value = model.calculate_buoyancy(
-        305,
-        300
-    )
-
-    assert value > 0
-
-
-def test_cape():
-    model = AtmosphericConvectionDynamics()
-
-    value = model.calculate_cape(
-        0.01,
-        1000
-    )
-
-    assert value > 0
-
-
-def test_cin():
-    model = AtmosphericConvectionDynamics()
-
-    value = model.calculate_cin(
-        -0.01,
-        1000
-    )
-
-    assert value > 0
-
-
-def test_velocity():
-    model = AtmosphericConvectionDynamics()
-
-    value = model.convective_velocity(
-        100
-    )
-
-    assert value > 0
-
-
-def test_heat_transport():
-    model = AtmosphericConvectionDynamics()
-
-    value = model.heat_transport(
-        20,
-        10
-    )
-
-    assert value == 200
-
-
-def test_analysis():
+def test_buoyancy_force():
 
     model = AtmosphericConvectionDynamics()
 
     state = ConvectionState(
-        temperature_surface=305,
-        temperature_parcel=305,
-        environmental_temperature=300,
-        vertical_velocity=5,
-        heat_flux=100
+        surface_temperature_anomaly=2,
+        lapse_rate=3,
+        stability_index=1,
+        moisture_content=1
     )
 
-    result = model.analyze(
-        state,
-        1000
+    assert model.buoyancy_force(state) == 6
+
+
+
+def test_vertical_velocity():
+
+    model = AtmosphericConvectionDynamics()
+
+    state = ConvectionState(
+        surface_temperature_anomaly=2,
+        lapse_rate=3,
+        stability_index=0.5,
+        moisture_content=1
     )
 
-    assert "cape" in result
-    assert "cin" in result
+    assert model.vertical_velocity(state) == 3
 
 
-def test_name():
 
-    model = AtmosphericConvectionDynamics()
-
-    assert model.name == "Atmospheric Convection Dynamics"
-
-
-def test_version():
+def test_convection_feedback():
 
     model = AtmosphericConvectionDynamics()
 
-    assert model.version == "1.0"
+    state = ConvectionState(
+        surface_temperature_anomaly=2,
+        lapse_rate=2,
+        stability_index=0.5,
+        moisture_content=2,
+        convection_efficiency=1
+    )
+
+    assert model.convection_feedback(state) == 4
 
 
-def test_negative_height():
 
-    model = AtmosphericConvectionDynamics()
-
-    try:
-        model.calculate_cape(
-            0.1,
-            -10
-        )
-        assert False
-    except ValueError:
-        assert True
-
-
-def test_negative_cape():
+def test_convection_state():
 
     model = AtmosphericConvectionDynamics()
 
-    try:
-        model.convective_velocity(
-            -1
-        )
-        assert False
-    except ValueError:
-        assert True
+    state = ConvectionState(
+        surface_temperature_anomaly=3,
+        lapse_rate=2,
+        stability_index=1,
+        moisture_content=1
+    )
+
+    assert model.convection_state(state) == "active_convection"

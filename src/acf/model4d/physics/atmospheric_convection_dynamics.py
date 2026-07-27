@@ -1,167 +1,121 @@
 """
 ACF - Atmospheric Complexity Framework
-Model4D Physics Module
 
-Atmospheric Convection Dynamics
-Sprint 8.83
+Atmospheric Convection Dynamics Physics Module
 
-Processes:
-- CAPE (Convective Available Potential Energy)
-- CIN (Convective Inhibition)
-- convective velocity
-- heat transport
-- vertical energy exchange
+Sprint 9.12
 """
 
 from dataclasses import dataclass
-import math
 
 
 @dataclass
 class ConvectionState:
-    temperature_surface: float
-    temperature_parcel: float
-    environmental_temperature: float
-    vertical_velocity: float
-    heat_flux: float
+    """
+    Atmospheric convection parameters.
+    """
+
+    surface_temperature_anomaly: float
+    lapse_rate: float
+    stability_index: float
+    moisture_content: float
+    convection_efficiency: float = 1.0
 
 
 class AtmosphericConvectionDynamics:
     """
-    Atmospheric convection parameterization engine.
+    Simplified atmospheric convection model.
+
+    Physical chain:
+
+        surface heating
+              ↓
+        instability
+              ↓
+        vertical motion
+              ↓
+        convection feedback
     """
 
-    def __init__(self):
-        self.name = "Atmospheric Convection Dynamics"
-        self.version = "1.0"
 
-    def calculate_buoyancy(
+    def buoyancy_force(
         self,
-        parcel_temperature: float,
-        environment_temperature: float
+        state: ConvectionState
     ) -> float:
         """
-        Simplified buoyancy proxy.
-        Positive = rising air.
+        Calculate atmospheric buoyancy.
+
+        Formula:
+
+            buoyancy =
+            temperature anomaly × lapse rate
         """
 
-        return (
-            parcel_temperature - environment_temperature
-        ) / environment_temperature
+        return round(
+            state.surface_temperature_anomaly
+            * state.lapse_rate,
+            6
+        )
 
 
-    def calculate_cape(
+    def vertical_velocity(
         self,
-        buoyancy: float,
-        height: float
+        state: ConvectionState
     ) -> float:
         """
-        CAPE approximation:
-        CAPE = buoyancy * g * height
+        Calculate vertical atmospheric motion.
+
+        Formula:
+
+            velocity =
+            buoyancy × instability
         """
 
-        if height < 0:
-            raise ValueError(
-                "Height must be positive"
-            )
+        buoyancy = self.buoyancy_force(state)
 
-        g = 9.81
-
-        return max(
-            0,
-            buoyancy * g * height
+        return round(
+            buoyancy
+            * state.stability_index,
+            6
         )
 
 
-    def calculate_cin(
+    def convection_feedback(
         self,
-        negative_buoyancy: float,
-        height: float
+        state: ConvectionState
     ) -> float:
         """
-        Convective inhibition.
+        Calculate convective energy transport.
+
+        Formula:
+
+            feedback =
+            vertical velocity
+            × moisture
+            × efficiency
         """
 
-        if height < 0:
-            raise ValueError(
-                "Height must be positive"
-            )
+        velocity = self.vertical_velocity(state)
 
-        return abs(
-            min(
-                0,
-                negative_buoyancy
-            )
-        ) * 9.81 * height
+        return round(
+            velocity
+            * state.moisture_content
+            * state.convection_efficiency,
+            6
+        )
 
 
-    def convective_velocity(
+    def convection_state(
         self,
-        cape: float
-    ) -> float:
+        state: ConvectionState
+    ) -> str:
         """
-        Maximum convective updraft velocity.
-        w = sqrt(2*CAPE)
-        """
-
-        if cape < 0:
-            raise ValueError(
-                "CAPE must be positive"
-            )
-
-        return math.sqrt(
-            2 * cape
-        )
-
-
-    def heat_transport(
-        self,
-        heat_flux: float,
-        area: float
-    ) -> float:
-        """
-        Total transported heat.
+        Classify atmospheric convection.
         """
 
-        if area <= 0:
-            raise ValueError(
-                "Area must be positive"
-            )
+        velocity = self.vertical_velocity(state)
 
-        return heat_flux * area
+        if velocity > 0:
+            return "active_convection"
 
-
-    def analyze(
-        self,
-        state: ConvectionState,
-        height: float
-    ) -> dict:
-
-        buoyancy = self.calculate_buoyancy(
-            state.temperature_parcel,
-            state.environmental_temperature
-        )
-
-        cape = self.calculate_cape(
-            buoyancy,
-            height
-        )
-
-        cin = self.calculate_cin(
-            buoyancy,
-            height
-        )
-
-        velocity = self.convective_velocity(
-            cape
-        )
-
-        return {
-            "module": self.name,
-            "buoyancy": buoyancy,
-            "cape": cape,
-            "cin": cin,
-            "updraft_velocity": velocity,
-            "heat_flux": state.heat_flux
-        }
-
+        return "stable_atmosphere"
