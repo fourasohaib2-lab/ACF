@@ -1,63 +1,126 @@
 from acf.model4d.physics.stratospheric_dynamics import (
-    StratosphericDynamicsPhysics
+    StratosphericDynamics,
+    StratosphericState,
 )
 
 
-def test_temperature_gradient():
-    assert StratosphericDynamicsPhysics.temperature_gradient(
-        220, 250
-    ) == 30
+def test_initialization():
+
+    model = StratosphericDynamics()
+
+    assert model.name == "Stratospheric Dynamics"
 
 
-def test_geopotential_height():
-    assert StratosphericDynamicsPhysics.geopotential_height(
-        100, 20
-    ) == 120
+def test_state_creation():
+
+    state = StratosphericState(
+        wind_speed=50,
+        temperature_gradient=20
+    )
+
+    assert state.wind_speed == 50
+    assert state.hemisphere == "north"
 
 
-def test_wind_shear():
-    assert StratosphericDynamicsPhysics.wind_shear(
-        80, 50
-    ) == 30
+def test_stability():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=40,
+        temperature_gradient=10
+    )
+
+    result = model.calculate_stability(state)
+
+    assert result > 1
 
 
-def test_planetary_wave_effect():
-    assert StratosphericDynamicsPhysics.planetary_wave_effect(
-        10, 5
-    ) == 50
+def test_circulation():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=40,
+        temperature_gradient=10,
+        stability_index=2
+    )
+
+    result = model.calculate_circulation_strength(state)
+
+    assert result == 80
 
 
-def test_ozone_heating():
-    assert StratosphericDynamicsPhysics.ozone_heating(
-        4, 20
-    ) == 80
+def test_ozone():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=30,
+        temperature_gradient=5,
+        ozone_level=400
+    )
+
+    assert model.ozone_feedback(state) == 0.4
 
 
-def test_stratopause_temperature():
-    assert StratosphericDynamicsPhysics.stratopause_temperature(
-        260, 10
-    ) == 270
+def test_simulation():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=60,
+        temperature_gradient=15
+    )
+
+    result = model.simulate(state)
+
+    assert "circulation_strength" in result
 
 
-def test_polar_vortex_strength():
-    assert StratosphericDynamicsPhysics.polar_vortex_strength(
-        50, 4
-    ) == 200
+def test_hemisphere():
+
+    state = StratosphericState(
+        wind_speed=30,
+        temperature_gradient=10,
+        hemisphere="south"
+    )
+
+    assert state.hemisphere == "south"
 
 
-def test_stratospheric_stability():
-    assert StratosphericDynamicsPhysics.stratospheric_stability(
-        -20
-    ) == 20
+def test_default_values():
+
+    state = StratosphericState(
+        wind_speed=20,
+        temperature_gradient=5
+    )
+
+    assert state.stability_index == 1.0
 
 
-def test_radiation_balance():
-    assert StratosphericDynamicsPhysics.radiation_balance(
-        500, 300
-    ) == 200
+def test_negative_gradient():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=20,
+        temperature_gradient=-5
+    )
+
+    assert model.calculate_stability(state) < 1
 
 
-def test_ozone_recovery_rate():
-    assert StratosphericDynamicsPhysics.ozone_recovery_rate(
-        300, 250
-    ) == 50
+def test_complete_model():
+
+    model = StratosphericDynamics()
+
+    state = StratosphericState(
+        wind_speed=70,
+        temperature_gradient=25,
+        ozone_level=350
+    )
+
+    result = model.simulate(state)
+
+    assert result["module"] == "Stratospheric Dynamics"
