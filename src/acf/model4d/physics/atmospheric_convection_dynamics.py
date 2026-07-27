@@ -1,9 +1,15 @@
 """
-ACF - Atmospheric Complexity Framework
+ACF Model4D Physics
 
-Atmospheric Convection Dynamics Physics Module
+Atmospheric Convection Dynamics Module
 
 Sprint 9.12
+
+Simplified atmospheric convection model:
+- buoyancy
+- thermal instability
+- vertical heat transport
+- convection classification
 """
 
 from dataclasses import dataclass
@@ -15,94 +21,71 @@ class ConvectionState:
     Atmospheric convection parameters.
     """
 
-    surface_temperature_anomaly: float
+    temperature_difference: float
     lapse_rate: float
-    stability_index: float
+    stability_threshold: float
+    vertical_velocity: float
     moisture_content: float
-    convection_efficiency: float = 1.0
 
 
 class AtmosphericConvectionDynamics:
     """
-    Simplified atmospheric convection model.
-
-    Physical chain:
-
-        surface heating
-              ↓
-        instability
-              ↓
-        vertical motion
-              ↓
-        convection feedback
+    Simplified convection dynamics engine.
     """
 
 
-    def buoyancy_force(
+    def calculate_buoyancy(
         self,
         state: ConvectionState
     ) -> float:
         """
-        Calculate atmospheric buoyancy.
-
-        Formula:
-
-            buoyancy =
-            temperature anomaly × lapse rate
+        Estimate atmospheric buoyancy.
         """
 
-        return round(
-            state.surface_temperature_anomaly
-            * state.lapse_rate,
-            6
+        value = (
+            state.temperature_difference
+            * 0.1
         )
 
+        return round(value, 6)
 
-    def vertical_velocity(
+
+    def convection_intensity(
         self,
         state: ConvectionState
     ) -> float:
         """
-        Calculate vertical atmospheric motion.
+        Estimate convection strength.
 
-        Formula:
-
-            velocity =
-            buoyancy × instability
+        Depends on:
+        - vertical velocity
+        - moisture
+        - instability
         """
 
-        buoyancy = self.buoyancy_force(state)
-
-        return round(
-            buoyancy
-            * state.stability_index,
-            6
-        )
-
-
-    def convection_feedback(
-        self,
-        state: ConvectionState
-    ) -> float:
-        """
-        Calculate convective energy transport.
-
-        Formula:
-
-            feedback =
-            vertical velocity
-            × moisture
-            × efficiency
-        """
-
-        velocity = self.vertical_velocity(state)
-
-        return round(
-            velocity
+        value = (
+            state.vertical_velocity
             * state.moisture_content
-            * state.convection_efficiency,
-            6
+            * abs(state.lapse_rate)
         )
+
+        return round(value, 6)
+
+
+    def vertical_heat_transport(
+        self,
+        state: ConvectionState
+    ) -> float:
+        """
+        Estimate vertical energy transport.
+        """
+
+        value = (
+            self.convection_intensity(state)
+            * 0.5
+        )
+
+        return round(value, 6)
 
 
     def convection_state(
@@ -110,12 +93,12 @@ class AtmosphericConvectionDynamics:
         state: ConvectionState
     ) -> str:
         """
-        Classify atmospheric convection.
+        Classify convection regime.
         """
 
-        velocity = self.vertical_velocity(state)
+        buoyancy = self.calculate_buoyancy(state)
 
-        if velocity > 0:
-            return "active_convection"
+        if buoyancy > state.stability_threshold:
+            return "unstable_convection"
 
         return "stable_atmosphere"

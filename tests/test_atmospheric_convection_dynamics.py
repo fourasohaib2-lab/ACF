@@ -4,61 +4,64 @@ from acf.model4d.physics.atmospheric_convection_dynamics import (
 )
 
 
-def test_buoyancy_force():
+def test_buoyancy():
 
     model = AtmosphericConvectionDynamics()
 
     state = ConvectionState(
-        surface_temperature_anomaly=2,
-        lapse_rate=3,
-        stability_index=1,
-        moisture_content=1
+        temperature_difference=20,
+        lapse_rate=6.5,
+        stability_threshold=1,
+        vertical_velocity=5,
+        moisture_content=0.8,
     )
 
-    assert model.buoyancy_force(state) == 6
+    assert model.calculate_buoyancy(state) == 2.0
 
 
 
-def test_vertical_velocity():
-
-    model = AtmosphericConvectionDynamics()
-
-    state = ConvectionState(
-        surface_temperature_anomaly=2,
-        lapse_rate=3,
-        stability_index=0.5,
-        moisture_content=1
-    )
-
-    assert model.vertical_velocity(state) == 3
-
-
-
-def test_convection_feedback():
+def test_convection_intensity():
 
     model = AtmosphericConvectionDynamics()
 
     state = ConvectionState(
-        surface_temperature_anomaly=2,
+        temperature_difference=10,
         lapse_rate=2,
-        stability_index=0.5,
-        moisture_content=2,
-        convection_efficiency=1
+        stability_threshold=1,
+        vertical_velocity=5,
+        moisture_content=0.5,
     )
 
-    assert model.convection_feedback(state) == 4
+    assert model.convection_intensity(state) == 5.0
 
 
 
-def test_convection_state():
+def test_vertical_heat_transport():
 
     model = AtmosphericConvectionDynamics()
 
     state = ConvectionState(
-        surface_temperature_anomaly=3,
+        temperature_difference=10,
         lapse_rate=2,
-        stability_index=1,
-        moisture_content=1
+        stability_threshold=1,
+        vertical_velocity=5,
+        moisture_content=0.5,
     )
 
-    assert model.convection_state(state) == "active_convection"
+    assert model.vertical_heat_transport(state) == 2.5
+
+
+
+def test_unstable_convection():
+
+    model = AtmosphericConvectionDynamics()
+
+    state = ConvectionState(
+        temperature_difference=30,
+        lapse_rate=6,
+        stability_threshold=1,
+        vertical_velocity=10,
+        moisture_content=1,
+    )
+
+    assert model.convection_state(state) == "unstable_convection"
