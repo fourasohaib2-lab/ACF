@@ -1,31 +1,32 @@
 """
-ACF Model4D Physics
-Polar Vortex Dynamics Module
+ACF Model4D Physics Module
 
-Sprint 8.88
+Polar Vortex Dynamics
+=====================
 
-Simulation conceptuelle :
-- vortex polaire stratosphérique
-- circulation zonale
-- stabilité du vortex
-- réchauffement stratosphérique soudain
-- transport polaire d'énergie
+Simulation simplifiée de la dynamique des vortex polaires
+dans la stratosphère.
+
+Concepts :
+- vitesse des vents stratosphériques
+- gradient thermique polaire
+- stabilité atmosphérique
+- hémisphère nord/sud
+- intensité du vortex
 """
 
-
 from dataclasses import dataclass
-from math import exp
 
 
 @dataclass
 class PolarVortexState:
     """
-    Etat du vortex polaire.
+    Etat physique du vortex polaire.
     """
 
     wind_speed: float
     temperature_gradient: float
-    stability_index: float
+    stability_index: float = 1.0
     hemisphere: str = "north"
 
 
@@ -36,90 +37,61 @@ class PolarVortexDynamics:
 
     def __init__(self):
         self.name = "Polar Vortex Dynamics"
-        self.version = "8.88"
+        self.version = "1.0"
 
-    def calculate_vortex_strength(
-        self,
-        wind_speed: float,
-        temperature_gradient: float
-    ) -> float:
+    def calculate_intensity(self, state: PolarVortexState) -> float:
         """
         Calcule une intensité normalisée du vortex.
 
-        Plus le gradient thermique et le vent zonal
-        sont élevés, plus le vortex est fort.
+        Plus :
+        - le vent est fort
+        - le gradient thermique est élevé
+        - la stabilité est importante
+
+        plus le vortex est intense.
         """
 
-        strength = (
-            wind_speed *
-            temperature_gradient
-        ) / 100.0
-
-        return round(strength, 4)
-
-
-    def diagnose_stability(
-        self,
-        strength: float
-    ) -> str:
-        """
-        Classification stabilité vortex.
-        """
-
-        if strength >= 5:
-            return "stable"
-
-        if strength >= 2:
-            return "moderate"
-
-        return "weak"
-
-
-    def sudden_stratospheric_warming_effect(
-        self,
-        temperature_increase: float
-    ) -> float:
-        """
-        Impact simplifié d'un SSW.
-
-        Une augmentation de température
-        réduit la force du vortex.
-        """
-
-        reduction = exp(
-            -temperature_increase / 10
+        intensity = (
+            state.wind_speed
+            * state.temperature_gradient
+            * state.stability_index
         )
 
-        return round(reduction, 4)
+        return round(intensity, 3)
 
-
-    def simulate(
-        self,
-        state: PolarVortexState
-    ) -> dict:
+    def simulate(self, state: PolarVortexState) -> dict:
         """
-        Simulation complète.
+        Simulation complète du vortex.
         """
 
-        strength = self.calculate_vortex_strength(
-            state.wind_speed,
-            state.temperature_gradient
-        )
+        intensity = self.calculate_intensity(state)
+
+        if intensity >= 500:
+            status = "strong"
+        elif intensity >= 200:
+            status = "moderate"
+        else:
+            status = "weak"
 
         return {
-            "module": self.name,
-            "version": self.version,
+            "name": self.name,
             "hemisphere": state.hemisphere,
-            "strength": strength,
-            "stability": self.diagnose_stability(
-                strength
-            )
+            "wind_speed": state.wind_speed,
+            "temperature_gradient": state.temperature_gradient,
+            "stability_index": state.stability_index,
+            "intensity": intensity,
+            "status": status,
         }
 
+    def hemisphere_effect(self, state: PolarVortexState) -> str:
+        """
+        Effet saisonnier simplifié selon l'hémisphère.
+        """
 
-def create_polar_vortex_model():
-    """
-    Factory ACF.
-    """
+        if state.hemisphere.lower() == "north":
+            return "Arctic polar vortex"
 
-    return PolarVortexDynamics()
+        if state.hemisphere.lower() == "south":
+            return "Antarctic polar vortex"
+
+        return "unknown hemisphere"

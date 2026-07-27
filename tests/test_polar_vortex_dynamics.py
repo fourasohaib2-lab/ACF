@@ -1,70 +1,32 @@
+"""
+Tests for Polar Vortex Dynamics
+"""
+
 from acf.model4d.physics.polar_vortex_dynamics import (
     PolarVortexDynamics,
-    PolarVortexState
+    PolarVortexState,
 )
 
 
-def test_model_creation():
+def test_creation():
 
-    model = PolarVortexDynamics()
-
-    assert model.name == "Polar Vortex Dynamics"
-
-
-def test_strength():
-
-    model = PolarVortexDynamics()
-
-    value = model.calculate_vortex_strength(
-        50,
-        20
+    state = PolarVortexState(
+        wind_speed=40,
+        temperature_gradient=15
     )
 
-    assert value == 10
+    assert state.wind_speed == 40
+    assert state.temperature_gradient == 15
 
 
-def test_stable_vortex():
+def test_default_stability():
 
-    model = PolarVortexDynamics()
-
-    assert (
-        model.diagnose_stability(6)
-        ==
-        "stable"
+    state = PolarVortexState(
+        wind_speed=40,
+        temperature_gradient=15
     )
 
-
-def test_moderate_vortex():
-
-    model = PolarVortexDynamics()
-
-    assert (
-        model.diagnose_stability(3)
-        ==
-        "moderate"
-    )
-
-
-def test_weak_vortex():
-
-    model = PolarVortexDynamics()
-
-    assert (
-        model.diagnose_stability(1)
-        ==
-        "weak"
-    )
-
-
-def test_ssw_effect():
-
-    model = PolarVortexDynamics()
-
-    result = model.sudden_stratospheric_warming_effect(
-        10
-    )
-
-    assert result < 1
+    assert state.stability_index == 1.0
 
 
 def test_simulation():
@@ -78,11 +40,9 @@ def test_simulation():
 
     result = model.simulate(state)
 
-    assert (
-        result["module"]
-        ==
-        "Polar Vortex Dynamics"
-    )
+    assert result["name"] == "Polar Vortex Dynamics"
+    assert result["intensity"] == 600
+    assert result["status"] == "strong"
 
 
 def test_hemisphere():
@@ -93,25 +53,71 @@ def test_hemisphere():
         hemisphere="south"
     )
 
-    assert state.hemisphere == "south"
+    model = PolarVortexDynamics()
+
+    result = model.hemisphere_effect(state)
+
+    assert result == "Antarctic polar vortex"
+
+
+def test_custom_stability():
+
+    state = PolarVortexState(
+        wind_speed=20,
+        temperature_gradient=10,
+        stability_index=2
+    )
+
+    assert state.stability_index == 2
+
+
+def test_weak_vortex():
+
+    model = PolarVortexDynamics()
+
+    state = PolarVortexState(
+        wind_speed=5,
+        temperature_gradient=5
+    )
+
+    result = model.simulate(state)
+
+    assert result["status"] == "weak"
+
+
+def test_moderate_vortex():
+
+    model = PolarVortexDynamics()
+
+    state = PolarVortexState(
+        wind_speed=20,
+        temperature_gradient=15
+    )
+
+    result = model.simulate(state)
+
+    assert result["status"] == "moderate"
 
 
 def test_version():
 
     model = PolarVortexDynamics()
 
-    assert model.version == "8.88"
+    assert model.version == "1.0"
 
 
-def test_factory():
+def test_name():
 
-    from acf.model4d.physics.polar_vortex_dynamics import (
-        create_polar_vortex_model
+    model = PolarVortexDynamics()
+
+    assert model.name == "Polar Vortex Dynamics"
+
+
+def test_state_structure():
+
+    state = PolarVortexState(
+        wind_speed=50,
+        temperature_gradient=20
     )
 
-    model = create_polar_vortex_model()
-
-    assert isinstance(
-        model,
-        PolarVortexDynamics
-    )
+    assert hasattr(state, "stability_index")
