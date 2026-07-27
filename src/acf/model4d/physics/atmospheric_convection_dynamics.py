@@ -5,9 +5,10 @@ Atmospheric Convection Dynamics Module
 
 Sprint 9.12
 
-Simplified atmospheric convection model:
+Simplified atmospheric convection physics:
 - buoyancy
-- thermal instability
+- instability
+- convective available energy
 - vertical heat transport
 - convection classification
 """
@@ -18,14 +19,15 @@ from dataclasses import dataclass
 @dataclass
 class ConvectionState:
     """
-    Atmospheric convection parameters.
+    Atmospheric convection state.
     """
 
-    temperature_difference: float
+    temperature_anomaly: float
     lapse_rate: float
-    stability_threshold: float
-    vertical_velocity: float
+    environmental_lapse_rate: float
     moisture_content: float
+    vertical_velocity: float
+
 
 
 class AtmosphericConvectionDynamics:
@@ -39,37 +41,66 @@ class AtmosphericConvectionDynamics:
         state: ConvectionState
     ) -> float:
         """
-        Estimate atmospheric buoyancy.
+        Calculate thermal buoyancy.
+
+        Positive value:
+        rising air
+
+        Negative value:
+        sinking air
         """
 
         value = (
-            state.temperature_difference
+            state.temperature_anomaly
             * 0.1
         )
 
         return round(value, 6)
 
 
-    def convection_intensity(
+
+    def instability_index(
         self,
         state: ConvectionState
     ) -> float:
         """
-        Estimate convection strength.
+        Estimate atmospheric instability.
 
-        Depends on:
-        - vertical velocity
-        - moisture
-        - instability
+        Difference between:
+        - environmental lapse rate
+        - parcel lapse rate
         """
 
         value = (
-            state.vertical_velocity
-            * state.moisture_content
-            * abs(state.lapse_rate)
+            state.environmental_lapse_rate
+            -
+            state.lapse_rate
         )
 
         return round(value, 6)
+
+
+
+    def convective_energy(
+        self,
+        state: ConvectionState
+    ) -> float:
+        """
+        Estimate convective available energy.
+
+        Simplified CAPE representation.
+        """
+
+        buoyancy = self.calculate_buoyancy(state)
+
+        value = (
+            max(buoyancy, 0)
+            *
+            state.moisture_content
+        )
+
+        return round(value, 6)
+
 
 
     def vertical_heat_transport(
@@ -77,15 +108,19 @@ class AtmosphericConvectionDynamics:
         state: ConvectionState
     ) -> float:
         """
-        Estimate vertical energy transport.
+        Estimate vertical heat transport.
         """
 
         value = (
-            self.convection_intensity(state)
-            * 0.5
+            state.vertical_velocity
+            *
+            state.moisture_content
+            *
+            0.5
         )
 
         return round(value, 6)
+
 
 
     def convection_state(
@@ -93,12 +128,12 @@ class AtmosphericConvectionDynamics:
         state: ConvectionState
     ) -> str:
         """
-        Classify convection regime.
+        Atmospheric convection regime.
         """
 
-        buoyancy = self.calculate_buoyancy(state)
+        instability = self.instability_index(state)
 
-        if buoyancy > state.stability_threshold:
+        if instability > 0:
             return "unstable_convection"
 
         return "stable_atmosphere"
