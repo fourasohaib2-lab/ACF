@@ -4,7 +4,6 @@ from acf.model4d.physics.atmospheric_fluid_dynamics import (
 )
 
 
-
 def create_state():
 
     return FluidDynamicsState(
@@ -21,29 +20,32 @@ def create_state():
     )
 
 
-
-def test_horizontal_wind_speed():
-
-    model = AtmosphericFluidDynamics()
-
-    assert model.horizontal_wind_speed(create_state()) == 11.18
-
-
-
-def test_wind_direction():
+def test_wind_speed():
 
     model = AtmosphericFluidDynamics()
 
-    assert model.wind_direction(create_state()) == 26.6
+    assert model.wind_speed(create_state()) == 11.18
 
 
-
-def test_horizontal_advection():
+def test_kinetic_energy():
 
     model = AtmosphericFluidDynamics()
 
-    assert model.horizontal_advection(create_state()) == 3.0
+    assert model.kinetic_energy(create_state()) == 75.0
 
+
+def test_relative_vorticity():
+
+    model = AtmosphericFluidDynamics()
+
+    assert model.relative_vorticity(create_state()) == 0.4
+
+
+def test_divergence():
+
+    model = AtmosphericFluidDynamics()
+
+    assert model.divergence(create_state()) == 0.1
 
 
 def test_vertical_motion():
@@ -53,23 +55,6 @@ def test_vertical_motion():
     assert model.vertical_motion(create_state()) == 2
 
 
-
-def test_vorticity_dynamics():
-
-    model = AtmosphericFluidDynamics()
-
-    assert model.vorticity_dynamics(create_state()) == 0.4
-
-
-
-def test_divergence_analysis():
-
-    model = AtmosphericFluidDynamics()
-
-    assert model.divergence_analysis(create_state()) == 0.1
-
-
-
 def test_coriolis_effect():
 
     model = AtmosphericFluidDynamics()
@@ -77,21 +62,25 @@ def test_coriolis_effect():
     assert model.coriolis_effect(create_state()) == 0.0
 
 
-
 def test_pressure_gradient_force():
 
     model = AtmosphericFluidDynamics()
 
-    assert model.pressure_gradient_force(create_state()) == 0.83
+    assert model.pressure_gradient_force(create_state()) == 833.33
 
 
-
-def test_momentum_transfer():
+def test_flow_balance():
 
     model = AtmosphericFluidDynamics()
 
-    assert model.momentum_transfer(create_state()) == 13.42
+    assert model.flow_balance(create_state()) == 0.3
 
+
+def test_atmospheric_transport():
+
+    model = AtmosphericFluidDynamics()
+
+    assert model.atmospheric_transport(create_state()) == 22.36
 
 
 def test_potential_vorticity():
