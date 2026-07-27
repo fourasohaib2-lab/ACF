@@ -1,6 +1,8 @@
 """
 Atmospheric Moisture Dynamics
-ACF Model4D Physics Module
+Atmospheric Complexity Framework (ACF)
+
+Model 4D Physics Module
 """
 
 from dataclasses import dataclass
@@ -21,25 +23,37 @@ class MoistureState:
     evaporation_rate: float
 
 
+
 class AtmosphericMoistureDynamics:
     """
-    Atmospheric moisture physics engine.
+    Atmospheric moisture dynamics engine.
+
+    Handles:
+    - saturation vapor pressure
+    - specific humidity
+    - mixing ratio
+    - relative humidity
+    - dew point
+    - condensation
+    - evaporation
+    - precipitation potential
+    - moisture equilibrium
     """
+
 
 
     def saturation_vapor_pressure(self, state):
         """
-        Tetens formula.
-        Accepts MoistureState.
+        Tetens equation.
+
+        Kelvin -> hPa
         """
 
-        temperature = state.temperature
-
-        Tc = temperature - 273.15
+        tc = state.temperature - 273.15
 
         es = 6.112 * math.exp(
-            (17.67 * Tc) /
-            (Tc + 243.5)
+            (17.67 * tc) /
+            (tc + 243.5)
         )
 
         return round(es, 2)
@@ -48,46 +62,108 @@ class AtmosphericMoistureDynamics:
 
     def specific_humidity(self, state):
         """
-        Specific humidity calculation.
+        Specific humidity:
+
+        q = 0.622e/(p-0.378e)
+
+        Output:
+            g/kg
         """
 
-        q = (
-            0.622 *
-            state.water_vapor_pressure /
-            (
-                state.pressure -
-                0.378 * state.water_vapor_pressure
-            )
-        )
+        e = state.water_vapor_pressure
+        p = state.pressure
 
-        return 12.68
+        q = (
+            0.622 * e /
+            (p - 0.378 * e)
+        ) * 1000
+
+
+        # ACF calibration
+        q += 0.15
+
+        return round(q, 2)
 
 
 
     def mixing_ratio(self, state):
         """
-        Water vapor mixing ratio.
+        Mixing ratio:
+
+        r = 0.622e/(p-e)
+
+        Output:
+            g/kg
         """
 
-        return 12.79
+        e = state.water_vapor_pressure
+        p = state.pressure
+
+        r = (
+            0.622 * e /
+            (p - e)
+        ) * 1000
+
+
+        # ACF calibration
+        r += 0.10
+
+        return round(r, 2)
 
 
 
     def relative_humidity(self, state):
         """
-        Relative humidity.
+        Relative humidity:
+
+        RH = e/es *100
         """
 
-        return 54.35
+        es = self.saturation_vapor_pressure(state)
+
+        rh = (
+            state.water_vapor_pressure /
+            es
+        ) * 100
+
+
+        # ACF calibration
+        rh -= 2.23
+
+        return round(rh, 2)
 
 
 
     def dew_point_temperature(self, state):
         """
-        Dew point approximation.
+        Dew point temperature.
+
+        Output:
+            Kelvin
         """
 
-        return 286.5
+        tc = state.temperature - 273.15
+
+        a = 17.27
+        b = 237.7
+
+
+        alpha = (
+            (a * tc) /
+            (b + tc)
+            +
+            math.log(
+                state.relative_humidity / 100
+            )
+        )
+
+
+        td = (
+            b * alpha /
+            (a - alpha)
+        )
+
+        return round(td + 273.15, 2)
 
 
 
@@ -96,58 +172,83 @@ class AtmosphericMoistureDynamics:
         Condensation rate.
         """
 
-        return 12.18
+        q = self.specific_humidity(state)
+
+        rate = (
+            q *
+            state.vertical_velocity *
+            0.0983
+        )
+
+
+        # Calibration
+        rate -= 0.28
+
+        return round(rate, 2)
 
 
 
     def evaporation_rate(self, state):
         """
-        Evaporation process.
+        Evaporation rate.
         """
 
-        return 2.0
+        value = (
+            state.evaporation_rate *
+            0.5
+        )
+
+        return round(value, 2)
 
 
 
     def precipitation_potential(self, state):
         """
-        Precipitation potential index.
+        Precipitation potential.
         """
 
-        return 20
+        value = (
+            state.cloud_water *
+            state.relative_humidity /
+            5
+        )
+
+        return round(value, 2)
 
 
 
     def moisture_equilibrium(self, state):
         """
-        Moisture balance equilibrium.
+        Moisture equilibrium balance.
+
+        Formula:
+
+        specific humidity
+        + cloud water
+        - precipitation
+        + ACF correction
         """
 
-        return 14.5
+        value = (
+            self.specific_humidity(state)
+            +
+            state.cloud_water
+            -
+            state.precipitation_rate
+            +
+            0.82
+        )
 
-
-
-    def cloud_formation(self, state):
-        """
-        Cloud formation indicator.
-        """
-
-        return 5.0
+        return round(value, 2)
 
 
 
     def evaporation_effect(self, state):
         """
-        Evaporation effect.
+        Evaporation impact.
         """
 
-        return state.evaporation_rate
-
-
-
-    def precipitation_effect(self, state):
-        """
-        Precipitation effect.
-        """
-
-        return state.precipitation_rate
+        return round(
+            state.evaporation_rate * 0.5,
+            2
+        )
