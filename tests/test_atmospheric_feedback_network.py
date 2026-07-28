@@ -1,73 +1,73 @@
 from acf.model4d.physics.atmospheric_feedback_network import (
     AtmosphericFeedbackNetwork,
-    FeedbackState
+    AtmosphericFeedbackState
 )
+
 
 
 def create_state():
 
-    return FeedbackState(
+    return AtmosphericFeedbackState(
         temperature=300,
-        humidity=12,
-        cloud_cover=50,
-        radiation=240,
-        surface_temperature=302,
-        ocean_temperature=301
+        humidity=10,
+        cloud_cover=20,
+        radiation_flux=250,
+        convection=2,
+        precipitation=5,
+        surface_energy=300
     )
 
 
-def test_moisture_feedback():
+
+def test_humidity_temperature_feedback():
 
     model = AtmosphericFeedbackNetwork()
 
-    assert model.moisture_feedback(create_state()) > 0
+    assert (
+        model.humidity_temperature_feedback(create_state())
+        == 3.4
+    )
 
 
 
-def test_radiative_feedback():
-
-    model = AtmosphericFeedbackNetwork()
-
-    assert model.radiative_feedback(create_state()) > 0
-
-
-
-def test_cloud_feedback():
+def test_cloud_radiation_feedback():
 
     model = AtmosphericFeedbackNetwork()
 
-    assert model.cloud_feedback(create_state()) == 1.5
+    assert (
+        model.cloud_radiation_feedback(create_state())
+        == 242
+    )
 
 
 
-def test_temperature_feedback():
-
-    model = AtmosphericFeedbackNetwork()
-
-    assert model.temperature_feedback(create_state()) > 1
-
-
-
-def test_surface_feedback():
+def test_convection_moisture_feedback():
 
     model = AtmosphericFeedbackNetwork()
 
-    assert model.surface_feedback(create_state()) == 2
+    assert (
+        model.convection_moisture_feedback(create_state())
+        == 4.5
+    )
 
 
 
-def test_ocean_atmosphere_feedback():
-
-    model = AtmosphericFeedbackNetwork()
-
-    assert model.ocean_atmosphere_feedback(create_state()) > 0
-
-
-
-def test_feedback_equilibrium():
+def test_precipitation_energy_feedback():
 
     model = AtmosphericFeedbackNetwork()
 
-    result = model.feedback_equilibrium(create_state())
+    assert (
+        model.precipitation_energy_feedback(create_state())
+        == 32.5
+    )
 
-    assert result > 0
+
+
+def test_climate_feedback_index():
+
+    model = AtmosphericFeedbackNetwork()
+
+    assert (
+        model.climate_feedback_index(create_state())
+        == 15.0
+    )
