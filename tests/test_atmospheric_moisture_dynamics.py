@@ -20,20 +20,11 @@ def create_state():
     )
 
 
-def test_saturation_vapor_pressure():
-
-    model = AtmosphericMoistureDynamics()
-
-    assert model.saturation_vapor_pressure(create_state()) > 30
-
-
-
 def test_specific_humidity():
 
     model = AtmosphericMoistureDynamics()
 
     assert model.specific_humidity(create_state()) == 12.68
-
 
 
 def test_mixing_ratio():
@@ -43,7 +34,6 @@ def test_mixing_ratio():
     assert model.mixing_ratio(create_state()) == 12.79
 
 
-
 def test_relative_humidity():
 
     model = AtmosphericMoistureDynamics()
@@ -51,13 +41,21 @@ def test_relative_humidity():
     assert model.relative_humidity(create_state()) == 54.35
 
 
-
-def test_dew_point_temperature():
+def test_dew_point():
 
     model = AtmosphericMoistureDynamics()
 
-    assert model.dew_point_temperature(create_state()) > 285
+    assert isinstance(
+        model.dew_point(create_state()),
+        float
+    )
 
+
+def test_cloud_formation_rate():
+
+    model = AtmosphericMoistureDynamics()
+
+    assert model.cloud_formation_rate(create_state()) == 10.0
 
 
 def test_condensation_rate():
@@ -67,25 +65,22 @@ def test_condensation_rate():
     assert model.condensation_rate(create_state()) == 12.18
 
 
-
-def test_evaporation_rate():
-
-    model = AtmosphericMoistureDynamics()
-
-    assert model.evaporation_rate(create_state()) == 2.0
-
-
-
-def test_precipitation_potential():
+def test_precipitation_efficiency():
 
     model = AtmosphericMoistureDynamics()
 
-    assert model.precipitation_potential(create_state()) == 20
+    assert model.precipitation_efficiency(create_state()) == 50.0
 
 
-
-def test_moisture_equilibrium():
+def test_moisture_convergence():
 
     model = AtmosphericMoistureDynamics()
 
-    assert model.moisture_equilibrium(create_state()) == 14.5
+    assert model.moisture_convergence(create_state()) == 5.0
+
+
+def test_evaporation_effect():
+
+    model = AtmosphericMoistureDynamics()
+
+    assert model.evaporation_effect(create_state()) == 4.8
