@@ -5,7 +5,7 @@ Visualization Manager
 """
 
 from acf.maps.auto_renderer import AutoRenderer
-from acf.visualization.layer_manager import LayerManager
+from acf.maps.layer_manager import LayerManager
 
 
 class VisualizationManager:
