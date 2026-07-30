@@ -13,9 +13,7 @@ from matplotlib.backends.backend_qtagg import (
 )
 
 
-from acf.visualization.cartopy_renderer import (
-    CartopyRenderer
-)
+from acf.maps import CartopyRenderer
 
 
 

@@ -1,188 +1,67 @@
 """
-ACF Cartopy Renderer
+ACF Cartopy Renderer Compatibility Shim
+=======================================
 
-Moteur cartographique scientifique.
+Compatibility facade redirecting legacy `acf.visualization.cartopy_renderer`
+to canonical `acf.maps.renderers.cartopy_renderer`.
 """
 
+from acf.maps.renderers.cartopy_renderer import CartopyRenderer as CanonicalCartopyRenderer
 import matplotlib.pyplot as plt
-
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 
-
-class CartopyRenderer:
+class CartopyRenderer(CanonicalCartopyRenderer):
     """
-    Renderer basé sur Cartopy.
-
-    Responsable de :
-    - création de cartes
-    - affichage des couches météo
-    - rendu scientifique
+    Compatibility CartopyRenderer facade supporting both headless canvas
+    and legacy direct figure creation methods.
     """
 
-
-    def __init__(self):
-
+    def __init__(self, canvas=None):
+        if canvas is not None:
+            super().__init__(canvas)
+        else:
+            self.canvas = None
         self.figure = None
         self.axis = None
         self.layers = []
 
-
-
-    ##################################################
-    # Création carte
-    ##################################################
-
     def create_map(self):
-        """
-        Création d'une carte mondiale.
-        """
-
-        self.figure = plt.figure(
-            figsize=(10, 6)
-        )
-
-
-        self.axis = plt.axes(
-            projection=ccrs.PlateCarree()
-        )
-
-
+        """Legacy figure creation helper."""
+        self.figure = plt.figure(figsize=(10, 6))
+        self.axis = plt.axes(projection=ccrs.PlateCarree())
         self.axis.set_global()
+        self.axis.add_feature(cfeature.LAND)
+        self.axis.add_feature(cfeature.OCEAN)
+        self.axis.add_feature(cfeature.BORDERS)
+        self.axis.add_feature(cfeature.COASTLINE)
+        self.axis.gridlines(draw_labels=True)
+        return self.figure, self.axis
 
-
-        # Fond terrestre
-
-        self.axis.add_feature(
-            cfeature.LAND
-        )
-
-
-        # Océans
-
-        self.axis.add_feature(
-            cfeature.OCEAN
-        )
-
-
-        # Frontières
-
-        self.axis.add_feature(
-            cfeature.BORDERS
-        )
-
-
-        # Côtes
-
-        self.axis.add_feature(
-            cfeature.COASTLINE
-        )
-
-
-        # Grille
-
-        self.axis.gridlines(
-            draw_labels=True
-        )
-
-
-        return (
-            self.figure,
-            self.axis
-        )
-
-
-
-    ##################################################
-    # Ajout champ scientifique
-    ##################################################
-
-    def add_field(
-        self,
-        longitude,
-        latitude,
-        data,
-        colormap="viridis",
-        levels=20,
-    ):
-        """
-        Ajoute un champ météo.
-
-        Exemple :
-        température
-        pression
-        humidité
-        """
-
+    def add_field(self, longitude, latitude, data, colormap="viridis", levels=20):
+        """Legacy field plotting helper."""
         if self.axis is None:
-
-            raise RuntimeError(
-                "Map not initialized"
-            )
-
-
+            raise RuntimeError("Map not initialized")
         layer = self.axis.contourf(
             longitude,
             latitude,
             data,
             levels=levels,
             cmap=colormap,
-            transform=ccrs.PlateCarree()
+            transform=ccrs.PlateCarree(),
         )
-
-
-        self.layers.append(
-            layer
-        )
-
-
+        self.layers.append(layer)
         return layer
 
-
-
-    ##################################################
-    # Nettoyage
-    ##################################################
-
-    def clear(self):
-
-        self.figure = None
-        self.axis = None
-        self.layers = []
-
-
-
-    ##################################################
-    # Rafraîchir
-    ##################################################
-
-    def refresh(self):
-
-        if self.figure:
-
-            self.figure.canvas.draw()
-
-
-
-    ##################################################
-    # Information
-    ##################################################
-
     def status(self):
-
+        """Legacy status diagnostic information."""
         return {
-
-            "figure":
-                self.figure is not None,
-
-            "axis":
-                self.axis is not None,
-
-            "layers":
-                len(self.layers),
-
-            "engine":
-                "Cartopy"
-
+            "figure": self.figure is not None,
+            "axis": self.axis is not None,
+            "layers": len(self.layers),
+            "engine": "Cartopy",
         }
+
+
+__all__ = ["CartopyRenderer"]

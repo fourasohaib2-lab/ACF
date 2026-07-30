@@ -22,9 +22,7 @@ from acf.gui.docks.dataset_panel import DatasetPanel
 from acf.workspace.manager import WorkspaceManager
 from acf.data.manager import DataManager
 
-from acf.visualization.visualization_manager import (
-    VisualizationManager,
-)
+from acf.maps import VisualizationManager
 
 
 class MainWindow(QMainWindow):

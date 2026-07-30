@@ -84,3 +84,4 @@ temp/
 # Project files
 project/*.pdf
 project/*.docx
+.aider*
