@@ -1,29 +1,9 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-GUI -   Init  
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+GUI - Main Window Init
 """
 
+from acf.gui.main_window.main_window import MainWindow
+
+__all__ = ["MainWindow"]

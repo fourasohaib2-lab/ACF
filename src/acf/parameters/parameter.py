@@ -1,40 +1,33 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-PARAMETERS - Parameter
-
-Purpose:
---------
-Physical parameter definitions, unit conversion tables, and parameter aliases.
-
-Responsibilities:
------------------
-• Manage parameter logic and state representations.
-• Integrate with the parameters subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Parameter
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.parameters module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+PARAMETERS - Parameter (Canonical Definition)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class Parameter:
+    code: str = ""
+    name: str = ""
+    unit: str = ""
+    standard_name: str = ""
+    category: str = ""
+    id: str = ""
+    units: str = ""
+    renderer: str = ""
+    colormap: str = ""
+    description: str = ""
+    alert_levels: dict = field(default_factory=dict)
 
-    code: str
-    name: str
-    unit: str
-    standard_name: str
-    category: str
+    def __post_init__(self):
+        if not self.id and self.code:
+            self.id = self.code
+        elif not self.code and self.id:
+            self.code = self.id
+
+        if not self.units and self.unit:
+            self.units = self.unit
+        elif not self.unit and self.units:
+            self.unit = self.units
