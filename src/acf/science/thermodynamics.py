@@ -6,7 +6,6 @@ Combines all thermodynamic calculations for ACF.
 """
 
 from .virtual_temperature import VirtualTemperature
-from .specific_humidity import SpecificHumidity
 from .mixing_ratio import MixingRatio
 from .saturation_mixing_ratio import SaturationMixingRatio
 from .vapor_pressure import VaporPressure

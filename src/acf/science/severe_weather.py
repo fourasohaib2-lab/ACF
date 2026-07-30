@@ -3,10 +3,6 @@ Severe Weather Engine
 =====================
 """
 
-from acf.science.cape import CAPE
-from acf.science.cin import CIN
-from acf.science.bulk_wind_shear import BulkWindShear
-from acf.science.storm_relative_helicity import StormRelativeHelicity
 
 
 class SevereWeather:

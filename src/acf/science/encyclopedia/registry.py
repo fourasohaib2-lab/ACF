@@ -4,6 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Encyclopedia Scientific Registry
 """
 
+import importlib
 from typing import Any, Dict, List, Optional
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.registry import ScientificRegistry
@@ -23,7 +24,45 @@ class EncyclopediaRegistry:
         if cls._initialized:
             return
         cls._initialized = True
-        # Lazy import of encyclopedia domain modules
+        modules = [
+            "acf.science.encyclopedia.atmosphere",
+            "acf.science.encyclopedia.thermodynamics",
+            "acf.science.encyclopedia.clouds",
+            "acf.science.encyclopedia.convection",
+            "acf.science.encyclopedia.precipitation",
+            "acf.science.encyclopedia.boundary_layer",
+            "acf.science.encyclopedia.dynamics",
+            "acf.science.encyclopedia.radiation",
+            "acf.science.encyclopedia.aerosols_chemistry",
+            "acf.science.encyclopedia.ocean",
+            "acf.science.encyclopedia.cryosphere",
+            "acf.science.encyclopedia.nwp",
+            "acf.science.encyclopedia.assimilation",
+            "acf.science.encyclopedia.satellite",
+            "acf.science.encyclopedia.radar",
+            "acf.science.encyclopedia.aviation",
+            "acf.science.encyclopedia.mathematics",
+            "acf.science.encyclopedia.turbulence",
+            "acf.science.encyclopedia.cloud_microphysics.cloud_classification",
+            "acf.science.encyclopedia.cloud_microphysics.nwp_microphysics",
+            "acf.science.encyclopedia.convection_extended",
+            "acf.science.encyclopedia.lightning",
+            "acf.science.encyclopedia.severe_weather",
+            "acf.science.encyclopedia.turbulence_extended",
+            "acf.science.encyclopedia.ocean_atmosphere",
+            "acf.science.encyclopedia.chemistry",
+            "acf.science.encyclopedia.satellite_extended",
+            "acf.science.encyclopedia.radar_extended",
+            "acf.science.encyclopedia.nwp_models.ifs",
+            "acf.science.encyclopedia.nwp_models.arome",
+            "acf.science.encyclopedia.assimilation_extended",
+            "acf.science.encyclopedia.mathematics_nwp",
+        ]
+        for mod in modules:
+            try:
+                importlib.import_module(mod)
+            except Exception:
+                pass
 
     @classmethod
     def register(cls, entry: EncyclopediaEntry):
