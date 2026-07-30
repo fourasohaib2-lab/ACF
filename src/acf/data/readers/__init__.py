@@ -1,29 +1,23 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-DATA -   Init  
-
-Purpose:
---------
-Data ingestion adapters, format detectors, caching mechanisms, and workflow managers.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the data subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.data module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+DATA READERS - Init (Compatibility Layer forwarding to acf.importers.readers)
 """
 
+from acf.importers.readers import (
+    BaseReader,
+    CFDetector,
+    NetCDFReader,
+    GRIBReader,
+    GribReader,
+    BufrReader,
+)
+
+__all__ = [
+    "BaseReader",
+    "CFDetector",
+    "NetCDFReader",
+    "GRIBReader",
+    "GribReader",
+    "BufrReader",
+]

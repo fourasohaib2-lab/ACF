@@ -1,5 +1,5 @@
 """
-ACF Base Reader (Compatibility Layer forwarding to acf.importers.base.base_reader)
+ACF Base Reader
 """
 
 from acf.importers.base.base_reader import BaseReader

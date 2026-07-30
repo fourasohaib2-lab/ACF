@@ -1,17 +1,7 @@
 """
-ECMWF JSON Loader
+ECMWF JSON Loader (Compatibility Layer forwarding to acf.importers.ecmwf.importer)
 """
 
-import json
-from pathlib import Path
+from acf.importers.ecmwf.importer import ECMWFImporter as ECMWFLoader
 
-
-class ECMWFLoader:
-
-    def load(self, filename):
-
-        filename = Path(filename)
-
-        with filename.open("r", encoding="utf-8") as f:
-
-            return json.load(f)
+__all__ = ["ECMWFLoader"]
