@@ -57,6 +57,9 @@ class EncyclopediaRegistry:
             "acf.science.encyclopedia.nwp_models.arome",
             "acf.science.encyclopedia.assimilation_extended",
             "acf.science.encyclopedia.mathematics_nwp",
+            "acf.science.encyclopedia.physical_laws.thermodynamics_laws",
+            "acf.science.encyclopedia.aerodynamics.flight_mechanics",
+            "acf.science.encyclopedia.nwp_database.nwp_models_registry",
         ]
         for mod in modules:
             try:
