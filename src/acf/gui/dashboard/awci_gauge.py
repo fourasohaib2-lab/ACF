@@ -9,7 +9,7 @@ Circular gauge displaying AWCI score with needle.
 import math
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush, QConicalGradient
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QConicalGradient
 
 from typing import Optional
 

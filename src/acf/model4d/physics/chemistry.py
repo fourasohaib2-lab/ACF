@@ -8,7 +8,6 @@ Provides simplified atmospheric chemistry
 calculations for trace gases and reactions.
 """
 
-import math
 
 
 class Chemistry:

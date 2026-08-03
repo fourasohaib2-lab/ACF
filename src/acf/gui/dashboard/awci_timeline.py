@@ -4,8 +4,8 @@ AWCI Timeline Widget
 """
 
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QSize, QPoint
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush, QPolygon
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPolygon
 
 from typing import List, Optional, Tuple
 

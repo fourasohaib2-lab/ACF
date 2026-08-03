@@ -1,0 +1,78 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global}
+    \entry{holton2004}{book}{}
+      \name{author}{1}{}{%
+        {{hash=2681a6ad997013a413f2ca2bb15f9bfc}{%
+           family={Holton},
+           familyi={H\bibinitperiod},
+           given={James\bibnamedelima R.},
+           giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Academic Press}%
+      }
+      \strng{namehash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \strng{fullhash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \strng{bibnamehash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \strng{authorbibnamehash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \strng{authornamehash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \strng{authorfullhash}{2681a6ad997013a413f2ca2bb15f9bfc}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{An Introduction to Dynamic Meteorology}
+      \field{year}{2004}
+    \endentry
+    \entry{wallace2006}{book}{}
+      \name{author}{2}{}{%
+        {{hash=066db983e41e0db42de0b6b89b6a055d}{%
+           family={Wallace},
+           familyi={W\bibinitperiod},
+           given={John\bibnamedelima M.},
+           giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=7e903ec69bba483a6440ededc7149518}{%
+           family={Hobbs},
+           familyi={H\bibinitperiod},
+           given={Peter\bibnamedelima V.},
+           giveni={P\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \strng{fullhash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \strng{bibnamehash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \strng{authorbibnamehash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \strng{authornamehash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \strng{authorfullhash}{eef74f4a3a4a4811f1c094ec859a621b}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Atmospheric Science: An Introductory Survey}
+      \field{year}{2006}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

@@ -1,5 +1,7 @@
 """
-NWP Models Documentation Package
+Atmospheric Complexity Framework (ACF)
+
+NWP Models Encyclopedia Package (ECMWF IFS, Météo-France AROME, WRF, DWD ICON)
 """
 
-__all__ = []
+__all__ = ["ifs", "arome", "wrf", "icon"]

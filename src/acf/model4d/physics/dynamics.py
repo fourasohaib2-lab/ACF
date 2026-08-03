@@ -10,7 +10,6 @@ Basic atmospheric dynamics operators:
 - buoyancy force
 """
 
-from math import isclose
 
 
 class Dynamics:

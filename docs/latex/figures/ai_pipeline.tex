@@ -1,0 +1,41 @@
+\begin{tikzpicture}[
+node distance=2cm,
+box/.style={
+rectangle,
+draw,
+rounded corners,
+minimum width=3cm,
+align=center
+}
+]
+
+
+\node[box] (input)
+{Atmospheric Data};
+
+
+\node[box,right=of input]
+(model)
+{Machine Learning\\
+Deep Learning};
+
+
+\node[box,right=of model]
+(output)
+{Forecast\\
+Prediction};
+
+
+\node[box,below=of model]
+(hybrid)
+{Physics AI\\
+PINNs};
+
+
+
+\draw[->](input)--(model);
+\draw[->](model)--(output);
+\draw[->](hybrid)--(model);
+
+
+\end{tikzpicture}

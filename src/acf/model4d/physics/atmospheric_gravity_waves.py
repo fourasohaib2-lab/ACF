@@ -14,7 +14,7 @@ Modèle simplifié des ondes de gravité atmosphériques :
 
 
 from dataclasses import dataclass
-from math import sqrt, pi
+from math import pi
 
 
 @dataclass

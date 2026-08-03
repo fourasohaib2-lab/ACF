@@ -11,7 +11,6 @@ Simulation des interactions atmosphère-ville :
 - impact sur température locale
 """
 
-import math
 
 
 class UrbanPhysics:

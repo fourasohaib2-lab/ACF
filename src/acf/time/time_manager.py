@@ -2,7 +2,6 @@
 Time Manager
 """
 
-from datetime import datetime
 
 
 class TimeManager:

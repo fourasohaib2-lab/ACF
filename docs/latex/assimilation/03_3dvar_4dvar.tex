@@ -1,0 +1,42 @@
+\section{Variational Assimilation}
+
+
+The variational approach minimizes the cost function:
+
+
+\begin{equation}
+J(x)
+=
+\frac{1}{2}(x-x_b)^TB^{-1}(x-x_b)
++
+\frac{1}{2}(y-H(x))^TR^{-1}(y-H(x))
+\end{equation}
+
+
+
+Where:
+
+
+\begin{itemize}
+
+\item $x_b$ : background state
+
+\item $B$ : background error covariance
+
+\item $R$ : observation error covariance
+
+\item $y$ : observations
+
+\end{itemize}
+
+
+
+4D-Var extends the method by including time evolution:
+
+
+\begin{equation}
+J(x_0)
+=
+\sum_t
+(y_t-H(M_t(x_0)))^2
+\end{equation}

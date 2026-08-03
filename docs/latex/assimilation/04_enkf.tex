@@ -1,0 +1,32 @@
+\section{Ensemble Kalman Filter}
+
+
+The Ensemble Kalman Filter represents uncertainty using
+multiple model states.
+
+
+
+The ensemble is:
+
+
+\begin{equation}
+X=
+[x_1,x_2,...,x_N]
+\end{equation}
+
+
+
+The analysis update is:
+
+
+\begin{equation}
+x_a
+=
+x_b
++
+K(y-H(x_b))
+\end{equation}
+
+
+
+where $K$ is the Kalman gain.

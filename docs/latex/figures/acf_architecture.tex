@@ -1,0 +1,51 @@
+\begin{tikzpicture}[
+node distance=1.8cm,
+box/.style={
+rectangle,
+draw,
+rounded corners,
+align=center,
+minimum width=3cm,
+minimum height=1cm
+}
+]
+
+
+\node[box] (obs)
+{Earth Observation\\
+Satellites\\Radar\\Stations};
+
+
+\node[box, right=of obs] (data)
+{Data Platform\\
+NetCDF\\GRIB\\BUFR};
+
+
+\node[box, right=of data] (assim)
+{Data Assimilation\\
+3DVAR\\4DVAR\\EnKF};
+
+
+\node[box, below=of assim] (model)
+{Atmospheric Models\\
+NWP\\AI Models};
+
+
+\node[box, below=of data] (digital)
+{Digital Twin\\
+Earth System};
+
+
+\node[box, right=of model] (awci)
+{AWCI\\
+Operational Dashboard};
+
+
+
+\draw[->] (obs)--(data);
+\draw[->] (data)--(assim);
+\draw[->] (assim)--(model);
+\draw[->] (model)--(digital);
+\draw[->] (digital)--(awci);
+
+\end{tikzpicture}

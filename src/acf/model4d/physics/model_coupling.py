@@ -13,7 +13,6 @@ Handles coupling between:
 Sprint 8.25
 """
 
-import math
 
 
 class ModelCouplingPhysics:

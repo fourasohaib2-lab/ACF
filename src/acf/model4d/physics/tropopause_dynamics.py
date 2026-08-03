@@ -13,7 +13,6 @@ Sprint 8.90
 """
 
 from dataclasses import dataclass
-from math import exp
 
 
 @dataclass

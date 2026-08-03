@@ -5,7 +5,8 @@ VISUALIZATION - Backward Compatibility Facade Layer
 ===================================================
 
 This package provides 100% backward compatibility for legacy imports by redirecting
-to the canonical `acf.maps` cartographic package using PEP 562 dynamic attributes.
+to the canonical `acf.maps` cartographic package using PEP 562 dynamic attributes,
+while exporting the new AWCI 2D/3D/4D visualization workstation engine.
 """
 
 import importlib
@@ -31,6 +32,16 @@ __all__ = [
     "LayerGroup",
     "ScientificRenderer",
     "ColorMapManager",
+    "VisualizationScene",
+    "CameraController",
+    "ParticleFlowLayer",
+    "IsosurfaceLayer",
+    "RadarVolumeLayer",
+    "SatelliteRGBLayer",
+    "TimelineController",
+    "ColorTableRegistry",
+    "GPUBackend",
+    "AWCIDashboardEngine",
 ]
 
 _MAPS_MAPPINGS = {
@@ -57,6 +68,16 @@ _VIZ_MAPPINGS = {
     "LayerGroup": ("acf.visualization.layer_group", "LayerGroup"),
     "ScientificRenderer": ("acf.visualization.renderer", "ScientificRenderer"),
     "ColorMapManager": ("acf.visualization.colormap", "ColorMapManager"),
+    "VisualizationScene": ("acf.visualization.scene.scene_manager", "VisualizationScene"),
+    "CameraController": ("acf.visualization.camera.camera_controller", "CameraController"),
+    "ParticleFlowLayer": ("acf.visualization.layers.scientific_layers", "ParticleFlowLayer"),
+    "IsosurfaceLayer": ("acf.visualization.layers.scientific_layers", "IsosurfaceLayer"),
+    "RadarVolumeLayer": ("acf.visualization.layers.scientific_layers", "RadarVolumeLayer"),
+    "SatelliteRGBLayer": ("acf.visualization.layers.scientific_layers", "SatelliteRGBLayer"),
+    "TimelineController": ("acf.visualization.timeline.timeline_controller", "TimelineController"),
+    "ColorTableRegistry": ("acf.visualization.legends.color_tables", "ColorTableRegistry"),
+    "GPUBackend": ("acf.visualization.gpu.gpu_backend", "GPUBackend"),
+    "AWCIDashboardEngine": ("acf.visualization.widgets.awci_dashboard", "AWCIDashboardEngine"),
 }
 
 

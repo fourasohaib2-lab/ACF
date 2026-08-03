@@ -1,0 +1,1487 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACF-DOC-039.02
+% Severe Weather Prediction System
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Severe Weather Prediction System}
+
+\subsection{Executive Summary}
+
+The Severe Weather Prediction System is a core component of the
+Atmospheric Complexity Framework (ACF) Multi-Hazard Decision Support
+platform.
+
+Its objective is to detect, predict and monitor high-impact atmospheric
+phenomena using a combination of:
+
+\begin{itemize}
+
+\item Numerical Weather Prediction models
+
+\item Radar observations
+
+\item Satellite observations
+
+\item Surface observations
+
+\item Atmospheric soundings
+
+\item Data assimilation
+
+\item Artificial intelligence
+
+\item Earth System Digital Twin
+
+\end{itemize}
+
+The system focuses on hazardous convective phenomena including:
+
+\begin{itemize}
+
+\item Severe thunderstorms
+
+\item Supercells
+
+\item Mesoscale Convective Systems
+
+\item Tornadoes
+
+\item Hailstorms
+
+\item Lightning events
+
+\item Downbursts
+
+\item Extreme convective precipitation
+
+\end{itemize}
+
+The final objective is to provide probabilistic forecasts and
+operational warnings through the Atmospheric Weather Center Interface
+(AWCI).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Introduction}
+
+Severe weather events are among the most complex atmospheric phenomena
+because they involve interactions between thermodynamics, dynamics,
+microphysics and surface processes.
+
+Unlike large-scale weather systems, severe convection develops on
+spatial and temporal scales that require high-resolution observations
+and numerical simulations.
+
+Typical severe storms involve:
+
+\begin{itemize}
+
+\item Strong atmospheric instability
+
+\item High moisture availability
+
+\item Dynamic lifting mechanisms
+
+\item Significant vertical wind shear
+
+\item Organized cloud structures
+
+\end{itemize}
+
+The ACF system represents severe weather as a coupled atmospheric
+process inside the Earth System Digital Twin.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Atmospheric Convection Fundamentals}
+
+Convection occurs when an air parcel becomes warmer and less dense than
+its surrounding environment.
+
+The vertical acceleration of an air parcel can be expressed as:
+
+\[
+\frac{dw}{dt}=B-g
+\]
+
+where:
+
+\begin{itemize}
+
+\item $w$ is vertical velocity
+
+\item $B$ is buoyancy acceleration
+
+\item $g$ is gravitational acceleration
+
+\end{itemize}
+
+
+The buoyancy term is approximated by:
+
+\[
+B=g
+\frac{T_v'-T_v}{T_v}
+\]
+
+where:
+
+\begin{itemize}
+
+\item $T_v'$ is parcel virtual temperature
+
+\item $T_v$ is environmental virtual temperature
+
+\end{itemize}
+
+Positive buoyancy promotes upward motion and cloud development.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Convective Storm Ingredients}
+
+The development of severe convection requires four main ingredients.
+
+\subsubsection{Instability}
+
+Instability represents the potential energy available for convection.
+
+The most common parameter is Convective Available Potential Energy:
+
+\[
+CAPE=
+\int_{LFC}^{EL}
+g
+\frac{T_v'-T_v}{T_v}
+dz
+\]
+
+where:
+
+\begin{itemize}
+
+\item LFC = Level of Free Convection
+
+\item EL = Equilibrium Level
+
+\end{itemize}
+
+
+Large CAPE values indicate stronger potential updrafts.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Moisture}
+
+Atmospheric moisture controls cloud formation and precipitation.
+
+Important ACF parameters include:
+
+\begin{itemize}
+
+\item Specific humidity
+
+\item Mixing ratio
+
+\item Relative humidity
+
+\item Dew point temperature
+
+\item Precipitable water
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Lift}
+
+A lifting mechanism initiates convection.
+
+ACF analyses:
+
+\begin{itemize}
+
+\item Cold fronts
+
+\item Warm fronts
+
+\item Dry lines
+
+\item Sea breeze boundaries
+
+\item Orographic lifting
+
+\item Outflow boundaries
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Wind Shear}
+
+Vertical wind shear controls storm organization.
+
+The bulk shear vector is:
+
+\[
+\vec{S}
+=
+\vec{V}_{top}
+-
+\vec{V}_{bottom}
+\]
+
+Strong shear favors organized severe storms such as supercells.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Severe Thunderstorm Classification}
+
+The ACF Severe Weather Engine classifies convective systems according to
+their structure, dynamics and associated hazards.
+
+The main categories are:
+
+\begin{itemize}
+
+\item Ordinary thunderstorms
+
+\item Multicell thunderstorms
+
+\item Supercell thunderstorms
+
+\item Mesoscale Convective Systems (MCS)
+
+\item Squall lines
+
+\item Derecho events
+
+\end{itemize}
+
+The classification combines:
+
+\begin{itemize}
+
+\item Radar reflectivity
+
+\item Doppler velocity
+
+\item Satellite cloud properties
+
+\item Numerical model output
+
+\item Artificial intelligence classification
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Ordinary and Multicell Thunderstorms}
+
+Ordinary thunderstorms are short-lived convective cells generally
+controlled by local instability.
+
+Their life cycle contains:
+
+\begin{enumerate}
+
+\item Developing stage
+
+\item Mature stage
+
+\item Dissipating stage
+
+\end{enumerate}
+
+
+Multicell storms consist of several convective cells at different stages
+of development.
+
+They can produce:
+
+\begin{itemize}
+
+\item Heavy precipitation
+
+\item Lightning
+
+\item Localized flooding
+
+\item Strong wind gusts
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Supercell Dynamics}
+
+Supercells represent one of the most dangerous forms of convection.
+
+They are characterized by:
+
+\begin{itemize}
+
+\item Persistent rotating updraft
+
+\item Mesocyclone formation
+
+\item Strong vertical wind shear
+
+\item Long lifetime
+
+\item Severe weather production
+
+\end{itemize}
+
+
+The rotating updraft is produced by the interaction between horizontal
+vorticity and vertical motion.
+
+The vertical vorticity equation can be approximated as:
+
+\[
+\frac{\partial \zeta}{\partial t}
+=
+-\vec{V}\cdot\nabla\zeta
++
+Stretching
++
+Tilting
++
+Friction
+\]
+
+where:
+
+\begin{itemize}
+
+\item $\zeta$ represents vertical vorticity
+
+\item Stretching increases rotation intensity
+
+\item Tilting converts horizontal rotation into vertical rotation
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Mesocyclone Detection}
+
+The ACF radar intelligence module detects mesocyclones using:
+
+\begin{itemize}
+
+\item Doppler velocity couplets
+
+\item Rotation signatures
+
+\item Vertical continuity
+
+\item Reflectivity structures
+
+\end{itemize}
+
+
+The rotation parameter is calculated as:
+
+\[
+Rotation =
+\frac{\Delta V}{\Delta x}
+\]
+
+where:
+
+\begin{itemize}
+
+\item $\Delta V$ is radial velocity difference
+
+\item $\Delta x$ is horizontal distance
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Mesoscale Convective Systems}
+
+Mesoscale Convective Systems (MCS) are organized groups of thunderstorms
+covering large areas.
+
+Typical characteristics:
+
+\begin{itemize}
+
+\item Horizontal scale greater than 100 km
+
+\item Long duration
+
+\item Organized precipitation structures
+
+\item Strong wind hazards
+
+\end{itemize}
+
+
+MCS categories include:
+
+\begin{itemize}
+
+\item Mesoscale Convective Complexes
+
+\item Squall Lines
+
+\item Bow Echoes
+
+\item Derechos
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Squall Lines}
+
+Squall lines are linear convective systems associated with strong
+downdrafts and damaging winds.
+
+Their structure contains:
+
+\begin{itemize}
+
+\item Leading convective line
+
+\item Cold pool
+
+\item Rear inflow jet
+
+\item Stratiform precipitation region
+
+\end{itemize}
+
+
+The ACF system monitors:
+
+\begin{itemize}
+
+\item Line orientation
+
+\item Propagation speed
+
+\item Wind intensity
+
+\item Lightning density
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Derecho Events}
+
+Derechos are widespread severe wind events generated by organized
+convective systems.
+
+Operational indicators include:
+
+\begin{itemize}
+
+\item Bow echo structures
+
+\item Strong rear inflow jet
+
+\item Long-lived convection
+
+\item Extensive damage path
+
+\end{itemize}
+
+
+ACF integrates:
+
+\begin{itemize}
+
+\item Radar analysis
+
+\item Wind field prediction
+
+\item AI pattern recognition
+
+\item Impact assessment
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Tornado Environment Prediction}
+
+Tornado prediction requires analysis of:
+
+\begin{itemize}
+
+\item Instability
+
+\item Low-level moisture
+
+\item Vertical wind shear
+
+\item Storm-relative helicity
+
+\item Mesocyclone potential
+
+\end{itemize}
+
+
+The Storm Relative Helicity (SRH) is:
+
+\[
+SRH =
+-\int
+(\vec{V}-\vec{C})
+\cdot
+\nabla\times\vec{V}
+dz
+\]
+
+where:
+
+\begin{itemize}
+
+\item $\vec{V}$ is wind vector
+
+\item $\vec{C}$ is storm motion vector
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Advanced Severe Weather Parameters}
+
+The ACF Severe Weather Prediction Engine uses a large set of
+thermodynamic and dynamic parameters to diagnose the potential for
+hazardous convection.
+
+These parameters are calculated from atmospheric soundings, numerical
+weather prediction models and assimilated observations.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Convective Inhibition (CIN)}
+
+Convective Inhibition represents the amount of energy required to lift
+an air parcel until it reaches free convection.
+
+It is defined as:
+
+\[
+CIN =
+-\int_{Surface}^{LFC}
+g
+\frac{T_v'-T_v}{T_v}
+dz
+\]
+
+Large CIN values indicate a stable atmosphere and suppressed convection.
+
+Small CIN values combined with strong instability indicate an environment
+favorable for explosive storm development.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Lifted Index (LI)}
+
+The Lifted Index measures atmospheric stability.
+
+It is defined as:
+
+\[
+LI=T_{500}-T_{p500}
+\]
+
+where:
+
+\begin{itemize}
+
+\item $T_{500}$ is environmental temperature at 500 hPa
+
+\item $T_{p500}$ is parcel temperature at 500 hPa
+
+\end{itemize}
+
+
+Operational interpretation:
+
+\begin{center}
+
+\begin{tabular}{lll}
+
+\toprule
+
+LI Value & Stability & Risk \\
+
+\midrule
+
+Positive & Stable & Low convection \\
+
+0 to -3 & Weak instability & Possible storms \\
+
+-3 to -6 & Moderate instability & Severe storms possible \\
+
+Below -6 & Strong instability & Extreme convection potential \\
+
+\bottomrule
+
+\end{tabular}
+
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Total Totals Index}
+
+The Total Totals index combines thermal instability and low-level
+moisture.
+
+\[
+TT =
+(T_{850}-T_{500})
++
+(Td_{850}-T_{500})
+\]
+
+Higher values indicate increasing thunderstorm potential.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{K Index}
+
+The K Index estimates thunderstorm potential using temperature and
+humidity profiles.
+
+\[
+K =
+(T_{850}-T_{500})
++
+Td_{850}
+-
+(T_{700}-Td_{700})
+\]
+
+It evaluates:
+
+\begin{itemize}
+
+\item Low-level moisture
+
+\item Mid-level lapse rates
+
+\item Atmospheric dryness
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{SWEAT Index}
+
+The Severe Weather Threat Index combines several ingredients:
+
+\[
+SWEAT =
+12Td_{850}
++
+20(TT-49)
++
+2V_{850}
++
+V_{500}
++
+125(Shear)
+\]
+
+It includes:
+
+\begin{itemize}
+
+\item Moisture
+
+\item Instability
+
+\item Wind speed
+
+\item Wind shear
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bulk Richardson Number (BRN)}
+
+The Bulk Richardson Number compares buoyancy and wind shear.
+
+\[
+BRN=
+\frac{CAPE}
+{0.5(V_{shear})^2}
+\]
+
+Interpretation:
+
+\begin{itemize}
+
+\item High BRN: pulse convection
+
+\item Moderate BRN: organized storms
+
+\item Low BRN: supercell environment
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Storm Relative Helicity (SRH)}
+
+Storm Relative Helicity measures the potential for rotating updrafts.
+
+\[
+SRH=
+-\int_{0}^{z}
+(\vec{V}-\vec{C})
+\cdot
+\nabla\times\vec{V}
+dz
+\]
+
+Important layers:
+
+\begin{itemize}
+
+\item 0--1 km SRH
+
+\item 0--3 km SRH
+
+\item Effective SRH
+
+\end{itemize}
+
+High SRH values increase tornado potential when combined with
+instability.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Significant Tornado Parameter (STP)}
+
+The Significant Tornado Parameter combines multiple tornado ingredients.
+
+A simplified formulation:
+
+\[
+STP=
+\frac{CAPE}{1500}
+\times
+\frac{SRH}{150}
+\times
+\frac{Shear}{20}
+\times
+\frac{LCL}{1000}
+\]
+
+The parameter combines:
+
+\begin{itemize}
+
+\item Instability
+
+\item Low-level rotation
+
+\item Deep-layer shear
+
+\item Cloud base height
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Supercell Composite Parameter (SCP)}
+
+The Supercell Composite Parameter estimates supercell potential.
+
+\[
+SCP=
+f(CAPE)
+\times
+f(SRH)
+\times
+f(Shear)
+\]
+
+High values indicate environments favorable for rotating storms.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{LCL, LFC and Equilibrium Level}
+
+The ACF system calculates important vertical atmospheric levels.
+
+\subsubsection{Lifted Condensation Level}
+
+LCL represents cloud base formation.
+
+\[
+LCL=f(T,Td,P)
+\]
+
+
+\subsubsection{Level of Free Convection}
+
+LFC represents the altitude where a parcel becomes positively buoyant.
+
+\[
+LFC=z(B>0)
+\]
+
+
+\subsubsection{Equilibrium Level}
+
+EL represents the top of the convective cloud.
+
+\[
+EL=z(B=0)
+\]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Hodograph Analysis}
+
+The hodograph represents wind evolution with altitude.
+
+It provides information about:
+
+\begin{itemize}
+
+\item Wind shear
+
+\item Storm motion
+
+\item Rotation potential
+
+\item Supercell characteristics
+
+\end{itemize}
+
+
+The ACF visualization engine displays:
+
+\begin{itemize}
+
+\item Surface to 6 km wind profile
+
+\item SRH regions
+
+\item Storm-relative flow
+
+\item Convective environment
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Radar Observation Integration}
+
+Weather radar represents one of the most important observation systems
+for severe weather monitoring.
+
+The ACF Severe Weather Engine integrates multi-source radar information:
+
+\begin{itemize}
+
+\item Reflectivity
+
+\item Doppler radial velocity
+
+\item Dual polarization products
+
+\item Echo tops
+
+\item Vertically Integrated Liquid (VIL)
+
+\item Hydrometeor classification
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Radar Reflectivity}
+
+Radar reflectivity provides information about precipitation intensity.
+
+The reflectivity factor is:
+
+\[
+Z=
+\sum D^6
+\]
+
+where:
+
+\begin{itemize}
+
+\item $Z$ represents radar reflectivity
+
+\item $D$ represents hydrometeor diameter
+
+\end{itemize}
+
+
+The ACF system analyzes:
+
+\begin{itemize}
+
+\item High reflectivity cores
+
+\item Hail signatures
+
+\item Hook echoes
+
+\item Bow echoes
+
+\item Weak echo regions
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Doppler Velocity Analysis}
+
+Doppler radar measures radial wind velocity.
+
+The measured velocity is:
+
+\[
+V_r =
+V
+\cos(\theta)
+\]
+
+where:
+
+\begin{itemize}
+
+\item $V_r$ is radial velocity
+
+\item $V$ is wind velocity
+
+\item $\theta$ is observation angle
+
+\end{itemize}
+
+
+The ACF engine detects:
+
+\begin{itemize}
+
+\item Rotation signatures
+
+\item Mesocyclones
+
+\item Tornadic vortex signatures
+
+\item Strong wind zones
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Satellite Observation Integration}
+
+Satellite observations provide continuous global monitoring.
+
+The ACF platform integrates:
+
+\begin{itemize}
+
+\item Geostationary satellites
+
+\item Polar orbiting satellites
+
+\item Infrared imagery
+
+\item Visible imagery
+
+\item Water vapor channels
+
+\item Lightning mapping observations
+
+\end{itemize}
+
+
+Important satellite indicators:
+
+\begin{itemize}
+
+\item Overshooting tops
+
+\item Rapid cloud growth
+
+\item Cold cloud tops
+
+\item Enhanced water vapor divergence
+
+\item Convective initiation zones
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Artificial Intelligence Severe Weather Engine}
+
+The ACF AI Severe Weather Engine combines physical prediction and
+machine learning techniques.
+
+The hybrid concept is:
+
+\[
+Prediction =
+NWP
++
+Observation
++
+AI
+\]
+
+
+The AI system performs:
+
+\begin{itemize}
+
+\item Storm classification
+
+\item Object detection
+
+\item Tracking
+
+\item Intensity estimation
+
+\item Probability forecasting
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Deep Learning Architecture}
+
+The AI architecture includes:
+
+\begin{itemize}
+
+\item Convolutional Neural Networks for radar images
+
+\item Transformers for temporal evolution
+
+\item Graph Neural Networks for atmospheric interactions
+
+\item Physics-Informed Neural Networks
+
+\end{itemize}
+
+
+The input data include:
+
+\begin{itemize}
+
+\item Radar sequences
+
+\item Satellite images
+
+\item Numerical model fields
+
+\item Soundings
+
+\item Surface observations
+
+\end{itemize}
+
+
+The output provides:
+
+\begin{itemize}
+
+\item Storm probability
+
+\item Hazard category
+
+\item Intensity prediction
+
+\item Forecast confidence
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Storm Tracking System}
+
+The ACF tracking engine follows severe weather objects in time.
+
+Tracked parameters:
+
+\begin{itemize}
+
+\item Position
+
+\item Movement vector
+
+\item Propagation speed
+
+\item Intensity evolution
+
+\item Hazard probability
+
+\end{itemize}
+
+
+The storm motion vector is:
+
+\[
+\vec{C}
+=
+(C_x,C_y)
+\]
+
+
+Future position estimation:
+
+\[
+X(t+\Delta t)
+=
+X(t)+C\Delta t
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Integration with Earth System Digital Twin}
+
+The Severe Weather Engine continuously exchanges information with the
+ACF Earth System Digital Twin.
+
+The Digital Twin provides:
+
+\begin{itemize}
+
+\item Atmospheric state
+
+\item Moisture distribution
+
+\item Wind fields
+
+\item Temperature structure
+
+\item Surface conditions
+
+\item Ocean influence
+
+\end{itemize}
+
+
+The Digital Twin enables:
+
+\begin{itemize}
+
+\item Real-time storm evolution
+
+\item Scenario simulation
+
+\item Probabilistic forecasting
+
+\item Impact assessment
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{AWCI Operational Integration}
+
+The Atmospheric Weather Center Interface receives severe weather
+information from the prediction engine.
+
+The AWCI dashboard displays:
+
+\begin{itemize}
+
+\item Severe weather maps
+
+\item Radar overlays
+
+\item Satellite layers
+
+\item Storm tracks
+
+\item Hazard probabilities
+
+\item Warning levels
+
+\end{itemize}
+
+
+Operational workflow:
+
+\[
+Detection
+\rightarrow
+Analysis
+\rightarrow
+Forecast
+\rightarrow
+Warning
+\rightarrow
+Decision
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Operational Severe Weather Workflow}
+
+The ACF Severe Weather Prediction System operates continuously inside
+the global operational environment.
+
+The complete workflow is:
+
+\[
+Observation
+\rightarrow
+Quality Control
+\rightarrow
+Assimilation
+\rightarrow
+Prediction
+\rightarrow
+Detection
+\rightarrow
+Risk Assessment
+\rightarrow
+Warning
+\]
+
+The operational cycle includes:
+
+\begin{enumerate}
+
+\item Acquisition of global observations
+
+\item Real-time atmospheric analysis
+
+\item High-resolution numerical prediction
+
+\item AI-based severe weather detection
+
+\item Expert analysis support
+
+\item Warning generation
+
+\item Event monitoring
+
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{High Performance Computing Requirements}
+
+Severe weather prediction requires large computational resources because
+of the high spatial and temporal resolution required.
+
+The ACF HPC architecture provides:
+
+\begin{itemize}
+
+\item Parallel numerical simulation
+
+\item GPU acceleration
+
+\item Distributed data processing
+
+\item AI model inference
+
+\item Real-time visualization
+
+\end{itemize}
+
+
+The computational workflow is:
+
+\[
+Data
+\rightarrow
+HPC
+\rightarrow
+Model
+\rightarrow
+AI
+\rightarrow
+Visualization
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Forecast Verification}
+
+The ACF system evaluates prediction quality using multiple verification
+methods.
+
+Verification parameters include:
+
+\begin{itemize}
+
+\item Probability of Detection (POD)
+
+\item False Alarm Ratio (FAR)
+
+\item Critical Success Index (CSI)
+
+\item Bias Score
+
+\item Forecast uncertainty
+
+\end{itemize}
+
+
+The Critical Success Index is:
+
+\[
+CSI=
+\frac{Hits}
+{Hits+Misses+False\ Alarms}
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Uncertainty Estimation}
+
+Severe weather prediction contains significant uncertainty.
+
+ACF uses:
+
+\begin{itemize}
+
+\item Ensemble Prediction Systems
+
+\item Probabilistic forecasting
+
+\item AI uncertainty estimation
+
+\item Physics-based sensitivity analysis
+
+\end{itemize}
+
+
+The final prediction includes:
+
+\[
+Forecast =
+Probability
++
+Confidence
++
+Uncertainty
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Human Expert Interaction}
+
+Although ACF provides advanced automation, human expertise remains
+essential.
+
+The system supports forecasters through:
+
+\begin{itemize}
+
+\item Interactive analysis tools
+
+\item AI explanations
+
+\item Situation summaries
+
+\item Risk prioritization
+
+\item Decision assistance
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Integration with Emergency Management}
+
+Severe weather information is transmitted to the ACF emergency
+management system.
+
+The system provides:
+
+\begin{itemize}
+
+\item Geographic warning zones
+
+\item Population exposure estimation
+
+\item Infrastructure risk assessment
+
+\item Response recommendations
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Future Development}
+
+Future versions of the ACF Severe Weather Engine will introduce:
+
+\begin{itemize}
+
+\item Kilometer-scale global convection prediction
+
+\item Autonomous AI forecasting agents
+
+\item Real-time urban hazard simulation
+
+\item Advanced radar artificial intelligence
+
+\item Fully coupled atmosphere-ocean-land prediction
+
+\item Global severe weather digital twin
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{References}
+
+Scientific foundations are based on:
+
+\begin{itemize}
+
+\item Atmospheric convection theory
+
+\item Numerical Weather Prediction
+
+\item Radar meteorology
+
+\item Satellite meteorology
+
+\item Mesoscale meteorology
+
+\item Machine learning for weather prediction
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

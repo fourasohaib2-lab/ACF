@@ -16,7 +16,6 @@ Simulation simplifiée de la propagation des ondes atmosphériques:
 
 
 from dataclasses import dataclass
-from math import pi
 
 
 @dataclass

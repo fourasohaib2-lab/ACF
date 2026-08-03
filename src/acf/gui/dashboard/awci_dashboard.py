@@ -5,7 +5,7 @@ AWCI Dashboard
 Complete AWCI dashboard with gauge, decomposition, profile, timeline.
 """
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt
 
 from typing import Optional, Dict, Any

@@ -5,8 +5,6 @@ AWCI Normalizer
 Normalizes variables to [0, 1] range for AWCI calculation.
 """
 
-from typing import Dict, Any, Optional
-import numpy as np
 
 
 class Normalizer:

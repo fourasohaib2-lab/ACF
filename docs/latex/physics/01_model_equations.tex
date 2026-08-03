@@ -1,0 +1,64 @@
+\section{Primitive Atmospheric Equations}
+
+
+The ACF atmospheric solver is based on the fundamental conservation
+equations of geophysical fluid dynamics.
+
+
+
+\subsection{Continuity Equation}
+
+
+\begin{equation}
+\frac{\partial \rho}{\partial t}
++
+\nabla \cdot (\rho \vec{V})
+=
+0
+\end{equation}
+
+
+
+\subsection{Momentum Equation}
+
+
+\begin{equation}
+\frac{D\vec{V}}{Dt}
+=
+-\frac{1}{\rho}\nabla p
+-2\Omega\times V
++g
++F
+\end{equation}
+
+
+
+\subsection{Thermodynamic Equation}
+
+
+\begin{equation}
+\frac{DT}{Dt}
+=
+\frac{Q}{C_p}
+\end{equation}
+
+
+
+\subsection{Water Vapor Equation}
+
+
+\begin{equation}
+\frac{Dq_v}{Dt}
+=
+S_q
+\end{equation}
+
+
+
+The complete atmospheric state vector is:
+
+
+\begin{equation}
+X=
+(u,v,w,T,p,q_v,q_c,q_r)
+\end{equation}

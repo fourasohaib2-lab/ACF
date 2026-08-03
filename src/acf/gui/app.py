@@ -1,30 +1,6 @@
-"""
-Atmospheric Complexity Framework (ACF)
+"""Atmospheric Complexity Framework (ACF) GUI Application Launcher.
 
-GUI - App
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage app logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Launches the Unified Earth System Operations Center (ESOC) (ACF-UI-012).
 """
 
 import sys
@@ -32,13 +8,13 @@ import time
 
 from PySide6.QtWidgets import QApplication
 
-from acf.gui.main_window import MainWindow
+from acf.gui.esoc.esoc_window import ESOCWindow
 from acf.gui.splash import SplashScreen
 from acf.gui.theme import ThemeManager
 
 
-def run():
-
+def run() -> None:
+    """Official application entry point launching ESOCWindow."""
     app = QApplication(sys.argv)
 
     theme = ThemeManager()
@@ -51,9 +27,14 @@ def run():
 
     time.sleep(2)
 
-    window = MainWindow()
+    # Boot into ESOCWindow as default operational command interface
+    window = ESOCWindow()
     window.show()
 
     splash.close()
 
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    run()

@@ -1,0 +1,43 @@
+\section{Numerical Discretization}
+
+
+Atmospheric equations are solved using numerical methods.
+
+
+
+ACF supports:
+
+
+\begin{itemize}
+
+\item Finite difference methods
+
+\item Finite volume methods
+
+\item Spectral methods
+
+\end{itemize}
+
+
+
+\section{Time Integration}
+
+
+The model state evolves as:
+
+
+\begin{equation}
+X^{n+1}=X^n+\Delta t F(X^n)
+\end{equation}
+
+
+
+Numerical stability requires:
+
+
+\begin{equation}
+C=\frac{u\Delta t}{\Delta x}<1
+\end{equation}
+
+
+where $C$ is the Courant number.

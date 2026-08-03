@@ -6,7 +6,6 @@ Aviation Weather Complexity Index calculator.
 """
 
 from typing import Dict, Optional, Any
-import numpy as np
 
 from .weights import WeightsManager
 from .normalizer import Normalizer

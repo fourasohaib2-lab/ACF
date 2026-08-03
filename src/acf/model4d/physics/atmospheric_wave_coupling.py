@@ -14,7 +14,6 @@ Module destiné au modèle 4D Atmospheric Complexity Framework.
 """
 
 from dataclasses import dataclass
-import math
 
 
 @dataclass

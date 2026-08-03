@@ -27,7 +27,6 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
-from acf.parameters.parameter import Parameter
 
 
 class ParameterCatalog:

@@ -12,7 +12,6 @@ Provides physical calculations related to atmospheric fronts:
 """
 
 
-import math
 
 
 class AtmosphericFrontsPhysics:

@@ -7,7 +7,7 @@ Bar chart showing AWCI decomposition by module.
 
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush
 
 from typing import Dict, Optional
 

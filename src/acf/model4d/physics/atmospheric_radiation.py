@@ -5,7 +5,6 @@ Model4D Atmospheric Radiation Physics
 Sprint 8.45
 """
 
-import math
 
 
 class AtmosphericRadiationPhysics:

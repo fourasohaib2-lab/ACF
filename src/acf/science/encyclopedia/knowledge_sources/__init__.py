@@ -1,5 +1,7 @@
 """
-Scientific Knowledge Sources Package
+Atmospheric Complexity Framework (ACF)
+
+Knowledge Sources Package
 """
 
 from acf.science.encyclopedia.knowledge_sources.sources_indexer import KnowledgeSourcesIndexer

@@ -45,21 +45,45 @@ class EncyclopediaRegistry:
             "acf.science.encyclopedia.turbulence",
             "acf.science.encyclopedia.cloud_microphysics.cloud_classification",
             "acf.science.encyclopedia.cloud_microphysics.nwp_microphysics",
+            "acf.science.encyclopedia.cloud_physics.cloud_physics",
+            "acf.science.encyclopedia.cloud_physics.wmo_cloud_taxonomy",
             "acf.science.encyclopedia.convection_extended",
             "acf.science.encyclopedia.lightning",
             "acf.science.encyclopedia.severe_weather",
+            "acf.science.encyclopedia.severe_weather_library",
             "acf.science.encyclopedia.turbulence_extended",
             "acf.science.encyclopedia.ocean_atmosphere",
             "acf.science.encyclopedia.chemistry",
+            "acf.science.encyclopedia.chemistry_extended",
             "acf.science.encyclopedia.satellite_extended",
+            "acf.science.encyclopedia.satellites_registry",
+            "acf.science.encyclopedia.remote_sensing_extended",
             "acf.science.encyclopedia.radar_extended",
+            "acf.science.encyclopedia.radar_meteorology_library",
             "acf.science.encyclopedia.nwp_models.ifs",
             "acf.science.encyclopedia.nwp_models.arome",
+            "acf.science.encyclopedia.nwp_models.wrf",
+            "acf.science.encyclopedia.nwp_models.icon",
+            "acf.science.encyclopedia.knowledge_sources.sources_indexer",
+            "acf.science.physics_ai.models",
             "acf.science.encyclopedia.assimilation_extended",
+            "acf.science.encyclopedia.data_assimilation_advanced",
             "acf.science.encyclopedia.mathematics_nwp",
+            "acf.science.encyclopedia.mathematics_advanced",
+            "acf.science.encyclopedia.numerical_methods_extended",
             "acf.science.encyclopedia.physical_laws.thermodynamics_laws",
             "acf.science.encyclopedia.aerodynamics.flight_mechanics",
+            "acf.science.encyclopedia.aerodynamics.isa_atmosphere",
+            "acf.science.encyclopedia.aviation_extended",
             "acf.science.encyclopedia.nwp_database.nwp_models_registry",
+            "acf.science.encyclopedia.hydrology.surface_hydrology",
+            "acf.science.encyclopedia.parameterizations.operational_schemes",
+            "acf.science.encyclopedia.cryosphere_extended",
+            "acf.science.encyclopedia.earth_system_coupling",
+            "acf.science.observations.surface_obs",
+            "acf.science.observations.aviation_obs",
+            "acf.science.observations.upper_air_obs",
+            "acf.science.observations.wmo_code_tables",
         ]
         for mod in modules:
             try:
@@ -73,7 +97,6 @@ class EncyclopediaRegistry:
         Enregistre une entrée encyclopédique et la synchronise avec ScientificRegistry.
         """
         cls._entries[entry.key] = entry
-        # Sync with ScientificRegistry for 100% backward compatibility
         law = AtmosphericLaw(
             key=entry.key,
             name=entry.name,
@@ -132,6 +155,13 @@ class EncyclopediaRegistry:
         """
         cls._ensure_initialized()
         return list(cls._entries.values())
+
+    @classmethod
+    def get_all_entries(cls) -> List[EncyclopediaEntry]:
+        """
+        Alias pour list_entries().
+        """
+        return cls.list_entries()
 
     @classmethod
     def domains(cls) -> List[str]:
