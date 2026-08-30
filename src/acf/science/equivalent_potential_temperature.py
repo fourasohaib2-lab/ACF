@@ -66,6 +66,44 @@ class EquivalentPotentialTemperature:
         return temperature_k * exp(LV * specific_humidity / (CP * temperature_k))
 
     @staticmethod
+    def lcl_temperature_bolton_1980(temperature_k: float, dewpoint_k: float) -> float:
+        """
+        LCL (lifting condensation level) temperature, Bolton (1980) eq.
+
+        T_L = 56 + 1 / (1/(Td-56) + ln(T/Td)/800)
+
+        Parameters
+        ----------
+        temperature_k : float
+            Air temperature (K).
+        dewpoint_k : float
+            Dewpoint temperature (K).
+
+        Returns
+        -------
+        float
+            Temperature at the LCL (K).
+
+        Raises
+        ------
+        ValueError
+            If temperature/dewpoint are non-positive or dewpoint
+            exceeds temperature.
+
+        Notes
+        -----
+        Reused by calculate_bolton_1980() and by science.lcl.LCL's
+        Bolton-based height method — factored out here so the formula
+        has exactly one implementation (single source of truth).
+        """
+        if temperature_k <= 0 or dewpoint_k <= 0:
+            raise ValueError("temperature and dewpoint must be positive.")
+        if dewpoint_k > temperature_k:
+            raise ValueError("dewpoint cannot exceed temperature.")
+
+        return 56.0 + 1.0 / (1.0 / (dewpoint_k - 56.0) + log(temperature_k / dewpoint_k) / 800.0)
+
+    @staticmethod
     def calculate_bolton_1980(
         temperature_k: float,
         dewpoint_k: float,
@@ -108,17 +146,13 @@ class EquivalentPotentialTemperature:
         MetPy / SHARPpy), reusing ACF's own SaturationVaporPressure
         (already Bolton's es formula) and SaturationMixingRatio.
         """
-        if temperature_k <= 0 or dewpoint_k <= 0:
-            raise ValueError("temperature and dewpoint must be positive.")
         if pressure_hpa <= 0:
             raise ValueError("pressure must be positive.")
-        if dewpoint_k > temperature_k:
-            raise ValueError("dewpoint cannot exceed temperature.")
+
+        t_l = EquivalentPotentialTemperature.lcl_temperature_bolton_1980(temperature_k, dewpoint_k)
 
         e = SaturationVaporPressure.calculate(dewpoint_k, is_kelvin=True)
         r = SaturationMixingRatio.calculate(e, pressure_hpa)
-
-        t_l = 56.0 + 1.0 / (1.0 / (dewpoint_k - 56.0) + log(temperature_k / dewpoint_k) / 800.0)
 
         theta_l = (
             temperature_k * (1000.0 / (pressure_hpa - e)) ** KAPPA * (temperature_k / t_l) ** (0.28 * r)
