@@ -4,6 +4,7 @@ Atmospheric Dynamics Laws
 
 from acf.science.laws.base_law import AtmosphericLaw
 from acf.science.severe_weather import SevereWeather
+from acf.science.storm_relative_helicity import StormRelativeHelicity
 
 DYNAMIC_LAWS = [
     AtmosphericLaw(
@@ -148,5 +149,23 @@ DYNAMIC_LAWS = [
                 mlcape, mllcl_m, effective_srh, effective_bulk_shear, mlcin
             )
         ),
+    ),
+    AtmosphericLaw(
+        key="storm_relative_helicity_profile",
+        name="Hélicité Relative à la Tempête (SRH, profil multi-couches)",
+        domain="Convection Sévère",
+        equation="SRH = sum_i [ (u_i - cu)*(v_(i+1)-v_i) - (v_i - cv)*(u_(i+1)-u_i) ]",
+        variables={
+            "u, v": "Composantes du vent à chaque niveau",
+            "cu, cv": "Composantes du vecteur de déplacement de l'orage",
+        },
+        units={"u, v, cu, cv": "m/s", "SRH": "m²/s²"},
+        description="Forme discrétisée de SRH = -∫(V-C)×(dV/dz)dz, sommée sur un profil de vent complet.",
+        references=[
+            "Davies-Jones, R., Burgess, D., & Foster, M. (1990). Test of Helicity as a Tornado Forecast "
+            "Parameter. Preprints, 16th Conf. on Severe Local Storms, AMS."
+        ],
+        limitations=["Discrétisation linéaire entre niveaux ; précision limitée par la résolution verticale."],
+        compute_func=lambda u, v, storm_u, storm_v: StormRelativeHelicity.calculate_profile(u, v, storm_u, storm_v),
     ),
 ]

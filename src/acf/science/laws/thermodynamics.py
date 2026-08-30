@@ -8,6 +8,7 @@ from acf.science.cape import CAPE
 from acf.science.cin import CIN
 from acf.science.equivalent_potential_temperature import EquivalentPotentialTemperature
 from acf.science.laws.base_law import AtmosphericLaw
+from acf.science.lcl import LCL
 
 THERMODYNAMIC_LAWS = [
     AtmosphericLaw(
@@ -144,5 +145,27 @@ THERMODYNAMIC_LAWS = [
         compute_func=lambda temperature_k, dewpoint_k, pressure_hpa: (
             EquivalentPotentialTemperature.calculate_bolton_1980(temperature_k, dewpoint_k, pressure_hpa)
         ),
+    ),
+    AtmosphericLaw(
+        key="lcl_height_bolton_1980",
+        name="Niveau de Condensation par Ascension (LCL, canonique ACF)",
+        domain="Thermodynamique",
+        equation="z_LCL = Cp * (T - T_L) / g  ;  T_L = 56 + 1/(1/(Td-56) + ln(T/Td)/800)",
+        variables={
+            "T": "Température de surface",
+            "Td": "Point de rosée de surface",
+            "T_L": "Température au LCL (Bolton 1980)",
+            "Cp": "Chaleur spécifique à pression constante",
+            "g": "Accélération de la pesanteur",
+        },
+        units={"T, Td, T_L": "K", "z_LCL": "m"},
+        description=(
+            "Hauteur du LCL dérivée de la conservation de l'énergie statique sèche entre la surface "
+            "et le LCL, utilisant la température T_L de Bolton plutôt qu'un taux fixe empirique "
+            "(règle d'Espy ~125 m/°C, conservée en parallèle pour compatibilité)."
+        ),
+        references=["Bolton, D. (1980). Mon. Wea. Rev., 108(7), 1046-1053.", "Holton & Hakim (2012)"],
+        limitations=["Suppose une ascension purement adiabatique sèche jusqu'au LCL."],
+        compute_func=lambda temperature_k, dewpoint_k: LCL.calculate_bolton(temperature_k, dewpoint_k),
     ),
 ]
