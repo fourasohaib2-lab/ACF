@@ -111,6 +111,48 @@ def test_cloud_classification():
     assert ci_result["genre"] == "Cirrus"
 
 
+def test_cloud_taxonomy_counts():
+    engine = CloudClassificationEngine()
+    assert len(engine.SPECIES) == 15
+    assert len(engine.VARIETIES) == 9
+    assert len(engine.SUPPLEMENTARY_FEATURES) == 11
+    assert len(engine.ACCESSORY_CLOUDS) == 4
+    assert len(engine.GENRE_ABBREVIATIONS) == 10
+
+
+def test_cloud_compose_valid_cumulonimbus_with_incus_and_pileus():
+    engine = CloudClassificationEngine()
+    result = engine.compose(
+        genre="Cumulonimbus",
+        species="capillatus",
+        supplementary_features=["incus", "mamma"],
+        accessory_clouds=["pileus"],
+    )
+    assert result["valid"] is True
+    assert result["errors"] == []
+    assert "Cumulonimbus" in result["name"]
+
+
+def test_cloud_compose_rejects_incompatible_species():
+    engine = CloudClassificationEngine()
+    # "uncinus" is Cirrus-only, not valid for Cumulus.
+    result = engine.compose(genre="Cumulus", species="uncinus")
+    assert result["valid"] is False
+    assert any("uncinus" in e for e in result["errors"])
+
+
+def test_cloud_compose_rejects_unknown_variety():
+    engine = CloudClassificationEngine()
+    result = engine.compose(genre="Cirrus", varieties=["not_a_real_variety"])
+    assert result["valid"] is False
+
+
+def test_cloud_compose_accepts_abbreviated_genre():
+    engine = CloudClassificationEngine()
+    result = engine.compose(genre="Cb", species="calvus")
+    assert result["valid"] is True
+
+
 def test_cloud_radiation_and_forcing():
     rad = CloudRadiationEngine()
     cod = rad.cloud_optical_depth(liquid_water_path_g_m2=100.0, effective_radius_um=10.0)
