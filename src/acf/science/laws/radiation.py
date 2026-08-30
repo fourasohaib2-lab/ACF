@@ -3,7 +3,9 @@ Radiative Transfer & Solar/Terrestrial Radiation Laws
 """
 
 import math
+
 from acf.science.laws.base_law import AtmosphericLaw
+from acf.science.radiation import PlanckLaw, SolarPosition
 
 RADIATION_LAWS = [
     AtmosphericLaw(
@@ -18,9 +20,12 @@ RADIATION_LAWS = [
         },
         units={"E": "W/m²", "sigma": "W/(m²·K⁴)", "T": "K"},
         description="Puissance totale rayonnée par unité de surface d'un corps noir en fonction de sa température.",
-        references=["WMO Radiation & Remote Sensing Guide", "Liou, K. N. (2002). An Introduction to Atmospheric Radiation."],
+        references=[
+            "WMO Radiation & Remote Sensing Guide",
+            "Liou, K. N. (2002). An Introduction to Atmospheric Radiation.",
+        ],
         limitations=["Corps noir idéal en équilibre thermodynamique local."],
-        compute_func=lambda temperature, sigma=5.670374e-8: sigma * (temperature ** 4),
+        compute_func=lambda temperature, sigma=5.670374e-8: sigma * (temperature**4),
     ),
     AtmosphericLaw(
         key="beer_lambert",
@@ -55,5 +60,21 @@ RADIATION_LAWS = [
         description="Distribution spectrale de l'énergie émise par un corps noir à une température donnée.",
         references=["Liou (2002)", "WMO Satellite Meteorology Manual"],
         limitations=["Équilibre thermodynamique local."],
+        compute_func=lambda wavelength_m, temperature: PlanckLaw.calculate(wavelength_m, temperature),
+    ),
+    AtmosphericLaw(
+        key="solar_declination_spencer_1971",
+        name="Déclinaison Solaire (Spencer 1971)",
+        domain="Rayonnement Atmosphérique",
+        equation=(
+            "delta = 0.006918 - 0.399912*cos(G) + 0.070257*sin(G) - 0.006758*cos(2G) "
+            "+ 0.000907*sin(2G) - 0.002697*cos(3G) + 0.001480*sin(3G)"
+        ),
+        variables={"G": "Angle du jour = 2*pi/365*(jour_julien-1)", "delta": "Déclinaison solaire"},
+        units={"delta": "radians", "G": "radians"},
+        description="Série de Fourier donnant la déclinaison solaire avec une précision <3' d'arc.",
+        references=["Spencer, J. W. (1971). Search, 2(5), 172."],
+        limitations=["Précision ~0.0006 rad ; ne remplace pas un éphéméride complet."],
+        compute_func=lambda day_of_year: SolarPosition.declination_spencer71(day_of_year),
     ),
 ]
