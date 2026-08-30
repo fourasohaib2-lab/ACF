@@ -6,40 +6,45 @@ ICAO Aviation Weather Products & Decoders Module (METAR, TAF, SIGMET, PIREP, IWX
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+from acf.aviation.icao.metar_decoder import METARDecoder
 
 
 @dataclass
 class METARData:
     """Structure de données décodée d'un message METAR / SPECI."""
+
     raw_text: str
     icao_code: str
     timestamp_utc: str
-    wind_direction_deg: int
-    wind_speed_kt: int
-    wind_gust_kt: Optional[int]
-    visibility_m: int
-    present_weather: List[str]
-    cloud_layers: List[Dict[str, Any]]
-    temperature_c: float
-    dewpoint_c: float
-    qnh_hpa: float
+    wind_direction_deg: int | None  # None for VRB (variable) wind
+    wind_speed_kt: float | None
+    wind_gust_kt: float | None
+    visibility_m: float | None
+    present_weather: list[str]
+    cloud_layers: list[dict[str, Any]]
+    temperature_c: float | None
+    dewpoint_c: float | None
+    qnh_hpa: float | None
 
 
 @dataclass
 class TAFData:
     """Structure de données décodée d'une prévision d'aérodrome TAF."""
+
     raw_text: str
     icao_code: str
     issue_time_utc: str
     valid_from_utc: str
     valid_until_utc: str
-    forecast_periods: List[Dict[str, Any]]
+    forecast_periods: list[dict[str, Any]]
 
 
 @dataclass
 class SIGMETData:
     """Structure d'un message d'information de vol SIGMET (Severe Weather in FIR)."""
+
     sigmet_id: str
     fir_code: str
     phenomenon: str  # "TS", "TURB", "ICE", "VA", "TC", "MTW"
@@ -55,24 +60,41 @@ class ICAOMetDecoder:
 
     @staticmethod
     def decode_metar(raw_metar: str) -> METARData:
-        """Décode une chaîne METAR au format TAC OACI."""
-        tokens = raw_metar.strip().split()
-        icao = tokens[0] if tokens else "LFPG"
-        timestamp = tokens[1] if len(tokens) > 1 else "020800Z"
+        """
+        Décode une chaîne METAR au format TAC OACI.
+
+        Délègue à METARDecoder (aviation/icao/metar_decoder.py) pour
+        l'analyse réelle du message, puis adapte le résultat au
+        dataclass METARData historique de ce module.
+
+        NOTE (correction) : l'implémentation précédente ignorait
+        entièrement le contenu du METAR fourni et retournait toujours
+        les mêmes valeurs codées en dur, quel que soit le message
+        passé en entrée — un stub non fonctionnel. Voir
+        metar_decoder.py et tests/test_metar_decoder.py pour le détail
+        et la preuve (via des messages METAR différents de celui du
+        test existant) que le décodage est désormais réel.
+        """
+        report = METARDecoder.decode(raw_metar)
+
+        if report.day is not None:
+            timestamp = f"{report.day:02d}{report.hour:02d}{report.minute:02d}Z"
+        else:
+            timestamp = ""
 
         return METARData(
-            raw_text=raw_metar,
-            icao_code=icao,
+            raw_text=report.raw_text,
+            icao_code=report.icao_code,
             timestamp_utc=timestamp,
-            wind_direction_deg=240,
-            wind_speed_kt=18,
-            wind_gust_kt=28,
-            visibility_m=9999,
-            present_weather=["-RA"],
-            cloud_layers=[{"coverage": "BKN", "base_ft": 2500}],
-            temperature_c=18.0,
-            dewpoint_c=12.0,
-            qnh_hpa=1015.0,
+            wind_direction_deg=report.wind_direction_deg,
+            wind_speed_kt=report.wind_speed_kt,
+            wind_gust_kt=report.wind_gust_kt,
+            visibility_m=report.visibility_m,
+            present_weather=report.present_weather,
+            cloud_layers=report.cloud_layers,
+            temperature_c=report.temperature_c,
+            dewpoint_c=report.dewpoint_c,
+            qnh_hpa=report.qnh_hpa,
         )
 
     @staticmethod
@@ -86,9 +108,7 @@ class ICAOMetDecoder:
             issue_time_utc="020600Z",
             valid_from_utc="020600Z",
             valid_until_utc="031200Z",
-            forecast_periods=[
-                {"change": "TEMPO", "period": "0212/0216", "weather": "SHRA", "wind": "26022G35KT"}
-            ],
+            forecast_periods=[{"change": "TEMPO", "period": "0212/0216", "weather": "SHRA", "wind": "26022G35KT"}],
         )
 
     @staticmethod
