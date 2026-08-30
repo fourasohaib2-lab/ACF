@@ -3,6 +3,10 @@ Atmospheric Thermodynamics Laws
 """
 
 import math
+
+from acf.science.cape import CAPE
+from acf.science.cin import CIN
+from acf.science.equivalent_potential_temperature import EquivalentPotentialTemperature
 from acf.science.laws.base_law import AtmosphericLaw
 
 THERMODYNAMIC_LAWS = [
@@ -67,5 +71,78 @@ THERMODYNAMIC_LAWS = [
         references=["NOAA Weather Prediction Manual", "Holton & Hakim (2012)"],
         limitations=["Absence d'échange thermique avec l'environnement et absence de condensation."],
         compute_func=lambda t1, p1, p2, kappa=0.286: t1 * (p2 / p1) ** kappa,
+    ),
+    AtmosphericLaw(
+        key="cape_buoyancy_integral",
+        name="Énergie Potentielle de Convection Disponible (CAPE)",
+        domain="Thermodynamique",
+        equation="CAPE = integral( g * (Tv_parcel - Tv_env) / Tv_env, dz )  [positively buoyant layers]",
+        variables={
+            "g": "Accélération de la pesanteur (9.80665 m/s²)",
+            "Tv_parcel": "Température virtuelle de la parcelle",
+            "Tv_env": "Température virtuelle de l'environnement",
+            "z": "Altitude géométrique",
+        },
+        units={"CAPE": "J/kg", "Tv_parcel, Tv_env": "K", "z": "m"},
+        description=(
+            "Énergie disponible pour l'ascension convective d'une parcelle, intégrée par la méthode "
+            "des trapèzes sur les couches à flottabilité positive. Utilise la température virtuelle "
+            "si l'humidité est fournie."
+        ),
+        references=["Doswell & Rasmussen (1994), Wea. Forecasting 9(4), 625-629"],
+        limitations=[
+            "Théorie de la parcelle non entraînée (pas d'entraînement/détraînement).",
+            "Intégration discrète par trapèzes : précision limitée par la résolution verticale du profil.",
+        ],
+        compute_func=lambda parcel_temperature, environment_temperature, height, **kw: CAPE.calculate(
+            parcel_temperature, environment_temperature, height, **kw
+        ),
+    ),
+    AtmosphericLaw(
+        key="cin_buoyancy_integral",
+        name="Inhibition Convective (CIN)",
+        domain="Thermodynamique",
+        equation="CIN = integral( g * (Tv_env - Tv_parcel) / Tv_env, dz )  [negatively buoyant layers]",
+        variables={
+            "g": "Accélération de la pesanteur (9.80665 m/s²)",
+            "Tv_parcel": "Température virtuelle de la parcelle",
+            "Tv_env": "Température virtuelle de l'environnement",
+            "z": "Altitude géométrique",
+        },
+        units={"CIN": "J/kg (magnitude positive)", "Tv_parcel, Tv_env": "K", "z": "m"},
+        description="Énergie à fournir pour surmonter la flottabilité négative sous le niveau de convection libre.",
+        references=["Doswell & Rasmussen (1994), Wea. Forecasting 9(4), 625-629"],
+        limitations=["Retourne une magnitude positive ; le signe conventionnel négatif est à appliquer par l'appelant."],
+        compute_func=lambda parcel_temperature, environment_temperature, height, **kw: CIN.calculate(
+            parcel_temperature, environment_temperature, height, **kw
+        ),
+    ),
+    AtmosphericLaw(
+        key="equivalent_potential_temperature_bolton_1980",
+        name="Température Potentielle Équivalente (Bolton 1980, canonique ACF)",
+        domain="Thermodynamique",
+        equation=(
+            "T_L = 56 + 1/(1/(Td-56) + ln(T/Td)/800); "
+            "theta_L = T*(1000/(p-e))^kappa*(T/T_L)^(0.28r); "
+            "theta_E = theta_L * exp(r*(1+0.448r)*(3036/T_L - 1.78))"
+        ),
+        variables={
+            "T": "Température de l'air",
+            "Td": "Température du point de rosée",
+            "p": "Pression atmosphérique",
+            "e": "Pression de vapeur réelle (= es(Td))",
+            "r": "Rapport de mélange (kg/kg)",
+            "kappa": "Rd/Cp",
+        },
+        units={"T, Td, T_L": "K", "p": "hPa", "r": "kg/kg", "theta_E": "K"},
+        description=(
+            "Formule empirique de référence pour theta_e, précise à ~0.3K. Implémentation ACF "
+            "canonique (formulaire opérationnel repris de MetPy/SHARPpy)."
+        ),
+        references=["Bolton, D. (1980). Mon. Wea. Rev., 108(7), 1046-1053."],
+        limitations=["Suppose une ascension pseudo-adiabatique réversible."],
+        compute_func=lambda temperature_k, dewpoint_k, pressure_hpa: (
+            EquivalentPotentialTemperature.calculate_bolton_1980(temperature_k, dewpoint_k, pressure_hpa)
+        ),
     ),
 ]
