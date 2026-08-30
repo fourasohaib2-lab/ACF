@@ -5,6 +5,7 @@ Atmospheric Dynamics Laws
 from acf.science.laws.base_law import AtmosphericLaw
 from acf.science.severe_weather import SevereWeather
 from acf.science.storm_relative_helicity import StormRelativeHelicity
+from acf.science.synoptic import Coriolis, ErtelPotentialVorticity, GeostrophicWind, ThermalWind
 
 DYNAMIC_LAWS = [
     AtmosphericLaw(
@@ -23,8 +24,7 @@ DYNAMIC_LAWS = [
         references=["WMO Atmospheric Dynamics Manual", "ECMWF Scientific Documentation"],
         limitations=["Valable au-dessus de la couche limite atmosphérique à des latitudes extratropicales."],
         compute_func=lambda dp_dx, dp_dy, density, coriolis_f: (
-            -dp_dy / (coriolis_f * density),
-            dp_dx / (coriolis_f * density),
+            GeostrophicWind.calculate(dp_dx, dp_dy, density, coriolis_f)
         ),
     ),
     AtmosphericLaw(
@@ -42,6 +42,9 @@ DYNAMIC_LAWS = [
         description="Grandeur conservée dans un écoulement adiabatique sans frottement, fondamentale pour le diagnostic des anomalies de tropopause.",
         references=["Hoskins et al. (1985) On the use and significance of PV maps", "ECMWF Technical Reports"],
         limitations=["Conservation exacte valable uniquement hors processus diabatiques et frottements."],
+        compute_func=lambda relative_vorticity, coriolis_f, dtheta_dp: (
+            ErtelPotentialVorticity.calculate(relative_vorticity, coriolis_f, dtheta_dp)
+        ),
     ),
     AtmosphericLaw(
         key="absolute_vorticity",
@@ -74,6 +77,33 @@ DYNAMIC_LAWS = [
         description="Relie le cisaillement vertical du vent géostrophique au gradient horizontal de température.",
         references=["Holton & Hakim (2012)", "WMO Synoptic Meteorology Guide"],
         limitations=["Presuppose l'équilibre géostrophique et hydrostatique."],
+        compute_func=lambda dt_dx, dt_dy, coriolis_f, mean_temperature_k: (
+            ThermalWind.calculate(dt_dx, dt_dy, coriolis_f, mean_temperature_k)
+        ),
+    ),
+    AtmosphericLaw(
+        key="coriolis_parameter",
+        name="Paramètre de Coriolis",
+        domain="Dynamique Atmosphérique",
+        equation="f = 2 * Omega * sin(latitude)",
+        variables={"Omega": "Vitesse de rotation terrestre (7.2921159e-5 rad/s)", "latitude": "Latitude"},
+        units={"f": "s⁻¹", "latitude": "degrés"},
+        description="Fréquence de rotation locale due à la rotation terrestre, nulle à l'équateur.",
+        references=["Holton & Hakim (2012), Ch. 1"],
+        limitations=["Approximation du plan tangent ; f varie en réalité continûment avec la latitude."],
+        compute_func=lambda latitude_deg: Coriolis.parameter(latitude_deg),
+    ),
+    AtmosphericLaw(
+        key="beta_parameter",
+        name="Paramètre Beta (Gradient Méridien de Coriolis)",
+        domain="Dynamique Atmosphérique",
+        equation="beta = df/dy = 2 * Omega * cos(latitude) / R_terre",
+        variables={"R_terre": "Rayon terrestre (6371 km)"},
+        units={"beta": "m⁻¹s⁻¹"},
+        description="Gouverne la propagation des ondes de Rossby ; maximal à l'équateur, nul aux pôles.",
+        references=["Holton & Hakim (2012), Ch. 1"],
+        limitations=["Approximation du plan beta (linéarisation locale)."],
+        compute_func=lambda latitude_deg: Coriolis.beta_parameter(latitude_deg),
     ),
     AtmosphericLaw(
         key="energy_helicity_index",

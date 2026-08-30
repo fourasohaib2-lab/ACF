@@ -27,6 +27,7 @@ THERMODYNAMIC_LAWS = [
         description="Principe de conservation de l'énergie appliqué à une parcelle d'air thermodynamique.",
         references=["WMO Atmospheric Thermodynamics Manual", "Bohren & Albrecht (1998)"],
         limitations=["Processus quasi-statique sans réaction nucléaire."],
+        compute_func=lambda cp, dT, alpha, dp: cp * dT - alpha * dp,
     ),
     AtmosphericLaw(
         key="clausius_clapeyron",
