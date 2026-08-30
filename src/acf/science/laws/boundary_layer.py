@@ -3,6 +3,8 @@ Boundary Layer & Turbulence Laws
 """
 
 import math
+
+from acf.science.boundary_layer import BowenRatio, FrictionVelocity, MoninObukhovLength, PBLHeight
 from acf.science.laws.base_law import AtmosphericLaw
 
 BOUNDARY_LAYER_LAWS = [
@@ -21,8 +23,14 @@ BOUNDARY_LAYER_LAWS = [
         },
         units={"L": "m", "ustar": "m/s", "Tv": "K", "w_theta_surface": "K·m/s"},
         description="Échelle de longueur caractérisant le rapport entre la production de turbulence thermique (flottabilité) et mécanique (cisaillement).",
-        references=["Stull, R. B. (1988). An Introduction to Boundary Layer Meteorology.", "ECMWF IFS PBL Documentation"],
+        references=[
+            "Stull, R. B. (1988). An Introduction to Boundary Layer Meteorology.",
+            "ECMWF IFS PBL Documentation",
+        ],
         limitations=["Valable dans la couche de surface atmosphérique stationnaire et homogène."],
+        compute_func=lambda friction_velocity, virtual_temperature_k, kinematic_heat_flux: (
+            MoninObukhovLength.calculate(friction_velocity, virtual_temperature_k, kinematic_heat_flux)
+        ),
     ),
     AtmosphericLaw(
         key="gradient_richardson_number",
@@ -78,5 +86,61 @@ BOUNDARY_LAYER_LAWS = [
         references=["WMO Guide to Instruments", "Stull (1988)"],
         limitations=["Valable uniquement en conditions de stabilité neutre (z/L ~ 0)."],
         compute_func=lambda ustar, z, z0, kappa=0.40: (ustar / kappa) * math.log(z / z0),
+    ),
+    AtmosphericLaw(
+        key="friction_velocity",
+        name="Vitesse de Frottement (u*)",
+        domain="Couche Limite Atmosphérique",
+        equation="u* = kappa * U(z) / ln(z/z0)",
+        variables={
+            "U(z)": "Vitesse du vent mesurée à l'altitude z",
+            "kappa": "Constante de von Kármán (0.40)",
+            "z0": "Longueur de rugosité",
+        },
+        units={"u*": "m/s", "U(z)": "m/s", "z, z0": "m"},
+        description="Inversion du profil logarithmique neutre pour obtenir u* à partir d'une mesure de vent.",
+        references=["Stull, R. B. (1988), Ch. 9"],
+        limitations=["Valable en conditions de stabilité neutre uniquement."],
+        compute_func=lambda wind_speed, height_m, roughness_length_m: (
+            FrictionVelocity.calculate(wind_speed, height_m, roughness_length_m)
+        ),
+    ),
+    AtmosphericLaw(
+        key="bowen_ratio",
+        name="Rapport de Bowen",
+        domain="Couche Limite Atmosphérique",
+        equation="beta = H/LE = gamma * delta_T / delta_e  ;  gamma = Cp*p / (epsilon*Lv)",
+        variables={
+            "delta_T": "Différence de température entre 2 niveaux",
+            "delta_e": "Différence de pression de vapeur entre les mêmes niveaux",
+            "gamma": "Constante psychrométrique",
+        },
+        units={"beta": "sans dimension", "delta_T": "K", "delta_e": "hPa", "gamma": "hPa/K"},
+        description="Méthode du bilan d'énergie de Bowen pour partitionner les flux de chaleur sensible et latente.",
+        references=["Bowen, I. S. (1926). Phys. Rev., 27(6), 779-787."],
+        limitations=["Suppose des coefficients de transfert turbulent égaux pour chaleur et vapeur d'eau."],
+        compute_func=lambda delta_temperature_k, delta_vapor_pressure_hpa, pressure_hpa: (
+            BowenRatio.calculate(delta_temperature_k, delta_vapor_pressure_hpa, pressure_hpa)
+        ),
+    ),
+    AtmosphericLaw(
+        key="convective_pbl_height_parcel_method",
+        name="Hauteur de la Couche Limite Convective (méthode de la parcelle)",
+        domain="Couche Limite Atmosphérique",
+        equation="Zi : hauteur où theta_env(z) = theta_surface + excess",
+        variables={
+            "theta_env(z)": "Profil de température potentielle environnementale",
+            "theta_surface": "Température potentielle de surface",
+            "excess": "Excès superadiabatique (typiquement 0.5-1K)",
+        },
+        units={"Zi": "m", "theta_env, theta_surface": "K"},
+        description="Hauteur à laquelle une thermique sèche partant de la surface devient neutre par rapport à l'environnement.",
+        references=["Holzworth, G. C. (1964). Mon. Wea. Rev., 92(5), 235-242."],
+        limitations=["Ne s'applique qu'à la couche limite convective diurne (pas la couche limite stable nocturne)."],
+        compute_func=lambda height_profile_m, potential_temperature_profile_k, surface_potential_temperature_k, excess_k=0.0: (
+            PBLHeight.parcel_method(
+                height_profile_m, potential_temperature_profile_k, surface_potential_temperature_k, excess_k
+            )
+        ),
     ),
 ]
