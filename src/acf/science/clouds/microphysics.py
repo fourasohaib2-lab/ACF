@@ -5,9 +5,10 @@ Cloud Microphysics Engine
 """
 
 import math
-from typing import Dict
+
 from acf.science.clouds.base import CloudProcess
 from acf.science.clouds.registry import CloudScientificRegistry
+from acf.science.constants import RHO_WATER
 
 
 class CloudMicrophysicsEngine:
@@ -108,6 +109,55 @@ class CloudMicrophysicsEngine:
                 references=["Rutledge & Hobbs (1983) J. Atmos. Sci."],
                 compute_func=self.riming_rate,
             ),
+            CloudProcess(
+                key="liquid_water_content",
+                name="Teneur en Eau Liquide (LWC)",
+                domain="Microphysique Nuageuse",
+                equation="LWC = qc * rho_air",
+                variables={"qc": "Rapport de mélange en eau liquide nuageuse (kg/kg)", "rho_air": "Masse volumique de l'air"},
+                units={"LWC": "kg/m³", "qc": "kg/kg", "rho_air": "kg/m³"},
+                description="Masse d'eau liquide nuageuse par unité de volume d'air.",
+                references=["Rogers & Yau (1989), A Short Course in Cloud Physics"],
+                compute_func=self.liquid_water_content,
+            ),
+            CloudProcess(
+                key="ice_water_content",
+                name="Teneur en Eau Glace (IWC)",
+                domain="Microphysique Nuageuse",
+                equation="IWC = qi * rho_air",
+                variables={"qi": "Rapport de mélange en glace nuageuse (kg/kg)", "rho_air": "Masse volumique de l'air"},
+                units={"IWC": "kg/m³", "qi": "kg/kg", "rho_air": "kg/m³"},
+                description="Masse de glace nuageuse par unité de volume d'air.",
+                references=["Rogers & Yau (1989), A Short Course in Cloud Physics"],
+                compute_func=self.ice_water_content,
+            ),
+            CloudProcess(
+                key="droplet_effective_radius",
+                name="Rayon Effectif des Gouttelettes (Martin et al. 1994)",
+                domain="Microphysique Nuageuse",
+                equation="re = (3 * LWC / (4 * pi * rho_water * k * N))^(1/3)",
+                variables={
+                    "LWC": "Teneur en eau liquide (kg/m³)",
+                    "N": "Concentration numérique de gouttelettes (m⁻³)",
+                    "k": "Paramètre de dispersion spectrale (largeur du spectre de tailles), ~0.67-0.85",
+                },
+                units={"re": "m", "LWC": "kg/m³", "N": "m⁻³"},
+                description=(
+                    "Relie le rayon effectif au rapport LWC/N via un paramètre de dispersion k qui dépend "
+                    "de la largeur relative du spectre de tailles de gouttelettes (k=1 pour un spectre "
+                    "monodispersé ; k<1 élargit re par rapport au rayon volumique moyen)."
+                ),
+                references=[
+                    "Martin, G. M., Johnson, D. W., & Spice, A. (1994). J. Atmos. Sci., 51(13), 1823-1842.",
+                ],
+                limitations=[
+                    "La valeur exacte de k selon le régime (maritime/continental) varie selon les sources "
+                    "secondaires consultées ; ACF ne fige pas cette correspondance sans vérification "
+                    "directe de la publication originale — k est un paramètre explicite de l'appelant, "
+                    "pas une valeur codée en dur par régime.",
+                ],
+                compute_func=self.droplet_effective_radius,
+            ),
         ]
         for p in processes:
             CloudScientificRegistry.register(p)
@@ -118,23 +168,23 @@ class CloudMicrophysicsEngine:
     def berry_autoconversion(self, qc: float, N_cm3: float = 100.0, density: float = 1.2) -> float:
         if qc <= 0:
             return 0.0
-        return (qc ** 2 * density) / (60.0 * (1.0 + 0.03 * N_cm3 / max(qc, 1e-6)))
+        return (qc**2 * density) / (60.0 * (1.0 + 0.03 * N_cm3 / max(qc, 1e-6)))
 
     def kohler_equilibrium(self, radius_m: float, solute_moles: float = 1e-18, temp_k: float = 288.15) -> float:
         # A = 2*sigma / (rho_w * R_v * T)
         A = 1.1e-9 / temp_k
         B = 4.3e-6 * solute_moles
-        return 1.0 + A / max(radius_m, 1e-10) - B / max(radius_m ** 3, 1e-30)
+        return 1.0 + A / max(radius_m, 1e-10) - B / max(radius_m**3, 1e-30)
 
     def collision_coalescence(self, qc: float, qr: float, k_coll: float = 2.2) -> float:
         if qc <= 0 or qr <= 0:
             return 0.0
-        return k_coll * qc * (qr ** 0.875)
+        return k_coll * qc * (qr**0.875)
 
     def rain_evaporation(self, qr: float, rh: float, temp_k: float = 288.15) -> float:
         if qr <= 0 or rh >= 1.0:
             return 0.0
-        return 1.41e-3 * (1.0 - rh) * (qr ** 0.52)
+        return 1.41e-3 * (1.0 - rh) * (qr**0.52)
 
     def bergeron_findeisen_rate(self, temp_k: float, qi: float, qc: float) -> float:
         if temp_k >= 273.15 or qc <= 0:
@@ -152,9 +202,91 @@ class CloudMicrophysicsEngine:
     def riming_rate(self, qc: float, qs: float) -> float:
         if qc <= 0 or qs <= 0:
             return 0.0
-        return 0.05 * qc * (qs ** 0.9)
+        return 0.05 * qc * (qs**0.9)
 
-    def compute_budget(self, qv: float, qc: float, qr: float, qi: float, qs: float, qg: float, dt: float = 1.0) -> Dict[str, float]:
+    def liquid_water_content(self, qc: float, air_density: float = 1.2) -> float:
+        """
+        Liquid water content: LWC = qc * rho_air (kg/m^3).
+
+        Parameters
+        ----------
+        qc : float
+            Cloud liquid water mixing ratio (kg/kg).
+        air_density : float
+            Air density (kg/m^3). Defaults to a typical near-surface value.
+        """
+        if qc < 0:
+            raise ValueError("qc must be non-negative.")
+        return qc * air_density
+
+    def ice_water_content(self, qi: float, air_density: float = 1.2) -> float:
+        """
+        Ice water content: IWC = qi * rho_air (kg/m^3).
+
+        Parameters
+        ----------
+        qi : float
+            Cloud ice mixing ratio (kg/kg).
+        air_density : float
+            Air density (kg/m^3). Defaults to a typical near-surface value.
+        """
+        if qi < 0:
+            raise ValueError("qi must be non-negative.")
+        return qi * air_density
+
+    def droplet_effective_radius(
+        self,
+        liquid_water_content_kg_m3: float,
+        droplet_number_concentration_m3: float,
+        k: float = 0.8,
+    ) -> float:
+        """
+        Cloud droplet effective radius (Martin et al., 1994 parameterization).
+
+        re = (3 * LWC / (4*pi*rho_water*k*N))^(1/3)
+
+        Parameters
+        ----------
+        liquid_water_content_kg_m3 : float
+            Liquid water content (kg/m^3) — see liquid_water_content().
+        droplet_number_concentration_m3 : float
+            Cloud droplet number concentration (m^-3).
+        k : float
+            Spectral dispersion parameter (dimensionless), representing
+            the width of the droplet size spectrum relative to a
+            monodisperse distribution (k=1). Typical literature values
+            fall in roughly the 0.67-0.85 range; ACF does not hard-code
+            a maritime/continental split (see the CloudProcess entry's
+            limitations note) — pass the value appropriate to the case.
+
+        Returns
+        -------
+        float
+            Effective radius (m).
+
+        Reference
+        ---------
+        Martin, G. M., Johnson, D. W., & Spice, A. (1994). "The
+        Measurement and Parameterization of Effective Radius of
+        Droplets in Warm Stratocumulus Clouds". J. Atmos. Sci.,
+        51(13), 1823-1842.
+        """
+        if liquid_water_content_kg_m3 < 0:
+            raise ValueError("liquid_water_content must be non-negative.")
+        if droplet_number_concentration_m3 <= 0:
+            raise ValueError("droplet_number_concentration must be positive.")
+        if k <= 0:
+            raise ValueError("k must be positive.")
+
+        return (
+            3.0
+            * liquid_water_content_kg_m3
+            / (4.0 * math.pi * RHO_WATER * k * droplet_number_concentration_m3)
+        ) ** (1.0 / 3.0)
+
+    def compute_budget(
+        self, qv: float, qc: float, qr: float, qi: float, qs: float, qg: float, dt: float = 1.0
+    ) -> dict[str, float]:
         """
         Calcule la conservation de la masse d'eau entre les 6 phases: qv, qc, qr, qi, qs, qg.
         """

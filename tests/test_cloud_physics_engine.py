@@ -3,18 +3,19 @@ Tests for ACF-020 Cloud Physics Knowledge Engine Complete Integration
 """
 
 import pytest
-from acf.science.clouds import (
-    CloudScientificRegistry,
-    CloudMicrophysicsEngine,
-    CloudThermodynamicsEngine,
-    CloudDynamicsEngine,
-    CloudClassificationEngine,
-    CloudRadiationEngine,
-    CloudAerosolEngine,
-    SevereWeatherCloudModule,
-    CloudDataAssimilationEngine,
-)
+
 from acf.ai.cloud_reasoning import CloudReasoningEngine
+from acf.science.clouds import (
+    CloudAerosolEngine,
+    CloudClassificationEngine,
+    CloudDataAssimilationEngine,
+    CloudDynamicsEngine,
+    CloudMicrophysicsEngine,
+    CloudRadiationEngine,
+    CloudScientificRegistry,
+    CloudThermodynamicsEngine,
+    SevereWeatherCloudModule,
+)
 
 
 def test_cloud_registry_lookup_and_calculate():
@@ -43,6 +44,42 @@ def test_cloud_thermodynamics_lcl_cape():
     t_parcel = [298.15, 292.15, 284.15, 272.15]
     cape = thermo.calculate_cape(z_levels, t_env, t_parcel)
     assert cape > 0.0
+
+
+def test_cloud_liquid_and_ice_water_content():
+    micro = CloudMicrophysicsEngine()
+    lwc = micro.liquid_water_content(qc=0.001, air_density=1.2)
+    assert lwc == pytest.approx(0.0012, rel=1e-6)
+
+    iwc = micro.ice_water_content(qi=0.0005, air_density=1.0)
+    assert iwc == pytest.approx(0.0005, rel=1e-6)
+
+    with pytest.raises(ValueError):
+        micro.liquid_water_content(qc=-0.001)
+
+
+def test_cloud_droplet_effective_radius_martin_1994():
+    micro = CloudMicrophysicsEngine()
+    # A denser, more polluted (higher N) cloud with the same LWC yields a
+    # smaller effective radius — a basic physical sanity check.
+    re_clean = micro.droplet_effective_radius(
+        liquid_water_content_kg_m3=0.0005, droplet_number_concentration_m3=1e8, k=0.8
+    )
+    re_polluted = micro.droplet_effective_radius(
+        liquid_water_content_kg_m3=0.0005, droplet_number_concentration_m3=1e9, k=0.8
+    )
+    assert re_clean > re_polluted > 0.0
+    # Typical warm cloud droplets: a few to a few tens of micrometers.
+    assert 1e-6 < re_clean < 100e-6
+
+    with pytest.raises(ValueError):
+        micro.droplet_effective_radius(liquid_water_content_kg_m3=0.0005, droplet_number_concentration_m3=0.0)
+
+
+def test_cloud_microphysics_processes_registered():
+    for key in ["liquid_water_content", "ice_water_content", "droplet_effective_radius"]:
+        proc = CloudScientificRegistry.get(key)
+        assert proc is not None
 
 
 def test_cloud_dynamics_mass_flux():
