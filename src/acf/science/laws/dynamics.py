@@ -3,6 +3,7 @@ Atmospheric Dynamics Laws
 """
 
 from acf.science.laws.base_law import AtmosphericLaw
+from acf.science.severe_weather import SevereWeather
 
 DYNAMIC_LAWS = [
     AtmosphericLaw(
@@ -72,5 +73,80 @@ DYNAMIC_LAWS = [
         description="Relie le cisaillement vertical du vent géostrophique au gradient horizontal de température.",
         references=["Holton & Hakim (2012)", "WMO Synoptic Meteorology Guide"],
         limitations=["Presuppose l'équilibre géostrophique et hydrostatique."],
+    ),
+    AtmosphericLaw(
+        key="energy_helicity_index",
+        name="Energy Helicity Index (EHI)",
+        domain="Convection Sévère",
+        equation="EHI = CAPE * SRH / 160000",
+        variables={"CAPE": "Énergie potentielle convective disponible", "SRH": "Hélicité relative à la tempête"},
+        units={"CAPE": "J/kg", "SRH": "m²/s²", "EHI": "sans dimension"},
+        description="Combine instabilité et rotation pour évaluer le potentiel de supercellule/tornade.",
+        references=["Hart & Korotky (1991), SHARP workstation v1.50 users guide"],
+        limitations=["Indice empirique ; ne remplace pas l'analyse complète du profil vertical."],
+        compute_func=lambda cape, srh: SevereWeather.energy_helicity_index(cape, srh),
+    ),
+    AtmosphericLaw(
+        key="supercell_composite_parameter",
+        name="Supercell Composite Parameter (SCP)",
+        domain="Convection Sévère",
+        equation="SCP = (muCAPE/1000) * (ESRH/50) * EBWD_term * CIN_term",
+        variables={
+            "muCAPE": "CAPE de la particule la plus instable",
+            "ESRH": "Hélicité relative à la tempête, couche d'afflux effective",
+            "EBWD": "Cisaillement effectif du vent en masse",
+            "muCIN": "CIN de la particule la plus instable",
+        },
+        units={"muCAPE": "J/kg", "ESRH": "m²/s²", "EBWD": "m/s", "muCIN": "J/kg", "SCP": "sans dimension"},
+        description="SCP > 1 favorise les supercellules cycloniques (droitières) ; SCP < -1 les supercellules anticycloniques.",
+        references=["NOAA SPC Mesoanalysis, help_scp.html (formule vérifiée à la source)"],
+        limitations=["Nécessite les couches effectives (ESRH/EBWD), pas les couches fixes 0-6km/0-1km."],
+        compute_func=lambda mucape, effective_srh, effective_bulk_shear, mucin: (
+            SevereWeather.supercell_composite_parameter(mucape, effective_srh, effective_bulk_shear, mucin)
+        ),
+    ),
+    AtmosphericLaw(
+        key="significant_tornado_parameter_fixed",
+        name="Significant Tornado Parameter (STP, couche fixe)",
+        domain="Convection Sévère",
+        equation="STP = (SBCAPE/1500) * ((2000-SBLCL)/1000) * (SRH_1km/150) * (Shear_6km/20)",
+        variables={
+            "SBCAPE": "CAPE de surface",
+            "SBLCL": "Altitude du niveau de condensation par ascension, particule de surface",
+            "SRH_1km": "Hélicité relative à la tempête 0-1km",
+            "Shear_6km": "Cisaillement du vent en masse 0-6km",
+        },
+        units={"SBCAPE": "J/kg", "SBLCL": "m", "SRH_1km": "m²/s²", "Shear_6km": "m/s", "STP": "sans dimension"},
+        description="STP > 1 : potentiel croissant de tornades significatives (EF2+).",
+        references=[
+            "Thompson, Edwards, Hart, Elmore & Markowski (2003), Wea. Forecasting 18(6), 1243-1261",
+            "NOAA SPC Mesoanalysis, help_stpc.html (bornes des termes vérifiées à la source)",
+        ],
+        limitations=["Variante couche fixe : ne tient pas compte de la CIN (voir variante effective)."],
+        compute_func=lambda sbcape, sblcl_m, srh_1km, shear_6km: (
+            SevereWeather.significant_tornado_parameter_fixed(sbcape, sblcl_m, srh_1km, shear_6km)
+        ),
+    ),
+    AtmosphericLaw(
+        key="significant_tornado_parameter_effective",
+        name="Significant Tornado Parameter (STP, couche effective, avec CIN)",
+        domain="Convection Sévère",
+        equation="STP = (mlCAPE/1500) * ((2000-mlLCL)/1000) * (ESRH/150) * (EBWD/20) * ((200+mlCIN)/150)",
+        variables={
+            "mlCAPE": "CAPE couche de mélange",
+            "mlLCL": "Altitude LCL, particule couche de mélange",
+            "ESRH": "Hélicité relative à la tempête, couche d'afflux effective",
+            "EBWD": "Cisaillement effectif du vent en masse",
+            "mlCIN": "CIN couche de mélange",
+        },
+        units={"mlCAPE": "J/kg", "mlLCL": "m", "ESRH": "m²/s²", "EBWD": "m/s", "mlCIN": "J/kg", "STP": "sans dimension"},
+        description="Variante complète du STP incluant le terme de CIN.",
+        references=["NOAA SPC Mesoanalysis, help_stpc.html (formule et bornes vérifiées à la source)"],
+        limitations=["Nécessite les couches effectives, pas les couches fixes."],
+        compute_func=lambda mlcape, mllcl_m, effective_srh, effective_bulk_shear, mlcin: (
+            SevereWeather.significant_tornado_parameter_effective(
+                mlcape, mllcl_m, effective_srh, effective_bulk_shear, mlcin
+            )
+        ),
     ),
 ]
