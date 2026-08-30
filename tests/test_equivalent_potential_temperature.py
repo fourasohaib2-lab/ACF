@@ -37,3 +37,57 @@ def test_invalid_humidity():
             300.0,
             -0.1,
         )
+
+
+def test_bolton_1980_warmer_than_temperature():
+    # A moist parcel's theta_e must exceed its actual temperature
+    # (latent heat content raises the equivalent temperature).
+    thetae = EquivalentPotentialTemperature.calculate_bolton_1980(
+        temperature_k=300.0,
+        dewpoint_k=290.0,
+        pressure_hpa=1000.0,
+    )
+    assert thetae > 300.0
+    # Sanity range for a fairly moist mid-latitude summer profile.
+    assert 300.0 < thetae < 360.0
+
+
+def test_bolton_1980_dry_air_close_to_potential_temperature():
+    # Very dry air (large T-Td spread): theta_e should be close to
+    # (but not below) the dry potential temperature at the same level.
+    from acf.science.potential_temperature import PotentialTemperature
+
+    theta = PotentialTemperature.calculate(300.0, 1000.0)
+    thetae = EquivalentPotentialTemperature.calculate_bolton_1980(
+        temperature_k=300.0,
+        dewpoint_k=250.0,
+        pressure_hpa=1000.0,
+    )
+    assert thetae >= theta - 1.0  # allow tiny numerical slack
+
+
+def test_bolton_1980_invalid_dewpoint_exceeds_temperature():
+    with pytest.raises(ValueError):
+        EquivalentPotentialTemperature.calculate_bolton_1980(
+            temperature_k=290.0,
+            dewpoint_k=295.0,
+            pressure_hpa=1000.0,
+        )
+
+
+def test_bolton_1980_invalid_temperature():
+    with pytest.raises(ValueError):
+        EquivalentPotentialTemperature.calculate_bolton_1980(
+            temperature_k=0.0,
+            dewpoint_k=-1.0,
+            pressure_hpa=1000.0,
+        )
+
+
+def test_bolton_1980_invalid_pressure():
+    with pytest.raises(ValueError):
+        EquivalentPotentialTemperature.calculate_bolton_1980(
+            temperature_k=300.0,
+            dewpoint_k=290.0,
+            pressure_hpa=0.0,
+        )
