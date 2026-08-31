@@ -3,6 +3,7 @@ Atmospheric Physics Encyclopedia Domain
 """
 
 import math
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -14,7 +15,12 @@ ENTRIES = [
         subdomain="Thermodynamique fondamentale",
         equation="p = rho * Rd * T",
         latex_equation=r"p = \rho R_d T",
-        variables={"p": "Pression (Pa)", "rho": "Masse volumique (kg/m³)", "Rd": "287.058 J/(kg·K)", "T": "Température (K)"},
+        variables={
+            "p": "Pression (Pa)",
+            "rho": "Masse volumique (kg/m³)",
+            "Rd": "287.058 J/(kg·K)",
+            "T": "Température (K)",
+        },
         units={"p": "Pa", "rho": "kg/m³", "T": "K"},
         description="Relation fondamentale d'état reliant la pression, la masse volumique et la température de l'air sec.",
         application_conditions=["Pression atmosphérique standard", "Gaz parfait en équilibre"],
@@ -44,7 +50,11 @@ ENTRIES = [
         subdomain="Statique de l'atmosphère",
         equation="h2 - h1 = (Rd * Tv_bar / g) * ln(p1 / p2)",
         latex_equation=r"z_2 - z_1 = \frac{R_d \bar{T}_v}{g} \ln\left(\frac{p_1}{p_2}\right)",
-        variables={"h1, h2": "Epaisseur de la couche (m)", "p1, p2": "Pressions aux limites (Pa)", "Tv_bar": "Température virtuelle moyenne"},
+        variables={
+            "h1, h2": "Epaisseur de la couche (m)",
+            "p1, p2": "Pressions aux limites (Pa)",
+            "Tv_bar": "Température virtuelle moyenne",
+        },
         units={"h": "m", "p": "Pa", "Tv_bar": "K"},
         description="Relie l'épaisseur géopotentielle d'une couche atmosphérique entre deux niveaux de pression à la température virtuelle moyenne.",
         application_conditions=["Atmosphère en équilibre hydrostatique"],
@@ -53,7 +63,13 @@ ENTRIES = [
         compute_func=lambda p1, p2, tv_bar, Rd=287.058, g=9.81: (Rd * tv_bar / g) * math.log(p1 / p2),
     ),
     EncyclopediaEntry(
-        key="boussinesq_approximation",
+        # NOTE (correction - registry key collision): renamed from
+        # "boussinesq_approximation" (also used, independently, by
+        # dynamics.py's density-perturbation-form entry) so both
+        # formulations are independently accessible instead of one
+        # silently shadowing the other depending on import order. See
+        # EncyclopediaRegistry.register()'s collision guard.
+        key="boussinesq_approximation_momentum_form",
         name="Approximation de Boussinesq",
         domain="Physique Atmosphérique",
         equation="d(rho)/dt ~ 0 except in buoyancy force g*(rho_prime/rho0)",

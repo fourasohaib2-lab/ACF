@@ -21,7 +21,20 @@ ENTRIES = [
         references=["WMO International Cloud Atlas (2017)", "ICAO Annex 3"],
     ),
     EncyclopediaEntry(
-        key="thompson_microphysics_scheme",
+        # NOTE (correction - registry key collision, this one
+        # consequential): this used to be registered as
+        # "thompson_microphysics_scheme", the SAME key as
+        # parameterizations/operational_schemes.py's more detailed
+        # aerosol-aware Thompson entry - which has NO compute_func
+        # (descriptive-only). Depending on unrelated import order, this
+        # entry's working compute_func (qc+qr+qi+qs+qg total condensed
+        # water) was silently replaced by the other's None, meaning
+        # EncyclopediaRegistry.calculate("thompson_microphysics_scheme", ...)
+        # could non-deterministically fail with NotImplementedError even
+        # though a working implementation existed. Renamed so this
+        # working entry is always independently accessible. See
+        # EncyclopediaRegistry.register()'s collision guard.
+        key="thompson_microphysics_scheme_basic",
         name="Schéma Microphysique de Thompson",
         domain="Nuages & Microphysique",
         subdomain="Paramétrisation microphysique des modèles NWP",

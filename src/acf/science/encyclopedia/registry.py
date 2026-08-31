@@ -5,10 +5,11 @@ Encyclopedia Scientific Registry
 """
 
 import importlib
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
-from acf.science.registry import ScientificRegistry
 from acf.science.laws.base_law import AtmosphericLaw
+from acf.science.registry import ScientificRegistry
 
 
 class EncyclopediaRegistry:
@@ -16,7 +17,7 @@ class EncyclopediaRegistry:
     Registre universel centralisé de l'Encyclopédie Scientifique Atmosphérique ACF.
     """
 
-    _entries: Dict[str, EncyclopediaEntry] = {}
+    _entries: dict[str, EncyclopediaEntry] = {}
     _initialized: bool = False
 
     @classmethod
@@ -95,7 +96,31 @@ class EncyclopediaRegistry:
     def register(cls, entry: EncyclopediaEntry):
         """
         Enregistre une entrée encyclopédique et la synchronise avec ScientificRegistry.
+
+        NOTE (correction): this used to silently overwrite `cls._entries[key]`
+        with no collision check at all. Five real, previously-undetected key
+        collisions across the encyclopedia (ideal_gas_law, boussinesq_approximation,
+        supercell_thunderstorm, density_altitude_aviation, thompson_microphysics_scheme)
+        meant whichever module happened to import last - a side effect of
+        unrelated test collection order, not a deliberate contract - silently
+        won, while the other entry became completely inaccessible (in one
+        case, thompson_microphysics_scheme, silently discarding a working
+        compute_func in favor of a descriptive-only one). This was
+        demonstrated to cause real, non-deterministic test failures
+        (`pytest -k ideal_gas` failed while a full unfiltered run passed by
+        accidental import ordering). Now raises immediately and loudly at
+        import time instead of silently overwriting, so any future
+        accidental collision is caught the moment it's introduced rather
+        than lurking until an unlucky import order surfaces it.
         """
+        if entry.key in cls._entries and cls._entries[entry.key] is not entry:
+            existing = cls._entries[entry.key]
+            raise ValueError(
+                f"EncyclopediaRegistry key collision: '{entry.key}' is already registered "
+                f"(existing entry: {existing.name!r} in domain {existing.domain!r}; "
+                f"new entry: {entry.name!r} in domain {entry.domain!r}). "
+                "Give the new entry a distinct key instead of silently overwriting the existing one."
+            )
         cls._entries[entry.key] = entry
         law = AtmosphericLaw(
             key=entry.key,
@@ -112,7 +137,7 @@ class EncyclopediaRegistry:
         ScientificRegistry.register(law)
 
     @classmethod
-    def get(cls, key_or_name: str) -> Optional[EncyclopediaEntry]:
+    def get(cls, key_or_name: str) -> EncyclopediaEntry | None:
         """
         Récupère une entrée par sa clé ou son nom.
         """
@@ -126,7 +151,7 @@ class EncyclopediaRegistry:
         return None
 
     @classmethod
-    def search(cls, query: str) -> List[EncyclopediaEntry]:
+    def search(cls, query: str) -> list[EncyclopediaEntry]:
         """
         Recherche dans l'encyclopédie par mot-clé.
         """
@@ -140,7 +165,7 @@ class EncyclopediaRegistry:
         return results
 
     @classmethod
-    def list_domain(cls, domain: str) -> List[EncyclopediaEntry]:
+    def list_domain(cls, domain: str) -> list[EncyclopediaEntry]:
         """
         Liste toutes les entrées d'un domaine donné.
         """
@@ -149,7 +174,7 @@ class EncyclopediaRegistry:
         return [e for e in cls._entries.values() if dom_lower in e.domain.lower()]
 
     @classmethod
-    def list_entries(cls) -> List[EncyclopediaEntry]:
+    def list_entries(cls) -> list[EncyclopediaEntry]:
         """
         Liste toutes les entrées enregistrées dans l'encyclopédie.
         """
@@ -157,19 +182,19 @@ class EncyclopediaRegistry:
         return list(cls._entries.values())
 
     @classmethod
-    def get_all_entries(cls) -> List[EncyclopediaEntry]:
+    def get_all_entries(cls) -> list[EncyclopediaEntry]:
         """
         Alias pour list_entries().
         """
         return cls.list_entries()
 
     @classmethod
-    def domains(cls) -> List[str]:
+    def domains(cls) -> list[str]:
         """
         Liste la totalité des domaines scientifiques répertoriés.
         """
         cls._ensure_initialized()
-        return sorted(list(set(e.domain for e in cls._entries.values())))
+        return sorted({e.domain for e in cls._entries.values()})
 
     @classmethod
     def calculate(cls, key_or_name: str, **kwargs) -> Any:

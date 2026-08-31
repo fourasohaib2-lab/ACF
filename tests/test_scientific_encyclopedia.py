@@ -3,7 +3,8 @@ Tests for ACF-020+ Atmospheric Scientific Encyclopedia Engine
 """
 
 import pytest
-from acf.science import EncyclopediaRegistry, EncyclopediaEntry, KnowledgeGraphEngine, ScientificRegistry
+
+from acf.science import EncyclopediaEntry, EncyclopediaRegistry, KnowledgeGraphEngine, ScientificRegistry
 
 
 def test_encyclopedia_registry_load_and_lookup():
@@ -25,7 +26,17 @@ def test_encyclopedia_calculation():
 def test_encyclopedia_search():
     results = EncyclopediaRegistry.search("Boussinesq")
     assert len(results) > 0
-    assert results[0].key == "boussinesq_approximation"
+    # CORRECTED: search() iterates a dict in insertion (import) order, so
+    # asserting a specific *first* result among several equally-matching
+    # entries was itself accidentally import-order-dependent (the same
+    # fragility class as the "ideal_gas_law" key-collision bug fixed
+    # alongside this) - there are now two independent, correctly-named
+    # Boussinesq entries (dynamics.py's density-perturbation form and
+    # atmosphere.py's momentum-equation form) and either may legitimately
+    # come first. Assert membership instead of a fragile ordering.
+    result_keys = {r.key for r in results}
+    assert "boussinesq_approximation" in result_keys
+    assert "boussinesq_approximation_momentum_form" in result_keys
 
 
 def test_encyclopedia_domains():

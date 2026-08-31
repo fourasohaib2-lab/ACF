@@ -22,13 +22,23 @@ ENTRIES = [
         compute_func=lambda dt_avg, dz, t_env_avg, g=9.81: g * (dt_avg / t_env_avg) * dz,
     ),
     EncyclopediaEntry(
-        key="supercell_thunderstorm",
+        # NOTE (correction - registry key collision): renamed from
+        # "supercell_thunderstorm" (also used, independently, by
+        # severe_weather.py's mesocyclone-vorticity-form entry) so both
+        # formulations are independently accessible instead of one
+        # silently shadowing the other depending on import order. See
+        # EncyclopediaRegistry.register()'s collision guard.
+        key="supercell_thunderstorm_overview",
         name="Orage Supercellulaire",
         domain="Convection & Orages",
         subdomain="Structure orageuse",
         equation="Mesocyclone Rotation: SCP = (CAPE/1000)*(SRH/50)*(BulkShear/20)",
         latex_equation=r"\text{SCP} = \left(\frac{\text{CAPE}}{1000}\right) \left(\frac{\text{SRH}}{50}\right) \left(\frac{\Delta V_{0-6}}{20}\right)",
-        variables={"CAPE": "J/kg", "SRH": "Hélicité relative à l'orage (m²/s²)", "BulkShear": "Cisaillement 0-6 km (m/s)"},
+        variables={
+            "CAPE": "J/kg",
+            "SRH": "Hélicité relative à l'orage (m²/s²)",
+            "BulkShear": "Cisaillement 0-6 km (m/s)",
+        },
         units={"SCP": "dimensionless"},
         description="Cellule orageuse possédant un courant ascendant en rotation quasi-permanente (mésocyclone).",
         application_conditions=["Environnements à fort CAPE et fort cisaillement vertical du vent"],

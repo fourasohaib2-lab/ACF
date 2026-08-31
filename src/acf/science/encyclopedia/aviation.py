@@ -7,7 +7,14 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 ENTRIES = [
     EncyclopediaEntry(
-        key="density_altitude_aviation",
+        # NOTE (correction - registry key collision): renamed from
+        # "density_altitude_aviation" (also used, independently, by
+        # aviation_extended.py's entry - both use the same FAA
+        # rule-of-thumb formula, but were silently colliding) so both
+        # remain independently accessible instead of one silently
+        # shadowing the other depending on import order. See
+        # EncyclopediaRegistry.register()'s collision guard.
+        key="density_altitude_aviation_basic",
         name="Altitude-Densité (Density Altitude)",
         domain="Aéronautique",
         subdomain="Performances de vol",

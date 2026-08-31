@@ -5,13 +5,14 @@ Fundamental Physical & Atmospheric Thermodynamics Laws Encyclopedia Module
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Atmospheric Thermodynamics
 # ---------------------------------------------------------------------------
+
 
 def calculate_ideal_gas_pressure(rho: float, temp_k: float, r_d: float = 287.058) -> float:
     """Calcul de la pression d'un gaz parfait p = rho * Rd * T en Pa."""
@@ -30,13 +31,17 @@ def calculate_potential_temperature(temp_k: float, p_hpa: float, p0_hpa: float =
     return temp_k * ((p0_hpa / p_hpa) ** kappa)
 
 
-def calculate_equivalent_potential_temperature(temp_k: float, p_hpa: float, q: float, lv: float = 2.5e6, cp: float = 1004.0) -> float:
+def calculate_equivalent_potential_temperature(
+    temp_k: float, p_hpa: float, q: float, lv: float = 2.5e6, cp: float = 1004.0
+) -> float:
     """Calcul de la température potentielle équivalente theta_e = theta * exp(Lv * q / (cp * T)) en K."""
     theta = calculate_potential_temperature(temp_k, p_hpa)
     return theta * math.exp((lv * q) / (cp * temp_k))
 
 
-def calculate_clausius_clapeyron_es(temp_k: float, es_0: float = 611.2, t0: float = 273.15, lv: float = 2.5e6, rv: float = 461.5) -> float:
+def calculate_clausius_clapeyron_es(
+    temp_k: float, es_0: float = 611.2, t0: float = 273.15, lv: float = 2.5e6, rv: float = 461.5
+) -> float:
     """Pression de vapeur saturante es(T) via l'équation d'état de Clausius-Clapeyron en Pa."""
     return es_0 * math.exp((lv / rv) * (1.0 / t0 - 1.0 / temp_k))
 
@@ -68,15 +73,42 @@ def calculate_relative_humidity(e_pa: float, es_pa: float) -> float:
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-LAWS: List[EncyclopediaEntry] = [
+LAWS: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
-        key="ideal_gas_law",
+        # NOTE (correction - registry key collision): this used to be
+        # registered as "ideal_gas_law", the SAME key as
+        # encyclopedia/atmosphere.py's own "ideal_gas_law" entry (and the
+        # foundational science/laws/atmospheric.py's ScientificRegistry
+        # entry of the same name) - EncyclopediaRegistry.register() does
+        # a silent `cls._entries[entry.key] = entry` with no collision
+        # detection, so whichever of the two encyclopedia modules
+        # happened to import last (a side effect of unrelated test
+        # collection order, not a deliberate contract) silently won,
+        # while the other became completely inaccessible. This was not
+        # theoretical: pytest tests/test_scientific_encyclopedia.py and
+        # tests/test_scientific_knowledge_engine.py (both hard-code
+        # atmosphere.py's density/temperature-param signature) FAILED
+        # when run in isolation or with `-k ideal_gas`, while a full
+        # unfiltered `pytest tests/` run happened to pass by accidental
+        # import ordering - exactly the "correct only by luck" pattern
+        # this session's audit exists to catch. Renamed to a distinct
+        # key so both formulations are independently accessible and
+        # deterministic regardless of import order. See
+        # EncyclopediaRegistry.register()'s new collision guard, added
+        # in the same fix, which now makes any future accidental key
+        # collision fail loudly at import time instead of silently.
+        key="ideal_gas_law_thermodynamics",
         name="Loi des Gaz Parfaits Atmosphériques",
         domain="Thermodynamique Atmosphérique",
         subdomain="Équation d'état",
         equation="p = rho * Rd * T",
         latex_equation=r"p = \rho R_d T",
-        variables={"p": "Pression atmosphérique (Pa)", "rho": "Masse volumique de l'air sec (kg/m³)", "Rd": "Constante de l'air sec (287.058 J/(kg·K))", "T": "Température absolue (K)"},
+        variables={
+            "p": "Pression atmosphérique (Pa)",
+            "rho": "Masse volumique de l'air sec (kg/m³)",
+            "Rd": "Constante de l'air sec (287.058 J/(kg·K))",
+            "T": "Température absolue (K)",
+        },
         units={"p": "Pa", "rho": "kg/m³", "T": "K"},
         description="Loi d'état fondamentale reliant la pression, la masse volumique et la température de l'air sec dans l'atmosphère terrestre.",
         application_conditions=["Troposphère et stratosphère sous conditions de pression standard"],
@@ -91,7 +123,12 @@ LAWS: List[EncyclopediaEntry] = [
         subdomain="Équation d'état",
         equation="(p + a/V^2) * (V - b) = R * T",
         latex_equation=r"\left(p + \frac{a}{V^2}\right)(V - b) = RT",
-        variables={"p": "Pression (Pa)", "V": "Volume molaire (m³/mol)", "a": "Constante d'attraction intermoléculaire", "b": "Covolume des molécules"},
+        variables={
+            "p": "Pression (Pa)",
+            "V": "Volume molaire (m³/mol)",
+            "a": "Constante d'attraction intermoléculaire",
+            "b": "Covolume des molécules",
+        },
         units={"p": "Pa", "V": "m³/mol"},
         description="Extension de la loi des gaz parfaits prenant en compte le volume propre des molécules et les forces d'attraction intermoléculaires.",
         application_conditions=["Hautes pressions et basses températures"],
@@ -120,7 +157,12 @@ LAWS: List[EncyclopediaEntry] = [
         subdomain="Variables conservées",
         equation="theta = T * (p0 / p)^0.286",
         latex_equation=r"\theta = T \left(\frac{p_0}{p}\right)^{\frac{R_d}{c_p}}",
-        variables={"T": "Température (K)", "p": "Pression (hPa)", "p0": "Pression de référence (1000 hPa)", "Rd/cp": "0.286"},
+        variables={
+            "T": "Température (K)",
+            "p": "Pression (hPa)",
+            "p0": "Pression de référence (1000 hPa)",
+            "Rd/cp": "0.286",
+        },
         units={"theta": "K"},
         description="Température qu'aurait une parcelle d'air si elle était amenée de manière adiabatique sèche à la pression de référence p0 = 1000 hPa. Conservée lors des mouvements adiabatiques secs.",
         application_conditions=["Analyse de stabilité atmosphérique et dynamique dry-isentropique"],
@@ -135,7 +177,12 @@ LAWS: List[EncyclopediaEntry] = [
         subdomain="Variables conservées",
         equation="theta_e = theta * exp(Lv * q / (cp * T))",
         latex_equation=r"\theta_e \approx \theta \exp\left(\frac{L_v q}{c_p T}\right)",
-        variables={"theta": "Température potentielle (K)", "Lv": "Chaleur latente de vaporisation (J/kg)", "q": "Humidité spécifique (kg/kg)", "cp": "Chaleur spécifique (1004 J/(kg·K))"},
+        variables={
+            "theta": "Température potentielle (K)",
+            "Lv": "Chaleur latente de vaporisation (J/kg)",
+            "q": "Humidité spécifique (kg/kg)",
+            "cp": "Chaleur spécifique (1004 J/(kg·K))",
+        },
         units={"theta_e": "K"},
         description="Température potentielle atteinte par une parcelle d'air après condensation complète de toute sa vapeur d'eau et libération de la chaleur latente associée. Conservée lors des mouvements pseudo-adiabatiques humides.",
         application_conditions=["Analyse des masses d'air convectives et fronts"],
@@ -164,7 +211,12 @@ LAWS: List[EncyclopediaEntry] = [
         subdomain="Principes fondamentaux",
         equation="dq = du + dw = cp * dT - v * dp",
         latex_equation=r"dq = c_v dT + p dv = c_p dT - \alpha dp",
-        variables={"dq": "Chaleur apportée (J/kg)", "cv": "718 J/(kg·K)", "cp": "1004 J/(kg·K)", "alpha": "Volume massique (m³/kg)"},
+        variables={
+            "dq": "Chaleur apportée (J/kg)",
+            "cv": "718 J/(kg·K)",
+            "cp": "1004 J/(kg·K)",
+            "alpha": "Volume massique (m³/kg)",
+        },
         units={"dq": "J/kg"},
         description="Bilan énergétique stipulant la conservation de l'énergie thermique, interne et du travail de pression au sein d'une parcelle d'air.",
         application_conditions=["Systèmes thermodynamiques atmosphériques fermés ou ouverts"],
@@ -252,7 +304,9 @@ LAWS: List[EncyclopediaEntry] = [
         units={"Gamma_m": "K/m"},
         description="Refroidissement d'une parcelle d'air saturée en ascendance, atténué par la libération continue de la chaleur latente de condensation.",
         application_conditions=["Ascendance nuageuse au-dessus du LCL"],
-        limitations=["Dépendance à la température (varie de 4 K/km dans les tropiques chauds à 9 K/km à très basse température)"],
+        limitations=[
+            "Dépendance à la température (varie de 4 K/km dans les tropiques chauds à 9 K/km à très basse température)"
+        ],
         references=["Bolton (1980)", "Emanuel (1994)"],
     ),
     EncyclopediaEntry(
@@ -262,7 +316,11 @@ LAWS: List[EncyclopediaEntry] = [
         subdomain="Changement de phase de l'eau",
         equation="des/dT = (L_v * es) / (R_v * T^2)",
         latex_equation=r"\frac{de_s}{dT} = \frac{L_v e_s}{R_v T^2}",
-        variables={"es": "Pression de vapeur saturante (Pa)", "Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)", "Rv": "Constante vapeur d'eau (461.5 J/(kg·K))"},
+        variables={
+            "es": "Pression de vapeur saturante (Pa)",
+            "Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)",
+            "Rv": "Constante vapeur d'eau (461.5 J/(kg·K))",
+        },
         units={"es": "Pa", "T": "K"},
         description="Relation différentielle fondamentale décrivant l'augmentation exponentielle de la capacité de retention d'eau de l'air avec la température (~7% par K).",
         application_conditions=["Équilibre liquide-vapeur ou glace-vapeur"],
@@ -325,7 +383,9 @@ LAWS: List[EncyclopediaEntry] = [
         units={"RH": "%"},
         description="Pourcentage de saturation de l'air par rapport à sa capacité maximale de rétention d'eau à la température T.",
         application_conditions=["Diagnostic de formation de brouillard, nuages et confort humain"],
-        limitations=["Fortement dépendant de la température (RH diminue quand T augmente à humidité absolue constante)"],
+        limitations=[
+            "Fortement dépendant de la température (RH diminue quand T augmente à humidité absolue constante)"
+        ],
         references=["WMO Guide to Meteorological Instruments", "NOAA NWS"],
         compute_func=calculate_relative_humidity,
     ),
