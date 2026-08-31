@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from acf.aviation.icao.metar_decoder import METARDecoder
+from acf.aviation.icao.taf_decoder import TAFDecoder
 
 
 @dataclass
@@ -103,34 +104,67 @@ class ICAOMetDecoder:
         """
         Décode un bulletin de prévision d'aérodrome TAF.
 
-        NOTE (correction — operationally dangerous, same class as the
-        METAR decoder bug fixed earlier this session): icao_code was
-        genuinely extracted from raw_taf, but issue_time_utc/
-        valid_from_utc/valid_until_utc/forecast_periods used to be
-        unconditionally hard-coded ("020600Z"/"031200Z" and a fixed
-        fake "TEMPO 0212/0216 SHRA 26022G35KT" period) regardless of
-        the actual TAF text - ANY TAF for ANY airport, on ANY day,
-        forecasting ANY conditions, would return the identical
-        fabricated forecast periods. A real TAF decoder needs to
-        parse the header (issue time, validity window) and each
-        forecast-change group (FM/TEMPO/BECMG/PROBxx, each with its
-        own wind/visibility/weather/cloud sub-fields) per WMO No. 782
-        / ICAO Annex 3 - not yet implemented here, and not attempted
-        as a quick fix given the real risk of a subtly-wrong parser
-        being just as dangerous as an honestly-absent one for a
-        safety-critical product. Not fabricated: only the genuinely
-        extractable icao_code and raw_text are returned as real; every
-        other field is honestly empty/None instead of invented.
+        Délègue à TAFDecoder (aviation/icao/taf_decoder.py) pour
+        l'analyse réelle du message, puis adapte le résultat au
+        dataclass TAFData historique de ce module.
+
+        NOTE (correction) : l'implémentation précédente ignorait tout
+        le contenu du TAF au-delà du code ICAO et retournait toujours
+        les mêmes horaires et la même période de prévision codés en
+        dur ("020600Z"/"031200Z", "TEMPO 0212/0216 SHRA 26022G35KT"),
+        quel que soit le message passé en entrée — un stub non
+        fonctionnel identique à celui du décodeur METAR corrigé plus
+        tôt dans cette session. Voir taf_decoder.py et
+        tests/test_taf_decoder.py pour la preuve (via des TAF
+        différents de celui du test existant) que le décodage des
+        groupes de changement (FM/BECMG/TEMPO/PROB30/PROB40) est
+        désormais réel.
         """
-        tokens = raw_taf.strip().split()
-        icao = tokens[1] if len(tokens) > 1 else ""
+        report = TAFDecoder.decode(raw_taf)
+
+        issue_time = (
+            f"{report.issue_day:02d}{report.issue_hour:02d}{report.issue_minute:02d}Z"
+            if report.issue_day is not None
+            else ""
+        )
+        valid_from = (
+            f"{report.valid_from_day:02d}{report.valid_from_hour:02d}" if report.valid_from_day is not None else ""
+        )
+        valid_until = (
+            f"{report.valid_until_day:02d}{report.valid_until_hour:02d}"
+            if report.valid_until_day is not None
+            else ""
+        )
+
+        forecast_periods = [
+            {
+                "change_type": p.change_type,
+                "probability": p.probability,
+                "from_day": p.from_day,
+                "from_hour": p.from_hour,
+                "from_minute": p.from_minute,
+                "until_day": p.until_day,
+                "until_hour": p.until_hour,
+                "wind_direction_deg": p.wind_direction_deg,
+                "wind_variable": p.wind_variable,
+                "wind_speed_kt": p.wind_speed_kt,
+                "wind_gust_kt": p.wind_gust_kt,
+                "visibility_m": p.visibility_m,
+                "cavok": p.cavok,
+                "present_weather": p.present_weather,
+                "cloud_layers": p.cloud_layers,
+                "vertical_visibility_ft": p.vertical_visibility_ft,
+            }
+            for p in report.periods
+        ]
+
         return TAFData(
-            raw_text=raw_taf,
-            icao_code=icao,
-            issue_time_utc="",
-            valid_from_utc="",
-            valid_until_utc="",
-            forecast_periods=[],
+            raw_text=report.raw_text,
+            icao_code=report.icao_code,
+            issue_time_utc=issue_time,
+            valid_from_utc=valid_from,
+            valid_until_utc=valid_until,
+            forecast_periods=forecast_periods,
         )
 
     @staticmethod

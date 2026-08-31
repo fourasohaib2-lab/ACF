@@ -24,12 +24,37 @@ def test_icao_met_decoder():
     # this used to also claim a fixed fake forecast (fabricated
     # TEMPO/wind/weather group) regardless of the actual TAF text -
     # same operationally dangerous pattern as the METAR decoder bug
-    # (fixed earlier this session). A real TAF period parser isn't
-    # implemented yet; forecast_periods is now honestly empty rather
-    # than fabricated.
+    # (fixed earlier this session). A real TAF decoder (taf_decoder.py)
+    # is now wired in - genuine header + base-forecast + change-group
+    # (FM/BECMG/TEMPO/PROB30/PROB40) parsing, see
+    # tests/test_taf_decoder.py for full coverage. This TAF has no
+    # change groups, so exactly one (base) forecast period is decoded.
     taf = ICAOMetDecoder.decode_taf("TAF LFPG 020600Z 0206/0312 24015KT 9999 NSW")
     assert taf.icao_code == "LFPG"
-    assert taf.forecast_periods == []
+    assert taf.issue_time_utc == "020600Z"
+    assert taf.valid_from_utc == "0206"
+    assert taf.valid_until_utc == "0312"
+    assert len(taf.forecast_periods) == 1
+    base = taf.forecast_periods[0]
+    assert base["change_type"] == "BASE"
+    assert base["wind_direction_deg"] == 240
+    assert base["wind_speed_kt"] == 15.0
+    assert base["visibility_m"] == 9999.0
+
+    # A TAF with real change groups: TEMPO fog + a FM group must decode distinctly.
+    taf_full = ICAOMetDecoder.decode_taf(
+        "TAF LFPO 020600Z 0206/0312 24015KT 9999 SCT030 "
+        "TEMPO 0206/0210 4000 SHRA BKN015CB "
+        "FM021800 27010KT 9999 SCT040"
+    )
+    assert len(taf_full.forecast_periods) == 3
+    tempo = taf_full.forecast_periods[1]
+    assert tempo["change_type"] == "TEMPO"
+    assert tempo["visibility_m"] == 4000.0
+    assert tempo["present_weather"] == ["SHRA"]
+    fm = taf_full.forecast_periods[2]
+    assert fm["change_type"] == "FM"
+    assert fm["from_day"] == 2 and fm["from_hour"] == 18
 
     # CORRECTED: this used to unconditionally return the exact same
     # fabricated SIGMET (fixed FIR/phenomenon/severity/levels)
