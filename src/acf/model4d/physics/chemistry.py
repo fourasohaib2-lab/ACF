@@ -9,7 +9,6 @@ calculations for trace gases and reactions.
 """
 
 
-
 class Chemistry:
     """
     Atmospheric chemistry physical processes.
@@ -37,7 +36,6 @@ class Chemistry:
 
         return concentration / air_density
 
-
     @staticmethod
     def reaction_rate(k, concentration_a, concentration_b):
         """
@@ -49,7 +47,6 @@ class Chemistry:
             raise ValueError("Reaction constant must be positive")
 
         return k * concentration_a * concentration_b
-
 
     @staticmethod
     def photolysis_rate(j, concentration):
@@ -63,19 +60,31 @@ class Chemistry:
 
         return j * concentration
 
-
     @staticmethod
     def ozone_production(no, o3, sunlight):
         """
         Simplified ozone production index.
 
         Represents NO + sunlight interactions.
+
+        NOTE (found, NOT changed — Physics Guard): o3 is accepted but
+        unused. In real tropospheric chemistry, NO also *destroys*
+        ozone via titration (NO + O3 -> NO2 + O2, the Leighton
+        photostationary-state relationship) - a real ozone_production
+        formula would need a term proportional to no*o3 with the
+        opposite sign, and this omission means "production" here can
+        only ever increase with NO, never capturing the well-known
+        NOx-titration effect near fresh emission sources. Not corrected
+        because no/o3/sunlight are arbitrary unitless indices (not real
+        concentrations in molecules/cm^3 or ppb), so there is no way to
+        derive a properly-calibrated titration rate constant for them
+        without inventing an equally arbitrary coefficient - same
+        situation as LayerPermissionEngine.check_layer_access()'s NOTE.
         """
         if sunlight < 0:
             raise ValueError("Sunlight must be positive")
 
         return no * sunlight * 1e-6
-
 
     @staticmethod
     def lifetime(concentration, loss_rate):

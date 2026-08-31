@@ -5,7 +5,8 @@ Flight Routing & Dynamic Navigation Optimization Module (Great Circle, Wind Opti
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
+
 from acf.aviation.airports.airport_database import AirportDatabase
 
 
@@ -34,8 +35,23 @@ class FlightRoutingEngine:
         arr_icao: str,
         cruise_fl: int = 350,
         avoid_hazards: bool = True,
-    ) -> Dict[str, Any]:
-        """Calcule une route optimale avec contournement des zones d'orages/CAT et terrains alternats."""
+    ) -> dict[str, Any]:
+        """
+        Calcule une route optimale avec contournement des zones d'orages/CAT et terrains alternats.
+
+        NOTE (correction — operationally dangerous): avoid_hazards was
+        genuinely accepted but never checked - hazard_avoidance_status
+        used to unconditionally claim "Active (Bypassing active SIGMET
+        thunderstorm zones)" regardless of whether the caller passed
+        avoid_hazards=True or avoid_hazards=False, AND regardless of
+        whether any real SIGMET data was ever consulted (no hazard/
+        weather data source is connected anywhere in this method). A
+        caller explicitly requesting avoid_hazards=False (e.g. an
+        emergency direct-routing decision) would still be told hazard
+        avoidance was active. Now genuinely reflects the avoid_hazards
+        flag and honestly discloses that no real SIGMET feed backs it.
+        Not fabricated.
+        """
         dep = AirportDatabase.get_airport(dep_icao)
         arr = AirportDatabase.get_airport(arr_icao)
 
@@ -55,6 +71,9 @@ class FlightRoutingEngine:
             "great_circle_distance_nm": round(dist_nm, 1),
             "estimated_flight_time_h": round(dist_nm / 450.0, 2),  # Cruise TAS ~450 kt
             "recommended_alternates": alternates,
-            "hazard_avoidance_status": "Active (Bypassing active SIGMET thunderstorm zones)",
+            "hazard_avoidance_requested": avoid_hazards,
+            "hazard_avoidance_status": (
+                "REQUESTED_NO_REAL_SIGMET_DATA_CONNECTED" if avoid_hazards else "NOT_REQUESTED"
+            ),
             "optimum_flight_level": "FL360 (Minimum Fuel Burn & Tail Wind)",
         }
