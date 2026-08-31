@@ -4,21 +4,20 @@ Atmospheric Complexity Framework (ACF)
 Scientific Layer Management & Data Fusion Engine Test Suite (MISSION ACF-UI-006)
 """
 
-from acf.visualization.layer_engine.layer_metadata import LayerDefinition
-from acf.visualization.layer_engine.layer_registry import LayerRegistry
-from acf.visualization.layer_engine.layer_catalog import LayerCatalog
-from acf.visualization.layer_engine.layer_dependency import LayerDependencyGraph
-from acf.visualization.layer_engine.fusion_engine import DataFusionEngine
-from acf.visualization.layer_engine.layer_query import LayerSearchEngine
-from acf.visualization.layer_engine.layer_cache import LayerCacheManager
-from acf.visualization.layer_engine.layer_permissions import LayerPermissionEngine
-from acf.visualization.layer_engine.layer_renderer import LayerRenderer
-from acf.visualization.layer_engine.layer_pipeline import LayerPipeline
-from acf.visualization.layer_engine.layer_manager import LayerManager
+from acf.validation.anomaly import AnomalyCalculator
 from acf.validation.bias_analysis import BiasAnalysis
 from acf.validation.rmse import RMSECalculator
-from acf.validation.anomaly import AnomalyCalculator
 from acf.validation.verification import ScientificVerificationEngine
+from acf.visualization.layer_engine.fusion_engine import DataFusionEngine
+from acf.visualization.layer_engine.layer_cache import LayerCacheManager
+from acf.visualization.layer_engine.layer_catalog import LayerCatalog
+from acf.visualization.layer_engine.layer_dependency import LayerDependencyGraph
+from acf.visualization.layer_engine.layer_manager import LayerManager
+from acf.visualization.layer_engine.layer_permissions import LayerPermissionEngine
+from acf.visualization.layer_engine.layer_pipeline import LayerPipeline
+from acf.visualization.layer_engine.layer_query import LayerSearchEngine
+from acf.visualization.layer_engine.layer_registry import LayerRegistry
+from acf.visualization.layer_engine.layer_renderer import LayerRenderer
 
 
 def test_layer_definition_and_registry():
@@ -42,8 +41,12 @@ def test_layer_dependency_and_data_fusion():
     tree = LayerDependencyGraph.build_causal_tree("conv.cape")
     assert "thermo.theta_e" in tree["upstream_dependencies"]
 
+    # CORRECTED: inputs_fused is a genuine static declared source
+    # list, but fusion_status used to claim "FUSED_OPTIMAL_ANALYSIS"
+    # with a fabricated uncertainty/confidence - no real fusion/OI/BLUE
+    # analysis was ever run.
     fusion = DataFusionEngine.fuse_data_sources("surface_temperature")
-    assert fusion["fusion_status"] == "FUSED_OPTIMAL_ANALYSIS"
+    assert fusion["fusion_status"] == "NOT_FUSED_NO_REAL_INPUT_FIELDS_PROVIDED"
     assert len(fusion["inputs_fused"]) == 5
 
 
@@ -69,8 +72,12 @@ def test_layer_manager_stack_and_renderer():
     assert summary["active_layers_count"] == 2
     assert summary["top_layer"] == "conv.cape"
 
+    # CORRECTED: rendered_layers_count/active_stack are genuinely
+    # computed, but status used to claim "RENDERED_SUCCESS" via a
+    # fixed "Vulkan" backend claim - no GPU backend is connected.
     render_res = LayerRenderer.render_layer_stack(["atm.temperature.850hpa", "conv.cape"])
-    assert render_res["status"] == "RENDERED_SUCCESS"
+    assert render_res["status"] == "NOT_RENDERED_NO_GPU_BACKEND_CONNECTED"
+    assert render_res["rendered_layers_count"] == 2
 
     cache = LayerCacheManager()
     cache.put("key1", "data1")
