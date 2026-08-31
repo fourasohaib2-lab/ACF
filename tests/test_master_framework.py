@@ -36,8 +36,15 @@ def test_acf_master_engine_lifecycle():
     init_res = engine.initialize()
     assert init_res["status"] == "INITIALIZED"
 
+    # CORRECTED: execute() genuinely echoed task_name, but used to
+    # unconditionally claim "SUCCESS" and a fixed 5-subsystem
+    # orchestration list - no real subsystem call is wired up (see
+    # master_engine.py's NOTE: acf.simulation_engine has no API yet,
+    # and the reasoning engine it would coordinate is itself not fully
+    # real).
     exec_res = engine.execute("Global Earth System Forecast & Defense")
-    assert exec_res["execution_status"] == "SUCCESS"
+    assert exec_res["execution_status"] == "NOT_EXECUTED_NO_SUBSYSTEM_ORCHESTRATION_WIRED"
+    assert exec_res["orchestrated_subsystems"] == []
 
     shutdown_res = engine.shutdown()
     assert shutdown_res["status"] == "SHUTDOWN_COMPLETE"
@@ -61,17 +68,25 @@ def test_global_module_and_capability_registries():
 
 def test_master_science_gateway():
     """Test de la façade unifiée MasterScienceGateway."""
+    # CORRECTED: all 8 gateway methods used to echo their own input
+    # and unconditionally claim "COMPLETED"/"ANSWERED"/"RENDERED" with
+    # no real dispatch into any underlying subsystem - investigated
+    # this session (see science_gateway.py's class-level NOTE):
+    # acf.simulation_engine has no callable API at all yet, and the
+    # reasoning engine a real .reason() would delegate to itself
+    # ignores its own observed_params argument.
     f = MasterScienceGateway.forecast("atmosphere", 240)
-    assert f["status"] == "COMPLETED"
+    assert f["status"] == "NOT_DISPATCHED_NO_FORECAST_ENGINE_WIRED"
+    assert f["domain"] == "atmosphere"
 
     s = MasterScienceGateway.simulate("cyclone_surge")
-    assert s["status"] == "COMPLETED"
+    assert s["status"] == "NOT_DISPATCHED_NO_SIMULATION_ENGINE_WIRED"
 
     a = MasterScienceGateway.analyze("planetary_boundaries")
-    assert a["status"] == "COMPLETED"
+    assert a["status"] == "NOT_DISPATCHED_NO_ANALYSIS_ENGINE_WIRED"
 
     r = MasterScienceGateway.reason("tropical_cyclone_intensification")
-    assert r["status"] == "COMPLETED"
+    assert r["status"] == "NOT_DISPATCHED_NO_REASONING_ENGINE_WIRED"
 
 
 def test_scientific_certification_and_equation_validator():
