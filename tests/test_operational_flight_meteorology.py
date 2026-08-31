@@ -4,12 +4,12 @@ Atmospheric Complexity Framework (ACF)
 Global Operational Flight Meteorology & Aviation Safety Test Suite (MISSION ACF-031)
 """
 
-from acf.aviation.icao.products import ICAOMetDecoder
-from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AVIATION_HAZARDS_REGISTRY
-from acf.aviation.performance.aircraft_performance import AircraftPerformanceEngine
-from acf.aviation.airports.airport_database import AirportDatabase, AIRPORT_REGISTRY
-from acf.aviation.routing.flight_routing import FlightRoutingEngine
+from acf.aviation.airports.airport_database import AIRPORT_REGISTRY, AirportDatabase
 from acf.aviation.graphics.cross_section import FlightCrossSectionEngine
+from acf.aviation.hazards.aviation_hazards import AVIATION_HAZARDS_REGISTRY, AviationHazardEngine
+from acf.aviation.icao.products import ICAOMetDecoder
+from acf.aviation.performance.aircraft_performance import AircraftPerformanceEngine
+from acf.aviation.routing.flight_routing import FlightRoutingEngine
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -103,8 +103,14 @@ def test_query_engine_phase15_aviation_questions():
     r4 = q_engine.ask("Decode SIGMET")
     assert r4["product_type"] == "SIGMET"
 
+    # CORRECTED: used to claim a fixed "recommended_flight_level:
+    # FL360" and 2 fixed fabricated alternate airports regardless of
+    # any real route/aircraft/weather data - unlike
+    # FlightRoutingEngine.plan_flight_route() above (a genuine real
+    # routing engine), this router has no real flight-planning
+    # computation connected.
     r5 = q_engine.ask("Best flight level")
-    assert r5["recommended_flight_level"] == "FL360"
+    assert r5["recommended_flight_level"] is None
 
     r6 = q_engine.ask("Find alternate airport")
-    assert len(r6["recommended_alternates"]) >= 1
+    assert r6["recommended_alternates"] == []

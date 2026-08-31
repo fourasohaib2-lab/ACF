@@ -963,20 +963,36 @@ class ScientificQueryEngine:
             }
 
         if "best flight level" in q or "meilleur niveau de vol" in q:
+            # CORRECTED: this used to claim a specific fabricated
+            # "recommended_flight_level: FL360" with a fabricated
+            # "+45kt tailwind" justification, regardless of any real
+            # route, aircraft, or current wind/turbulence data - no
+            # real flight-planning computation is connected here.
             return {
                 "question": question,
-                "recommended_flight_level": "FL360",
+                "recommended_flight_level": None,
                 "physical_explanation": (
-                    "Le niveau de vol optimal FL360 offre le meilleur compromis entre la consommation spécifique de carburant, "
-                    "l'absence de Turbulence CAT (Ri > 0.5) et la présence d'un vent arrière favorable (Tailwind +45 kt)."
+                    "Le choix du niveau de vol optimal dépend du compromis entre la consommation spécifique de carburant, "
+                    "l'absence de Turbulence CAT (Ri > 0.5) et un vent arrière favorable - une recommandation réelle "
+                    "nécessite la route, le type d'avion et les données de vent/turbulence actuelles, non fournies ici."
                 ),
+                "is_real_data": False,
             }
 
         if "find alternate airport" in q or "trouver terrain alternat" in q:
+            # CORRECTED: this used to claim 2 specific fabricated
+            # alternate airports (LFPO, LILH) with a fabricated
+            # visibility/ceiling justification, regardless of any real
+            # departure/destination airport or current weather data.
             return {
                 "question": question,
-                "recommended_alternates": ["LFPO (Paris Orly)", "LILH (Lille Lesquin)"],
-                "physical_explanation": "Sélection des terrains de déroutement présentant une visibilité > 5000 m, plafond > 1000 ft et ILS CAT IIIb opérationnel.",
+                "recommended_alternates": [],
+                "physical_explanation": (
+                    "La sélection des terrains de déroutement nécessite une visibilité > 5000 m, un plafond > 1000 ft "
+                    "et un ILS opérationnel - une recommandation réelle nécessite l'aéroport de référence et les "
+                    "conditions météorologiques actuelles, non fournies ici."
+                ),
+                "is_real_data": False,
             }
 
         # -------------------------------------------------------------------
@@ -1009,13 +1025,22 @@ class ScientificQueryEngine:
             }
 
         if "explain warning" in q or "expliquer l'alerte" in q:
+            # CORRECTED: this used to claim a fixed "severity: ORANGE"
+            # as if reporting a real current alert severity - same
+            # underlying issue as
+            # hazard_operations.alert_generator.AlertGenerator (fixed
+            # earlier this session). The physical_explanation text is
+            # a genuine general explainer of what conditions WOULD
+            # justify a warning, kept as-is; only the specific "current
+            # severity" claim is removed.
             return {
                 "question": question,
                 "physical_explanation": (
-                    "L'alerte opérationnelle est justifiée par la combinaison d'une instabilité convective marquée (CAPE > 2000 J/kg) "
-                    "et d'un cisaillement vertical fort (Shear 0-6km > 18 m/s), entraînant un risque élevé d'orages supercellulaires avec grêle."
+                    "Une alerte opérationnelle est généralement justifiée par la combinaison d'une instabilité convective marquée "
+                    "(CAPE > 2000 J/kg) et d'un cisaillement vertical fort (Shear 0-6km > 18 m/s), entraînant un risque élevé "
+                    "d'orages supercellulaires avec grêle - la sévérité réelle dépend des conditions actuelles, non fournies ici."
                 ),
-                "severity": "ORANGE",
+                "severity": None,
                 "references": ["WMO Severe Weather Guidelines", "Météo-France Directives Vigicrues"],
             }
 

@@ -155,5 +155,9 @@ def test_query_engine_phase13_operational_questions():
     r3 = q_engine.ask("Generate briefing")
     assert r3["action"] == "generate_report"
 
+    # CORRECTED: used to claim a fixed "severity: ORANGE" as if
+    # reporting a real current alert severity - the real severity
+    # depends on actual current conditions, not provided to this
+    # router.
     r4 = q_engine.ask("Explain warning")
-    assert r4["severity"] == "ORANGE"
+    assert r4["severity"] is None
