@@ -60,11 +60,33 @@ def test_icao_met_decoder():
     # fabricated SIGMET (fixed FIR/phenomenon/severity/levels)
     # regardless of the actual SIGMET text - a SIGMET for a completely
     # different FIR and phenomenon would decode identically. A real
-    # SIGMET parser isn't implemented yet; every field except the
-    # preserved raw_text is now honestly empty rather than fabricated.
+    # SIGMET decoder (sigmet_decoder.py) is now wired in - genuine
+    # header (FIR/sequence/validity/issuing center) and keyword-based
+    # phenomenon/flight-level/movement extraction, see
+    # tests/test_sigmet_decoder.py for full coverage across several
+    # distinct, realistic international SIGMETs. Geographic location
+    # description remains genuinely free-text and is not structurally
+    # parsed (see sigmet_decoder.py's module docstring).
     sigmet = ICAOMetDecoder.decode_sigmet("LFFF SIGMET 2 VALID 020800/021200 LFPW- LFFF PARIS FIR EMBD TS")
-    assert sigmet.phenomenon == ""
+    assert sigmet.phenomenon == "EMBD TS"
+    assert sigmet.fir_code == "LFFF"
+    assert sigmet.sigmet_id == "2"
+    assert sigmet.valid_from == "020800"
+    assert sigmet.valid_until == "021200"
     assert sigmet.raw_text == "LFFF SIGMET 2 VALID 020800/021200 LFPW- LFFF PARIS FIR EMBD TS"
+
+    # A different FIR, phenomenon, and flight-level range must decode distinctly (the exact original bug).
+    sigmet2 = ICAOMetDecoder.decode_sigmet(
+        "KZAK SIGMET 1 VALID 021200/021600 KZAK- KZAK OAKLAND OCEANIC FIR SEV TURB "
+        "FCST AT 1200Z S OF N30 FL180/FL340 MOV NE 25KT INTSF"
+    )
+    assert sigmet2.fir_code == "KZAK"
+    assert sigmet2.phenomenon == "SEV TURB"
+    assert sigmet2.severity == "SEV"
+    assert sigmet2.flight_levels == "FL180/FL340"
+    assert sigmet2.movement_dir_speed == "MOV NE 25KT"
+    assert sigmet2.phenomenon != sigmet.phenomenon
+    assert sigmet2.fir_code != sigmet.fir_code
 
 
 def test_aviation_hazards_registry():

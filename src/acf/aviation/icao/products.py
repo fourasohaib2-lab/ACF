@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from acf.aviation.icao.metar_decoder import METARDecoder
+from acf.aviation.icao.sigmet_decoder import SIGMETDecoder
 from acf.aviation.icao.taf_decoder import TAFDecoder
 
 
@@ -172,30 +173,63 @@ class ICAOMetDecoder:
         """
         Décode un message d'avertissement de vol SIGMET.
 
-        NOTE (correction — operationally dangerous, same class as the
-        METAR decoder bug fixed earlier this session): this used to
-        unconditionally return the exact same fabricated SIGMET
-        (fixed FIR "LFFF", fixed phenomenon "EMBD TS", fixed "SEV"
-        severity, fixed FL100/FL380, fixed validity/movement)
-        regardless of the actual SIGMET text passed in - a SIGMET
-        warning severe turbulence over a totally different FIR would
-        decode identically to one warning embedded thunderstorms over
-        Paris. A real SIGMET decoder needs to parse the FIR
-        identifier, phenomenon code, severity, flight-level range,
-        validity window, and movement/intensity-change group per
-        ICAO Annex 3 - not yet implemented here, for the same reason
-        given in decode_taf()'s NOTE. Not fabricated: only raw_text is
-        returned as real; every other field is honestly empty instead
-        of invented.
+        Délègue à SIGMETDecoder (aviation/icao/sigmet_decoder.py) pour
+        l'analyse réelle du message, puis adapte le résultat au
+        dataclass SIGMETData historique de ce module.
+
+        NOTE (correction) : l'implémentation précédente retournait
+        inconditionnellement le même SIGMET fabriqué (FIR "LFFF" fixe,
+        phénomène "EMBD TS" fixe, sévérité "SEV" fixe, FL100/FL380
+        fixes, validité/mouvement fixes) quel que soit le texte SIGMET
+        réellement fourni — un SIGMET signalant une turbulence sévère
+        sur un FIR totalement différent se décodait de façon
+        identique à un SIGMET signalant des orages isolés sur Paris.
+        Voir sigmet_decoder.py pour le détail : ce décodeur extrait de
+        façon fiable les champs structurés (FIR, numéro de séquence,
+        validité, centre émetteur, phénomène, niveaux de vol,
+        mouvement) mais NE tente PAS de décoder la description
+        géographique libre de la zone concernée (texte non
+        structuré et très variable selon les centres émetteurs) -
+        voir tests/test_sigmet_decoder.py pour la couverture.
         """
+        report = SIGMETDecoder.decode(raw_sigmet)
+
+        valid_from = (
+            f"{report.valid_from_day:02d}{report.valid_from_hour:02d}{report.valid_from_minute:02d}"
+            if report.valid_from_day is not None
+            else ""
+        )
+        valid_until = (
+            f"{report.valid_until_day:02d}{report.valid_until_hour:02d}{report.valid_until_minute:02d}"
+            if report.valid_until_day is not None
+            else ""
+        )
+
+        if report.flight_level_bottom is not None and report.flight_level_top is not None:
+            bottom = "SFC" if report.flight_level_bottom == 0 else f"FL{report.flight_level_bottom:03d}"
+            flight_levels = f"{bottom}/FL{report.flight_level_top:03d}"
+        elif report.flight_level_top is not None:
+            flight_levels = f"TOP FL{report.flight_level_top:03d}"
+        elif report.flight_level_bottom is not None:
+            flight_levels = f"ABV FL{report.flight_level_bottom:03d}"
+        else:
+            flight_levels = ""
+
+        if report.is_stationary:
+            movement = "STNR"
+        elif report.movement_dir is not None and report.movement_speed_kt is not None:
+            movement = f"MOV {report.movement_dir} {report.movement_speed_kt:.0f}KT"
+        else:
+            movement = ""
+
         return SIGMETData(
-            raw_text=raw_sigmet,
-            sigmet_id="",
-            fir_code="",
-            phenomenon="",
-            severity="",
-            flight_levels="",
-            valid_from="",
-            valid_until="",
-            movement_dir_speed="",
+            raw_text=report.raw_text,
+            sigmet_id=report.sequence_number or "",
+            fir_code=report.fir_code or "",
+            phenomenon=report.phenomenon or "",
+            severity=report.severity or "",
+            flight_levels=flight_levels,
+            valid_from=valid_from,
+            valid_until=valid_until,
+            movement_dir_speed=movement,
         )
