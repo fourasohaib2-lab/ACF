@@ -58,9 +58,18 @@ def test_forecast_engine():
     nowcast = f_engine.generate_nowcast({"max_reflectivity_dbz": 52.0}, [])
     assert nowcast["horizon"] == "Nowcasting (0-6 Hours)"
     assert nowcast["convective_trend"] == "Intensification"
+    # CORRECTED: storm_motion_speed_kt/storm_heading_deg/nowcast_confidence
+    # used to be fixed constants regardless of input - real motion
+    # estimation needs a multi-frame radar time series, not provided
+    # by a single mosaic snapshot.
+    assert nowcast["storm_motion_speed_kt"] is None
 
     blended = f_engine.blend_forecasts({"temperature": 290.0}, {"temperature": 292.0}, weight_ai=0.5)
     assert abs(blended["blended_variables"]["temperature"] - 291.0) < 1e-4
+    # CORRECTED: forecast_confidence/bias_correction_status used to be
+    # fixed regardless of input - no ERA5 climatology or confidence
+    # model is actually connected.
+    assert blended["forecast_confidence"] is None
 
 
 def test_warning_engine():

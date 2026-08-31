@@ -21,10 +21,25 @@ from acf.science.query_engine import ScientificQueryEngine
 
 def test_scientific_reasoning_engine():
     """Test du moteur de raisonnement scientifique autonome."""
+    # CORRECTED: this used to completely ignore observed_params and
+    # return one of two fixed reports (fixed 95.5%/91.0% confidence)
+    # based only on a "cyclone"/"storm" keyword match in the
+    # phenomenon string. Now genuinely checks the real sst value
+    # against the classical Palmen (1948) tropical-cyclogenesis
+    # threshold (SST >= 26.5 degC); confidence_pct is no longer a
+    # specific fabricated percentage since no calibrated confidence
+    # model exists.
     report = ScientificReasoningEngine.evaluate_phenomenon("Tropical Cyclone", {"sst": 29.5, "cape": 1800.0})
     assert isinstance(report, ScientificReasoningReport)
-    assert report.confidence_pct > 90.0
+    assert report.confidence_pct is None
+    assert "26.5" in report.logical_chain
+    assert "favorable" in report.scientific_conclusion.lower()
     assert "Bernoulli Equation" in report.physical_laws_invoked
+
+    # Regression guard: a different sst below the threshold must yield
+    # a genuinely different conclusion, not the old fixed narrative.
+    cold_report = ScientificReasoningEngine.evaluate_phenomenon("Tropical Cyclone", {"sst": 20.0})
+    assert "not thermodynamically favored" in cold_report.scientific_conclusion
 
 
 def test_multi_agent_manager():
