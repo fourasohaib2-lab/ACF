@@ -1,3 +1,5 @@
+import pytest
+
 from acf.model4d.physics.dynamics import Dynamics
 
 
@@ -18,7 +20,16 @@ def test_pressure_force():
 
 
 def test_buoyancy():
-    assert Dynamics.buoyancy(1) == 9.81
+    """
+    CORRECTED: used to return gravity*temperature_difference (missing
+    the division by a reference temperature that the function's own
+    documented formula "B = g * dT / T" requires) - dimensionally
+    wrong. Default reference_temperature=288.15 K.
+    """
+    assert Dynamics.buoyancy(1) == pytest.approx(9.81 / 288.15)
+    assert Dynamics.buoyancy(1, reference_temperature=300.0) == pytest.approx(9.81 / 300.0)
+    with pytest.raises(ValueError):
+        Dynamics.buoyancy(1, reference_temperature=0)
 
 
 def test_category_weak():
@@ -34,16 +45,10 @@ def test_category_strong():
 
 
 def test_zero_density():
-    try:
+    with pytest.raises(ValueError):
         Dynamics.pressure_force(10, 0)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_zero_mass():
-    try:
+    with pytest.raises(ValueError):
         Dynamics.acceleration(10, 0)
-        assert False
-    except ValueError:
-        assert True

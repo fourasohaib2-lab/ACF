@@ -11,7 +11,6 @@ Basic atmospheric dynamics operators:
 """
 
 
-
 class Dynamics:
     """
     Atmospheric dynamics calculations.
@@ -45,7 +44,7 @@ class Dynamics:
 
         KE = 1/2 m v²
         """
-        return 0.5 * mass * velocity ** 2
+        return 0.5 * mass * velocity**2
 
     @staticmethod
     def pressure_force(pressure_gradient, density):
@@ -60,15 +59,34 @@ class Dynamics:
         return -pressure_gradient / density
 
     @staticmethod
-    def buoyancy(temperature_difference, gravity=9.81):
+    def buoyancy(temperature_difference, gravity=9.81, reference_temperature=288.15):
         """
         Simplified buoyancy acceleration:
 
         B = g * ΔT / T
 
         simplified normalized form
+
+        NOTE (correction — Physics Guard): the docstring's own stated
+        formula divides by a reference temperature T, but the
+        implementation used to just return `gravity * temperature_difference`
+        - completely omitting that division. Dimensionally, g*ΔT alone
+        has units of m/s^2*K (meaningless as an acceleration); g*ΔT/T
+        is the correct, dimensionless-ratio-scaled acceleration (the
+        same form correctly used elsewhere in this codebase, e.g.
+        simulation_engine/atmosphere_solver/convection_engine.py's
+        buoyancy = g*(t_parcel-t_env)/t_env). Added
+        reference_temperature as a new optional parameter (default
+        288.15 K, the standard-atmosphere reference temperature also
+        used in model4d/constants.py's STANDARD_TEMPERATURE) so the
+        formula now matches its own documented equation; existing
+        2-argument call sites keep working with this default. Not
+        fabricated.
         """
-        return gravity * temperature_difference
+        if reference_temperature == 0:
+            raise ValueError("Reference temperature cannot be zero")
+
+        return gravity * temperature_difference / reference_temperature
 
     @staticmethod
     def category(value):
