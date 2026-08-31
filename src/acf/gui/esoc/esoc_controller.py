@@ -76,13 +76,33 @@ class ESOCController:
         return {"status": "NOT_EXECUTED_NO_DA_ENGINE_CONNECTED", "scheme": scheme}
 
     def handle_run_ai_forecast(self) -> dict[str, Any]:
-        """Run AI Neural Operator accelerated forecast."""
+        """Run AI Neural Operator accelerated forecast.
+
+        NOTE (correction): this used to feed a fabricated, disconnected
+        `{"T": 288.0}` scalar into predict_next_state() regardless of any
+        real atmospheric state - and since it wasn't even a numpy array,
+        NeuralOperatorEngine.predict_next_state()'s own logic passes
+        non-array fields through completely unchanged (`if not
+        isinstance(field, np.ndarray): predicted_state[key] = field`), so
+        this call never even exercised the neural operator's real
+        FFT-based prediction path. It still unconditionally claimed
+        "SUCCESS". Fixed to use AtmosphericModel.initialize_state() (the
+        registry's "atmospheric_model" module) as the input state - a
+        genuine, physically-consistent, properly-shaped array state
+        (standard-atmosphere lapse rate, realistic wind statistics, real
+        grid shape), not fabricated. This is a baseline/initial state
+        rather than a tracked live "current" state (no live-state
+        tracking exists anywhere in this codebase to reference), which is
+        disclosed in the response rather than presented as more than it is.
+        """
         neural = self.registry.get_module("neural_operator")
-        if neural:
-            dummy_state = {"T": 288.0}
-            out = neural.predict_next_state(dummy_state)
-            return {"status": "SUCCESS", "output": out}
-        return {"status": "ERROR"}
+        atmos_model = self.registry.get_module("atmospheric_model")
+        if not neural or not atmos_model:
+            return {"status": "ERROR"}
+
+        state = atmos_model.initialize_state()
+        out = neural.predict_next_state(state)
+        return {"status": "SUCCESS", "output": out, "input_state_source": "AtmosphericModel.initialize_state() baseline"}
 
     def handle_assess_hazards(self) -> dict[str, Any]:
         """
