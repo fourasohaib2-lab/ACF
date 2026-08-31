@@ -80,18 +80,35 @@ def test_configuration_dependencies_and_runtime():
     assert deps["cuda"] == "NOT_INSTALLED"
     assert "PRESENT" in deps["numpy"]
 
+    # CORRECTED: detect_environment() used to unconditionally claim
+    # HPC/CLOUD DISTRIBUTED with slurm/kubernetes/gpu all True - it now
+    # genuinely probes SLURM_JOB_ID / KUBERNETES_SERVICE_HOST / an
+    # nvidia-smi binary on PATH, so on this dev workstation none of
+    # them are expected to be detected.
     env = EnvironmentDetector.detect_environment()
-    assert env["slurm_detected"] is True
+    assert env["slurm_detected"] is False
+    assert env["kubernetes_detected"] is False
+    assert env["execution_mode"] == "WORKSTATION"
+    assert env["is_real_data"] is True
 
+    # CORRECTED: initialize_runtime() used to claim "RUNNING_PRODUCTION"
+    # and a hardcoded fake version "1.0.0" regardless of whether any
+    # real subsystem was started - it now reports the real package
+    # version and an honest status.
     runtime = ProductionRuntime()
     rt_res = runtime.initialize_runtime()
-    assert rt_res["runtime_status"] == "RUNNING_PRODUCTION"
+    assert rt_res["runtime_status"] == "INITIALIZED_NO_SUBSYSTEMS_STARTED"
+    assert rt_res["version"] == "0.1.0"
 
 
 def test_services_health_and_diagnostics():
     """Test du chargeur de services, des contrôles de santé et des diagnostics."""
+    # CORRECTED: load_services() used to unconditionally claim "21
+    # loaded services, 14 active plugins" with no real service/plugin
+    # registry connected - none exists yet in this codebase.
     serv = ServiceLoader.load_services()
-    assert serv["discovery_status"] == "ALL_SERVICES_LOADED"
+    assert serv["discovery_status"] == "NOT_LOADED_NO_SERVICE_REGISTRY_CONNECTED"
+    assert serv["loaded_services_count"] == 0
 
     # CORRECTED: validate_package_integrity() used to claim
     # "VERIFIED_VALID / PASS" with no package artifact to check
@@ -99,8 +116,14 @@ def test_services_health_and_diagnostics():
     pkg = PackageValidator.validate_package_integrity()
     assert pkg["integrity"] == "NOT_VERIFIED_NO_PACKAGE_ARTIFACT_PROVIDED"
 
+    # CORRECTED: check_health() used to unconditionally claim
+    # "100% HEALTHY, 45 subsystems healthy" - no such subsystem
+    # registry exists. It now reports real host CPU/memory usage (via
+    # psutil) and honestly declines to claim an untracked subsystem
+    # count.
     health = ProductionHealthCheck.check_health()
-    assert health["overall_health"] == "100% HEALTHY"
+    assert health["overall_health"] in ("HOST_RESOURCES_OK", "HOST_RESOURCES_STRAINED", "UNKNOWN_PSUTIL_NOT_INSTALLED")
+    assert health["subsystems_healthy"] is None
 
     diag = ProductionDiagnostics.run_diagnostics()
     assert diag["diagnostic_result"] == "NO_ISSUES_DETECTED"
@@ -168,8 +191,14 @@ def test_installer_updater_logging_and_security():
     exc_cat = ExceptionManager.classify_exception(RuntimeError("Sample Exception"))
     assert exc_cat == "SYSTEM_RECOVERABLE"
 
+    # CORRECTED: audit_security() used to unconditionally claim
+    # sandboxed execution / strict schema enforcement / automatic
+    # rollback were all "ENABLED" and overall status "SECURE" - none of
+    # these controls are actually implemented anywhere in this
+    # codebase, making the "SECURE" claim actively misleading.
     sec = SecurityManager.audit_security()
-    assert sec["security_status"] == "SECURE"
+    assert sec["security_status"] == "NOT_AUDITED_NO_SECURITY_CONTROLS_IMPLEMENTED"
+    assert sec["plugin_isolation"] == "NOT_IMPLEMENTED"
 
     # CORRECTED: verify_integrity() used to return a fake truncated
     # hash ("3a8f90...b4e2") and "100% INTEGRITY VERIFIED" - nothing
