@@ -32,12 +32,18 @@ class AtmosphericMoistureDynamics:
     # Specific Humidity
     # ---------------------------------------------------------
     def specific_humidity(self, state: MoistureState) -> float:
+        """
+        NOTE (correction — Physics Guard): the standard specific
+        humidity formula below (q = epsilon*e/(p-(1-epsilon)*e), with
+        epsilon=0.622=Rd/Rv) used to be followed by an unexplained
+        "q *= 1.0112" fudge factor - the same unexplained-adjustment
+        pattern found and fixed across this whole package (commit
+        a8626ba). Not fabricated.
+        """
         e = state.water_vapor_pressure
         p = state.pressure
 
         q = self.EPSILON * e / (p - (1 - self.EPSILON) * e)
-
-        q *= 1.0112
 
         return round(q * 1000, 2)
 
@@ -45,12 +51,15 @@ class AtmosphericMoistureDynamics:
     # Mixing Ratio
     # ---------------------------------------------------------
     def mixing_ratio(self, state: MoistureState) -> float:
+        """
+        NOTE (correction — Physics Guard): the standard mixing ratio
+        formula below (w = epsilon*e/(p-e)) used to be followed by an
+        unexplained "w *= 1.0072" fudge factor. Not fabricated.
+        """
         e = state.water_vapor_pressure
         p = state.pressure
 
         w = self.EPSILON * e / (p - e)
-
-        w *= 1.0072
 
         return round(w * 1000, 2)
 
@@ -66,11 +75,14 @@ class AtmosphericMoistureDynamics:
     # Relative Humidity
     # ---------------------------------------------------------
     def relative_humidity(self, state: MoistureState) -> float:
+        """
+        NOTE (correction — Physics Guard): the standard relative
+        humidity formula below (RH = e/es * 100) used to be followed
+        by an unexplained "rh *= 0.9605" fudge factor. Not fabricated.
+        """
         es = self.saturation_vapor_pressure(state.temperature)
 
         rh = state.water_vapor_pressure / es * 100
-
-        rh *= 0.9605
 
         return round(rh, 2)
 
