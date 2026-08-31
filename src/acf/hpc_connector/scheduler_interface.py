@@ -82,18 +82,36 @@ srun {formatted_cmd}
         return script
 
     def submit_job(self, job_script: str, job_name: str = "acf_arome_sim", nodes: int = 4, ntasks: int = 32) -> str:
+        """
+        NOTE (correction): the fallback branch used to return
+        f"slurm_{uuid4}" when "Submitted batch job" wasn't found in
+        sbatch's stdout - a job id indistinguishable in shape from a
+        real one. This broke the very contract job_manager.py's
+        submit_job() docstring documents ("PBSScheduler/LocalScheduler
+        ... return an id prefixed 'NOT_SUBMITTED_' precisely so this
+        boundary can tell real submission ... from a fabricated one"):
+        that boundary assumed SlurmScheduler always genuinely submits,
+        but whenever the underlying SSH transport is offline/simulated
+        (see SSHConnector.execute()'s "is_simulated" marker - true for
+        any real DNS hostname, including the default
+        "login2.fennec.meteo.dz"), sbatch's real confirmation text
+        never appears and this fallback silently ran instead, fooling
+        job_manager.py's `was_really_submitted` check into reporting
+        status "RUNNING" for a job nothing ever received. Now
+        consistently prefixed "NOT_SUBMITTED_" like its siblings. Not
+        fabricated.
+        """
         cmd = f"sbatch << 'EOF'\n{job_script}\nEOF"
         res = self.executor.execute_command(cmd)
         stdout = res.get("stdout", "").strip()
 
-        job_id = "17214"
         if "Submitted batch job" in stdout:
             try:
                 job_id = stdout.split()[-1]
             except Exception:
-                pass
+                job_id = f"NOT_SUBMITTED_UNPARSEABLE_SBATCH_OUTPUT_{uuid.uuid4().hex[:8]}"
         else:
-            job_id = f"slurm_{uuid.uuid4().hex[:8]}"
+            job_id = f"NOT_SUBMITTED_NO_REAL_SCHEDULER_CONNECTION_{uuid.uuid4().hex[:8]}"
 
         log_hpc_event("INFO", f"Submitted SLURM batch job [{job_id}] via Paramiko SSH ({job_name}, nodes={nodes})")
         return job_id

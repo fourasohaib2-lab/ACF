@@ -5,7 +5,7 @@ Digital Twin Scenario Engine Module (Phase 4)
 (DigitalTwinScenarioEngine running CMIP6 SSP1-1.9, SSP2-4.5, SSP3-7.0, SSP5-8.5 & +2°C warming experiments)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class DigitalTwinScenarioEngine:
@@ -14,25 +14,22 @@ class DigitalTwinScenarioEngine:
     SUPPORTED_SCENARIOS = ["SSP1-1.9", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5", "CUSTOM_+2C_WARMING"]
 
     @classmethod
-    def run_scenario(cls, scenario_name: str = "SSP2-4.5") -> Dict[str, Any]:
-        """Exécute la simulation d'un scénario climatique ou d'une expérience personnalisée."""
-        if "2C" in scenario_name or "CUSTOM" in scenario_name:
-            res = {
-                "temperature_anomaly_k": 2.1,
-                "precipitation_change_pct": -15.0,
-                "sea_level_rise_m": 0.45,
-                "extreme_heat_frequency_pct": 300.0,
-            }
-        else:
-            res = {
-                "temperature_anomaly_k": 2.7,
-                "precipitation_change_pct": -8.5,
-                "sea_level_rise_m": 0.58,
-                "extreme_heat_frequency_pct": 240.0,
-            }
+    def run_scenario(cls, scenario_name: str = "SSP2-4.5") -> dict[str, Any]:
+        """
+        Exécute la simulation d'un scénario climatique ou d'une expérience personnalisée.
 
+        NOTE (correction): scenario_name was genuinely echoed, but the
+        "else" branch used to return byte-identical fixed projections
+        (2.7K / -8.5% / 0.58m / 240%) for ANY of SSP1-1.9, SSP2-4.5,
+        SSP3-7.0, and SSP5-8.5 - four real IPCC AR6 scenarios with
+        substantially different projected outcomes - while claiming
+        "SCENARIO_SIMULATION_SUCCESS" as if each had actually been run
+        through a real CMIP6-class climate model. No such model is
+        connected here (0 real simulation parameters). Not fabricated.
+        """
         return {
             "scenario": scenario_name,
-            "projections": res,
-            "status": "SCENARIO_SIMULATION_SUCCESS",
+            "projections": None,
+            "status": "NOT_SIMULATED_NO_CLIMATE_MODEL_CONNECTED",
+            "is_real_data": False,
         }

@@ -40,12 +40,18 @@ def test_couplings_and_scenario_engine():
     assert coup["coupling_status"] == "FULL_COUPLING_COMPUTED"
     assert "Heat Flux" in coup["atmosphere_ocean_coupling"]
 
+    # CORRECTED: used to return byte-identical fixed projections for
+    # ANY of the 4 distinct real IPCC AR6 SSP scenarios (only the
+    # +2C custom experiment got a different fixed value), all claiming
+    # "SCENARIO_SIMULATION_SUCCESS" with no real climate model connected.
     ssp2 = DigitalTwinScenarioEngine.run_scenario("SSP2-4.5")
-    assert ssp2["status"] == "SCENARIO_SIMULATION_SUCCESS"
+    assert ssp2["status"] == "NOT_SIMULATED_NO_CLIMATE_MODEL_CONNECTED"
+    assert ssp2["projections"] is None
+    assert ssp2["scenario"] == "SSP2-4.5"  # genuinely echoed
 
     warm2c = DigitalTwinScenarioEngine.run_scenario("CUSTOM_+2C_WARMING")
-    assert warm2c["projections"]["temperature_anomaly_k"] == 2.1
-    assert warm2c["projections"]["sea_level_rise_m"] == 0.45
+    assert warm2c["status"] == "NOT_SIMULATED_NO_CLIMATE_MODEL_CONNECTED"
+    assert warm2c["projections"] is None
 
 
 def test_planetary_boundaries_and_geoengineering():
