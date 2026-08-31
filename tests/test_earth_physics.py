@@ -141,14 +141,24 @@ def test_carbon_cycle_and_coupled_solver():
     npp = TerrestrialCarbonSink.net_primary_productivity_gtc_yr(15.0, 1000.0)
     assert npp > 0.0
 
+    # CORRECTED: step_forward performs no real computation (no
+    # simulation state is even passed in) - used to falsely report
+    # "TIMESTEP_SOLVED_CONSERVED" regardless. Now honestly reports it
+    # didn't solve anything.
     step_res = EarthSolver.step_forward(3600.0)
-    assert step_res["solver_status"] == "TIMESTEP_SOLVED_CONSERVED"
+    assert step_res["solver_status"] == "PLACEHOLDER_NO_REAL_SOLVE_PERFORMED"
+    assert step_res["is_real_data"] is False
 
     dt_cfl = AdaptiveTimestepManager.compute_cfl_timestep(10000.0, 50.0)
     assert dt_cfl == 100.0
 
+    # CORRECTED: verify_conservation_laws took no before/after state to
+    # compare - a "verification" that always passes regardless of what
+    # it's checking is a false-assurance bug, worse than no check at
+    # all. Now honestly reports it didn't verify anything.
     verif = ConservationEngine.verify_conservation_laws()
-    assert verif["conservation_status"] == "LAWS_STRICTLY_CONSERVED"
+    assert verif["conservation_status"] == "NOT_VERIFIED_NO_SIMULATION_STATE_PROVIDED"
+    assert verif["mass_conservation_delta_kg"] is None
 
 
 def test_hpc_and_parallel_acceleration():
