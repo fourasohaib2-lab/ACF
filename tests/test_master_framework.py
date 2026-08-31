@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Global Interstellar Master Framework Test Suite (MISSION ACF-041)
 """
 
+import pytest
+
 from acf.master.awci_master_dashboard import MasterDashboard
 from acf.master.capabilities import ScientificCapabilityRegistry
 from acf.master.documentation_index import DocumentationIndexer
@@ -114,11 +116,23 @@ def test_scientific_certification_and_equation_validator():
 
 def test_master_knowledge_graph_and_workflow_engine():
     """Test du graphe de connaissances Master et du moteur de workflows."""
+    # CORRECTED: find()/infer() used to return fixed fake data for ANY
+    # input (find("cyclone") and find(anything) gave identical fake
+    # domains; infer() always returned the same fabricated causal
+    # chain and a fake 98.5% confidence). find() now genuinely queries
+    # EncyclopediaRegistry - a real search for "cyclone" turns up real
+    # matching domains (Dynamique Atmospherique, Ocean-Atmosphere,
+    # Phenomenes Violents & Grele, etc.), not the old fake
+    # ["Atmosphere","Ocean","Hydrology","DigitalTwin"].
     graph_node = MasterKnowledgeGraph.find("cyclone")
-    assert "DigitalTwin" in graph_node["connected_domains"]
+    assert graph_node["is_real_data"] is True
+    assert graph_node["relationships_count"] > 0
+    assert "Océan-Atmosphère" in graph_node["connected_domains"]
 
-    inference = MasterKnowledgeGraph.infer("space_weather_impact")
-    assert inference["confidence_pct"] > 95.0
+    # infer() has no real causal-reasoning engine behind it - honestly
+    # raises instead of fabricating a causal chain and fake confidence.
+    with pytest.raises(NotImplementedError):
+        MasterKnowledgeGraph.infer("space_weather_impact")
 
     pipeline_res = MasterWorkflowEngine.execute_master_pipeline()
     assert pipeline_res["master_pipeline_status"].startswith("SUCCESS")
@@ -129,9 +143,16 @@ def test_master_dashboard_and_executive_reporting():
     meta = MasterDashboard.get_dashboard_metadata()
     assert meta["workspace_name"] == "ACF MASTER FRAMEWORK UNIFIED CONTROL CENTER"
 
+    # CORRECTED: generate_report() used to hard-code "PLATINUM
+    # CERTIFIED (100% SI & WMO/NOAA/NASA Compliance)" and "2006+
+    # Passed" tests into the report text regardless of the framework's
+    # actual state - the same false claim already fixed in
+    # ScientificCertificationEngine. Now pulls the real (honest,
+    # NOT_AUDITED) certification result instead.
     rep = MasterExecutiveReport.generate_report("Certification", "Markdown")
     assert rep["format"] == "Markdown"
-    assert "PLATINUM CERTIFIED" in rep["content"]
+    assert "NOT_AUDITED" in rep["content"]
+    assert "PLATINUM CERTIFIED" not in rep["content"]
 
 
 def test_performance_profiler_and_health_monitor():
@@ -158,8 +179,16 @@ def test_performance_profiler_and_health_monitor():
         status.startswith("HEALTHY") or status.startswith("FAILED") for status in health.subsystem_statuses.values()
     )
 
+    # CORRECTED: index_framework_documentation() used to return fixed
+    # fake counts (350/1200/450/850, "UP_TO_DATE") regardless of the
+    # codebase's actual content. Now performs a real AST scan + real
+    # registry queries.
     doc_index = DocumentationIndexer.index_framework_documentation()
-    assert doc_index["index_status"] == "UP_TO_DATE"
+    assert doc_index["index_status"] == "INDEXED_FROM_LIVE_SCAN"
+    assert doc_index["is_real_data"] is True
+    assert doc_index["total_classes_indexed"] > 100  # real codebase has hundreds of classes
+    assert doc_index["total_functions_indexed"] > 100
+    assert doc_index["total_laws_indexed"] > 0
 
     settings = MasterSettings()
     assert settings.active_mode == "OPERATIONAL_FULL"
