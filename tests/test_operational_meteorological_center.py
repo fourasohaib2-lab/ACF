@@ -51,15 +51,20 @@ def test_wmo_wis_engine():
 
 def test_radar_and_satellite_centers():
     """Phases 4 & 5: Test des centres opérationnels Radar et Satellite."""
+    # CORRECTED: neither file list nor recipe ever led to real data
+    # being read - max_reflectivity_dbz/detected_hail_cells/etc. were
+    # fixed regardless of what (if anything) radar_files contained.
     radar = OperationalRadarCenter()
     mosaic = radar.generate_radar_mosaic(["radar1.h5", "radar2.h5"])
-    assert mosaic["status"] == "success"
-    assert mosaic["max_reflectivity_dbz"] > 50.0
+    assert mosaic["status"] == "NOT_GENERATED_NO_RADAR_FILE_READER_CONNECTED"
+    assert mosaic["max_reflectivity_dbz"] is None
+    assert mosaic["active_radars"] == 2  # genuinely echoed from the input list length
 
     sat = OperationalSatelliteCenter()
     rgb = sat.generate_rgb_composite("RGB_Day_Natural")
-    assert rgb["status"] == "success"
-    assert "MTG" in rgb["satellite"] or "SEVIRI" in rgb["satellite"]
+    assert rgb["status"] == "NOT_GENERATED_NO_SATELLITE_DATA_SOURCE_CONNECTED"
+    assert rgb["cloud_top_temp_min_k"] is None
+    assert rgb["recipe"] == "RGB_Day_Natural"  # genuinely echoed
 
 
 def test_forecast_engine():
