@@ -31,7 +31,10 @@ def test_earth_twin_core_and_state():
     state = EarthState()
     summary = state.get_state_vector_summary()
     assert summary["co2_ppm"] == 422.5
-    assert summary["status"] == "EARTH_STATE_SYNCHRONIZED"
+    # CORRECTED: used to claim "EARTH_STATE_SYNCHRONIZED" - a live-sync
+    # claim - despite every field being a fixed dataclass default with
+    # no update()/sync() mechanism of any kind.
+    assert summary["status"] == "STATIC_REFERENCE_STATE_NOT_LIVE_SYNCHRONIZED"
 
 
 def test_couplings_and_scenario_engine():
