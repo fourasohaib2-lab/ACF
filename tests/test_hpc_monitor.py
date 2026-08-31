@@ -230,3 +230,63 @@ def test_real_data_paths_still_carry_a_connected_true_marker():
 
     jobs = monitor.list_jobs()
     assert jobs[0]["connected"] is True
+
+
+class _CapturingExecutor:
+    """Captures the exact shell command string that would be sent for execution."""
+
+    def __init__(self):
+        self.last_cmd: str | None = None
+
+    def execute_command(self, cmd: str) -> str:
+        self.last_cmd = cmd
+        return ""
+
+
+def test_list_jobs_user_is_shell_quoted_not_injectable():
+    """
+    NOTE (hardening): `user` used to be interpolated directly into a
+    shell command string, executed via subprocess.run(shell=True) or
+    sent as-is to a remote SSH executor - a shell-metacharacter value
+    could inject arbitrary commands.
+    """
+    executor = _CapturingExecutor()
+    monitor = HPCMonitor(remote_executor=executor)
+
+    monitor.list_jobs(user="sfoura; rm -rf /tmp/pwned")
+
+    assert executor.last_cmd is not None
+    assert "'sfoura; rm -rf /tmp/pwned'" in executor.last_cmd
+    # The malicious segment must appear only inside the quoted argument,
+    # never as a second, separately-executable shell command.
+    assert not executor.last_cmd.split("'", 1)[0].rstrip().endswith(";")
+
+
+def test_get_job_history_job_id_is_shell_quoted_not_injectable():
+    executor = _CapturingExecutor()
+    monitor = HPCMonitor(remote_executor=executor)
+
+    monitor.get_job_history("123; echo INJECTED")
+
+    assert executor.last_cmd is not None
+    assert "'123; echo INJECTED'" in executor.last_cmd
+
+
+def test_node_status_node_name_is_shell_quoted_not_injectable():
+    executor = _CapturingExecutor()
+    monitor = HPCMonitor(remote_executor=executor)
+
+    monitor.node_status("node01`whoami`")
+
+    assert executor.last_cmd is not None
+    assert "'node01`whoami`'" in executor.last_cmd
+
+
+def test_legitimate_simple_values_still_produce_a_clean_command():
+    """Sanitization must not corrupt the normal, non-malicious case."""
+    executor = _CapturingExecutor()
+    monitor = HPCMonitor(remote_executor=executor)
+
+    monitor.list_jobs(user="sfoura")
+
+    assert executor.last_cmd == 'squeue -u sfoura --format="%i|%j|%u|%T|%M|%D|%R" -h'

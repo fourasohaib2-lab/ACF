@@ -24,6 +24,7 @@ looking numbers for the case where nothing is actually connected.
 from __future__ import annotations
 
 import re
+import shlex
 import shutil
 import subprocess
 from typing import Any
@@ -74,8 +75,18 @@ class HPCMonitor:
     def list_jobs(self, user: str | None = None) -> list[dict[str, Any]]:
         """
         List active and queued Slurm jobs via squeue.
+
+        NOTE (hardening): `user` used to be interpolated directly into a
+        shell command string executed via subprocess.run(shell=True) (or
+        sent as-is to a remote SSH executor) - a shell-metacharacter-
+        containing value (e.g. a stray `;`, `` ` ``, or `$()`) could
+        inject arbitrary commands. No caller currently passes anything
+        but a trusted local value (verified via grep), but this is cheap
+        to close properly rather than rely on that holding forever -
+        shlex.quote() makes the value safe to embed in a POSIX shell
+        command line either locally or over SSH.
         """
-        user_flag = f"-u {user}" if user else ""
+        user_flag = f"-u {shlex.quote(user)}" if user else ""
         cmd = f'squeue {user_flag} --format="%i|%j|%u|%T|%M|%D|%R" -h'
         output = self._exec_command(cmd)
 
@@ -111,8 +122,12 @@ class HPCMonitor:
     def get_job_history(self, job_id: str) -> dict[str, Any]:
         """
         Get finished job history and accounting details via sacct.
+
+        NOTE (hardening): `job_id` used to be interpolated directly into
+        the shell command string - see list_jobs()'s NOTE (hardening)
+        for the same reasoning. shlex.quote()'d before use.
         """
-        cmd = f"sacct -j {job_id} --format=JobID,State,Elapsed,NNodes,NodeList,ExitCode -P -n"
+        cmd = f"sacct -j {shlex.quote(job_id)} --format=JobID,State,Elapsed,NNodes,NodeList,ExitCode -P -n"
         output = self._exec_command(cmd)
 
         if output:
@@ -208,8 +223,12 @@ class HPCMonitor:
     def node_status(self, node_name: str | None = None) -> dict[str, Any] | list[dict[str, Any]]:
         """
         Get detailed node metrics via scontrol show node.
+
+        NOTE (hardening): `node_name` used to be interpolated directly
+        into the shell command string - see list_jobs()'s NOTE
+        (hardening) for the same reasoning. shlex.quote()'d before use.
         """
-        target = node_name if node_name else ""
+        target = shlex.quote(node_name) if node_name else ""
         cmd = f"scontrol show node {target}"
         output = self._exec_command(cmd)
 
