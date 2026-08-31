@@ -2,21 +2,20 @@
 
 import os
 import tempfile
+
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
-from acf.gui.esoc.session_manager import SessionManager
-from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
-from acf.gui.esoc.panel_manager import PanelManager
-from acf.gui.esoc.view_manager import ViewManager
 from acf.gui.esoc.esoc_sidebar import ESOCLeftSidebar, ESOCRightSidebar
-from acf.gui.esoc.esoc_toolbar import ESOCToolbar
 from acf.gui.esoc.esoc_statusbar import ESOCStatusBar
-from acf.gui.esoc.esoc_layout import ESOCLayout
-from acf.gui.esoc.esoc_controller import ESOCController
+from acf.gui.esoc.esoc_toolbar import ESOCToolbar
 from acf.gui.esoc.esoc_window import ESOCWindow
+from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
+from acf.gui.esoc.module_registry import ModuleRegistry
+from acf.gui.esoc.panel_manager import PanelManager
+from acf.gui.esoc.session_manager import SessionManager
+from acf.gui.esoc.view_manager import ViewManager
 
 
 @pytest.fixture(scope="session")
@@ -78,7 +77,7 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 22
+    assert len(pm.list_panel_names()) == 27
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
 
@@ -116,11 +115,18 @@ def test_esoc_controller_and_window(qapp):
     res_sim = window.controller.handle_run_simulation(dt=10.0)
     assert res_sim["status"] == "SUCCESS"
 
+    # CORRECTED: handle_run_assimilation() used to claim "SUCCESS" for
+    # any scheme with no real DA engine connected.
     res_da = window.controller.handle_run_assimilation("4D-Var")
-    assert res_da["status"] == "SUCCESS"
+    assert res_da["status"] == "NOT_EXECUTED_NO_DA_ENGINE_CONNECTED"
 
     res_ai = window.controller.handle_run_ai_forecast()
     assert res_ai["status"] == "SUCCESS"
 
+    # CORRECTED: handle_assess_hazards() used to unconditionally emit
+    # a fabricated "Tropical Cyclone Cat 3" hazard alert signal and
+    # claim "SUCCESS" - operationally dangerous false-alarm risk, no
+    # longer emits any alert.
     res_haz = window.controller.handle_assess_hazards()
-    assert res_haz["status"] == "SUCCESS"
+    assert res_haz["status"] == "NOT_ASSESSED_NO_HAZARD_DETECTION_ENGINE_CONNECTED"
+    assert res_haz["hazards_assessed"] is False

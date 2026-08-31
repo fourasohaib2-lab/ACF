@@ -1,17 +1,18 @@
 """Unified Earth System Operations Center (ESOC) Main Window (ACF-UI-011)."""
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from PySide6.QtWidgets import QMainWindow, QMessageBox
 
-from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
-from acf.gui.esoc.session_manager import SessionManager
-from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
-from acf.gui.esoc.panel_manager import PanelManager
-from acf.gui.esoc.esoc_toolbar import ESOCToolbar
-from acf.gui.esoc.esoc_statusbar import ESOCStatusBar
-from acf.gui.esoc.esoc_layout import ESOCLayout
 from acf.gui.esoc.esoc_controller import ESOCController
+from acf.gui.esoc.esoc_layout import ESOCLayout
+from acf.gui.esoc.esoc_statusbar import ESOCStatusBar
+from acf.gui.esoc.esoc_toolbar import ESOCToolbar
+from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
+from acf.gui.esoc.module_registry import ModuleRegistry
+from acf.gui.esoc.panel_manager import PanelManager
+from acf.gui.esoc.session_manager import SessionManager
 
 
 class ESOCWindow(QMainWindow):
@@ -20,12 +21,10 @@ class ESOCWindow(QMainWindow):
     Provides a single unified command cockpit controlling all 45+ ACF scientific subsystems.
     """
 
-    def __init__(self, parent: Optional[QMainWindow] = None) -> None:
+    def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
 
-        self.setWindowTitle(
-            "Unified Earth System Operations Center (ESOC) v1.0 — Atmospheric Complexity Framework"
-        )
+        self.setWindowTitle("Unified Earth System Operations Center (ESOC) v1.0 — Atmospheric Complexity Framework")
         self.resize(1600, 1000)
 
         # 1. Subsystem Registry & Dispatchers
@@ -36,9 +35,7 @@ class ESOCWindow(QMainWindow):
 
         # 2. Controllers & Managers
         self.panel_manager = PanelManager(self.registry, self.dispatcher)
-        self.controller = ESOCController(
-            self.registry, self.dispatcher, self.workspace_manager, self.session_manager
-        )
+        self.controller = ESOCController(self.registry, self.dispatcher, self.workspace_manager, self.session_manager)
 
         # 3. Layout & UI Components
         self.layout_manager = ESOCLayout(self, self.panel_manager)
@@ -97,25 +94,38 @@ class ESOCWindow(QMainWindow):
         """Switch workspace operational mode."""
         self._apply_mode(mode_str)
 
-    def _on_hazard_alert(self, level: str, info: Dict[str, Any]) -> None:
+    def _on_hazard_alert(self, level: str, info: dict[str, Any]) -> None:
         """Handle incoming hazard alert signal."""
         self.dispatcher.log_message_emitted.emit(
             "WARNING", f"HAZARD ALERT [{level}]: {info.get('threat', 'Unknown Threat')}"
         )
 
-    def _on_sim_step(self, info: Dict[str, Any]) -> None:
+    def _on_sim_step(self, info: dict[str, Any]) -> None:
         """Handle simulation step completed signal."""
         step = info.get("step", 0)
         self.status_bar.update_metrics(sim_time=f"t+{step:03d}h")
 
     @classmethod
-    def get_esoc_metadata(cls) -> Dict[str, Any]:
-        """Return operational platform metadata dictionary."""
+    def get_esoc_metadata(cls) -> dict[str, Any]:
+        """
+        Return operational platform metadata dictionary.
+
+        NOTE (correction): platform_name/version/operational_modes/
+        dock_panels are static platform-descriptor constants (kept
+        as-is), but "connected_subsystems: 45" and
+        "status: OPERATIONAL_READY" used to claim a live, verified
+        operational state with 0 parameters and no real subsystem-
+        connectivity check performed (the exact same fabricated "45"
+        count also appeared in release.health_check.ProductionHealthCheck,
+        fixed earlier this session - neither was ever real). Not
+        fabricated.
+        """
         return {
             "platform_name": "Unified Earth System Operations Center (ESOC)",
             "version": "1.0",
-            "connected_subsystems": 45,
+            "connected_subsystems": None,
             "operational_modes": 10,
             "dock_panels": 11,
-            "status": "OPERATIONAL_READY",
+            "status": "NOT_VERIFIED_NO_SUBSYSTEM_CONNECTIVITY_CHECK_PERFORMED",
+            "is_real_data": False,
         }
