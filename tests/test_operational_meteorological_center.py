@@ -4,16 +4,16 @@ Atmospheric Complexity Framework (ACF)
 Global Operational Meteorological Center Platform Test Suite (MISSION ACF-030)
 """
 
-from acf.connectors.live_connectors import LiveDataConnectorEngine, LIVE_CONNECTORS_REGISTRY
-from acf.connectors.wmo_wis import WMOWISEngine
-from acf.visualization.radar_satellite_center import OperationalRadarCenter, OperationalSatelliteCenter
-from acf.forecast.forecast_engine import ForecastEngine
-from acf.alerts.warning_engine import WarningEngine
-from acf.reports.briefings.briefing_generator import BriefingGenerator
 from acf.ai.decision_support.operational_decision import OperationalDecisionSupportEngine
-from acf.verification.verification_engine import ForecastVerificationEngine
+from acf.alerts.warning_engine import WarningEngine
+from acf.connectors.live_connectors import LIVE_CONNECTORS_REGISTRY, LiveDataConnectorEngine
+from acf.connectors.wmo_wis import WMOWISEngine
 from acf.data.archive_system import OperationalArchiveSystem
+from acf.forecast.forecast_engine import ForecastEngine
+from acf.reports.briefings.briefing_generator import BriefingGenerator
 from acf.science.query_engine import ScientificQueryEngine
+from acf.verification.verification_engine import ForecastVerificationEngine
+from acf.visualization.radar_satellite_center import OperationalRadarCenter, OperationalSatelliteCenter
 
 
 def test_live_data_connectors():
@@ -83,6 +83,36 @@ def test_operational_decision_support():
     engine = OperationalDecisionSupportEngine()
     eval_res = engine.evaluate_operational_situation({"CAPE": 2200.0}, {}, {}, {})
     assert eval_res["overall_risk_level"] in ["ÉLEVÉ", "CRITIQUE / EXTRÊME"]
+
+
+def test_operational_decision_support_no_longer_fabricates_evidence():
+    """
+    Regression guard: evaluate_operational_situation() used to
+    fabricate fixed "model_consensus" percentages and fake
+    "supporting_observations" (a made-up METAR string, a made-up
+    radiosonde reading) regardless of the actual ai_predictions/
+    radar_summary/obs_data inputs (even when empty, as in the test
+    above). It must now honestly report when no real data was
+    supplied, and must genuinely reflect real data when it is.
+    """
+    engine = OperationalDecisionSupportEngine()
+
+    empty_result = engine.evaluate_operational_situation({"CAPE": 2200.0}, {}, {}, {})
+    assert empty_result["model_consensus"] == {"status": "NO_AI_PREDICTIONS_PROVIDED"}
+    assert empty_result["supporting_observations"] == ["NO_OBSERVATIONS_PROVIDED"]
+    # The old fabricated text must not appear anywhere.
+    assert "GraphCast" not in str(empty_result)
+    assert "22018G32KT" not in str(empty_result)
+
+    real_result = engine.evaluate_operational_situation(
+        {"CAPE": 2200.0},
+        {"ifs_vs_graphcast_agreement_pct": 77.0},
+        {"max_reflectivity_dbz": 55.0},
+        {"metar_wind": "22018G32KT"},
+    )
+    assert real_result["model_consensus"] == {"ifs_vs_graphcast_agreement_pct": 77.0}
+    assert "metar_wind: 22018G32KT" in real_result["supporting_observations"]
+    assert "radar.max_reflectivity_dbz: 55.0" in real_result["supporting_observations"]
 
 
 def test_forecast_verification_engine():
