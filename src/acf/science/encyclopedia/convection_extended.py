@@ -5,32 +5,46 @@ Convection & Severe Convective Weather Encyclopedia Module (CAPE, CIN, Indices, 
 """
 
 import math
-from typing import List
+
+from acf.science.cape import CAPE
+from acf.science.cin import CIN
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from acf.science.severe_weather import SevereWeather
+from acf.science.sweat_index import SWEATIndex
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Convective Parameters & Stability Indices
 # ---------------------------------------------------------------------------
+#
+# NOTE (single-source-of-truth cleanup): compute_cape/compute_cin/
+# compute_sweat_index/compute_scp_index/compute_stp_index below used to
+# be independent reimplementations of formulas already verified and
+# tested in science/cape.py, science/cin.py, science/sweat_index.py and
+# science/severe_weather.py. compute_scp_index and compute_stp_index in
+# particular were LESS accurate than the canonical versions (missing
+# the shear-term capping and CIN term that science/severe_weather.py's
+# implementations have, verified against the SPC's own published
+# formula). All five now delegate to the canonical implementations
+# instead of duplicating (possibly-diverging) logic, while keeping
+# their historical parameter names for backward compatibility with
+# tests/test_atmospheric_encyclopedia_expansion.py.
 
-def compute_cape(tv_parcel: List[float], tv_env: List[float], dz: float = 100.0) -> float:
-    """Calcul numérique de l'Énergie Potentielle Convective Disponible (CAPE) en J/kg."""
-    g = 9.81
-    cape = 0.0
-    for tv_p, tv_e in zip(tv_parcel, tv_env):
-        if tv_p > tv_e and tv_e > 0.0:
-            cape += g * ((tv_p - tv_e) / tv_e) * dz
-    return float(cape)
+
+def compute_cape(tv_parcel: list[float], tv_env: list[float], dz: float = 100.0) -> float:
+    """
+    CAPE (J/kg) from virtual-temperature profiles on a uniform grid
+    spacing dz. Delegates to the canonical CAPE.calculate() (trapezoidal
+    integration) instead of a hand-rolled Riemann sum.
+    """
+    height = [i * dz for i in range(len(tv_parcel))]
+    return CAPE.calculate(tv_parcel, tv_env, height, is_kelvin=True)
 
 
-def compute_cin(tv_parcel: List[float], tv_env: List[float], dz: float = 100.0) -> float:
-    """Calcul numérique de l'Inhibition Convective (CIN) en J/kg."""
-    g = 9.81
-    cin = 0.0
-    for tv_p, tv_e in zip(tv_parcel, tv_env):
-        if tv_p < tv_e and tv_e > 0.0:
-            cin += g * ((tv_e - tv_p) / tv_e) * dz
-    return float(cin)
+def compute_cin(tv_parcel: list[float], tv_env: list[float], dz: float = 100.0) -> float:
+    """CIN (J/kg), mirror of compute_cape() above. Delegates to CIN.calculate()."""
+    height = [i * dz for i in range(len(tv_parcel))]
+    return CIN.calculate(tv_parcel, tv_env, height, is_kelvin=True)
 
 
 def compute_lifted_index(t_env_500_c: float, t_parcel_500_c: float) -> float:
@@ -53,43 +67,44 @@ def compute_total_totals(t850_c: float, t500_c: float, td850_c: float) -> float:
     return (t850_c - t500_c) + (td850_c - t500_c)
 
 
-def compute_sweat_index(td850_c: float, tt: float, f850_kt: float, f500_kt: float, wdir850_deg: float, wdir500_deg: float) -> float:
-    """SWEAT Index (Severe Weather Threat Index)."""
-    term_td = 12.0 * max(td850_c, 0.0)
-    term_tt = 20.0 * max(tt - 49.0, 0.0)
-    term_f850 = 2.0 * f850_kt
-    term_f500 = f500_kt
-
-    shear_term = 0.0
-    rad850 = math.radians(wdir850_deg)
-    rad500 = math.radians(wdir500_deg)
-    diff = rad500 - rad850
-
-    if 130 <= wdir850_deg <= 250 and 210 <= wdir500_deg <= 310 and (wdir500_deg - wdir850_deg) > 0 and f850_kt >= 15 and f500_kt >= 15:
-        shear_term = 125.0 * (math.sin(diff) + 0.2)
-
-    return term_td + term_tt + term_f850 + term_f500 + shear_term
+def compute_sweat_index(
+    td850_c: float, tt: float, f850_kt: float, f500_kt: float, wdir850_deg: float, wdir500_deg: float
+) -> float:
+    """SWEAT Index. Delegates to the canonical, verified SWEATIndex.calculate()."""
+    return SWEATIndex.calculate(
+        td850=td850_c, tt=tt, wind850=f850_kt, wind500=f500_kt, dir850=wdir850_deg, dir500=wdir500_deg
+    )
 
 
-def compute_scp_index(cape: float, srh3km: float, bwd6km: float) -> float:
-    """Supercell Composite Parameter (SCP): SCP = (CAPE / 1000) * (SRH3km / 50) * (BWD6km / 20)."""
-    return (cape / 1000.0) * (srh3km / 50.0) * (bwd6km / 20.0)
+def compute_scp_index(cape: float, srh3km: float, bwd6km: float, mucin: float = 0.0) -> float:
+    """
+    Supercell Composite Parameter (SCP). Delegates to
+    SevereWeather.supercell_composite_parameter() (SPC-verified: shear
+    term capped at [0,1], CIN term included). mucin defaults to 0.0
+    (CIN term = 1.0, i.e. "no CIN penalty"), matching this function's
+    historical 3-argument signature for callers that don't supply it.
+    """
+    return SevereWeather.supercell_composite_parameter(
+        mucape=cape, effective_srh=srh3km, effective_bulk_shear=bwd6km, mucin=mucin
+    )
 
 
 def compute_stp_index(cape: float, srh1km: float, lcl_m: float, shear6km: float) -> float:
-    """Significant Tornado Parameter (STP)."""
-    term_cape = cape / 1500.0
-    term_srh = srh1km / 150.0
-    term_lcl = max(2000.0 - lcl_m, 0.0) / 1000.0
-    term_shear = shear6km / 20.0
-    return term_cape * term_srh * term_lcl * term_shear
+    """
+    Significant Tornado Parameter (STP), fixed-layer variant. Delegates
+    to SevereWeather.significant_tornado_parameter_fixed() (SPC-
+    verified: LCL and shear terms capped, matching the primary source).
+    """
+    return SevereWeather.significant_tornado_parameter_fixed(
+        sbcape=cape, sblcl_m=lcl_m, srh_1km=srh1km, shear_6km=shear6km
+    )
 
 
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="cape_convective_energy",
         name="Énergie Potentielle Convective Disponible (CAPE)",
@@ -97,11 +112,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Thermodynamique convective",
         equation="CAPE = int g * (Tv_parcel - Tv_env) / Tv_env dz",
         latex_equation=r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_{v,\text{parcel}} - T_{v,\text{env}}}{T_{v,\text{env}}} \, dz",
-        variables={"Tv_parcel": "Température virtuelle parcelle (K)", "Tv_env": "Température virtuelle environnement (K)"},
+        variables={
+            "Tv_parcel": "Température virtuelle parcelle (K)",
+            "Tv_env": "Température virtuelle environnement (K)",
+        },
         units={"CAPE": "J/kg"},
         description="Quantité maximale d'énergie d'accélération verticale disponible pour une parcelle d'air montant du LFC au niveau d'équilibre EL.",
         application_conditions=["Prévision d'instabilité atmosphérique, orages violents"],
-        limitations=["Sensible aux profils d'humidité en basse couche et au choix du type de parcelle (Surface, Mixed-Layer, Most-Unstable)"],
+        limitations=[
+            "Sensible aux profils d'humidité en basse couche et au choix du type de parcelle (Surface, Mixed-Layer, Most-Unstable)"
+        ],
         references=["Moncrieff & Miller (1976)", "NOAA SPC Severe Weather Parameters", "WMO-No. 8"],
         compute_func=compute_cape,
     ),
@@ -127,7 +147,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Indices de stabilité",
         equation="LI = T_env(500hPa) - T_parcel(500hPa)",
         latex_equation=r"\text{LI} = T_{\text{env}, 500} - T_{\text{parcel}, 500}",
-        variables={"T_env": "Température environnement à 500 hPa (°C)", "T_parcel": "Température parcelle soulevée à 500 hPa (°C)"},
+        variables={
+            "T_env": "Température environnement à 500 hPa (°C)",
+            "T_parcel": "Température parcelle soulevée à 500 hPa (°C)",
+        },
         units={"LI": "°C"},
         description="Indice d'instabilité mesurant la différence de température à 500 hPa. LI < -6 °C indique une forte instabilité convective.",
         application_conditions=["Analyse de stabilité sous-synoptique"],
@@ -142,7 +165,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Indices de stabilité",
         equation="SI = T_env(500hPa) - T_parcel(850->500hPa)",
         latex_equation=r"\text{SI} = T_{\text{env}, 500} - T_{\text{parcel}, 850 \to 500}",
-        variables={"T_env": "Température environnement à 500 hPa (°C)", "T_parcel": "Parcelle soulevée depuis 850 hPa à 500 hPa (°C)"},
+        variables={
+            "T_env": "Température environnement à 500 hPa (°C)",
+            "T_parcel": "Parcelle soulevée depuis 850 hPa à 500 hPa (°C)",
+        },
         units={"SI": "°C"},
         description="Indice d'instabilité évitant l'influence des inversions nocturnes de surface en élevant la parcelle depuis 850 hPa.",
         application_conditions=["Prévision des orages nocturnes et convection élevée (elevated convection)"],
@@ -157,10 +183,15 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Indices de stabilité",
         equation="KI = (T850 - T500) + Td850 - (T700 - Td700)",
         latex_equation=r"\text{KI} = (T_{850} - T_{500}) + T_{d,850} - (T_{700} - T_{d,700})",
-        variables={"T850, T500, T700": "Températures aux niveaux de pression (°C)", "Td850, Td700": "Points de rosée (°C)"},
+        variables={
+            "T850, T500, T700": "Températures aux niveaux de pression (°C)",
+            "Td850, Td700": "Points de rosée (°C)",
+        },
         units={"KI": "°C"},
         description="Indice évaluant le potentiel d'averses et d'orages non sévéres en intégrant le gradient thermique vertical et l'humidité en moyenne/basse couche.",
-        application_conditions=["Prévision des averses de masse d'air et orages d'été (KI > 35 indique forte probabilité d'orages)"],
+        application_conditions=[
+            "Prévision des averses de masse d'air et orages d'été (KI > 35 indique forte probabilité d'orages)"
+        ],
         limitations=["Peu adapté aux orages supercellulaires et phénomènes violents"],
         references=["George (1960) Weather Forecasting for Aeronautics"],
         compute_func=compute_k_index,
@@ -187,7 +218,12 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Indices de stabilité & cisaillement",
         equation="SWEAT = 12*Td850 + 20*(TT - 49) + 2*f850 + f500 + 125*(sin(wdir500-wdir850) + 0.2)",
         latex_equation=r"\text{SWEAT} = 12 T_{d,850} + 20(\text{TT}-49) + 2 f_{850} + f_{500} + 125[\sin(\theta_{500}-\theta_{850})+0.2]",
-        variables={"Td850": "Point de rosée à 850 hPa", "TT": "Total Totals", "f850, f500": "Vitesse du vent (kt)", "theta": "Direction du vent"},
+        variables={
+            "Td850": "Point de rosée à 850 hPa",
+            "TT": "Total Totals",
+            "f850, f500": "Vitesse du vent (kt)",
+            "theta": "Direction du vent",
+        },
         units={"SWEAT": "dimensionless"},
         description="Indice composite intégrant thermodynamique et cinématique (cisaillement et advection de vorticité) pour évaluer la sévérité des orages (SWEAT > 300 = orages violents, > 400 = tornades).",
         application_conditions=["Prévision d'orages violents et tornades"],
@@ -225,7 +261,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         references=["Thompson et al. (2003) Wea. Forecasting", "NOAA SPC Severe Weather Manual"],
         compute_func=compute_stp_index,
     ),
-
     # ---------------------------------------------------------------------------
     # Convective Dynamics & Processus
     # ---------------------------------------------------------------------------
@@ -268,7 +303,9 @@ ENTRIES: List[EncyclopediaEntry] = [
         units={"w_max": "m/s"},
         description="Vitesse verticale théorique maximale d'une parcelle d'air en l'absence de frottement et d'entraînement.",
         application_conditions=["Ascendance adiabatique idéale"],
-        limitations=["En pratique, la vitesse réelle est de 30% à 50% de w_max en raison de l'entraînement et du poids de l'eau"],
+        limitations=[
+            "En pratique, la vitesse réelle est de 30% à 50% de w_max en raison de l'entraînement et du poids de l'eau"
+        ],
         references=["Holton & Hakim (2012)", "NOAA SPC Dynamics Manual"],
         compute_func=lambda cape: math.sqrt(2.0 * max(cape, 0.0)),
     ),
@@ -293,11 +330,17 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Paramétrisation du flux de masse",
         equation="dM/dz = (mu - delta) * M",
         latex_equation=r"\frac{1}{M}\frac{dM}{dz} = \epsilon - \delta",
-        variables={"M": "Flux de masse du courant ascendant (kg/s)", "epsilon": "Taux d'entraînement", "delta": "Taux de détraînement"},
+        variables={
+            "M": "Flux de masse du courant ascendant (kg/s)",
+            "epsilon": "Taux d'entraînement",
+            "delta": "Taux de détraînement",
+        },
         units={"epsilon, delta": "m⁻¹"},
         description="Mélange turbulent entre le courant ascendant du nuage et l'air environnant. L'entraînement d'air sec affaiblit le courant ascendant.",
         application_conditions=["Modèles de flux de masse convectifs (Tiedtke, Kain-Fritsch, AROME EDMF)"],
-        limitations=["Incertitude fondamentale sur la formulation de epsilon en fonction de la flottabilité et du rayon du nuage"],
+        limitations=[
+            "Incertitude fondamentale sur la formulation de epsilon en fonction de la flottabilité et du rayon du nuage"
+        ],
         references=["Kain & Fritsch (1990) J. Atmos. Sci.", "ECMWF / Météo-France Documentation"],
     ),
 ]

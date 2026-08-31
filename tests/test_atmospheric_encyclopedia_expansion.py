@@ -3,11 +3,11 @@ Tests for MISSION ACF-021 Complete Atmospheric Scientific Encyclopedia Expansion
 """
 
 import pytest
-import numpy as np
-from acf.science import EncyclopediaRegistry, KnowledgeGraphEngine
+
+from acf.science import EncyclopediaRegistry
 from acf.science.encyclopedia.cloud_microphysics import WMOCloudClassifier
-from acf.science.physics_ai import PhysicsInformedAIArchitectures, ScientificReasoningEngine
 from acf.science.encyclopedia.knowledge_sources import KnowledgeSourcesIndexer
+from acf.science.physics_ai import PhysicsInformedAIArchitectures, ScientificReasoningEngine
 
 
 def test_expanded_encyclopedia_entries_count():
@@ -82,22 +82,57 @@ def test_convective_indices_and_calculations():
     assert scp > 1.0
 
 
+def test_scp_and_stp_now_use_spc_verified_capping():
+    """
+    Regression guard: scp_supercell_composite/stp_index_tornado used to
+    be naive reimplementations without the shear-term capping (and, for
+    SCP, the CIN term) verified against the SPC's own published
+    formula in science/severe_weather.py. They now delegate to it.
+    """
+    # SCP: bwd6km=40 (>20) must be capped at ebwd_term=1.0, not 40/20=2.0.
+    scp_capped = EncyclopediaRegistry.calculate("scp_supercell_composite", cape=1000.0, srh3km=50.0, bwd6km=40.0)
+    scp_naive_would_be = (1000.0 / 1000.0) * (50.0 / 50.0) * (40.0 / 20.0)  # = 2.0
+    assert scp_capped < scp_naive_would_be
+    assert scp_capped == pytest.approx(1.0)  # capped ebwd_term=1.0, cin_term defaults to 1.0
+
+    # STP: shear6km=50 (>30) must be capped at shear_term=1.5, not 50/20=2.5.
+    stp_capped = EncyclopediaRegistry.calculate(
+        "stp_index_tornado", cape=1500.0, srh1km=150.0, lcl_m=500.0, shear6km=50.0
+    )
+    stp_naive_would_be = (1500.0 / 1500.0) * (150.0 / 150.0) * ((2000.0 - 500.0) / 1000.0) * (50.0 / 20.0)
+    assert stp_capped < stp_naive_would_be
+    # lcl_m=500 < 1000 -> lcl_term capped at 1.0 (not the naive (2000-500)/1000=1.5);
+    # shear6km=50 > 30 -> shear_term capped at 1.5 (not the naive 50/20=2.5).
+    assert stp_capped == pytest.approx(1.0 * 1.0 * 1.0 * 1.5)
+
+
 def test_lightning_and_tles():
-    rate_land = EncyclopediaRegistry.calculate("lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=False)
+    rate_land = EncyclopediaRegistry.calculate(
+        "lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=False
+    )
     assert rate_land > 10.0
 
-    rate_sea = EncyclopediaRegistry.calculate("lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=True)
+    rate_sea = EncyclopediaRegistry.calculate(
+        "lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=True
+    )
     assert rate_sea < rate_land
 
     sprite = EncyclopediaRegistry.get("sprites_tles_mesosphere")
     assert sprite is not None
-    assert "Mésosphère" in sprite.domain or "Mésosphère" in sprite.equation or "Mésosphère" in sprite.subdomain or "Mésosphère" in sprite.description
+    assert (
+        "Mésosphère" in sprite.domain
+        or "Mésosphère" in sprite.equation
+        or "Mésosphère" in sprite.subdomain
+        or "Mésosphère" in sprite.description
+    )
 
 
 def test_severe_weather_and_srh():
     u_prof = [0.0, 5.0, 10.0, 15.0, 20.0]
     v_prof = [0.0, 5.0, 10.0, 15.0, 20.0]
-    srh = EncyclopediaRegistry.calculate("storm_relative_helicity_srh", u_profile=u_prof, v_profile=v_prof, storm_u=5.0, storm_v=5.0, dz=500.0)
+    srh = EncyclopediaRegistry.calculate(
+        "storm_relative_helicity_srh", u_profile=u_prof, v_profile=v_prof, storm_u=5.0, storm_v=5.0, dz=500.0
+    )
     assert isinstance(srh, float)
 
     mesh_desc = EncyclopediaRegistry.calculate("hail_size_estimation_mesh", mesh_mm=55.0)
@@ -173,7 +208,9 @@ def test_data_assimilation_and_mathematics():
     hx = [2.0]
     r_inv = [[1.0]]
 
-    j_val = EncyclopediaRegistry.calculate("cost_function_variational_assimilation", x=x, xb=xb, b_inv=b_inv, y=y, hx=hx, r_inv=r_inv)
+    j_val = EncyclopediaRegistry.calculate(
+        "cost_function_variational_assimilation", x=x, xb=xb, b_inv=b_inv, y=y, hx=hx, r_inv=r_inv
+    )
     assert j_val == 3.0
 
     # Semi-Lagrangian departure point
