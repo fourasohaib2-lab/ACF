@@ -9,6 +9,7 @@ from acf.science.laws.atmospheric import ATMOSPHERIC_LAWS
 from acf.science.laws.base_law import AtmosphericLaw
 from acf.science.laws.boundary_layer import BOUNDARY_LAYER_LAWS
 from acf.science.laws.dynamics import DYNAMIC_LAWS
+from acf.science.laws.geodesy import GEODESY_LAWS
 from acf.science.laws.mathematics import MATHEMATICAL_LAWS
 from acf.science.laws.microphysics import MICROPHYSICS_LAWS
 from acf.science.laws.radiation import RADIATION_LAWS
@@ -37,6 +38,7 @@ class ScientificRegistry:
             + RADIATION_LAWS
             + AERONAUTICAL_LAWS
             + MATHEMATICAL_LAWS
+            + GEODESY_LAWS
         )
         for law in all_laws:
             cls._registry[law.key] = law
