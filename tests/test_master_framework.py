@@ -134,8 +134,14 @@ def test_master_knowledge_graph_and_workflow_engine():
     with pytest.raises(NotImplementedError):
         MasterKnowledgeGraph.infer("space_weather_impact")
 
+    # CORRECTED: execute_master_pipeline() used to unconditionally
+    # claim "SUCCESS / ALL PIPELINES COMPLETED" while running none of
+    # its 8 named stages - same false-success pattern as EarthSolver.
+    # Now honestly reports nothing actually ran.
     pipeline_res = MasterWorkflowEngine.execute_master_pipeline()
-    assert pipeline_res["master_pipeline_status"].startswith("SUCCESS")
+    assert pipeline_res["master_pipeline_status"] == "NOT_EXECUTED_PLACEHOLDER_ONLY"
+    assert pipeline_res["pipelines_executed"] == []
+    assert len(pipeline_res["pipelines_defined_but_not_run"]) == 8
 
 
 def test_master_dashboard_and_executive_reporting():
