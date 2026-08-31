@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 AEOS Mission Control Center & System Telemetry Dashboard Module (Phase 12)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class MissionControlDashboard:
@@ -13,16 +13,29 @@ class MissionControlDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
-        """Retourne la configuration complète du workspace AEOS Mission Control."""
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
+        """
+        Retourne la configuration complète du workspace AEOS Mission Control.
+
+        NOTE (correction): workspace_name/active_mode/active_monitors/
+        center_panel are a genuine static UI descriptor (the
+        dashboard's declared layout), but "system_telemetry" used to
+        claim fixed "cpu_usage_pct: 14.5" / "memory_usage_pct: 22.0" -
+        the exact same fabricated CPU/RAM pair independently found and
+        fixed in aeos.aeos_kernel.AEOSKernel.health_check() and
+        aeos.reports.aeos_report.AEOSReportGenerator this session - and
+        "active_gpu_nodes: 32", with 0 parameters and no real system
+        query performed. Not fabricated.
+        """
         return {
             "workspace_name": "AEOS MISSION CONTROL CENTER",
             "active_mode": "Autonomous Earth Operating System Control & Telemetry",
             "system_telemetry": {
-                "cpu_usage_pct": 14.5,
-                "memory_usage_pct": 22.0,
-                "active_gpu_nodes": 32,
+                "cpu_usage_pct": None,
+                "memory_usage_pct": None,
+                "active_gpu_nodes": None,
                 "cluster_backend": "Slurm / Kubernetes Distributed Compute",
+                "status": "NOT_QUERIED_NO_SYSTEM_TELEMETRY_CONNECTED",
             },
             "active_monitors": [
                 "System Health & Self-Healing Monitor",

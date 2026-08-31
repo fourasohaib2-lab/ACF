@@ -55,9 +55,14 @@ def test_multi_agent_manager():
 
 def test_hypothesis_engine_and_physics_validator():
     """Test de la génération et validation d'hypothèses physiques."""
+    # CORRECTED: anomaly_name used to be accepted but never referenced
+    # - this unconditionally returned the exact same 2 fixed
+    # hypotheses (fabricated 88.5%/92.0% probabilities, both claimed
+    # "physically validated") regardless of what anomaly was actually
+    # passed in. No real anomaly-detection/hypothesis-generation
+    # pipeline is connected.
     hypotheses = HypothesisEngine.generate_hypotheses("Marine Heatwave")
-    assert len(hypotheses) >= 2
-    assert hypotheses[0].is_physically_validated is True
+    assert hypotheses == []
 
 
 def test_forecast_reasoning_and_model_comparison():

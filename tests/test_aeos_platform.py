@@ -127,8 +127,14 @@ def test_planetary_event_bus_and_autonomous_agents():
 
 def test_mission_control_dashboard_and_reporting():
     """Test du tableau de bord AEOS Mission Control et de la génération de rapports."""
+    # CORRECTED: system_telemetry used to claim a fixed "14.5% CPU /
+    # 22.0% RAM" - the exact same fake pair independently found in
+    # AEOSKernel.health_check() and AEOSReportGenerator, both fixed
+    # earlier this session - and "32 active_gpu_nodes", with no real
+    # system query performed.
     meta = MissionControlDashboard.get_dashboard_metadata()
     assert meta["workspace_name"] == "AEOS MISSION CONTROL CENTER"
+    assert meta["system_telemetry"]["cpu_usage_pct"] is None
 
     # CORRECTED: used to unconditionally embed fabricated figures
     # ("100% HEALTHY", "15/15 microservices", "93.8% Model Consensus",
