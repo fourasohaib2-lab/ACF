@@ -72,8 +72,12 @@ def test_particles_interpolation_and_turbulence():
     assert parts["particle_count_requested"] == 10000
     assert parts["status"] == "NOT_RENDERED_NO_GPU_COMPUTE_BACKEND_CONNECTED"
 
+    # CORRECTED: used to ignore x/y/z entirely and unconditionally
+    # claim a fixed "284.15 K" via a fake "3D Trilinear GPU" method -
+    # no real volume field is connected.
     interp = VolumeInterpolationEngine.interpolate_point(10.0, 20.0, 500.0)
-    assert interp["interpolated_value"] == 284.15
+    assert interp["interpolated_value"] is None
+    assert interp["method"] == "NOT_INTERPOLATED_NO_VOLUME_FIELD_PROVIDED"
 
     turb = TurbulenceVisualizer.visualize_turbulence()
     assert turb["status"] == "VISUALIZED"
