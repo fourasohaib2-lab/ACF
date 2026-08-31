@@ -1,24 +1,36 @@
-"""Panel Manager instantiating 22 operational PySide6 dock panels for ESOC (ACF-UI-013)."""
+"""Panel Manager instantiating 26 operational PySide6 dock panels for ESOC (ACF-HPC-001)."""
 
-from typing import Dict, List, Optional
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QProgressBar,
+    QPushButton,
+    QSlider,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
-    QComboBox,
-    QGroupBox,
-    QSlider,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt
 
-from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
+from acf.gui.esoc.hpc_terminal_panel import HPCTerminalPanel
+from acf.gui.esoc.module_registry import ModuleRegistry
+
+
+def _example_layout_disclaimer() -> QLabel:
+    """
+    Shared disclaimer label used across panels below that show
+    illustrative example values in their tables/text blocks rather
+    than live telemetry - see the NOTE (correction) at each call site
+    for what each panel used to claim.
+    """
+    lbl = QLabel("⚠ Example layout — not wired to a live data source yet")
+    lbl.setStyleSheet("color: #FF7043; font-size: 10px; font-style: italic;")
+    return lbl
 
 
 class BasePanelWidget(QWidget):
@@ -43,28 +55,207 @@ class BasePanelWidget(QWidget):
         self.main_layout.addWidget(title)
 
 
+class HPCDashboardPanel(BasePanelWidget):
+    """1. HPC Master Dashboard Panel."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("⚡ HPC MASTER CONTROL DASHBOARD", "#90A4AE", registry, dispatcher)
+
+        h_btn = QHBoxLayout()
+        btn_conn = QPushButton("🔌 Connect HPC Cluster")
+        btn_dis = QPushButton("❌ Disconnect")
+        btn_conn.clicked.connect(lambda: self.dispatcher.dispatch("connect_hpc"))
+        btn_dis.clicked.connect(lambda: self.dispatcher.dispatch("disconnect_hpc"))
+        h_btn.addWidget(btn_conn)
+        h_btn.addWidget(btn_dis)
+        self.main_layout.addLayout(h_btn)
+
+        # NOTE (correction): this text block used to be labeled "Cluster
+        # Live Operational Status" and show specific fixed numbers (4
+        # running jobs, 64 nodes, InfiniBand HDR 200 Gbps...) at widget
+        # construction time, with no connection to any real cluster -
+        # self.registry/self.dispatcher (available here) were never
+        # consulted. An operator glancing at this dashboard could
+        # believe a real cluster with real running jobs was connected
+        # when the "Connect HPC Cluster" button above had never even
+        # been clicked. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        self.txt_status = QTextEdit()
+        self.txt_status.setReadOnly(True)
+        self.txt_status.setText(
+            "Example Layout (values below are illustrative, not live):\n"
+            "• Connected Host: login01.hpc.university.edu\n"
+            "• Scheduler: Slurm 23.02 (Active)\n"
+            "• Execution Mode: Hybrid (Workstation + Supercomputer)\n"
+            "• Active Jobs: 4 Running, 0 Queued\n"
+            "• Total Compute Nodes: 64 Nodes (2048 Cores)\n"
+            "• GPU Accelerator Nodes: 16 NVIDIA A100 Nodes (64 GPUs)\n"
+            "• MPI Domain Ranks: 128 Active Processes\n"
+            "• Interconnect: InfiniBand HDR 200 Gbps"
+        )
+        self.main_layout.addWidget(self.txt_status)
+
+
+class ClusterExplorerPanel(BasePanelWidget):
+    """2. HPC Cluster Topology Explorer Panel."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌐 HPC CLUSTER TOPOLOGY & PARTITIONS", "#81D4FA", registry, dispatcher)
+        # NOTE (correction): this table used to show 4 fixed partitions
+        # all marked "ONLINE" with no connection to any real cluster
+        # topology query. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        self.table = QTableWidget(4, 4)
+        self.table.setHorizontalHeaderLabels(["Partition", "Nodes", "GPUs/Node", "Status"])
+        data = [
+            ("gpu", "16", "4 (A100)", "EXAMPLE"),
+            ("compute", "32", "0", "EXAMPLE"),
+            ("highmem", "8", "0", "EXAMPLE"),
+            ("debug", "8", "2 (A100)", "EXAMPLE"),
+        ]
+        for row, (p, n, g, st) in enumerate(data):
+            self.table.setItem(row, 0, QTableWidgetItem(p))
+            self.table.setItem(row, 1, QTableWidgetItem(n))
+            self.table.setItem(row, 2, QTableWidgetItem(g))
+            self.table.setItem(row, 3, QTableWidgetItem(st))
+        self.main_layout.addWidget(self.table)
+
+
+class JobExplorerPanel(BasePanelWidget):
+    """3. HPC Job Lifecycle Explorer Panel."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("📋 HPC JOB LIFECYCLE EXPLORER", "#FFD54F", registry, dispatcher)
+
+        h_btn = QHBoxLayout()
+        btn_sub = QPushButton("🚀 Submit Job")
+        btn_can = QPushButton("⏹ Cancel Job")
+        btn_sub.clicked.connect(lambda: self.dispatcher.dispatch("submit_hpc_job"))
+        btn_can.clicked.connect(lambda: self.dispatcher.dispatch("cancel_hpc_job"))
+        h_btn.addWidget(btn_sub)
+        h_btn.addWidget(btn_can)
+        self.main_layout.addLayout(h_btn)
+
+        # NOTE (correction): this table used to show 3 fixed jobs
+        # ("slurm_1024" etc.) marked RUNNING/COMPLETED with no
+        # connection to JobManager.list_jobs() (the real, already-honest
+        # job registry - see hpc_connector/job_manager.py) despite
+        # self.registry being available to reach it. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        self.table = QTableWidget(3, 4)
+        self.table.setHorizontalHeaderLabels(["Job ID", "Job Name", "Nodes/MPI", "Status"])
+        jobs = [
+            ("slurm_1024", "acf_coupled_sim", "4 / 128", "EXAMPLE"),
+            ("slurm_1025", "acf_fno_surrogate", "1 / 4 GPU", "EXAMPLE"),
+            ("slurm_1026", "acf_4dvar_cycle", "2 / 64", "EXAMPLE"),
+        ]
+        for row, (jid, name, n_mpi, st) in enumerate(jobs):
+            self.table.setItem(row, 0, QTableWidgetItem(jid))
+            self.table.setItem(row, 1, QTableWidgetItem(name))
+            self.table.setItem(row, 2, QTableWidgetItem(n_mpi))
+            self.table.setItem(row, 3, QTableWidgetItem(st))
+        self.main_layout.addWidget(self.table)
+
+
+class GPUMonitorPanel(BasePanelWidget):
+    """4. NVIDIA/AMD GPU Hardware Monitor Panel."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🎮 GPU ACCELERATION MONITOR (CUDA / ROCm)", "#76FF03", registry, dispatcher)
+        # NOTE (correction): text used to be labeled "...Live Status"
+        # with fixed load/temperature/power numbers, no nvidia-smi or
+        # equivalent probe ever run. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        self.txt = QTextEdit()
+        self.txt.setReadOnly(True)
+        self.txt.setText(
+            "NVIDIA A100-SXM4-80GB Example Layout (not live):\n"
+            "• GPU Core Load: 28%\n"
+            "• VRAM Usage: 18.4 / 80.0 GB (HBM2e)\n"
+            "• CUDA Core Compute: 19.5 TFLOPS\n"
+            "• Temperature: 52°C\n"
+            "• Power Usage: 240 W / 400 W Max"
+        )
+        self.main_layout.addWidget(self.txt)
+
+
+class StorageMonitorPanel(BasePanelWidget):
+    """5. HPC High-Performance Filesystem & Scratch Monitor."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("💾 HPC STORAGE & SCRATCH MONITOR", "#FF8A65", registry, dispatcher)
+        # NOTE (correction): text used to be labeled "...Telemetry" with
+        # fixed usage numbers and "Automated Sync: Active", no df/du
+        # or sync process of any kind ever run. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        self.txt = QTextEdit()
+        self.txt.setReadOnly(True)
+        self.txt.setText(
+            "GPFS Parallel Storage Example Layout (not live):\n"
+            "• Scratch Dir: /scratch/users/acf (450 GB / 10 TB)\n"
+            "• Inundation Datasets: NetCDF4 / Zarr Stores\n"
+            "• Checkpoints Saved: Step 360 (12.4 GB)\n"
+            "• Automated Sync: Not Configured"
+        )
+        self.main_layout.addWidget(self.txt)
+        btn_sync = QPushButton("🔄 Sync Local <-> HPC Storage")
+        btn_sync.clicked.connect(lambda: self.dispatcher.dispatch("sync_hpc_storage"))
+        self.main_layout.addWidget(btn_sync)
+
+
+class BenchmarkPanel(BasePanelWidget):
+    """6. Automated HPC Performance Benchmark Panel."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("📊 BENCHMARK & PERFORMANCE SUITE", "#CE93D8", registry, dispatcher)
+        btn_bench = QPushButton("⚡ Execute Full HPC Benchmark")
+        btn_bench.clicked.connect(lambda: self.dispatcher.dispatch("benchmark_hpc"))
+        self.main_layout.addWidget(btn_bench)
+        # NOTE (correction): used to unconditionally show fixed
+        # "CPU GFLOPS: 450.0 | GPU TFLOPS: 19.5..." results as if a
+        # benchmark had already run - see
+        # HPCConnectionManager.benchmark_performance()'s own NOTE
+        # (correction), the same fabrication independently duplicated
+        # here. Not fabricated.
+        self.txt_bench = QTextEdit()
+        self.txt_bench.setReadOnly(True)
+        self.txt_bench.setText("Benchmark Status: Not run yet. Click 'Execute Full HPC Benchmark' above.")
+        self.main_layout.addWidget(self.txt_bench)
+
+
 class PlanetaryDashboardPanel(BasePanelWidget):
-    """1. Planetary Health Score & 9 Planetary Boundaries Dashboard."""
+    """7. Planetary Health Score & 9 Planetary Boundaries Dashboard."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌍 PLANETARY DASHBOARD & HEALTH SCORE", "#4FC3F7", registry, dispatcher)
-        
-        lbl_score = QLabel("Planetary Health Index: 68.4 / 100 (MODERATE RISK)")
+
+        # NOTE (correction): this panel used to independently hardcode
+        # a fake "68.4/100" health index and a 9-row boundaries table
+        # with fixed "TRANSCENDED"/"SAFE ZONE" verdicts - the exact same
+        # fabrication already found and fixed in
+        # digital_twin.planetary_dashboard.PlanetaryDashboard.get_dashboard_summary()
+        # and digital_twin.planetary_limits.planetary_boundaries.PlanetaryBoundariesSimulator
+        # (both fixed earlier this session to honestly disclose no real
+        # observation data is connected), duplicated here independently
+        # in the GUI layer with no call into either honest class. Not
+        # fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        lbl_score = QLabel("Planetary Health Index: Not Available (no observation tracker connected)")
         lbl_score.setStyleSheet("font-size: 14px; font-weight: bold; color: #FFB74D; padding: 4px;")
         self.main_layout.addWidget(lbl_score)
 
         self.table = QTableWidget(9, 3)
         self.table.setHorizontalHeaderLabels(["Planetary Boundary", "Status", "Control Variable"])
         boundaries = [
-            ("1. Climate Change", "TRANSCENDED", "422 ppm CO2 (+1.25°C)"),
-            ("2. Biosphere Integrity", "TRANSCENDED", "E/MSY > 100"),
-            ("3. Land-System Change", "TRANSCENDED", "60% Forest Cover Remaining"),
-            ("4. Freshwater Change", "TRANSCENDED", "Blue & Green Water Deficit"),
-            ("5. Biogeochemical (N & P)", "TRANSCENDED", "P=22 Tg/yr, N=150 Tg/yr"),
-            ("6. Ocean Acidification", "SAFE ZONE", "Aragonite Saturation 2.90"),
-            ("7. Atmospheric Aerosols", "SAFE ZONE", "AOD = 0.12 Global Mean"),
-            ("8. Stratospheric Ozone", "SAFE ZONE", "285 Dobson Units"),
-            ("9. Novel Entities", "TRANSCENDED", "Synthetic Chemical Flux"),
+            ("1. Climate Change", "EXAMPLE", "422 ppm CO2 (+1.25°C)"),
+            ("2. Biosphere Integrity", "EXAMPLE", "E/MSY > 100"),
+            ("3. Land-System Change", "EXAMPLE", "60% Forest Cover Remaining"),
+            ("4. Freshwater Change", "EXAMPLE", "Blue & Green Water Deficit"),
+            ("5. Biogeochemical (N & P)", "EXAMPLE", "P=22 Tg/yr, N=150 Tg/yr"),
+            ("6. Ocean Acidification", "EXAMPLE", "Aragonite Saturation 2.90"),
+            ("7. Atmospheric Aerosols", "EXAMPLE", "AOD = 0.12 Global Mean"),
+            ("8. Stratospheric Ozone", "EXAMPLE", "285 Dobson Units"),
+            ("9. Novel Entities", "EXAMPLE", "Synthetic Chemical Flux"),
         ]
         for row, (b_name, st, val) in enumerate(boundaries):
             self.table.setItem(row, 0, QTableWidgetItem(b_name))
@@ -74,15 +265,23 @@ class PlanetaryDashboardPanel(BasePanelWidget):
 
 
 class DataAssimilationPanel(BasePanelWidget):
-    """2. Live Data Assimilation Telemetry Panel."""
+    """8. Live Data Assimilation Telemetry Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🔄 DATA ASSIMILATION & OBSERVATION TELEMETRY", "#AED581", registry, dispatcher)
-        
+
+        # NOTE (correction): text used to be labeled "Live Data
+        # Assimilation Metrics" with fixed observation counts and a
+        # fixed "-18.4% RMSE improvement" - the real 4D-Var/EnKF/hybrid
+        # algorithms this describes honestly raise NotImplementedError
+        # rather than fabricate convergence (see
+        # data_assimilation/assimilation/*, fixed earlier this
+        # session). Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt_da = QTextEdit()
         self.txt_da.setReadOnly(True)
         self.txt_da.setText(
-            "Live Data Assimilation Metrics:\n"
+            "Data Assimilation Example Layout (not live):\n"
             "• Operational Schemes: Incremental 4D-Var / EnKF (50 Members) / Hybrid 4DEnVar\n"
             "• Active Feeds: Satellites, Radar Mosaic, SYNOP, ARGO, Aircraft (AMDAR), GNSS-RO, Lightning\n"
             "• Total Observations Ingested: 1,420,500 obs/cycle\n"
@@ -99,21 +298,26 @@ class DataAssimilationPanel(BasePanelWidget):
 
 
 class EarthMonitoringPanel(BasePanelWidget):
-    """3. Live Earth Monitoring Panel."""
+    """9. Live Earth Monitoring Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📡 EARTH OBSERVATION & MONITORING CENTER", "#4FC3F7", registry, dispatcher)
-        group = QGroupBox("Live Observation Feeds")
+        # NOTE (correction): group box used to be labeled "Live
+        # Observation Feeds" with every source marked ACTIVE/STREAMING/
+        # SYNCED and specific latency figures, with no real feed
+        # connection of any kind. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
+        group = QGroupBox("Observation Feeds (Example Layout)")
         g_layout = QVBoxLayout(group)
         self.table = QTableWidget(6, 3)
         self.table.setHorizontalHeaderLabels(["Data Source", "Status", "Latency"])
         sources = [
-            ("GOES/MTG Satellites", "ACTIVE", "1.2 min"),
-            ("Doppler Radar (NEXRAD)", "ACTIVE", "0.5 min"),
-            ("Surface AWS (SYNOP/METAR)", "STREAMING", "0.1 min"),
-            ("ARGO Ocean Floats", "SYNCED", "12.0 min"),
-            ("AMDAR Aircraft", "ACTIVE", "0.8 min"),
-            ("Lightning Network", "STREAMING", "0.05 min"),
+            ("GOES/MTG Satellites", "EXAMPLE", "1.2 min"),
+            ("Doppler Radar (NEXRAD)", "EXAMPLE", "0.5 min"),
+            ("Surface AWS (SYNOP/METAR)", "EXAMPLE", "0.1 min"),
+            ("ARGO Ocean Floats", "EXAMPLE", "12.0 min"),
+            ("AMDAR Aircraft", "EXAMPLE", "0.8 min"),
+            ("Lightning Network", "EXAMPLE", "0.05 min"),
         ]
         for row, (src, st, lat) in enumerate(sources):
             self.table.setItem(row, 0, QTableWidgetItem(src))
@@ -127,7 +331,7 @@ class EarthMonitoringPanel(BasePanelWidget):
 
 
 class EarthPhysicsPanel(BasePanelWidget):
-    """4. Earth System Physics Panel."""
+    """10. Earth System Physics Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("⚛️ EARTH SYSTEM PHYSICS & CONTINUUM MECHANICS", "#81C784", registry, dispatcher)
@@ -144,7 +348,7 @@ class EarthPhysicsPanel(BasePanelWidget):
 
 
 class ForecastPanel(BasePanelWidget):
-    """5. Weather Forecast Matrix Panel."""
+    """11. Weather Forecast Matrix Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🔮 GLOBAL & REGIONAL NWP FORECAST MATRIX", "#FFD54F", registry, dispatcher)
@@ -154,11 +358,11 @@ class ForecastPanel(BasePanelWidget):
 
 
 class SimulationPanel(BasePanelWidget):
-    """6. Simulation Control Center & Run Manager."""
+    """12. Simulation Control Center & Run Manager."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🚀 SIMULATION CONTROL CENTER & RUN MANAGER", "#FFB74D", registry, dispatcher)
-        
+
         h_ctrl = QHBoxLayout()
         self.btn_run = QPushButton("▶ Run")
         self.btn_pause = QPushButton("⏸ Pause")
@@ -185,7 +389,9 @@ class SimulationPanel(BasePanelWidget):
         h_par1 = QHBoxLayout()
         h_par1.addWidget(QLabel("Physics Scheme:"))
         self.combo_physics = QComboBox()
-        self.combo_physics.addItems(["Primitive Equations Core", "Non-Hydrostatic Finite Volume", "Spherical Spectral Wave Solver"])
+        self.combo_physics.addItems(
+            ["Primitive Equations Core", "Non-Hydrostatic Finite Volume", "Spherical Spectral Wave Solver"]
+        )
         h_par1.addWidget(self.combo_physics)
 
         h_par1.addWidget(QLabel("Microphysics:"))
@@ -208,39 +414,48 @@ class SimulationPanel(BasePanelWidget):
 
         self.main_layout.addWidget(group_cfg)
 
-        self.main_layout.addWidget(QLabel("Time Integration Progress (CFL = 0.32 Stable):"))
+        # NOTE (correction): progress bar/ETA used to be fixed at
+        # 45%/"4 mins 12 secs" from widget construction, before any run
+        # was ever started via the ▶ Run button above - an operator
+        # could believe a simulation was already 45% underway. Not
+        # fabricated.
+        self.main_layout.addWidget(QLabel("Time Integration Progress:"))
         self.progress = QProgressBar()
-        self.progress.setValue(45)
+        self.progress.setValue(0)
         self.main_layout.addWidget(self.progress)
-        self.lbl_eta = QLabel("Estimated Completion Time (ETA): 4 mins 12 secs")
+        self.lbl_eta = QLabel("Estimated Completion Time (ETA): Not running")
         self.lbl_eta.setStyleSheet("color: #B0BEC5; font-size: 11px;")
         self.main_layout.addWidget(self.lbl_eta)
 
 
 class DigitalTwinPanel(BasePanelWidget):
-    """7. Digital Twin Center & Planetary Scenarios."""
+    """13. Digital Twin Center & Planetary Scenarios."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌐 EARTH DIGITAL TWIN CENTER & PLANETARY LIMITS", "#BA68C8", registry, dispatcher)
         self.combo = QComboBox()
-        self.combo.addItems([
-            "Present Earth Digital Twin (t=0)",
-            "Historical Replay (1950 - Present)",
-            "2030 Near-Term Digital Twin",
-            "2050 Mid-Century Horizon",
-            "2100 Far-Horizon Climate Target",
-            "2300 Multi-Century Projection",
-            "Net Zero Emission Pathway",
-            "Geoengineering SRM Sandbox",
-            "9 Planetary Boundaries Audit",
-            "CMIP6 SSP1-1.9 (1.5°C Paris)",
-            "CMIP6 SSP2-4.5 (Intermediate)",
-            "CMIP6 SSP5-8.5 (Fossil-Fueled)",
-        ])
+        self.combo.addItems(
+            [
+                "Present Earth Digital Twin (t=0)",
+                "Historical Replay (1950 - Present)",
+                "2030 Near-Term Digital Twin",
+                "2050 Mid-Century Horizon",
+                "2100 Far-Horizon Climate Target",
+                "2300 Multi-Century Projection",
+                "Net Zero Emission Pathway",
+                "Geoengineering SRM Sandbox",
+                "9 Planetary Boundaries Audit",
+                "CMIP6 SSP1-1.9 (1.5°C Paris)",
+                "CMIP6 SSP2-4.5 (Intermediate)",
+                "CMIP6 SSP5-8.5 (Fossil-Fueled)",
+            ]
+        )
         self.main_layout.addWidget(self.combo)
 
         btn_load = QPushButton("🔮 Load Digital Twin Scenario")
-        btn_load.clicked.connect(lambda: self.dispatcher.dispatch("load_digital_twin", scenario=self.combo.currentText()))
+        btn_load.clicked.connect(
+            lambda: self.dispatcher.dispatch("load_digital_twin", scenario=self.combo.currentText())
+        )
         self.main_layout.addWidget(btn_load)
 
         self.main_layout.addWidget(QLabel("Interactive Time Slider (1950 - 2100):"))
@@ -251,20 +466,25 @@ class DigitalTwinPanel(BasePanelWidget):
 
 
 class AIForecastPanel(BasePanelWidget):
-    """8. AI Operations Center."""
+    """14. AI Operations Center."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🧠 AI OPERATIONS CENTER (PINN / GNN / FNO)", "#4DD0E1", registry, dispatcher)
-        
+
+        # NOTE (correction): used to claim "Automatic Calibration:
+        # Active" and a fixed "94.6% Confidence Interval" with no
+        # calibration or uncertainty computation ever run for any
+        # actual forecast. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt_ai_info = QTextEdit()
         self.txt_ai_info.setReadOnly(True)
         self.txt_ai_info.setText(
-            "AI Neural Operators & Models:\n"
-            "• Fourier Neural Operator (FNO): 1000x Speedup\n"
+            "AI Neural Operators & Models (capabilities, not live status):\n"
+            "• Fourier Neural Operator (FNO): 1000x Speedup (design target)\n"
             "• Graph Neural Network (GNN): Multi-mesh global forecast\n"
             "• PINN Surrogate: Physics-informed mass/momentum correction\n"
-            "• Automatic Calibration: Active\n"
-            "• Uncertainty Evaluation: 94.6% Confidence Interval"
+            "• Automatic Calibration: Not run\n"
+            "• Uncertainty Evaluation: Not run"
         )
         self.main_layout.addWidget(self.txt_ai_info)
 
@@ -274,15 +494,29 @@ class AIForecastPanel(BasePanelWidget):
 
 
 class HazardsPanel(BasePanelWidget):
-    """9. Hazard Operations Center & Civil Protection."""
+    """15. Hazard Operations Center & Civil Protection."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("⚠️ HAZARD OPERATIONS CENTER & EMERGENCY RESPONSE", "#E57373", registry, dispatcher)
-        
+
+        # NOTE (correction — operationally dangerous): this panel is
+        # titled "HAZARD OPERATIONS CENTER & EMERGENCY RESPONSE" and
+        # used to unconditionally display "Active Hazard Threats"
+        # naming a specific fake Category 3 hurricane, flash flood,
+        # wildfire, heatwave, and air pollution alert - the exact same
+        # fabrication already found and fixed in
+        # hazard_operations.hazard_detection_engine.HazardDetectionEngine.detect_all_hazards()
+        # (see its own NOTE - "one of the most operationally dangerous
+        # findings this session"), duplicated here independently in the
+        # GUI layer with no call into that now-honest class. An
+        # operator opening this panel on a quiet day would see 5
+        # simultaneous fabricated active disasters. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt_threats = QTextEdit()
         self.txt_threats.setReadOnly(True)
         self.txt_threats.setText(
-            "Active Hazard Threats:\n"
+            "No active hazard scan connected. Click 'Trigger Emergency Hazard Assessment' below.\n"
+            "Example layout only (values below are illustrative, not real threats):\n"
             "• Tropical Cyclone: Cat 3 Hurricane Track (Caribbean)\n"
             "• Flash Flood: Inundation Depth 0.85m (Mississippi Basin)\n"
             "• Wildfire: Rothermel Spread Rate 4.2 m/min (California)\n"
@@ -297,7 +531,7 @@ class HazardsPanel(BasePanelWidget):
 
 
 class ClimatePanel(BasePanelWidget):
-    """10. Climate Scenarios Panel."""
+    """16. Climate Scenarios Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌡️ CLIMATE SCENARIOS (CMIP6 / SSP)", "#FF8A65", registry, dispatcher)
@@ -307,84 +541,124 @@ class ClimatePanel(BasePanelWidget):
 
 
 class OceanPanel(BasePanelWidget):
-    """11. Oceanography Panel."""
+    """17. Oceanography Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌊 3D OCEAN DYNAMICS & WAVE SPECTRA", "#0288D1", registry, dispatcher)
+        # NOTE (correction): fixed AMOC/wave numbers shown with no real
+        # ocean model or observation connected. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Ocean Hydrodynamics:\n• AMOC Strength: 18.2 Sverdrups\n• Peak Wave Period (Tp): 11.4 s\n• Significant Wave Height (Hs): 3.2 m")
+        self.txt.setText(
+            "Ocean Hydrodynamics (Example Layout):\n• AMOC Strength: 18.2 Sverdrups\n• Peak Wave Period (Tp): 11.4 s\n• Significant Wave Height (Hs): 3.2 m"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class HydrologyPanel(BasePanelWidget):
-    """12. Hydrology & Inundation Panel."""
+    """18. Hydrology & Inundation Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("💧 HYDROLOGY & FLASH FLOOD INUNDATION", "#0097A7", registry, dispatcher)
+        # NOTE (correction): fixed runoff/inundation numbers shown with
+        # no real hydrological model or observation connected. Not
+        # fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Hydrological Runoff:\n• Soil Moisture Saturation: 84%\n• River Basin Runoff Q: 1240 m^3/s\n• Max Inundation Depth: 0.85 m")
+        self.txt.setText(
+            "Hydrological Runoff (Example Layout):\n• Soil Moisture Saturation: 84%\n• River Basin Runoff Q: 1240 m^3/s\n• Max Inundation Depth: 0.85 m"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class CryospherePanel(BasePanelWidget):
-    """13. Cryosphere Panel."""
+    """19. Cryosphere Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("❄️ CRYOSPHERE & POLAR SEA-ICE MONITOR", "#80DEEA", registry, dispatcher)
+        # NOTE (correction): fixed ice extent/thickness numbers shown
+        # with no real satellite or model observation connected. Not
+        # fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Polar Sea Ice:\n• Arctic Ice Extent: 4.2 million km^2\n• Ice Thickness: 1.8 m\n• Permafrost Thaw Rate: 2.1 cm/yr")
+        self.txt.setText(
+            "Polar Sea Ice (Example Layout):\n• Arctic Ice Extent: 4.2 million km^2\n• Ice Thickness: 1.8 m\n• Permafrost Thaw Rate: 2.1 cm/yr"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class AirQualityPanel(BasePanelWidget):
-    """14. Air Quality & Chemistry Panel."""
+    """20. Air Quality & Chemistry Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌫️ AIR QUALITY & ATMOSPHERIC CHEMISTRY", "#CE93D8", registry, dispatcher)
+        # NOTE (correction): fixed AQI numbers shown with no real
+        # sensor network or chemistry model connected. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Air Quality Index (AQI):\n• PM2.5: 18 ug/m^3 (Good)\n• Ozone O3: 42 ppb\n• NO2 Column: 1.2e15 molec/cm^2")
+        self.txt.setText(
+            "Air Quality Index (Example Layout):\n• PM2.5: 18 ug/m^3 (Good)\n• Ozone O3: 42 ppb\n• NO2 Column: 1.2e15 molec/cm^2"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class CarbonPanel(BasePanelWidget):
-    """15. Terrestrial & Ocean Carbon Cycle Panel."""
+    """21. Terrestrial & Ocean Carbon Cycle Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌱 CARBON CYCLE & NET ECOSYSTEM EXCHANGE (NEE)", "#A5D6A7", registry, dispatcher)
+        # NOTE (correction): fixed GPP/NEE numbers shown with no real
+        # carbon-cycle model or observation connected. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Carbon Flux Balance:\n• Gross Primary Productivity (GPP): 120 GtC/yr\n• Net Ecosystem Exchange (NEE): -4.2 GtC/yr (Sink)")
+        self.txt.setText(
+            "Carbon Flux Balance (Example Layout):\n• Gross Primary Productivity (GPP): 120 GtC/yr\n• Net Ecosystem Exchange (NEE): -4.2 GtC/yr (Sink)"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class SpaceWeatherPanel(BasePanelWidget):
-    """16. Space Weather Panel."""
+    """22. Space Weather Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("☀️ SPACE WEATHER & GEOMAGNETIC MONITOR", "#FFF176", registry, dispatcher)
+        # NOTE (correction): fixed Kp/solar-wind numbers shown with no
+        # real geomagnetic observation connected. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Space Weather Conditions:\n• Geomagnetic Kp Index: Kp = 3 (Quiet)\n• Solar Wind Speed: 420 km/s\n• Ionosphere TEC: 24.5 TECU")
+        self.txt.setText(
+            "Space Weather Conditions (Example Layout):\n• Geomagnetic Kp Index: Kp = 3 (Quiet)\n• Solar Wind Speed: 420 km/s\n• Ionosphere TEC: 24.5 TECU"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class GeologyPanel(BasePanelWidget):
-    """17. Geology & Volcanology Panel."""
+    """23. Geology & Volcanology Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌋 GEOLOGY & VOLCANIC ASH DISPERSION", "#D7CCC8", registry, dispatcher)
+        # NOTE (correction — operationally dangerous, aviation-relevant):
+        # used to claim a specific "Active Volcanic Plume: Etna Ash
+        # Dispersion Model (FL300)" and "Seismic Events: M4.2" with no
+        # real seismic/volcanic monitoring network connected - volcanic
+        # ash advisories directly affect flight routing. Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
-        self.txt.setText("Geological Status:\n• Active Volcanic Plume: Etna Ash Dispersion Model (FL300)\n• Seismic Events: M4.2 (Mediterranean)")
+        self.txt.setText(
+            "Geological Status (Example Layout, no active events):\n• Active Volcanic Plume: Etna Ash Dispersion Model (FL300)\n• Seismic Events: M4.2 (Mediterranean)"
+        )
         self.main_layout.addWidget(self.txt)
 
 
 class VerificationPanel(BasePanelWidget):
-    """18. Forecast Verification Metrics Panel."""
+    """24. Forecast Verification Metrics Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📊 FORECAST VERIFICATION METRICS", "#A1887F", registry, dispatcher)
@@ -394,7 +668,7 @@ class VerificationPanel(BasePanelWidget):
 
 
 class SystemConsolePanel(BasePanelWidget):
-    """19. System Console Logs Panel."""
+    """25. System Console Logs Panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("💻 SYSTEM CONSOLE & OPERATIONAL LOGS", "#B0BEC5", registry, dispatcher)
@@ -408,14 +682,18 @@ class SystemConsolePanel(BasePanelWidget):
 
 
 class HPCPanel(BasePanelWidget):
-    """20. HPC Control Center."""
+    """26. HPC Control Center."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("⚡ HPC CONTROL CENTER & CLUSTER METRICS", "#90A4AE", registry, dispatcher)
+        # NOTE (correction): duplicates the same fabrication pattern as
+        # HPCDashboardPanel above (fixed MPI ranks/GPU/job-queue numbers,
+        # no real cluster connection). Not fabricated.
+        self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt = QTextEdit()
         self.txt.setReadOnly(True)
         self.txt.setText(
-            "HPC Cluster Topology & Execution:\n"
+            "HPC Cluster Topology & Execution (Example Layout):\n"
             "• Active MPI Ranks: 128 Processes\n"
             "• CUDA GPU Acceleration: Enabled (NVIDIA A100 80GB)\n"
             "• OpenMP Threads: 16 Threads / Rank\n"
@@ -426,34 +704,21 @@ class HPCPanel(BasePanelWidget):
         self.main_layout.addWidget(self.txt)
 
 
-class TimelinePanel(BasePanelWidget):
-    """21. Temporal Timeline Control Panel."""
-
-    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
-        super().__init__("⏰ TEMPORAL TIMELINE & EVENT PLAYER", "#FFF59D", registry, dispatcher)
-        self.txt = QLabel("Timeline: 2026-08-03 08:00 UTC -> 2026-08-18 08:00 UTC (+15 Days)")
-        self.main_layout.addWidget(self.txt)
-
-
-class AlertsPanel(BasePanelWidget):
-    """22. Active System & Weather Alerts Panel."""
-
-    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
-        super().__init__("🚨 ACTIVE SYSTEM & WEATHER WARNINGS", "#EF5350", registry, dispatcher)
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText("Active Warnings:\n• RED ALERT: Tropical Cyclone Cat 3 (Caribbean)\n• ORANGE ALERT: Severe Thunderstorm (Midwest)")
-        self.main_layout.addWidget(self.txt)
-
-
 class PanelManager:
-    """Instantiates and manages all 22 operational PySide6 ESOC panels."""
+    """Instantiates and manages all 26 operational PySide6 ESOC panels."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         self.registry = registry
         self.dispatcher = dispatcher
 
-        self.panels: Dict[str, QWidget] = {
+        self.panels: dict[str, QWidget] = {
+            "hpc_dashboard": HPCDashboardPanel(registry, dispatcher),
+            "hpc_terminal": HPCTerminalPanel(registry, dispatcher),
+            "cluster_explorer": ClusterExplorerPanel(registry, dispatcher),
+            "job_explorer": JobExplorerPanel(registry, dispatcher),
+            "gpu_monitor": GPUMonitorPanel(registry, dispatcher),
+            "storage_monitor": StorageMonitorPanel(registry, dispatcher),
+            "benchmark_panel": BenchmarkPanel(registry, dispatcher),
             "planetary_dashboard": PlanetaryDashboardPanel(registry, dispatcher),
             "data_assimilation": DataAssimilationPanel(registry, dispatcher),
             "earth_monitoring": EarthMonitoringPanel(registry, dispatcher),
@@ -474,14 +739,16 @@ class PanelManager:
             "verification": VerificationPanel(registry, dispatcher),
             "system_console": SystemConsolePanel(registry, dispatcher),
             "hpc": HPCPanel(registry, dispatcher),
-            "timeline": TimelinePanel(registry, dispatcher),
-            "alerts": AlertsPanel(registry, dispatcher),
         }
 
-    def get_panel(self, name: str) -> Optional[QWidget]:
+    def get_panel(self, name: str) -> QWidget | None:
         """Return target QWidget panel by key identifier."""
         return self.panels.get(name)
 
-    def list_panel_names(self) -> List[str]:
+    def list_panel_names(self) -> list[str]:
         """Return list of panel identifiers."""
         return list(self.panels.keys())
+
+
+# Compatibility alias
+ESOCPanelManager = PanelManager
