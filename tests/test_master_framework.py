@@ -74,10 +74,17 @@ def test_master_science_gateway():
 
 def test_scientific_certification_and_equation_validator():
     """Test de l'audit de certification scientifique Platinum et du validateur d'équations."""
+    # CORRECTED: audit_framework() used to unconditionally claim
+    # "CERTIFIED_PLATINUM" / 100% SI compliance / 450 equations audited
+    # with zero actual verification performed - the single most
+    # consequential fake-stub finding of this session (a framework
+    # falsely self-certifying as fully verified). Now honestly reports
+    # no real audit was performed.
     cert = ScientificCertificationEngine.audit_framework()
     assert isinstance(cert, CertificationReport)
-    assert cert.certification_level == "CERTIFIED_PLATINUM"
-    assert cert.si_compliance_pct == 100.0
+    assert cert.certification_level == "NOT_AUDITED"
+    assert cert.si_compliance_pct == 0.0
+    assert cert.equations_audited_count == 0
 
     # CORRECTED: validate_equation used to always report
     # is_dimensional_correct=True/VALIDATED regardless of content - a
