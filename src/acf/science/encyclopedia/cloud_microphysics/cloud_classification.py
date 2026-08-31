@@ -157,17 +157,51 @@ def calculate_lcl_height(temp_c: float, dewpoint_c: float) -> float:
 
 
 def calculate_lfc_height(z_lcl: float, cape: float) -> float:
-    """Calcul estimé du Niveau de Convection Libre (LFC)."""
-    if cape <= 0.0:
-        return z_lcl + 1500.0
-    return max(z_lcl, z_lcl + 500.0 - (cape / 10.0))
+    """
+    NOTE (correction - fabricated formula): this used to return
+    `z_lcl + 1500.0` or `max(z_lcl, z_lcl + 500.0 - cape/10.0)` - an
+    ad-hoc linear formula with no physical basis, presented alongside
+    citations (WMO-No. 8, NOAA SPC Stability Parameters) that define
+    the CONCEPT of LFC but do not support this specific formula.
+    Verified via WebSearch: no standard closed-form LFC-from-(LCL,CAPE)
+    approximation exists in the meteorological literature - the LFC is
+    always determined by finding where a parcel's virtual-temperature
+    profile first exceeds the environmental profile above the LCL
+    (e.g. MetPy's lfc(), NOAA SPC's own definition), which requires the
+    actual sounding, not just two integrated scalars. Honestly
+    unimplemented rather than left silently wrong, per the precedent
+    set earlier this session for the related MEHS/POH hail indices and
+    ice_crystal_nucleation (unverifiable coefficients left unguessed).
+    """
+    raise NotImplementedError(
+        "calculate_lfc_height(z_lcl, cape) needs a full parcel-vs-environment "
+        "virtual-temperature profile to find where the parcel first becomes "
+        "positively buoyant above the LCL - no closed-form approximation from "
+        "(z_lcl, cape) alone exists in the literature (verified). Previously "
+        "returned a fabricated ad-hoc formula; removed rather than left silently wrong."
+    )
 
 
 def calculate_el_height(z_lfc: float, cape: float) -> float:
-    """Calcul estimé du Niveau d'Équilibre Convectif (EL / Equilibrium Level)."""
-    if cape <= 0.0:
-        return z_lfc
-    return z_lfc + 1000.0 + (cape * 3.5)
+    """
+    NOTE (correction - fabricated formula): this used to return
+    `z_lfc + 1000.0 + cape*3.5` - an ad-hoc linear formula with no
+    physical basis, presented alongside citations (AMS Glossary,
+    ECMWF Convection Documentation) that define the CONCEPT of EL but
+    do not support this specific formula. Same underlying issue as
+    calculate_lfc_height() above: the EL is where the parcel's
+    virtual-temperature profile crosses back below the environmental
+    profile (the top of the CAPE-positive layer), which requires the
+    actual sounding - not a function of z_lfc and CAPE alone. Honestly
+    unimplemented rather than left silently wrong.
+    """
+    raise NotImplementedError(
+        "calculate_el_height(z_lfc, cape) needs a full parcel-vs-environment "
+        "virtual-temperature profile to find where the parcel's positive "
+        "buoyancy ends - no closed-form approximation from (z_lfc, cape) alone "
+        "exists in the literature (verified). Previously returned a fabricated "
+        "ad-hoc formula; removed rather than left silently wrong."
+    )
 
 
 EncyclopediaRegistry.register(
@@ -203,7 +237,10 @@ EncyclopediaRegistry.register(
         units={"z_LFC": "m"},
         description="Altitude à partir de laquelle une parcelle d'air ascendante devient plus chaude que son environnement et s'élève spontanément par flottabilité.",
         application_conditions=["Sondage thermodynamique (SKEW-T / Emagramme)"],
-        limitations=["Dépend de l'entraînement d'air sec (entrainment)"],
+        limitations=[
+            "Dépend de l'entraînement d'air sec (entrainment)",
+            "compute_func honnêtement non implémenté (NotImplementedError) - aucune approximation fermée à partir de (z_LCL, CAPE) seuls n'existe dans la littérature vérifiée ; le sondage complet Tv_parcel(z) vs Tv_env(z) est requis",
+        ],
         references=["WMO-No. 8", "NOAA SPC Stability Parameters"],
         compute_func=calculate_lfc_height,
     )
@@ -221,7 +258,10 @@ EncyclopediaRegistry.register(
         units={"z_EL": "m"},
         description="Altitude marquant le sommet du courant ascendant convectif (sommet de la tour convective ou base de l'enclume du Cumulonimbus).",
         application_conditions=["Convection libre"],
-        limitations=["L'inertie convective peut entraîner un dépassement du sommet (overshooting top) au-dessus du EL"],
+        limitations=[
+            "L'inertie convective peut entraîner un dépassement du sommet (overshooting top) au-dessus du EL",
+            "compute_func honnêtement non implémenté (NotImplementedError) - aucune approximation fermée à partir de (z_LFC, CAPE) seuls n'existe dans la littérature vérifiée ; le sondage complet Tv_parcel(z) vs Tv_env(z) est requis",
+        ],
         references=["AMS Glossary of Meteorology", "ECMWF Convection Documentation"],
         compute_func=calculate_el_height,
     )
