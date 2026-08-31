@@ -44,15 +44,29 @@ class MarineObservationEngine:
 
     @classmethod
     def decode_buoy_report(cls, buoy_id: str = "41001") -> dict[str, Any]:
-        """Décode un message d'observation de bouée d'ancrage NOAA NDBC / WMO."""
+        """
+        Décode un message d'observation de bouée d'ancrage NOAA NDBC / WMO.
+
+        NOTE (correction): buoy_id was genuinely echoed, but this
+        claimed to "decode" a real NDBC buoy MESSAGE while every
+        reading (wave height, wind, pressure, even the buoy's name/
+        location "East Hatteras...") was fixed regardless of which
+        buoy_id was actually requested - buoy 41001 (off Cape
+        Hatteras) and any other NDBC buoy would get byte-identical
+        readings. Unlike get_sample_argo_profile() above (honestly
+        self-labeled as an example), "decode" implies a real message
+        was parsed. No real NDBC feed is connected. Not fabricated.
+        """
         return {
             "buoy_id": buoy_id,
-            "name": "East Hatteras 150 NM East of Cape Hatteras",
-            "significant_wave_height_m": 2.8,
-            "peak_wave_period_s": 9.5,
-            "sea_surface_temp_c": 24.2,
-            "wind_speed_kt": 22.0,
-            "wind_gust_kt": 29.0,
-            "wind_dir_deg": 210,
-            "sea_level_pressure_hpa": 1012.4,
+            "name": None,
+            "significant_wave_height_m": None,
+            "peak_wave_period_s": None,
+            "sea_surface_temp_c": None,
+            "wind_speed_kt": None,
+            "wind_gust_kt": None,
+            "wind_dir_deg": None,
+            "sea_level_pressure_hpa": None,
+            "status": "NOT_DECODED_NO_REAL_NDBC_FEED_CONNECTED",
+            "is_real_data": False,
         }

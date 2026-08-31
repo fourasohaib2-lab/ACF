@@ -61,9 +61,11 @@ def test_hurricane_database():
     cat1 = HurricaneDatabase.saffir_simpson_category(wind_speed_kt=75.0)
     assert cat1 == 1
 
+    # CORRECTED: used to unconditionally claim a specific Category 4
+    # hurricane named "Helene" was currently active, with 0 real
+    # NHC/JTWC best-track feed connected.
     active = HurricaneDatabase.get_active_cyclones()
-    assert len(active) >= 1
-    assert active[0].name == "Helene"
+    assert active == []
 
 
 def test_ocean_models_registry():
@@ -81,8 +83,13 @@ def test_marine_observation_engine():
     assert len(argo.depths_m) == 8
     assert argo.depths_m[-1] == 2000.0
 
+    # CORRECTED: used to claim to "decode" a real buoy message while
+    # every reading was fixed regardless of buoy_id, with no real
+    # NDBC feed connected.
     buoy = MarineObservationEngine.decode_buoy_report("41001")
-    assert buoy["significant_wave_height_m"] == 2.8
+    assert buoy["significant_wave_height_m"] is None
+    assert buoy["status"] == "NOT_DECODED_NO_REAL_NDBC_FEED_CONNECTED"
+    assert buoy["buoy_id"] == "41001"  # genuinely echoed
 
 
 def test_query_engine_phase16_marine_questions():

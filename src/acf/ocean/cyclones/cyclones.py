@@ -47,20 +47,18 @@ class HurricaneDatabase:
 
     @classmethod
     def get_active_cyclones(cls) -> list[TropicalCycloneInfo]:
-        """Retourne la liste des cyclones tropicaux actifs dans le monde."""
-        return [
-            TropicalCycloneInfo(
-                cyclone_id="AL092026",
-                name="Helene",
-                basin="North Atlantic",
-                category_saffir_simpson=4,
-                max_sustained_wind_kt=120.0,
-                min_central_pressure_hpa=938.0,
-                radius_max_wind_nm=25.0,
-                current_lat=24.5,
-                current_lon=-84.2,
-                movement_dir_deg=15.0,
-                movement_speed_kt=14.0,
-                rapid_intensification_flag=True,
-            )
-        ]
+        """
+        Retourne la liste des cyclones tropicaux actifs dans le monde.
+
+        NOTE (correction — operationally dangerous): this used to
+        unconditionally claim a specific Category 4 hurricane named
+        "Helene" (reusing the name of a real, historically destructive
+        2024 Atlantic hurricane) was currently active, complete with
+        realistic-looking position (24.5N, -84.2W), pressure (938 hPa),
+        and a rapid-intensification flag, for ANY call with 0
+        parameters and no real NHC/JTWC best-track feed ever connected.
+        A caller checking "active cyclones" during a genuinely quiet
+        period would be told a major hurricane was underway. Not
+        fabricated.
+        """
+        return []
