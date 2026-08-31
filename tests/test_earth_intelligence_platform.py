@@ -62,9 +62,14 @@ def test_hypothesis_engine_and_physics_validator():
 
 def test_forecast_reasoning_and_model_comparison():
     """Test de la comparaison autonome entre modèles NWP et d'IA (IFS, GraphCast, NeuralGCM)."""
+    # CORRECTED: used to unconditionally claim "agreement_pct: 93.8"
+    # and a fabricated specific synoptic scenario regardless of
+    # variable - no real forecast data from any listed model is
+    # compared.
     comparison = ForecastReasoningEngine.compare_models("wind_speed")
     assert len(comparison["models_evaluated"]) == 9
-    assert comparison["agreement_pct"] > 90.0
+    assert comparison["agreement_pct"] is None
+    assert comparison["is_real_data"] is False
 
 
 def test_earth_anomaly_engine():
