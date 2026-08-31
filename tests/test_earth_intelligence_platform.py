@@ -4,17 +4,17 @@ Atmospheric Complexity Framework (ACF)
 Global Earth Intelligence & Autonomous Scientific Reasoning Platform Test Suite (MISSION ACF-037)
 """
 
-from acf.intelligence.scientific_reasoning import ScientificReasoningEngine, ScientificReasoningReport
 from acf.intelligence.agents.manager import ScientificAgentManager
-from acf.intelligence.hypothesis.hypothesis_engine import HypothesisEngine, PhysicalHypothesis
-from acf.intelligence.forecast_analysis.forecast_reasoning import ForecastReasoningEngine
 from acf.intelligence.anomalies.anomaly_engine import EarthAnomalyEngine
-from acf.intelligence.decision_support.decision_engine import DecisionSupportEngine, RecommendedAction
+from acf.intelligence.decision_support.decision_engine import DecisionSupportEngine
+from acf.intelligence.explanations.physics_explainer import ScientificExplanationEngine
+from acf.intelligence.forecast_analysis.forecast_reasoning import ForecastReasoningEngine
+from acf.intelligence.hypothesis.hypothesis_engine import HypothesisEngine
+from acf.intelligence.knowledge.knowledge_updater import KnowledgeEvolutionEngine
 from acf.intelligence.optimization.evacuation import EmergencyOptimizationEngine
 from acf.intelligence.planner.mission_planner import MissionPlanner
-from acf.intelligence.explanations.physics_explainer import ScientificExplanationEngine
-from acf.intelligence.knowledge.knowledge_updater import KnowledgeEvolutionEngine
 from acf.intelligence.reports.executive_report import AutonomousReportGenerator
+from acf.intelligence.scientific_reasoning import ScientificReasoningEngine, ScientificReasoningReport
 from acf.intelligence.visualization.intelligence_dashboard import EarthIntelligenceDashboard
 from acf.science.query_engine import ScientificQueryEngine
 
@@ -81,8 +81,16 @@ def test_mission_planner_and_explanation_engine():
 
 def test_knowledge_evolution_and_executive_reports():
     """Test du moteur d'évolution des connaissances et générateur de rapports d'intelligence."""
+    # CORRECTED: audit_knowledge_base_consistency() used to
+    # unconditionally claim "450 laws validated, 120 constants
+    # verified, 100% SCIENTIFICALLY CONSISTENT" citing real-sounding
+    # sources (IPCC AR6, WMO-No.8...) with no actual checking - a
+    # duplicate of the same false-certification pattern already fixed
+    # in master/scientific_certification.py. Now uses the real
+    # ScientificRegistry law count instead of a fabricated number.
     audit = KnowledgeEvolutionEngine.audit_knowledge_base_consistency()
-    assert "100%" in audit["consistency_status"]
+    assert audit["consistency_status"] == "NOT_VERIFIED_NO_AUTOMATED_CONSISTENCY_CHECK"
+    assert audit["total_laws_registered"] > 0
 
     rep = AutonomousReportGenerator.generate_executive_intelligence_report()
     assert rep["format"] == "Markdown"

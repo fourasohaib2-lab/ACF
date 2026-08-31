@@ -2,20 +2,22 @@
 Global Earth Data Assimilation Framework Test Suite (MISSION ACF-DT-002)
 """
 
-from acf.data_assimilation.observation_ingestion.satellite_ingestor import SatelliteIngestor
-from acf.data_assimilation.observation_ingestion.radar_ingestor import RadarIngestor
-from acf.data_assimilation.observation_ingestion.surface_station_ingestor import SurfaceStationIngestor
-from acf.data_assimilation.observation_ingestion.ocean_observation_ingestor import OceanObservationIngestor
-from acf.data_assimilation.quality_control.qc_engine import ObservationQCEngine
-from acf.data_assimilation.quality_control.observation_error import ObservationErrorModel
-from acf.data_assimilation.quality_control.bias_correction import VariationalBiasCorrection
-from acf.data_assimilation.assimilation.variational.var_4d import FourDVarEngine
-from acf.data_assimilation.assimilation.ensemble.enkf import EnsembleKalmanFilter
-from acf.data_assimilation.assimilation.hybrid.hybrid_da import HybridEnsembleVarDA
-from acf.data_assimilation.analysis_state import EarthAnalysisStateVector
+import pytest
+
 from acf.ai.data_assimilation.neural_assimilation import NeuralDataAssimilation
 from acf.data.data_catalog import DataCatalogEngine
 from acf.data.streaming import StreamingEngine
+from acf.data_assimilation.analysis_state import EarthAnalysisStateVector
+from acf.data_assimilation.assimilation.ensemble.enkf import EnsembleKalmanFilter
+from acf.data_assimilation.assimilation.hybrid.hybrid_da import HybridEnsembleVarDA
+from acf.data_assimilation.assimilation.variational.var_4d import FourDVarEngine
+from acf.data_assimilation.observation_ingestion.ocean_observation_ingestor import OceanObservationIngestor
+from acf.data_assimilation.observation_ingestion.radar_ingestor import RadarIngestor
+from acf.data_assimilation.observation_ingestion.satellite_ingestor import SatelliteIngestor
+from acf.data_assimilation.observation_ingestion.surface_station_ingestor import SurfaceStationIngestor
+from acf.data_assimilation.quality_control.bias_correction import VariationalBiasCorrection
+from acf.data_assimilation.quality_control.observation_error import ObservationErrorModel
+from acf.data_assimilation.quality_control.qc_engine import ObservationQCEngine
 
 
 def test_observation_ingestion_engine():
@@ -51,17 +53,29 @@ def test_quality_control_and_error_modeling():
 
 def test_assimilation_algorithms_4dvar_enkf_hybrid():
     """Test des algorithmes d'assimilation 4D-Var, EnKF 50 membres et 4DEnVar Hybride."""
+    # compute_cost_function() is a real, correct scalar 4D-Var cost
+    # function implementation - unaffected by the corrections below.
     cost = FourDVarEngine.compute_cost_function(1.0, 2.0)
     assert cost > 0.0
 
-    var4d = FourDVarEngine.minimize_4dvar()
-    assert var4d["status"] == "CONVERGED_OPTIMAL"
+    # CORRECTED: minimize_4dvar()/run_ensemble_update()/
+    # run_hybrid_assimilation() used to unconditionally claim
+    # CONVERGED_OPTIMAL / ENKF_UPDATE_SUCCESS / HYBRID_ASSIMILATION_SUCCESS
+    # with zero real minimization, ensemble, or hybrid covariance
+    # computation behind any of them - direct fabrication of the exact
+    # NWP data assimilation methods (4D-Var, EnKF, hybrid 4DEnVar) this
+    # whole project is meant to provide. None of the underlying
+    # infrastructure (adjoint models, ensemble covariances, real
+    # optimizers) exists yet, so they now honestly raise
+    # NotImplementedError instead of fabricating convergence.
+    with pytest.raises(NotImplementedError):
+        FourDVarEngine.minimize_4dvar()
 
-    enkf = EnsembleKalmanFilter.run_ensemble_update(50)
-    assert enkf["ensemble_members"] == 50
+    with pytest.raises(NotImplementedError):
+        EnsembleKalmanFilter.run_ensemble_update(50)
 
-    hyb = HybridEnsembleVarDA.run_hybrid_assimilation(0.5)
-    assert hyb["status"] == "HYBRID_ASSIMILATION_SUCCESS"
+    with pytest.raises(NotImplementedError):
+        HybridEnsembleVarDA.run_hybrid_assimilation(0.5)
 
 
 def test_analysis_state_vector_and_neural_da():

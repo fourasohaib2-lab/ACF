@@ -4,19 +4,21 @@ Atmospheric Complexity Framework (ACF)
 Global Autonomous Earth Operating System (AEOS) Platform Test Suite (MISSION ACF-038)
 """
 
+import os
+
 from acf.aeos.aeos_kernel import AEOSKernel
-from acf.aeos.services.service_registry import ServiceRegistry
-from acf.aeos.scheduler.task_scheduler import TaskScheduler, AEOSTask
+from acf.aeos.agents.autonomous_agents import AgentManager
 from acf.aeos.distributed.cluster_manager import ClusterManager
-from acf.aeos.workflow.workflow_engine import WorkflowEngine, ScientificWorkflow
+from acf.aeos.events.event_bus import PlanetaryEvent, PlanetaryEventBus
 from acf.aeos.health.self_healing import SelfHealingEngine
 from acf.aeos.knowledge.knowledge_evolution import KnowledgeEvolutionEngine
-from acf.aeos.orchestration.model_orchestrator import ModelOrchestrator, ModelExecutionPlan, ModelConsensus
-from acf.aeos.resources.resource_optimizer import ResourceOptimizer
-from acf.aeos.events.event_bus import PlanetaryEventBus, PlanetaryEvent
-from acf.aeos.agents.autonomous_agents import AgentManager
-from acf.aeos.visualization.mission_control import MissionControlDashboard
+from acf.aeos.orchestration.model_orchestrator import ModelConsensus, ModelExecutionPlan, ModelOrchestrator
 from acf.aeos.reports.aeos_report import AEOSReportGenerator
+from acf.aeos.resources.resource_optimizer import ResourceOptimizer
+from acf.aeos.scheduler.task_scheduler import AEOSTask, TaskScheduler
+from acf.aeos.services.service_registry import ServiceRegistry
+from acf.aeos.visualization.mission_control import MissionControlDashboard
+from acf.aeos.workflow.workflow_engine import WorkflowEngine
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -70,11 +72,16 @@ def test_cluster_manager_distributed_computing():
 
 def test_self_healing_and_knowledge_evolution():
     """Test de l'auto-guérison du système et de l'évolution du graphe de connaissances."""
+    # CORRECTED: run_system_health_audit()/update_knowledge_graph()
+    # used to unconditionally claim "100% HEALTHY" / "100% VERIFIED
+    # SCIENTIFIC ACCURACY" with no real scan/validation behind either.
     health_audit = SelfHealingEngine.run_system_health_audit()
-    assert health_audit["system_integrity_status"] == "100% HEALTHY"
+    assert health_audit["system_integrity_status"] == "NOT_AUDITED_NO_REAL_SCAN_PERFORMED"
+    assert health_audit["is_real_data"] is False
 
     ke = KnowledgeEvolutionEngine.update_knowledge_graph()
     assert "v38.0" in ke["current_schema_version"]
+    assert ke["consistency_check"] == "NOT_VERIFIED_NO_LITERATURE_MONITORING_PIPELINE"
 
 
 def test_model_orchestration_and_resource_optimization():
@@ -87,8 +94,14 @@ def test_model_orchestration_and_resource_optimization():
     assert isinstance(consensus, ModelConsensus)
     assert consensus.ensemble_spread < 0.5
 
+    # CORRECTED: optimize_resources() used to return fixed fake
+    # numbers (48.0 GB GPU, 128 threads, 10.0 Gbps) regardless of the
+    # real machine. cpu_threads_active is now a real os.cpu_count()
+    # reading; GPU/network are honestly None (no library to query them).
     resources = ResourceOptimizer.optimize_resources()
-    assert resources["gpu_memory_allocated_gb"] == 48.0
+    assert resources["gpu_memory_allocated_gb"] is None
+    assert resources["cpu_threads_active"] == os.cpu_count()
+    assert resources["is_real_data"] is True
 
 
 def test_planetary_event_bus_and_autonomous_agents():
@@ -100,7 +113,9 @@ def test_planetary_event_bus_and_autonomous_agents():
         received.append(evt.event_id)
 
     bus.subscribe("CycloneDetected", callback)
-    published_count = bus.publish(PlanetaryEvent("EVT-01", "CycloneDetected", {"name": "Typhoon"}, "2026-08-02T08:00:00Z"))
+    published_count = bus.publish(
+        PlanetaryEvent("EVT-01", "CycloneDetected", {"name": "Typhoon"}, "2026-08-02T08:00:00Z")
+    )
     assert published_count == 1
     assert len(received) == 1
 
