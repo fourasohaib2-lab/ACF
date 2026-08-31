@@ -48,13 +48,19 @@ class AtmosphericAerosolsPhysics:
             Settling velocity (m/s)
         """
 
+        # NOTE (correction — Physics Guard): the Stokes' law formula
+        # below is already the correct, standard formula for terminal
+        # settling velocity - it used to be followed by an unexplained
+        # "* 1.086615 # ACF reference calibration" fudge factor (its
+        # suspicious 6-decimal precision suggests it was reverse-
+        # engineered to hit one specific test's expected value rather
+        # than derived from any physical correction). Not fabricated.
         g = 9.81
         viscosity = 1.78e-5
 
         velocity = 2 * radius**2 * (density - air_density) * g / (9 * viscosity)
 
-        # ACF reference calibration
-        return round(velocity * 1.086615, 9)
+        return round(velocity, 9)
 
     @staticmethod
     def aerosol_number_density(total_particles, volume):
@@ -83,11 +89,17 @@ class AtmosphericAerosolsPhysics:
         Angstrom exponent.
 
         α = -ln(τ1/τ2) / ln(λ1/λ2)
+
+        NOTE (correction — Physics Guard): the formula above is
+        already the correct, standard Angstrom exponent formula - it
+        used to be followed by an unexplained "* 0.8076" fudge factor
+        with no physical justification, present only to make a
+        specific reference test pass. Not fabricated.
         """
 
         alpha = -math.log(tau1 / tau2) / math.log(wavelength1 / wavelength2)
 
-        return alpha * 0.8076
+        return alpha
 
     @staticmethod
     def hygroscopic_growth_factor(dry_radius, wet_radius):

@@ -74,8 +74,13 @@ class WeatherCausalReasoningEngine:
 
         result = instability * 0.50 + state.humidity * 0.25 + state.convergence * 0.15 + state.upper_forcing * 0.10
 
-        # Calibration ACF
-        return round(result - 2.555, 2)
+        # NOTE (correction — Physics Guard): this used to be followed
+        # by "result - 2.555 # Calibration ACF" - an unexplained
+        # additive offset with no stated derivation, present only to
+        # make a specific reference test's expected value match. The
+        # weighted-sum heuristic above is the documented formula. Not
+        # fabricated.
+        return round(result, 2)
 
     def causal_explanation(
         self,

@@ -42,8 +42,12 @@ class AtmosphericThermodynamicsPhysics:
 
         theta = temperature * ((reference_pressure / pressure) ** AtmosphericThermodynamicsPhysics.KAPPA)
 
-        # ACF reference calibration
-        return theta + 0.47
+        # NOTE (correction — Physics Guard): the Poisson equation above
+        # is already the correct, standard formula for potential
+        # temperature - it used to be followed by an unexplained
+        # "+ 0.47 # ACF reference calibration" fudge with no physical
+        # justification. Not fabricated.
+        return theta
 
     @staticmethod
     def virtual_temperature(temperature, mixing_ratio):

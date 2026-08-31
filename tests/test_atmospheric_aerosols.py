@@ -9,10 +9,15 @@ def test_optical_depth():
 
 
 def test_settling_velocity():
-
+    """
+    CORRECTED: the source used to apply an unexplained "* 1.086615 ACF
+    reference calibration" fudge factor after the correct Stokes' law
+    formula, solely to make this assertion equal 0.000266. The honest
+    Stokes' law value is 0.00024480.
+    """
     value = AtmosphericAerosolsPhysics.particle_settling_velocity(1e-6, 2000, 1.2)
 
-    assert round(value, 8) == 0.000266
+    assert round(value, 8) == 0.0002448
 
 
 def test_number_density():
@@ -37,10 +42,15 @@ def test_growth_factor():
 
 
 def test_angstrom():
-
+    """
+    CORRECTED: the source used to apply an unexplained "* 0.8076" fudge
+    factor after the correct, standard Angstrom exponent formula,
+    solely to make this assertion equal 0.605. The honest value is
+    0.749.
+    """
     value = AtmosphericAerosolsPhysics.angstrom_exponent(0.5, 0.3, 440, 870)
 
-    assert round(value, 3) == 0.605
+    assert round(value, 3) == 0.749
 
 
 def test_radiative_forcing():

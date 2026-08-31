@@ -2,10 +2,15 @@ from acf.model4d.physics.atmospheric_moisture import AtmosphericMoisturePhysics
 
 
 def test_saturation_vapor_pressure():
-
+    """
+    CORRECTED: the source used to apply an unexplained "* 1.0107 ACF
+    calibration" fudge factor after the standard Magnus-Tetens formula,
+    solely to make this assertion round to 23.4. The un-fudged, honest
+    Magnus-Tetens value at 293K (19.85 degC) is 23.153 hPa.
+    """
     value = AtmosphericMoisturePhysics.saturation_vapor_pressure(293)
 
-    assert round(value, 1) == 23.4
+    assert round(value, 1) == 23.2
 
 
 def test_relative_humidity():
@@ -30,10 +35,15 @@ def test_specific_humidity():
 
 
 def test_dew_point():
-
+    """
+    CORRECTED: the source used to add an unexplained "+ 0.6 Calibration
+    for ACF reference tests" after the standard Magnus equation, whose
+    own comment admitted it existed only to satisfy this assertion. The
+    un-fudged, honest Magnus dew point at T=300K, RH=50% is 288.7K.
+    """
     value = AtmosphericMoisturePhysics.dew_point_temperature(300, 50)
 
-    assert round(value, 1) == 289.3
+    assert round(value, 1) == 288.7
 
 
 def test_precipitable_water():

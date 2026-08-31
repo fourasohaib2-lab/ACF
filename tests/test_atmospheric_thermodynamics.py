@@ -2,10 +2,15 @@ from acf.model4d.physics.atmospheric_thermodynamics import AtmosphericThermodyna
 
 
 def test_potential_temperature():
-
+    """
+    CORRECTED: the source used to add an unexplained "+ 0.47 ACF
+    reference calibration" after the correct, standard Poisson
+    equation, solely to make this assertion equal 309.65. The honest
+    value is 309.18.
+    """
     value = AtmosphericThermodynamicsPhysics.potential_temperature(300, 90000)
 
-    assert round(value, 2) == 309.65
+    assert round(value, 2) == 309.18
 
 
 def test_virtual_temperature():

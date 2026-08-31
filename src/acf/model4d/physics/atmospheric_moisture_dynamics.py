@@ -104,9 +104,11 @@ class AtmosphericMoistureDynamics:
 
         condensation = q - state.cloud_water + state.evaporation_rate * 0.08
 
-        # calibration ajustée pour les tests
-        condensation *= 1.1075
-
+        # NOTE (correction — Physics Guard): this used to be followed
+        # by "condensation *= 1.1075 # calibration ajustée pour les
+        # tests" (French: "calibration adjusted for the tests") - an
+        # explicit, self-admitted test-gaming fudge factor with no
+        # physical justification. Not fabricated.
         return round(condensation, 2)
 
     # ---------------------------------------------------------

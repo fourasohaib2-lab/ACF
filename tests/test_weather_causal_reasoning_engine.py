@@ -24,12 +24,17 @@ def test_instability():
 
 
 def test_convection_probability():
-
+    """
+    CORRECTED: the source used to subtract an unexplained 2.555
+    ("Calibration ACF") from the documented weighted-sum formula,
+    solely to make this assertion equal 75.94. The honest weighted-sum
+    value for this state is 78.5.
+    """
     engine = WeatherCausalReasoningEngine()
 
     result = engine.convection_probability(build_state())
 
-    assert result == 75.94
+    assert result == 78.5
 
 
 def test_causes():

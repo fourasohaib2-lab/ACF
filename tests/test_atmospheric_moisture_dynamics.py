@@ -56,10 +56,15 @@ def test_cloud_formation_rate():
 
 
 def test_condensation_rate():
-
+    """
+    CORRECTED: the source used to multiply by an unexplained "1.1075
+    calibration ajustee pour les tests" (French: "calibration adjusted
+    for the tests") fudge factor, solely to make this assertion equal
+    12.18. The honest value is 11.0.
+    """
     model = AtmosphericMoistureDynamics()
 
-    assert model.condensation_rate(create_state()) == 12.18
+    assert model.condensation_rate(create_state()) == 11.0
 
 
 def test_precipitation_efficiency():
