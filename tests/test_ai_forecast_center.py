@@ -77,8 +77,13 @@ def test_xai_and_attention_maps():
     assert att["attention_hotspots"] == []
     assert att["visualizer_status"] == "NOT_RENDERED_NO_MODEL_ATTENTION_DATA_CONNECTED"
 
+    # CORRECTED: target_event is genuinely echoed, but status used to
+    # claim "EXPLANATION_GENERATED_SUCCESS" - no real causal-
+    # attribution pipeline connected (CausalChainGenerator, also fixed
+    # this session, now honestly returns an empty chain).
     gen = XAIExplanationGenerator.generate_explanation("Severe Thunderstorm Episode")
-    assert gen["status"] == "EXPLANATION_GENERATED_SUCCESS"
+    assert gen["status"] == "NOT_GENERATED_NO_CAUSAL_ATTRIBUTION_PIPELINE_CONNECTED"
+    assert gen["causal_chain"] == []
 
 
 def test_skill_scores_story_and_decision_support():
@@ -112,6 +117,11 @@ def test_skill_scores_story_and_decision_support():
 
 def test_xai_package_components():
     """Test des composants internes du package src/acf/ai/xai/."""
-    assert AttentionAnalysis.analyze_attention_weights()["weight"] > 0.8
-    assert len(FeatureImportanceAnalyzer.compute_feature_importance()["top_features"]) == 3
-    assert len(CausalChainGenerator.generate_causal_chain()) == 5
+    # CORRECTED: all three used to unconditionally claim fabricated
+    # data with 0 parameters and no real model/input data connected -
+    # a fixed "0.89" attention weight, 3 fixed fake SHAP-style
+    # features, and an identical fixed 5-step causal narrative
+    # regardless of what event was being explained.
+    assert AttentionAnalysis.analyze_attention_weights()["weight"] is None
+    assert FeatureImportanceAnalyzer.compute_feature_importance()["top_features"] == []
+    assert CausalChainGenerator.generate_causal_chain() == []

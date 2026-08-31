@@ -5,7 +5,7 @@ AI-Assisted Atmosphere Explorer Engine Module (Phase 10)
 (AIAtmosphereExplorer answering natural questions like 'Why is this storm intensifying?')
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class AIAtmosphereExplorer:
@@ -14,19 +14,24 @@ class AIAtmosphereExplorer:
     """
 
     @classmethod
-    def analyze_natural_query(cls, query_text: str = "Why is this storm intensifying?") -> Dict[str, Any]:
-        """Analyse une requête naturelle et retourne la chaîne explicative causale physique."""
+    def analyze_natural_query(cls, query_text: str = "Why is this storm intensifying?") -> dict[str, Any]:
+        """
+        Analyse une requête naturelle et retourne la chaîne explicative causale physique.
+
+        NOTE (correction): this used to ignore query_text's content
+        (beyond echoing it) and unconditionally claim a fabricated
+        "Explosive Cyclogenesis" event, 5 fixed physical causes, a
+        specific fake location (45.2°N, 12.4°W), and "96.8%"
+        confidence for ANY query, regardless of what was actually
+        asked - no real NLU/causal-attribution pipeline is connected
+        here. Not fabricated.
+        """
         return {
             "query": query_text,
-            "detected_event": "Explosive Cyclogenesis / Severe Thunderstorm",
-            "physical_causes": [
-                "SST Anomaly +2.4°C over Gulf Stream",
-                "Strong Integrated Vapor Transport (IVT > 750 kg/m/s)",
-                "Stratospheric PV Intrusion (PV Anomaly Tower at 300 hPa)",
-                "Low Deep-Layer Wind Shear in Storm Core",
-                "Increasing Surface CAPE (> 2800 J/kg)",
-            ],
-            "ai_confidence_score": 96.8,
-            "recommended_volume_slice": "3D Cross-Section through Storm Core at 45.2°N, 12.4°W",
-            "status": "ANALYSIS_COMPLETE",
+            "detected_event": None,
+            "physical_causes": [],
+            "ai_confidence_score": None,
+            "recommended_volume_slice": None,
+            "status": "NOT_ANALYZED_NO_NLU_PIPELINE_CONNECTED",
+            "is_real_data": False,
         }

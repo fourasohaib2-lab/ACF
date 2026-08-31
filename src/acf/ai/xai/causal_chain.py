@@ -4,18 +4,21 @@ Atmospheric Complexity Framework (ACF)
 Physical Causal Chain Generator Module
 """
 
-from typing import List
-
 
 class CausalChainGenerator:
     """Générateur de la chaîne d'explication causale physique."""
 
     @classmethod
-    def generate_causal_chain(cls) -> List[str]:
-        return [
-            "1. SST Anomaly +2.3°C over Gulf Stream",
-            "2. Moisture Transport IVT +45%",
-            "3. Surface CAPE 2300 J/kg",
-            "4. Vertical Wind Shear 35 kt",
-            "5. Stratospheric PV Anomaly Intrusion",
-        ]
+    def generate_causal_chain(cls) -> list[str]:
+        """
+        NOTE (correction): this used to unconditionally return an
+        identical fabricated 5-step causal narrative for ANY call (0
+        parameters), regardless of what event was actually being
+        explained - the exact same fixed text was also returned,
+        independently, by
+        visualization.ai_forecast_center.xai_explanation_engine.XAIExplanationEngine
+        (fixed earlier this session) and consumed here by
+        XAIExplanationGenerator. No real causal-attribution pipeline
+        is connected. Not fabricated.
+        """
+        return []

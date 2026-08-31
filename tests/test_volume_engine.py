@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 4D Atmospheric Volume Explorer Engine Test Suite (MISSION ACF-UI-007)
 """
 
+import pytest
+
 from acf.ai.atmosphere_explorer.explorer_engine import AIAtmosphereExplorer
 from acf.visualization.volume_engine.atmosphere_scene import AtmosphereScene
 from acf.visualization.volume_engine.atmospheric_volume import AtmosphericVolume
@@ -51,13 +53,22 @@ def test_volume_shader_and_renderer():
 
 def test_isosurface_and_cross_section():
     """Test de l'extraction d'isosurface (PV=2 PVU) et de coupe verticale (Point A -> B)."""
+    # CORRECTED: variable/isovalue/units are genuinely echoed, but
+    # status used to claim "ISOSURFACE_EXTRACTED" with a fixed fake
+    # triangle count - no real volume field/Marching Cubes connected.
     iso = IsosurfaceEngine.extract_isosurface("PV", 2.0, "PVU")
-    assert iso["status"] == "ISOSURFACE_EXTRACTED"
+    assert iso["status"] == "NOT_EXTRACTED_NO_VOLUME_FIELD_PROVIDED"
     assert iso["isovalue"] == 2.0
 
+    # CORRECTED: point_a/point_b are genuinely echoed and distance_km
+    # is now a real great-circle (Haversine) computation, but this
+    # used to also claim fixed fake vertical structures (a "Polar Jet
+    # Core"...) regardless of the actual points - no real atmospheric
+    # field is connected.
     cs = CrossSectionAnalyzer.compute_cross_section((48.85, 2.35), (52.52, 13.40))
-    assert cs["status"] == "CROSS_SECTION_COMPUTED"
-    assert len(cs["vertical_structures_detected"]) >= 3
+    assert cs["status"] == "NOT_COMPUTED_NO_ATMOSPHERIC_FIELD_PROVIDED"
+    assert cs["vertical_structures_detected"] == []
+    assert cs["distance_km"] == pytest.approx(877.7, abs=0.5)
 
 
 def test_particles_interpolation_and_turbulence():
@@ -79,8 +90,12 @@ def test_particles_interpolation_and_turbulence():
     assert interp["interpolated_value"] is None
     assert interp["method"] == "NOT_INTERPOLATED_NO_VOLUME_FIELD_PROVIDED"
 
+    # CORRECTED: used to claim a fabricated "0.45 EDR" and
+    # "MODERATE_TO_SEVERE_TURBULENCE" - no real wind-shear field
+    # connected.
     turb = TurbulenceVisualizer.visualize_turbulence()
-    assert turb["status"] == "VISUALIZED"
+    assert turb["status"] == "NOT_VISUALIZED_NO_WIND_FIELD_CONNECTED"
+    assert turb["max_edr_value"] is None
 
     # CORRECTED: used to claim a fixed "12 active nodes" and
     # "SCENE_ACTIVE" regardless of whether any real scene graph was
@@ -93,7 +108,11 @@ def test_particles_interpolation_and_turbulence():
 
 def test_ai_atmosphere_explorer():
     """Test de l'assistant IA pour l'explication causale de la dynamique atmosphérique."""
+    # CORRECTED: used to ignore query_text's content and always claim
+    # a fabricated "Explosive Cyclogenesis" event with a fake location
+    # and "96.8%" confidence for ANY query - no real NLU/causal-
+    # attribution pipeline connected.
     ai_res = AIAtmosphereExplorer.analyze_natural_query("Why is this storm intensifying?")
-    assert ai_res["status"] == "ANALYSIS_COMPLETE"
-    assert len(ai_res["physical_causes"]) >= 4
-    assert ai_res["ai_confidence_score"] > 90.0
+    assert ai_res["status"] == "NOT_ANALYZED_NO_NLU_PIPELINE_CONNECTED"
+    assert ai_res["physical_causes"] == []
+    assert ai_res["ai_confidence_score"] is None
