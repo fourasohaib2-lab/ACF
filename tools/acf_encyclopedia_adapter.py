@@ -56,18 +56,87 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
-import math
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 _SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
 from acf.science.encyclopedia.registry import EncyclopediaRegistry  # noqa: E402
+
+# Hand-crafted probe pairs for the compute_func entries whose signature takes
+# an array/list/tuple argument that the generic scalar-jitter prober in
+# _build_probe_kwargs() cannot safely fabricate (it returns None and the
+# entry is reported as "skipped_array_input" instead of guessed at). Each
+# pair was verified (this session) to produce genuinely distinct, non-
+# degenerate output for its entry - see the module docstring for what
+# "distinct" is checked against. Keeping this list short and explicit
+# (rather than trying to auto-generate array probes) is deliberate: a wrong
+# auto-generated array probe could produce a misleading finding for
+# physically involved entries like the 3D-Var cost function or the
+# spherical-divergence operator.
+_ARRAY_PROBES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
+    "cape_convective_energy": (
+        {"tv_parcel": [300, 302, 305, 303, 300], "tv_env": [300, 299, 298, 299, 300], "dz": 100.0},
+        {"tv_parcel": [295, 300, 310, 308, 300], "tv_env": [295, 296, 297, 300, 302], "dz": 200.0},
+    ),
+    "cin_convective_inhibition": (
+        {"tv_parcel": [300, 298, 297, 303, 300], "tv_env": [300, 300, 299, 299, 300], "dz": 100.0},
+        {"tv_parcel": [295, 293, 296, 308, 300], "tv_env": [295, 297, 298, 300, 302], "dz": 200.0},
+    ),
+    "cost_function_variational_assimilation": (
+        {
+            "x": [1.0, 2.0],
+            "xb": [0.0, 0.0],
+            "b_inv": [[1.0, 0.0], [0.0, 1.0]],
+            "y": [1.5, 2.5],
+            "hx": [1.0, 2.0],
+            "r_inv": [[1.0, 0.0], [0.0, 1.0]],
+        },
+        {
+            "x": [3.0, -1.0],
+            "xb": [1.0, 1.0],
+            "b_inv": [[2.0, 0.0], [0.0, 2.0]],
+            "y": [0.0, 0.0],
+            "hx": [3.0, -1.0],
+            "r_inv": [[0.5, 0.0], [0.0, 0.5]],
+        },
+    ),
+    "finite_difference_schemes": (
+        {"f_values": [0.0, 1.0, 4.0, 9.0, 16.0], "dx": 1.0},
+        {"f_values": [0.0, 2.0, 8.0, 18.0, 32.0], "dx": 0.5},
+    ),
+    "storm_relative_helicity_srh": (
+        {"u_profile": [5.0, 10.0, 15.0, 20.0], "v_profile": [0.0, 5.0, 8.0, 10.0], "storm_u": 8.0, "storm_v": 4.0, "dz": 500.0},
+        {
+            "u_profile": [0.0, -5.0, -10.0, -15.0],
+            "v_profile": [10.0, 8.0, 5.0, 2.0],
+            "storm_u": -3.0,
+            "storm_v": 6.0,
+            "dz": 1000.0,
+        },
+    ),
+    "vector_calculus_spherical": (
+        {
+            "u_grid": np.tile((20.0 * np.cos(np.radians(np.linspace(-60, 60, 7))))[:, None], (1, 8)),
+            "v_grid": np.zeros((7, 8)),
+            "lat_deg": np.linspace(-60, 60, 7),
+            "dlon_deg": 45.0,
+        },
+        {
+            "u_grid": np.tile(np.sin(np.radians(np.linspace(0, 315, 8)))[None, :] * 10.0, (7, 1)),
+            "v_grid": np.zeros((7, 8)),
+            "lat_deg": np.linspace(-60, 60, 7),
+            "dlon_deg": 45.0,
+        },
+    ),
+}
 
 # ---------------------------------------------------------------------------
 # Data model for findings
@@ -209,13 +278,24 @@ def run_verify() -> VerifyResult:
         func = entry.compute_func
         if func is None:
             continue  # unreachable given the `computable` filter above; narrows the type for mypy
-        kwargs_a = _build_probe_kwargs(func, _PROBE_BASE_SETS[0])
-        kwargs_b = _build_probe_kwargs(func, _PROBE_BASE_SETS[1])
-        if kwargs_a is None or kwargs_b is None:
-            result.findings.append(
-                VerifyFinding(key, "skipped_array_input", "compute_func takes an array/list/tuple argument")
-            )
-            continue
+
+        kwargs_a: dict[str, Any] | None
+        kwargs_b: dict[str, Any] | None
+        if key in _ARRAY_PROBES:
+            kwargs_a, kwargs_b = _ARRAY_PROBES[key]
+        else:
+            kwargs_a = _build_probe_kwargs(func, _PROBE_BASE_SETS[0])
+            kwargs_b = _build_probe_kwargs(func, _PROBE_BASE_SETS[1])
+            if kwargs_a is None or kwargs_b is None:
+                result.findings.append(
+                    VerifyFinding(
+                        key,
+                        "skipped_array_input",
+                        "compute_func takes an array/list/tuple argument with no hand-crafted probe "
+                        "in _ARRAY_PROBES - add one there rather than guessing generically",
+                    )
+                )
+                continue
 
         result.checked += 1
         try:
@@ -232,11 +312,13 @@ def run_verify() -> VerifyResult:
             continue
 
         for label, out in (("A", out_a), ("B", out_b)):
-            if isinstance(out, int | float) and not math.isfinite(out):
-                result.findings.append(VerifyFinding(key, "non_finite", f"probe {label} -> {out!r}"))
+            values = np.atleast_1d(out) if isinstance(out, int | float | list | np.ndarray) else None
+            if values is not None and not np.all(np.isfinite(np.asarray(values, dtype=float))):
+                result.findings.append(VerifyFinding(key, "non_finite", f"probe {label} -> non-finite value(s) present"))
 
-        if isinstance(out_a, int | float) and isinstance(out_b, int | float):
-            if math.isclose(out_a, out_b, rel_tol=1e-9, abs_tol=1e-12):
+        if isinstance(out_a, int | float | list | np.ndarray) and isinstance(out_b, int | float | list | np.ndarray):
+            arr_a, arr_b = np.asarray(out_a, dtype=float), np.asarray(out_b, dtype=float)
+            if arr_a.shape == arr_b.shape and np.allclose(arr_a, arr_b, rtol=1e-9, atol=1e-12):
                 result.findings.append(
                     VerifyFinding(key, "insensitive", f"identical output for two distinct probe sets: {out_a!r}")
                 )
