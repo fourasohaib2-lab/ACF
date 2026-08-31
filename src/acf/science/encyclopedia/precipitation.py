@@ -3,13 +3,14 @@ Precipitation Science, Rain, Snow Crystal Growth & Hail Density Encyclopedia Mod
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Precipitation Physics
 # ---------------------------------------------------------------------------
+
 
 def calculate_marshall_palmer_nd(n0: float, lambda_param: float, diameter_m: float) -> float:
     """Calcul de la distribution en taille des gouttes de pluie N(D) = N0 * exp(-lambda * D)."""
@@ -34,7 +35,7 @@ def calculate_hailstone_density(wet_growth: bool = True) -> float:
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="marshall_palmer_distribution",
         name="Distribution des Tailles de Gouttes de Marshall-Palmer",

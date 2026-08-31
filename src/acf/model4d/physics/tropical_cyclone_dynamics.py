@@ -12,7 +12,6 @@ Purpose:
     structure, intensity, pressure, rotation and evolution.
 """
 
-
 import math
 
 
@@ -30,7 +29,6 @@ class TropicalCycloneDynamicsPhysics:
         """
         return pressure_difference / distance
 
-
     @staticmethod
     def cyclone_intensity(wind_speed, radius):
         """
@@ -38,8 +36,7 @@ class TropicalCycloneDynamicsPhysics:
 
         I = V² / R
         """
-        return (wind_speed ** 2) / radius
-
+        return (wind_speed**2) / radius
 
     @staticmethod
     def coriolis_effect(latitude, wind_speed):
@@ -54,14 +51,12 @@ class TropicalCycloneDynamicsPhysics:
 
         return 2 * omega * math.sin(latitude_rad) * wind_speed
 
-
     @staticmethod
     def gradient_wind_balance(pressure_gradient, coriolis):
         """
         Gradient wind approximation.
         """
         return pressure_gradient + coriolis
-
 
     @staticmethod
     def cyclone_energy(mass, velocity):
@@ -70,8 +65,7 @@ class TropicalCycloneDynamicsPhysics:
 
         KE = 1/2 m v²
         """
-        return 0.5 * mass * velocity ** 2
-
+        return 0.5 * mass * velocity**2
 
     @staticmethod
     def eyewall_radius_change(initial_radius, contraction):
@@ -79,7 +73,6 @@ class TropicalCycloneDynamicsPhysics:
         Eyewall contraction model.
         """
         return initial_radius - contraction
-
 
     @staticmethod
     def moisture_energy(mass_water, latent_heat):
@@ -90,14 +83,12 @@ class TropicalCycloneDynamicsPhysics:
         """
         return mass_water * latent_heat
 
-
     @staticmethod
     def cyclone_lifetime(distance, translation_speed):
         """
         Cyclone lifetime estimate.
         """
         return distance / translation_speed
-
 
     @staticmethod
     def rapid_intensification(wind_before, wind_after):
@@ -106,10 +97,9 @@ class TropicalCycloneDynamicsPhysics:
         """
         return wind_after - wind_before
 
-
     @staticmethod
     def storm_surge_height(wind_speed, coefficient):
         """
         Simplified storm surge model.
         """
-        return coefficient * wind_speed ** 2
+        return coefficient * wind_speed**2

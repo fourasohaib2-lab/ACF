@@ -209,7 +209,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["virtual_temperature", "ideal_gas_law"],
         calculation_methods=["acf.science.virtual_potential_temperature"],
     ),
-
     # ----------------------------------------------------
     # DYNAMICS
     # ----------------------------------------------------
@@ -358,7 +357,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["vector_gradient"],
         calculation_methods=["acf.science.frontogenesis"],
     ),
-
     # ----------------------------------------------------
     # THERMODYNAMICS
     # ----------------------------------------------------
@@ -463,7 +461,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["first_law_thermodynamics"],
         calculation_methods=["acf.science.cin.CIN.calculate"],
     ),
-
     # ----------------------------------------------------
     # MICROPHYSICS & CLOUDS
     # ----------------------------------------------------
@@ -581,7 +578,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["collection_coalescence"],
         calculation_methods=["acf.model4d.physics.atmospheric_cloud_microphysics"],
     ),
-
     # ----------------------------------------------------
     # RADIATION
     # ----------------------------------------------------
@@ -651,7 +647,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["beer_lambert"],
         calculation_methods=["acf.model4d.physics.atmospheric_radiation_dynamics"],
     ),
-
     # ----------------------------------------------------
     # AERONAUTICS
     # ----------------------------------------------------
@@ -777,7 +772,6 @@ PHYSICAL_PARAMETERS = [
         related_laws=["aerodynamic_drag"],
         calculation_methods=["acf.science.laws.aeronautics"],
     ),
-
     # ----------------------------------------------------
     # REMOTE SENSING & RADAR
     # ----------------------------------------------------

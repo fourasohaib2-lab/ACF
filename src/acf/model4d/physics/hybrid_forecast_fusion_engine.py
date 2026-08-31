@@ -81,9 +81,7 @@ class HybridForecastFusionEngine:
     def arpege_weight(self, state: HybridForecastFusionState) -> float:
         return round(
             self._clamp(
-                state.arpege_quality * 0.55
-                + state.observation_quality * 0.25
-                + state.forecast_consistency * 0.20
+                state.arpege_quality * 0.55 + state.observation_quality * 0.25 + state.forecast_consistency * 0.20
             ),
             2,
         )
@@ -91,9 +89,7 @@ class HybridForecastFusionEngine:
     def arome_weight(self, state: HybridForecastFusionState) -> float:
         return round(
             self._clamp(
-                state.arome_quality * 0.60
-                + state.observation_quality * 0.25
-                + state.atmosphere_stability * 0.15
+                state.arome_quality * 0.60 + state.observation_quality * 0.25 + state.atmosphere_stability * 0.15
             ),
             2,
         )
@@ -101,9 +97,7 @@ class HybridForecastFusionEngine:
     def wrf_weight(self, state: HybridForecastFusionState) -> float:
         return round(
             self._clamp(
-                state.wrf_quality * 0.55
-                + state.forecast_consistency * 0.25
-                + state.atmosphere_stability * 0.20
+                state.wrf_quality * 0.55 + state.forecast_consistency * 0.25 + state.atmosphere_stability * 0.20
             ),
             2,
         )
@@ -111,9 +105,7 @@ class HybridForecastFusionEngine:
     def icon_weight(self, state: HybridForecastFusionState) -> float:
         return round(
             self._clamp(
-                state.icon_quality * 0.60
-                + state.forecast_consistency * 0.20
-                + state.observation_quality * 0.20
+                state.icon_quality * 0.60 + state.forecast_consistency * 0.20 + state.observation_quality * 0.20
             ),
             2,
         )
@@ -121,9 +113,7 @@ class HybridForecastFusionEngine:
     def ecmwf_weight(self, state: HybridForecastFusionState) -> float:
         return round(
             self._clamp(
-                state.ecmwf_quality * 0.65
-                + state.forecast_consistency * 0.20
-                + state.observation_quality * 0.15
+                state.ecmwf_quality * 0.65 + state.forecast_consistency * 0.20 + state.observation_quality * 0.15
             ),
             2,
         )
@@ -260,11 +250,7 @@ class HybridForecastFusionEngine:
         state: HybridForecastFusionState,
     ) -> float:
 
-        value = (
-            self.hybrid_forecast(state)
-            + self.confidence_score(state)
-            + self.average_model_score(state)
-        ) / 3
+        value = (self.hybrid_forecast(state) + self.confidence_score(state) + self.average_model_score(state)) / 3
 
         return round(value, 2)
 
@@ -285,7 +271,7 @@ class HybridForecastFusionEngine:
             "ECMWF": self.ecmwf_score(state),
         }
 
-        return max(scores, key=scores.get)
+        return max(scores, key=lambda k: scores[k])
 
     # ============================================================
     # Model4D readiness

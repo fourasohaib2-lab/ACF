@@ -1,18 +1,20 @@
-"""ESOC Top Master Operational Toolbar (ACF-UI-013)."""
+"""ESOC Top Master Operational Toolbar with HPC Cluster Controls (ACF-HPC-001)."""
 
-from typing import Callable, Optional
-from PySide6.QtWidgets import QToolBar, QComboBox, QLabel, QWidget, QHBoxLayout
+from collections.abc import Callable
+
 from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QToolBar, QWidget
+
 from acf.gui.esoc.esoc_workspace import WorkspaceMode
 
 
 class ESOCToolbar(QToolBar):
-    """Top operational toolbar for action buttons and workspace mode selection."""
+    """Top operational toolbar for action buttons, HPC connections, and workspace mode selection."""
 
     def __init__(
         self,
-        on_action_callback: Optional[Callable[[str], None]] = None,
-        on_mode_callback: Optional[Callable[[str], None]] = None,
+        on_action_callback: Callable[[str], None] | None = None,
+        on_mode_callback: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__("ESOC Master Operational Toolbar")
         self.on_action_callback = on_action_callback
@@ -23,6 +25,14 @@ class ESOCToolbar(QToolBar):
         actions = [
             ("📂 Open Dataset", "open_dataset"),
             ("📡 Live Stream", "live_stream"),
+            ("🔌 Connect HPC", "connect_hpc"),
+            ("❌ Disconnect", "disconnect_hpc"),
+            ("🚀 Submit Job", "submit_hpc_job"),
+            ("⏹ Cancel Job", "cancel_hpc_job"),
+            ("🔄 Sync HPC", "sync_hpc_storage"),
+            ("💻 Terminal", "open_terminal"),
+            ("📜 Logs", "open_logs"),
+            ("📊 Benchmark", "benchmark_hpc"),
             ("🔮 Forecast", "trigger_forecast"),
             ("🚀 Simulation", "trigger_sim"),
             ("🔄 Assimilation", "trigger_da"),
@@ -32,7 +42,6 @@ class ESOCToolbar(QToolBar):
             ("🧠 AI", "trigger_ai"),
             ("💾 Export", "export_data"),
             ("📷 Screenshot", "take_screenshot"),
-            ("🎬 Movie", "render_movie"),
             ("⚙️ Settings", "open_settings"),
             ("❓ Help", "open_help"),
         ]

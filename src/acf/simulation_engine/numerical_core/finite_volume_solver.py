@@ -1,7 +1,9 @@
 """Conservative finite volume numerical solver for conservation laws."""
 
-from typing import Any, Tuple
+from typing import Any
+
 import numpy as np
+
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
@@ -18,7 +20,7 @@ class FiniteVolumeSolver:
         self.grid = grid
         self.cfl_target = cfl_target
 
-    def check_cfl_condition(self, max_velocity: float, dt: float) -> Tuple[bool, float]:
+    def check_cfl_condition(self, max_velocity: float, dt: float) -> tuple[bool, float]:
         """Validate CFL stability condition: C = u * dt / dx <= CFL_target.
 
         Args:
@@ -33,9 +35,7 @@ class FiniteVolumeSolver:
         is_stable = bool(cfl <= self.cfl_target)
         return is_stable, float(cfl)
 
-    def compute_flux_divergence(
-        self, u_field: np.ndarray, v_field: np.ndarray, scalar_field: np.ndarray
-    ) -> np.ndarray:
+    def compute_flux_divergence(self, u_field: np.ndarray, v_field: np.ndarray, scalar_field: np.ndarray) -> np.ndarray:
         """Compute conservative flux divergence div(F(U)) = d(u*q)/dx + d(v*q)/dy.
 
         Args:
@@ -61,7 +61,7 @@ class FiniteVolumeSolver:
         self,
         u_state: np.ndarray,
         flux_function: Any = None,
-        source_term: np.ndarray = None,
+        source_term: np.ndarray | None = None,
         dt: float = 60.0,
     ) -> np.ndarray:
         """Advance state vector U by one explicit finite volume timestep dt.
@@ -80,7 +80,7 @@ class FiniteVolumeSolver:
         if source_term is None:
             source_term = np.zeros_like(u_state)
 
-        if flux_function is callable(flux_function):
+        if callable(flux_function):
             flux_div = flux_function(u_state)
         else:
             # Default advection flux divergence proxy
@@ -90,9 +90,7 @@ class FiniteVolumeSolver:
         u_next = u_state - dt * flux_div + dt * source_term
         return u_next
 
-    def verify_mass_conservation(
-        self, initial_state: np.ndarray, final_state: np.ndarray
-    ) -> float:
+    def verify_mass_conservation(self, initial_state: np.ndarray, final_state: np.ndarray) -> float:
         """Compute absolute relative total mass change: |M_final - M_init| / M_init.
 
         Returns:

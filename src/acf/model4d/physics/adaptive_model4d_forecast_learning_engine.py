@@ -59,14 +59,9 @@ class AdaptiveModel4DForecastLearningEngine:
         """
 
         return round(
-            abs(
-                state.forecast_value
-                - state.observed_value
-            ),
+            abs(state.forecast_value - state.observed_value),
             2,
         )
-
-
 
     def bias_correction(
         self,
@@ -76,22 +71,14 @@ class AdaptiveModel4DForecastLearningEngine:
         Correct previous model bias.
         """
 
-        error = (
-            state.observed_value
-            - state.forecast_value
-        )
+        error = state.observed_value - state.forecast_value
 
-        correction = (
-            state.previous_bias
-            + error * 0.25
-        )
+        correction = state.previous_bias + error * 0.25
 
         return round(
             correction,
             2,
         )
-
-
 
     def adaptive_model_weight(
         self,
@@ -103,17 +90,12 @@ class AdaptiveModel4DForecastLearningEngine:
 
         error = self.forecast_error(state)
 
-        weight = (
-            state.model_weight
-            - error * 0.10
-        )
+        weight = state.model_weight - error * 0.10
 
         return round(
             max(min(weight, 100), 0),
             2,
         )
-
-
 
     def learning_score(
         self,
@@ -123,18 +105,12 @@ class AdaptiveModel4DForecastLearningEngine:
         Calculate learning performance.
         """
 
-        score = (
-            state.confidence
-            - self.forecast_error(state)
-            + self.adaptive_model_weight(state)
-        ) / 2
+        score = (state.confidence - self.forecast_error(state) + self.adaptive_model_weight(state)) / 2
 
         return round(
             max(min(score, 100), 0),
             2,
         )
-
-
 
     def model_update(
         self,
@@ -145,19 +121,9 @@ class AdaptiveModel4DForecastLearningEngine:
         """
 
         return {
-
-            "model":
-                state.model_name,
-
-            "forecast_error":
-                self.forecast_error(state),
-
-            "bias_correction":
-                self.bias_correction(state),
-
-            "new_model_weight":
-                self.adaptive_model_weight(state),
-
-            "learning_score":
-                self.learning_score(state),
+            "model": state.model_name,
+            "forecast_error": self.forecast_error(state),
+            "bias_correction": self.bias_correction(state),
+            "new_model_weight": self.adaptive_model_weight(state),
+            "learning_score": self.learning_score(state),
         }

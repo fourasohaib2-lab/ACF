@@ -5,7 +5,7 @@ Planetary Defense AI & Reasoning Engine Module (Phase 11)
 (PlanetaryReasoningEngine implementing Observation -> Analysis -> Simulation -> Impact -> Mitigation -> Scientific Report)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryReasoningEngine:
@@ -14,7 +14,7 @@ class PlanetaryReasoningEngine:
     """
 
     @classmethod
-    def run_planetary_reasoning_chain(cls, object_name: str = "Bennu") -> Dict[str, Any]:
+    def run_planetary_reasoning_chain(cls, object_name: str = "Bennu") -> dict[str, Any]:
         """Exécute la chaîne autonome complète d'analyse de menace cosmique."""
         return {
             "target_object": object_name,

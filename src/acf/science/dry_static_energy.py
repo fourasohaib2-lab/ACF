@@ -22,4 +22,3 @@ class DryStaticEnergy:
             raise ValueError("height must be non-negative.")
 
         return CP * temperature_k + G * height_m
-

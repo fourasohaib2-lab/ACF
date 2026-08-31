@@ -11,7 +11,6 @@ Core atmospheric chemical processes:
 - pollutant concentration conversion
 """
 
-
 import math
 
 
@@ -30,7 +29,6 @@ class AtmosphericChemistryPhysics:
 
         return k * concentration_a * concentration_b
 
-
     @staticmethod
     def ozone_production(nox, voc):
         """
@@ -40,7 +38,6 @@ class AtmosphericChemistryPhysics:
         """
 
         return nox * voc * 1.5
-
 
     @staticmethod
     def photolysis_rate(j_value, concentration):
@@ -52,7 +49,6 @@ class AtmosphericChemistryPhysics:
 
         return j_value * concentration
 
-
     @staticmethod
     def chemical_lifetime(concentration, loss_rate):
         """
@@ -63,12 +59,8 @@ class AtmosphericChemistryPhysics:
 
         return concentration / loss_rate
 
-
     @staticmethod
-    def mixing_ratio_concentration(
-        concentration,
-        air_density
-    ):
+    def mixing_ratio_concentration(concentration, air_density):
         """
         Convert concentration to mixing ratio.
 
@@ -77,27 +69,18 @@ class AtmosphericChemistryPhysics:
 
         return concentration / air_density * 1e6
 
-
     @staticmethod
-    def exponential_decay(initial,
-                          lifetime,
-                          time):
+    def exponential_decay(initial, lifetime, time):
         """
         Chemical exponential decay.
 
         C(t)=C0 exp(-t/tau)
         """
 
-        return initial * math.exp(
-            -time / lifetime
-        )
-
+        return initial * math.exp(-time / lifetime)
 
     @staticmethod
-    def methane_lifetime(
-        methane,
-        oxidation_loss
-    ):
+    def methane_lifetime(methane, oxidation_loss):
         """
         Methane lifetime.
 
@@ -106,12 +89,8 @@ class AtmosphericChemistryPhysics:
 
         return methane / oxidation_loss
 
-
     @staticmethod
-    def ozone_column_density(
-        concentration,
-        height
-    ):
+    def ozone_column_density(concentration, height):
         """
         Column ozone approximation.
 
@@ -120,12 +99,8 @@ class AtmosphericChemistryPhysics:
 
         return concentration * height * 1e-3
 
-
     @staticmethod
-    def arrhenius_rate(
-        activation_energy,
-        temperature
-    ):
+    def arrhenius_rate(activation_energy, temperature):
         """
         Arrhenius simplified rate.
 
@@ -134,17 +109,10 @@ class AtmosphericChemistryPhysics:
 
         R = 8.314
 
-        return math.exp(
-            -activation_energy /
-            (R * temperature)
-        )
-
+        return math.exp(-activation_energy / (R * temperature))
 
     @staticmethod
-    def aerosol_effect(
-        aerosol,
-        radiation
-    ):
+    def aerosol_effect(aerosol, radiation):
         """
         Aerosol radiative chemistry interaction.
         """

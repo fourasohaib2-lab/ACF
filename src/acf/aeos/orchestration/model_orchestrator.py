@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class ModelExecutionPlan:
     """Plan d'exécution d'un modèle NWP ou d'IA."""
+
     model_name: str
     grid_resolution_km: float
     vertical_levels: int
@@ -21,6 +22,7 @@ class ModelExecutionPlan:
 @dataclass
 class ModelConsensus:
     """Consensus calculé entre les modèles NWP déterministes et d'IA stochastiques."""
+
     variable: str
     ensemble_mean: float
     ensemble_spread: float

@@ -10,7 +10,6 @@ Reader and Importer registry.
 
 
 class ReaderRegistry:
-
     def __init__(self):
         self._readers = []
 

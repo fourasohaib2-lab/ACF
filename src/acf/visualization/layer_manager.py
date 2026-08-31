@@ -48,7 +48,6 @@ class LayerManager(QObject):
         self.layerAdded.emit(layer)
 
         if self._current_layer is None:
-
             self._current_layer = layer
 
             self.currentLayerChanged.emit(layer)
@@ -71,6 +70,7 @@ class LayerManager(QObject):
         )
 
         return self.add_layer(layer)
+
     ##################################################
 
     def remove_layer(
@@ -88,18 +88,13 @@ class LayerManager(QObject):
         self.layerRemoved.emit(layer_id)
 
         if self._current_layer == layer:
-
             if self._layers:
-
                 self._current_layer = self._layers[-1]
 
             else:
-
                 self._current_layer = None
 
-            self.currentLayerChanged.emit(
-                self._current_layer
-            )
+            self.currentLayerChanged.emit(self._current_layer)
 
     ##################################################
 
@@ -121,9 +116,7 @@ class LayerManager(QObject):
     ):
 
         for layer in self._layers:
-
             if layer.id == layer_id:
-
                 return layer
 
         return None
@@ -136,12 +129,11 @@ class LayerManager(QObject):
     ):
 
         for layer in self._layers:
-
             if layer.name == name:
-
                 return layer
 
         return None
+
     ##################################################
 
     def set_current_layer(
@@ -186,11 +178,7 @@ class LayerManager(QObject):
 
     def visible_layers(self):
 
-        return [
-            layer
-            for layer in self._layers
-            if layer.visible
-        ]
+        return [layer for layer in self._layers if layer.visible]
 
     ##################################################
 
@@ -205,7 +193,6 @@ class LayerManager(QObject):
             return
 
         if not layer.visible:
-
             layer.visible = True
 
             self.layerChanged.emit(layer)
@@ -223,10 +210,10 @@ class LayerManager(QObject):
             return
 
         if layer.visible:
-
             layer.visible = False
 
             self.layerChanged.emit(layer)
+
     ##################################################
 
     def move_layer(
@@ -235,16 +222,10 @@ class LayerManager(QObject):
         new_index,
     ):
 
-        if (
-            old_index < 0
-            or old_index >= len(self._layers)
-        ):
+        if old_index < 0 or old_index >= len(self._layers):
             return
 
-        if (
-            new_index < 0
-            or new_index >= len(self._layers)
-        ):
+        if new_index < 0 or new_index >= len(self._layers):
             return
 
         layer = self._layers.pop(old_index)
@@ -267,21 +248,8 @@ class LayerManager(QObject):
     def status(self):
 
         return {
-
             "layers": self.count(),
-
-            "visible": len(
-                self.visible_layers()
-            ),
-
-            "current_layer":
-                self._current_layer.name
-                if self._current_layer
-                else None,
-
-            "names": [
-                layer.name
-                for layer in self._layers
-            ],
-
+            "visible": len(self.visible_layers()),
+            "current_layer": self._current_layer.name if self._current_layer else None,
+            "names": [layer.name for layer in self._layers],
         }

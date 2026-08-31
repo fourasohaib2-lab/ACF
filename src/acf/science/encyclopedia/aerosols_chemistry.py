@@ -27,7 +27,11 @@ ENTRIES = [
         subdomain="Dépôt et transport",
         equation="vd = 1 / (Ra + Rb + Rc)",
         latex_equation=r"v_d = \frac{1}{R_a + R_b + R_c}",
-        variables={"Ra": "Résistance aérodynamique", "Rb": "Résistance de sous-couche laminaire", "Rc": "Résistance de surface (canopée)"},
+        variables={
+            "Ra": "Résistance aérodynamique",
+            "Rb": "Résistance de sous-couche laminaire",
+            "Rc": "Résistance de surface (canopée)",
+        },
         units={"vd": "m/s"},
         description="Processus de capture des polluants et aérosols par la surface terrestre sans précipitation.",
         application_conditions=["Couche limite de surface"],

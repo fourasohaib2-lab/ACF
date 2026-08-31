@@ -11,7 +11,6 @@ Handles:
 - Surface layer calculations
 """
 
-
 import math
 
 
@@ -43,7 +42,6 @@ class BoundaryLayerPhysics:
 
         return round(1000 * math.sqrt(temperature_gradient), 2)
 
-
     @staticmethod
     def mixing_length(height: float) -> float:
         """
@@ -57,7 +55,6 @@ class BoundaryLayerPhysics:
 
         return round(0.1 * height, 3)
 
-
     @staticmethod
     def turbulent_diffusion(wind_speed: float) -> float:
         """
@@ -68,7 +65,6 @@ class BoundaryLayerPhysics:
             raise ValueError("Wind speed cannot be negative")
 
         return round(0.4 * wind_speed, 3)
-
 
     @staticmethod
     def stability_parameter(temperature_difference: float) -> str:
@@ -83,7 +79,6 @@ class BoundaryLayerPhysics:
             return "unstable"
 
         return "neutral"
-
 
     @staticmethod
     def friction_velocity(wind_speed: float) -> float:

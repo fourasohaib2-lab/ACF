@@ -54,21 +54,16 @@ class WeatherCausalReasoningEngine:
     - forçage dynamique supérieur
     """
 
-
     def instability_analysis(
         self,
         state: WeatherCausalState,
     ) -> float:
 
         result = (
-            state.instability * 0.40
-            + state.humidity * 0.25
-            + state.convergence * 0.20
-            + state.upper_forcing * 0.15
+            state.instability * 0.40 + state.humidity * 0.25 + state.convergence * 0.20 + state.upper_forcing * 0.15
         )
 
         return round(result, 2)
-
 
     def convection_probability(
         self,
@@ -77,16 +72,10 @@ class WeatherCausalReasoningEngine:
 
         instability = self.instability_analysis(state)
 
-        result = (
-            instability * 0.50
-            + state.humidity * 0.25
-            + state.convergence * 0.15
-            + state.upper_forcing * 0.10
-        )
+        result = instability * 0.50 + state.humidity * 0.25 + state.convergence * 0.15 + state.upper_forcing * 0.10
 
         # Calibration ACF
         return round(result - 2.555, 2)
-
 
     def causal_explanation(
         self,
@@ -96,30 +85,21 @@ class WeatherCausalReasoningEngine:
         causes = []
 
         if state.humidity >= 70:
-            causes.append(
-                "HIGH_LOW_LEVEL_HUMIDITY"
-            )
+            causes.append("HIGH_LOW_LEVEL_HUMIDITY")
 
         if state.instability >= 60:
-            causes.append(
-                "ATMOSPHERIC_INSTABILITY"
-            )
+            causes.append("ATMOSPHERIC_INSTABILITY")
 
         if state.convergence >= 50:
-            causes.append(
-                "LOW_LEVEL_CONVERGENCE"
-            )
+            causes.append("LOW_LEVEL_CONVERGENCE")
 
         if state.upper_forcing >= 50:
-            causes.append(
-                "UPPER_LEVEL_FORCING"
-            )
+            causes.append("UPPER_LEVEL_FORCING")
 
         return {
             "causes": causes,
             "confidence": self.convection_probability(state),
         }
-
 
     def risk_assessment(
         self,
@@ -138,7 +118,6 @@ class WeatherCausalReasoningEngine:
             return "MODERATE_CONVECTIVE_RISK"
 
         return "LOW_CONVECTIVE_RISK"
-
 
     def reasoning_update(
         self,

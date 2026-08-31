@@ -23,7 +23,7 @@ class BulkWindShear:
         du = u_top - u_bottom
         dv = v_top - v_bottom
 
-        return sqrt(du ** 2 + dv ** 2)
+        return sqrt(du**2 + dv**2)
 
     @staticmethod
     def category(value: float) -> str:
@@ -41,4 +41,3 @@ class BulkWindShear:
             return "Strong"
 
         return "Extreme"
-

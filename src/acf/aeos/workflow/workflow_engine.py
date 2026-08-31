@@ -6,12 +6,12 @@ AEOS Scientific Workflow Engine Module (Phase 5)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class ScientificWorkflow:
     """Description d'un workflow scientifique complet AEOS."""
+
     workflow_id: str
     name: str
     workflow_type: str  # Forecast, Assimilation, Data Ingestion, Emergency, Report, AI, Digital Twin
@@ -25,7 +25,7 @@ class WorkflowEngine:
     """
 
     @classmethod
-    def get_registered_workflows(cls) -> List[ScientificWorkflow]:
+    def get_registered_workflows(cls) -> list[ScientificWorkflow]:
         """Retourne la liste des grands workflows opérationnels d'AEOS."""
         return [
             ScientificWorkflow("WF-01", "Global 10-Day Coupled Neural Forecast", "Forecast Workflow", 6, "COMPLETED"),

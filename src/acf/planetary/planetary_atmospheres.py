@@ -6,8 +6,6 @@ Planetary Atmospheres Engine Module (Phase 5)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
-
 
 R_GAS_CONST = 8.314462618  # J / (mol K)
 
@@ -15,6 +13,7 @@ R_GAS_CONST = 8.314462618  # J / (mol K)
 @dataclass
 class PlanetaryAtmosphere:
     """Propriétés physiques de l'atmosphère d'un corps du Système Solaire."""
+
     planet_name: str
     surface_pressure_pa: float
     surface_gravity_m_s2: float
@@ -22,13 +21,13 @@ class PlanetaryAtmosphere:
     mean_molar_mass_kg_mol: float
     scale_height_km: float
     bond_albedo: float
-    major_gases: Dict[str, float]  # Nom gaz -> % volumique
-    cloud_layers: List[str]
+    major_gases: dict[str, float]  # Nom gaz -> % volumique
+    cloud_layers: list[str]
     max_wind_speed_m_s: float
-    prominent_storms: List[str]
+    prominent_storms: list[str]
 
 
-PLANET_ATMOSPHERES: Dict[str, PlanetaryAtmosphere] = {
+PLANET_ATMOSPHERES: dict[str, PlanetaryAtmosphere] = {
     "earth": PlanetaryAtmosphere(
         planet_name="Earth",
         surface_pressure_pa=101325.0,
@@ -103,14 +102,14 @@ class PlanetaryAtmosphereEngine:
     """
 
     @classmethod
-    def get_atmosphere(cls, planet_name: str) -> Optional[PlanetaryAtmosphere]:
+    def get_atmosphere(cls, planet_name: str) -> PlanetaryAtmosphere | None:
         return PLANET_ATMOSPHERES.get(planet_name.lower())
 
     @classmethod
     def calculate_scale_height_km(cls, temperature_k: float, molar_mass_kg_mol: float, gravity_m_s2: float) -> float:
         """
         Calcule la hauteur d'échelle atmosphérique : H = (R * T) / (M * g)
-        
+
         Equations:
             H = \\frac{R \\cdot T}{M \\cdot g}
         """

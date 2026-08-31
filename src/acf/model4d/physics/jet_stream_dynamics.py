@@ -10,9 +10,8 @@ Simulation simplifiée des courants-jets atmosphériques :
 - influence sur circulation générale
 """
 
-
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 
 @dataclass
@@ -35,7 +34,6 @@ class JetStreamDynamics:
     def __init__(self, state: JetStreamState):
         self.state = state
 
-
     def coriolis_parameter(self):
         """
         Paramètre de Coriolis simplifié.
@@ -43,62 +41,34 @@ class JetStreamDynamics:
 
         omega = 7.2921e-5
 
-        latitude_rad = math.radians(
-            self.state.latitude
-        )
+        latitude_rad = math.radians(self.state.latitude)
 
         return 2 * omega * math.sin(latitude_rad)
-
 
     def thermal_wind_balance(self):
         """
         Approximation équilibre vent thermique.
         """
 
-        return (
-            self.state.temperature_gradient
-            *
-            self.state.vertical_shear
-        )
-
+        return self.state.temperature_gradient * self.state.vertical_shear
 
     def jet_intensity(self):
         """
         Intensité dynamique du courant-jet.
         """
 
-        coriolis = abs(
-            self.coriolis_parameter()
-        )
+        coriolis = abs(self.coriolis_parameter())
 
-        return (
-            self.state.wind_speed
-            *
-            coriolis
-            *
-            (1 + self.state.vertical_shear)
-        )
-
+        return self.state.wind_speed * coriolis * (1 + self.state.vertical_shear)
 
     def blocking_risk(self):
         """
         Risque de blocage atmosphérique.
         """
 
-        instability = (
-            self.state.vertical_shear
-            -
-            self.state.temperature_gradient
-        )
+        instability = self.state.vertical_shear - self.state.temperature_gradient
 
-        return max(
-            0.0,
-            min(
-                1.0,
-                instability
-            )
-        )
-
+        return max(0.0, min(1.0, instability))
 
     def diagnostic(self):
         """
@@ -112,4 +82,3 @@ class JetStreamDynamics:
             "jet_intensity": self.jet_intensity(),
             "blocking_risk": self.blocking_risk(),
         }
-

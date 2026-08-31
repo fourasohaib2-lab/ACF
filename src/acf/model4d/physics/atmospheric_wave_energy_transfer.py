@@ -29,54 +29,29 @@ class AtmosphericWaveEnergyTransfer:
         self.name = "Atmospheric Wave Energy Transfer"
         self.version = "8.93"
 
-    def energy_density(
-        self,
-        state: WaveEnergyState
-    ) -> float:
+    def energy_density(self, state: WaveEnergyState) -> float:
         """
         Energie simplifiée proportionnelle
         à l'amplitude et densité.
         """
 
-        return (
-            0.5 *
-            state.density *
-            state.amplitude ** 2
-        )
+        return 0.5 * state.density * state.amplitude**2
 
-    def attenuation(
-        self,
-        state: WaveEnergyState
-    ) -> float:
+    def attenuation(self, state: WaveEnergyState) -> float:
         """
         Atténuation exponentielle simplifiée.
         """
 
-        return max(
-            0.0,
-            1 -
-            state.damping *
-            state.propagation_distance
-        )
+        return max(0.0, 1 - state.damping * state.propagation_distance)
 
-    def transferred_energy(
-        self,
-        state: WaveEnergyState
-    ) -> float:
+    def transferred_energy(self, state: WaveEnergyState) -> float:
         """
         Energie restante après propagation.
         """
 
-        return (
-            self.energy_density(state)
-            *
-            self.attenuation(state)
-        )
+        return self.energy_density(state) * self.attenuation(state)
 
-    def classify_transfer(
-        self,
-        state: WaveEnergyState
-    ) -> str:
+    def classify_transfer(self, state: WaveEnergyState) -> str:
         """
         Classification du transfert.
         """
@@ -91,21 +66,13 @@ class AtmosphericWaveEnergyTransfer:
 
         return "Weak transfer"
 
-    def simulate(
-        self,
-        state: WaveEnergyState
-    ) -> dict:
+    def simulate(self, state: WaveEnergyState) -> dict:
 
         return {
             "module": self.name,
             "version": self.version,
-            "energy_density":
-                self.energy_density(state),
-            "attenuation":
-                self.attenuation(state),
-            "transferred_energy":
-                self.transferred_energy(state),
-            "classification":
-                self.classify_transfer(state)
+            "energy_density": self.energy_density(state),
+            "attenuation": self.attenuation(state),
+            "transferred_energy": self.transferred_energy(state),
+            "classification": self.classify_transfer(state),
         }
-

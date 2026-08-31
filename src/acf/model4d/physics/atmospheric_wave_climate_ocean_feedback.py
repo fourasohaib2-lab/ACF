@@ -14,7 +14,6 @@ Author:
     ACF Development Team
 """
 
-
 from dataclasses import dataclass
 
 
@@ -39,10 +38,7 @@ class AtmosphericWaveClimateOceanFeedback:
     def __init__(self):
         self.name = "Atmospheric Wave Climate Ocean Feedback"
 
-    def calculate_feedback(
-        self,
-        state: AtmosphericWaveClimateOceanState
-    ) -> float:
+    def calculate_feedback(self, state: AtmosphericWaveClimateOceanState) -> float:
         """
         Calculate climate-ocean feedback intensity.
 
@@ -61,10 +57,7 @@ class AtmosphericWaveClimateOceanFeedback:
             + state.climate_feedback
         )
 
-    def simulate(
-        self,
-        state: AtmosphericWaveClimateOceanState
-    ) -> dict:
+    def simulate(self, state: AtmosphericWaveClimateOceanState) -> dict:
         """
         Run coupled simulation.
         """
@@ -74,21 +67,12 @@ class AtmosphericWaveClimateOceanFeedback:
         return {
             "module": self.name,
             "feedback_index": round(feedback, 3),
-            "ocean_response": round(
-                state.ocean_temperature * feedback,
-                3
-            ),
-            "wave_response": round(
-                state.wave_energy + feedback,
-                3
-            ),
-            "stable": feedback < 50
+            "ocean_response": round(state.ocean_temperature * feedback, 3),
+            "wave_response": round(state.wave_energy + feedback, 3),
+            "stable": feedback < 50,
         }
 
-    def climate_state(
-        self,
-        feedback_index: float
-    ) -> str:
+    def climate_state(self, feedback_index: float) -> str:
         """
         Classify climate feedback regime.
         """
@@ -100,4 +84,3 @@ class AtmosphericWaveClimateOceanFeedback:
             return "moderate"
 
         return "strong"
-

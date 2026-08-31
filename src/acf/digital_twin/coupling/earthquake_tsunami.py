@@ -5,7 +5,6 @@ Earthquake-Tsunami Solid Earth-Ocean Coupling Module (Phase 4)
 """
 
 
-
 class EarthquakeTsunamiCouplingEngine:
     """
     Moteur de couplage entre la rupture sismique sous-marine et l'initialisation du tsunami.

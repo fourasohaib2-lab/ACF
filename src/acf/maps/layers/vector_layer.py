@@ -9,7 +9,6 @@ from .base_layer import BaseLayer
 
 
 class VectorLayer(BaseLayer):
-
     def __init__(self, name="Vector Layer"):
         super().__init__(name)
 
@@ -32,8 +31,4 @@ class VectorLayer(BaseLayer):
         self.features.clear()
 
     def __repr__(self):
-        return (
-            f"VectorLayer("
-            f"name='{self.name}', "
-            f"features={len(self.features)})"
-        )
+        return f"VectorLayer(name='{self.name}', features={len(self.features)})"

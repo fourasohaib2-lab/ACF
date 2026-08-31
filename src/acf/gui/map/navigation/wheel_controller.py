@@ -39,11 +39,9 @@ class WheelController(QObject):
         delta = event.angleDelta().y()
 
         if delta > 0:
-
             self.zoomInRequested.emit()
 
         elif delta < 0:
-
             self.zoomOutRequested.emit()
 
     ##################################################
@@ -60,7 +58,5 @@ class WheelController(QObject):
     def status(self):
 
         return {
-
             "zoom_factor": self.zoom_factor,
-
         }

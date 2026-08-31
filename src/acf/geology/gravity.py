@@ -6,7 +6,6 @@ Gravimetry, Bouguer Anomalies & Satellite Gravity Engine Module (Phase 12)
 """
 
 import math
-from typing import Dict
 
 
 class GravityEngine:
@@ -35,7 +34,7 @@ class GravityEngine:
         latitude_deg: float,
         elevation_m: float,
         rock_density_g_cm3: float = 2.67,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calcul de l'Anomalie de Bouguer Delta g_B (en mGal).
         Delta g_FA = g_obs - g_ref + 0.3086 * h (Anomalie à l'air libre).

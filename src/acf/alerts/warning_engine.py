@@ -6,23 +6,23 @@ Operational Warning & Meteorological Alert Engine Module (MISSION ACF-030 Phase 
 """
 
 from dataclasses import dataclass
-from typing import List
 from uuid import uuid4
 
 
 @dataclass
 class OperationalWarning:
     """Structure officielle d'une vigilance / alerte météorologique opérationnelle."""
+
     warning_id: str
     phenomenon: str
     severity: str  # "Yellow" (Vigilance), "Orange" (Alerte), "Red" (Alerte Maximale / Urgence)
     probability_pct: float
     confidence_score: float
-    affected_regions: List[str]
+    affected_regions: list[str]
     valid_from: str
     valid_until: str
-    expected_impacts: List[str]
-    recommended_actions: List[str]
+    expected_impacts: list[str]
+    recommended_actions: list[str]
     scientific_explanation: str
     ai_explanation: str
 
@@ -31,14 +31,14 @@ class WarningEngine:
     """Moteur de génération et de diffusion des alertes météorologiques opérationnelles WMO/EUMETNET CAP."""
 
     def __init__(self):
-        self.active_warnings: List[OperationalWarning] = []
+        self.active_warnings: list[OperationalWarning] = []
 
     def issue_warning(
         self,
         phenomenon: str,
         severity: str,
         probability_pct: float,
-        affected_regions: List[str],
+        affected_regions: list[str],
         valid_hours: float = 24.0,
         scientific_explanation: str = "",
         ai_explanation: str = "",
@@ -66,12 +66,13 @@ class WarningEngine:
             valid_until="2026-08-03T08:00:00Z",
             expected_impacts=impacts,
             recommended_actions=actions,
-            scientific_explanation=scientific_explanation or f"Alerte déclenchée en raison des conditions favorables à {phenomenon}.",
+            scientific_explanation=scientific_explanation
+            or f"Alerte déclenchée en raison des conditions favorables à {phenomenon}.",
             ai_explanation=ai_explanation or f"Prédiction d'IA confirmant un risque élevé de {phenomenon}.",
         )
         self.active_warnings.append(warning)
         return warning
 
-    def get_active_warnings(self) -> List[OperationalWarning]:
+    def get_active_warnings(self) -> list[OperationalWarning]:
         """Retourne la liste des alertes en cours."""
         return self.active_warnings

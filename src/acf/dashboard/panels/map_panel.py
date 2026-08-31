@@ -27,11 +27,10 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 
 class MapPanel(QWidget):
-
     def __init__(self):
         super().__init__()
 
@@ -40,9 +39,7 @@ class MapPanel(QWidget):
         title = QLabel("🌍 Main Map")
         title.setStyleSheet("font-size:18px;font-weight:bold;")
 
-        placeholder = QLabel(
-            "Interactive map will appear here."
-        )
+        placeholder = QLabel("Interactive map will appear here.")
 
         placeholder.setMinimumHeight(500)
 

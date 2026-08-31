@@ -5,7 +5,7 @@ Global Geological Natural Hazards & Multi-Risk Assessment Module (Phase 14)
 (Earthquakes, Tsunamis, Volcanoes, Landslides, Liquefaction, Subsidence)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class HazardEngine:
@@ -19,7 +19,7 @@ class HazardEngine:
         earthquake_mw: float,
         coastal_distance_km: float,
         slope_angle_deg: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Évalue les risques géologiques combinés (Séisme + Tsunami + Glissement de terrain + Liquéfaction)."""
         hazards = []
 
@@ -34,7 +34,11 @@ class HazardEngine:
         if slope_angle_deg >= 25.0 and earthquake_mw >= 5.5:
             hazards.append("Earthquake-Induced Landslides and Rockfalls")
 
-        severity = "CRITICAL / MULTI-HAZARD WARNING" if len(hazards) >= 3 else ("HIGH RISK" if len(hazards) >= 1 else "LOW HAZARD")
+        severity = (
+            "CRITICAL / MULTI-HAZARD WARNING"
+            if len(hazards) >= 3
+            else ("HIGH RISK" if len(hazards) >= 1 else "LOW HAZARD")
+        )
 
         return {
             "earthquake_magnitude_mw": earthquake_mw,

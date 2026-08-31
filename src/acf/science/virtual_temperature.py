@@ -28,4 +28,3 @@ class VirtualTemperature:
             Virtual temperature in Kelvin.
         """
         return temperature * (1.0 + 0.61 * specific_humidity)
-

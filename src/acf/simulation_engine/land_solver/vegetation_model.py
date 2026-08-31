@@ -1,6 +1,5 @@
 """Dynamic vegetation and terrestrial biosphere simulator."""
 
-from typing import Dict
 import numpy as np
 
 
@@ -18,7 +17,7 @@ class VegetationModel:
 
     def compute_vegetation_indices(
         self, temperature_k: np.ndarray, soil_moisture: np.ndarray, solar_radiation: np.ndarray
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Compute LAI, NDVI, and NPP from climate forcing drivers.
 
         Args:

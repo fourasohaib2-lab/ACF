@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 AWCI GEOLOGY CENTER Operational Dashboard Integration Module (Phase 16)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class GeologyCenterDashboard:
@@ -13,7 +13,7 @@ class GeologyCenterDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace GEOLOGY CENTER."""
         return {
             "workspace_name": "GEOLOGY CENTER",

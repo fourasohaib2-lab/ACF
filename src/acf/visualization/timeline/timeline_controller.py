@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 4D Timeline & Animation Controller Module
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class TimelineController:
@@ -12,7 +12,7 @@ class TimelineController:
     Contrôleur Temporel 4D pour l'animation des prévisions numériques et observations historiques.
     """
 
-    def __init__(self, time_steps: Optional[List[str]] = None):
+    def __init__(self, time_steps: list[str] | None = None):
         self.time_steps = time_steps or [
             "2026-07-30T00:00:00Z",
             "2026-07-30T03:00:00Z",
@@ -30,7 +30,7 @@ class TimelineController:
         self.speed_fps = 2.0
         self.vertical_levels = ["surface", "1000hPa", "925hPa", "850hPa", "700hPa", "500hPa", "300hPa", "200hPa"]
         self.current_level_index = 0
-        self.frame_cache: Dict[str, Any] = {}
+        self.frame_cache: dict[str, Any] = {}
 
     @property
     def current_time(self) -> str:
@@ -86,7 +86,7 @@ class TimelineController:
             return True
         return False
 
-    def state(self) -> Dict[str, Any]:
+    def state(self) -> dict[str, Any]:
         """Retourne l'état complet du timeline 4D."""
         return {
             "playing": self.playing,

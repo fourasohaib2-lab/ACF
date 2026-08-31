@@ -69,17 +69,10 @@ class IntegrationEngine:
             return {}
 
         return {
-
             "name": self.dataset.name,
-
             "filetype": self.dataset.filetype,
-
             "filepath": str(self.dataset.filepath),
-
             "variables": len(self.dataset.variables),
-
             "dimensions": len(self.dataset.dimensions),
-
             "metadata": len(self.dataset.metadata),
-
         }

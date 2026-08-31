@@ -26,7 +26,6 @@ class ProjectSerializer:
         filename = project.project_file
 
         with open(filename, "w", encoding="utf-8") as file:
-
             json.dump(
                 data,
                 file,
@@ -47,7 +46,6 @@ class ProjectSerializer:
         filename = Path(filename)
 
         with open(filename, "r", encoding="utf-8") as file:
-
             data = json.load(file)
 
         return Project.from_dict(data)

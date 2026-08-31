@@ -5,7 +5,7 @@ Van Allen Radiation Belts & Energetic Particle Charging Module (Phase 5)
 (Inner/Outer Van Allen Belts, Radiation Dose, Surface & Deep Dielectric Charging)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class RadiationBeltsEngine:
@@ -14,7 +14,7 @@ class RadiationBeltsEngine:
     """
 
     @staticmethod
-    def evaluate_van_allen_belt_flux(altitude_km: float, electron_flux_gt_2mev: float) -> Dict[str, Any]:
+    def evaluate_van_allen_belt_flux(altitude_km: float, electron_flux_gt_2mev: float) -> dict[str, Any]:
         """Évalue l'exposition d'un satellite dans la Ceinture Interne ou Externe de Van Allen."""
         re_km = 6371.0
         r_re = 1.0 + (altitude_km / re_km)

@@ -1,260 +1,144 @@
-"""
-Atmospheric Complexity Framework (ACF)
+"""Scientific QWidget-based MapCanvas using Cartopy and Matplotlib Qt Backend (ACF Map Canvas)."""
 
-MapCanvas Pro
-=============
+from typing import Any
 
-Professional Map Engine
-"""
+import matplotlib
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from typing import Optional
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-)
-
+matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qtagg import (
-    FigureCanvasQTAgg as FigureCanvas,
-)
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
-import cartopy.crs as ccrs
-
-from .map_navigation import NavigationMixin
-from .map_rendering import RenderingMixin
-from .map_events import EventMixin
-from .map_status import StatusMixin
-from .map_export import ExportMixin
-
-from .map_scene import MapScene
-from .map_camera import MapCamera
-
-from .projections.projection_manager import (
-    ProjectionManager,
-)
-
-from .rendering.renderer_manager import (
-    RendererManager,
-)
-from .renderers.world_renderer import WorldRenderer
+from acf.data.dataset import Dataset
+from acf.gui.map.map_layers import LayerManager
+from acf.gui.map.map_projection import MapProjection
+from acf.gui.map.map_renderer import MapRenderer
 
 
-class MapCanvas(
-    QWidget,
-    NavigationMixin,
-    RenderingMixin,
-    EventMixin,
-    StatusMixin,
-    ExportMixin,
-):
-    """
-    Professional Map Canvas.
+class _LabelProxy:
+    """Proxy object maintaining backward compatibility with self.map_canvas.label.setText()."""
 
-    Central graphical engine of ACF.
-    """
+    def __init__(self, parent_canvas: "MapCanvas") -> None:
+        self._canvas = parent_canvas
 
-    ##################################################
+    def setText(self, text: str) -> None:
+        self._canvas.set_title(text)
 
-    def __init__(
-        self,
-        parent: Optional[QWidget] = None,
-    ):
 
+class MapCanvas(QWidget):
+    """QWidget embedding a Matplotlib Cartopy GeoAxes figure for scientific Earth visualization."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
-        ##################################################
-        # Core
-        ##################################################
+        # 1. State & Managers
+        self.projection_manager = MapProjection("2D Mercator Map")
+        self.renderer = MapRenderer()
+        self.layer_manager = LayerManager()
 
-        self.scene = None
+        self.title_text: str = "GLOBAL EARTH INTERACTIVE MAP"
 
-        self.camera = None
+        # Compatibility proxy for ViewManager.map_canvas.label.setText()
+        self.label = _LabelProxy(self)
 
-        self.projection_manager = None
+        # 2. Matplotlib Figure & High DPI Setup
+        self.figure = plt.figure(figsize=(12, 8), dpi=100, facecolor="#0a0f1d")
+        self.canvas = FigureCanvas(self.figure)
+        self.canvas.setStyleSheet("background-color: #0a0f1d;")
 
-        self.renderer_manager = None
+        self.axes: Any | None = None
 
-        
-        self.world_renderer = None
+        # 3. Layout Setup
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.canvas)
 
-        
-        ##################################################
-        # Matplotlib
-        ##################################################
+        # 4. Initial Render
+        self.rebuild_axes()
+        self.draw_map()
 
-        self.figure = None
+    def rebuild_axes(self) -> None:
+        """Re-create subplot axes with current Cartopy CRS projection."""
+        self.figure.clear()
 
-        self.axes = None
+        # Add subplot with active Cartopy projection
+        current_crs = self.projection_manager.current_crs
+        self.axes = self.figure.add_subplot(111, projection=current_crs)
+        self.axes.set_facecolor("#0a0f1d")
 
-        self.canvas = None
+    def draw_map(self) -> None:
+        """Render base map and active scientific layers on GeoAxes."""
+        if self.axes is None:
+            return
 
-        self.projection = None
+        self.axes.clear()
 
-        ##################################################
-
-        self._initialized = False
-
-        self.initialize()
-
-    ##################################################
-
-    def initialize(self):
-        """
-        Initialize Map Engine.
-        """
-
-        ##################################################
-        # Managers
-        ##################################################
-
-        self.scene = MapScene(self)
-
-        self.camera = MapCamera(self)
-
-        self.projection_manager = ProjectionManager(self)
-
-        self.renderer_manager = RendererManager(self)
-
-        self.world_renderer = WorldRenderer()
-        self.scene = MapScene(self)
-        self.camera = MapCamera(self)
-        self.projection_manager = ProjectionManager(self)
-        self.renderer_manager = RendererManager(self)        
-        ##################################################
-        # Projection
-        ##################################################
-
-        self.projection = ccrs.PlateCarree()
-
-        ##################################################
-        # Figure
-        ##################################################
-
-        self.figure = plt.figure(
-            figsize=(12, 8)
+        # Draw oceans, continents, coastlines, borders, lat/lon grid, and layers
+        self.renderer.render(
+            axes=self.axes,
+            projection=self.projection_manager.current_crs,
+            layer_manager=self.layer_manager,
+            title=self.title_text,
         )
-
-        ##################################################
-        # Axes
-        ##################################################
-
-        self.axes = self.figure.add_subplot(
-            111,
-            projection=self.projection,
-        )
-
-        ##################################################
-        # Canvas
-        ##################################################
-
-        self.canvas = FigureCanvas(
-            self.figure
-        )
-
-        ##################################################
-        # Layout
-        ##################################################
-
-        layout = QVBoxLayout()
-
-        layout.setContentsMargins(
-            0,
-            0,
-            0,
-            0,
-        )
-
-        layout.addWidget(
-            self.canvas
-        )
-
-        self.setLayout(
-            layout
-        )
-
-        ##################################################
-        # Initial Draw
-        ##################################################
-
-        self.canvas.draw()
-        self._initialized = True
-
-        ##################################################
-
-        self._initialized = True
-
-    ##################################################
-
-    def refresh(self):
-        """
-        Refresh canvas.
-        """
 
         if self.canvas is not None:
+            try:
+                self.canvas.draw_idle()
+            except RuntimeError:
+                pass
 
-            self.canvas.draw_idle()
+    def draw_world(self) -> None:
+        """Draw professional world base map and scientific layers (ACF-MAP-004 API)."""
+        self.draw_map()
 
-    ##################################################
+    def set_projection(self, name: str) -> None:
+        """Update map projection and re-render."""
+        self.projection_manager.set_projection(name)
+        self.rebuild_axes()
+        self.draw_map()
 
-    def clear(self):
+    def set_title(self, title: str) -> None:
+        """Update map title and trigger redraw."""
+        self.title_text = title
+        if self.axes is not None:
+            self.axes.set_title(title, fontsize=10, color="#81D4FA", weight="bold", pad=6)
+            if self.canvas is not None:
+                try:
+                    self.canvas.draw_idle()
+                except RuntimeError:
+                    pass
 
-        if self.axes is None:
-            return
+    def set_active_layers(self, layers: list[str]) -> None:
+        """Update active scientific layer catalog and re-render overlays."""
+        self.layer_manager.set_active_layers(layers)
+        self.draw_map()
 
-        self.axes.clear()
+    def load_dataset(self, dataset: Dataset) -> None:
+        """Connect canonical NWP Dataset (WRF/ARPEGE/ICON/GRIB/NetCDF) to map layers (ACF-MAP-005)."""
+        self.layer_manager.bind_dataset(dataset)
+        self.draw_map()
 
+    def refresh(self) -> None:
+        """Refresh canvas drawing."""
+        if self.canvas is not None:
+            try:
+                self.canvas.draw_idle()
+            except RuntimeError:
+                pass
+
+    def clear(self) -> None:
+        """Clear map axes."""
+        if self.axes is not None:
+            self.axes.clear()
+            self.refresh()
+
+    def resizeEvent(self, event: Any) -> None:
+        """Handle widget resize event gracefully."""
+        super().resizeEvent(event)
         self.refresh()
 
-    ##################################################
-
-    def draw_world(self):
-        """
-        Draw professional world map.
-        """
-
-        if self.axes is None:
-            return
-
-        self.axes.clear()
-
-        self.world_renderer.render(self.axes)
-
-        self.canvas.draw_idle()
-
-    ##################################################
-
-    def status(self):
-
-        return {
-
-            "initialized": self._initialized,
-
-            "scene": self.scene is not None,
-
-            "camera": self.camera is not None,
-
-            "projection_manager": self.projection_manager is not None,
-
-            "renderer_manager": self.renderer_manager is not None,
-
-            "figure": self.figure is not None,
-
-            "axes": self.axes is not None,
-
-            "canvas": self.canvas is not None,
-
-            "projection": type(self.projection).__name__
-            if self.projection else None,
-
-        }
-
-    ##################################################
-
-    def closeEvent(self, event):
-
+    def closeEvent(self, event: Any) -> None:
+        """Clean up Matplotlib resources upon widget closure."""
         if self.figure is not None:
             plt.close(self.figure)
-
         super().closeEvent(event)
-

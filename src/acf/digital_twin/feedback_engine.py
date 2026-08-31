@@ -4,14 +4,14 @@ Atmospheric Complexity Framework (ACF)
 Climate & Earth System Feedback Loops Engine Module
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class FeedbackEngine:
     """Moteur d'évaluation des boucles de rétroaction (Ice-Albedo, Vapeur d'eau, Puits de carbone)."""
 
     @classmethod
-    def evaluate_feedbacks(cls) -> Dict[str, Any]:
+    def evaluate_feedbacks(cls) -> dict[str, Any]:
         return {
             "active_feedbacks": [
                 "Water Vapor Thermal Feedback (+1.8 W/m^2)",

@@ -6,12 +6,12 @@ Volcanology & Active Volcanoes Registry Module (Phase 7)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class Volcano:
     """Description d'un édifice volcanique actif."""
+
     volcano_id: str
     name: str
     country: str
@@ -22,10 +22,10 @@ class Volcano:
     magma_composition: str  # e.g., "Basaltic", "Andesitic", "Dacitic", "Rhyolitic"
     last_known_eruption_year: int
     vei_max: int  # Volcanic Explosivity Index (0 to 8)
-    hazards: List[str]
+    hazards: list[str]
 
 
-VOLCANO_REGISTRY: Dict[str, Volcano] = {
+VOLCANO_REGISTRY: dict[str, Volcano] = {
     "vesuvius": Volcano(
         volcano_id="vesuvius",
         name="Mount Vesuvius",
@@ -72,9 +72,9 @@ class VolcanoDatabase:
     """Base de données et registre des principaux volcans actifs de la Terre."""
 
     @classmethod
-    def get_volcano(cls, key: str) -> Optional[Volcano]:
+    def get_volcano(cls, key: str) -> Volcano | None:
         return VOLCANO_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_volcanoes(cls) -> List[str]:
+    def list_volcanoes(cls) -> list[str]:
         return list(VOLCANO_REGISTRY.keys())

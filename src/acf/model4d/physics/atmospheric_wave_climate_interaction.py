@@ -10,7 +10,6 @@ Coupling between:
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
@@ -34,28 +33,15 @@ class AtmosphericWaveClimateInteraction:
         """
         Estimate atmospheric wave energy index.
         """
-        return (
-            0.5
-            * state.wave_amplitude ** 2
-            * state.wave_frequency
-        )
+        return 0.5 * state.wave_amplitude**2 * state.wave_frequency
 
-    def compute_ocean_feedback(
-        self,
-        state: AtmosphericWaveClimateState
-    ) -> float:
+    def compute_ocean_feedback(self, state: AtmosphericWaveClimateState) -> float:
         """
         Ocean-atmosphere thermal feedback.
         """
-        return (
-            state.ocean_temperature_anomaly
-            * state.climate_feedback_strength
-        )
+        return state.ocean_temperature_anomaly * state.climate_feedback_strength
 
-    def compute_climate_response(
-        self,
-        state: AtmosphericWaveClimateState
-    ) -> Dict[str, float]:
+    def compute_climate_response(self, state: AtmosphericWaveClimateState) -> dict[str, float]:
         """
         Compute coupled climate response.
         """
@@ -64,11 +50,7 @@ class AtmosphericWaveClimateInteraction:
 
         ocean_feedback = self.compute_ocean_feedback(state)
 
-        total_feedback = (
-            wave_energy
-            + ocean_feedback
-            + state.humidity_anomaly
-        )
+        total_feedback = wave_energy + ocean_feedback + state.humidity_anomaly
 
         return {
             "wave_energy": wave_energy,
@@ -76,10 +58,7 @@ class AtmosphericWaveClimateInteraction:
             "total_feedback": total_feedback,
         }
 
-    def classify_interaction(
-        self,
-        state: AtmosphericWaveClimateState
-    ) -> str:
+    def classify_interaction(self, state: AtmosphericWaveClimateState) -> str:
         """
         Classify climate-wave coupling regime.
         """

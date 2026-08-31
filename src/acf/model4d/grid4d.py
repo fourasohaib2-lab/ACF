@@ -114,26 +114,14 @@ class Grid4D:
     def summary(self):
 
         return {
-
             "latitudes": len(self.latitudes),
-
             "longitudes": len(self.longitudes),
-
             "projection": self.projection,
-
             "validated": self.validated,
-
         }
 
     ##################################################
 
     def __repr__(self):
 
-        return (
-
-            f"Grid4D(lat={len(self.latitudes)}, "
-
-            f"lon={len(self.longitudes)})"
-
-        )
-
+        return f"Grid4D(lat={len(self.latitudes)}, lon={len(self.longitudes)})"

@@ -5,6 +5,7 @@ Reader for GRIB1 / GRIB2 meteorological files.
 """
 
 from pathlib import Path
+
 import xarray as xr
 
 from acf.data.dataset import Dataset
@@ -26,12 +27,7 @@ class GRIBReader(BaseReader):
     )
 
     def can_read(self, filename):
-        return (
-            Path(filename)
-            .suffix
-            .lower()
-            in self.SUPPORTED_EXTENSIONS
-        )
+        return Path(filename).suffix.lower() in self.SUPPORTED_EXTENSIONS
 
     def read(self, filename):
         filename = Path(filename)
@@ -39,10 +35,7 @@ class GRIBReader(BaseReader):
         if not filename.exists():
             raise FileNotFoundError(filename)
 
-        ds = xr.open_dataset(
-            filename,
-            engine="cfgrib"
-        )
+        ds = xr.open_dataset(filename, engine="cfgrib")
 
         dataset = Dataset(
             name=filename.stem,
@@ -78,10 +71,7 @@ class GribReader:
         self.dataset = None
 
     def open(self, filename):
-        self.dataset = xr.open_dataset(
-            filename,
-            engine="cfgrib"
-        )
+        self.dataset = xr.open_dataset(filename, engine="cfgrib")
         return self.dataset
 
     def variables(self):

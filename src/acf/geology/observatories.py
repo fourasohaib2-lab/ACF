@@ -6,22 +6,22 @@ Global Geological Observatories & Seismological Data Center Registry Module (Pha
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class GeologicalObservatoryInfo:
     """Description scientifique d'un observatoire sismologique ou géologique international."""
+
     key: str
     name: str
     agency: str
     location: str
-    datasets_provided: List[str]
+    datasets_provided: list[str]
     api_url: str
-    references: List[str]
+    references: list[str]
 
 
-GEOLOGICAL_OBSERVATORIES_REGISTRY: Dict[str, GeologicalObservatoryInfo] = {
+GEOLOGICAL_OBSERVATORIES_REGISTRY: dict[str, GeologicalObservatoryInfo] = {
     "usgs": GeologicalObservatoryInfo(
         key="usgs",
         name="USGS Earthquake Hazards Program",
@@ -56,9 +56,9 @@ class GeologicalObservatoryEngine:
     """Moteur de consultation des observatoires et centres de données sismologiques."""
 
     @classmethod
-    def get_observatory(cls, key: str) -> Optional[GeologicalObservatoryInfo]:
+    def get_observatory(cls, key: str) -> GeologicalObservatoryInfo | None:
         return GEOLOGICAL_OBSERVATORIES_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_observatories(cls) -> List[str]:
+    def list_observatories(cls) -> list[str]:
         return list(GEOLOGICAL_OBSERVATORIES_REGISTRY.keys())

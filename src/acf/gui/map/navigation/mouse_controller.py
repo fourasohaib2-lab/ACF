@@ -7,7 +7,7 @@ Mouse Controller
 Central mouse event controller.
 """
 
-from PySide6.QtCore import QObject, Signal, QPoint
+from PySide6.QtCore import QObject, QPoint, Signal
 
 
 class MouseController(QObject):
@@ -52,15 +52,12 @@ class MouseController(QObject):
         self.last_position = event.position().toPoint()
 
         if event.button() == event.button().LeftButton:
-
             self.left_pressed = True
 
         elif event.button() == event.button().MiddleButton:
-
             self.middle_pressed = True
 
         elif event.button() == event.button().RightButton:
-
             self.right_pressed = True
 
         self.mousePressed.emit(event)
@@ -105,13 +102,9 @@ class MouseController(QObject):
     def status(self):
 
         return {
-
             "left_pressed": self.left_pressed,
-
             "middle_pressed": self.middle_pressed,
-
             "right_pressed": self.right_pressed,
-
             "position": (
                 self.last_position.x(),
                 self.last_position.y(),

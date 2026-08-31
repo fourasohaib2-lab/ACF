@@ -32,7 +32,6 @@ class Aerosols:
 
         return mass / volume
 
-
     @staticmethod
     def pm25_fraction(pm25, total_particles):
         """
@@ -42,7 +41,6 @@ class Aerosols:
             raise ValueError("Particle count must be positive")
 
         return pm25 / total_particles
-
 
     @staticmethod
     def dry_deposition(concentration, velocity, area):
@@ -59,7 +57,6 @@ class Aerosols:
 
         return concentration * velocity * area
 
-
     @staticmethod
     def wet_deposition(concentration, precipitation_rate):
         """
@@ -72,7 +69,6 @@ class Aerosols:
 
         return concentration * precipitation_rate
 
-
     @staticmethod
     def cloud_interaction(aerosol_number, cloud_water):
         """
@@ -82,7 +78,6 @@ class Aerosols:
             raise ValueError("Cloud water must be positive")
 
         return aerosol_number * cloud_water
-
 
     @staticmethod
     def radiative_forcing(aerosol_optical_depth):

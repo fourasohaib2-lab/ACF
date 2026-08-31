@@ -6,12 +6,12 @@ Global Planetary Defense Center & Near-Earth Objects Registry Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class NearEarthObject:
     """Description d'un objet géocroiseur (NEO / PHA)."""
+
     neo_id: str
     name: str
     object_class: str  # Apollo, Aten, Amor, Atira, Comet
@@ -28,12 +28,13 @@ class NearEarthObject:
     impact_probability: float
     is_potentially_hazardous: bool
     discovery_agency: str
-    references: List[str]
+    references: list[str]
 
 
 @dataclass
 class PotentialHazard:
     """Évaluation de risque de géocroiseur à haut potentiel de danger (PHA)."""
+
     neo_id: str
     torino_scale_level: int  # 0 to 10
     palermo_scale_score: float
@@ -44,6 +45,7 @@ class PotentialHazard:
 @dataclass
 class ImpactScenario:
     """Scénario d'impact cosmique historique ou prédictif."""
+
     scenario_name: str
     impactor_name: str
     diameter_m: float
@@ -54,7 +56,7 @@ class ImpactScenario:
     global_extinction_risk: bool
 
 
-NEO_REGISTRY: Dict[str, NearEarthObject] = {
+NEO_REGISTRY: dict[str, NearEarthObject] = {
     "apophis": NearEarthObject(
         neo_id="99942",
         name="99942 Apophis",
@@ -119,11 +121,11 @@ class PlanetaryDefenseRegistry:
     """Registre de défense planétaire des astéroïdes et comètes géocroiseurs."""
 
     @classmethod
-    def get_neo(cls, key: str) -> Optional[NearEarthObject]:
+    def get_neo(cls, key: str) -> NearEarthObject | None:
         return NEO_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_neos(cls) -> List[str]:
+    def list_neos(cls) -> list[str]:
         return list(NEO_REGISTRY.keys())
 
 

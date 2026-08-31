@@ -21,9 +21,7 @@ class CoordinateDetector:
 
     def detect(self, dataset):
 
-        dimensions = {
-            d.lower() for d in getattr(dataset, "dimensions", [])
-        }
+        dimensions = {d.lower() for d in getattr(dataset, "dimensions", [])}
 
         return {
             "latitude": self._find(dimensions, self.LAT_NAMES),

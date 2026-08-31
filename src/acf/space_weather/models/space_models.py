@@ -6,23 +6,23 @@ Global Space Weather & Magnetosphere Numerical Models Registry Module (Phase 8)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class SpaceWeatherModelInfo:
     """Description scientifique d'un modèle numérique du Soleil ou de la Magnétosphère."""
+
     key: str
     name: str
     institution: str
     domain: str  # e.g., "Heliosphere / CME Propagation", "Ionosphere", "Global Magnetosphere"
     governing_equations: str
     typical_lead_time: str
-    strengths: List[str]
-    references: List[str]
+    strengths: list[str]
+    references: list[str]
 
 
-SPACE_WEATHER_MODELS_REGISTRY: Dict[str, SpaceWeatherModelInfo] = {
+SPACE_WEATHER_MODELS_REGISTRY: dict[str, SpaceWeatherModelInfo] = {
     "wsa_enlil": SpaceWeatherModelInfo(
         key="wsa_enlil",
         name="WSA-ENLIL (Wang-Sheeley-Arge / ENLIL 3D MHD)",
@@ -60,9 +60,9 @@ class SpaceWeatherModelEngine:
     """Moteur de consultation des modèles de temps spatial."""
 
     @classmethod
-    def get_model(cls, key: str) -> Optional[SpaceWeatherModelInfo]:
+    def get_model(cls, key: str) -> SpaceWeatherModelInfo | None:
         return SPACE_WEATHER_MODELS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls) -> list[str]:
         return list(SPACE_WEATHER_MODELS_REGISTRY.keys())

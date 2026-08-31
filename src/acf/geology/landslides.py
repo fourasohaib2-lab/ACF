@@ -6,7 +6,7 @@ Slope Stability, Landslides & Debris Flow Engine Module (Phase 10)
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class SlopeStabilityEngine:
@@ -41,7 +41,7 @@ class SlopeStabilityEngine:
         slope_angle_deg: float,
         rainfall_24h_mm: float,
         soil_saturation_pct: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Évalue le risque de déclenchement de glissement de terrain suite à de fortes pluies."""
         trigger_index = (slope_angle_deg / 30.0) * (rainfall_24h_mm / 100.0) * (soil_saturation_pct / 100.0)
 

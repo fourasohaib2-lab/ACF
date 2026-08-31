@@ -33,7 +33,6 @@ from acf.catalog.catalog_entry import CatalogEntry
 def register_atmosphere(catalog):
 
     parameters = [
-
         CatalogEntry(
             parameter_id="t",
             standard_name="air_temperature",
@@ -42,9 +41,8 @@ def register_atmosphere(catalog):
             category="Atmosphere",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="temperature"
+            colormap="temperature",
         ),
-
         CatalogEntry(
             parameter_id="q",
             standard_name="specific_humidity",
@@ -53,9 +51,8 @@ def register_atmosphere(catalog):
             category="Atmosphere",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="humidity"
+            colormap="humidity",
         ),
-
         CatalogEntry(
             parameter_id="rh_pl",
             standard_name="relative_humidity",
@@ -64,9 +61,8 @@ def register_atmosphere(catalog):
             category="Atmosphere",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="humidity"
+            colormap="humidity",
         ),
-
         CatalogEntry(
             parameter_id="u",
             standard_name="eastward_wind",
@@ -75,9 +71,8 @@ def register_atmosphere(catalog):
             category="Atmosphere",
             level_type="Pressure Level",
             renderer="Wind",
-            colormap="wind"
+            colormap="wind",
         ),
-
         CatalogEntry(
             parameter_id="v",
             standard_name="northward_wind",
@@ -86,9 +81,8 @@ def register_atmosphere(catalog):
             category="Atmosphere",
             level_type="Pressure Level",
             renderer="Wind",
-            colormap="wind"
+            colormap="wind",
         ),
-
         CatalogEntry(
             parameter_id="w",
             standard_name="upward_air_velocity",
@@ -97,9 +91,8 @@ def register_atmosphere(catalog):
             category="Dynamics",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="vertical_velocity"
+            colormap="vertical_velocity",
         ),
-
         CatalogEntry(
             parameter_id="z",
             standard_name="geopotential",
@@ -108,9 +101,8 @@ def register_atmosphere(catalog):
             category="Dynamics",
             level_type="Pressure Level",
             renderer="Contour",
-            colormap="geopotential"
+            colormap="geopotential",
         ),
-
         CatalogEntry(
             parameter_id="gh",
             standard_name="geopotential_height",
@@ -119,9 +111,8 @@ def register_atmosphere(catalog):
             category="Dynamics",
             level_type="Pressure Level",
             renderer="Contour",
-            colormap="height"
+            colormap="height",
         ),
-
         CatalogEntry(
             parameter_id="vo",
             standard_name="atmosphere_relative_vorticity",
@@ -130,9 +121,8 @@ def register_atmosphere(catalog):
             category="Dynamics",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="vorticity"
+            colormap="vorticity",
         ),
-
         CatalogEntry(
             parameter_id="d",
             standard_name="divergence_of_wind",
@@ -141,9 +131,8 @@ def register_atmosphere(catalog):
             category="Dynamics",
             level_type="Pressure Level",
             renderer="Raster",
-            colormap="divergence"
+            colormap="divergence",
         ),
-
         CatalogEntry(
             parameter_id="clwc",
             standard_name="cloud_liquid_water_content",
@@ -152,9 +141,8 @@ def register_atmosphere(catalog):
             category="Cloud",
             level_type="Model Level",
             renderer="Raster",
-            colormap="cloud_water"
+            colormap="cloud_water",
         ),
-
         CatalogEntry(
             parameter_id="ciwc",
             standard_name="cloud_ice_water_content",
@@ -163,9 +151,8 @@ def register_atmosphere(catalog):
             category="Cloud",
             level_type="Model Level",
             renderer="Raster",
-            colormap="ice"
+            colormap="ice",
         ),
-
         CatalogEntry(
             parameter_id="crwc",
             standard_name="rain_water_content",
@@ -174,9 +161,8 @@ def register_atmosphere(catalog):
             category="Hydrometeor",
             level_type="Model Level",
             renderer="Raster",
-            colormap="rain"
+            colormap="rain",
         ),
-
         CatalogEntry(
             parameter_id="cswc",
             standard_name="snow_water_content",
@@ -185,9 +171,8 @@ def register_atmosphere(catalog):
             category="Hydrometeor",
             level_type="Model Level",
             renderer="Raster",
-            colormap="snow"
+            colormap="snow",
         ),
-
         CatalogEntry(
             parameter_id="graupel",
             standard_name="graupel_mixing_ratio",
@@ -196,9 +181,8 @@ def register_atmosphere(catalog):
             category="Hydrometeor",
             level_type="Model Level",
             renderer="Raster",
-            colormap="graupel"
-        )
-
+            colormap="graupel",
+        ),
     ]
 
     for p in parameters:

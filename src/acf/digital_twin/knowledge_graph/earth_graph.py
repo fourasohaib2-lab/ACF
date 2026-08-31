@@ -5,7 +5,7 @@ Planetary Knowledge Graph & Inter-Domain Scientific Knowledge Base Module (Phase
 (PlanetaryKnowledgeGraph linking Atmosphere, Ocean, Hydrology, Climate, Cryosphere, Space Weather, Geology)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class PlanetaryKnowledgeGraph:
@@ -14,7 +14,7 @@ class PlanetaryKnowledgeGraph:
     """
 
     @classmethod
-    def get_domain_nodes(cls) -> List[str]:
+    def get_domain_nodes(cls) -> list[str]:
         return [
             "Atmosphere",
             "Ocean",
@@ -29,7 +29,7 @@ class PlanetaryKnowledgeGraph:
         ]
 
     @classmethod
-    def explain_planetary_link(cls, source_domain: str, target_domain: str) -> Dict[str, Any]:
+    def explain_planetary_link(cls, source_domain: str, target_domain: str) -> dict[str, Any]:
         """Explique la relation causale physique entre deux sous-systèmes du Digital Twin."""
         s = source_domain.lower()
         t = target_domain.lower()

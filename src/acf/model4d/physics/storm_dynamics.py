@@ -21,7 +21,6 @@ class StormDynamicsPhysics:
         """
         return parcel_energy - environment_energy
 
-
     @staticmethod
     def cin(inhibition, reference):
         """
@@ -30,7 +29,6 @@ class StormDynamicsPhysics:
         CIN = reference - inhibition
         """
         return reference - inhibition
-
 
     @staticmethod
     def updraft_velocity(energy):
@@ -42,14 +40,12 @@ class StormDynamicsPhysics:
         """
         return energy / 10
 
-
     @staticmethod
     def wind_shear(upper_wind, lower_wind):
         """
         Vertical wind shear.
         """
         return upper_wind - lower_wind
-
 
     @staticmethod
     def storm_intensity(wind_speed, duration):
@@ -58,14 +54,12 @@ class StormDynamicsPhysics:
         """
         return wind_speed * duration
 
-
     @staticmethod
     def supercell_potential(vorticity, shear):
         """
         Supercell potential index.
         """
         return vorticity * shear
-
 
     @staticmethod
     def storm_lifetime(distance, speed):
@@ -76,7 +70,6 @@ class StormDynamicsPhysics:
         """
         return distance / speed
 
-
     @staticmethod
     def precipitation_efficiency(rainfall, moisture):
         """
@@ -84,14 +77,12 @@ class StormDynamicsPhysics:
         """
         return rainfall / moisture
 
-
     @staticmethod
     def vorticity(rotation, scale):
         """
         Relative vorticity approximation.
         """
         return rotation / scale
-
 
     @staticmethod
     def convective_index(surface_temperature, upper_temperature):

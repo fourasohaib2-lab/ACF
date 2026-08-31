@@ -40,9 +40,7 @@ class WetBulbTemperature:
         """
 
         if not (0.0 <= relative_humidity <= 1.0):
-            raise ValueError(
-                "relative_humidity must be between 0 and 1."
-            )
+            raise ValueError("relative_humidity must be between 0 and 1.")
 
         rh = relative_humidity * 100.0
 
@@ -50,6 +48,6 @@ class WetBulbTemperature:
             temperature_c * atan(0.151977 * sqrt(rh + 8.313659))
             + atan(temperature_c + rh)
             - atan(rh - 1.676331)
-            + 0.00391838 * rh ** 1.5 * atan(0.023101 * rh)
+            + 0.00391838 * rh**1.5 * atan(0.023101 * rh)
             - 4.686035
         )

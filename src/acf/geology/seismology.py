@@ -5,13 +5,14 @@ Global Seismology, Earthquake Laws & Moment Tensor Module (Phase 4)
 (Moment Magnitude Mw, Gutenberg-Richter Law, Omori Aftershock Law, Bath's Law, PGA, PGV, MMI)
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 
 @dataclass
 class MomentTensor:
     """Composantes du tenseur du moment sismique M = [[Mxx, Mxy, Mxz], [Myx, Myy, Myz], [Mzx, Mzy, Mzz]] (N.m)."""
+
     mrr: float
     mtt: float
     mpp: float
@@ -22,13 +23,14 @@ class MomentTensor:
     @property
     def scalar_seismic_moment_m0(self) -> float:
         """Calcul du moment sismique scalaire M0 = sqrt(0.5 * sum(M_ij²))."""
-        val = (self.mrr**2 + self.mtt**2 + self.mpp**2 + 2*(self.mrt**2 + self.mrp**2 + self.mtp**2))
+        val = self.mrr**2 + self.mtt**2 + self.mpp**2 + 2 * (self.mrt**2 + self.mrp**2 + self.mtp**2)
         return math.sqrt(0.5 * val)
 
 
 @dataclass
 class EarthquakeEvent:
     """Description complète d'un événement séisme."""
+
     event_id: str
     latitude: float
     longitude: float
@@ -63,7 +65,9 @@ class SeismologyEngine:
         return 10.0 ** (a_value - b_value * min_magnitude)
 
     @staticmethod
-    def omori_aftershock_rate(time_days: float, k_const: float = 100.0, c_const: float = 0.1, p_exponent: float = 1.0) -> float:
+    def omori_aftershock_rate(
+        time_days: float, k_const: float = 100.0, c_const: float = 0.1, p_exponent: float = 1.0
+    ) -> float:
         """Loi d'Omori modifiée pour le taux de répliques n(t) = K / (t + c)^p."""
         return k_const / ((time_days + c_const) ** p_exponent)
 

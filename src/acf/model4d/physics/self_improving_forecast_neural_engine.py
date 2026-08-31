@@ -58,16 +58,12 @@ class SelfImprovingForecastNeuralEngine:
         Calculate learning improvement gain.
         """
 
-        gain = (
-            state.learning_rate
-            * state.training_cycles
-        )
+        gain = state.learning_rate * state.training_cycles
 
         return round(
             gain,
             2,
         )
-
 
     def corrected_accuracy(
         self,
@@ -77,17 +73,12 @@ class SelfImprovingForecastNeuralEngine:
         Improve forecast accuracy after learning.
         """
 
-        accuracy = (
-            state.initial_accuracy
-            + self.improvement_gain(state)
-            - state.forecast_error * 0.2
-        )
+        accuracy = state.initial_accuracy + self.improvement_gain(state) - state.forecast_error * 0.2
 
         return round(
             max(min(accuracy, 100), 0),
             2,
         )
-
 
     def neural_learning_score(
         self,
@@ -97,16 +88,12 @@ class SelfImprovingForecastNeuralEngine:
         Global neural learning performance.
         """
 
-        score = (
-            self.corrected_accuracy(state)
-            + state.neural_confidence
-        ) / 2
+        score = (self.corrected_accuracy(state) + state.neural_confidence) / 2
 
         return round(
             score,
             2,
         )
-
 
     def optimization_status(
         self,
@@ -126,7 +113,6 @@ class SelfImprovingForecastNeuralEngine:
 
         return "RETRAIN_REQUIRED"
 
-
     def learning_update(
         self,
         state: SelfImprovingForecastState,
@@ -137,12 +123,8 @@ class SelfImprovingForecastNeuralEngine:
 
         return {
             "model": state.model_name,
-            "improvement_gain":
-                self.improvement_gain(state),
-            "corrected_accuracy":
-                self.corrected_accuracy(state),
-            "learning_score":
-                self.neural_learning_score(state),
-            "status":
-                self.optimization_status(state),
+            "improvement_gain": self.improvement_gain(state),
+            "corrected_accuracy": self.corrected_accuracy(state),
+            "learning_score": self.neural_learning_score(state),
+            "status": self.optimization_status(state),
         }

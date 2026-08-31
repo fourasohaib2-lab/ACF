@@ -34,6 +34,7 @@ class RendererManager(QObject):
         super().__init__(parent)
 
         self.initialize()
+
     ##################################################
 
     def initialize(self):
@@ -44,6 +45,7 @@ class RendererManager(QObject):
         self._renderers = {}
 
         self._default_renderer = None
+
     ##################################################
 
     def register_renderer(
@@ -78,6 +80,7 @@ class RendererManager(QObject):
         del self._renderers[name]
 
         self.rendererRemoved.emit(name)
+
     ##################################################
 
     def renderer(self, name):
@@ -95,17 +98,13 @@ class RendererManager(QObject):
     def renderer_names(self):
 
         return sorted(self._renderers.keys())
+
     ##################################################
 
     def status(self):
 
         return {
-
             "count": len(self._renderers),
-
             "default": self._default_renderer,
-
             "renderers": self.renderer_names(),
-
         }
-

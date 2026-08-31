@@ -10,13 +10,12 @@ Centralisation des opérateurs physiques :
 - Diffusion
 """
 
-
-from .gradient import Gradient
-from .divergence import Divergence
-from .laplacian import Laplacian
-from .curl import Curl
 from .advection import Advection
+from .curl import Curl
 from .diffusion import Diffusion
+from .divergence import Divergence
+from .gradient import Gradient
+from .laplacian import Laplacian
 
 
 class OperatorsEngine:
@@ -42,7 +41,6 @@ class OperatorsEngine:
     def diffusion(self, *args, **kwargs):
         return Diffusion.calculate(*args, **kwargs)
 
-
     def apply(self, operator, *args, **kwargs):
         """
         Application dynamique d'un opérateur.
@@ -58,12 +56,6 @@ class OperatorsEngine:
         }
 
         if operator not in operators:
-            raise ValueError(
-                f"Unknown operator: {operator}"
-            )
+            raise ValueError(f"Unknown operator: {operator}")
 
-        return operators[operator](
-            *args,
-            **kwargs
-        )
-
+        return operators[operator](*args, **kwargs)

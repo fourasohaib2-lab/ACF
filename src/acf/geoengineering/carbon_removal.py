@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class CDRTechniqueResult:
     """Description et métriques d'une méthode de captage et d'élimination du CO2 (CDR)."""
+
     technique_name: str
     annual_removal_capacity_gt_co2: float
     durability_years: float  # Durée de stockage (10 à 10000+ ans)

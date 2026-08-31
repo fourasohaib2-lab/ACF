@@ -6,8 +6,7 @@ Impact Tsunami Hydrodynamics Engine Module (Phase 4)
 """
 
 import math
-from typing import Any, Dict
-
+from typing import Any
 
 GRAVITY_EARTH = 9.80665  # m/s^2
 
@@ -21,7 +20,7 @@ class ImpactTsunamiEngine:
     def calculate_initial_wave_height(cls, impactor_diameter_m: float, water_depth_m: float = 4000.0) -> float:
         """
         Calcule la hauteur initiale de la vague d'impact océanique H0 en eau profonde.
-        
+
         Equations:
             H_0 = 0.05 \\cdot d_i \\cdot \\left(\\frac{d_i}{d_w}\\right)^{0.5}
         """
@@ -31,7 +30,7 @@ class ImpactTsunamiEngine:
     def calculate_tsunami_celerity(cls, water_depth_m: float) -> float:
         """
         Calcule la célérité de l'onde de tsunami en eau profonde : c = sqrt(g * d)
-        
+
         Equations:
             c = \\sqrt{g \\cdot d}
         """
@@ -41,7 +40,7 @@ class ImpactTsunamiEngine:
     def green_law_amplification(cls, initial_height_m: float, deep_depth_m: float, shallow_depth_m: float) -> float:
         """
         Calcule l'amplification de la vague sur la côte par la loi de Green.
-        
+
         Equations:
             H_{\\text{coast}} = H_{\\text{initial}} \\cdot \\left(\\frac{d_{\\text{deep}}}{d_{\\text{shallow}}}\\right)^{1/4}
         """
@@ -50,7 +49,9 @@ class ImpactTsunamiEngine:
         return initial_height_m * ((deep_depth_m / shallow_depth_m) ** 0.25)
 
     @classmethod
-    def simulate_ocean_impact_tsunami(cls, impactor_diameter_m: float, distance_from_impact_km: float) -> Dict[str, Any]:
+    def simulate_ocean_impact_tsunami(
+        cls, impactor_diameter_m: float, distance_from_impact_km: float
+    ) -> dict[str, Any]:
         """Simule la propagation et le déferlement du tsunami d'impact."""
         h0 = cls.calculate_initial_wave_height(impactor_diameter_m)
         c_deep = cls.calculate_tsunami_celerity(4000.0)  # ~198 m/s = 712 km/h

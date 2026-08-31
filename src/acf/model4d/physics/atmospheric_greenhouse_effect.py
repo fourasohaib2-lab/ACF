@@ -30,40 +30,23 @@ class AtmosphericGreenhouseEffect:
     atmospheric re-emission
     """
 
-    def absorbed_infrared(
-        self,
-        state: GreenhouseState
-    ) -> float:
+    def absorbed_infrared(self, state: GreenhouseState) -> float:
         """
         Calculate absorbed terrestrial infrared radiation.
         """
 
-        return (
-            state.infrared_emission
-            * state.greenhouse_gas_factor
-        )
+        return state.infrared_emission * state.greenhouse_gas_factor
 
-
-    def total_greenhouse_forcing(
-        self,
-        state: GreenhouseState
-    ) -> float:
+    def total_greenhouse_forcing(self, state: GreenhouseState) -> float:
         """
         Calculate total greenhouse forcing.
         """
 
         absorbed = self.absorbed_infrared(state)
 
-        return (
-            absorbed
-            + state.atmospheric_reemission
-        )
+        return absorbed + state.atmospheric_reemission
 
-
-    def climate_response(
-        self,
-        state: GreenhouseState
-    ) -> str:
+    def climate_response(self, state: GreenhouseState) -> str:
         """
         Determine thermal tendency.
         """

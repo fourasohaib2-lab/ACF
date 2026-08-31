@@ -46,7 +46,6 @@ class AerosolCloudInteractionPhysics:
 
         return min(activation, aerosol_number)
 
-
     @staticmethod
     def droplet_number(ccn, efficiency):
         """
@@ -74,7 +73,6 @@ class AerosolCloudInteractionPhysics:
 
         return ccn * efficiency
 
-
     @staticmethod
     def aerosol_indirect_effect(clean_albedo, polluted_albedo):
         """
@@ -99,7 +97,6 @@ class AerosolCloudInteractionPhysics:
 
         return (polluted_albedo - clean_albedo) / clean_albedo
 
-
     @staticmethod
     def cloud_albedo_response(droplet_number):
         """
@@ -120,7 +117,6 @@ class AerosolCloudInteractionPhysics:
             raise ValueError("Droplet number cannot be negative")
 
         return droplet_number / (droplet_number + 1000)
-
 
     @staticmethod
     def aerosol_scavenging_rate(concentration, precipitation):
@@ -148,7 +144,6 @@ class AerosolCloudInteractionPhysics:
             raise ValueError("Invalid precipitation")
 
         return concentration * precipitation / 100
-
 
     @staticmethod
     def cloud_lifetime_change(clean_lifetime, aerosol_loading):

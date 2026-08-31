@@ -1,7 +1,9 @@
 """Hydrodynamic ocean circulation model."""
 
-from typing import Dict
+from typing import Any
+
 import numpy as np
+
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
@@ -27,7 +29,7 @@ class OceanModel:
         self.rho_0 = 1025.0  # Reference seawater density (kg/m^3)
         self.g = 9.80665
 
-    def initialize_state(self) -> Dict[str, np.ndarray]:
+    def initialize_state(self) -> dict[str, Any]:
         """Generate baseline ocean physical state."""
         shape_2d = (self.grid.n_lat, self.grid.n_lon)
 
@@ -51,9 +53,7 @@ class OceanModel:
         }
         return state
 
-    def calculate_seawater_density(
-        self, temp_c: np.ndarray, salinity_psu: np.ndarray
-    ) -> np.ndarray:
+    def calculate_seawater_density(self, temp_c: np.ndarray, salinity_psu: np.ndarray) -> np.ndarray:
         """Compute seawater density via linearized equation of state.
 
         rho = rho_0 * (1 - alpha * (T - T0) + beta * (S - S0))
@@ -69,12 +69,12 @@ class OceanModel:
 
     def step(
         self,
-        state: Dict[str, np.ndarray],
-        wind_stress_x: np.ndarray = None,
-        wind_stress_y: np.ndarray = None,
-        heat_flux: np.ndarray = None,
+        state: dict[str, Any],
+        wind_stress_x: np.ndarray | None = None,
+        wind_stress_y: np.ndarray | None = None,
+        heat_flux: np.ndarray | None = None,
         dt: float = 3600.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, Any]:
         """Advance ocean state over time step dt.
 
         Args:

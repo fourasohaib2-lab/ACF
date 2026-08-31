@@ -4,7 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Scientific Reasoning Engine (Physics-AI Expert System & Explanatory Forecast Engine)
 """
 
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
 
 
@@ -16,10 +17,10 @@ class ScientificReasoningEngine:
     def __init__(self):
         self.graph = KnowledgeGraphEngine()
 
-    def explain_forecast_chain(self, initial_state: Dict[str, float]) -> Dict[str, Any]:
+    def explain_forecast_chain(self, initial_state: dict[str, float]) -> dict[str, Any]:
         """
         Explique de manière transparente la chaîne causale physique de prévision à partir d'un état atmosphérique initial.
-        
+
         Exemple de chaîne causale:
         CAPE élevé -> instabilité -> convection -> Cumulonimbus -> foudre -> fortes pluies & grêle
         """
@@ -28,9 +29,9 @@ class ScientificReasoningEngine:
         cin = initial_state.get("cin", 0.0)
         shear = initial_state.get("shear", 10.0)
 
-        chain: List[str] = []
-        mechanisms: List[str] = []
-        laws_used: List[str] = []
+        chain: list[str] = []
+        mechanisms: list[str] = []
+        laws_used: list[str] = []
 
         if cape > 1500 and cin < 100:
             chain.append("CAPE élevé")

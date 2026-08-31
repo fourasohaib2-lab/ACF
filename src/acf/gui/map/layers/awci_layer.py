@@ -58,7 +58,6 @@ class AWCILayer(BaseLayer):
     ##################################################
 
     def render(self, renderer):
-
         """
         Render AWCI layer.
         """
@@ -83,20 +82,11 @@ class AWCILayer(BaseLayer):
     def status(self):
 
         return {
-
             "name": self.name,
-
             "visible": self.visible,
-
             "opacity": self.opacity,
-
             "has_data": self.data is not None,
-
             "colormap": self.colormap,
-
             "alpha": self.alpha,
-
             "levels": self.levels,
-
         }
-

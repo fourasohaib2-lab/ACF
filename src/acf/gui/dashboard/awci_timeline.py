@@ -3,32 +3,30 @@ AWCI Timeline Widget
 ====================
 """
 
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen, QPolygon
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPolygon
-
-from typing import List, Optional, Tuple
 
 
 class AWCITimeline(QWidget):
     """Timeline showing AWCI evolution over time."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._data = []
-        self._forecast_start = None
+        self._data: list[tuple[str, float]] = []
+        self._forecast_start: int | None = None
         self._title = "Évolution AWCI"
         self.setMinimumSize(300, 150)
         self.setStyleSheet("background: transparent;")
 
-    def set_data(self, data: List[Tuple[str, float]], forecast_start: Optional[int] = None):
+    def set_data(self, data: list[tuple[str, float]], forecast_start: int | None = None):
         self._data = data
         self._forecast_start = forecast_start
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect()
         width = rect.width()
@@ -61,43 +59,44 @@ class AWCITimeline(QWidget):
             return
 
         scores = [s for _, s in self._data]
-        min_score = 0
         max_score = max(100, max(scores) + 10)
 
         # Grid lines
-        painter.setPen(QPen(QColor(50, 50, 80), 1, Qt.DashLine))
+        painter.setPen(QPen(QColor(50, 50, 80), 1, Qt.PenStyle.DashLine))
         font.setPointSize(7)
         painter.setFont(font)
         for grid_score in [25, 50, 75]:
             y = margin_top + plot_height - (grid_score / max_score) * plot_height
             painter.drawLine(margin_left, int(y), width - margin_right, int(y))
             painter.setPen(QPen(QColor(100, 100, 130), 1))
-            painter.drawText(5, int(y) + 4, 30, 12, Qt.AlignRight, f"{grid_score}")
+            painter.drawText(5, int(y) + 4, 30, 12, Qt.AlignmentFlag.AlignRight, f"{grid_score}")
 
         # Points
         points = []
-        for i, (label, score) in enumerate(self._data):
+        for i, (_label, score) in enumerate(self._data):
             x = margin_left + (i / max(1, len(self._data) - 1)) * plot_width
             y = margin_top + plot_height - (score / max_score) * plot_height
             points.append(QPoint(int(x), int(y)))
 
         # Fill area under curve (polygon)
         if len(points) >= 2:
-            polygon = points + [QPoint(points[-1].x(), margin_top + plot_height),
-                                QPoint(points[0].x(), margin_top + plot_height)]
+            polygon = points + [
+                QPoint(points[-1].x(), margin_top + plot_height),
+                QPoint(points[0].x(), margin_top + plot_height),
+            ]
             painter.setBrush(QBrush(QColor(66, 133, 244, 50)))
-            painter.setPen(QPen(Qt.NoPen))
+            painter.setPen(QPen(Qt.PenStyle.NoPen))
             painter.drawPolygon(QPolygon(polygon))
 
         # Draw line
-        painter.setBrush(QBrush(Qt.NoBrush))
+        painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
         if self._forecast_start is not None and 0 < self._forecast_start < len(points):
             # Historical (solid)
             painter.setPen(QPen(QColor(66, 133, 244), 2))
             for i in range(self._forecast_start - 1):
                 painter.drawLine(points[i], points[i + 1])
             # Forecast (dashed)
-            painter.setPen(QPen(QColor(255, 100, 100), 2, Qt.DashLine))
+            painter.setPen(QPen(QColor(255, 100, 100), 2, Qt.PenStyle.DashLine))
             for i in range(self._forecast_start - 1, len(points) - 1):
                 painter.drawLine(points[i], points[i + 1])
         else:
@@ -106,7 +105,7 @@ class AWCITimeline(QWidget):
                 painter.drawLine(points[i], points[i + 1])
 
         # Data points
-        painter.setPen(QPen(Qt.NoPen))
+        painter.setPen(QPen(Qt.PenStyle.NoPen))
         for i, p in enumerate(points):
             if self._forecast_start is not None and i >= self._forecast_start:
                 painter.setBrush(QBrush(QColor(255, 100, 100)))
@@ -122,6 +121,8 @@ class AWCITimeline(QWidget):
         for i, (label, _) in enumerate(self._data):
             if i % step == 0 or i == len(self._data) - 1:
                 x = margin_left + (i / max(1, len(self._data) - 1)) * plot_width
-                painter.drawText(int(x) - 15, margin_top + plot_height + 12, 30, 12, Qt.AlignCenter, label)
+                painter.drawText(
+                    int(x) - 15, margin_top + plot_height + 12, 30, 12, Qt.AlignmentFlag.AlignCenter, label
+                )
 
         painter.end()

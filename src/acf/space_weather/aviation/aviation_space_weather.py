@@ -5,7 +5,7 @@ Aviation Space Weather & ICAO Advisory Module (Phase 7)
 (Polar Routes, Radiation Dose Rates µSv/h, ICAO SWX Advisories, HF Blackout)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class AviationSpaceWeatherEngine:
@@ -14,7 +14,7 @@ class AviationSpaceWeatherEngine:
     """
 
     @staticmethod
-    def calculate_polar_flight_radiation_dose(flight_level: int, solar_proton_event_s_scale: int = 0) -> Dict[str, Any]:
+    def calculate_polar_flight_radiation_dose(flight_level: int, solar_proton_event_s_scale: int = 0) -> dict[str, Any]:
         """
         Calcule le débit de dose de radiation Cosmique / Solaire au niveau de vol (FL300 - FL450).
         Dose ambiante normale au niveau FL360 ~ 4.5 µSv/h.

@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Planetary Boundaries & Geoengineering Dashboard Module (Phase 9)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryBoundariesDashboard:
@@ -13,7 +13,7 @@ class PlanetaryBoundariesDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Geoengineering & Boundaries dans AWCI."""
         return {
             "workspace_name": "PLANETARY BOUNDARIES & CLIMATE CONTROL CENTER",

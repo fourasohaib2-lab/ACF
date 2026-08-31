@@ -11,6 +11,7 @@ from PySide6.QtCore import QObject, Signal
 
 try:
     import cartopy.crs as ccrs
+
     HAS_CARTOPY = True
 except Exception:
     HAS_CARTOPY = False
@@ -28,6 +29,7 @@ class ProjectionManager(QObject):
         super().__init__(parent)
 
         self.initialize()
+
     ##################################################
 
     def initialize(self):
@@ -42,28 +44,17 @@ class ProjectionManager(QObject):
         self._projections = {}
 
         if HAS_CARTOPY:
-
             self._projections = {
-
                 "PlateCarree": ccrs.PlateCarree(),
-
                 "Mercator": ccrs.Mercator(),
-
                 "LambertConformal": ccrs.LambertConformal(),
-
                 "NorthPolarStereo": ccrs.NorthPolarStereo(),
-
                 "SouthPolarStereo": ccrs.SouthPolarStereo(),
-
                 "Robinson": ccrs.Robinson(),
-
                 "Orthographic": ccrs.Orthographic(),
-
             }
 
-            self.current_projection = (
-                self._projections[self.current_name]
-            )
+            self.current_projection = self._projections[self.current_name]
 
     ##################################################
 
@@ -72,9 +63,7 @@ class ProjectionManager(QObject):
         Return all available projections.
         """
 
-        return sorted(
-            self._projections.keys()
-        )
+        return sorted(self._projections.keys())
 
     ##################################################
 
@@ -93,6 +82,7 @@ class ProjectionManager(QObject):
         """
 
         return self.current_name
+
     ##################################################
 
     def set_projection(
@@ -108,15 +98,12 @@ class ProjectionManager(QObject):
 
         self.current_name = name
 
-        self.current_projection = (
-            self._projections[name]
-        )
+        self.current_projection = self._projections[name]
 
-        self.projectionChanged.emit(
-            name
-        )
+        self.projectionChanged.emit(name)
 
         return True
+
     ##################################################
     ##################################################
 
@@ -126,25 +113,17 @@ class ProjectionManager(QObject):
         """
 
         return {
-
             "cartopy": HAS_CARTOPY,
-
             "projection": self.current_name,
-
             "available": self.available_projections(),
-
         }
-    def status(self):
+
+    def get_status(self):
         """
         Diagnostic information.
         """
-
         return {
-
             "cartopy": HAS_CARTOPY,
-
             "projection": self.current_name,
-
             "available": self.available_projections(),
-
         }

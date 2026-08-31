@@ -3,7 +3,6 @@ Ice Sheet Dynamics Model (Greenland & Antarctica)
 """
 
 
-
 class IceSheetDynamics:
     """Modèle d'écoulement et de dynamique des calottes glaciaires (Groenland & Antarctique)."""
 

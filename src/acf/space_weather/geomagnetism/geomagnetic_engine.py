@@ -5,18 +5,20 @@ Geomagnetism, Magnetosphere & NOAA Storm Scales Module (Phase 3)
 (Magnetopause Standoff Distance Rmp, Geomagnetic Indices Kp, Dst, Ap, NOAA G1-G5 Scales)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class GeomagneticStormScale:
     """Classification des tempêtes géomagnétiques selon l'échelle NOAA (G1 à G5)."""
 
     @staticmethod
-    def classify_kp_index(kp_value: float) -> Dict[str, str]:
+    def classify_kp_index(kp_value: float) -> dict[str, str]:
         """Convertit l'indice Kp (0 à 9) en tempête géomagnétique NOAA G1-G5."""
         if kp_value >= 9.0:
             scale = "G5 - Extreme Geomagnetic Storm"
-            impacts = "Effondrement possible de réseaux électriques, panne totale de télécoms HF et d'orientation satellite."
+            impacts = (
+                "Effondrement possible de réseaux électriques, panne totale de télécoms HF et d'orientation satellite."
+            )
         elif kp_value >= 8.0:
             scale = "G4 - Severe Geomagnetic Storm"
             impacts = "Problèmes de contrôle de tension des réseaux électriques, aurores visibles aux basses latitudes."
@@ -53,7 +55,7 @@ class GeomagneticEngine:
         return max(4.0, min(15.0, rmp))
 
     @classmethod
-    def evaluate_dst_index_severity(cls, dst_nt: float) -> Dict[str, Any]:
+    def evaluate_dst_index_severity(cls, dst_nt: float) -> dict[str, Any]:
         """Évalue l'intensité de la ceinture de courant (Ring Current) selon l'indice Dst (nT)."""
         if dst_nt <= -300.0:
             severity = "Superstorm (Dst <= -300 nT)"

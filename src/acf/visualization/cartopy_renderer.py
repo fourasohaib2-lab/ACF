@@ -6,10 +6,11 @@ Compatibility facade redirecting legacy `acf.visualization.cartopy_renderer`
 to canonical `acf.maps.renderers.cartopy_renderer`.
 """
 
-from acf.maps.renderers.cartopy_renderer import CartopyRenderer as CanonicalCartopyRenderer
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+
+from acf.maps.renderers.cartopy_renderer import CartopyRenderer as CanonicalCartopyRenderer
 
 
 class CartopyRenderer(CanonicalCartopyRenderer):

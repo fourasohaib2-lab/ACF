@@ -8,5 +8,5 @@ class OceanCarbonBiologicalPump:
 
     @classmethod
     def ocean_co2_uptake_rate(cls, pco2_air: float, pco2_water: float, wind_speed_m_s: float) -> float:
-        kw = 0.251 * (wind_speed_m_s ** 2)
+        kw = 0.251 * (wind_speed_m_s**2)
         return kw * (pco2_air - pco2_water) * 0.001

@@ -4,7 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Cloud Scientific Registry
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from acf.science.clouds.base import CloudProcess
 
 
@@ -13,7 +14,7 @@ class CloudScientificRegistry:
     Registre centralisé des lois et processus physiques des nuages.
     """
 
-    _processes: Dict[str, CloudProcess] = {}
+    _processes: dict[str, CloudProcess] = {}
     _initialized: bool = False
 
     @classmethod
@@ -22,11 +23,11 @@ class CloudScientificRegistry:
             return
         cls._initialized = True
         # Lazy import of engines to trigger registration of processes
-        from acf.science.clouds.microphysics import CloudMicrophysicsEngine
-        from acf.science.clouds.thermodynamics import CloudThermodynamicsEngine
-        from acf.science.clouds.dynamics import CloudDynamicsEngine
-        from acf.science.clouds.radiation import CloudRadiationEngine
         from acf.science.clouds.aerosols import CloudAerosolEngine
+        from acf.science.clouds.dynamics import CloudDynamicsEngine
+        from acf.science.clouds.microphysics import CloudMicrophysicsEngine
+        from acf.science.clouds.radiation import CloudRadiationEngine
+        from acf.science.clouds.thermodynamics import CloudThermodynamicsEngine
 
         CloudMicrophysicsEngine()
         CloudThermodynamicsEngine()
@@ -42,7 +43,7 @@ class CloudScientificRegistry:
         cls._processes[process.key] = process
 
     @classmethod
-    def get(cls, key_or_name: str) -> Optional[CloudProcess]:
+    def get(cls, key_or_name: str) -> CloudProcess | None:
         """
         Récupère un processus nuageux par sa clé ou son nom.
         """
@@ -56,7 +57,7 @@ class CloudScientificRegistry:
         return None
 
     @classmethod
-    def search(cls, query: str) -> List[CloudProcess]:
+    def search(cls, query: str) -> list[CloudProcess]:
         """
         Recherche des processus nuageux par mot-clé.
         """
@@ -70,7 +71,7 @@ class CloudScientificRegistry:
         return results
 
     @classmethod
-    def list_processes(cls, domain: Optional[str] = None) -> List[CloudProcess]:
+    def list_processes(cls, domain: str | None = None) -> list[CloudProcess]:
         """
         Liste tous les processus nuageux enregistrés.
         """

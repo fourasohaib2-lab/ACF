@@ -72,7 +72,6 @@ class AdvancedAtmosphericDynamicsEngine:
             2,
         )
 
-
     def vorticity_analysis(
         self,
         state: AtmosphericDynamicsState,
@@ -83,23 +82,17 @@ class AdvancedAtmosphericDynamicsEngine:
             2,
         )
 
-
     def dynamic_lift_index(
         self,
         state: AtmosphericDynamicsState,
     ) -> float:
 
-        value = (
-            state.divergence
-            + state.convergence
-            + state.upper_troposphere_forcing
-        )
+        value = state.divergence + state.convergence + state.upper_troposphere_forcing
 
         return round(
             value / 3,
             2,
         )
-
 
     def thermal_advection_balance(
         self,
@@ -107,14 +100,9 @@ class AdvancedAtmosphericDynamicsEngine:
     ) -> float:
 
         return round(
-            (
-                state.warm_advection
-                - state.cold_advection
-            )
-            * 0.75,
+            (state.warm_advection - state.cold_advection) * 0.75,
             2,
         )
-
 
     def tropospheric_coupling(
         self,
@@ -122,14 +110,9 @@ class AdvancedAtmosphericDynamicsEngine:
     ) -> float:
 
         return round(
-            (
-                state.upper_troposphere_forcing
-                + state.lower_troposphere_energy
-            )
-            / 2,
+            (state.upper_troposphere_forcing + state.lower_troposphere_energy) / 2,
             2,
         )
-
 
     def atmospheric_instability(
         self,
@@ -148,7 +131,6 @@ class AdvancedAtmosphericDynamicsEngine:
             2,
         )
 
-
     def circulation_regime(
         self,
         state: AtmosphericDynamicsState,
@@ -164,31 +146,17 @@ class AdvancedAtmosphericDynamicsEngine:
 
         return "STABLE_DYNAMIC_REGIME"
 
-
     def dynamics_update(
         self,
         state: AtmosphericDynamicsState,
     ) -> dict:
 
         return {
-            "jet_stream":
-                self.jet_stream_analysis(state),
-
-            "vorticity":
-                self.vorticity_analysis(state),
-
-            "dynamic_lift":
-                self.dynamic_lift_index(state),
-
-            "thermal_balance":
-                self.thermal_advection_balance(state),
-
-            "tropospheric_coupling":
-                self.tropospheric_coupling(state),
-
-            "instability":
-                self.atmospheric_instability(state),
-
-            "regime":
-                self.circulation_regime(state),
+            "jet_stream": self.jet_stream_analysis(state),
+            "vorticity": self.vorticity_analysis(state),
+            "dynamic_lift": self.dynamic_lift_index(state),
+            "thermal_balance": self.thermal_advection_balance(state),
+            "tropospheric_coupling": self.tropospheric_coupling(state),
+            "instability": self.atmospheric_instability(state),
+            "regime": self.circulation_regime(state),
         }

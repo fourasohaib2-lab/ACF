@@ -27,6 +27,7 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
+
 class HydrologyAtmosphereInteractionPhysics:
     """
     Hydrology-Atmosphere Interaction Physics Module
@@ -74,4 +75,3 @@ class HydrologyAtmosphereInteractionPhysics:
     @staticmethod
     def water_cycle_intensity(evaporation, precipitation):
         return evaporation * precipitation
-

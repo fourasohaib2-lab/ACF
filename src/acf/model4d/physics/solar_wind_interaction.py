@@ -39,7 +39,7 @@ class SolarWindInteractionPhysics:
         float
             pression dynamique
         """
-        return round(0.5 * density * velocity ** 2, 6)
+        return round(0.5 * density * velocity**2, 6)
 
     @staticmethod
     def solar_wind_energy_flux(density, velocity):
@@ -48,7 +48,7 @@ class SolarWindInteractionPhysics:
 
         F = 0.5 * rho * v³
         """
-        return round(0.5 * density * velocity ** 3, 6)
+        return round(0.5 * density * velocity**3, 6)
 
     @staticmethod
     def magnetopause_distance(solar_pressure, magnetic_pressure):
@@ -61,10 +61,7 @@ class SolarWindInteractionPhysics:
         if solar_pressure == 0:
             return 0
 
-        return round(
-            sqrt(magnetic_pressure / solar_pressure),
-            6
-        )
+        return round(sqrt(magnetic_pressure / solar_pressure), 6)
 
     @staticmethod
     def solar_wind_speed_change(initial_speed, final_speed):
@@ -98,20 +95,14 @@ class SolarWindInteractionPhysics:
         """
         Indice simplifié d'activité géomagnétique.
         """
-        return round(
-            solar_flux * magnetic_field,
-            6
-        )
+        return round(solar_flux * magnetic_field, 6)
 
     @staticmethod
     def solar_storm_intensity(particle_flux, velocity):
         """
         Intensité simplifiée d'une tempête solaire.
         """
-        return round(
-            particle_flux * velocity,
-            6
-        )
+        return round(particle_flux * velocity, 6)
 
     @staticmethod
     def aurora_probability(particle_flux, magnetic_activity):
@@ -122,17 +113,11 @@ class SolarWindInteractionPhysics:
         """
         value = particle_flux * magnetic_activity
 
-        return min(
-            max(round(value, 6), 0),
-            1
-        )
+        return min(max(round(value, 6), 0), 1)
 
     @staticmethod
     def interaction_strength(solar_wind, magnetosphere):
         """
         Force globale d'interaction vent solaire-magnétosphère.
         """
-        return round(
-            solar_wind * magnetosphere,
-            6
-        )
+        return round(solar_wind * magnetosphere, 6)

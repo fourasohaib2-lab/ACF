@@ -1,7 +1,7 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-MAPS -   Init  
+MAPS -   Init
 
 Purpose:
 --------
@@ -27,6 +27,6 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
-from .map_canvas import MapCanvas
+from .map_canvas import Canvas, MapCanvas
 
-__all__ = ["MapCanvas"]
+__all__ = ["Canvas", "MapCanvas"]

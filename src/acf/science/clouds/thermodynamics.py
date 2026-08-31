@@ -5,7 +5,8 @@ Cloud Thermodynamics Engine
 """
 
 import math
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.science.clouds.base import CloudProcess
 from acf.science.clouds.registry import CloudScientificRegistry
 
@@ -78,7 +79,9 @@ class CloudThermodynamicsEngine:
         td_c = dewpoint_k - 273.15
         return max(125.0 * (temp_c - td_c), 0.0)
 
-    def calculate_cape(self, z_levels: List[float], t_env_k: List[float], t_parcel_k: List[float], g: float = 9.81) -> float:
+    def calculate_cape(
+        self, z_levels: list[float], t_env_k: list[float], t_parcel_k: list[float], g: float = 9.81
+    ) -> float:
         """
         Calcule l'intégrale du CAPE = int g * (Tparcel - Tenv) / Tenv dz pour Tparcel > Tenv.
         """
@@ -93,7 +96,9 @@ class CloudThermodynamicsEngine:
                 cape += g * (dT / t_env_avg) * dz
         return cape
 
-    def calculate_cin(self, z_levels: List[float], t_env_k: List[float], t_parcel_k: List[float], g: float = 9.81) -> float:
+    def calculate_cin(
+        self, z_levels: list[float], t_env_k: list[float], t_parcel_k: list[float], g: float = 9.81
+    ) -> float:
         """
         Calcule l'intégrale du CIN = - int g * (Tparcel - Tenv) / Tenv dz pour Tparcel < Tenv sous le LFC.
         """
@@ -108,7 +113,9 @@ class CloudThermodynamicsEngine:
                 cin += g * (-dT / t_env_avg) * dz
         return cin
 
-    def convective_sounding_analysis(self, z_levels: List[float], p_levels: List[float], t_env: List[float], td_env: List[float]) -> Dict[str, Any]:
+    def convective_sounding_analysis(
+        self, z_levels: list[float], p_levels: list[float], t_env: list[float], td_env: list[float]
+    ) -> dict[str, Any]:
         """
         Effectue une analyse thermodynamique complète du profil vertical.
         """
@@ -119,7 +126,7 @@ class CloudThermodynamicsEngine:
 
         # Build parcel temperature profile along dry adiabat to LCL, then moist adiabat
         t_parcel = []
-        for i, z in enumerate(z_levels):
+        for z in z_levels:
             if z <= lcl_z:
                 # Dry adiabatic lapse rate (~9.8 K/km)
                 t_p = t_sfc - 0.0098 * z

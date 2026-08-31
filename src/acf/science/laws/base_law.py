@@ -4,8 +4,9 @@ Atmospheric Complexity Framework (ACF)
 Scientific Knowledge Engine - Base Law Representation
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -18,24 +19,22 @@ class AtmosphericLaw:
     name: str
     domain: str
     equation: str
-    variables: Dict[str, str] = field(default_factory=dict)
-    units: Dict[str, str] = field(default_factory=dict)
+    variables: dict[str, str] = field(default_factory=dict)
+    units: dict[str, str] = field(default_factory=dict)
     description: str = ""
-    references: List[str] = field(default_factory=list)
-    limitations: List[str] = field(default_factory=list)
-    compute_func: Optional[Callable[..., Any]] = None
+    references: list[str] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
+    compute_func: Callable[..., Any] | None = None
 
     def calculate(self, **kwargs) -> Any:
         """
         Évalue numériquement la loi scientifique avec les paramètres fournis.
         """
         if self.compute_func is None:
-            raise NotImplementedError(
-                f"Calcul numérique non configuré pour la loi '{self.name}'."
-            )
+            raise NotImplementedError(f"Calcul numérique non configuré pour la loi '{self.name}'.")
         return self.compute_func(**kwargs)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """
         Retourne la documentation et les métadonnées complètes de la loi.
         """

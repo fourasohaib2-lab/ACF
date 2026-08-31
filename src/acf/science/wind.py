@@ -31,7 +31,6 @@ import math
 
 
 class Wind:
-
     @staticmethod
     def speed(u, v):
 

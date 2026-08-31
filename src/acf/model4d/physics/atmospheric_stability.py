@@ -20,10 +20,7 @@ class AtmosphericStabilityPhysics:
     """
 
     @staticmethod
-    def brunt_vaisala_frequency(
-        potential_temperature_gradient,
-        temperature=300
-    ):
+    def brunt_vaisala_frequency(potential_temperature_gradient, temperature=300):
         """
         Calculate Brunt-Väisälä frequency.
 
@@ -40,17 +37,10 @@ class AtmosphericStabilityPhysics:
         if potential_temperature_gradient < 0:
             raise ValueError("Gradient cannot be negative")
 
-        return math.sqrt(
-            (g / temperature)
-            * potential_temperature_gradient
-        )
-
+        return math.sqrt((g / temperature) * potential_temperature_gradient)
 
     @staticmethod
-    def richardson_number(
-        static_stability,
-        wind_shear
-    ):
+    def richardson_number(static_stability, wind_shear):
         """
         Gradient Richardson number.
 
@@ -60,17 +50,10 @@ class AtmosphericStabilityPhysics:
         if wind_shear <= 0:
             raise ValueError("Wind shear must be positive")
 
-        return round(
-            static_stability / (wind_shear ** 2),
-            3
-        )
-
+        return round(static_stability / (wind_shear**2), 3)
 
     @staticmethod
-    def stability_parameter(
-        temperature_gradient,
-        lapse_rate=9.8
-    ):
+    def stability_parameter(temperature_gradient, lapse_rate=9.8):
         """
         Atmospheric stability parameter.
 
@@ -79,11 +62,7 @@ class AtmosphericStabilityPhysics:
         Negative -> unstable
         """
 
-        return round(
-            lapse_rate - temperature_gradient,
-            2
-        )
-
+        return round(lapse_rate - temperature_gradient, 2)
 
     @staticmethod
     def classify_stability(parameter):
@@ -100,12 +79,8 @@ class AtmosphericStabilityPhysics:
         else:
             return "unstable"
 
-
     @staticmethod
-    def convective_available_energy(
-        temperature_difference,
-        height
-    ):
+    def convective_available_energy(temperature_difference, height):
         """
         Simplified CAPE estimation.
 
@@ -118,20 +93,10 @@ class AtmosphericStabilityPhysics:
         if height < 0:
             raise ValueError("Height cannot be negative")
 
-        return round(
-            g *
-            (temperature_difference /
-             reference_temperature)
-            * height,
-            2
-        )
-
+        return round(g * (temperature_difference / reference_temperature) * height, 2)
 
     @staticmethod
-    def convective_inhibition(
-        temperature_difference,
-        height
-    ):
+    def convective_inhibition(temperature_difference, height):
         """
         Simplified CIN estimation.
         """
@@ -139,18 +104,10 @@ class AtmosphericStabilityPhysics:
         if temperature_difference >= 0:
             return 0
 
-        return round(
-            abs(
-                temperature_difference
-            ) * height * 0.01,
-            2
-        )
-
+        return round(abs(temperature_difference) * height * 0.01, 2)
 
     @staticmethod
-    def stability_index(
-        temperature_difference
-    ):
+    def stability_index(temperature_difference):
         """
         Stability index.
 
@@ -161,7 +118,4 @@ class AtmosphericStabilityPhysics:
         unstable atmosphere
         """
 
-        return round(
-            temperature_difference,
-            2
-        )
+        return round(temperature_difference, 2)

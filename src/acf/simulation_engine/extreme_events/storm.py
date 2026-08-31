@@ -1,6 +1,5 @@
 """Severe storm, supercell, and tornado risk simulation engine."""
 
-from typing import Dict
 import numpy as np
 
 
@@ -24,7 +23,7 @@ class SevereStormSimulator:
         srh_03km: np.ndarray,
         bulk_shear_06km: np.ndarray,
         cin: np.ndarray,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Compute SCP, STP, and Hail Size MESH metrics across grid.
 
         STP = (CAPE / 1500) * ((2000 - LCL) / 1000) * (SRH / 150) * (BulkShear / 20)

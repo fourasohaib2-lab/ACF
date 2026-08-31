@@ -29,8 +29,8 @@ physical modeling, and spatial-temporal analysis within the Atmospheric Complexi
 
 from pathlib import Path
 
-class ThemeManager:
 
+class ThemeManager:
     def __init__(self):
         self.theme = "dark"
 

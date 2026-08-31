@@ -6,7 +6,6 @@ from acf.parameters.parameter import Parameter
 
 
 class ParameterIndex:
-
     def __init__(self):
 
         self._code_index = {}

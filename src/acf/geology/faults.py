@@ -6,12 +6,12 @@ Global Geological Faults Database Module (Phase 3)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class FaultSegment:
     """Description d'une faille géologique active."""
+
     fault_id: str
     name: str
     fault_type: str  # e.g., "Strike-Slip", "Normal", "Reverse / Thrust", "Megathrust"
@@ -19,11 +19,11 @@ class FaultSegment:
     slip_rate_mm_year: float
     locking_depth_km: float
     max_credible_magnitude_mw: float
-    historic_earthquakes: List[str]
+    historic_earthquakes: list[str]
     hazard_level: str
 
 
-FAULT_REGISTRY: Dict[str, FaultSegment] = {
+FAULT_REGISTRY: dict[str, FaultSegment] = {
     "san_andreas": FaultSegment(
         fault_id="san_andreas",
         name="San Andreas Fault System",
@@ -64,9 +64,9 @@ class FaultDatabase:
     """Base de données et registre des grandes failles sismogènes mondiales."""
 
     @classmethod
-    def get_fault(cls, key: str) -> Optional[FaultSegment]:
+    def get_fault(cls, key: str) -> FaultSegment | None:
         return FAULT_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_faults(cls) -> List[str]:
+    def list_faults(cls) -> list[str]:
         return list(FAULT_REGISTRY.keys())

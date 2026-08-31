@@ -29,17 +29,12 @@ class ConvectionState:
     vertical_velocity: float
 
 
-
 class AtmosphericConvectionDynamics:
     """
     Simplified convection dynamics engine.
     """
 
-
-    def calculate_buoyancy(
-        self,
-        state: ConvectionState
-    ) -> float:
+    def calculate_buoyancy(self, state: ConvectionState) -> float:
         """
         Calculate thermal buoyancy.
 
@@ -50,19 +45,11 @@ class AtmosphericConvectionDynamics:
         sinking air
         """
 
-        value = (
-            state.temperature_anomaly
-            * 0.1
-        )
+        value = state.temperature_anomaly * 0.1
 
         return round(value, 6)
 
-
-
-    def instability_index(
-        self,
-        state: ConvectionState
-    ) -> float:
+    def instability_index(self, state: ConvectionState) -> float:
         """
         Estimate atmospheric instability.
 
@@ -71,20 +58,11 @@ class AtmosphericConvectionDynamics:
         - parcel lapse rate
         """
 
-        value = (
-            state.environmental_lapse_rate
-            -
-            state.lapse_rate
-        )
+        value = state.environmental_lapse_rate - state.lapse_rate
 
         return round(value, 6)
 
-
-
-    def convective_energy(
-        self,
-        state: ConvectionState
-    ) -> float:
+    def convective_energy(self, state: ConvectionState) -> float:
         """
         Estimate convective available energy.
 
@@ -93,40 +71,20 @@ class AtmosphericConvectionDynamics:
 
         buoyancy = self.calculate_buoyancy(state)
 
-        value = (
-            max(buoyancy, 0)
-            *
-            state.moisture_content
-        )
+        value = max(buoyancy, 0) * state.moisture_content
 
         return round(value, 6)
 
-
-
-    def vertical_heat_transport(
-        self,
-        state: ConvectionState
-    ) -> float:
+    def vertical_heat_transport(self, state: ConvectionState) -> float:
         """
         Estimate vertical heat transport.
         """
 
-        value = (
-            state.vertical_velocity
-            *
-            state.moisture_content
-            *
-            0.5
-        )
+        value = state.vertical_velocity * state.moisture_content * 0.5
 
         return round(value, 6)
 
-
-
-    def convection_state(
-        self,
-        state: ConvectionState
-    ) -> str:
+    def convection_state(self, state: ConvectionState) -> str:
         """
         Atmospheric convection regime.
         """

@@ -6,12 +6,12 @@ Climate Scenarios Engine Module (Phase 8)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class SSPScenario:
     """Description d'un scénario d'émission socio-économique CMIP6 SSP."""
+
     scenario_id: str
     name: str
     radiative_forcing_2100_w_m2: float
@@ -22,7 +22,7 @@ class SSPScenario:
     policy_description: str
 
 
-SSP_CATALOG: Dict[str, SSPScenario] = {
+SSP_CATALOG: dict[str, SSPScenario] = {
     "ssp1_19": SSPScenario(
         scenario_id="SSP1-1.9",
         name="SSP1-1.9 (Very Low Emissions / 1.5°C Goal)",
@@ -62,9 +62,9 @@ class ClimateScenarioEngine:
     """
 
     @classmethod
-    def get_scenario(cls, scenario_key: str) -> Optional[SSPScenario]:
+    def get_scenario(cls, scenario_key: str) -> SSPScenario | None:
         return SSP_CATALOG.get(scenario_key.lower().replace("-", "_"))
 
     @classmethod
-    def list_scenarios(cls) -> List[str]:
+    def list_scenarios(cls) -> list[str]:
         return list(SSP_CATALOG.keys())

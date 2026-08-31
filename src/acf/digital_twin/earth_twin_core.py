@@ -4,9 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Earth Digital Twin Master Core Module (Phase 1)
 """
 
-from typing import Any, Dict
-from acf.digital_twin.earth_state import EarthState
+from typing import Any
+
 from acf.digital_twin.coupling_engine import CouplingEngine
+from acf.digital_twin.earth_state import EarthState
 from acf.digital_twin.scenario_engine import DigitalTwinScenarioEngine
 
 
@@ -16,7 +17,7 @@ class EarthTwinCore:
     def __init__(self):
         self.state = EarthState()
 
-    def run_full_earth_twin_cycle(self) -> Dict[str, Any]:
+    def run_full_earth_twin_cycle(self) -> dict[str, Any]:
         """Exécute un cycle complet d'assimilation, couplage, simulation et audit planétaire."""
         couplings = CouplingEngine.compute_couplings()
         scenarios = DigitalTwinScenarioEngine.run_scenario("SSP2-4.5")

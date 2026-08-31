@@ -15,45 +15,21 @@ class TurbulencePhysics:
     Atmospheric turbulence parameterization.
     """
 
-
     @staticmethod
-    def turbulent_kinetic_energy(
-        u_prime,
-        v_prime,
-        w_prime
-    ):
+    def turbulent_kinetic_energy(u_prime, v_prime, w_prime):
         """
         Compute turbulent kinetic energy.
 
         TKE = 0.5 * (u'^2 + v'^2 + w'^2)
         """
 
-        if not all(
-            isinstance(value, (int, float))
-            for value in (
-                u_prime,
-                v_prime,
-                w_prime
-            )
-        ):
-            raise ValueError(
-                "Velocity fluctuations must be numeric"
-            )
+        if not all(isinstance(value, (int, float)) for value in (u_prime, v_prime, w_prime)):
+            raise ValueError("Velocity fluctuations must be numeric")
 
-        return 0.5 * (
-            u_prime ** 2
-            +
-            v_prime ** 2
-            +
-            w_prime ** 2
-        )
-
+        return 0.5 * (u_prime**2 + v_prime**2 + w_prime**2)
 
     @staticmethod
-    def eddy_viscosity(
-        mixing_length,
-        velocity_gradient
-    ):
+    def eddy_viscosity(mixing_length, velocity_gradient):
         """
         Eddy viscosity coefficient.
 
@@ -61,27 +37,15 @@ class TurbulencePhysics:
         """
 
         if mixing_length <= 0:
-            raise ValueError(
-                "Mixing length must be positive"
-            )
+            raise ValueError("Mixing length must be positive")
 
         if velocity_gradient < 0:
-            raise ValueError(
-                "Velocity gradient must be positive"
-            )
+            raise ValueError("Velocity gradient must be positive")
 
-        return (
-            mixing_length ** 2
-            *
-            velocity_gradient
-        )
-
+        return mixing_length**2 * velocity_gradient
 
     @staticmethod
-    def mixing_length(
-        height,
-        surface_roughness
-    ):
+    def mixing_length(height, surface_roughness):
         """
         Atmospheric mixing length.
 
@@ -89,33 +53,17 @@ class TurbulencePhysics:
         """
 
         if height <= 0:
-            raise ValueError(
-                "Height must be positive"
-            )
+            raise ValueError("Height must be positive")
 
         if surface_roughness < 0:
-            raise ValueError(
-                "Surface roughness invalid"
-            )
+            raise ValueError("Surface roughness invalid")
 
         von_karman = 0.4
 
-        return (
-            von_karman
-            *
-            (
-                height
-                +
-                surface_roughness
-            )
-        )
-
+        return von_karman * (height + surface_roughness)
 
     @staticmethod
-    def turbulence_intensity(
-        tke,
-        mean_velocity
-    ):
+    def turbulence_intensity(tke, mean_velocity):
         """
         Turbulence intensity.
 
@@ -131,30 +79,15 @@ class TurbulencePhysics:
         """
 
         if tke < 0:
-            raise ValueError(
-                "TKE must be positive"
-            )
+            raise ValueError("TKE must be positive")
 
         if mean_velocity <= 0:
-            raise ValueError(
-                "Mean velocity must be positive"
-            )
+            raise ValueError("Mean velocity must be positive")
 
-        return math.sqrt(
-            tke
-            /
-            (
-                0.15
-                *
-                mean_velocity ** 2
-            )
-        )
-
+        return math.sqrt(tke / (0.15 * mean_velocity**2))
 
     @staticmethod
-    def stability_correction(
-        richardson_number
-    ):
+    def stability_correction(richardson_number):
         """
         Stability correction using Richardson number.
 

@@ -3,7 +3,7 @@ Moist Static Energy
 ===================
 """
 
-from acf.science.constants import CP, G, LV
+from acf.science.constants import CP, LV, G
 
 
 class MoistStaticEnergy:
@@ -23,13 +23,6 @@ class MoistStaticEnergy:
             raise ValueError("height must be non-negative.")
 
         if specific_humidity < 0:
-            raise ValueError(
-                "specific_humidity must be non-negative."
-            )
+            raise ValueError("specific_humidity must be non-negative.")
 
-        return (
-            CP * temperature_k
-            + G * height_m
-            + LV * specific_humidity
-        )
-
+        return CP * temperature_k + G * height_m + LV * specific_humidity

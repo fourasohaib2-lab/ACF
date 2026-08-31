@@ -5,8 +5,6 @@ Forecast Verification Engine Module (Phase 11)
 (ETS, CSI, POD, FAR, HSS, ACC, CRPS, Brier Score, Taylor Diagram)
 """
 
-from typing import Dict
-
 
 class ForecastVerificationEngine:
     """
@@ -14,7 +12,7 @@ class ForecastVerificationEngine:
     """
 
     @staticmethod
-    def contingency_table_metrics(a: float, b: float, c: float, d: float) -> Dict[str, float]:
+    def contingency_table_metrics(a: float, b: float, c: float, d: float) -> dict[str, float]:
         """
         Calcule les scores statistiques à partir d'une table de contingence 2x2 :
         a = Succès (Hits), b = Fausses Alertes (False Alarms), c = Rabilités / Non-détections (Misses), d = Vrais Négatifs (Correct Rejections).

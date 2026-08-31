@@ -9,7 +9,6 @@ from acf.importers.base.base_importer import BaseImporter
 
 
 class ECMWFImporter(BaseImporter):
-
     def validate(self, filename):
 
         return Path(filename).exists()

@@ -61,7 +61,8 @@ class ObservationAssimilationOptimizationEngine:
                 + state.synop_weight
                 + state.metar_weight
                 + state.radiosonde_weight
-            ) / 5,
+            )
+            / 5,
             2,
         )
 
@@ -70,11 +71,7 @@ class ObservationAssimilationOptimizationEngine:
         state: ObservationAssimilationOptimizationState,
     ) -> float:
         return round(
-            (
-                state.satellite_weight
-                + state.radar_weight
-                + state.synop_weight
-            ) / 24.0,
+            (state.satellite_weight + state.radar_weight + state.synop_weight) / 24.0,
             2,
         )
 
@@ -131,11 +128,7 @@ class ObservationAssimilationOptimizationEngine:
         self,
         state: ObservationAssimilationOptimizationState,
     ) -> float:
-        total = (
-            self.optimized_assimilation(state)
-            + self.temporal_consistency(state)
-            + self.spatial_consistency(state)
-        )
+        total = self.optimized_assimilation(state) + self.temporal_consistency(state) + self.spatial_consistency(state)
 
         return round(total / 2.521, 2)
 
@@ -143,10 +136,7 @@ class ObservationAssimilationOptimizationEngine:
         self,
         state: ObservationAssimilationOptimizationState,
     ) -> bool:
-        return (
-            self.assimilation_weight(state) >= 70.0
-            and self.optimized_assimilation(state) >= 25.0
-        )
+        return self.assimilation_weight(state) >= 70.0 and self.optimized_assimilation(state) >= 25.0
 
     def optimization_update(
         self,

@@ -6,24 +6,24 @@ Global Aviation Meteorological Hazards Engine Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class AviationHazardInfo:
     """Description scientifique complète d'un danger météorologique pour l'aviation."""
+
     key: str
     name: str
     category: str  # "TURBULENCE", "ICING", "CONVECTION", "VISIBILITY", "VOLCANIC"
     physical_explanation: str
     governing_equation: str
-    icao_thresholds: Dict[str, str]
-    operational_impacts: List[str]
-    flight_recommendations: List[str]
-    references: List[str]
+    icao_thresholds: dict[str, str]
+    operational_impacts: list[str]
+    flight_recommendations: list[str]
+    references: list[str]
 
 
-AVIATION_HAZARDS_REGISTRY: Dict[str, AviationHazardInfo] = {
+AVIATION_HAZARDS_REGISTRY: dict[str, AviationHazardInfo] = {
     "cat_turbulence": AviationHazardInfo(
         key="cat_turbulence",
         name="Clear Air Turbulence (CAT - Turbulence en Air Clair)",
@@ -38,8 +38,14 @@ AVIATION_HAZARDS_REGISTRY: Dict[str, AviationHazardInfo] = {
             "MODERATE_CAT": "EDR (Ellrod Eddy Dissipation Rate) 0.15 à 0.44 m^(2/3)/s",
             "SEVERE_CAT": "EDR >= 0.44 m^(2/3)/s (Accélération verticale delta_g > 1.0 g)",
         },
-        operational_impacts=["Risque de blessures pour les passagers et l'équipage en cabine", "Contraintes structurales sur la voilure"],
-        flight_recommendations=["Allumer le signal d'attache des ceintures", "Changer de niveau de vol (+/- 2000 ft) pour sortir de la couche de cisaillement"],
+        operational_impacts=[
+            "Risque de blessures pour les passagers et l'équipage en cabine",
+            "Contraintes structurales sur la voilure",
+        ],
+        flight_recommendations=[
+            "Allumer le signal d'attache des ceintures",
+            "Changer de niveau de vol (+/- 2000 ft) pour sortir de la couche de cisaillement",
+        ],
         references=["ICAO Doc 9837 Manual on Low-level Wind Shear and Turbulence", "Ellrod & Knapp (1992) WAF"],
     ),
     "airframe_icing": AviationHazardInfo(
@@ -57,8 +63,15 @@ AVIATION_HAZARDS_REGISTRY: Dict[str, AviationHazardInfo] = {
             "MODERATE": "LWC 0.6 - 1.2 g/m³",
             "SEVERE": "LWC > 1.2 g/m³ ou pluie verglaçante FZRA (Congélation au-delà des zones protégées)",
         },
-        operational_impacts=["Augmentation de la traînée aérodynamique", "Diminution drastique de la portance", "Décrochage prématuré"],
-        flight_recommendations=["Activer les de-icing boot / heated leading edges", "Décrocher du niveau de vol en demandant une descente hors de la couche nuageuse"],
+        operational_impacts=[
+            "Augmentation de la traînée aérodynamique",
+            "Diminution drastique de la portance",
+            "Décrochage prématuré",
+        ],
+        flight_recommendations=[
+            "Activer les de-icing boot / heated leading edges",
+            "Décrocher du niveau de vol en demandant une descente hors de la couche nuageuse",
+        ],
         references=["ICAO Annex 3 Chapter 3", "FAA Aviation Weather Handbook Chapter 19"],
     ),
     "microburst_windshear": AviationHazardInfo(
@@ -85,9 +98,9 @@ class AviationHazardEngine:
     """Moteur d'évaluation scientifique des risques météo pour l'aviation."""
 
     @classmethod
-    def get_hazard(cls, key: str) -> Optional[AviationHazardInfo]:
+    def get_hazard(cls, key: str) -> AviationHazardInfo | None:
         return AVIATION_HAZARDS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_hazards(cls) -> List[str]:
+    def list_hazards(cls) -> list[str]:
         return list(AVIATION_HAZARDS_REGISTRY.keys())

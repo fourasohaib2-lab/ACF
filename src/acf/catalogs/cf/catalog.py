@@ -7,7 +7,6 @@ from acf.standards.cf_standard_names import CF_STANDARD_NAMES
 
 
 class CFCatalog(BaseCatalog):
-
     def __init__(self):
 
         self._parameters = {}

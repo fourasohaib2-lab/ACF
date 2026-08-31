@@ -66,12 +66,8 @@ class VisualizationManager:
     def status(self):
         return {
             "initialized": self.initialized,
-            "dataset": (
-                self.current_dataset.name if self.current_dataset else None
-            ),
-            "current_layer": (
-                self.current_layer.name if self.current_layer else None
-            ),
+            "dataset": (self.current_dataset.name if self.current_dataset else None),
+            "current_layer": (self.current_layer.name if self.current_layer else None),
             "layer_manager": self.layer_manager.status(),
             "renderer": self.renderer.status(),
         }

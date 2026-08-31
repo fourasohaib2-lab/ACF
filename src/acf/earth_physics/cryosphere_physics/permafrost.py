@@ -3,7 +3,6 @@ Permafrost Thaw & Carbon/Methane Release Model
 """
 
 
-
 class PermafrostThawModel:
     """Modèle de dégel du permafrost et de libération de méthane et $CO_2$."""
 

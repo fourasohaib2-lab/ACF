@@ -3,7 +3,7 @@ Atmospheric Boundary Layer, Surface Layer, Turbulent Fluxes & Monin-Obukhov Ency
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -11,22 +11,38 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Boundary Layer & Surface Fluxes
 # ---------------------------------------------------------------------------
 
-def calculate_obukhov_length(friction_vel_u_star: float, surface_heat_flux_w_theta: float, temp_ref_k: float = 288.15, von_karman: float = 0.4, g: float = 9.81) -> float:
+
+def calculate_obukhov_length(
+    friction_vel_u_star: float,
+    surface_heat_flux_w_theta: float,
+    temp_ref_k: float = 288.15,
+    von_karman: float = 0.4,
+    g: float = 9.81,
+) -> float:
     """Calcul de la longueur d'Obukhov L en mètres."""
     if abs(surface_heat_flux_w_theta) < 1e-6:
         return 1e6 if surface_heat_flux_w_theta >= 0 else -1e6
-    return - (friction_vel_u_star ** 3 * temp_ref_k) / (von_karman * g * surface_heat_flux_w_theta)
+    return -(friction_vel_u_star**3 * temp_ref_k) / (von_karman * g * surface_heat_flux_w_theta)
 
 
-def calculate_bulk_richardson_number(temp_top: float, temp_bot: float, z_top: float, z_bot: float, u_top: float, v_top: float, u_bot: float = 0.0, v_bot: float = 0.0, g: float = 9.81) -> float:
+def calculate_bulk_richardson_number(
+    temp_top: float,
+    temp_bot: float,
+    z_top: float,
+    z_bot: float,
+    u_top: float,
+    v_top: float,
+    u_bot: float = 0.0,
+    v_bot: float = 0.0,
+    g: float = 9.81,
+) -> float:
     """Calcul du Nombre de Richardson Global (Bulk Richardson Number Rib)."""
     dz = z_top - z_bot
     if dz <= 0.0:
         return 0.0
     t_mean = 0.5 * (temp_top + temp_bot)
     du2 = (u_top - u_bot) ** 2 + (v_top - v_bot) ** 2
-    if du2 < 1e-4:
-        du2 = 1e-4
+    du2 = max(du2, 1e-4)
     return (g / t_mean) * (temp_top - temp_bot) * dz / du2
 
 
@@ -41,7 +57,7 @@ def calculate_log_wind_profile(u_star: float, z: float, z0: float, von_karman: f
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="monin_obukhov_similarity_theory",
         name="Théorie de Similitude de Monin-Obukhov (MOST)",
@@ -49,7 +65,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Couche de surface",
         equation="dU/dz = (u_star / (kappa * z)) * phi_m(z / L)",
         latex_equation=r"\frac{\partial U}{\partial z} = \frac{u_*}{\kappa z} \phi_m\left(\frac{z}{L}\right)",
-        variables={"u_star": "Vitesse de frottement (m/s)", "L": "Longueur d'Obukhov (m)", "phi_m": "Fonction universelle de stabilité de Businger-Dyer"},
+        variables={
+            "u_star": "Vitesse de frottement (m/s)",
+            "L": "Longueur d'Obukhov (m)",
+            "phi_m": "Fonction universelle de stabilité de Businger-Dyer",
+        },
         units={"dU/dz": "s⁻¹"},
         description="Formalisme universel régissant les profils verticaux moyens de vent, température et humidité dans la couche de surface en fonction du rapport de stabilité z/L.",
         application_conditions=["Couche de surface constante en flux (10 à 100m au-dessus du sol)"],
@@ -78,7 +98,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Stabilité de couche limite",
         equation="Rib = (g / T_mean) * (Delta_theta * Delta_z) / ((Delta_u)^2 + (Delta_v)^2)",
         latex_equation=r"Ri_b = \frac{g}{\bar{\theta}} \frac{\Delta \theta \Delta z}{(\Delta U)^2 + (\Delta V)^2}",
-        variables={"Delta_theta": "Différence de température potentielle entre 2 niveaux", "Delta_u, Delta_v": "Cisaillement des composantes du vent"},
+        variables={
+            "Delta_theta": "Différence de température potentielle entre 2 niveaux",
+            "Delta_u, Delta_v": "Cisaillement des composantes du vent",
+        },
         units={"Rib": "dimensionless"},
         description="Approximation intégrée du nombre de Richardson utilisée dans les modèles NWP pour déterminer l'épaisseur de la couche limite et le déclenchement du mélange turbulent.",
         application_conditions=["Diagnostics NWP et paramétrisations de couche limite (ex: Mellor-Yamada, Holtslag)"],

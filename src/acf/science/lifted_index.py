@@ -18,10 +18,7 @@ class LiftedIndex:
         LI = T_environment - T_parcel
         """
 
-        return (
-            environment_temperature
-            - parcel_temperature
-        )
+        return environment_temperature - parcel_temperature
 
     @staticmethod
     def category(li: float) -> str:
@@ -45,4 +42,3 @@ class LiftedIndex:
             return "Very Unstable"
 
         return "Extreme Instability"
-

@@ -33,7 +33,6 @@ class ChemistryCouplingPhysics:
 
         return concentration * rate_constant
 
-
     @staticmethod
     def chemical_lifetime(concentration, loss_rate):
         """
@@ -46,7 +45,6 @@ class ChemistryCouplingPhysics:
 
         return concentration / loss_rate
 
-
     @staticmethod
     def production_rate(source, sink):
         """
@@ -55,7 +53,6 @@ class ChemistryCouplingPhysics:
         Pnet = source - sink
         """
         return source - sink
-
 
     @staticmethod
     def chemistry_transport_coupling(chemistry, transport):
@@ -67,7 +64,6 @@ class ChemistryCouplingPhysics:
         """
         return chemistry * transport
 
-
     @staticmethod
     def photochemical_factor(solar_flux):
         """
@@ -78,8 +74,7 @@ class ChemistryCouplingPhysics:
         if solar_flux < 0:
             raise ValueError("Solar flux must be positive")
 
-        return (solar_flux ** 0.5) / 10
-
+        return (solar_flux**0.5) / 10
 
     @staticmethod
     def ozone_production(no2, sunlight):
@@ -91,7 +86,4 @@ class ChemistryCouplingPhysics:
         if no2 < 0:
             raise ValueError("NO2 must be positive")
 
-        return no2 * ChemistryCouplingPhysics.photochemical_factor(
-            sunlight
-        )
-
+        return no2 * ChemistryCouplingPhysics.photochemical_factor(sunlight)

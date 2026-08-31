@@ -3,13 +3,14 @@ Atmospheric Dynamics, Primitive Equations, Vorticity & Large-Scale Circulation E
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Atmospheric Dynamics
 # ---------------------------------------------------------------------------
+
 
 def calculate_coriolis_parameter(latitude_deg: float, omega: float = 7.292115e-5) -> float:
     """Calcul du paramètre de Coriolis f = 2 * Omega * sin(lat) en s⁻¹."""
@@ -44,7 +45,7 @@ def calculate_rossby_number(u_ms: float, length_scale_m: float, latitude_deg: fl
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     # --- PRIMITIVE EQUATIONS & SYSTEM FORMS ---
     EncyclopediaEntry(
         key="mass_conservation_continuity",
@@ -67,7 +68,12 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Équations primitives",
         equation="DV/Dt = -1/rho * grad(p) - g*k - 2*Omega x V + F_viscous",
         latex_equation=r"\frac{D\mathbf{V}}{Dt} = -\frac{1}{\rho}\nabla p - g \mathbf{k} - 2\boldsymbol{\Omega}\times\mathbf{V} + \mathbf{F}_{\text{turb}}",
-        variables={"V": "Vitesse du fluide", "p": "Pression", "Omega": "Vitesse angulaire de rotation terrestre", "F": "Force de frottement turbulent"},
+        variables={
+            "V": "Vitesse du fluide",
+            "p": "Pression",
+            "Omega": "Vitesse angulaire de rotation terrestre",
+            "F": "Force de frottement turbulent",
+        },
         units={"Accélération": "m/s²"},
         description="Deuxième loi de Newton appliquée à une parcelle d'air dans le repère tournant terrestre, incorporant les forces de pression, de gravité, de Coriolis et de frottement.",
         application_conditions=["Modèles NWP non-hydrostatiques et hydrostatiques"],
@@ -116,7 +122,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Invalide sur des couches atmosphériques de grande hauteur (> 2 km)"],
         references=["Boussinesq (1903)", "Stull (1988)"],
     ),
-
     # --- LARGE SCALE DYNAMICS & EQUILIBRIA ---
     EncyclopediaEntry(
         key="hydrostatic_equilibrium_law",
@@ -154,7 +159,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Cisaillement et fronts",
         equation="d(Vg)/dz = (g / (f * T)) * k x grad_h(T)",
         latex_equation=r"\frac{\partial \mathbf{V}_g}{\partial z} = \frac{g}{f T} \mathbf{k} \times \nabla_h T",
-        variables={"d(Vg)/dz": "Cisaillement vertical du vent géostrophique", "grad_h(T)": "Gradient horizontal de température"},
+        variables={
+            "d(Vg)/dz": "Cisaillement vertical du vent géostrophique",
+            "grad_h(T)": "Gradient horizontal de température",
+        },
         units={"dV/dz": "s⁻¹"},
         description="Relation liant le cisaillement vertical du vent géostrophique au gradient horizontal de température. Explique l'existence des jet-streams au-dessus des zones frontales.",
         application_conditions=["Atmosphère quasi-géostrophique et fronts synoptiques"],
@@ -182,7 +190,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Diagnostics de vorticité",
         equation="PV = (1 / rho) * (omega_a) * grad(theta)",
         latex_equation=r"PV = \frac{1}{\rho} \boldsymbol{\omega}_a \cdot \nabla \theta = \frac{1}{\rho} (\zeta + f) \frac{\partial \theta}{\partial z}",
-        variables={"PV": "Vorticité potentielle (PVU)", "omega_a": "Vorticité absolue", "theta": "Température potentielle"},
+        variables={
+            "PV": "Vorticité potentielle (PVU)",
+            "omega_a": "Vorticité absolue",
+            "theta": "Température potentielle",
+        },
         units={"PV": "PVU (10⁻⁶ K·m²/(kg·s))"},
         description="Quantité scalaire fondamentale conservée pour chaque parcelle d'air lors d'un écoulement adiabatique sans frottement. Traceur parfait des anomalies de tropopause.",
         application_conditions=["Diagnostic dynamique de méso et grande échelle (Anomalies de PV)"],
@@ -197,7 +209,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Nombres sans dimension",
         equation="Ro = U / (f * L)",
         latex_equation=r"Ro = \frac{U}{f L}",
-        variables={"U": "Vitesse caractéristique (m/s)", "L": "Échelle spatiale (m)", "f": "Paramètre de Coriolis (s⁻¹)"},
+        variables={
+            "U": "Vitesse caractéristique (m/s)",
+            "L": "Échelle spatiale (m)",
+            "f": "Paramètre de Coriolis (s⁻¹)",
+        },
         units={"Ro": "dimensionless"},
         description="Nombre sans dimension mesurant le rapport entre les forces d'inertie et la force de Coriolis. Ro << 1 caractérise les écoulements quasi-géostrophiques à grande échelle.",
         application_conditions=["Analyse d'échelle de la dynamique des fluides"],

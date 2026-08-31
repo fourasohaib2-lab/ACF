@@ -4,7 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Physics-Informed AI Architectures (PINN, FNO, GNN, Hybrid AI Physics)
 """
 
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -23,7 +24,7 @@ class PhysicsInformedAIArchitectures:
         return float(data_loss + lambda_pde * pde_residual_loss)
 
     @staticmethod
-    def fourier_neural_operator_specs() -> Dict[str, Any]:
+    def fourier_neural_operator_specs() -> dict[str, Any]:
         """Retourne les métadonnées et caractéristiques de l'architecture FNO (Fourier Neural Operator)."""
         return {
             "name": "Fourier Neural Operator (FNO)",
@@ -35,7 +36,7 @@ class PhysicsInformedAIArchitectures:
         }
 
     @staticmethod
-    def graph_neural_network_weather_specs() -> Dict[str, Any]:
+    def graph_neural_network_weather_specs() -> dict[str, Any]:
         """Retourne les spécifications des architectures GNN sur grille/maillage (ex: GraphCast)."""
         return {
             "name": "Graph Neural Network for Weather (GNN / GraphCast)",
@@ -47,7 +48,7 @@ class PhysicsInformedAIArchitectures:
         }
 
     @staticmethod
-    def hybrid_ai_physics_coupler_specs() -> Dict[str, Any]:
+    def hybrid_ai_physics_coupler_specs() -> dict[str, Any]:
         """Retourne les spécifications des modèles hybrides couplant cœur dynamique et paramétrisations IA."""
         return {
             "name": "Couplage Hybride IA-Physique (Hybrid AI-NWP)",
@@ -62,7 +63,7 @@ class PhysicsInformedAIArchitectures:
 # Encyclopedia Entries for Physics-AI
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="pinn_physics_informed_neural_network",
         name="Réseau de Neurones Informé par la Physique (PINN)",
@@ -70,10 +71,15 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="IA Scientifique & EDP",
         equation="Loss_total = Loss_data + lambda_pde * || N(u) - f ||^2",
         latex_equation=r"\mathcal{L}_{\text{PINN}} = \mathcal{L}_{\text{data}} + \lambda_{\text{pde}} \left\| \frac{\partial u}{\partial t} + \mathbf{V}\cdot\nabla u - \nu \nabla^2 u \right\|^2",
-        variables={"Loss_data": "Erreur d'ajustement aux observations", "Loss_pde": "Résidu de l'équation différentielle physique"},
+        variables={
+            "Loss_data": "Erreur d'ajustement aux observations",
+            "Loss_pde": "Résidu de l'équation différentielle physique",
+        },
         units={"Loss": "dimensionless"},
         description="Architecture de réseau de neurones incorporant directement les équations aux dérivées partielles atmosphériques (Navier-Stokes, conservation de la masse) dans la fonction de perte via la différentiation automatique.",
-        application_conditions=["Reconstitution de champs 3D fluides et assimilation de données physiquement cohérente"],
+        application_conditions=[
+            "Reconstitution de champs 3D fluides et assimilation de données physiquement cohérente"
+        ],
         limitations=["Optimisation parfois difficile en présence de hauts gradients ou de régimes chaotiques"],
         references=["Raissi et al. (2019) J. Comput. Phys.", "Karniadakis et al. (2021) Nature Reviews Physics"],
     ),
@@ -84,7 +90,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Opérateurs spectraux IA",
         equation="v_(l+1)(x) = sigma( W * v_l(x) + F^-1 ( R_l * F(v_l) ) )",
         latex_equation=r"v_{l+1}(x) = \sigma \left( W v_l(x) + \mathcal{F}^{-1} \left( R_l \cdot \mathcal{F}(v_l) \right)(x) \right)",
-        variables={"F": "Transformée de Fourier rapide (FFT)", "R_l": "Poids complexes appris dans l'espace des fréquences", "W": "Matrice linéaire"},
+        variables={
+            "F": "Transformée de Fourier rapide (FFT)",
+            "R_l": "Poids complexes appris dans l'espace des fréquences",
+            "W": "Matrice linéaire",
+        },
         units={"Speedup": "10000x"},
         description="Opérateur neural apprenant directement la cartographie d'une fonction vers une autre fonction entre espaces de Banach. Indépendant de la résolution spatiale du réseau de grille.",
         application_conditions=["Prévision météo mondiale ultra-rapide (FourCastNet / Spherical FNO)"],
@@ -98,7 +108,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Prévision NWP par IA",
         equation="Message passing sur grille icosaédrique 3D: v_i^(l+1) = phi(v_i^l, sum_j psi(v_i^l, v_j^l, e_ij))",
         latex_equation=r"v_i^{(l+1)} = \phi \left( v_i^{(l)}, \sum_{j \in \mathcal{N}(i)} \psi \left( v_i^{(l)}, v_j^{(l)}, e_{ij} \right) \right)",
-        variables={"v_i": "Nœuds atmosphériques (latitude, longitude, altitude)", "e_ij": "Arêtes causales 3D dans l'espace"},
+        variables={
+            "v_i": "Nœuds atmosphériques (latitude, longitude, altitude)",
+            "e_ij": "Arêtes causales 3D dans l'espace",
+        },
         units={"Accuracy": "Surpasse ECMWF HRES à 0.25°"},
         description="Modèle d'IA de prévision météorologique mondiale haute résolution développé par Google DeepMind opérant sur des graphes icosaédriques multi-échelles pour prédire des centaines de variables atmosphériques en moins d'une minute.",
         application_conditions=["Prévision synoptique mondiale à 10 jours"],

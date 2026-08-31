@@ -1,6 +1,5 @@
 """Multi-layer soil thermodynamics and hydrology solver."""
 
-from typing import Dict, Tuple
 import numpy as np
 
 
@@ -22,7 +21,7 @@ class SoilModel:
         self.n_soil_layers = n_soil_layers
         self.layer_depths = np.array([0.1, 0.4, 1.0, 2.0])  # meters depth
 
-    def initialize_soil_state(self, shape_2d: Tuple[int, int]) -> Dict[str, np.ndarray]:
+    def initialize_soil_state(self, shape_2d: tuple[int, int]) -> dict[str, np.ndarray]:
         """Initialize soil physical fields across layers."""
         shape_3d = (self.n_soil_layers,) + shape_2d
         state = {
@@ -34,12 +33,12 @@ class SoilModel:
 
     def step(
         self,
-        soil_state: Dict[str, np.ndarray],
+        soil_state: dict[str, np.ndarray],
         precip_rate: np.ndarray,
         evapotranspiration: np.ndarray,
         surface_temp: np.ndarray,
         dt: float = 3600.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Advance soil moisture and temperature over time step dt.
 
         Args:

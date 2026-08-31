@@ -4,13 +4,13 @@ Atmospheric Complexity Framework (ACF)
 Advanced Turbulence, Boundary Layer Dynamics & Aviation CAT Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Turbulence & Boundary Layer
 # ---------------------------------------------------------------------------
+
 
 def calculate_kolmogorov_energy_spectrum(k: float, epsilon: float, c_k: float = 1.5) -> float:
     """Calcul du spectre d'énergie cinétique turbulente de Kolmogorov E(k) = C_k * epsilon^(2/3) * k^(-5/3)."""
@@ -21,9 +21,8 @@ def calculate_kolmogorov_energy_spectrum(k: float, epsilon: float, c_k: float = 
 
 def calculate_gradient_richardson_number(g_over_theta: float, dtheta_dz: float, du_dz: float) -> float:
     """Calcul du Nombre de Richardson de Gradient (Ri)."""
-    shear_sq = du_dz ** 2
-    if shear_sq < 1e-10:
-        shear_sq = 1e-10
+    shear_sq = du_dz**2
+    shear_sq = max(shear_sq, 1e-10)
     return (g_over_theta * dtheta_dz) / shear_sq
 
 
@@ -36,7 +35,7 @@ def calculate_ellrod_cat_index(shear: float, deformation: float) -> float:
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="kolmogorov_5_3_spectrum",
         name="Loi de Kolmogorov du Spectre Turbulent (-5/3)",
@@ -44,7 +43,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Théorie de la turbulence",
         equation="E(k) = C_k * epsilon^(2/3) * k^(-5/3)",
         latex_equation=r"E(k) = C_k \varepsilon^{2/3} k^{-5/3}",
-        variables={"k": "Nombre d'onde spatial (m⁻¹)", "epsilon": "Taux de dissipation de l'énergie cinétique (m²/s³)", "Ck": "Constante de Kolmogorov (~ 1.5)"},
+        variables={
+            "k": "Nombre d'onde spatial (m⁻¹)",
+            "epsilon": "Taux de dissipation de l'énergie cinétique (m²/s³)",
+            "Ck": "Constante de Kolmogorov (~ 1.5)",
+        },
         units={"E(k)": "m³/s²"},
         description="Loi universelle de la cascade d'énergie turbulente de Kolmogorov (1941) décrivant le transfert d'énergie des grands tourbillons vers les petites échelles dans la sous-zone inertielle.",
         application_conditions=["Sous-domaine inertiel de turbulence isotrope et homogène"],
@@ -59,7 +62,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Paramétrisation de la turbulence",
         equation="de/dt = P_shear + P_buoyancy + Transports - dissipation_epsilon",
         latex_equation=r"\frac{\partial e}{\partial t} = -\overline{u^\prime w^\prime}\frac{\partial U}{\partial z} + \frac{g}{\theta_0}\overline{w^\prime \theta^\prime} - \frac{\partial}{\partial z}\left(\overline{w^\prime e} + \frac{\overline{w^\prime p^\prime}}{\rho_0}\right) - \varepsilon",
-        variables={"P_shear": "Production par cisaillement", "P_buoyancy": "Production/destruction par flottabilité", "epsilon": "Dissipation visqueuse"},
+        variables={
+            "P_shear": "Production par cisaillement",
+            "P_buoyancy": "Production/destruction par flottabilité",
+            "epsilon": "Dissipation visqueuse",
+        },
         units={"e": "m²/s²", "epsilon": "m²/s³"},
         description="Équation pronostique fondamentale de la TKE décrivant l'énergie des fluctuations turbulentes dans la couche limite atmosphérique (ex: schémas EDMF dans AROME et IFS).",
         application_conditions=["Modélisation de la couche limite de surface et d'inversion"],
@@ -73,7 +80,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Stabilité de l'écoulement",
         equation="Ri = (g / theta) * (dtheta/dz) / (dU/dz)^2",
         latex_equation=r"Ri = \frac{\frac{g}{\theta_0}\frac{\partial \theta}{\partial z}}{\left(\frac{\partial U}{\partial z}\right)^2}",
-        variables={"g_over_theta": "Gravité réduite g / theta_0", "dtheta_dz": "Gradient de température potentielle", "du_dz": "Cisaillement vertical du vent"},
+        variables={
+            "g_over_theta": "Gravité réduite g / theta_0",
+            "dtheta_dz": "Gradient de température potentielle",
+            "du_dz": "Cisaillement vertical du vent",
+        },
         units={"Ri": "dimensionless"},
         description="Rapport sans dimension mesurant la stabilité thermique par rapport à la production mécanique par cisaillement. Ri < 0.25 (critique) indique le déclenchement de la turbulence dynamique (instabilité de Kelvin-Helmholtz).",
         application_conditions=["Cisaillement de jet-stream et couche limite stratifiée"],
@@ -102,7 +113,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Méthodes de simulation de la turbulence",
         equation="Résolution complète de toutes les échelles jusqu'à l'échelle de Kolmogorov eta",
         latex_equation=r"\eta = \left(\frac{\nu^3}{\varepsilon}\right)^{1/4}, \quad N_{\text{grid}} \sim Re^{9/4}",
-        variables={"eta": "Échelle de Kolmogorov (mm)", "nu": "Viscosité cinématique (1.5e-5 m²/s)", "Re": "Nombre de Reynolds"},
+        variables={
+            "eta": "Échelle de Kolmogorov (mm)",
+            "nu": "Viscosité cinématique (1.5e-5 m²/s)",
+            "Re": "Nombre de Reynolds",
+        },
         units={"eta": "mm"},
         description="Résolution exacte des équations de Navier-Stokes sans aucune modélisation de turbulence, résolvant du mètre jusqu'à la dissipation millimétrique.",
         application_conditions=["Études théoriques fondamentales à faible nombre de Reynolds"],

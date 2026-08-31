@@ -7,12 +7,12 @@ Greenhouse Gas Physics & Radiative Forcing Engine Module (Phase 5)
 
 import math
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
 class GHGProperties:
     """Propriétés radiatives et thermodynamiques d'un gaz à effet de serre (GES)."""
+
     gas_name: str
     chemical_formula: str
     current_concentration: float
@@ -23,7 +23,7 @@ class GHGProperties:
     radiative_efficiency_w_m2_ppb: float
 
 
-GHG_REGISTRY: Dict[str, GHGProperties] = {
+GHG_REGISTRY: dict[str, GHGProperties] = {
     "co2": GHGProperties("Carbon Dioxide", "CO2", 425.0, 280.0, "ppm", 1.0, 100.0, 1.37e-5),
     "ch4": GHGProperties("Methane", "CH4", 1920.0, 722.0, "ppb", 28.0, 11.8, 3.63e-4),
     "n2o": GHGProperties("Nitrous Oxide", "N2O", 336.0, 270.0, "ppb", 265.0, 109.0, 3.0e-3),
@@ -40,7 +40,7 @@ class GreenhouseGasEngine:
     def co2_radiative_forcing(cls, c_ppm: float, c0_ppm: float = 280.0) -> float:
         """
         Calcule le forçage radiatif du CO2 par la formule du GIEC : F = 5.35 * ln(C / C0)
-        
+
         Equations:
             F_{\\text{CO2}} = 5.35 \\cdot \\ln\\left(\\frac{C}{C_0}\\right)
         """

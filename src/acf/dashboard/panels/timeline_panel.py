@@ -29,17 +29,16 @@ physical modeling, and spatial-temporal analysis within the Atmospheric Complexi
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QLabel,
-    QVBoxLayout,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QSlider,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class TimelinePanel(QWidget):
-
     def __init__(self):
         super().__init__()
 

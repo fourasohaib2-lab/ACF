@@ -1,29 +1,17 @@
 """
-Atmospheric Complexity Framework (ACF)
-
-DATA -   Init  
-
-Purpose:
---------
-Data ingestion adapters, format detectors, caching mechanisms, and workflow managers.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the data subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.data module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Atmospheric Complexity Framework (ACF) - DATA Package Init (ACF-100)
 """
 
+from acf.data.dataset import Dataset
+from acf.data.detector import FormatDetector
+from acf.data.preprocessing import PreprocessingEngine
+from acf.data.universal_ingestion import UniversalDataIngestionEngine
+from acf.data.universal_reader import UniversalReader
+
+__all__ = [
+    "Dataset",
+    "FormatDetector",
+    "PreprocessingEngine",
+    "UniversalDataIngestionEngine",
+    "UniversalReader",
+]

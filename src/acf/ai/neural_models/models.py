@@ -6,29 +6,29 @@ Neural Weather Prediction Models Registry & Metadata Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class NeuralWeatherModelInfo:
     """Description scientifique complète d'un modèle d'IA météorologique."""
+
     key: str
     name: str
     institution: str
     architecture: str
     spatial_resolution_deg: float
     vertical_levels: int
-    inputs: List[str]
-    outputs: List[str]
+    inputs: list[str]
+    outputs: list[str]
     max_lead_time_days: int
     physics_assumptions: str
-    training_datasets: List[str]
-    limitations: List[str]
-    references: List[str]
-    operational_applications: List[str]
+    training_datasets: list[str]
+    limitations: list[str]
+    references: list[str]
+    operational_applications: list[str]
 
 
-NEURAL_MODELS_REGISTRY: Dict[str, NeuralWeatherModelInfo] = {
+NEURAL_MODELS_REGISTRY: dict[str, NeuralWeatherModelInfo] = {
     "graphcast": NeuralWeatherModelInfo(
         key="graphcast",
         name="GraphCast (Google DeepMind)",
@@ -148,9 +148,9 @@ class NeuralWeatherModelEngine:
     """Moteur d'exécution et d'interrogation des modèles d'IA météorologiques."""
 
     @classmethod
-    def get_model(cls, key: str) -> Optional[NeuralWeatherModelInfo]:
+    def get_model(cls, key: str) -> NeuralWeatherModelInfo | None:
         return NEURAL_MODELS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls) -> list[str]:
         return list(NEURAL_MODELS_REGISTRY.keys())

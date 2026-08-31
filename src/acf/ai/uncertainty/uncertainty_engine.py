@@ -5,7 +5,6 @@ Uncertainty Quantification Engine (Aleatoric, Epistemic, Deep Ensembles & Monte 
 """
 
 import math
-from typing import Dict, List, Optional, Tuple
 
 
 class UncertaintyQuantificationEngine:
@@ -14,7 +13,9 @@ class UncertaintyQuantificationEngine:
     """
 
     @classmethod
-    def decompose_uncertainty(cls, predictions: List[float], aleatoric_variances: Optional[List[float]] = None) -> Dict[str, float]:
+    def decompose_uncertainty(
+        cls, predictions: list[float], aleatoric_variances: list[float] | None = None
+    ) -> dict[str, float]:
         """
         Décompose l'incertitude totale en composante Épistémique (manque de connaissances du modèle)
         et Aléatoire (bruit intrinsèque des observations).
@@ -43,7 +44,9 @@ class UncertaintyQuantificationEngine:
         }
 
     @classmethod
-    def calculate_confidence_interval(cls, mean: float, std: float, confidence_level: float = 0.95) -> Tuple[float, float]:
+    def calculate_confidence_interval(
+        cls, mean: float, std: float, confidence_level: float = 0.95
+    ) -> tuple[float, float]:
         """Calcule l'intervalle de confiance à [mean - z*std, mean + z*std]."""
         z = 1.96 if confidence_level == 0.95 else 2.576
         return (mean - z * std, mean + z * std)

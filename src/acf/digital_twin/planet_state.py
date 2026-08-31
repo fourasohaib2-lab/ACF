@@ -6,13 +6,15 @@ Planetary State & Global Earth System Container Module (Phase 1)
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
+
 from acf.digital_twin.state_vector import GlobalEarthStateVector
 
 
 @dataclass
 class GlobalEarthState:
     """État global instantané de la planète Terre."""
+
     timestamp_utc: str
     state_vector: GlobalEarthStateVector = field(default_factory=GlobalEarthStateVector)
     active_warnings_count: int = 3
@@ -25,7 +27,7 @@ class PlanetState:
     def __init__(self):
         self.current_state = GlobalEarthState(timestamp_utc="2026-08-02T08:00:00Z")
 
-    def get_planet_status(self) -> Dict[str, Any]:
+    def get_planet_status(self) -> dict[str, Any]:
         return {
             "timestamp_utc": self.current_state.timestamp_utc,
             "health_status": self.current_state.health_status,

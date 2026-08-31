@@ -4,8 +4,8 @@ ACF Catalog Manager (Canonical Implementation)
 Central access point for all catalogs.
 """
 
-from acf.catalog.default_catalog import create_catalog
 from acf.catalog.dataset_catalog import DatasetCatalog
+from acf.catalog.default_catalog import create_catalog
 
 
 class CatalogManager:

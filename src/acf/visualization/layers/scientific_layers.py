@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Scientific Layers Module (Raster, Vector, Contours, Wind Particle Flow, Isosurfaces & Radar/Satellite Renderers)
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class BaseScientificLayer:
@@ -18,10 +18,10 @@ class BaseScientificLayer:
         self.visible = True
         self.opacity = 1.0
         self.colormap = "viridis"
-        self.vmin: Optional[float] = None
-        self.vmax: Optional[float] = None
+        self.vmin: float | None = None
+        self.vmax: float | None = None
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         return {
             "id": self.layer_id,
             "name": self.name,
@@ -41,7 +41,7 @@ class RasterLayer(BaseScientificLayer):
         super().__init__(layer_id, name, parameter_key)
         self.data_grid = data_grid
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         info = super().render()
         info["type"] = "raster"
         info["grid_resolution"] = getattr(self.data_grid, "shape", (181, 360))
@@ -59,7 +59,7 @@ class ParticleFlowLayer(BaseScientificLayer):
         self.speed_scale = 1.0
         self.particle_lifetime_sec = 3.0
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         info = super().render()
         info["type"] = "particle_flow"
         info["num_particles"] = self.num_particles
@@ -76,7 +76,7 @@ class IsosurfaceLayer(BaseScientificLayer):
         self.mesh_color = "#00FFFF"
         self.wireframe = False
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         info = super().render()
         info["type"] = "isosurface"
         info["iso_value"] = self.iso_value
@@ -93,7 +93,7 @@ class RadarVolumeLayer(BaseScientificLayer):
         self.product = product  # "ZH", "VR", "ZDR", "KDP", "HCA"
         self.elevation_angles_deg = [0.5, 1.5, 2.4, 3.4, 5.0, 7.0, 10.0]
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         info = super().render()
         info["type"] = "radar_volume"
         info["product"] = self.product
@@ -108,7 +108,7 @@ class SatelliteRGBLayer(BaseScientificLayer):
         super().__init__(layer_id, name, parameter_key="satellite_rgb", domain="Télédétection")
         self.recipe = recipe  # "Day_Natural", "Night_Microphysics", "Volcanic_Ash", "Dust_RGB", "Airmass"
 
-    def render(self) -> Dict[str, Any]:
+    def render(self) -> dict[str, Any]:
         info = super().render()
         info["type"] = "satellite_rgb"
         info["recipe"] = self.recipe

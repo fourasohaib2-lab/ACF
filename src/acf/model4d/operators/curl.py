@@ -60,7 +60,7 @@ class Curl:
         """
         Horizontal curl magnitude.
         """
-        return round(math.sqrt(x*x + y*y), 12)
+        return round(math.sqrt(x * x + y * y), 12)
 
     @staticmethod
     def vertical(
@@ -82,11 +82,7 @@ class Curl:
         """
 
         return round(
-            math.sqrt(
-                x*x +
-                y*y +
-                z*z
-            ),
+            math.sqrt(x * x + y * y + z * z),
             12,
         )
 

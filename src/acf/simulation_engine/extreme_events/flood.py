@@ -1,6 +1,5 @@
 """Coupled hydrological flood and inundation simulator."""
 
-from typing import Dict
 import numpy as np
 
 
@@ -25,7 +24,7 @@ class FloodSimulator:
         soil_moisture: np.ndarray,
         elevation_m: np.ndarray,
         saturation_capacity: float = 0.45,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Compute surface runoff accumulation and inundation depth.
 
         Args:

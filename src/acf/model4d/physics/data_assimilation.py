@@ -40,7 +40,6 @@ class DataAssimilationPhysics:
 
         return observation - model_value
 
-
     @staticmethod
     def observation_weight(error):
         """
@@ -52,8 +51,7 @@ class DataAssimilationPhysics:
         if error <= 0:
             raise ValueError("Error must be positive")
 
-        return 1 / (error ** 2)
-
+        return 1 / (error**2)
 
     @staticmethod
     def kalman_gain(background_error, observation_error):
@@ -69,17 +67,10 @@ class DataAssimilationPhysics:
         if observation_error <= 0:
             raise ValueError("Observation error must be positive")
 
-        return background_error / (
-            background_error + observation_error
-        )
-
+        return background_error / (background_error + observation_error)
 
     @staticmethod
-    def analysis_update(
-        background,
-        observation,
-        gain
-    ):
+    def analysis_update(background, observation, gain):
         """
         Analysis state update.
 
@@ -87,22 +78,12 @@ class DataAssimilationPhysics:
         """
 
         if gain < 0 or gain > 1:
-            raise ValueError(
-                "Gain must be between 0 and 1"
-            )
+            raise ValueError("Gain must be between 0 and 1")
 
-        return (
-            background
-            +
-            gain * (observation - background)
-        )
-
+        return background + gain * (observation - background)
 
     @staticmethod
-    def four_d_var_cost(
-        model_error,
-        observation_error
-    ):
+    def four_d_var_cost(model_error, observation_error):
         """
         Simplified 4D-Var cost function.
 
@@ -110,12 +91,7 @@ class DataAssimilationPhysics:
           + observation_error²
         """
 
-        return (
-            model_error ** 2
-            +
-            observation_error ** 2
-        )
-
+        return model_error**2 + observation_error**2
 
     @staticmethod
     def quality_index(error):
@@ -127,12 +103,9 @@ class DataAssimilationPhysics:
         """
 
         if error < 0:
-            raise ValueError(
-                "Error cannot be negative"
-            )
+            raise ValueError("Error cannot be negative")
 
         return 1 / (1 + error)
-
 
     @staticmethod
     def spread(error):
@@ -141,9 +114,6 @@ class DataAssimilationPhysics:
         """
 
         if error < 0:
-            raise ValueError(
-                "Error cannot be negative"
-            )
+            raise ValueError("Error cannot be negative")
 
         return sqrt(error)
-

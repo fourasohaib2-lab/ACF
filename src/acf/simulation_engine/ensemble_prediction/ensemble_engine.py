@@ -1,7 +1,9 @@
 """Earth Ensemble Prediction Engine."""
 
-from typing import List, Dict, Any
+from typing import Any
+
 import numpy as np
+
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 
 
@@ -22,8 +24,8 @@ class EarthEnsembleEngine:
         self.n_members = n_members
 
     def generate_perturbed_initial_states(
-        self, base_state: Dict[str, Any], perturbation_scale: float = 0.05
-    ) -> List[Dict[str, Any]]:
+        self, base_state: dict[str, Any], perturbation_scale: float = 0.05
+    ) -> list[dict[str, Any]]:
         """Generate N perturbed initial state vectors for ensemble initialization.
 
         Args:
@@ -39,7 +41,7 @@ class EarthEnsembleEngine:
         ensemble_states.append(base_state.copy())
 
         # Members 002 through N receive orthogonal noise perturbations
-        for i in range(1, self.n_members):
+        for _ in range(1, self.n_members):
             member_state = {}
             for key, val in base_state.items():
                 if isinstance(val, np.ndarray) and np.issubdtype(val.dtype, np.number):
@@ -54,10 +56,10 @@ class EarthEnsembleEngine:
 
     def run_ensemble_forecast(
         self,
-        base_state: Dict[str, Any],
+        base_state: dict[str, Any],
         steps: int = 10,
         dt: float = 3600.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Run all ensemble members over forecast horizon.
 
         Returns:
@@ -66,17 +68,17 @@ class EarthEnsembleEngine:
         members = self.generate_perturbed_initial_states(base_state)
         final_member_states = []
 
-        for m_idx, state in enumerate(members):
+        for state in members:
             curr_state = state
-            for s in range(steps):
+            for _ in range(steps):
                 curr_state = self.solver.step(curr_state, dt=dt)
             final_member_states.append(curr_state)
 
         return final_member_states
 
     def compute_ensemble_statistics(
-        self, member_states: List[Dict[str, Any]], field_key: str = "T"
-    ) -> Dict[str, np.ndarray]:
+        self, member_states: list[dict[str, Any]], field_key: str = "T"
+    ) -> dict[str, np.ndarray]:
         """Compute ensemble mean, variance, and spread (std dev) for a state variable.
 
         Args:

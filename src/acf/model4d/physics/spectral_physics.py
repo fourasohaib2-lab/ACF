@@ -10,7 +10,6 @@ Spectral representation of atmospheric processes:
 """
 
 import math
-from typing import List
 
 
 class SpectralPhysics:
@@ -41,7 +40,6 @@ class SpectralPhysics:
 
         return (2 * math.pi) / wavelength
 
-
     @staticmethod
     def wavenumber_to_wavelength(wavenumber: float) -> float:
         """
@@ -55,7 +53,6 @@ class SpectralPhysics:
 
         return (2 * math.pi) / wavenumber
 
-
     @staticmethod
     def spectral_energy(amplitude: float) -> float:
         """
@@ -67,15 +64,10 @@ class SpectralPhysics:
         if amplitude < 0:
             raise ValueError("Amplitude cannot be negative")
 
-        return 0.5 * amplitude ** 2
-
+        return 0.5 * amplitude**2
 
     @staticmethod
-    def fourier_component(
-        signal: float,
-        frequency: float,
-        phase: float = 0.0
-    ) -> float:
+    def fourier_component(signal: float, frequency: float, phase: float = 0.0) -> float:
         """
         Simple Fourier harmonic component.
 
@@ -87,16 +79,10 @@ class SpectralPhysics:
         if frequency < 0:
             raise ValueError("Frequency cannot be negative")
 
-        return signal * math.cos(
-            (2 * math.pi * frequency) + phase
-        )
-
+        return signal * math.cos((2 * math.pi * frequency) + phase)
 
     @staticmethod
-    def spectral_filter(
-        spectrum: List[float],
-        cutoff: float
-    ) -> List[float]:
+    def spectral_filter(spectrum: list[float], cutoff: float) -> list[float]:
         """
         Apply simple spectral cutoff filter.
         """
@@ -104,16 +90,10 @@ class SpectralPhysics:
         if cutoff < 0:
             raise ValueError("Cutoff must be positive")
 
-        return [
-            value if abs(value) <= cutoff else 0.0
-            for value in spectrum
-        ]
-
+        return [value if abs(value) <= cutoff else 0.0 for value in spectrum]
 
     @staticmethod
-    def dominant_wavenumber(
-        spectrum: List[float]
-    ) -> int:
+    def dominant_wavenumber(spectrum: list[float]) -> int:
         """
         Find dominant spectral mode.
         """
@@ -121,7 +101,4 @@ class SpectralPhysics:
         if not spectrum:
             raise ValueError("Spectrum cannot be empty")
 
-        return max(
-            range(len(spectrum)),
-            key=lambda i: abs(spectrum[i])
-        )
+        return max(range(len(spectrum)), key=lambda i: abs(spectrum[i]))

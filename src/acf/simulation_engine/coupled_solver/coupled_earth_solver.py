@@ -1,14 +1,15 @@
 """Central Earth System Coupled Solver for multi-sphere interactions."""
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 import numpy as np
 
-from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 from acf.simulation_engine.atmosphere_solver.atmospheric_model import AtmosphericModel
-from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
+from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
 from acf.simulation_engine.land_solver.soil_model import SoilModel
 from acf.simulation_engine.land_solver.vegetation_model import VegetationModel
-from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
+from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
+from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
 
 
 class CoupledEarthSolver:
@@ -30,7 +31,7 @@ class CoupledEarthSolver:
         X = [T, P, U, V, q, O3, CO2, SST, Ice, Soil, Biomass]
     """
 
-    def __init__(self, grid: Optional[EarthGrid] = None) -> None:
+    def __init__(self, grid: EarthGrid | None = None) -> None:
         self.grid = grid if grid is not None else EarthGrid(n_lat=36, n_lon=72, n_levels=16)
 
         self.atmosphere = AtmosphericModel(self.grid)
@@ -41,7 +42,7 @@ class CoupledEarthSolver:
 
         self.current_time_step = 0
 
-    def initialize_coupled_state(self) -> Dict[str, Any]:
+    def initialize_coupled_state(self) -> dict[str, Any]:
         """Initialize the full Earth System State Vector X(t=0)."""
         shape_2d = (self.grid.n_lat, self.grid.n_lon)
 
@@ -72,7 +73,7 @@ class CoupledEarthSolver:
         }
         return coupled_state
 
-    def compute_interfacial_fluxes(self, state: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def compute_interfacial_fluxes(self, state: dict[str, Any]) -> dict[str, np.ndarray]:
         """Compute coupled interface momentum, heat, moisture, and carbon fluxes.
 
         Returns:
@@ -111,11 +112,11 @@ class CoupledEarthSolver:
 
     def step(
         self,
-        state: Dict[str, Any],
+        state: dict[str, Any],
         dt: float = 60.0,
-        forcing: Optional[Dict[str, Any]] = None,
-        ai_correction: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        forcing: dict[str, Any] | None = None,
+        ai_correction: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Execute master coupled timestep: X(t + dt) = M(X(t), Physics, Forcing, AI).
 
         Args:

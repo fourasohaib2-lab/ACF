@@ -38,28 +38,18 @@ class AtmosphericRadiativeBalance:
         cooling tendency
         """
 
-        value = (
-            state.solar_input
-            - state.infrared_output
-            + state.greenhouse_forcing
-            + state.atmospheric_absorption
-        )
+        value = state.solar_input - state.infrared_output + state.greenhouse_forcing + state.atmospheric_absorption
 
         return round(value, 6)
-
 
     def greenhouse_effect(self, state: RadiativeState) -> float:
         """
         Estimates greenhouse contribution.
         """
 
-        value = (
-            state.greenhouse_forcing
-            * (1 + state.atmospheric_absorption)
-        )
+        value = state.greenhouse_forcing * (1 + state.atmospheric_absorption)
 
         return round(value, 6)
-
 
     def energy_balance_status(self, state: RadiativeState) -> str:
         """

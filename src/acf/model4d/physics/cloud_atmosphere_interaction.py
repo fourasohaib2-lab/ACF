@@ -13,9 +13,7 @@ Features:
 - Cloud radiative feedback
 """
 
-
 from dataclasses import dataclass
-
 
 
 @dataclass
@@ -34,18 +32,12 @@ class CloudAtmosphereState:
     precipitation: float
 
 
-
 class CloudAtmosphereInteraction:
     """
     Model4D cloud atmosphere interaction engine.
     """
 
-
-
-    def saturation_adjustment(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def saturation_adjustment(self, state: CloudAtmosphereState) -> float:
         """
         Saturation adjustment.
 
@@ -53,20 +45,11 @@ class CloudAtmosphereInteraction:
         12.55
         """
 
-        value = (
-            state.humidity
-            + state.cloud_water * 0.15
-            + state.cloud_ice * 0.05
-        )
+        value = state.humidity + state.cloud_water * 0.15 + state.cloud_ice * 0.05
 
         return round(value, 2)
 
-
-
-    def condensation_process(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def condensation_process(self, state: CloudAtmosphereState) -> float:
         """
         Condensation process.
 
@@ -74,20 +57,11 @@ class CloudAtmosphereInteraction:
         6.5
         """
 
-        value = (
-            state.cloud_water * 1.5
-            + state.cloud_ice * 0.5
-            + state.vertical_velocity * 0.2
-        )
+        value = state.cloud_water * 1.5 + state.cloud_ice * 0.5 + state.vertical_velocity * 0.2
 
         return round(value, 2)
 
-
-
-    def evaporation_process(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def evaporation_process(self, state: CloudAtmosphereState) -> float:
         """
         Evaporation process.
 
@@ -96,20 +70,12 @@ class CloudAtmosphereInteraction:
         """
 
         value = (
-            state.cloud_water * 0.18
-            + state.cloud_ice * 0.02
-            + state.radiation_flux * 0.00232
-            - state.humidity * 0.002
+            state.cloud_water * 0.18 + state.cloud_ice * 0.02 + state.radiation_flux * 0.00232 - state.humidity * 0.002
         )
 
         return round(value, 2)
 
-
-
-    def cloud_growth_rate(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def cloud_growth_rate(self, state: CloudAtmosphereState) -> float:
         """
         Cloud growth rate.
 
@@ -118,20 +84,12 @@ class CloudAtmosphereInteraction:
         """
 
         value = (
-            state.humidity * 0.15
-            + state.cloud_water * 0.15
-            + state.cloud_ice * 0.15
-            + state.vertical_velocity * 0.25
+            state.humidity * 0.15 + state.cloud_water * 0.15 + state.cloud_ice * 0.15 + state.vertical_velocity * 0.25
         )
 
         return round(value, 2)
 
-
-
-    def precipitation_efficiency(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def precipitation_efficiency(self, state: CloudAtmosphereState) -> float:
         """
         Precipitation efficiency.
 
@@ -139,20 +97,11 @@ class CloudAtmosphereInteraction:
         20.0
         """
 
-        value = (
-            state.precipitation
-            * state.cloud_water
-            * 6.666666
-        )
+        value = state.precipitation * state.cloud_water * 6.666666
 
         return round(value, 2)
 
-
-
-    def cloud_radiative_feedback(
-        self,
-        state: CloudAtmosphereState
-    ) -> float:
+    def cloud_radiative_feedback(self, state: CloudAtmosphereState) -> float:
         """
         Cloud radiative feedback.
 
@@ -160,11 +109,6 @@ class CloudAtmosphereInteraction:
         242
         """
 
-        value = (
-            state.radiation_flux
-            - state.cloud_water * 1.5
-            - state.cloud_ice * 1.25
-            - 1
-        )
+        value = state.radiation_flux - state.cloud_water * 1.5 - state.cloud_ice * 1.25 - 1
 
         return round(value, 2)

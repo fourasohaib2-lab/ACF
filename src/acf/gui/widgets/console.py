@@ -62,33 +62,25 @@ class ConsoleWidget(QTextEdit):
 
     def info(self, message):
 
-        self.append(
-            f"[{self.timestamp()}] [INFO] {message}"
-        )
+        self.append(f"[{self.timestamp()}] [INFO] {message}")
 
     ########################################################
 
     def warning(self, message):
 
-        self.append(
-            f"[{self.timestamp()}] [WARNING] {message}"
-        )
+        self.append(f"[{self.timestamp()}] [WARNING] {message}")
 
     ########################################################
 
     def error(self, message):
 
-        self.append(
-            f"[{self.timestamp()}] [ERROR] {message}"
-        )
+        self.append(f"[{self.timestamp()}] [ERROR] {message}")
 
     ########################################################
 
     def success(self, message):
 
-        self.append(
-            f"[{self.timestamp()}] [SUCCESS] {message}"
-        )
+        self.append(f"[{self.timestamp()}] [SUCCESS] {message}")
 
     ########################################################
 

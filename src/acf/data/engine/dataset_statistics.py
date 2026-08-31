@@ -28,9 +28,7 @@ class DatasetStatistics:
         result = []
 
         for value in values:
-
             if isinstance(value, (int, float)):
-
                 if math.isnan(value):
                     continue
 
@@ -45,27 +43,19 @@ class DatasetStatistics:
         statistics = {}
 
         for name, values in self.dataset.variables.items():
-
             if not isinstance(values, (list, tuple)):
                 continue
 
             numeric = self._numeric(values)
 
             if not numeric:
-
                 continue
 
             statistics[name] = {
-
                 "count": len(numeric),
-
                 "minimum": min(numeric),
-
                 "maximum": max(numeric),
-
                 "mean": sum(numeric) / len(numeric),
-
             }
 
         return statistics
-

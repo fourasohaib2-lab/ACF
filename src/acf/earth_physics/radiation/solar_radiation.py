@@ -11,4 +11,5 @@ class SolarRadiationModel:
     @classmethod
     def top_of_atmosphere_insolation(cls, zenith_angle_rad: float) -> float:
         import math
+
         return max(0.0, cls.SOLAR_CONSTANT * math.cos(zenith_angle_rad))

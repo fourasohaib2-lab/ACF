@@ -4,7 +4,6 @@ Universal Unit Converter
 
 
 class UnitConverter:
-
     def convert(self, value, source, target):
 
         if source == target:
@@ -38,6 +37,4 @@ class UnitConverter:
         if source == "m" and target == "mm":
             return value * 1000.0
 
-        raise ValueError(
-            f"Unsupported conversion : {source} -> {target}"
-        )
+        raise ValueError(f"Unsupported conversion : {source} -> {target}")

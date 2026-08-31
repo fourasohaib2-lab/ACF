@@ -15,12 +15,22 @@ ENTRIES = [
         subdomain="Météo-France AROME",
         equation="Équations d'Euler non-hydrostatiques avec microphysique ICE3/ICE4 à 1.3 km",
         latex_equation=r"\frac{D\mathbf{V}}{Dt} = -\frac{1}{\rho}\nabla p - \mathbf{g}\mathbf{k} - 2\boldsymbol{\Omega}\times\mathbf{V} + \mathbf{F}_{\text{turb}}",
-        variables={"Résolution": "1.3 km (AROME-France) / 500 m (AROME-HD)", "Niveaux": "90 niveaux verticaux", "Cœur": "Meso-NH / ALADIN non-hydrostatique"},
+        variables={
+            "Résolution": "1.3 km (AROME-France) / 500 m (AROME-HD)",
+            "Niveaux": "90 niveaux verticaux",
+            "Cœur": "Meso-NH / ALADIN non-hydrostatique",
+        },
         units={"Résolution": "km", "Niveaux": "90"},
         description="Modèle numérique régional de prévision à très haute résolution de Météo-France. Résout explicitement la convection profonde sans paramétrisation sous-maille des courants ascendants convectifs.",
-        application_conditions=["Prévision à courte échéance (0 à 48h) des orages, pluies intenses, grêle et brouillard"],
+        application_conditions=[
+            "Prévision à courte échéance (0 à 48h) des orages, pluies intenses, grêle et brouillard"
+        ],
         limitations=["Domaine régional nécessitant les conditions aux limites fournies par ARPEGE"],
-        references=["Seity et al. (2011) Mon. Wea. Rev.", "Brousseau et al. (2016) Geosci. Model Dev.", "Météo-France Documentation"],
+        references=[
+            "Seity et al. (2011) Mon. Wea. Rev.",
+            "Brousseau et al. (2016) Geosci. Model Dev.",
+            "Météo-France Documentation",
+        ],
     ),
     EncyclopediaEntry(
         key="arome_non_hydrostatic_core",

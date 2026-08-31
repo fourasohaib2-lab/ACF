@@ -1,7 +1,7 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-CORE -   Init  
+CORE -   Init
 
 Purpose:
 --------
@@ -27,3 +27,10 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
+from acf.core.version import __author__, __license__, __version__
+
+__all__ = [
+    "__author__",
+    "__license__",
+    "__version__",
+]

@@ -6,26 +6,27 @@ Global Earth Operations Center & Planetary Alert Board Module (Phase 10)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class OperationalSituation:
     """Situation opérationnelle globale décrivant les événements majeurs en cours."""
+
     situation_id: str
     domain: str  # Weather, Ocean, Hydrology, Climate, Space Weather, Geology
     headline: str
     severity: str
-    affected_regions: List[str]
+    affected_regions: list[str]
 
 
 @dataclass
 class GlobalAlertBoard:
     """Tableau d'affichage unifié des alertes planétaires en temps réel."""
+
     timestamp_utc: str
     total_red_alerts: int
     total_orange_alerts: int
-    active_situations: List[OperationalSituation]
+    active_situations: list[OperationalSituation]
 
 
 class EarthOperationsCenter:

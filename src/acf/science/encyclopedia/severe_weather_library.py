@@ -3,13 +3,14 @@ Severe Weather Encyclopedia Module (Tornadoes, Microbursts, Derechos, Supercells
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Severe Weather
 # ---------------------------------------------------------------------------
+
 
 def calculate_ehi_index(cape_j_kg: float, sreh_m2_s2: float) -> float:
     """Calcul de l'indice EHI (Energy Helicity Index) EHI = (CAPE * SREH) / 160000."""
@@ -18,7 +19,9 @@ def calculate_ehi_index(cape_j_kg: float, sreh_m2_s2: float) -> float:
     return (cape_j_kg * sreh_m2_s2) / 160000.0
 
 
-def calculate_integrated_vapor_transport_ivt(q_kg_kg: float, u_ms: float, v_ms: float, dp_pa: float, g: float = 9.81) -> float:
+def calculate_integrated_vapor_transport_ivt(
+    q_kg_kg: float, u_ms: float, v_ms: float, dp_pa: float, g: float = 9.81
+) -> float:
     """Calcul de l'intensité du transport d'humidité IVT = (1 / g) * q * sqrt(u^2 + v^2) * dp en kg/(m·s)."""
     v_mag = math.sqrt(u_ms**2 + v_ms**2)
     return (1.0 / g) * q_kg_kg * v_mag * dp_pa
@@ -28,7 +31,7 @@ def calculate_integrated_vapor_transport_ivt(q_kg_kg: float, u_ms: float, v_ms: 
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="tornado_ehi_helicity_index",
         name="Tornades, Supercellules et Indice EHI (Energy Helicity Index)",
@@ -51,7 +54,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Systèmes convectifs de méso-échelle (MCS)",
         equation="Ligne de rafales destructrices continues sur > 400 km avec rafales > 26 m/s (52 kts)",
         latex_equation=r"\text{Derecho} \iff \text{Gusts} > 26\text{ m/s sur } \Delta L > 400\text{ km}",
-        variables={"RIJ": "Rear Inflow Jet (Courant d'inflow arrière)", "Path_length": "Longueur de trajectoire > 400 km"},
+        variables={
+            "RIJ": "Rear Inflow Jet (Courant d'inflow arrière)",
+            "Path_length": "Longueur de trajectoire > 400 km",
+        },
         units={"Rafales": "m/s"},
         description="Système convectif de méso-échelle ultra-violent générant un couloir ininterrompu de rafales de vent dévastatrices provoquées par l'effondrement du Rear Inflow Jet au niveau du sol.",
         application_conditions=["Grandes plaines nord-américaines et Europe centrale en été"],
@@ -69,7 +75,9 @@ ENTRIES: List[EncyclopediaEntry] = [
         units={"IVT": "kg/(m·s)"},
         description="Tubes étroits et allongés de transport massif de vapeur d'eau d'origine tropicale traversant les océans et provoquant des pluies torrentielles et des inondations majeures lors de leur impact sur les reliefs côtiers.",
         application_conditions=["Côte Ouest des États-Unis (Pineapple Express), Europe de l'Ouest et Chili"],
-        limitations=["IVT > 1000 kg/(m·s) caractérise les rivières atmosphériques de catégorie 5 d'une violence extrême"],
+        limitations=[
+            "IVT > 1000 kg/(m·s) caractérise les rivières atmosphériques de catégorie 5 d'une violence extrême"
+        ],
         references=["Zhu & Newell (1998) Mon. Wea. Rev.", "Ralph et al. (2019) Bull. Amer. Meteor. Soc."],
         compute_func=calculate_integrated_vapor_transport_ivt,
     ),

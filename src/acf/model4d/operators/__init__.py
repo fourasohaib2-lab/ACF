@@ -1,29 +1,27 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-MODEL4D -   Init  
-
-Purpose:
---------
-4D spatio-temporal grid mechanics, field representations, differential operators, and physical parameterizations.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the model4d subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.model4d module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+MODEL4D - Operators Package
+===========================
 """
+
+from __future__ import annotations
+
+from acf.model4d.operators.advection import Advection
+from acf.model4d.operators.curl import Curl
+from acf.model4d.operators.diffusion import Diffusion
+from acf.model4d.operators.divergence import Divergence
+from acf.model4d.operators.gradient import Gradient
+from acf.model4d.operators.laplacian import Laplacian
+from acf.model4d.operators.operators_engine import OperatorsEngine
+
+__all__ = [
+    "Advection",
+    "Curl",
+    "Diffusion",
+    "Divergence",
+    "Gradient",
+    "Laplacian",
+    "OperatorsEngine",
+]
 

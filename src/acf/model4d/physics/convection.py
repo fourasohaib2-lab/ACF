@@ -23,13 +23,8 @@ class ConvectionPhysics:
     Classe de calculs physiques liés à la convection atmosphérique.
     """
 
-
     @staticmethod
-    def cape(
-        temperature_parcel,
-        temperature_environment,
-        height
-    ):
+    def cape(temperature_parcel, temperature_environment, height):
         """
         Calcule une approximation de la CAPE.
 
@@ -62,25 +57,14 @@ class ConvectionPhysics:
 
         g = 9.81
 
-        buoyancy = (
-            temperature_parcel -
-            temperature_environment
-        ) / temperature_environment
+        buoyancy = (temperature_parcel - temperature_environment) / temperature_environment
 
         cape = g * buoyancy * height
 
-        return max(
-            0.0,
-            cape / 100
-        )
-
+        return max(0.0, cape / 100)
 
     @staticmethod
-    def cin(
-        temperature_parcel,
-        temperature_environment,
-        height
-    ):
+    def cin(temperature_parcel, temperature_environment, height):
         """
         Calcule une approximation de la CIN.
 
@@ -98,15 +82,11 @@ class ConvectionPhysics:
 
         g = 9.81
 
-        deficit = (
-            temperature_environment -
-            temperature_parcel
-        ) / temperature_environment
+        deficit = (temperature_environment - temperature_parcel) / temperature_environment
 
         cin = -g * deficit * height
 
         return cin / 100
-
 
     @staticmethod
     def convective_velocity(cape):
@@ -131,10 +111,7 @@ class ConvectionPhysics:
         if cape <= 0:
             return 0.0
 
-        return math.sqrt(
-            2 * cape
-        )
-
+        return math.sqrt(2 * cape)
 
     @staticmethod
     def convection_index(cape, cin):
@@ -145,11 +122,7 @@ class ConvectionPhysics:
         plus la convection est importante.
         """
 
-        return max(
-            0.0,
-            cape + abs(cin)
-        )
-
+        return max(0.0, cape + abs(cin))
 
     @staticmethod
     def thunderstorm_probability(cape):
@@ -167,7 +140,4 @@ class ConvectionPhysics:
 
         probability = cape / 2500
 
-        return min(
-            1.0,
-            probability
-        )
+        return min(1.0, probability)

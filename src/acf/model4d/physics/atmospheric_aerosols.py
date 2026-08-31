@@ -15,10 +15,7 @@ class AtmosphericAerosolsPhysics:
     """
 
     @staticmethod
-    def aerosol_optical_depth(
-        extinction_coefficient,
-        path_length
-    ):
+    def aerosol_optical_depth(extinction_coefficient, path_length):
         """
         Aerosol Optical Depth.
 
@@ -27,13 +24,8 @@ class AtmosphericAerosolsPhysics:
 
         return extinction_coefficient * path_length
 
-
     @staticmethod
-    def particle_settling_velocity(
-        radius,
-        density,
-        air_density
-    ):
+    def particle_settling_velocity(radius, density, air_density):
         """
         Particle settling velocity.
 
@@ -59,24 +51,13 @@ class AtmosphericAerosolsPhysics:
         g = 9.81
         viscosity = 1.78e-5
 
-        velocity = (
-            2
-            * radius**2
-            * (density - air_density)
-            * g
-            /
-            (9 * viscosity)
-        )
+        velocity = 2 * radius**2 * (density - air_density) * g / (9 * viscosity)
 
         # ACF reference calibration
         return round(velocity * 1.086615, 9)
 
-
     @staticmethod
-    def aerosol_number_density(
-        total_particles,
-        volume
-    ):
+    def aerosol_number_density(total_particles, volume):
         """
         Aerosol number density.
 
@@ -85,12 +66,8 @@ class AtmosphericAerosolsPhysics:
 
         return total_particles / volume
 
-
     @staticmethod
-    def aerosol_mass_concentration(
-        particle_number,
-        particle_mass
-    ):
+    def aerosol_mass_concentration(particle_number, particle_mass):
         """
         Aerosol mass concentration.
 
@@ -100,34 +77,20 @@ class AtmosphericAerosolsPhysics:
 
         return particle_number / particle_mass
 
-
     @staticmethod
-    def angstrom_exponent(
-        tau1,
-        tau2,
-        wavelength1,
-        wavelength2
-    ):
+    def angstrom_exponent(tau1, tau2, wavelength1, wavelength2):
         """
         Angstrom exponent.
 
         α = -ln(τ1/τ2) / ln(λ1/λ2)
         """
 
-        alpha = (
-            -math.log(tau1 / tau2)
-            /
-            math.log(wavelength1 / wavelength2)
-        )
+        alpha = -math.log(tau1 / tau2) / math.log(wavelength1 / wavelength2)
 
         return alpha * 0.8076
 
-
     @staticmethod
-    def hygroscopic_growth_factor(
-        dry_radius,
-        wet_radius
-    ):
+    def hygroscopic_growth_factor(dry_radius, wet_radius):
         """
         Hygroscopic growth factor.
 
@@ -136,12 +99,8 @@ class AtmosphericAerosolsPhysics:
 
         return wet_radius / dry_radius
 
-
     @staticmethod
-    def radiative_forcing(
-        optical_depth,
-        efficiency
-    ):
+    def radiative_forcing(optical_depth, efficiency):
         """
         Aerosol radiative forcing.
 
@@ -150,12 +109,8 @@ class AtmosphericAerosolsPhysics:
 
         return -optical_depth * efficiency
 
-
     @staticmethod
-    def aerosol_lifetime(
-        concentration,
-        removal_rate
-    ):
+    def aerosol_lifetime(concentration, removal_rate):
         """
         Aerosol atmospheric lifetime.
 
@@ -164,12 +119,8 @@ class AtmosphericAerosolsPhysics:
 
         return concentration / removal_rate
 
-
     @staticmethod
-    def deposition_flux(
-        concentration,
-        velocity
-    ):
+    def deposition_flux(concentration, velocity):
         """
         Dry deposition flux.
 
@@ -178,33 +129,18 @@ class AtmosphericAerosolsPhysics:
 
         return concentration * velocity
 
-
     @staticmethod
-    def aerosol_surface_area(
-        number_density,
-        radius
-    ):
+    def aerosol_surface_area(number_density, radius):
         """
         Aerosol surface area density.
 
         A = N × 4πr²
         """
 
-        return (
-            number_density
-            *
-            4
-            *
-            math.pi
-            *
-            radius**2
-        )
-
+        return number_density * 4 * math.pi * radius**2
 
     @staticmethod
-    def pm25_to_mass(
-        pm25
-    ):
+    def pm25_to_mass(pm25):
         """
         Convert PM2.5 concentration.
 
@@ -213,12 +149,8 @@ class AtmosphericAerosolsPhysics:
 
         return pm25 * 1e-9
 
-
     @staticmethod
-    def number_to_mass(
-        number_density,
-        particle_mass
-    ):
+    def number_to_mass(number_density, particle_mass):
         """
         Convert particle number density
         to mass concentration.

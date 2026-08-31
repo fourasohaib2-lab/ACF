@@ -32,7 +32,6 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 
 class SplashScreen(QWidget):
-
     def __init__(self):
         super().__init__()
 

@@ -6,25 +6,25 @@ Global Physical Equation Library Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class PhysicalEquationEntry:
     """Description canonique d'une équation physique dans la bibliothèque ACF."""
+
     equation_id: str
     name: str
     category: str
     latex_formula: str
     text_formula: str
     si_units_summary: str
-    assumptions: List[str]
+    assumptions: list[str]
     validity_domain: str
-    variables_map: Dict[str, str]
-    scientific_references: List[str]
+    variables_map: dict[str, str]
+    scientific_references: list[str]
 
 
-EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
+EQUATION_CATALOG: dict[str, PhysicalEquationEntry] = {
     # ----------------------------------------------------
     # FLUID DYNAMICS & PRIMITIVE EQUATIONS
     # ----------------------------------------------------
@@ -37,7 +37,12 @@ EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
         si_units_summary="N/m^3 (Force per unit volume)",
         assumptions=["Newtonian fluid", "Continuum hypothesis"],
         validity_domain="Full 3D atmospheric and oceanic fluid dynamics",
-        variables_map={"rho": "Density (kg/m^3)", "v": "Velocity vector (m/s)", "p": "Pressure (Pa)", "g": "Gravity vector (m/s^2)"},
+        variables_map={
+            "rho": "Density (kg/m^3)",
+            "v": "Velocity vector (m/s)",
+            "p": "Pressure (Pa)",
+            "g": "Gravity vector (m/s^2)",
+        },
         scientific_references=["Navier (1822)", "Stokes (1845)", "Holton & Hakim (2012)"],
     ),
     "continuity_equation": PhysicalEquationEntry(
@@ -73,10 +78,13 @@ EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
         si_units_summary="Pa/K",
         assumptions=["Phase equilibrium", "Ideal gas behavior for water vapor"],
         validity_domain="Water phase transitions (-50°C to +50°C)",
-        variables_map={"es": "Saturation vapor pressure (Pa)", "Lv": "Latent heat of vaporization (J/kg)", "T": "Temperature (K)"},
+        variables_map={
+            "es": "Saturation vapor pressure (Pa)",
+            "Lv": "Latent heat of vaporization (J/kg)",
+            "T": "Temperature (K)",
+        },
         scientific_references=["Clausius (1850)", "Clapeyron (1834)", "Bohren & Albrecht (1998)"],
     ),
-
     # ----------------------------------------------------
     # RADIATIVE TRANSFER
     # ----------------------------------------------------
@@ -101,10 +109,14 @@ EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
         si_units_summary="W/(m^2 sr m)",
         assumptions=["Blackbody spectral emission"],
         validity_domain="Satellite infrared and solar spectrum radiance retrievals",
-        variables_map={"h": "Planck constant", "c": "Speed of light", "kB": "Boltzmann constant", "lambda": "Wavelength (m)"},
+        variables_map={
+            "h": "Planck constant",
+            "c": "Speed of light",
+            "kB": "Boltzmann constant",
+            "lambda": "Wavelength (m)",
+        },
         scientific_references=["Planck (1900)", "Liou (2002) Atmospheric Radiation"],
     ),
-
     # ----------------------------------------------------
     # TURBULENCE & BOUNDARY LAYER
     # ----------------------------------------------------
@@ -120,7 +132,6 @@ EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
         variables_map={"e": "TKE per unit mass (m^2/s^2)", "epsilon": "Viscous dissipation rate (m^2/s^3)"},
         scientific_references=["Stull (1988) Boundary Layer Meteorology"],
     ),
-
     # ----------------------------------------------------
     # DATA ASSIMILATION
     # ----------------------------------------------------
@@ -133,7 +144,11 @@ EQUATION_CATALOG: Dict[str, PhysicalEquationEntry] = {
         si_units_summary="Dimensionless scalar cost",
         assumptions=["Gaussian error distributions", "Linearized observation operator H"],
         validity_domain="Operational 4D-Var at ECMWF IFS and Météo-France ARPEGE",
-        variables_map={"xb": "Background state", "B": "Background error covariance", "R": "Observation error covariance"},
+        variables_map={
+            "xb": "Background state",
+            "B": "Background error covariance",
+            "R": "Observation error covariance",
+        },
         scientific_references=["Courtier et al. (1994) QJRMS", "Rabier et al. (2000) QJRMS"],
     ),
 }
@@ -145,9 +160,9 @@ class GlobalEquationLibrary:
     """
 
     @classmethod
-    def get_equation(cls, eq_id: str) -> Optional[PhysicalEquationEntry]:
+    def get_equation(cls, eq_id: str) -> PhysicalEquationEntry | None:
         return EQUATION_CATALOG.get(eq_id.lower())
 
     @classmethod
-    def list_equations_by_category(cls, category: str) -> List[PhysicalEquationEntry]:
+    def list_equations_by_category(cls, category: str) -> list[PhysicalEquationEntry]:
         return [eq for eq in EQUATION_CATALOG.values() if eq.category.lower() == category.lower()]

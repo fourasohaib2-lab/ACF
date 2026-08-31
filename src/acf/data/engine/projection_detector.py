@@ -31,7 +31,6 @@ class ProjectionDetector:
 
         # Cas 1 : dictionnaire
         if isinstance(obj, dict):
-
             grid = obj.get("grid_mapping_name")
 
             if grid is None:

@@ -6,12 +6,12 @@ Planetary Boundaries Monitoring Engine Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 
 @dataclass
 class PlanetaryBoundary:
     """Description d'une des 9 limites planétaires (Stockholm Resilience Centre)."""
+
     boundary_name: str
     control_variable: str
     pre_industrial_value: float
@@ -25,13 +25,14 @@ class PlanetaryBoundary:
 @dataclass
 class BoundaryAssessment:
     """Bilan global des 9 limites planétaires."""
+
     total_boundaries_count: int
     transgressed_count: int
     overall_safety_index_pct: float
-    boundaries_status: Dict[str, PlanetaryBoundary]
+    boundaries_status: dict[str, PlanetaryBoundary]
 
 
-BOUNDARIES_REGISTRY: Dict[str, PlanetaryBoundary] = {
+BOUNDARIES_REGISTRY: dict[str, PlanetaryBoundary] = {
     "climate_change": PlanetaryBoundary(
         boundary_name="Climate Change",
         control_variable="Atmospheric CO2 Concentration",
@@ -131,7 +132,7 @@ class PlanetaryBoundaryEngine:
     """
 
     @classmethod
-    def get_boundary(cls, key: str) -> Optional[PlanetaryBoundary]:
+    def get_boundary(cls, key: str) -> PlanetaryBoundary | None:
         return BOUNDARIES_REGISTRY.get(key.lower())
 
     @classmethod

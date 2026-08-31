@@ -30,7 +30,6 @@ class LandSurface:
 
         return energy / heat_capacity
 
-
     @staticmethod
     def soil_moisture_balance(initial, precipitation, evaporation):
         """
@@ -41,7 +40,6 @@ class LandSurface:
         value = initial + precipitation - evaporation
 
         return max(value, 0)
-
 
     @staticmethod
     def evaporation_rate(temperature, humidity, coefficient=0.1):
@@ -55,32 +53,19 @@ class LandSurface:
 
         return coefficient * temperature * deficit
 
-
     @staticmethod
-    def sensible_heat_flux(temperature_surface,
-                           temperature_air,
-                           coefficient=10):
+    def sensible_heat_flux(temperature_surface, temperature_air, coefficient=10):
         """
         Sensible heat exchange.
         """
-        return coefficient * (
-            temperature_surface - temperature_air
-        )
-
+        return coefficient * (temperature_surface - temperature_air)
 
     @staticmethod
-    def energy_balance(net_radiation,
-                       sensible_heat,
-                       latent_heat,
-                       ground_heat):
+    def energy_balance(net_radiation, sensible_heat, latent_heat, ground_heat):
         """
         Surface energy conservation.
 
         Rn = H + LE + G
         """
 
-        return net_radiation - (
-            sensible_heat +
-            latent_heat +
-            ground_heat
-        )
+        return net_radiation - (sensible_heat + latent_heat + ground_heat)

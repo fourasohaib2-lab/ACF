@@ -2,7 +2,7 @@
 Observation Quality Control Engine Module (Range Check, Temporal Check, Spatial Consistency)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ObservationQCEngine:
@@ -14,7 +14,7 @@ class ObservationQCEngine:
         return -90.0 <= temp_c <= 60.0
 
     @classmethod
-    def run_qc_pipeline(cls, obs_batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def run_qc_pipeline(cls, obs_batch: list[dict[str, Any]]) -> dict[str, Any]:
         valid_count = sum(1 for o in obs_batch if cls.validate_temperature_observation(o.get("temp_c", 20.0)))
         return {
             "total_observations": len(obs_batch),

@@ -20,7 +20,6 @@ class DataFusionEngine:
         result = deepcopy(datasets[0])
 
         for dataset in datasets[1:]:
-
             # Variables
             if hasattr(result, "variables") and hasattr(dataset, "variables"):
                 result.variables.update(dataset.variables)

@@ -7,13 +7,13 @@ Solar Radiation Management (SRM) Geoengineering Engine Module (Phase 2)
 
 from dataclasses import dataclass
 
-
 CLIMATE_SENSITIVITY_LAMBDA = 0.8  # K per (W/m^2)
 
 
 @dataclass
 class SRMResult:
     """Résultat physique d'une intervention de gestion du rayonnement solaire (SRM)."""
+
     technique_name: str
     radiative_forcing_w_m2: float
     global_temperature_cooling_k: float
@@ -31,7 +31,7 @@ class SolarRadiationManagementEngine:
     def simulate_stratospheric_aerosol_injection(cls, so2_injection_megatons_per_year: float = 5.0) -> SRMResult:
         """
         Simule l'injection d'aérosols de dioxyde de soufre (SO2) dans la stratosphère (SAI).
-        
+
         Equations:
             \\Delta F = -0.45 \\cdot \\text{SO2}_{\\text{Mt/yr}}
             \\Delta T = \\lambda \\cdot \\Delta F

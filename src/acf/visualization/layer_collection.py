@@ -28,11 +28,7 @@ class LayerCollection:
 
     def remove(self, layer_id):
 
-        self._layers = [
-            layer
-            for layer in self._layers
-            if layer.id != layer_id
-        ]
+        self._layers = [layer for layer in self._layers if layer.id != layer_id]
 
     ##################################################
 
@@ -45,9 +41,7 @@ class LayerCollection:
     def get(self, layer_id):
 
         for layer in self._layers:
-
             if layer.id == layer_id:
-
                 return layer
 
         return None
@@ -57,9 +51,7 @@ class LayerCollection:
     def by_name(self, name):
 
         for layer in self._layers:
-
             if layer.name == name:
-
                 return layer
 
         return None
@@ -68,66 +60,42 @@ class LayerCollection:
 
     def visible(self):
 
-        return [
-            layer
-            for layer in self._layers
-            if layer.visible
-        ]
+        return [layer for layer in self._layers if layer.visible]
 
     ##################################################
 
     def hidden(self):
 
-        return [
-            layer
-            for layer in self._layers
-            if not layer.visible
-        ]
+        return [layer for layer in self._layers if not layer.visible]
 
     ##################################################
 
     def names(self):
 
-        return [
-            layer.name
-            for layer in self._layers
-        ]
+        return [layer.name for layer in self._layers]
 
     ##################################################
 
     def summary(self):
 
         return {
-
             "count": len(self._layers),
-
-            "visible": len(
-                self.visible()
-            ),
-
-            "hidden": len(
-                self.hidden()
-            ),
-
+            "visible": len(self.visible()),
+            "hidden": len(self.hidden()),
             "layers": self.names(),
-
         }
 
     ##################################################
 
     def __iter__(self):
 
-        return iter(
-            self._layers
-        )
+        return iter(self._layers)
 
     ##################################################
 
     def __len__(self):
 
-        return len(
-            self._layers
-        )
+        return len(self._layers)
 
     ##################################################
 

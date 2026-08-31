@@ -4,11 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Atmospheric Chemistry, Photochemistry & Aerosols Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     # --- GASES ---
     EncyclopediaEntry(
         key="ozone_gas_o3",
@@ -17,7 +16,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Gaz à effet de serre et polluants",
         equation="O3 (Troposphérique: polluant secondaire, Stratosphérique: bouclier UV)",
         latex_equation=r"\text{O}_3 \quad [\text{ppm / DU}]",
-        variables={"Troposphère": "Polluant photochimique toxique", "Stratosphère": "Couche protectrice absorbant les UV-B/UV-C"},
+        variables={
+            "Troposphère": "Polluant photochimique toxique",
+            "Stratosphère": "Couche protectrice absorbant les UV-B/UV-C",
+        },
         units={"O3": "DU (Dobson Units) / ppm"},
         description="Gaz triatomique présent principalement dans la stratosphère (90% de la colonne) et dans la troposphère comme composé oxydant majeur.",
         application_conditions=["Stratosphère et chimie de la pollution de l'air (Copernicus CAMS)"],
@@ -80,7 +82,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Oxydation rapide en phase aqueuse nuageuse par H2O2 et O3"],
         references=["Seinfeld & Pandis (2016)", "WMO Volcano Hazards Guide"],
     ),
-
     # --- PROCESSES ---
     EncyclopediaEntry(
         key="chapman_stratospheric_cycle",
@@ -103,7 +104,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Photo-chimie",
         equation="J = int Flux_actinique(lambda) * Section_efficace(lambda) * Rendement_quantique(lambda) dlambda",
         latex_equation=r"J_i = \int \Phi_\lambda(\lambda) \sigma_i(\lambda, T) q_i(\lambda, T) d\lambda",
-        variables={"Phi": "Flux actinique solaire (photons/(cm²·s·nm))", "sigma": "Section efficace d'absorption", "q": "Rendement quantique"},
+        variables={
+            "Phi": "Flux actinique solaire (photons/(cm²·s·nm))",
+            "sigma": "Section efficace d'absorption",
+            "q": "Rendement quantique",
+        },
         units={"J": "s⁻¹"},
         description="Taux de dissociation photochimique d'un composé chimique sous l'action du rayonnement solaire incident.",
         application_conditions=["Modèles de chimie-transport (CTM ex: MOCAGE, WRF-Chem, CAMS)"],
@@ -117,14 +122,17 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Chimie hétérogène",
         equation="dn_i/dt = gamma * 0.25 * v_thermal * Area_aerosol * Conc_gas",
         latex_equation=r"\frac{dC_{\text{gas}}}{dt} = -\frac{1}{4} \gamma v_{\text{th}} A_{\text{aer}} C_{\text{gas}}",
-        variables={"gamma": "Coefficient d'accommodation (uptake coefficient)", "vth": "Vitesse thermique moléculaire", "Aaer": "Surface massique d'aérosol"},
+        variables={
+            "gamma": "Coefficient d'accommodation (uptake coefficient)",
+            "vth": "Vitesse thermique moléculaire",
+            "Aaer": "Surface massique d'aérosol",
+        },
         units={"rate": "molec/(cm³·s)"},
         description="Réactions chimiques se produisant à la surface des aérosols solides ou liquides (ex: hydrolyse de N2O5 sur les aérosols sulfates, trou d'ozone polaire sur les PSC).",
         application_conditions=["Nuages Stratosphériques Polaires (PSC) et aérosols troposphériques"],
         limitations=["Incertitudes sur les coefficients d'accommodation gamma"],
         references=["Jacob (1999) Atmos. Environ.", "IPCC AR6"],
     ),
-
     # --- AEROSOLS ---
     EncyclopediaEntry(
         key="mineral_dust_aerosol",

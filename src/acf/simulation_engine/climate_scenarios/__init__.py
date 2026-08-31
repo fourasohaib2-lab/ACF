@@ -5,6 +5,6 @@ from acf.simulation_engine.climate_scenarios.ssp_engine import SSPEngine
 
 __all__ = [
     "CMIP6Engine",
-    "SSPScenario",
     "SSPEngine",
+    "SSPScenario",
 ]

@@ -14,7 +14,6 @@ Simulation simplifiée de la propagation des ondes atmosphériques:
 - fréquence
 """
 
-
 from dataclasses import dataclass
 
 
@@ -46,41 +45,23 @@ class AtmosphericWavePropagation:
 
         return state.wavelength * state.frequency
 
-    def intrinsic_frequency(
-        self,
-        state: AtmosphericWaveState
-    ) -> float:
+    def intrinsic_frequency(self, state: AtmosphericWaveState) -> float:
         """
         Fréquence intrinsèque corrigée par le vent.
         """
 
-        doppler_shift = (
-            state.wind_speed /
-            max(state.wavelength, 1e-6)
-        )
+        doppler_shift = state.wind_speed / max(state.wavelength, 1e-6)
 
-        return max(
-            state.frequency - doppler_shift,
-            0.0
-        )
+        return max(state.frequency - doppler_shift, 0.0)
 
-    def vertical_propagation_factor(
-        self,
-        state: AtmosphericWaveState
-    ) -> float:
+    def vertical_propagation_factor(self, state: AtmosphericWaveState) -> float:
         """
         Facteur de propagation verticale.
         """
 
-        return (
-            state.stability *
-            (1 + state.altitude / 10000)
-        )
+        return state.stability * (1 + state.altitude / 10000)
 
-    def classify_wave(
-        self,
-        state: AtmosphericWaveState
-    ) -> str:
+    def classify_wave(self, state: AtmosphericWaveState) -> str:
         """
         Classification physique.
         """
@@ -93,10 +74,7 @@ class AtmosphericWavePropagation:
 
         return "Atmospheric wave"
 
-    def simulate(
-        self,
-        state: AtmosphericWaveState
-    ) -> dict:
+    def simulate(self, state: AtmosphericWaveState) -> dict:
         """
         Simulation complète.
         """
@@ -106,8 +84,6 @@ class AtmosphericWavePropagation:
             "version": self.version,
             "wave_type": self.classify_wave(state),
             "phase_speed": self.phase_speed(state),
-            "intrinsic_frequency":
-                self.intrinsic_frequency(state),
-            "vertical_factor":
-                self.vertical_propagation_factor(state)
+            "intrinsic_frequency": self.intrinsic_frequency(state),
+            "vertical_factor": self.vertical_propagation_factor(state),
         }

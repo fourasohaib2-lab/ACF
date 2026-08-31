@@ -6,12 +6,12 @@ CMIP6 & CORDEX Shared Socioeconomic Pathways (SSP) Climate Scenarios Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class ClimateScenarioInfo:
     """Description d'un scénario de projection climatique CMIP6 / SSP."""
+
     key: str
     name: str
     forcing_2100_wm2: float
@@ -19,10 +19,10 @@ class ClimateScenarioInfo:
     co2_concentration_2100_ppm: float
     narrative: str
     policy_assumptions: str
-    references: List[str]
+    references: list[str]
 
 
-SSP_SCENARIOS_REGISTRY: Dict[str, ClimateScenarioInfo] = {
+SSP_SCENARIOS_REGISTRY: dict[str, ClimateScenarioInfo] = {
     "ssp1_19": ClimateScenarioInfo(
         key="ssp1_19",
         name="SSP1-1.9 (Very Low Emissions / 1.5°C Goal)",
@@ -80,9 +80,9 @@ class ClimateScenarioEngine:
     """Moteur de consultation des scénarios de projections climatiques CMIP6."""
 
     @classmethod
-    def get(cls, key: str) -> Optional[ClimateScenarioInfo]:
+    def get(cls, key: str) -> ClimateScenarioInfo | None:
         return SSP_SCENARIOS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_scenarios(cls) -> List[str]:
+    def list_scenarios(cls) -> list[str]:
         return list(SSP_SCENARIOS_REGISTRY.keys())

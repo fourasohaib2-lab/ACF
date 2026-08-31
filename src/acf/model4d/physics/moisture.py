@@ -21,28 +21,17 @@ class Moisture:
     """
 
     @staticmethod
-    def vapor_pressure(
-        relative_humidity: float,
-        saturation_pressure: float
-    ) -> float:
+    def vapor_pressure(relative_humidity: float, saturation_pressure: float) -> float:
         """
         Calculate vapor pressure.
 
         e = RH * es / 100
         """
 
-        return round(
-            (relative_humidity / 100.0)
-            * saturation_pressure,
-            10
-        )
-
+        return round((relative_humidity / 100.0) * saturation_pressure, 10)
 
     @staticmethod
-    def relative_humidity(
-        vapor_pressure: float,
-        saturation_pressure: float
-    ) -> float:
+    def relative_humidity(vapor_pressure: float, saturation_pressure: float) -> float:
         """
         Calculate relative humidity.
 
@@ -52,18 +41,10 @@ class Moisture:
         if saturation_pressure == 0:
             return 0.0
 
-        return round(
-            (vapor_pressure /
-             saturation_pressure) * 100,
-            6
-        )
-
+        return round((vapor_pressure / saturation_pressure) * 100, 6)
 
     @staticmethod
-    def mixing_ratio(
-        vapor_pressure: float,
-        pressure: float
-    ) -> float:
+    def mixing_ratio(vapor_pressure: float, pressure: float) -> float:
         """
         Mixing ratio.
 
@@ -73,36 +54,20 @@ class Moisture:
         if pressure <= vapor_pressure:
             return 0.0
 
-        return round(
-            0.622 *
-            vapor_pressure /
-            (pressure - vapor_pressure),
-            10
-        )
-
+        return round(0.622 * vapor_pressure / (pressure - vapor_pressure), 10)
 
     @staticmethod
-    def specific_humidity(
-        mixing_ratio: float
-    ) -> float:
+    def specific_humidity(mixing_ratio: float) -> float:
         """
         Specific humidity.
 
         q = w/(1+w)
         """
 
-        return round(
-            mixing_ratio /
-            (1 + mixing_ratio),
-            10
-        )
-
+        return round(mixing_ratio / (1 + mixing_ratio), 10)
 
     @staticmethod
-    def dew_point(
-        temperature: float,
-        relative_humidity: float
-    ) -> float:
+    def dew_point(temperature: float, relative_humidity: float) -> float:
         """
         Magnus formula.
 
@@ -115,24 +80,12 @@ class Moisture:
         a = 17.27
         b = 237.7
 
-        alpha = (
-            (a * temperature) /
-            (b + temperature)
-            +
-            math.log(relative_humidity / 100)
-        )
+        alpha = (a * temperature) / (b + temperature) + math.log(relative_humidity / 100)
 
-        return round(
-            (b * alpha) /
-            (a - alpha),
-            6
-        )
-
+        return round((b * alpha) / (a - alpha), 6)
 
     @staticmethod
-    def category(
-        relative_humidity: float
-    ) -> str:
+    def category(relative_humidity: float) -> str:
         """
         Humidity classification.
         """

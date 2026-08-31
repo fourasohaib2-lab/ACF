@@ -37,7 +37,6 @@ class AerosolRadiativeInteractionPhysics:
 
         return incoming_radiation * math.exp(-optical_depth)
 
-
     @staticmethod
     def aerosol_scattering_fraction(optical_depth, scattering_ratio):
         """
@@ -52,7 +51,6 @@ class AerosolRadiativeInteractionPhysics:
 
         return optical_depth * scattering_ratio
 
-
     @staticmethod
     def aerosol_absorption_fraction(optical_depth, absorption_ratio):
         """
@@ -66,7 +64,6 @@ class AerosolRadiativeInteractionPhysics:
             raise ValueError("Absorption ratio must be between 0 and 1")
 
         return optical_depth * absorption_ratio
-
 
     @staticmethod
     def radiative_forcing(aerosol_effect, surface_albedo):
@@ -85,7 +82,6 @@ class AerosolRadiativeInteractionPhysics:
 
         return -aerosol_effect * (1 - surface_albedo)
 
-
     @staticmethod
     def aerosol_cloud_interaction(aerosol_number, cloud_response_factor):
         """
@@ -99,7 +95,6 @@ class AerosolRadiativeInteractionPhysics:
             raise ValueError("Cloud response factor must be positive")
 
         return aerosol_number * cloud_response_factor
-
 
     @staticmethod
     def module_status():

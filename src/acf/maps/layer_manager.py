@@ -7,7 +7,6 @@ Gestionnaire des couches cartographiques.
 
 
 class LayerManager:
-
     def __init__(self):
         self.layers = {}
 

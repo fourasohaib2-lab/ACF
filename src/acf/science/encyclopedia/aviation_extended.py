@@ -3,13 +3,14 @@ Advanced Aviation Meteorology, Mountain Waves, Wake Turbulence & Runway Contamin
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for Aviation Meteorology
 # ---------------------------------------------------------------------------
+
 
 def calculate_density_altitude(pressure_alt_ft: float, oat_celsius: float, isa_temp_celsius: float = 15.0) -> float:
     """Calcul approximatif de l'altitude-densité (Density Altitude) en pieds."""
@@ -27,7 +28,7 @@ def calculate_hydroplaning_speed_knots(tire_pressure_psi: float) -> float:
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="density_altitude_aviation",
         name="Altitude-Densité (Density Altitude)",
@@ -35,7 +36,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Performances aéronefs",
         equation="DA = PA + 120 * (OAT - ISA_Temp)",
         latex_equation=r"\text{DA} = \text{PA} + 120 \times (T_{\text{reelle}} - T_{\text{ISA}})",
-        variables={"PA": "Altitude-pression (ft)", "OAT": "Température extérieure réelle (°C)", "ISA_Temp": "Température ISA théorique à l'altitude PA"},
+        variables={
+            "PA": "Altitude-pression (ft)",
+            "OAT": "Température extérieure réelle (°C)",
+            "ISA_Temp": "Température ISA théorique à l'altitude PA",
+        },
         units={"DA": "ft"},
         description="Altitude corrigée de la température à laquelle la densité de l'air est équivalente dans l'atmosphère standard ISA. Détermine la distance de décollage, le taux de montée et la puissance disponible du moteur.",
         application_conditions=["Calcul des performances d'envol sur terrains d'altitude par forte chaleur"],
@@ -50,7 +55,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Danger en vol & Relief",
         equation="Fr = U / (N * H)  (Nombre de Froude: Fr < 1 pour ondes stationnaires intenses)",
         latex_equation=r"Fr = \frac{U}{N H}, \quad N = \sqrt{\frac{g}{\theta}\frac{\partial \theta}{\partial z}}",
-        variables={"U": "Vitesse du vent perpendiculaire au relief", "N": "Fréquence de Brunt-Väisälä", "H": "Hauteur de la chaîne de montagnes"},
+        variables={
+            "U": "Vitesse du vent perpendiculaire au relief",
+            "N": "Fréquence de Brunt-Väisälä",
+            "H": "Hauteur de la chaîne de montagnes",
+        },
         units={"Fr": "dimensionless"},
         description="Ondulations stationnaires de gravité générées sous le vent d'un relief perpendiculaire à un vent fort (> 20 kts) stable, accompagnées sous les crêtes de rotors à turbulence extrême et de rabattants violents.",
         application_conditions=["Reliefs montagneux (Alpes, Pyrénées, Rockies) par vent fort perpendiculaire"],
@@ -64,7 +73,12 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Sécurité des vols",
         equation="Gamma_0 = (4 * M * g) / (pi * rho * b * V_fly)",
         latex_equation=r"\Gamma_0 = \frac{4 M g}{\pi \rho b V}",
-        variables={"M": "Masse de l'aéronef (kg)", "b": "Envergure des ailes (m)", "V": "Vitesse de vol", "Gamma0": "Circulation initiale des tourbillons de saumon"},
+        variables={
+            "M": "Masse de l'aéronef (kg)",
+            "b": "Envergure des ailes (m)",
+            "V": "Vitesse de vol",
+            "Gamma0": "Circulation initiale des tourbillons de saumon",
+        },
         units={"Gamma": "m²/s"},
         description="Paire de tourbillons marginales contrarotatifs d'une grande violence générés par la portance des ailes des gros porteurs (Heavy / Super A380), descendant sous la trajectoire de vol.",
         application_conditions=["Procédures de séparation au décollage et à l'atterrissage aux aéroports"],

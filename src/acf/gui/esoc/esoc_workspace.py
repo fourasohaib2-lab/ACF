@@ -1,7 +1,7 @@
 """Workspace mode management and configuration for ESOC (ACF-UI-011)."""
 
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Any
 
 
 class WorkspaceMode(Enum):
@@ -25,7 +25,7 @@ class WorkspaceManager:
     def __init__(self, initial_mode: WorkspaceMode = WorkspaceMode.METEOROLOGIST) -> None:
         self.current_mode = initial_mode
 
-    def set_mode(self, mode: WorkspaceMode) -> Dict[str, Any]:
+    def set_mode(self, mode: WorkspaceMode) -> dict[str, Any]:
         """Switch workspace operational mode and return view layout profile.
 
         Args:
@@ -37,7 +37,7 @@ class WorkspaceManager:
         self.current_mode = mode
         return self.get_current_profile()
 
-    def get_current_profile(self) -> Dict[str, Any]:
+    def get_current_profile(self) -> dict[str, Any]:
         """Return panel visibility, active tools, and focus map layers for current mode."""
         profiles = {
             WorkspaceMode.METEOROLOGIST: {
@@ -203,6 +203,6 @@ class WorkspaceManager:
         profile["mode_name"] = self.current_mode.value
         return profile
 
-    def list_modes(self) -> List[str]:
+    def list_modes(self) -> list[str]:
         """List human-readable names of all available workspace modes."""
         return [m.value for m in WorkspaceMode]

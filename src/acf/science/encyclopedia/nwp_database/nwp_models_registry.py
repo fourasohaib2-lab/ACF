@@ -2,11 +2,10 @@
 Global & Regional NWP Models Database Encyclopedia Module (IFS, AROME, ARPEGE, ICON, WRF, GFS, UKMO UM, GEM, COSMO, HARMONIE, Meso-NH, MPAS)
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="nwp_meteo_france_arpege",
         name="Modèle ARPEGE (Météo-France)",
@@ -14,10 +13,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Modèles globaux",
         equation="Équations primitives hydrostatiques spectrales avec étirement de maillage (Transformation de Schmidt)",
         latex_equation=r"\Delta x_{\text{France}} \approx 5 \text{ km}, \quad \Delta x_{\text{Antipodes}} \approx 24 \text{ km}, \quad c = 2.25",
-        variables={"c": "Facteur d'étirement de maillage de Schmidt (2.25)", "Pôle d'étirement": "Centré sur la France (46.5°N, 2.5°E)", "Niveaux": "105 niveaux verticaux"},
+        variables={
+            "c": "Facteur d'étirement de maillage de Schmidt (2.25)",
+            "Pôle d'étirement": "Centré sur la France (46.5°N, 2.5°E)",
+            "Niveaux": "105 niveaux verticaux",
+        },
         units={"Résolution": "km"},
         description="Modèle spectral global opérationnel de Météo-France reposant sur un maillage étiré sur la France assurant une très haute résolution sur l'Europe tout en couvrant le globe.",
-        application_conditions=["Prévision numérique du temps à moyen terme (0 à 102 heures) et conditions aux limites d'AROME"],
+        application_conditions=[
+            "Prévision numérique du temps à moyen terme (0 à 102 heures) et conditions aux limites d'AROME"
+        ],
         limitations=["Déformation progressive du maillage vers les antipodes"],
         references=["Courtier & Geleyn (1988) Q. J. R. Meteorol. Soc.", "Météo-France ARPEGE Documentation"],
     ),
@@ -45,7 +50,9 @@ ENTRIES: List[EncyclopediaEntry] = [
         variables={"Cœur": "Meso-NH non-hydrostatique", "Microphysique": "ICE3 / ICE4 / LIMA (2-moment aerosol-aware)"},
         units={"Résolution": "m"},
         description="Modèle de recherche méso-échelle atmosphérique et de nuages (CRM/LES) développé par le CNRM (Météo-France) et le Laboratoire d'Aérologie (CNRS).",
-        application_conditions=["Recherche scientifique sur la microphysique, les orages, les feux de forêt et la chimie de la couche limite"],
+        application_conditions=[
+            "Recherche scientifique sur la microphysique, les orages, les feux de forêt et la chimie de la couche limite"
+        ],
         limitations=["Conçu pour la recherche scientifique (coût computationnel élevé)"],
         references=["Lafore et al. (1998) Ann. Geophys.", "Lac et al. (2018) Geosci. Model Dev."],
     ),
@@ -56,7 +63,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Modèles à maillage variable",
         equation="Non-hydrostatic equations on a centroidal Voronoi tessellation (CVT)",
         latex_equation=r"\text{Mesh: Voronoi Polygons (3 km to 60 km mesh refinement)}",
-        variables={"Grille": "Polygon Voronoi mesh (Maillage Voronoi variable)", "Résolution": "Raffinement continu local (ex: 60 km -> 3 km)"},
+        variables={
+            "Grille": "Polygon Voronoi mesh (Maillage Voronoi variable)",
+            "Résolution": "Raffinement continu local (ex: 60 km -> 3 km)",
+        },
         units={"Résolution": "km"},
         description="Modèle atmosphérique et océanique de nouvelle génération de NCAR reposant sur un maillage Voronoi à résolution variable sans raccord ni frontière artificielle.",
         application_conditions=["Simulations globales à haute résolution et prévision d'ensemble"],
@@ -70,10 +80,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Modèles globaux et régionaux",
         equation="Non-hydrostatic ENDGame dynamical core on rotated lat-lon grid",
         latex_equation=r"\text{Met Office UM: } \Delta x = 10 \text{ km Global}, \quad 1.5 \text{ km UK}",
-        variables={"Résolution": "10 km (Global) / 1.5 km (UK)", "Niveaux": "70 à 140 niveaux verticaux", "Cœur": "ENDGame"},
+        variables={
+            "Résolution": "10 km (Global) / 1.5 km (UK)",
+            "Niveaux": "70 à 140 niveaux verticaux",
+            "Cœur": "ENDGame",
+        },
         units={"Résolution": "km"},
         description="Système de prévision numérique intégré du Met Office britannique couvrant les échelles globales, régionales et climatiques.",
-        application_conditions=["Prévision synoptique mondiale, prévision haute résolution du Royaume-Uni et modélisation climatique HadGEM"],
+        application_conditions=[
+            "Prévision synoptique mondiale, prévision haute résolution du Royaume-Uni et modélisation climatique HadGEM"
+        ],
         limitations=["Grille latitude-longitude tournée nécessitant des transformations de coordonnées"],
         references=["Wood et al. (2014) Q.J.R. Meteorol. Soc.", "UK Met Office Docs"],
     ),

@@ -6,12 +6,12 @@ Cosmic Hazard & Extraterrestrial Risk Engine Module (Phase 10)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class ThreatAssessment:
     """Bilan d'évaluation des menaces cosmiques."""
+
     hazard_id: str
     hazard_type: str  # Asteroid Impact, Solar Storm, Gamma Ray Burst, Supernova, Cosmic Rays
     risk_level: str  # NONE, LOW, MEDIUM, HIGH, CRITICAL, CATACLYSMIC
@@ -34,7 +34,7 @@ class CosmicHazardEngine:
     """
 
     @classmethod
-    def evaluate_threats(cls) -> List[ThreatAssessment]:
+    def evaluate_threats(cls) -> list[ThreatAssessment]:
         """Évalue les menaces cosmiques pesant sur le système Terre."""
         return [
             ThreatAssessment(

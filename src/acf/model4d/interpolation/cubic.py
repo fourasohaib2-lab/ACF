@@ -24,30 +24,12 @@ class CubicInterpolation:
             Position between p1 and p2 (0 <= t <= 1).
         """
 
-        a = (
-            -0.5 * p0
-            + 1.5 * p1
-            - 1.5 * p2
-            + 0.5 * p3
-        )
+        a = -0.5 * p0 + 1.5 * p1 - 1.5 * p2 + 0.5 * p3
 
-        b = (
-            p0
-            - 2.5 * p1
-            + 2.0 * p2
-            - 0.5 * p3
-        )
+        b = p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3
 
-        c = (
-            -0.5 * p0
-            + 0.5 * p2
-        )
+        c = -0.5 * p0 + 0.5 * p2
 
         d = p1
 
-        return (
-            a * t**3
-            + b * t**2
-            + c * t
-            + d
-        )
+        return a * t**3 + b * t**2 + c * t + d

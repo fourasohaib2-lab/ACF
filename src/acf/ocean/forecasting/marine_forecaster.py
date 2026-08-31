@@ -6,7 +6,7 @@ Operational Marine Forecasting Engine Module (Phase 3 & Phase 7)
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class MarineForecastEngine:
@@ -15,7 +15,7 @@ class MarineForecastEngine:
     """
 
     @staticmethod
-    def douglas_sea_state(hs_m: float) -> Dict[str, str]:
+    def douglas_sea_state(hs_m: float) -> dict[str, str]:
         """Convertit la hauteur significative Hs en échelle de Douglas pour l'état de la mer."""
         if hs_m < 0.1:
             code = "0 - Calm (glassy)"
@@ -43,16 +43,16 @@ class MarineForecastEngine:
         wind_speed_kts: float,
         fetch_km: float = 200.0,
         swell_hs_m: float = 2.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Génère un bulletin complet d'état de mer et de sécurité maritime."""
         wind_ms = wind_speed_kts * 0.514444
         wind_wave_hs = 0.02 * wind_ms * math.sqrt(fetch_km)
-        combined_hs = math.sqrt((wind_wave_hs ** 2) + (swell_hs_m ** 2))
+        combined_hs = math.sqrt((wind_wave_hs**2) + (swell_hs_m**2))
 
         sea_state = self.douglas_sea_state(combined_hs)
 
         rip_risk = "HIGH" if combined_hs > 2.5 else "MODERATE"
-        surge_m = 0.05 * (wind_ms ** 1.5) / 10.0
+        surge_m = 0.05 * (wind_ms**1.5) / 10.0
 
         return {
             "sea_state": sea_state["douglas_code"],

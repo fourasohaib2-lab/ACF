@@ -65,17 +65,10 @@ class GlobalWeatherKnowledgeGraphEngine:
             "location": node.location,
             "phenomenon": node.phenomenon,
             "signature": round(
-                (
-                    node.intensity
-                    + node.temperature
-                    + node.pressure
-                    + node.humidity
-                ) / 4,
+                (node.intensity + node.temperature + node.pressure + node.humidity) / 4,
                 2,
             ),
         }
-
-
 
     def risk_classification(
         self,
@@ -92,8 +85,6 @@ class GlobalWeatherKnowledgeGraphEngine:
             return "SIGNIFICANT_EVENT"
 
         return "NORMAL_EVENT"
-
-
 
     def atmospheric_similarity(
         self,
@@ -118,8 +109,6 @@ class GlobalWeatherKnowledgeGraphEngine:
             2,
         )
 
-
-
     def find_weather_analogue(
         self,
         current: WeatherKnowledgeNode,
@@ -130,10 +119,9 @@ class GlobalWeatherKnowledgeGraphEngine:
         """
 
         best_event = None
-        best_score = -1
+        best_score = -1.0
 
         for event in historical:
-
             score = self.atmospheric_similarity(
                 current,
                 event,
@@ -143,18 +131,10 @@ class GlobalWeatherKnowledgeGraphEngine:
                 best_score = score
                 best_event = event
 
-
         return {
-            "analogue_event":
-                best_event.event_id
-                if best_event
-                else None,
-
-            "similarity":
-                round(best_score, 2),
+            "analogue_event": best_event.event_id if best_event else None,
+            "similarity": round(best_score, 2),
         }
-
-
 
     def knowledge_update(
         self,
@@ -165,9 +145,6 @@ class GlobalWeatherKnowledgeGraphEngine:
         """
 
         return {
-            "signature":
-                self.create_weather_signature(node),
-
-            "risk":
-                self.risk_classification(node),
+            "signature": self.create_weather_signature(node),
+            "risk": self.risk_classification(node),
         }

@@ -7,7 +7,6 @@ from acf.parameters.registry import ParameterRegistry
 
 
 class ParameterSearch:
-
     def __init__(self, registry: ParameterRegistry):
 
         self.registry = registry
@@ -31,9 +30,7 @@ class ParameterSearch:
         name = name.lower()
 
         for parameter in self.registry._parameters.values():
-
             if parameter.name.lower() == name:
-
                 return parameter
 
         return None

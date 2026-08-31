@@ -10,7 +10,6 @@ from acf.data.dataset import Dataset
 
 
 class GRIBAdapter:
-
     supported_extensions = [
         ".grib",
         ".grb",

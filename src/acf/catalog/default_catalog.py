@@ -27,12 +27,12 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
-from acf.catalog.catalog import ScientificCatalog
-from acf.catalog.surface_parameters import register_surface
 from acf.catalog.atmospheric_parameters import register_atmosphere
+from acf.catalog.catalog import ScientificCatalog
+from acf.catalog.climate_parameters import register_climate
 from acf.catalog.ocean_parameters import register_ocean
 from acf.catalog.satellite_parameters import register_satellite
-from acf.catalog.climate_parameters import register_climate
+from acf.catalog.surface_parameters import register_surface
 
 
 def create_catalog():

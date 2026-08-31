@@ -2,14 +2,14 @@
 Surface In-situ Station Ingestion Module (METAR, SYNOP, AWS, TEMP Radiosondes)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class SurfaceStationIngestor:
     """Gestionnaire d'ingestion des stations météo sol et radiosondages."""
 
     @classmethod
-    def ingest_synop_reports(cls) -> Dict[str, Any]:
+    def ingest_synop_reports(cls) -> dict[str, Any]:
         return {
             "reports_count": 4500,
             "report_types": ["METAR", "SYNOP", "AWS"],

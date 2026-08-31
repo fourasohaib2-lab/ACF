@@ -10,7 +10,6 @@ from acf.parameters.search import ParameterSearch
 
 
 class ParameterHub:
-
     def __init__(self):
 
         self.registry = ParameterRegistry()

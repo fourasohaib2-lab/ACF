@@ -61,8 +61,6 @@ class AutonomousForecastAssistantEngine:
 
         return len(state.model_sources)
 
-
-
     def model_consensus(
         self,
         state: AutonomousForecastAssistantState,
@@ -71,15 +69,9 @@ class AutonomousForecastAssistantEngine:
         Evaluate agreement between forecast models.
         """
 
-        score = (
-            state.ensemble_score
-            + state.confidence
-            + state.observation_quality
-        ) / 3
+        score = (state.ensemble_score + state.confidence + state.observation_quality) / 3
 
         return round(score, 2)
-
-
 
     def risk_assessment(
         self,
@@ -100,8 +92,6 @@ class AutonomousForecastAssistantEngine:
 
         return "LOW"
 
-
-
     def forecast_reliability(
         self,
         state: AutonomousForecastAssistantState,
@@ -110,18 +100,12 @@ class AutonomousForecastAssistantEngine:
         Calculate forecast reliability.
         """
 
-        reliability = (
-            state.confidence
-            + state.observation_quality
-            - state.uncertainty
-        ) / 2
+        reliability = (state.confidence + state.observation_quality - state.uncertainty) / 2
 
         return round(
             max(min(reliability, 100), 0),
             2,
         )
-
-
 
     def assistant_decision(
         self,
@@ -145,8 +129,6 @@ class AutonomousForecastAssistantEngine:
 
         return "NORMAL_FORECAST_OPERATION"
 
-
-
     def generate_summary(
         self,
         state: AutonomousForecastAssistantState,
@@ -156,22 +138,10 @@ class AutonomousForecastAssistantEngine:
         """
 
         return {
-
-            "region":
-                state.region,
-
-            "models_used":
-                self.available_models(state),
-
-            "model_consensus":
-                self.model_consensus(state),
-
-            "risk":
-                self.risk_assessment(state),
-
-            "reliability":
-                self.forecast_reliability(state),
-
-            "decision":
-                self.assistant_decision(state),
+            "region": state.region,
+            "models_used": self.available_models(state),
+            "model_consensus": self.model_consensus(state),
+            "risk": self.risk_assessment(state),
+            "reliability": self.forecast_reliability(state),
+            "decision": self.assistant_decision(state),
         }

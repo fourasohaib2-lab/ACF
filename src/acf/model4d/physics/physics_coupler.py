@@ -34,7 +34,6 @@ class PhysicsCoupler:
         self.name = "ACF Model4D Physics Coupling Engine"
         self.version = "0.1.0"
 
-
     def moisture_temperature_feedback(self, state):
         """
         Temperature-humidity interaction.
@@ -44,11 +43,7 @@ class PhysicsCoupler:
 
         factor = 1 + (state.temperature - 273.15) * 0.001
 
-        return round(
-            state.humidity * factor,
-            2
-        )
-
+        return round(state.humidity * factor, 2)
 
     def radiation_energy_balance(self, state):
         """
@@ -60,11 +55,7 @@ class PhysicsCoupler:
 
         balance = absorbed - emitted
 
-        return round(
-            balance,
-            2
-        )
-
+        return round(balance, 2)
 
     def latent_heat_exchange(self, state):
         """
@@ -75,32 +66,18 @@ class PhysicsCoupler:
 
         condensation = state.cloud_water * 0.5
 
-        latent_heat = (
-            condensation -
-            evaporation
-        ) * 2.5
+        latent_heat = (condensation - evaporation) * 2.5
 
-        return round(
-            latent_heat,
-            2
-        )
-
+        return round(latent_heat, 2)
 
     def convection_feedback(self, state):
         """
         Vertical motion and thermal feedback.
         """
 
-        convection = (
-            state.vertical_velocity *
-            (state.temperature / 300)
-        )
+        convection = state.vertical_velocity * (state.temperature / 300)
 
-        return round(
-            convection,
-            2
-        )
-
+        return round(convection, 2)
 
     def coupled_energy(self, state):
         """
@@ -115,13 +92,6 @@ class PhysicsCoupler:
 
         convection_effect = self.convection_feedback(state)
 
-
-        total = (
-            state.energy
-            + moisture_effect
-            + radiation_effect
-            + latent_effect
-            + convection_effect
-        )
+        total = state.energy + moisture_effect + radiation_effect + latent_effect + convection_effect
 
         return round(total, 2)

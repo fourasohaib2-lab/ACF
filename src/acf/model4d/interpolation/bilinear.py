@@ -28,20 +28,25 @@ class BilinearInterpolation:
         """
 
         r1 = LinearInterpolation.interpolate(
-            0, q11,
-            1, q21,
+            0,
+            q11,
+            1,
+            q21,
             tx,
         )
 
         r2 = LinearInterpolation.interpolate(
-            0, q12,
-            1, q22,
+            0,
+            q12,
+            1,
+            q22,
             tx,
         )
 
         return LinearInterpolation.interpolate(
-            0, r1,
-            1, r2,
+            0,
+            r1,
+            1,
+            r2,
             ty,
         )
-

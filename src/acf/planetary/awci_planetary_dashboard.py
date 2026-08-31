@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Planetary Defense & Interplanetary Observation Dashboard Module (Phase 12)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryDefenseDashboard:
@@ -13,7 +13,7 @@ class PlanetaryDefenseDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Planetary Defense dans AWCI."""
         return {
             "workspace_name": "PLANETARY DEFENSE & INTERPLANETARY CENTER",

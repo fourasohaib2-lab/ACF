@@ -27,6 +27,7 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
+
 class LandSurfaceModelPhysics:
     """
     ACF Model 4D - Land Surface Model Physics Module
@@ -40,14 +41,12 @@ class LandSurfaceModelPhysics:
         """
         return surface + variation
 
-
     @staticmethod
     def surface_flux(energy, coefficient):
         """
         Surface energy flux.
         """
         return energy * coefficient
-
 
     @staticmethod
     def vegetation_effect(radiation, vegetation_factor):
@@ -56,14 +55,12 @@ class LandSurfaceModelPhysics:
         """
         return radiation * vegetation_factor
 
-
     @staticmethod
     def snow_cover_effect(temperature, snow_factor):
         """
         Snow cover thermal effect.
         """
         return temperature * snow_factor
-
 
     @staticmethod
     def surface_albedo(radiation, albedo):
@@ -72,14 +69,12 @@ class LandSurfaceModelPhysics:
         """
         return radiation * albedo
 
-
     @staticmethod
     def root_zone_moisture(initial, loss):
         """
         Root zone soil moisture.
         """
         return initial - loss
-
 
     @staticmethod
     def roughness_length(wind, factor):
@@ -88,14 +83,12 @@ class LandSurfaceModelPhysics:
         """
         return wind * factor
 
-
     @staticmethod
     def energy_balance(incoming, losses):
         """
         Surface energy balance.
         """
         return incoming - losses
-
 
     @staticmethod
     def water_balance(precipitation, evaporation):
@@ -104,11 +97,9 @@ class LandSurfaceModelPhysics:
         """
         return precipitation - evaporation
 
-
     @staticmethod
     def land_surface_response(forcing, sensitivity):
         """
         Land surface response to atmospheric forcing.
         """
         return forcing * sensitivity
-

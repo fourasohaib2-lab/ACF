@@ -51,44 +51,28 @@ class AtmosphericCloudMicrophysics:
         Liquid droplet growth by condensation.
         """
 
-        return round(
-            state.liquid_water_content
-            * state.droplet_radius,
-            2
-        )
+        return round(state.liquid_water_content * state.droplet_radius, 2)
 
     def ice_crystal_formation(self, state: CloudMicrophysicsState) -> float:
         """
         Ice crystal nucleation process.
         """
 
-        return round(
-            state.ice_nuclei
-            * abs(state.temperature) / 10,
-            2
-        )
+        return round(state.ice_nuclei * abs(state.temperature) / 10, 2)
 
     def bergeron_process(self, state: CloudMicrophysicsState) -> float:
         """
         Bergeron-Findeisen ice growth process.
         """
 
-        return round(
-            state.ice_content
-            * state.liquid_water_content,
-            2
-        )
+        return round(state.ice_content * state.liquid_water_content, 2)
 
     def collision_coalescence(self, state: CloudMicrophysicsState) -> float:
         """
         Warm rain collision-coalescence.
         """
 
-        return round(
-            state.droplet_radius
-            * state.updraft_velocity,
-            2
-        )
+        return round(state.droplet_radius * state.updraft_velocity, 2)
 
     def precipitation_efficiency(self, state: CloudMicrophysicsState) -> float:
         """
@@ -96,28 +80,11 @@ class AtmosphericCloudMicrophysics:
         to precipitation.
         """
 
-        return round(
-            (
-                state.liquid_water_content
-                + state.ice_content
-            )
-            /
-            10,
-            2
-        )
+        return round((state.liquid_water_content + state.ice_content) / 10, 2)
 
     def phase_transition(self, state: CloudMicrophysicsState) -> float:
         """
         Liquid/ice phase conversion.
         """
 
-        return round(
-            (
-                state.liquid_water_content
-                - state.ice_content
-            )
-            *
-            state.ice_nuclei,
-            2
-        )
-
+        return round((state.liquid_water_content - state.ice_content) * state.ice_nuclei, 2)

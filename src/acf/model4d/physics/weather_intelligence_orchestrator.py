@@ -58,8 +58,6 @@ class WeatherIntelligenceOrchestrator:
     ) -> int:
         return len(data.models)
 
-
-
     def observation_quality(
         self,
         data: WeatherIntelligenceInput,
@@ -69,8 +67,6 @@ class WeatherIntelligenceOrchestrator:
             2,
         )
 
-
-
     def ensemble_quality(
         self,
         data: WeatherIntelligenceInput,
@@ -79,8 +75,6 @@ class WeatherIntelligenceOrchestrator:
             data.ensemble_score,
             2,
         )
-
-
 
     def risk_level(
         self,
@@ -98,26 +92,17 @@ class WeatherIntelligenceOrchestrator:
 
         return "LOW"
 
-
-
     def forecast_confidence(
         self,
         data: WeatherIntelligenceInput,
     ) -> float:
 
-        value = (
-            data.confidence
-            + data.observation_score
-            + data.ensemble_score
-            - data.uncertainty
-        ) / 3
+        value = (data.confidence + data.observation_score + data.ensemble_score - data.uncertainty) / 3
 
         return round(
             max(min(value, 100), 0),
             2,
         )
-
-
 
     def operational_decision(
         self,
@@ -138,36 +123,18 @@ class WeatherIntelligenceOrchestrator:
 
         return "NORMAL_OPERATION"
 
-
-
     def generate_intelligence_report(
         self,
         data: WeatherIntelligenceInput,
     ) -> dict:
 
         return {
-
-            "region":
-                data.region,
-
-            "models_used":
-                self.active_models(data),
-
-            "observation_quality":
-                self.observation_quality(data),
-
-            "ensemble_quality":
-                self.ensemble_quality(data),
-
-            "risk_level":
-                self.risk_level(data),
-
-            "confidence":
-                self.forecast_confidence(data),
-
-            "decision":
-                self.operational_decision(data),
-
-            "description":
-                data.weather_description,
+            "region": data.region,
+            "models_used": self.active_models(data),
+            "observation_quality": self.observation_quality(data),
+            "ensemble_quality": self.ensemble_quality(data),
+            "risk_level": self.risk_level(data),
+            "confidence": self.forecast_confidence(data),
+            "decision": self.operational_decision(data),
+            "description": data.weather_description,
         }

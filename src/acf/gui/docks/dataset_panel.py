@@ -7,10 +7,10 @@ Dataset Panel
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDockWidget,
-    QWidget,
-    QVBoxLayout,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -91,7 +91,6 @@ class DatasetPanel(QDockWidget):
             datasets = datasets()
 
         for dataset in datasets:
-
             dataset_item = QTreeWidgetItem(self.tree)
 
             dataset_name = getattr(
@@ -118,10 +117,7 @@ class DatasetPanel(QDockWidget):
             )
 
             for variable in variables:
-
-                variable_item = QTreeWidgetItem(
-                    dataset_item
-                )
+                variable_item = QTreeWidgetItem(dataset_item)
 
                 variable_item.setText(
                     0,

@@ -1,6 +1,7 @@
 """GPU solver acceleration layer using CuPy or NumPy fallback."""
 
 from typing import Any
+
 import numpy as np
 
 try:

@@ -4,7 +4,6 @@ Parameter Alias Manager
 
 
 class ParameterAliases:
-
     def __init__(self):
         self._aliases = {}
 
@@ -27,5 +26,6 @@ class ParameterAliases:
 def __getattr__(name):
     if name == "ParameterSearch":
         from acf.parameters.search import ParameterSearch
+
         return ParameterSearch
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

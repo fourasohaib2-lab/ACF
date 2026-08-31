@@ -6,12 +6,13 @@ Global Carbon Cycle Dynamics Engine Module (Phase 6)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class CarbonReservoirs:
     """Reservoirs de carbone planétaires (GtC = GigaTonnes de Carbone)."""
+
     atmosphere_gtc: float  # ~870 GtC (~425 ppm)
     ocean_gtc: float  # ~38,000 GtC
     soils_permafrost_gtc: float  # ~1,700 GtC
@@ -22,6 +23,7 @@ class CarbonReservoirs:
 @dataclass
 class CarbonFluxes:
     """Flux annuels de carbone (GtC/an)."""
+
     gpp_photosynthesis_gtc_yr: float  # ~120 GtC/yr
     terrestrial_respiration_gtc_yr: float  # ~120 GtC/yr
     ocean_atmosphere_net_sink_gtc_yr: float  # ~2.5 GtC/yr
@@ -36,7 +38,7 @@ class CarbonCycleEngine:
     """
 
     @classmethod
-    def get_current_state(cls) -> Dict[str, Any]:
+    def get_current_state(cls) -> dict[str, Any]:
         """Retourne l'état actuel des réservoirs et flux du cycle du carbone."""
         reservoirs = CarbonReservoirs(
             atmosphere_gtc=870.0,
@@ -55,7 +57,8 @@ class CarbonCycleEngine:
         )
         # Bilan net annuel dans l'atmosphère
         net_air_growth_gtc = (fluxes.fossil_emissions_gtc_yr + fluxes.land_use_emissions_gtc_yr) - (
-            fluxes.ocean_atmosphere_net_sink_gtc_yr + (fluxes.gpp_photosynthesis_gtc_yr - fluxes.terrestrial_respiration_gtc_yr)
+            fluxes.ocean_atmosphere_net_sink_gtc_yr
+            + (fluxes.gpp_photosynthesis_gtc_yr - fluxes.terrestrial_respiration_gtc_yr)
         )
 
         return {

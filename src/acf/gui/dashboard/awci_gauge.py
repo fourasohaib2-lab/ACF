@@ -1,4 +1,3 @@
-
 """
 AWCI Gauge Widget
 =================
@@ -7,17 +6,16 @@ Circular gauge displaying AWCI score with needle.
 """
 
 import math
-from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QConicalGradient
 
-from typing import Optional
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QConicalGradient, QPainter, QPen
+from PySide6.QtWidgets import QWidget
 
 
 class AWCIGauge(QWidget):
     """Circular gauge widget for AWCI score (0-100)."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         self._score = 0.0
@@ -69,7 +67,7 @@ class AWCIGauge(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect()
         size = min(rect.width(), rect.height()) - 20
@@ -98,12 +96,8 @@ class AWCIGauge(QWidget):
             gradient.setColorAt(1.0, color_end)
 
             painter.setBrush(QBrush(gradient))
-            painter.setPen(QPen(Qt.NoPen))
-            painter.drawPie(
-                rect.adjusted(10, 10, -10, -10),
-                int(angle_start * 16),
-                int((angle_end - angle_start) * 16)
-            )
+            painter.setPen(QPen(Qt.PenStyle.NoPen))
+            painter.drawPie(rect.adjusted(10, 10, -10, -10), int(angle_start * 16), int((angle_end - angle_start) * 16))
 
         # Inner circle
         painter.setBrush(QBrush(QColor(20, 20, 40)))
@@ -119,11 +113,11 @@ class AWCIGauge(QWidget):
         needle_y = center.y() + needle_length * 0.7 * math.sin(angle_rad)
 
         painter.setPen(QPen(QColor(255, 255, 255), 3))
-        painter.drawLine(center, int(needle_x), int(needle_y))
+        painter.drawLine(center.x(), center.y(), int(needle_x), int(needle_y))
 
         # Center dot
         painter.setBrush(QBrush(QColor(255, 255, 255)))
-        painter.setPen(QPen(Qt.NoPen))
+        painter.setPen(QPen(Qt.PenStyle.NoPen))
         painter.drawEllipse(center, 8, 8)
 
         # Score
@@ -133,24 +127,14 @@ class AWCIGauge(QWidget):
         font.setPointSize(22)
         font.setBold(True)
         painter.setFont(font)
-        painter.drawText(
-            center.x() - 30, center.y() + 10,
-            60, 40,
-            Qt.AlignCenter,
-            f"{int(self._score)}"
-        )
+        painter.drawText(center.x() - 30, center.y() + 10, 60, 40, Qt.AlignmentFlag.AlignCenter, f"{int(self._score)}")
 
         # Level
         font.setPointSize(9)
         font.setBold(False)
         painter.setFont(font)
         painter.setPen(QPen(QColor(180, 180, 200), 1))
-        painter.drawText(
-            center.x() - 50, center.y() + 50,
-            100, 20,
-            Qt.AlignCenter,
-            level
-        )
+        painter.drawText(center.x() - 50, center.y() + 50, 100, 20, Qt.AlignmentFlag.AlignCenter, level)
 
         painter.end()
 

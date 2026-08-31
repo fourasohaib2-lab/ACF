@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 AWCI Real-Time Mission Control Monitoring Dashboard Module (Phase 10)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class AWCIMonitoringDashboard:
@@ -13,7 +13,7 @@ class AWCIMonitoringDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Real-Time Monitoring dans AWCI."""
         return {
             "workspace_name": "GLOBAL REAL-TIME EARTH MONITORING MISSION CONTROL",
@@ -28,10 +28,31 @@ class AWCIMonitoringDashboard:
                 "Digital Twin Synchronization & Event Log Console",
             ],
             "live_map_layers": [
-                "Temperature", "Pressure", "Wind", "Humidity", "Rainfall", "Radar",
-                "Satellite", "Clouds", "Lightning", "Snow", "Sea Ice", "Ocean Currents",
-                "Wave Height", "SST", "Wildfires", "Smoke", "Dust", "Air Quality",
-                "Cyclones", "Floods", "Heatwaves", "Drought", "Volcanoes", "Earthquakes", "Solar Storms"
+                "Temperature",
+                "Pressure",
+                "Wind",
+                "Humidity",
+                "Rainfall",
+                "Radar",
+                "Satellite",
+                "Clouds",
+                "Lightning",
+                "Snow",
+                "Sea Ice",
+                "Ocean Currents",
+                "Wave Height",
+                "SST",
+                "Wildfires",
+                "Smoke",
+                "Dust",
+                "Air Quality",
+                "Cyclones",
+                "Floods",
+                "Heatwaves",
+                "Drought",
+                "Volcanoes",
+                "Earthquakes",
+                "Solar Storms",
             ],
             "alert_levels": ["GREEN", "BLUE", "YELLOW", "ORANGE", "RED", "PURPLE", "BLACK"],
             "center_panel": ["3D Live Earth Globe", "Active Hazards Ribbon"],

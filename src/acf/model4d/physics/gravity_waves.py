@@ -16,9 +16,7 @@ class GravityWavesPhysics:
     GRAVITY = 9.81
 
     @staticmethod
-    def brunt_vaisala_frequency_squared(
-        stability_parameter: float
-    ) -> float:
+    def brunt_vaisala_frequency_squared(stability_parameter: float) -> float:
         """
         Calculate squared Brunt-Vaisala frequency.
 
@@ -29,18 +27,12 @@ class GravityWavesPhysics:
         """
 
         if stability_parameter <= 0:
-            raise ValueError(
-                "Stability parameter must be positive"
-            )
+            raise ValueError("Stability parameter must be positive")
 
         return GravityWavesPhysics.GRAVITY * stability_parameter
 
-
     @staticmethod
-    def wave_phase_speed(
-        buoyancy_frequency: float,
-        wavelength: float
-    ) -> float:
+    def wave_phase_speed(buoyancy_frequency: float, wavelength: float) -> float:
         """
         Calculate simplified gravity wave phase speed.
 
@@ -48,27 +40,15 @@ class GravityWavesPhysics:
         """
 
         if buoyancy_frequency <= 0:
-            raise ValueError(
-                "Buoyancy frequency must be positive"
-            )
+            raise ValueError("Buoyancy frequency must be positive")
 
         if wavelength <= 0:
-            raise ValueError(
-                "Wavelength must be positive"
-            )
+            raise ValueError("Wavelength must be positive")
 
-        return (
-            buoyancy_frequency *
-            wavelength /
-            (2 * math.pi)
-        )
-
+        return buoyancy_frequency * wavelength / (2 * math.pi)
 
     @staticmethod
-    def vertical_wavenumber(
-        buoyancy_frequency: float,
-        horizontal_wavenumber: float
-    ) -> float:
+    def vertical_wavenumber(buoyancy_frequency: float, horizontal_wavenumber: float) -> float:
         """
         Estimate vertical wave number.
 
@@ -76,22 +56,15 @@ class GravityWavesPhysics:
         """
 
         if buoyancy_frequency <= 0:
-            raise ValueError(
-                "Buoyancy frequency must be positive"
-            )
+            raise ValueError("Buoyancy frequency must be positive")
 
         if horizontal_wavenumber <= 0:
-            raise ValueError(
-                "Horizontal wavenumber must be positive"
-            )
+            raise ValueError("Horizontal wavenumber must be positive")
 
         return buoyancy_frequency / horizontal_wavenumber
 
-
     @staticmethod
-    def classify_wave(
-        phase_speed: float
-    ) -> str:
+    def classify_wave(phase_speed: float) -> str:
         """
         Classify gravity wave regime.
         """

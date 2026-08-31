@@ -15,7 +15,6 @@ class AerosolChemistryPhysics:
     Aerosol chemistry and aerosol-cloud interaction physics.
     """
 
-
     @staticmethod
     def aerosol_mass(number, radius, density):
         """
@@ -50,8 +49,7 @@ class AerosolChemistryPhysics:
         if density <= 0:
             raise ValueError("Invalid particle density")
 
-        return 4 * number * (radius ** 3) * density * 1000
-
+        return 4 * number * (radius**3) * density * 1000
 
     @staticmethod
     def hygroscopic_growth(radius, humidity):
@@ -80,7 +78,6 @@ class AerosolChemistryPhysics:
 
         return radius * (1 + humidity / 200)
 
-
     @staticmethod
     def dry_deposition_velocity(size):
         """
@@ -101,7 +98,6 @@ class AerosolChemistryPhysics:
             raise ValueError("Invalid particle size")
 
         return 0.1 / size
-
 
     @staticmethod
     def chemical_conversion(amount, efficiency):
@@ -129,7 +125,6 @@ class AerosolChemistryPhysics:
             raise ValueError("Efficiency must be between 0 and 1")
 
         return amount * efficiency
-
 
     @staticmethod
     def cloud_activation_fraction(aerosol, threshold):

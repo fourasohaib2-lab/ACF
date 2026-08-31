@@ -64,13 +64,11 @@ class VectorLayer(BaseLayer):
 
         status = super().status()
 
-        status.update({
-
-            "type": "vector",
-
-            "has_data": self.data is not None,
-
-        })
+        status.update(
+            {
+                "type": "vector",
+                "has_data": self.data is not None,
+            }
+        )
 
         return status
-

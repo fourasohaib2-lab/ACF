@@ -6,7 +6,6 @@ Volcanic Physics, Mogi Deformation Model & Plume Dynamics Module (Phase 8)
 """
 
 import math
-from typing import Dict
 
 
 class VolcanicPhysicsEngine:
@@ -15,14 +14,16 @@ class VolcanicPhysicsEngine:
     """
 
     @staticmethod
-    def mogi_surface_displacement_m(radial_distance_m: float, chamber_depth_m: float, volume_change_m3: float, poisson_ratio: float = 0.25) -> Dict[str, float]:
+    def mogi_surface_displacement_m(
+        radial_distance_m: float, chamber_depth_m: float, volume_change_m3: float, poisson_ratio: float = 0.25
+    ) -> dict[str, float]:
         """
         Modèle de déformation élastique de Mogi (1958) pour une chambre magmatique sphérique.
         Dz = ((1 - nu) / pi) * dV * d / (r² + d²)^(3/2) (déplacement vertical).
         Dr = ((1 - nu) / pi) * dV * r / (r² + d²)^(3/2) (déplacement radial).
         """
-        r2_d2 = (radial_distance_m ** 2) + (chamber_depth_m ** 2)
-        denom = r2_d2 ** 1.5
+        r2_d2 = (radial_distance_m**2) + (chamber_depth_m**2)
+        denom = r2_d2**1.5
 
         if denom <= 0:
             return {"vertical_displacement_m": 0.0, "radial_displacement_m": 0.0}
@@ -44,4 +45,4 @@ class VolcanicPhysicsEngine:
         """
         if volumetric_eruption_rate_m3_s <= 0:
             return 0.0
-        return 2.0 * (volumetric_eruption_rate_m3_s ** 0.241)
+        return 2.0 * (volumetric_eruption_rate_m3_s**0.241)

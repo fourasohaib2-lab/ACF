@@ -6,8 +6,6 @@ Orbital Mechanics Engine Module (Phase 2)
 """
 
 import math
-from typing import Dict
-
 
 # Constants (SI units)
 G_CONST = 6.67430e-11  # m^3 kg^-1 s^-2
@@ -25,7 +23,7 @@ class OrbitalMechanicsEngine:
     def vis_viva_velocity(cls, r_m: float, a_m: float, central_mass_kg: float = MASS_SUN) -> float:
         """
         Calcule la vitesse orbitale par l'équation Vis-Viva : v = sqrt(G * M * (2/r - 1/a))
-        
+
         Equations:
             v = \\sqrt{G \\cdot M \\left(\\frac{2}{r} - \\frac{1}{a}\\right)}
         """
@@ -38,7 +36,7 @@ class OrbitalMechanicsEngine:
     def orbital_period(cls, a_m: float, central_mass_kg: float = MASS_SUN) -> float:
         """
         Calcule la période orbitale par la 3ème loi de Kepler : T = 2*pi * sqrt(a^3 / (G*M))
-        
+
         Equations:
             T = 2\\pi \\sqrt{\\frac{a^3}{G \\cdot M}}
         """
@@ -49,7 +47,7 @@ class OrbitalMechanicsEngine:
     def solve_kepler_equation(cls, M_rad: float, e: float, max_iter: int = 100, tol: float = 1e-10) -> float:
         """
         Résout l'équation de Kepler M = E - e*sin(E) par la méthode de Newton-Raphson.
-        
+
         Equations:
             f(E) = E - e \\sin E - M = 0
             E_{n+1} = E_n - \\frac{E_n - e \\sin E_n - M}{1 - e \\cos E_n}
@@ -65,7 +63,7 @@ class OrbitalMechanicsEngine:
         return E
 
     @classmethod
-    def perihelion_aphelion_distances(cls, a_m: float, e: float) -> Dict[str, float]:
+    def perihelion_aphelion_distances(cls, a_m: float, e: float) -> dict[str, float]:
         """Calcule la distance au périhélie q = a(1-e) et à l'aphélie Q = a(1+e)."""
         return {
             "perihelion_m": a_m * (1.0 - e),
@@ -78,7 +76,7 @@ class OrbitalMechanicsEngine:
     def lagrange_l1_distance(cls, r_orbit_m: float, m1_kg: float = MASS_SUN, m2_kg: float = MASS_EARTH) -> float:
         """
         Calcule la distance approximative du point de Lagrange L1 : r_L1 = R * (m2 / (3*m1))^(1/3)
-        
+
         Equations:
             r_{L1} = R \\left(\\frac{m_2}{3 m_1}\\right)^{1/3}
         """

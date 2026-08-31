@@ -1,7 +1,9 @@
 """Long-term climate scenario solver across multi-century horizons."""
 
-from typing import Dict, Any
+from typing import Any
+
 import numpy as np
+
 from acf.simulation_engine.climate_scenarios.cmip6 import CMIP6Engine, SSPScenario
 
 
@@ -20,7 +22,7 @@ class SSPEngine:
         self.cmip6 = CMIP6Engine(scenario)
         self.climate_sensitivity_tcr = 1.8  # Transient Climate Response (°C per CO2 doubling)
 
-    def evaluate_horizon(self, target_year: int) -> Dict[str, Any]:
+    def evaluate_horizon(self, target_year: int) -> dict[str, Any]:
         """Simulate global Earth climate indicators for target year horizon.
 
         Args:

@@ -34,49 +34,28 @@ class PlanetaryClimateFeedbackLoops:
         - Ocean memory
     """
 
-    def ice_albedo_feedback(
-        self,
-        state: ClimateFeedbackState
-    ) -> float:
+    def ice_albedo_feedback(self, state: ClimateFeedbackState) -> float:
         """
         Ice-albedo feedback.
         """
 
-        return (
-            (1 - state.ice_cover)
-            * state.temperature_anomaly
-        )
+        return (1 - state.ice_cover) * state.temperature_anomaly
 
-
-    def water_vapor_feedback(
-        self,
-        state: ClimateFeedbackState
-    ) -> float:
+    def water_vapor_feedback(self, state: ClimateFeedbackState) -> float:
         """
         Water vapor greenhouse amplification.
         """
 
-        return (
-            state.water_vapor
-            * state.temperature_anomaly
-        )
+        return state.water_vapor * state.temperature_anomaly
 
-
-    def cloud_feedback(
-        self,
-        state: ClimateFeedbackState
-    ) -> float:
+    def cloud_feedback(self, state: ClimateFeedbackState) -> float:
         """
         Cloud radiative feedback.
         """
 
         return state.cloud_effect
 
-
-    def total_feedback(
-        self,
-        state: ClimateFeedbackState
-    ) -> float:
+    def total_feedback(self, state: ClimateFeedbackState) -> float:
         """
         Total climate feedback.
 
@@ -86,19 +65,12 @@ class PlanetaryClimateFeedbackLoops:
 
         return (
             self.ice_albedo_feedback(state)
-            +
-            self.water_vapor_feedback(state)
-            +
-            self.cloud_feedback(state)
-            +
-            state.co2_forcing
+            + self.water_vapor_feedback(state)
+            + self.cloud_feedback(state)
+            + state.co2_forcing
         )
 
-
-    def climate_response(
-        self,
-        state: ClimateFeedbackState
-    ) -> str:
+    def climate_response(self, state: ClimateFeedbackState) -> str:
         """
         Climate system response.
         """

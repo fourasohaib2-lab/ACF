@@ -4,15 +4,16 @@ Atmospheric Complexity Framework (ACF)
 AWCI Professional Weather Workstation Dashboard Layout Engine
 """
 
-from typing import Any, Dict, Optional
-from acf.visualization.scene.scene_manager import VisualizationScene
-from acf.visualization.camera.camera_controller import CameraController
-from acf.visualization.timeline.timeline_controller import TimelineController
-from acf.visualization.legends.color_tables import ColorTableRegistry
-from acf.visualization.gpu.gpu_backend import GPUBackend
+from typing import Any
+
+from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
 from acf.science.parameters.engine import ParameterEngine
 from acf.science.query_engine import ScientificQueryEngine
-from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.visualization.camera.camera_controller import CameraController
+from acf.visualization.gpu.gpu_backend import GPUBackend
+from acf.visualization.legends.color_tables import ColorTableRegistry
+from acf.visualization.scene.scene_manager import VisualizationScene
+from acf.visualization.timeline.timeline_controller import TimelineController
 
 
 class AWCIDashboardEngine:
@@ -29,11 +30,11 @@ class AWCIDashboardEngine:
         self.query_engine = ScientificQueryEngine()
         self.graph = KnowledgeGraphEngine()
 
-        self.selected_parameter: Optional[str] = "temperature"
+        self.selected_parameter: str | None = "temperature"
         self.active_model: str = "IFS_00Z"
         self.mouse_position = {"lat": 48.8566, "lon": 2.3522, "value": 295.15}
 
-    def render_left_panel(self) -> Dict[str, Any]:
+    def render_left_panel(self) -> dict[str, Any]:
         """Panneau Gauche: Gestionnaire de couches, Modèles, Navigateur d'observations, Signets."""
         return {
             "layers": [layer_item["name"] for layer_item in self.scene.layers],
@@ -42,7 +43,7 @@ class AWCIDashboardEngine:
             "bookmarks": list(self.camera.bookmarks.keys()),
         }
 
-    def render_center_canvas(self) -> Dict[str, Any]:
+    def render_center_canvas(self) -> dict[str, Any]:
         """Canvas Central: Rendu Carte 2D/3D/4D."""
         return {
             "scene_mode": self.scene.mode,
@@ -51,7 +52,7 @@ class AWCIDashboardEngine:
             "fps": 60,
         }
 
-    def render_right_inspector(self) -> Dict[str, Any]:
+    def render_right_inspector(self) -> dict[str, Any]:
         """Panneau Droit: Inspecteur physique, Légendes, Explication du Reasoning Engine & Knowledge Graph."""
         if not self.selected_parameter:
             return {"selected_parameter": None}
@@ -72,7 +73,7 @@ class AWCIDashboardEngine:
             "governing_laws": explanation.get("governing_laws", []),
         }
 
-    def render_bottom_timeline(self) -> Dict[str, Any]:
+    def render_bottom_timeline(self) -> dict[str, Any]:
         """Panneau Bas: Contrôle d'animation 4D, Sélecteur de niveau vertical & Barre d'état."""
         return {
             "timeline_state": self.timeline.state(),
@@ -82,7 +83,7 @@ class AWCIDashboardEngine:
             "fps": 60,
         }
 
-    def process_natural_language_query(self, user_query: str) -> Dict[str, Any]:
+    def process_natural_language_query(self, user_query: str) -> dict[str, Any]:
         """Traite les requêtes vocales ou textuelles en langage naturel (ex: 'Show CAPE', 'Display radar')."""
         q_res = self.query_engine.ask(user_query)
 
@@ -109,7 +110,7 @@ class AWCIDashboardEngine:
             },
         }
 
-    def layout_summary(self) -> Dict[str, Any]:
+    def layout_summary(self) -> dict[str, Any]:
         """Génère le résumé global de la disposition du poste de travail AWCI."""
         return {
             "left_panel": self.render_left_panel(),

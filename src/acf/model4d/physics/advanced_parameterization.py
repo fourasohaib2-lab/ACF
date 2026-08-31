@@ -12,7 +12,6 @@ Handles advanced atmospheric parameterization:
 - boundary layer tuning
 """
 
-
 import math
 
 
@@ -42,12 +41,8 @@ class AdvancedParameterizationPhysics:
 
         return coefficient * 1.5
 
-
     @staticmethod
-    def cloud_parameterization(
-        cloud_fraction: float,
-        efficiency: float = 0.8
-    ) -> float:
+    def cloud_parameterization(cloud_fraction: float, efficiency: float = 0.8) -> float:
         """
         Estimate cloud sub-grid contribution.
         """
@@ -60,11 +55,8 @@ class AdvancedParameterizationPhysics:
 
         return cloud_fraction * efficiency
 
-
     @staticmethod
-    def convection_adjustment(
-        temperature_gradient: float
-    ) -> float:
+    def convection_adjustment(temperature_gradient: float) -> float:
         """
         Convective adjustment intensity.
         """
@@ -74,12 +66,8 @@ class AdvancedParameterizationPhysics:
 
         return math.sqrt(temperature_gradient)
 
-
     @staticmethod
-    def boundary_layer_parameterization(
-        wind_speed: float,
-        roughness: float
-    ) -> float:
+    def boundary_layer_parameterization(wind_speed: float, roughness: float) -> float:
         """
         Boundary layer exchange coefficient.
         """
@@ -92,11 +80,8 @@ class AdvancedParameterizationPhysics:
 
         return wind_speed * math.log(1 + roughness)
 
-
     @staticmethod
-    def stability_correction(
-        richardson_number: float
-    ) -> str:
+    def stability_correction(richardson_number: float) -> str:
         """
         Stability correction classification.
         """

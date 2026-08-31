@@ -6,7 +6,6 @@ from acf.time.time_manager import TimeManager
 
 
 class AnimationEngine:
-
     def __init__(self, time_manager=None):
 
         self.time_manager = time_manager or TimeManager()

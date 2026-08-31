@@ -4,7 +4,7 @@ Earth Analysis State Vector Module (Phase 9)
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -12,13 +12,23 @@ class EarthAnalysisStateVector:
     """Vecteur d'analyse d'état global ré-assimilé X du système Terre."""
 
     analysis_timestamp: str = "2026-08-02 12:00 UTC"
-    state_variables: List[str] = field(default_factory=lambda: [
-        "Temperature T", "Pressure P", "Wind U", "Wind V", "Specific Humidity q",
-        "Ozone O3", "Carbon Dioxide CO2", "Sea Surface Temp SST", "Sea Ice", "Soil Moisture"
-    ])
+    state_variables: list[str] = field(
+        default_factory=lambda: [
+            "Temperature T",
+            "Pressure P",
+            "Wind U",
+            "Wind V",
+            "Specific Humidity q",
+            "Ozone O3",
+            "Carbon Dioxide CO2",
+            "Sea Surface Temp SST",
+            "Sea Ice",
+            "Soil Moisture",
+        ]
+    )
     quality_score: float = 98.6
 
-    def get_analysis_summary(self) -> Dict[str, Any]:
+    def get_analysis_summary(self) -> dict[str, Any]:
         return {
             "timestamp": self.analysis_timestamp,
             "variables_count": len(self.state_variables),

@@ -17,23 +17,14 @@ class DatasetMetadata:
     def extract(self, dataset):
 
         return {
-
             "name": getattr(dataset, "name", ""),
-
             "model": dataset.metadata.get("model", ""),
-
             "institution": dataset.metadata.get("institution", ""),
-
             "source": dataset.metadata.get("source", ""),
-
             "history": dataset.metadata.get("history", ""),
-
             "references": dataset.metadata.get("references", ""),
-
             "variables": len(dataset.variables),
-
             "dimensions": len(dataset.dimensions),
-
         }
 
     ############################################################

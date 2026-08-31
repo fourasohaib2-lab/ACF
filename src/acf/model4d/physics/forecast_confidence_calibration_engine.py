@@ -9,7 +9,6 @@ Sprint 9.31
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass(slots=True)
@@ -44,9 +43,7 @@ class ForecastConfidenceCalibrationEngine:
     # -----------------------------------------------------
 
     @staticmethod
-    def _clamp(value: float,
-               minimum: float = 0.0,
-               maximum: float = 100.0) -> float:
+    def _clamp(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
         return max(minimum, min(maximum, value))
 
     # -----------------------------------------------------
@@ -58,11 +55,7 @@ class ForecastConfidenceCalibrationEngine:
         state: ForecastConfidenceCalibrationState,
     ) -> float:
 
-        score = (
-            state.model_confidence * 0.40
-            + state.assimilation_quality * 0.35
-            + state.historical_accuracy * 0.25
-        )
+        score = state.model_confidence * 0.40 + state.assimilation_quality * 0.35 + state.historical_accuracy * 0.25
 
         # calibration offset
         score -= 0.50
@@ -70,7 +63,8 @@ class ForecastConfidenceCalibrationEngine:
         return round(
             self._clamp(score),
             2,
-        ) 
+        )
+
     # -----------------------------------------------------
     # Error correction
     # -----------------------------------------------------
@@ -84,10 +78,7 @@ class ForecastConfidenceCalibrationEngine:
         and observation errors.
         """
 
-        score = (
-            (100.0 - state.forecast_error)
-            + (100.0 - state.observation_error)
-        ) / 2.0
+        score = ((100.0 - state.forecast_error) + (100.0 - state.observation_error)) / 2.0
 
         return round(
             self._clamp(score),
@@ -107,20 +98,15 @@ class ForecastConfidenceCalibrationEngine:
         and objective quality.
         """
 
-        objective = (
-            self.error_correction_index(state)
-            + state.historical_accuracy
-        ) / 2.0
+        objective = (self.error_correction_index(state) + state.historical_accuracy) / 2.0
 
-        bias = (
-            state.model_confidence
-            - objective
-        )
+        bias = state.model_confidence - objective
 
         return round(
             bias,
             2,
         )
+
     # -----------------------------------------------------
     # Confidence adjustment
     # -----------------------------------------------------
@@ -144,6 +130,7 @@ class ForecastConfidenceCalibrationEngine:
             self._clamp(adjustment),
             2,
         )
+
     # -----------------------------------------------------
     # Calibrated confidence
     # -----------------------------------------------------
@@ -155,11 +142,7 @@ class ForecastConfidenceCalibrationEngine:
 
         adjusted = self.confidence_adjustment(state)
 
-        correction = (
-            state.assimilation_quality * 0.05
-            +
-            state.historical_accuracy * 0.03
-        )
+        correction = state.assimilation_quality * 0.05 + state.historical_accuracy * 0.03
 
         value = adjusted + correction
 
@@ -170,6 +153,7 @@ class ForecastConfidenceCalibrationEngine:
             self._clamp(value),
             2,
         )
+
     # -----------------------------------------------------
     # Operational confidence
     # -----------------------------------------------------
@@ -179,11 +163,7 @@ class ForecastConfidenceCalibrationEngine:
         state: ForecastConfidenceCalibrationState,
     ) -> float:
 
-        value = (
-            self.calibrated_confidence(state) * 0.60
-            +
-            self.error_correction_index(state) * 0.40
-        )
+        value = self.calibrated_confidence(state) * 0.60 + self.error_correction_index(state) * 0.40
 
         value -= 0.79
 
@@ -191,6 +171,7 @@ class ForecastConfidenceCalibrationEngine:
             self._clamp(value),
             2,
         )
+
     # -----------------------------------------------------
     # Confidence level
     # -----------------------------------------------------
@@ -212,6 +193,7 @@ class ForecastConfidenceCalibrationEngine:
             return "MODERATE"
 
         return "LOW"
+
     # -----------------------------------------------------
     # Confidence report
     # -----------------------------------------------------
@@ -219,29 +201,16 @@ class ForecastConfidenceCalibrationEngine:
     def confidence_report(
         self,
         state: ForecastConfidenceCalibrationState,
-    ) -> Dict[str, float | str]:
+    ) -> dict[str, float | str]:
 
         return {
-            "raw_confidence":
-                self.raw_confidence(state),
-
-            "error_correction":
-                self.error_correction_index(state),
-
-            "confidence_bias":
-                self.confidence_bias(state),
-
-            "confidence_adjustment":
-                self.confidence_adjustment(state),
-
-            "calibrated_confidence":
-                self.calibrated_confidence(state),
-
-            "operational_confidence":
-                self.operational_confidence(state),
-
-            "confidence_level":
-                self.confidence_level(state),
+            "raw_confidence": self.raw_confidence(state),
+            "error_correction": self.error_correction_index(state),
+            "confidence_bias": self.confidence_bias(state),
+            "confidence_adjustment": self.confidence_adjustment(state),
+            "calibrated_confidence": self.calibrated_confidence(state),
+            "operational_confidence": self.operational_confidence(state),
+            "confidence_level": self.confidence_level(state),
         }
 
     # -----------------------------------------------------
@@ -251,7 +220,6 @@ class ForecastConfidenceCalibrationEngine:
     def confidence_update(
         self,
         state: ForecastConfidenceCalibrationState,
-    ) -> Dict[str, float | str]:
+    ) -> dict[str, float | str]:
 
         return self.confidence_report(state)
-

@@ -41,12 +41,9 @@ class AtmosphericConvectionPhysics:
 
         return (
             AtmosphericConvectionPhysics.GRAVITY
-            *
-            (temperature_parcel - temperature_environment)
-            /
-            temperature_environment
-            *
-            height
+            * (temperature_parcel - temperature_environment)
+            / temperature_environment
+            * height
         )
 
     @staticmethod
@@ -62,12 +59,9 @@ class AtmosphericConvectionPhysics:
 
         return abs(
             AtmosphericConvectionPhysics.GRAVITY
-            *
-            (temperature_parcel - temperature_environment)
-            /
-            temperature_environment
-            *
-            height
+            * (temperature_parcel - temperature_environment)
+            / temperature_environment
+            * height
         )
 
     @staticmethod
@@ -80,10 +74,8 @@ class AtmosphericConvectionPhysics:
 
         return (
             AtmosphericConvectionPhysics.GRAVITY
-            *
-            (temperature_parcel - temperature_environment)
-            /
-            temperature_environment
+            * (temperature_parcel - temperature_environment)
+            / temperature_environment
         )
 
     @staticmethod
@@ -121,41 +113,24 @@ class AtmosphericConvectionPhysics:
         return height / velocity
 
     @staticmethod
-    def lifting_condensation_level_height(
-        temperature_surface,
-        temperature_dewpoint
-    ):
+    def lifting_condensation_level_height(temperature_surface, temperature_dewpoint):
         """
         LCL height approximation.
 
         z = 125 * (T - Td)
         """
 
-        return 125 * (
-            temperature_surface - temperature_dewpoint
-        )
+        return 125 * (temperature_surface - temperature_dewpoint)
 
     @staticmethod
-    def convective_flux(
-        density,
-        velocity,
-        temperature_difference
-    ):
+    def convective_flux(density, velocity, temperature_difference):
         """
         Simplified sensible heat flux.
 
         F = rho * Cp * w * ΔT
         """
 
-        return (
-            density
-            *
-            AtmosphericConvectionPhysics.CP_AIR
-            *
-            velocity
-            *
-            temperature_difference
-        )
+        return density * AtmosphericConvectionPhysics.CP_AIR * velocity * temperature_difference
 
     @staticmethod
     def updraft_velocity(cape):
@@ -163,7 +138,4 @@ class AtmosphericConvectionPhysics:
         Atmospheric updraft velocity.
         """
 
-        return AtmosphericConvectionPhysics.convection_velocity(
-            cape
-        )
-
+        return AtmosphericConvectionPhysics.convection_velocity(cape)

@@ -15,7 +15,6 @@ from uuid import uuid4
 
 
 class Field4D:
-
     def __init__(self):
 
         self.id = str(uuid4())
@@ -92,25 +91,14 @@ class Field4D:
     def summary(self):
 
         return {
-
             "name": self.name,
-
             "unit": self.unit,
-
             "validated": self.validated,
-
             "metadata": len(self.metadata),
-
         }
 
     ##################################################
 
     def __repr__(self):
 
-        return (
-
-            f"Field4D(name='{self.name}', "
-
-            f"unit='{self.unit}')"
-
-        )
+        return f"Field4D(name='{self.name}', unit='{self.unit}')"

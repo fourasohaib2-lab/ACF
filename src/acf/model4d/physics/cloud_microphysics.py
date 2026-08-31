@@ -14,11 +14,8 @@ class CloudMicrophysicsPhysics:
     Cloud microphysics calculations.
     """
 
-
     @staticmethod
-    def saturation_vapor_pressure(
-        temperature
-    ):
+    def saturation_vapor_pressure(temperature):
         """
         Saturation vapor pressure.
 
@@ -26,42 +23,18 @@ class CloudMicrophysicsPhysics:
         Temperature in Celsius.
         """
 
-        return round(
-            6.112 * math.exp(
-                (17.67 * temperature)
-                /
-                (temperature + 243.5)
-            ),
-            2
-        )
-
+        return round(6.112 * math.exp((17.67 * temperature) / (temperature + 243.5)), 2)
 
     @staticmethod
-    def condensation_rate(
-        vapor_pressure,
-        saturation_pressure,
-        coefficient
-    ):
+    def condensation_rate(vapor_pressure, saturation_pressure, coefficient):
         """
         Condensation rate.
         """
 
-        return (
-            coefficient
-            *
-            (
-                vapor_pressure
-                -
-                saturation_pressure
-            )
-        )
-
+        return coefficient * (vapor_pressure - saturation_pressure)
 
     @staticmethod
-    def cloud_water_content(
-        liquid_water,
-        air_volume
-    ):
+    def cloud_water_content(liquid_water, air_volume):
         """
         Liquid water content.
 
@@ -70,33 +43,18 @@ class CloudMicrophysicsPhysics:
 
         return liquid_water / air_volume
 
-
     @staticmethod
-    def droplet_growth_rate(
-        radius,
-        supersaturation
-    ):
+    def droplet_growth_rate(radius, supersaturation):
         """
         Droplet diffusional growth.
 
         Normalized ACF formulation.
         """
 
-        return round(
-            radius
-            *
-            supersaturation
-            *
-            1e-6,
-            7
-        )
-
+        return round(radius * supersaturation * 1e-6, 7)
 
     @staticmethod
-    def autoconversion_rate(
-        cloud_water,
-        threshold
-    ):
+    def autoconversion_rate(cloud_water, threshold):
         """
         Cloud water converted
         into precipitation.
@@ -105,42 +63,18 @@ class CloudMicrophysicsPhysics:
         if cloud_water <= threshold:
             return 0
 
-        return round(
-            (
-                cloud_water
-                -
-                threshold
-            )
-            *
-            1e-2,
-            5
-        )
-
+        return round((cloud_water - threshold) * 1e-2, 5)
 
     @staticmethod
-    def accretion_rate(
-        rain_water,
-        cloud_water,
-        coefficient
-    ):
+    def accretion_rate(rain_water, cloud_water, coefficient):
         """
         Collision-coalescence growth.
         """
 
-        return (
-            coefficient
-            *
-            rain_water
-            *
-            cloud_water
-        )
-
+        return coefficient * rain_water * cloud_water
 
     @staticmethod
-    def ice_nucleation_rate(
-        temperature,
-        concentration
-    ):
+    def ice_nucleation_rate(temperature, concentration):
         """
         Ice crystal nucleation.
 
@@ -150,40 +84,18 @@ class CloudMicrophysicsPhysics:
         if temperature >= 0:
             return 0
 
-        return round(
-            abs(temperature)
-            *
-            concentration
-            *
-            1e-4,
-            5
-        )
-
+        return round(abs(temperature) * concentration * 1e-4, 5)
 
     @staticmethod
-    def deposition_growth(
-        ice_mass,
-        vapor_supply
-    ):
+    def deposition_growth(ice_mass, vapor_supply):
         """
         Ice deposition growth.
         """
 
-        return round(
-            ice_mass
-            *
-            vapor_supply
-            *
-            1e-3,
-            5
-        )
-
+        return round(ice_mass * vapor_supply * 1e-3, 5)
 
     @staticmethod
-    def precipitation_efficiency(
-        precipitation,
-        available_water
-    ):
+    def precipitation_efficiency(precipitation, available_water):
         """
         Precipitation efficiency.
         """
@@ -193,18 +105,12 @@ class CloudMicrophysicsPhysics:
 
         return precipitation / available_water
 
-
     @staticmethod
-    def terminal_velocity_droplet(
-        radius
-    ):
+    def terminal_velocity_droplet(radius):
         """
         Droplet terminal velocity.
 
         Simplified power law.
         """
 
-        return round(
-            1300 * radius ** 2,
-            5
-        )
+        return round(1300 * radius**2, 5)

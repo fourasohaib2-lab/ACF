@@ -6,7 +6,7 @@ Geodesy, GNSS & InSAR Crustal Deformation Engine Module (Phase 11)
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class GeodesyEngine:
@@ -24,7 +24,9 @@ class GeodesyEngine:
         return d_cm * 10.0  # en mm
 
     @classmethod
-    def gnss_displacement_vector(cls, station_id: str, ve_mm_yr: float, vn_mm_yr: float, vu_mm_yr: float) -> Dict[str, Any]:
+    def gnss_displacement_vector(
+        cls, station_id: str, ve_mm_yr: float, vn_mm_yr: float, vu_mm_yr: float
+    ) -> dict[str, Any]:
         """Calcule le vecteur de vitesse horizontal et vertical d'une station GNSS."""
         v_horiz = math.sqrt(ve_mm_yr**2 + vn_mm_yr**2)
         azimuth = math.degrees(math.atan2(ve_mm_yr, vn_mm_yr)) % 360.0

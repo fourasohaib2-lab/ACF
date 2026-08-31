@@ -5,7 +5,7 @@ Advanced Data Assimilation Encyclopedia Module (3D-Var, 4D-Var, EnKF & Cost Func
 """
 
 import numpy as np
-from typing import List, Union
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -13,12 +13,15 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Data Assimilation
 # ---------------------------------------------------------------------------
 
-def calculate_variational_cost_function(x: Union[np.ndarray, List[float]], 
-                                       xb: Union[np.ndarray, List[float]], 
-                                       b_inv: Union[np.ndarray, List[List[float]]], 
-                                       y: Union[np.ndarray, List[float]], 
-                                       hx: Union[np.ndarray, List[float]], 
-                                       r_inv: Union[np.ndarray, List[List[float]]]) -> float:
+
+def calculate_variational_cost_function(
+    x: np.ndarray | list[float],
+    xb: np.ndarray | list[float],
+    b_inv: np.ndarray | list[list[float]],
+    y: np.ndarray | list[float],
+    hx: np.ndarray | list[float],
+    r_inv: np.ndarray | list[list[float]],
+) -> float:
     """
     Calcul de la fonction coût des méthodes d'assimilation variationnelles:
     J(x) = 0.5 * (x - xb)^T * B^-1 * (x - xb) + 0.5 * (y - H(x))^T * R^-1 * (y - H(x))
@@ -43,7 +46,7 @@ def calculate_variational_cost_function(x: Union[np.ndarray, List[float]],
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="cost_function_variational_assimilation",
         name="Fonction Coût des Assimilations Variationnelles (3D-Var / 4D-Var)",
@@ -51,12 +54,23 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Algorithmes variationnels",
         equation="J(x) = 0.5 * (x - xb)^T * B^-1 * (x - xb) + 0.5 * (y - H(x))^T * R^-1 * (y - H(x))",
         latex_equation=r"J(\mathbf{x}) = \frac{1}{2}(\mathbf{x}-\mathbf{x}_b)^T \mathbf{B}^{-1} (\mathbf{x}-\mathbf{x}_b) + \frac{1}{2}(\mathbf{y}-\mathcal{H}(\mathbf{x}))^T \mathbf{R}^{-1} (\mathbf{y}-\mathcal{H}(\mathbf{x}))",
-        variables={"x": "Vecteur d'état analysé", "xb": "Ébauche (background)", "B": "Covariance d'erreur de background", "y": "Vecteur d'observations", "H": "Opérateur d'observation", "R": "Covariance d'erreur d'observation"},
+        variables={
+            "x": "Vecteur d'état analysé",
+            "xb": "Ébauche (background)",
+            "B": "Covariance d'erreur de background",
+            "y": "Vecteur d'observations",
+            "H": "Opérateur d'observation",
+            "R": "Covariance d'erreur d'observation",
+        },
         units={"J": "dimensionless"},
         description="Formulation quadratique objectif minimisée par descente de gradient (L-BFGS ou Conjugate Gradient) pour estimer l'état le plus vraisemblable de l'atmosphère.",
         application_conditions=["Centres de prévision numérique NWP (ECMWF, Météo-France, NOAA, NCEP)"],
         limitations=["Hypothèse d'erreurs gaussiennes non-biaisées"],
-        references=["Ide et al. (1997) J. Meteor. Soc. Japan", "Lorenc (1986) Q. J. R. Meteorol. Soc.", "ECMWF Assimilation Docs"],
+        references=[
+            "Ide et al. (1997) J. Meteor. Soc. Japan",
+            "Lorenc (1986) Q. J. R. Meteorol. Soc.",
+            "ECMWF Assimilation Docs",
+        ],
         compute_func=calculate_variational_cost_function,
     ),
     EncyclopediaEntry(
@@ -94,11 +108,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Filtres séquentiels d'ensemble",
         equation="B_ens = 1/(N-1) * sum (x_i - x_mean)(x_i - x_mean)^T,  x_i^a = x_i^b + K (y_i - H x_i^b)",
         latex_equation=r"\mathbf{K} = \mathbf{P}_b \mathcal{H}^T \left(\mathcal{H} \mathbf{P}_b \mathcal{H}^T + \mathbf{R}\right)^{-1}, \quad \mathbf{x}_i^a = \mathbf{x}_i^b + \mathbf{K} \left(\mathbf{y}_i - \mathcal{H}(\mathbf{x}_i^b)\right)",
-        variables={"Pb": "Covariance des erreurs d'ébauche dépendant du temps (Errors of the day)", "K": "Gain de Kalman"},
+        variables={
+            "Pb": "Covariance des erreurs d'ébauche dépendant du temps (Errors of the day)",
+            "K": "Gain de Kalman",
+        },
         units={"N": "Nombre de membres de l'ensemble (30 à 100)"},
         description="Méthode probabiliste séquentielle estimant dynamiquement la covariance des erreurs de prévision B à partir d'un ensemble de prévisions numériques propagées en parallèle.",
         application_conditions=["Assimilation d'ensemble (LETKF, ETKF, EnVar hybride)"],
-        limitations=["Exige de la localisation de covariance et de l'inflation de variance pour éviter le collapse d'ensemble"],
+        limitations=[
+            "Exige de la localisation de covariance et de l'inflation de variance pour éviter le collapse d'ensemble"
+        ],
         references=["Evensen (1994) J. Geophys. Res.", "Houtekamer & Mitchell (1998) Mon. Wea. Rev."],
     ),
 ]

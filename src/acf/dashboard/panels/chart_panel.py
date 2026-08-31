@@ -29,15 +29,14 @@ physical modeling, and spatial-temporal analysis within the Atmospheric Complexi
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
     QLabel,
-    QVBoxLayout,
     QListWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class ChartPanel(QWidget):
-
     def __init__(self):
         super().__init__()
 
@@ -52,20 +51,22 @@ class ChartPanel(QWidget):
 
         charts = QListWidget()
 
-        charts.addItems([
-            "Temperature",
-            "Pressure",
-            "Wind Speed",
-            "Wind Direction",
-            "Humidity",
-            "Precipitation",
-            "Cloud Cover",
-            "CAPE",
-            "CIN",
-            "Lifted Index",
-            "Skew-T",
-            "Time Series",
-        ])
+        charts.addItems(
+            [
+                "Temperature",
+                "Pressure",
+                "Wind Speed",
+                "Wind Direction",
+                "Humidity",
+                "Precipitation",
+                "Cloud Cover",
+                "CAPE",
+                "CIN",
+                "Lifted Index",
+                "Skew-T",
+                "Time Series",
+            ]
+        )
 
         layout.addWidget(title)
         layout.addWidget(charts)

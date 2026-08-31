@@ -1,6 +1,5 @@
 """Probabilistic hazard risk and threshold engine."""
 
-from typing import List, Dict
 import numpy as np
 
 
@@ -16,9 +15,7 @@ class ProbabilityEngine:
     def __init__(self) -> None:
         pass
 
-    def compute_exceedance_probability(
-        self, member_fields: List[np.ndarray], threshold: float
-    ) -> np.ndarray:
+    def compute_exceedance_probability(self, member_fields: list[np.ndarray], threshold: float) -> np.ndarray:
         """Calculate probability P(X >= threshold) = count(X >= threshold) / N_members.
 
         Args:
@@ -34,17 +31,19 @@ class ProbabilityEngine:
         return prob
 
     def compute_percentiles(
-        self, member_fields: List[np.ndarray], percentiles: List[float] = [10.0, 50.0, 90.0]
-    ) -> Dict[float, np.ndarray]:
+        self, member_fields: list[np.ndarray], percentiles: list[float] | None = None
+    ) -> dict[float, np.ndarray]:
         """Compute array quantiles across ensemble members.
 
         Args:
             member_fields (List[np.ndarray]): List of member arrays.
-            percentiles (List[float]): List of percentiles (e.g. 10th, 50th, 90th).
+            percentiles (Optional[List[float]]): List of percentiles (e.g. 10th, 50th, 90th).
 
         Returns:
             Dict[float, np.ndarray]: Map of percentile value to field array.
         """
+        if percentiles is None:
+            percentiles = [10.0, 50.0, 90.0]
         stack = np.stack(member_fields, axis=0)
         results = {}
         for p in percentiles:

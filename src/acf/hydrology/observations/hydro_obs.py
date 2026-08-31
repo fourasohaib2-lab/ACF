@@ -5,7 +5,7 @@ Hydrological Observation & Remote Sensing Engine Module (Phase 8)
 (River Gauges, Discharge Stations, SMAP Soil Moisture, GRACE Water Storage)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class HydrologicalObservationEngine:
@@ -14,7 +14,7 @@ class HydrologicalObservationEngine:
     """
 
     @classmethod
-    def get_river_gauge_reading(cls, station_id: str = "H5201010") -> Dict[str, Any]:
+    def get_river_gauge_reading(cls, station_id: str = "H5201010") -> dict[str, Any]:
         """Retourne la mesure d'une station de jaugeage de rivière (ex: Vigicrues Seine à Paris Austerlitz)."""
         return {
             "station_id": station_id,
@@ -27,7 +27,7 @@ class HydrologicalObservationEngine:
         }
 
     @classmethod
-    def get_satellite_smap_moisture(cls, latitude: float, longitude: float) -> Dict[str, Any]:
+    def get_satellite_smap_moisture(cls, latitude: float, longitude: float) -> dict[str, Any]:
         """Extrait la mesure de l'humidité du sol issue du satellite NASA SMAP (0-5 cm)."""
         return {
             "satellite": "NASA SMAP (Radiomètre L-band)",

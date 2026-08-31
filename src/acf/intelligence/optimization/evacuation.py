@@ -5,7 +5,7 @@ Emergency Optimization & Resource Allocation Engine Module (Phase 7)
 (EmergencyOptimizationEngine for Evacuation Routes, Shelter Logistics, Response Time Minimization)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EmergencyOptimizationEngine:
@@ -14,7 +14,7 @@ class EmergencyOptimizationEngine:
     """
 
     @classmethod
-    def optimize_evacuation_plan(cls, population_count: int = 150000) -> Dict[str, Any]:
+    def optimize_evacuation_plan(cls, population_count: int = 150000) -> dict[str, Any]:
         """Calcule le plan d'évacuation optimal et les routes à débit maximal."""
         return {
             "target_population": population_count,

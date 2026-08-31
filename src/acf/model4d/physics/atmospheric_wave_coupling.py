@@ -46,14 +46,12 @@ class AtmosphericWaveCoupling:
 
         return state.wavelength * state.frequency
 
-
     def wave_energy(self, state: AtmosphericWaveState):
         """
         Energie relative de l'onde.
         """
 
-        return 0.5 * state.amplitude ** 2
-
+        return 0.5 * state.amplitude**2
 
     def gravity_wave_effect(self, state: AtmosphericWaveState):
         """
@@ -62,7 +60,6 @@ class AtmosphericWaveCoupling:
 
         return self.gravity * state.amplitude
 
-
     def wind_coupling(self, state: AtmosphericWaveState):
         """
         Interaction vent-onde.
@@ -70,18 +67,12 @@ class AtmosphericWaveCoupling:
 
         return state.wind_speed * state.frequency
 
-
     def coupling_index(self, state: AtmosphericWaveState):
         """
         Indice global de couplage.
         """
 
-        return (
-            self.wave_energy(state)
-            + self.wind_coupling(state)
-            + self.gravity_wave_effect(state)
-        )
-
+        return self.wave_energy(state) + self.wind_coupling(state) + self.gravity_wave_effect(state)
 
     def simulate(self, state: AtmosphericWaveState):
         """

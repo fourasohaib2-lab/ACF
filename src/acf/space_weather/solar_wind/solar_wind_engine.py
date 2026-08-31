@@ -5,14 +5,15 @@ Solar Wind Hydrodynamics & Interplanetary Magnetic Field Module (Phase 2)
 (Parker Spiral, Solar Wind Speed Vsw, Dynamic Pressure Pdyn, IMF Bx/By/Bz, Clock Angle, Reconnection)
 """
 
-from dataclasses import dataclass
 import math
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class InterplanetaryMagneticField:
     """Composantes vectorielles du Champ Magnétique Interplanétaire (IMF) en nT."""
+
     bx_nt: float
     by_nt: float
     bz_nt: float
@@ -35,7 +36,7 @@ class SolarWindEngine:
         n_m3 = proton_density_cm3 * 1e6
         v_m_s = solar_wind_speed_km_s * 1000.0
 
-        pdyn_pa = m_p_kg * n_m3 * (v_m_s ** 2)
+        pdyn_pa = m_p_kg * n_m3 * (v_m_s**2)
         return pdyn_pa * 1e9  # Conversion en nanoPascals (nPa)
 
     @staticmethod
@@ -52,7 +53,7 @@ class SolarWindEngine:
         return math.degrees(phi_rad)
 
     @classmethod
-    def evaluate_reconnection_risk(cls, imf: InterplanetaryMagneticField) -> Dict[str, Any]:
+    def evaluate_reconnection_risk(cls, imf: InterplanetaryMagneticField) -> dict[str, Any]:
         """Évalue la probabilité de reconnexion magnétique à la magnétopause (B_z négatif / Sud)."""
         if imf.bz_nt < -10.0:
             risk = "CRITICAL / STRONG MAGNETIC RECONNECTION"

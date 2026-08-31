@@ -5,7 +5,7 @@ Planetary Scenario Engine & Multi-Horizon Projections Module (Phase 8)
 (Short-term Weather +6h to Long-term Climate Projections +100 years, CMIP6 / SSP Scenarios)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryScenarioEngine:
@@ -16,7 +16,7 @@ class PlanetaryScenarioEngine:
     SUPPORTED_HORIZONS = ["+6h", "+12h", "+24h", "+48h", "+72h", "+7d", "+30d", "+1yr", "+10yr", "+50yr", "+100yr"]
 
     @classmethod
-    def run_scenario_projection(cls, horizon: str = "+24h", ssp_scenario: str = "SSP2-4.5") -> Dict[str, Any]:
+    def run_scenario_projection(cls, horizon: str = "+24h", ssp_scenario: str = "SSP2-4.5") -> dict[str, Any]:
         """Exécute une projection scénarisée sur l'horizon temporel spécifié."""
         if horizon not in cls.SUPPORTED_HORIZONS:
             horizon = "+24h"

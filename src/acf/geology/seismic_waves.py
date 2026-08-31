@@ -6,7 +6,6 @@ Seismic Waves Hydrodynamics & Elastic Wave Propagation Module (Phase 5)
 """
 
 import math
-from typing import Dict
 
 
 class SeismicWaveEngine:
@@ -43,7 +42,7 @@ class SeismicWaveEngine:
         return math.degrees(math.asin(sin_i2))
 
     @classmethod
-    def travel_time_p_and_s(cls, distance_km: float, vp_km_s: float = 6.0, vs_km_s: float = 3.5) -> Dict[str, float]:
+    def travel_time_p_and_s(cls, distance_km: float, vp_km_s: float = 6.0, vs_km_s: float = 3.5) -> dict[str, float]:
         """Calcul des temps de parcours des ondes P et S et du délai S-P."""
         t_p = distance_km / vp_km_s
         t_s = distance_km / vs_km_s

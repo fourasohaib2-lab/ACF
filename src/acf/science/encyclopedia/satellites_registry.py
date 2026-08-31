@@ -2,11 +2,10 @@
 Satellite Missions, Instruments, Channels & Products Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="eumetsat_mtg_fci_li",
         name="Météosat Troisième Génération (EUMETSAT MTG - FCI & LI)",

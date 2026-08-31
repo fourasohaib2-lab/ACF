@@ -29,23 +29,14 @@ class RadiativeBalanceEquation:
         absorbed solar energy - outgoing radiation
     """
 
-    def absorbed_solar_energy(
-        self,
-        state: RadiativeBalanceState
-    ) -> float:
+    def absorbed_solar_energy(self, state: RadiativeBalanceState) -> float:
         """
         Calculate absorbed solar radiation.
         """
 
-        return (
-            state.solar_input
-            * (1 - state.albedo)
-        )
+        return state.solar_input * (1 - state.albedo)
 
-    def energy_balance(
-        self,
-        state: RadiativeBalanceState
-    ) -> float:
+    def energy_balance(self, state: RadiativeBalanceState) -> float:
         """
         Calculate planetary energy imbalance.
         """
@@ -54,10 +45,7 @@ class RadiativeBalanceEquation:
 
         return absorbed - state.outgoing_longwave
 
-    def climate_state(
-        self,
-        state: RadiativeBalanceState
-    ) -> str:
+    def climate_state(self, state: RadiativeBalanceState) -> str:
         """
         Classify climate equilibrium.
         """

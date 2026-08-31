@@ -6,12 +6,12 @@ Operational Decision Support & Recommendation Engine Module (Phase 6)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class RecommendedAction:
     """Action recommandée par le moteur de support décisionnel."""
+
     action_id: str
     target_sector: str  # Civil Protection, Aviation, Maritime, Power Grid, Agriculture
     priority_level: str  # CRITICAL, HIGH, MEDIUM, LOW
@@ -26,7 +26,7 @@ class DecisionSupportEngine:
     """
 
     @classmethod
-    def generate_recommendations(cls) -> List[RecommendedAction]:
+    def generate_recommendations(cls) -> list[RecommendedAction]:
         """Génère la liste des recommandations opérationnelles prioritaires."""
         return [
             RecommendedAction(

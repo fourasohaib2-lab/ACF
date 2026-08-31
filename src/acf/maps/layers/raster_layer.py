@@ -40,9 +40,4 @@ class RasterLayer:
         self.data = None
 
     def __repr__(self):
-        return (
-            f"RasterLayer("
-            f"name={self.name!r}, "
-            f"visible={self.visible}, "
-            f"opacity={self.opacity})"
-        )
+        return f"RasterLayer(name={self.name!r}, visible={self.visible}, opacity={self.opacity})"

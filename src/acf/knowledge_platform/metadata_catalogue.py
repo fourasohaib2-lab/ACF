@@ -4,7 +4,8 @@ Atmospheric Complexity Framework (ACF)
 WMO, CF, GRIB2 & NetCDF Metadata Catalogue Module
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
+
 from acf.knowledge_platform.parameter_database import PARAMETERS_DB
 
 
@@ -14,7 +15,7 @@ class MetadataCatalogue:
     """
 
     @classmethod
-    def lookup_by_grib2(cls, grib2_code: str) -> Optional[Dict[str, Any]]:
+    def lookup_by_grib2(cls, grib2_code: str) -> dict[str, Any] | None:
         """Retrouve le paramètre ACF correspondant à un code GRIB2 'discipline,category,number'."""
         for param in PARAMETERS_DB.values():
             if param.grib2_identifier == grib2_code:
@@ -22,7 +23,7 @@ class MetadataCatalogue:
         return None
 
     @classmethod
-    def lookup_by_cf_standard_name(cls, cf_name: str) -> Optional[Dict[str, Any]]:
+    def lookup_by_cf_standard_name(cls, cf_name: str) -> dict[str, Any] | None:
         """Retrouve le paramètre ACF correspondant à un nom standard CF."""
         for param in PARAMETERS_DB.values():
             if param.cf_convention_name.lower() == cf_name.lower():
@@ -30,7 +31,7 @@ class MetadataCatalogue:
         return None
 
     @classmethod
-    def export_full_catalogue(cls) -> Dict[str, Any]:
+    def export_full_catalogue(cls) -> dict[str, Any]:
         """Exporte la totalité des métadonnées sous forme de dictionnaire structuré."""
         return {
             "total_parameters_catalogued": len(PARAMETERS_DB),

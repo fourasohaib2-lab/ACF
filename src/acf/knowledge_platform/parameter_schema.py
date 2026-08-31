@@ -6,7 +6,7 @@ Meteorological Parameter Schema (Phase 1)
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -19,7 +19,7 @@ class MeteorologicalParameterSchema:
     official_scientific_name: str
 
     # 2. Noms alternatifs
-    alternative_names: List[str] = field(default_factory=list)
+    alternative_names: list[str] = field(default_factory=list)
 
     # 3. Code OMM (WMO Code)
     wmo_code: str = ""
@@ -61,49 +61,49 @@ class MeteorologicalParameterSchema:
     diagnostic_equations: str = ""
 
     # 16. Formulations empiriques
-    empirical_formulations: List[str] = field(default_factory=list)
+    empirical_formulations: list[str] = field(default_factory=list)
 
     # 17. Approximations numériques
-    numerical_approximations: List[str] = field(default_factory=list)
+    numerical_approximations: list[str] = field(default_factory=list)
 
     # 18. Implémentations dans les modèles (IFS, AROME, GFS, ICON, WRF)
-    model_implementation: List[str] = field(default_factory=list)
+    model_implementation: list[str] = field(default_factory=list)
 
     # 19. Dépendances amont
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
 
     # 20. Variables dérivées en aval
-    derived_variables: List[str] = field(default_factory=list)
+    derived_variables: list[str] = field(default_factory=list)
 
     # 21. Références scientifiques (Peer-reviewed DOI / OMM)
-    scientific_references: List[str] = field(default_factory=list)
+    scientific_references: list[str] = field(default_factory=list)
 
     # 22. Usage opérationnel en centre météo
     operational_usage: str = ""
 
     # 23. Procédures de contrôle qualité (QC)
-    quality_control_procedures: List[str] = field(default_factory=list)
+    quality_control_procedures: list[str] = field(default_factory=list)
 
     # 24. Recommandations de visualisation 2D/3D/4D
     visualization_recommendations: str = ""
 
     # 25. Seuils typiques d'alerte
-    typical_thresholds: Dict[str, str] = field(default_factory=dict)
+    typical_thresholds: dict[str, str] = field(default_factory=dict)
 
     # 26. Applications pour la prévision numérique
-    forecast_applications: List[str] = field(default_factory=list)
+    forecast_applications: list[str] = field(default_factory=list)
 
     # 27. Applications pour les études climatiques
-    climate_applications: List[str] = field(default_factory=list)
+    climate_applications: list[str] = field(default_factory=list)
 
     # 28. Applications pour l'apprentissage automatique (Machine Learning / Surrogate)
-    machine_learning_applications: List[str] = field(default_factory=list)
+    machine_learning_applications: list[str] = field(default_factory=list)
 
     # Clé canonique interne
     key: str = ""
     domain: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convertit le schéma complet en dictionnaire sérialisable."""
         return {
             "key": self.key,

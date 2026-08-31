@@ -1,7 +1,8 @@
 """Spherical spectral solver for planetary circulation and Rossby wave dynamics."""
 
 import numpy as np
-from acf.simulation_engine.numerical_core.earth_grid import EarthGrid, EARTH_RADIUS
+
+from acf.simulation_engine.numerical_core.earth_grid import EARTH_RADIUS, EarthGrid
 
 
 class SpectralSolver:

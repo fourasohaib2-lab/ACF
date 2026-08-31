@@ -6,12 +6,12 @@ Global Geology Database & Internal Earth Structure Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class EarthLayer:
     """Description d'une couche interne de la Terre (modèle PREM)."""
+
     name: str
     depth_top_km: float
     depth_bottom_km: float
@@ -22,10 +22,10 @@ class EarthLayer:
     composition: str
     vp_km_s: float
     vs_km_s: float
-    references: List[str]
+    references: list[str]
 
 
-EARTH_LAYERS_PREM: Dict[str, EarthLayer] = {
+EARTH_LAYERS_PREM: dict[str, EarthLayer] = {
     "continental_crust": EarthLayer(
         name="Continental Crust",
         depth_top_km=0.0,
@@ -111,9 +111,9 @@ class GeologyDatabase:
     """Base de données et registre de la structure interne de la Terre et des couches géologiques."""
 
     @classmethod
-    def get_layer(cls, key: str) -> Optional[EarthLayer]:
+    def get_layer(cls, key: str) -> EarthLayer | None:
         return EARTH_LAYERS_PREM.get(key.lower())
 
     @classmethod
-    def list_layers(cls) -> List[str]:
+    def list_layers(cls) -> list[str]:
         return list(EARTH_LAYERS_PREM.keys())

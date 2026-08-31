@@ -6,22 +6,22 @@ Satellite Infrastructure Database & Spacecraft Hazards Module (Phase 6)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 
 @dataclass
 class SatelliteInfo:
     """Informations de suivi d'un satellite ou constellation orbitale."""
+
     satellite_id: str
     name: str
     orbit_type: str  # e.g., "LEO", "GEO", "MEO"
     altitude_km: float
     inclination_deg: float
     primary_operator: str
-    sensitive_components: List[str]
+    sensitive_components: list[str]
 
 
-SATELLITE_REGISTRY: Dict[str, SatelliteInfo] = {
+SATELLITE_REGISTRY: dict[str, SatelliteInfo] = {
     "iss": SatelliteInfo(
         satellite_id="iss",
         name="International Space Station (ISS)",

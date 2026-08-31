@@ -5,24 +5,24 @@ Operational Wave Models & Spectral Wave Dynamics Module (Phase 2)
 (WaveWatch III, WAM, SWAN, JONSWAP / Pierson-Moskowitz Spectra, Hs, Tp, Cg)
 """
 
-from dataclasses import dataclass
 import math
-from typing import Dict, List
+from dataclasses import dataclass
 
 
 @dataclass
 class WaveModelInfo:
     """Description scientifique d'un modèle numérique de vagues/houle."""
+
     key: str
     name: str
     institution: str
     equation_type: str  # e.g. "Spectral Action Balance Equation"
     spectral_resolution: str
-    strengths: List[str]
-    references: List[str]
+    strengths: list[str]
+    references: list[str]
 
 
-WAVE_MODELS_REGISTRY: Dict[str, WaveModelInfo] = {
+WAVE_MODELS_REGISTRY: dict[str, WaveModelInfo] = {
     "wavewatch_3": WaveModelInfo(
         key="wavewatch_3",
         name="WAVEWATCH III (NOAA NCEP / US Navy)",
@@ -68,11 +68,11 @@ class OperationalWaveEngine:
         return (g * peak_period_s) / (4.0 * math.pi)
 
     @classmethod
-    def jonswap_spectrum_peak_energy(cls, wind_speed_10m: float, fetch_m: float) -> Dict[str, float]:
+    def jonswap_spectrum_peak_energy(cls, wind_speed_10m: float, fetch_m: float) -> dict[str, float]:
         """Calcul du spectre de vagues JONSWAP selon le vent et le fetch."""
         g = 9.80665
-        alpha = 0.076 * ((wind_speed_10m ** 2) / (fetch_m * g)) ** 0.22
-        fp = 3.5 * (g / wind_speed_10m) * ((g * fetch_m) / (wind_speed_10m ** 2)) ** (-0.33)
+        alpha = 0.076 * ((wind_speed_10m**2) / (fetch_m * g)) ** 0.22
+        fp = 3.5 * (g / wind_speed_10m) * ((g * fetch_m) / (wind_speed_10m**2)) ** (-0.33)
         tp = 1.0 / fp if fp > 0 else 10.0
         hs = 0.0016 * math.sqrt(fetch_m) * wind_speed_10m
 

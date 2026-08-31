@@ -6,16 +6,17 @@ AEOS Autonomous Task Scheduler Module (Phase 3)
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
 class AEOSTask:
     """Tâche d'exécution scientifique autonome AEOS."""
+
     task_id: str
     name: str
     priority: int  # 1 (Critical) to 10 (Low)
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     status: str = "PENDING"
     retry_count: int = 0
 
@@ -26,14 +27,14 @@ class TaskScheduler:
     """
 
     def __init__(self):
-        self.task_queue: List[AEOSTask] = []
+        self.task_queue: list[AEOSTask] = []
 
     def submit_task(self, task: AEOSTask) -> None:
         """Soumet une tâche au planificateur."""
         self.task_queue.append(task)
         self.task_queue.sort(key=lambda t: t.priority)
 
-    def execute_pending_tasks(self) -> Dict[str, Any]:
+    def execute_pending_tasks(self) -> dict[str, Any]:
         """Exécute de manière séquentielle ou parallèle les tâches en attente."""
         executed = []
         for task in self.task_queue:

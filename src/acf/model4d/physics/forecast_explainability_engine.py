@@ -19,9 +19,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from typing import Dict
-from typing import List
-
 
 @dataclass(slots=True)
 class ForecastExplainabilityState:
@@ -35,10 +32,9 @@ class ForecastExplainabilityState:
 
     decision: str
 
-    causes: List[str] = field(default_factory=list)
+    causes: list[str] = field(default_factory=list)
 
     recommended_action: str = ""
-
 
 
 class ForecastExplainabilityEngine:
@@ -75,7 +71,6 @@ class ForecastExplainabilityEngine:
         )
 
         if state.causes:
-
             text += " Main scientific causes: "
 
             text += ", ".join(state.causes)
@@ -83,7 +78,6 @@ class ForecastExplainabilityEngine:
             text += "."
 
         return text
-
 
     # ==========================================================
     # Human explanation
@@ -95,27 +89,15 @@ class ForecastExplainabilityEngine:
     ) -> str:
 
         if state.hazard_index >= 90:
-
-            return (
-                "Very dangerous weather conditions are expected."
-            )
+            return "Very dangerous weather conditions are expected."
 
         if state.hazard_index >= 75:
-
-            return (
-                "Hazardous weather conditions are expected."
-            )
+            return "Hazardous weather conditions are expected."
 
         if state.hazard_index >= 50:
+            return "Moderate weather instability is expected."
 
-            return (
-                "Moderate weather instability is expected."
-            )
-
-        return (
-            "No significant hazardous weather is expected."
-        )
-
+        return "No significant hazardous weather is expected."
 
     # ==========================================================
     # Confidence interpretation
@@ -127,26 +109,15 @@ class ForecastExplainabilityEngine:
     ) -> str:
 
         if state.confidence >= 95:
-
-            return (
-                "Forecast confidence is extremely high."
-            )
+            return "Forecast confidence is extremely high."
 
         if state.confidence >= 85:
-
-            return (
-                "Forecast confidence is high."
-            )
+            return "Forecast confidence is high."
 
         if state.confidence >= 70:
+            return "Forecast confidence is moderate."
 
-            return (
-                "Forecast confidence is moderate."
-            )
-
-        return (
-            "Forecast confidence is low."
-        )
+        return "Forecast confidence is low."
 
     # ==========================================================
     # Operational summary
@@ -158,32 +129,19 @@ class ForecastExplainabilityEngine:
     ) -> str:
 
         summary = (
-            f"Decision: {state.decision}\n"
-            f"Hazard Index: {state.hazard_index:.2f}\n"
-            f"Confidence: {state.confidence:.2f}%\n"
+            f"Decision: {state.decision}\nHazard Index: {state.hazard_index:.2f}\nConfidence: {state.confidence:.2f}%\n"
         )
 
         if state.recommended_action:
-
-            summary += (
-                f"Recommended Action: "
-                f"{state.recommended_action}\n"
-            )
+            summary += f"Recommended Action: {state.recommended_action}\n"
 
         if state.causes:
-
-            summary += (
-                "Primary Causes:\n"
-            )
+            summary += "Primary Causes:\n"
 
             for cause in state.causes:
-
-                summary += (
-                    f" - {cause}\n"
-                )
+                summary += f" - {cause}\n"
 
         return summary.strip()
-
 
     # ==========================================================
     # Complete explanation
@@ -192,38 +150,19 @@ class ForecastExplainabilityEngine:
     def full_explanation(
         self,
         state: ForecastExplainabilityState,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
 
         return {
-
-            "decision":
-                state.decision,
-
-            "hazard_index":
-                round(state.hazard_index, 2),
-
-            "confidence":
-                round(state.confidence, 2),
-
-            "scientific":
-                self.scientific_explanation(state),
-
-            "human":
-                self.human_explanation(state),
-
-            "confidence_comment":
-                self.confidence_comment(state),
-
-            "summary":
-                self.operational_summary(state),
-
-            "recommended_action":
-                state.recommended_action,
-
-            "causes":
-                list(state.causes),
+            "decision": state.decision,
+            "hazard_index": round(state.hazard_index, 2),
+            "confidence": round(state.confidence, 2),
+            "scientific": self.scientific_explanation(state),
+            "human": self.human_explanation(state),
+            "confidence_comment": self.confidence_comment(state),
+            "summary": self.operational_summary(state),
+            "recommended_action": state.recommended_action,
+            "causes": list(state.causes),
         }
-
 
     # ==========================================================
     # Export
@@ -236,34 +175,24 @@ class ForecastExplainabilityEngine:
 
         report = []
 
-        report.append(
-            "========== ACF Forecast Explainability =========="
-        )
+        report.append("========== ACF Forecast Explainability ==========")
 
-        report.append(
-            self.operational_summary(state)
-        )
+        report.append(self.operational_summary(state))
 
         report.append("")
 
         report.append("Scientific Explanation")
 
-        report.append(
-            self.scientific_explanation(state)
-        )
+        report.append(self.scientific_explanation(state))
 
         report.append("")
 
         report.append("Human Explanation")
 
-        report.append(
-            self.human_explanation(state)
-        )
+        report.append(self.human_explanation(state))
 
         report.append("")
 
-        report.append(
-            self.confidence_comment(state)
-        )
+        report.append(self.confidence_comment(state))
 
         return "\n".join(report)

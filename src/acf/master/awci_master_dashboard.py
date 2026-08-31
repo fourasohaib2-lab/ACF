@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Master Framework Unified Dashboard Module (Phase 11)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class MasterDashboard:
@@ -13,7 +13,7 @@ class MasterDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Master Framework dans AWCI."""
         return {
             "workspace_name": "ACF MASTER FRAMEWORK UNIFIED CONTROL CENTER",

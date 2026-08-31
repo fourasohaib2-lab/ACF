@@ -1,8 +1,8 @@
 """Simulation state checkpointing and restart manager."""
 
-from typing import Dict, Any, Optional
 import os
 import pickle
+from typing import Any
 
 
 class CheckpointManager:
@@ -12,9 +12,7 @@ class CheckpointManager:
         self.checkpoint_dir = checkpoint_dir
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-    def save_checkpoint(
-        self, state: Dict[str, Any], step: int, filename: Optional[str] = None
-    ) -> str:
+    def save_checkpoint(self, state: dict[str, Any], step: int, filename: str | None = None) -> str:
         """Save full simulation state dictionary to disk checkpoint file.
 
         Args:
@@ -38,7 +36,7 @@ class CheckpointManager:
 
         return filename
 
-    def load_checkpoint(self, filename: str) -> Dict[str, Any]:
+    def load_checkpoint(self, filename: str) -> dict[str, Any]:
         """Load state checkpoint from file.
 
         Args:

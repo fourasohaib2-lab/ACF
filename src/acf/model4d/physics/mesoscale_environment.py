@@ -23,7 +23,6 @@ class MesoscaleEnvironmentPhysics:
         """
         return surface_temperature - upper_temperature
 
-
     @staticmethod
     def pressure_gradient(high_pressure, low_pressure):
         """
@@ -31,14 +30,12 @@ class MesoscaleEnvironmentPhysics:
         """
         return high_pressure - low_pressure
 
-
     @staticmethod
     def moisture_flux(mixing_ratio, wind_speed):
         """
         Simplified moisture transport.
         """
         return mixing_ratio * wind_speed
-
 
     @staticmethod
     def boundary_layer_height(surface_temp, lapse_rate):
@@ -49,14 +46,12 @@ class MesoscaleEnvironmentPhysics:
         """
         return surface_temp / lapse_rate
 
-
     @staticmethod
     def mesoscale_convection_index(cape, moisture):
         """
         Simple convection potential index.
         """
         return cape * moisture
-
 
     @staticmethod
     def convergence(surface_wind, upper_wind):
@@ -65,14 +60,12 @@ class MesoscaleEnvironmentPhysics:
         """
         return surface_wind - upper_wind
 
-
     @staticmethod
     def vertical_velocity(temperature_difference):
         """
         Approximate vertical motion.
         """
         return temperature_difference / 10
-
 
     @staticmethod
     def stability_index(environment_temp, parcel_temp):
@@ -81,7 +74,6 @@ class MesoscaleEnvironmentPhysics:
         """
         return environment_temp - parcel_temp
 
-
     @staticmethod
     def mesoscale_energy(mass, velocity):
         """
@@ -89,8 +81,7 @@ class MesoscaleEnvironmentPhysics:
 
         E = 0.5*m*v²
         """
-        return 0.5 * mass * velocity ** 2
-
+        return 0.5 * mass * velocity**2
 
     @staticmethod
     def turbulence_factor(wind_difference, height_difference):

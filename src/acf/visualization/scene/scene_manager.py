@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Visualization Scene Manager (2D, 3D Globe & 4D Scene Container)
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
 
@@ -17,12 +17,14 @@ class VisualizationScene:
         self.scene_id = str(uuid4())
         self.name = name
         self.mode = mode  # "2D", "3D_Globe", "4D_Time"
-        self.layers: List[Dict[str, Any]] = []
+        self.layers: list[dict[str, Any]] = []
         self.camera_state = {"mode": "Perspective", "zoom": 1.0, "lat": 0.0, "lon": 0.0, "altitude_km": 1000.0}
         self.active_time = "2026-07-30T12:00:00Z"
         self.active_vertical_level = "surface"  # "500hPa", "300hPa", "surface"
 
-    def add_layer(self, layer_id: str, name: str, layer_type: str, data: Any = None, opacity: float = 1.0, visible: bool = True) -> Dict[str, Any]:
+    def add_layer(
+        self, layer_id: str, name: str, layer_type: str, data: Any = None, opacity: float = 1.0, visible: bool = True
+    ) -> dict[str, Any]:
         """Ajoute une couche scientifique à la scène."""
         layer = {
             "id": layer_id,
@@ -52,14 +54,14 @@ class VisualizationScene:
             if layer["id"] == layer_id:
                 layer["opacity"] = max(0.0, min(1.0, opacity))
 
-    def get_layer(self, layer_id: str) -> Optional[Dict[str, Any]]:
+    def get_layer(self, layer_id: str) -> dict[str, Any] | None:
         """Récupère une couche par son ID."""
         for layer in self.layers:
             if layer["id"] == layer_id:
                 return layer
         return None
 
-    def render_summary(self) -> Dict[str, Any]:
+    def render_summary(self) -> dict[str, Any]:
         """Résumé synthétique de l'état de rendu de la scène."""
         return {
             "scene_id": self.scene_id,

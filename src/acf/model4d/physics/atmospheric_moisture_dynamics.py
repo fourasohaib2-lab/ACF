@@ -3,8 +3,8 @@ Atmospheric Moisture Dynamics
 ACF Model4D Physics Module
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 
 @dataclass
@@ -82,10 +82,7 @@ class AtmosphericMoistureDynamics:
 
         tc = state.temperature - 273.15
 
-        gamma = (
-            (17.27 * tc) / (237.7 + tc)
-            + math.log(rh / 100.0)
-        )
+        gamma = (17.27 * tc) / (237.7 + tc) + math.log(rh / 100.0)
 
         td = (237.7 * gamma) / (17.27 - gamma)
 
@@ -95,11 +92,7 @@ class AtmosphericMoistureDynamics:
     # Cloud Formation Rate
     # ---------------------------------------------------------
     def cloud_formation_rate(self, state: MoistureState) -> float:
-        rate = (
-            state.vertical_velocity
-            * state.cloud_water
-            * 0.5
-        )
+        rate = state.vertical_velocity * state.cloud_water * 0.5
 
         return round(rate, 2)
 
@@ -109,11 +102,7 @@ class AtmosphericMoistureDynamics:
     def condensation_rate(self, state: MoistureState) -> float:
         q = self.specific_humidity(state)
 
-        condensation = (
-            q
-            - state.cloud_water
-            + state.evaporation_rate * 0.08
-        )
+        condensation = q - state.cloud_water + state.evaporation_rate * 0.08
 
         # calibration ajustée pour les tests
         condensation *= 1.1075
@@ -127,11 +116,7 @@ class AtmosphericMoistureDynamics:
         if state.cloud_water == 0:
             return 0.0
 
-        efficiency = (
-            state.precipitation_rate
-            / state.cloud_water
-            * 100
-        )
+        efficiency = state.precipitation_rate / state.cloud_water * 100
 
         return round(efficiency, 2)
 
@@ -139,11 +124,7 @@ class AtmosphericMoistureDynamics:
     # Moisture Convergence
     # ---------------------------------------------------------
     def moisture_convergence(self, state: MoistureState) -> float:
-        convergence = (
-            state.vertical_velocity
-            * state.relative_humidity
-            / 100
-        )
+        convergence = state.vertical_velocity * state.relative_humidity / 100
 
         return round(convergence, 2)
 
@@ -151,9 +132,6 @@ class AtmosphericMoistureDynamics:
     # Evaporation Effect
     # ---------------------------------------------------------
     def evaporation_effect(self, state: MoistureState) -> float:
-        effect = (
-            state.evaporation_rate
-            * state.air_density
-        )
+        effect = state.evaporation_rate * state.air_density
 
         return round(effect, 2)

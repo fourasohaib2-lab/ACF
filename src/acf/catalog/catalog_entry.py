@@ -32,7 +32,6 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class CatalogEntry:
-
     parameter_id: str
 
     standard_name: str

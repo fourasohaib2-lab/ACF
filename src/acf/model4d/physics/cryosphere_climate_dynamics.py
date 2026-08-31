@@ -42,11 +42,7 @@ class CryosphereClimateDynamics:
         climate warming feedback
     """
 
-
-    def albedo_effect(
-        self,
-        state: CryosphereState
-    ) -> float:
+    def albedo_effect(self, state: CryosphereState) -> float:
         """
         Calculate cryosphere reflectivity effect.
 
@@ -54,16 +50,9 @@ class CryosphereClimateDynamics:
         stronger albedo cooling effect.
         """
 
-        return round(
-            state.ice_cover + state.snow_cover,
-            6
-        )
+        return round(state.ice_cover + state.snow_cover, 6)
 
-
-    def ice_loss(
-        self,
-        state: CryosphereState
-    ) -> float:
+    def ice_loss(self, state: CryosphereState) -> float:
         """
         Calculate ice loss rate.
 
@@ -72,17 +61,9 @@ class CryosphereClimateDynamics:
             ice_loss = temperature_anomaly × melting_rate
         """
 
-        return round(
-            state.temperature_anomaly
-            * state.melting_rate,
-            6
-        )
+        return round(state.temperature_anomaly * state.melting_rate, 6)
 
-
-    def climate_feedback(
-        self,
-        state: CryosphereState
-    ) -> float:
+    def climate_feedback(self, state: CryosphereState) -> float:
         """
         Calculate cryosphere warming feedback.
 
@@ -101,11 +82,7 @@ class CryosphereClimateDynamics:
 
         return round(feedback, 6)
 
-
-    def cryosphere_state(
-        self,
-        state: CryosphereState
-    ) -> str:
+    def cryosphere_state(self, state: CryosphereState) -> str:
         """
         Determine cryosphere condition.
         """

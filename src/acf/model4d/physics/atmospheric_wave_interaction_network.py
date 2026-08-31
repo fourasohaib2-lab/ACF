@@ -6,7 +6,6 @@ Sprint 8.95
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
@@ -28,41 +27,26 @@ class AtmosphericWaveInteractionNetwork:
         self.name = "Atmospheric Wave Interaction Network"
         self.version = "8.95"
 
-    def compute_energy_exchange(
-        self,
-        state: WaveInteractionState
-    ) -> float:
+    def compute_energy_exchange(self, state: WaveInteractionState) -> float:
         """
         Calcule l'échange énergétique
         entre ondes et dynamique atmosphérique.
         """
 
-        exchange = (
-            state.wave_energy
-            * state.propagation_speed
-            * (1 + state.turbulence_level)
-        )
+        exchange = state.wave_energy * state.propagation_speed * (1 + state.turbulence_level)
 
         return round(exchange, 3)
 
-    def evaluate_atmospheric_response(
-        self,
-        state: WaveInteractionState
-    ) -> Dict[str, float]:
+    def evaluate_atmospheric_response(self, state: WaveInteractionState) -> dict[str, float]:
 
         energy = self.compute_energy_exchange(state)
 
         return {
             "wave_energy_exchange": energy,
-            "convection_response":
-                round(state.convection_index * energy, 3),
-            "jet_response":
-                round(state.jet_intensity * energy, 3),
+            "convection_response": round(state.convection_index * energy, 3),
+            "jet_response": round(state.jet_intensity * energy, 3),
         }
 
-    def simulate(
-        self,
-        state: WaveInteractionState
-    ) -> Dict[str, float]:
+    def simulate(self, state: WaveInteractionState) -> dict[str, float]:
 
         return self.evaluate_atmospheric_response(state)

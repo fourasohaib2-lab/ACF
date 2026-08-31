@@ -43,4 +43,3 @@ class ShapeFileManager:
 
     def __repr__(self):
         return f"ShapeFileManager({len(self._layers)} layers)"
-

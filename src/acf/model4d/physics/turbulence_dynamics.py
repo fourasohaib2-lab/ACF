@@ -13,8 +13,8 @@ Represents atmospheric turbulence processes:
 - mixing length
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 
 @dataclass
@@ -43,11 +43,7 @@ class TurbulenceDynamics:
 
         return 1.5 * velocity_variance
 
-    def turbulence_intensity(
-        self,
-        velocity_variance: float,
-        wind_speed: float
-    ) -> float:
+    def turbulence_intensity(self, velocity_variance: float, wind_speed: float) -> float:
         """
         I = sqrt(variance) / mean wind speed
         """
@@ -56,11 +52,7 @@ class TurbulenceDynamics:
 
         return math.sqrt(velocity_variance) / wind_speed
 
-    def eddy_diffusivity(
-        self,
-        mixing_length: float,
-        velocity_scale: float
-    ) -> float:
+    def eddy_diffusivity(self, mixing_length: float, velocity_scale: float) -> float:
         """
         K = mixing_length * velocity_scale
         """
@@ -72,43 +64,23 @@ class TurbulenceDynamics:
 
         return mixing_length * velocity_scale
 
-    def dissipation_timescale(
-        self,
-        tke: float,
-        dissipation_rate: float
-    ) -> float:
+    def dissipation_timescale(self, tke: float, dissipation_rate: float) -> float:
         """
         Turbulence decay timescale.
         """
         if dissipation_rate <= 0:
-            raise ValueError(
-                "Dissipation rate must be positive"
-            )
+            raise ValueError("Dissipation rate must be positive")
 
         return tke / dissipation_rate
 
-    def analyze(
-        self,
-        state: TurbulenceState
-    ) -> dict:
-        tke = self.turbulent_kinetic_energy(
-            state.velocity_variance
-        )
+    def analyze(self, state: TurbulenceState) -> dict:
+        tke = self.turbulent_kinetic_energy(state.velocity_variance)
 
-        intensity = self.turbulence_intensity(
-            state.velocity_variance,
-            state.wind_speed
-        )
+        intensity = self.turbulence_intensity(state.velocity_variance, state.wind_speed)
 
-        diffusivity = self.eddy_diffusivity(
-            state.mixing_length,
-            math.sqrt(state.velocity_variance)
-        )
+        diffusivity = self.eddy_diffusivity(state.mixing_length, math.sqrt(state.velocity_variance))
 
-        timescale = self.dissipation_timescale(
-            tke,
-            state.dissipation_rate
-        )
+        timescale = self.dissipation_timescale(tke, state.dissipation_rate)
 
         return {
             "module": self.name,
@@ -117,4 +89,3 @@ class TurbulenceDynamics:
             "eddy_diffusivity": diffusivity,
             "timescale": timescale,
         }
-

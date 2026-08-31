@@ -6,12 +6,13 @@ Global Solar Physics, Solar Flares & Coronal Mass Ejections Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class CoronalMassEjectionInfo:
     """Description d'une Éjection de Masse Coronale (CME) émise par le Soleil."""
+
     cme_id: str  # e.g., "CME-2026-08-02-01"
     active_region: str  # e.g., "AR13664"
     speed_km_s: float
@@ -25,7 +26,7 @@ class SolarFlareEngine:
     """Moteur d'analyse des éruptions solaires (Flares) basées sur le flux X bruts des satellites GOES."""
 
     @staticmethod
-    def classify_goes_xray_flare(xray_flux_w_m2: float) -> Dict[str, str]:
+    def classify_goes_xray_flare(xray_flux_w_m2: float) -> dict[str, str]:
         """Classifie les éruptions solaires selon l'échelle GOES (A, B, C, M, X)."""
         if xray_flux_w_m2 >= 1e-4:
             class_letter = f"X{round(xray_flux_w_m2 / 1e-4, 1)}"
@@ -57,7 +58,7 @@ class SolarDatabase:
         return k_factor * (10.0 * num_groups + num_spots)
 
     @classmethod
-    def get_solar_cycle_info(cls, cycle_number: int = 25) -> Dict[str, Any]:
+    def get_solar_cycle_info(cls, cycle_number: int = 25) -> dict[str, Any]:
         """Retourne l'état d'un cycle d'activité solaire (ex: Cycle Solaire 25)."""
         if cycle_number == 25:
             return {

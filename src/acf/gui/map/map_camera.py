@@ -36,14 +36,19 @@ class MapCamera(QObject):
 
     extentChanged = Signal(object)
 
+
 ##################################################
+
 
 def __init__(self, parent=None):
 
     super().__init__(parent)
 
     self.initialize()
+
+
 ##################################################
+
 
 def initialize(self):
     """
@@ -72,7 +77,10 @@ def initialize(self):
     ]
 
     self.initialized = True
+
+
 ##################################################
+
 
 def set_center(
     self,
@@ -97,6 +105,7 @@ def set_center(
 
 ##################################################
 
+
 def center(self):
 
     return (
@@ -106,6 +115,7 @@ def center(self):
 
 
 ##################################################
+
 
 def move(
     self,
@@ -124,6 +134,7 @@ def move(
 
 ##################################################
 
+
 def pan(
     self,
     delta_longitude,
@@ -138,7 +149,9 @@ def pan(
         delta_latitude,
     )
 
+
 ##################################################
+
 
 def zoom(self):
 
@@ -146,6 +159,7 @@ def zoom(self):
 
 
 ##################################################
+
 
 def set_zoom(
     self,
@@ -168,36 +182,35 @@ def set_zoom(
 
     self.zoom_level = value
 
-    self.zoomChanged.emit(
-        self.zoom_level
-    )
+    self.zoomChanged.emit(self.zoom_level)
 
     self.cameraChanged.emit()
 
 
 ##################################################
 
+
 def zoom_in(
     self,
     factor=1.2,
 ):
 
-    self.set_zoom(
-        self.zoom_level * factor
-    )
+    self.set_zoom(self.zoom_level * factor)
 
 
 ##################################################
+
 
 def zoom_out(
     self,
     factor=1.2,
 ):
 
-    self.set_zoom(
-        self.zoom_level / factor
-    )
+    self.set_zoom(self.zoom_level / factor)
+
+
 ##################################################
+
 
 def set_projection(
     self,
@@ -209,19 +222,21 @@ def set_projection(
 
     self.projection_name = projection
 
-    self.projectionChanged.emit(
-        projection
-    )
+    self.projectionChanged.emit(projection)
 
     self.cameraChanged.emit()
 
 
 ##################################################
 
+
 def projection(self):
 
     return self.projection_name
+
+
 ##################################################
+
 
 def set_extent(
     self,
@@ -241,14 +256,13 @@ def set_extent(
         north,
     ]
 
-    self.extentChanged.emit(
-        self.extent
-    )
+    self.extentChanged.emit(self.extent)
 
     self.cameraChanged.emit()
 
 
 ##################################################
+
 
 def fit_world(self):
 
@@ -262,6 +276,7 @@ def fit_world(self):
 
 ##################################################
 
+
 def fit_extent(
     self,
     extent,
@@ -273,7 +288,10 @@ def fit_extent(
         extent[2],
         extent[3],
     )
+
+
 ##################################################
+
 
 def reset(self):
 
@@ -284,21 +302,14 @@ def reset(self):
 
 ##################################################
 
+
 def status(self):
 
     return {
-
         "initialized": self.initialized,
-
         "center": self.center(),
-
         "zoom": self.zoom_level,
-
         "projection": self.projection_name,
-
         "extent": self.extent,
-
         "rotation": self.rotation,
-
     }
-

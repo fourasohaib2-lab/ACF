@@ -3,11 +3,11 @@ Operational Meteorological Observation Quality Control (QC) Algorithms Module
 """
 
 import math
-from typing import List, Tuple
 
 
 class ObservationQCFlags:
     """Codes de contrôle qualité normalisés (WMO WIGOS Quality Flags)."""
+
     PASSED = 0
     SUSPECT = 1
     FAILED = 2
@@ -40,7 +40,9 @@ def temporal_consistency_check(val_t2: float, val_t1: float, delta_t_sec: float,
     return ObservationQCFlags.FAILED
 
 
-def background_check(obs_val: float, model_bg_val: float, obs_error: float, bg_error: float, threshold_sigma: float = 3.0) -> Tuple[int, float]:
+def background_check(
+    obs_val: float, model_bg_val: float, obs_error: float, bg_error: float, threshold_sigma: float = 3.0
+) -> tuple[int, float]:
     """
     Test du premier deviné par rapport au modèle NWP (Background Check / Innovation Check).
     Rejette l'observation si |y - H(x_b)| > threshold_sigma * sqrt(sigma_o^2 + sigma_b^2).
@@ -56,7 +58,7 @@ def background_check(obs_val: float, model_bg_val: float, obs_error: float, bg_e
     return ObservationQCFlags.FAILED, innovation
 
 
-def buddy_check(obs_val: float, neighbor_vals: List[float], max_allowed_diff_std: float = 2.5) -> int:
+def buddy_check(obs_val: float, neighbor_vals: list[float], max_allowed_diff_std: float = 2.5) -> int:
     """Test des voisins proches (Buddy Check / Spatial Consistency)."""
     if not neighbor_vals:
         return ObservationQCFlags.NOT_CHECKED
@@ -66,7 +68,7 @@ def buddy_check(obs_val: float, neighbor_vals: List[float], max_allowed_diff_std
         return ObservationQCFlags.NOT_CHECKED
 
     mean_n = sum(valid_neighbors) / len(valid_neighbors)
-    variance_n = sum((v - mean_n)**2 for v in valid_neighbors) / len(valid_neighbors)
+    variance_n = sum((v - mean_n) ** 2 for v in valid_neighbors) / len(valid_neighbors)
     std_n = math.sqrt(variance_n) if variance_n > 1e-6 else 1.0
 
     if abs(obs_val - mean_n) <= max_allowed_diff_std * std_n:

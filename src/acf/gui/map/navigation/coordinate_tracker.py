@@ -67,9 +67,6 @@ class CoordinateTracker(QObject):
     def status(self):
 
         return {
-
             "longitude": self.longitude,
-
             "latitude": self.latitude,
-
         }

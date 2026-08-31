@@ -33,4 +33,3 @@ class Divergence:
             return "Moderate"
 
         return "Strong"
-

@@ -5,7 +5,7 @@ Knowledge Graph Relation Definitions Module
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -22,7 +22,7 @@ class KnowledgeRelation:
     domain: str = "Physique Atmosphérique"
     reference: str = "WMO Atmospheric Sciences Manual"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convertit la relation en dictionnaire."""
         return {
             "source": self.source,

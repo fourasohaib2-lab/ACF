@@ -2,11 +2,8 @@
 CF Convention Detector
 """
 
-from typing import Dict
-
 
 class CFDetector:
-
     LATITUDE_NAMES = {
         "lat",
         "latitude",
@@ -36,7 +33,7 @@ class CFDetector:
         "altitude",
     }
 
-    def detect(self, dataset) -> Dict:
+    def detect(self, dataset) -> dict:
 
         result = {
             "latitude": None,
@@ -46,44 +43,22 @@ class CFDetector:
         }
 
         for coord in dataset.coords:
-
             attrs = dataset[coord].attrs
 
             axis = attrs.get("axis")
 
             standard = attrs.get("standard_name")
 
-            if coord in self.LATITUDE_NAMES:
+            if coord in self.LATITUDE_NAMES or standard == "latitude" or axis == "Y":
                 result["latitude"] = coord
 
-            elif standard == "latitude":
-                result["latitude"] = coord
-
-            elif axis == "Y":
-                result["latitude"] = coord
-
-            if coord in self.LONGITUDE_NAMES:
+            if coord in self.LONGITUDE_NAMES or standard == "longitude" or axis == "X":
                 result["longitude"] = coord
 
-            elif standard == "longitude":
-                result["longitude"] = coord
-
-            elif axis == "X":
-                result["longitude"] = coord
-
-            if coord in self.TIME_NAMES:
+            if coord in self.TIME_NAMES or standard == "time" or axis == "T":
                 result["time"] = coord
 
-            elif standard == "time":
-                result["time"] = coord
-
-            elif axis == "T":
-                result["time"] = coord
-
-            if coord in self.LEVEL_NAMES:
-                result["level"] = coord
-
-            elif axis == "Z":
+            if coord in self.LEVEL_NAMES or axis == "Z":
                 result["level"] = coord
 
         return result

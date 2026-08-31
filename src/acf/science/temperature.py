@@ -27,8 +27,8 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
-class Temperature:
 
+class Temperature:
     @staticmethod
     def kelvin_to_celsius(value):
 

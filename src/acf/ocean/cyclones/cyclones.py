@@ -6,12 +6,12 @@ Tropical Cyclones, Hurricanes & IBTrACS Best Track Module (Phase 4)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class TropicalCycloneInfo:
     """Description et trajectoire d'un cyclone tropical / ouragan / typhon."""
+
     cyclone_id: str  # e.g., "AL092024"
     name: str  # e.g., "Hélène"
     basin: str  # "North Atlantic", "Western Pacific", "Indian Ocean"
@@ -46,7 +46,7 @@ class HurricaneDatabase:
             return 5
 
     @classmethod
-    def get_active_cyclones(cls) -> List[TropicalCycloneInfo]:
+    def get_active_cyclones(cls) -> list[TropicalCycloneInfo]:
         """Retourne la liste des cyclones tropicaux actifs dans le monde."""
         return [
             TropicalCycloneInfo(

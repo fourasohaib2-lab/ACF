@@ -37,11 +37,7 @@ class AtmosphericMoistureFeedbackDynamics:
         greenhouse amplification
     """
 
-
-    def evaporation_feedback(
-        self,
-        state: MoistureFeedbackState
-    ) -> float:
+    def evaporation_feedback(self, state: MoistureFeedbackState) -> float:
         """
         Calculate evaporation response.
 
@@ -51,34 +47,18 @@ class AtmosphericMoistureFeedbackDynamics:
             temperature anomaly × ocean evaporation
         """
 
-        return round(
-            state.temperature_anomaly
-            * state.ocean_evaporation,
-            6
-        )
+        return round(state.temperature_anomaly * state.ocean_evaporation, 6)
 
-
-    def humidity_amplification(
-        self,
-        state: MoistureFeedbackState
-    ) -> float:
+    def humidity_amplification(self, state: MoistureFeedbackState) -> float:
         """
         Calculate atmospheric humidity amplification.
         """
 
         evaporation = self.evaporation_feedback(state)
 
-        return round(
-            evaporation
-            * state.humidity_level,
-            6
-        )
+        return round(evaporation * state.humidity_level, 6)
 
-
-    def greenhouse_feedback(
-        self,
-        state: MoistureFeedbackState
-    ) -> float:
+    def greenhouse_feedback(self, state: MoistureFeedbackState) -> float:
         """
         Calculate water vapor greenhouse feedback.
 
@@ -92,18 +72,9 @@ class AtmosphericMoistureFeedbackDynamics:
 
         humidity = self.humidity_amplification(state)
 
-        return round(
-            humidity
-            * state.cloud_response
-            * state.greenhouse_effect,
-            6
-        )
+        return round(humidity * state.cloud_response * state.greenhouse_effect, 6)
 
-
-    def moisture_state(
-        self,
-        state: MoistureFeedbackState
-    ) -> str:
+    def moisture_state(self, state: MoistureFeedbackState) -> str:
         """
         Classify atmospheric moisture condition.
         """

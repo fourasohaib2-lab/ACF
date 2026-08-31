@@ -14,7 +14,6 @@ class CloudPrecipitationPhysics:
     Physics of cloud precipitation processes.
     """
 
-
     @staticmethod
     def precipitation_rate(amount, duration):
         """
@@ -29,8 +28,6 @@ class CloudPrecipitationPhysics:
         """
         return amount / duration
 
-
-
     @staticmethod
     def rainfall_volume(area, depth):
         """
@@ -39,8 +36,6 @@ class CloudPrecipitationPhysics:
         V = area × depth
         """
         return area * depth
-
-
 
     @staticmethod
     def terminal_velocity(diameter, density):
@@ -51,12 +46,7 @@ class CloudPrecipitationPhysics:
         diameter * density / 100000
         """
 
-        return round(
-            (diameter * density) / 100000,
-            3
-        )
-
-
+        return round((diameter * density) / 100000, 3)
 
     @staticmethod
     def rain_drop_mass(radius, density=1000):
@@ -73,21 +63,11 @@ class CloudPrecipitationPhysics:
             mass in kg
         """
 
-        volume = (
-            (4 / 3)
-            * math.pi
-            * radius ** 3
-            * 1e-9
-        )
+        volume = (4 / 3) * math.pi * radius**3 * 1e-9
 
         mass = density * volume
 
-        return round(
-            mass,
-            9
-        )
-
-
+        return round(mass, 9)
 
     @staticmethod
     def collision_coalescence(rate, efficiency):
@@ -97,8 +77,6 @@ class CloudPrecipitationPhysics:
 
         return rate * efficiency
 
-
-
     @staticmethod
     def evaporation_rate(surface, humidity):
         """
@@ -107,8 +85,6 @@ class CloudPrecipitationPhysics:
 
         return surface * (1 - humidity)
 
-
-
     @staticmethod
     def snowfall_rate(water_equivalent, ratio):
         """
@@ -116,8 +92,6 @@ class CloudPrecipitationPhysics:
         """
 
         return water_equivalent * ratio
-
-
 
     @staticmethod
     def precipitation_flux(density, velocity):
@@ -129,8 +103,6 @@ class CloudPrecipitationPhysics:
 
         return density * velocity
 
-
-
     @staticmethod
     def latent_heat_release(mass, latent_heat):
         """
@@ -140,8 +112,6 @@ class CloudPrecipitationPhysics:
         """
 
         return mass * latent_heat
-
-
 
     @staticmethod
     def precipitation_efficiency(precipitated, condensed):

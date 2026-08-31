@@ -1,7 +1,7 @@
 """Neural Operator AI Simulation Accelerator."""
 
 from enum import Enum
-from typing import Dict
+
 import numpy as np
 
 
@@ -26,9 +26,7 @@ class NeuralOperatorEngine:
         self.architecture = architecture
         self.acceleration_factor = 1000.0  # 1000x speedup vs traditional NWP
 
-    def predict_next_state(
-        self, state: Dict[str, np.ndarray], dt: float = 3600.0
-    ) -> Dict[str, np.ndarray]:
+    def predict_next_state(self, state: dict[str, np.ndarray], dt: float = 3600.0) -> dict[str, np.ndarray]:
         """Predict state evolution X(t + dt) via neural operator forward pass.
 
         Args:
@@ -50,7 +48,7 @@ class NeuralOperatorEngine:
                 field_fft = np.fft.rfftn(field)
                 # Keep low frequency modes
                 field_fft *= np.exp(-1e-4 * dt)
-                field_next = np.fft.irfftn(field_fft, s=field.shape)
+                field_next = np.fft.irfftn(field_fft, s=field.shape, axes=list(range(field.ndim)))
             else:
                 # GNN/Transformer spatial smoothing proxy
                 field_next = field + 0.001 * np.random.normal(size=field.shape)

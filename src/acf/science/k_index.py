@@ -19,11 +19,7 @@ class KIndex:
         Compute K Index.
         """
 
-        return (
-            (t850 - t500)
-            + td850
-            - (t700 - td700)
-        )
+        return (t850 - t500) + td850 - (t700 - td700)
 
     @staticmethod
     def category(ki: float) -> str:
@@ -44,4 +40,3 @@ class KIndex:
             return "High"
 
         return "Extreme"
-

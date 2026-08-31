@@ -10,7 +10,6 @@ Simulation des effets orographiques :
 - effet foehn
 """
 
-
 import math
 
 
@@ -43,7 +42,6 @@ class MountainPhysics:
 
         return wind_speed * math.sin(slope)
 
-
     @staticmethod
     def adiabatic_cooling(height):
         """
@@ -59,13 +57,8 @@ class MountainPhysics:
 
         return height * MountainPhysics.LAPSE_RATE
 
-
-
     @staticmethod
-    def mountain_temperature(
-        surface_temperature,
-        height
-    ):
+    def mountain_temperature(surface_temperature, height):
         """
         Température à une altitude donnée.
 
@@ -78,18 +71,10 @@ class MountainPhysics:
         if height < 0:
             raise ValueError("Invalid height")
 
-        return (
-            surface_temperature
-            - MountainPhysics.LAPSE_RATE * height
-        )
-
-
+        return surface_temperature - MountainPhysics.LAPSE_RATE * height
 
     @staticmethod
-    def orographic_precipitation(
-        moisture,
-        uplift
-    ):
+    def orographic_precipitation(moisture, uplift):
         """
         Estimation simple précipitation orographique.
 
@@ -105,13 +90,8 @@ class MountainPhysics:
 
         return moisture * uplift
 
-
-
     @staticmethod
-    def foehn_temperature(
-        windward_temperature,
-        descent_height
-    ):
+    def foehn_temperature(windward_temperature, descent_height):
         """
         Réchauffement effet foehn.
 
@@ -119,22 +99,12 @@ class MountainPhysics:
         """
 
         if descent_height < 0:
-            raise ValueError(
-                "Invalid descent height"
-            )
+            raise ValueError("Invalid descent height")
 
-        return (
-            windward_temperature
-            + MountainPhysics.LAPSE_RATE
-            * descent_height
-        )
-
-
+        return windward_temperature + MountainPhysics.LAPSE_RATE * descent_height
 
     @staticmethod
-    def classify_orography(
-        slope
-    ):
+    def classify_orography(slope):
         """
         Classification terrain montagneux.
         """

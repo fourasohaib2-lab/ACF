@@ -32,14 +32,12 @@ class ArcticAtmosphereDynamicsPhysics:
         """
         return surface_temp - upper_temp
 
-
     @staticmethod
     def polar_vortex_strength(wind_speed, pressure_gradient):
         """
         Polar vortex intensity index.
         """
         return wind_speed * pressure_gradient
-
 
     @staticmethod
     def sea_ice_feedback(initial_albedo, final_albedo):
@@ -48,10 +46,8 @@ class ArcticAtmosphereDynamicsPhysics:
         """
         return initial_albedo - final_albedo
 
-
     @staticmethod
-    def arctic_amplification(global_temperature_change,
-                             arctic_temperature_change):
+    def arctic_amplification(global_temperature_change, arctic_temperature_change):
         """
         Arctic amplification ratio.
         """
@@ -60,14 +56,12 @@ class ArcticAtmosphereDynamicsPhysics:
 
         return arctic_temperature_change / global_temperature_change
 
-
     @staticmethod
     def katabatic_wind_speed(height_difference, temperature_difference):
         """
         Simplified katabatic wind estimation.
         """
         return height_difference * temperature_difference
-
 
     @staticmethod
     def polar_boundary_layer(surface_wind, stability_factor):
@@ -76,7 +70,6 @@ class ArcticAtmosphereDynamicsPhysics:
         """
         return surface_wind / stability_factor
 
-
     @staticmethod
     def albedo_feedback(incoming_radiation, albedo):
         """
@@ -84,28 +77,22 @@ class ArcticAtmosphereDynamicsPhysics:
         """
         return incoming_radiation * albedo
 
-
     @staticmethod
-    def jet_stream_shift(polar_temperature_gradient,
-                         midlatitude_gradient):
+    def jet_stream_shift(polar_temperature_gradient, midlatitude_gradient):
         """
         Jet stream displacement index.
         """
         return polar_temperature_gradient - midlatitude_gradient
 
-
     @staticmethod
-    def cold_air_outbreak_index(cold_air_mass,
-                                temperature_anomaly):
+    def cold_air_outbreak_index(cold_air_mass, temperature_anomaly):
         """
         Cold air outbreak intensity.
         """
         return cold_air_mass * temperature_anomaly
 
-
     @staticmethod
-    def arctic_energy_balance(incoming_energy,
-                              outgoing_energy):
+    def arctic_energy_balance(incoming_energy, outgoing_energy):
         """
         Arctic surface energy balance.
         """

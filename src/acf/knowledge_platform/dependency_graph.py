@@ -5,7 +5,8 @@ Parameter & Equation Dependency Graph Module
 (ParameterDependencyGraph building DAG dependencies and derived variable calculations)
 """
 
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.knowledge_platform.parameter_database import GlobalParameterDatabase
 
 
@@ -15,19 +16,19 @@ class ParameterDependencyGraph:
     """
 
     @classmethod
-    def get_dependencies(cls, parameter_key: str) -> List[str]:
+    def get_dependencies(cls, parameter_key: str) -> list[str]:
         """Retourne la liste des paramètres amont indispensables au calcul."""
         param = GlobalParameterDatabase.get(parameter_key)
         return param.dependencies if param else []
 
     @classmethod
-    def get_derived_variables(cls, parameter_key: str) -> List[str]:
+    def get_derived_variables(cls, parameter_key: str) -> list[str]:
         """Retourne la liste des variables aval calculées à partir de ce paramètre."""
         param = GlobalParameterDatabase.get(parameter_key)
         return param.derived_variables if param else []
 
     @classmethod
-    def build_full_causal_tree(cls, target_key: str) -> Dict[str, Any]:
+    def build_full_causal_tree(cls, target_key: str) -> dict[str, Any]:
         """Construit l'arbre complet de dépendance amont d'un paramètre cible."""
         dependencies = cls.get_dependencies(target_key)
         tree = {}

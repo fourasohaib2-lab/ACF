@@ -16,7 +16,6 @@ Author:
     Atmospheric Complexity Framework (ACF)
 """
 
-
 from dataclasses import dataclass
 
 
@@ -46,44 +45,27 @@ class AtmosphericWaveFeedbackDynamics:
         self.name = "Atmospheric Wave Feedback Dynamics"
         self.version = "1.0"
 
-    def calculate_wave_growth(
-        self,
-        state: AtmosphericWaveFeedbackState
-    ) -> float:
+    def calculate_wave_growth(self, state: AtmosphericWaveFeedbackState) -> float:
         """
         Calculate wave amplification due to feedback.
         """
 
-        growth = (
-            state.wave_amplitude
-            * state.feedback_strength
-            * (1 + state.convective_energy * 0.01)
-        )
+        growth = state.wave_amplitude * state.feedback_strength * (1 + state.convective_energy * 0.01)
 
         return round(growth, 4)
 
-    def calculate_feedback_cycle(
-        self,
-        state: AtmosphericWaveFeedbackState
-    ) -> float:
+    def calculate_feedback_cycle(self, state: AtmosphericWaveFeedbackState) -> float:
         """
         Compute atmospheric feedback cycle intensity.
         """
 
-        feedback = (
-            state.wave_amplitude
-            + state.convective_energy * 0.05
-            + state.turbulence_level * 0.1
-        )
+        feedback = state.wave_amplitude + state.convective_energy * 0.05 + state.turbulence_level * 0.1
 
         feedback *= state.feedback_strength
 
         return round(feedback, 4)
 
-    def stability_response(
-        self,
-        state: AtmosphericWaveFeedbackState
-    ) -> str:
+    def stability_response(self, state: AtmosphericWaveFeedbackState) -> str:
         """
         Determine atmospheric stability response.
         """
@@ -96,10 +78,7 @@ class AtmosphericWaveFeedbackDynamics:
 
         return "stable"
 
-    def simulate(
-        self,
-        state: AtmosphericWaveFeedbackState
-    ) -> dict:
+    def simulate(self, state: AtmosphericWaveFeedbackState) -> dict:
         """
         Run complete feedback simulation.
         """

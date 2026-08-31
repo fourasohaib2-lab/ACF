@@ -68,25 +68,16 @@ class BaseLayer(ABC):
         """
         Render the layer.
         """
-        pass
 
     ##################################################
 
     def status(self):
 
         return {
-
             "id": self.id,
-
             "name": self.name,
-
             "visible": self.visible,
-
             "enabled": self.enabled,
-
             "opacity": self.opacity,
-
             "zorder": self.zorder,
-
         }
-

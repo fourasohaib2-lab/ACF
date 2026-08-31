@@ -5,14 +5,16 @@ Multi-Model Layer Comparison & Difference Pipeline Module
 (LayerPipeline comparing Model A minus Model B = Difference Field)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class LayerPipeline:
     """Pipeline de traitement et de calcul de différence entre modèles (IFS - GraphCast)."""
 
     @classmethod
-    def compute_model_difference(cls, model_a: str = "IFS", model_b: str = "GraphCast", variable: str = "t850") -> Dict[str, Any]:
+    def compute_model_difference(
+        cls, model_a: str = "IFS", model_b: str = "GraphCast", variable: str = "t850"
+    ) -> dict[str, Any]:
         """Calcule le champ de différence scalaire et vectoriel entre 2 modèles."""
         return {
             "model_a": model_a,

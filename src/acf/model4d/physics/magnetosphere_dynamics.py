@@ -26,7 +26,7 @@ class MagnetosphereDynamicsPhysics:
         density : densité plasma
         velocity : vitesse vent solaire
         """
-        return density * velocity ** 2
+        return density * velocity**2
 
     @staticmethod
     def magnetic_pressure(field_strength):
@@ -37,7 +37,7 @@ class MagnetosphereDynamicsPhysics:
 
         field_strength : intensité champ magnétique
         """
-        return (field_strength ** 2) / 2
+        return (field_strength**2) / 2
 
     @staticmethod
     def magnetopause_distance(solar_pressure):
@@ -47,7 +47,7 @@ class MagnetosphereDynamicsPhysics:
         Plus la pression solaire augmente,
         plus la magnétopause se rapproche.
         """
-        return 100 / (solar_pressure ** 0.5)
+        return 100 / (solar_pressure**0.5)
 
     @staticmethod
     def geomagnetic_activity(index):

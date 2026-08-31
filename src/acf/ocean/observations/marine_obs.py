@@ -6,19 +6,20 @@ Global Marine Observations Engine Module (Phase 6)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
 class ARGOFloatProfile:
     """Profil vertical mesuré par un flotteur autonome ARGO (jusqu'à 2000 m de profondeur)."""
+
     float_wmo_id: str
     latitude: float
     longitude: float
     timestamp_utc: str
-    depths_m: List[float]
-    temperatures_c: List[float]
-    salinities_psu: List[float]
+    depths_m: list[float]
+    temperatures_c: list[float]
+    salinities_psu: list[float]
 
 
 class MarineObservationEngine:
@@ -42,7 +43,7 @@ class MarineObservationEngine:
         )
 
     @classmethod
-    def decode_buoy_report(cls, buoy_id: str = "41001") -> Dict[str, Any]:
+    def decode_buoy_report(cls, buoy_id: str = "41001") -> dict[str, Any]:
         """Décode un message d'observation de bouée d'ancrage NOAA NDBC / WMO."""
         return {
             "buoy_id": buoy_id,

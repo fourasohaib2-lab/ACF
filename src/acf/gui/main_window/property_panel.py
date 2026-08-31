@@ -9,11 +9,11 @@ Displays the properties of the selected layer.
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QLabel,
     QFormLayout,
-    QVBoxLayout,
     QFrame,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -82,7 +82,6 @@ class PropertyPanel(QWidget):
     def update_properties(self, layer):
 
         if layer is None:
-
             self.layer_name.setText("--")
 
             self.layer_type.setText("--")
@@ -100,4 +99,3 @@ class PropertyPanel(QWidget):
         self.layer_visible.setText(str(layer.visible))
 
         self.layer_opacity.setText(f"{layer.opacity}%")
-

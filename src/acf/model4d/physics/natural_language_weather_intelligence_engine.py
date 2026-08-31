@@ -71,8 +71,6 @@ class NaturalLanguageWeatherIntelligenceEngine:
 
         return "LOW"
 
-
-
     def confidence_level(
         self,
         state: NaturalLanguageWeatherState,
@@ -89,8 +87,6 @@ class NaturalLanguageWeatherIntelligenceEngine:
 
         return "LOW"
 
-
-
     def model_interpretation(
         self,
         state: NaturalLanguageWeatherState,
@@ -100,23 +96,12 @@ class NaturalLanguageWeatherIntelligenceEngine:
         """
 
         if state.models_agreement >= 80:
-            return (
-                "Les modèles numériques présentent "
-                "une forte convergence."
-            )
+            return "Les modèles numériques présentent une forte convergence."
 
         if state.models_agreement >= 50:
-            return (
-                "Les modèles montrent un scénario "
-                "globalement cohérent avec quelques incertitudes."
-            )
+            return "Les modèles montrent un scénario globalement cohérent avec quelques incertitudes."
 
-        return (
-            "Les modèles divergent fortement, "
-            "la prévision reste incertaine."
-        )
-
-
+        return "Les modèles divergent fortement, la prévision reste incertaine."
 
     def generate_weather_explanation(
         self,
@@ -141,8 +126,6 @@ class NaturalLanguageWeatherIntelligenceEngine:
             f"Le signal précipitation est {state.precipitation_signal}."
         )
 
-
-
     def bulletin_summary(
         self,
         state: NaturalLanguageWeatherState,
@@ -155,8 +138,6 @@ class NaturalLanguageWeatherIntelligenceEngine:
             "region": state.region,
             "hazard_level": self.hazard_level(state),
             "confidence_level": self.confidence_level(state),
-            "model_interpretation":
-                self.model_interpretation(state),
-            "explanation":
-                self.generate_weather_explanation(state),
+            "model_interpretation": self.model_interpretation(state),
+            "explanation": self.generate_weather_explanation(state),
         }

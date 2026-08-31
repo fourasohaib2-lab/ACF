@@ -6,24 +6,24 @@ Global Hydrological Numerical Models Registry Module (Phase 3)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class HydrologicalModelInfo:
     """Description scientifique d'un modèle numérique hydrologique / hydraulique."""
+
     key: str
     name: str
     institution: str
     physics_type: str  # e.g., "Distributed Hydrological & Channel Routing Engine"
     governing_equations: str
     typical_resolution: str
-    strengths: List[str]
-    limitations: List[str]
-    references: List[str]
+    strengths: list[str]
+    limitations: list[str]
+    references: list[str]
 
 
-HYDROLOGICAL_MODELS_REGISTRY: Dict[str, HydrologicalModelInfo] = {
+HYDROLOGICAL_MODELS_REGISTRY: dict[str, HydrologicalModelInfo] = {
     "lisflood": HydrologicalModelInfo(
         key="lisflood",
         name="LISFLOOD (ECMWF / Copernicus EFAS & GloFAS)",
@@ -42,7 +42,9 @@ HYDROLOGICAL_MODELS_REGISTRY: Dict[str, HydrologicalModelInfo] = {
         governing_equations="SCS Runoff / Green-Ampt + Hydrogramme Unitaire & Muskingum / Kinematic Wave",
         physics_type="Lumped & Semi-Distributed Watershed Modeling System",
         typical_resolution="Échelle du Bassin Versant / Sous-bassins",
-        strengths=["Standard mondial pour l'ingénierie hydraulique, les barrages et l'aménagement des bassins versants"],
+        strengths=[
+            "Standard mondial pour l'ingénierie hydraulique, les barrages et l'aménagement des bassins versants"
+        ],
         limitations=["Nécessite la délimitation préalable précise des sous-bassins"],
         references=["USACE (2021) HEC-HMS Technical Reference Manual"],
     ),
@@ -75,9 +77,9 @@ class HydrologicalModelEngine:
     """Moteur de consultation des modèles numériques hydrologiques."""
 
     @classmethod
-    def get_model(cls, key: str) -> Optional[HydrologicalModelInfo]:
+    def get_model(cls, key: str) -> HydrologicalModelInfo | None:
         return HYDROLOGICAL_MODELS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls) -> list[str]:
         return list(HYDROLOGICAL_MODELS_REGISTRY.keys())

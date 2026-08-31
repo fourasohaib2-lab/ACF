@@ -37,11 +37,7 @@ class CloudMicrophysicsClimateDynamics:
         radiative feedback
     """
 
-
-    def condensation(
-        self,
-        state: CloudMicrophysicsState
-    ) -> float:
+    def condensation(self, state: CloudMicrophysicsState) -> float:
         """
         Calculate condensation production.
 
@@ -51,34 +47,18 @@ class CloudMicrophysicsClimateDynamics:
             humidity × condensation_rate
         """
 
-        return round(
-            state.humidity
-            * state.condensation_rate,
-            6
-        )
+        return round(state.humidity * state.condensation_rate, 6)
 
-
-    def cloud_formation(
-        self,
-        state: CloudMicrophysicsState
-    ) -> float:
+    def cloud_formation(self, state: CloudMicrophysicsState) -> float:
         """
         Calculate cloud formation intensity.
         """
 
         condensation = self.condensation(state)
 
-        return round(
-            condensation
-            * state.cloud_fraction,
-            6
-        )
+        return round(condensation * state.cloud_fraction, 6)
 
-
-    def radiative_feedback(
-        self,
-        state: CloudMicrophysicsState
-    ) -> float:
+    def radiative_feedback(self, state: CloudMicrophysicsState) -> float:
         """
         Calculate cloud radiative forcing.
 
@@ -90,17 +70,9 @@ class CloudMicrophysicsClimateDynamics:
 
         clouds = self.cloud_formation(state)
 
-        return round(
-            clouds
-            * state.radiative_effect,
-            6
-        )
+        return round(clouds * state.radiative_effect, 6)
 
-
-    def cloud_state(
-        self,
-        state: CloudMicrophysicsState
-    ) -> str:
+    def cloud_state(self, state: CloudMicrophysicsState) -> str:
         """
         Classify cloud activity.
         """

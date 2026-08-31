@@ -1,29 +1,29 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-MODEL4D -   Init  
-
-Purpose:
---------
-4D spatio-temporal grid mechanics, field representations, differential operators, and physical parameterizations.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the model4d subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.model4d module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+MODEL4D - Interpolation Package
+===============================
 """
+
+from __future__ import annotations
+
+from acf.model4d.interpolation.bilinear import BilinearInterpolation
+from acf.model4d.interpolation.cubic import CubicInterpolation
+from acf.model4d.interpolation.interpolation_engine import InterpolationEngine
+from acf.model4d.interpolation.linear import LinearInterpolation
+from acf.model4d.interpolation.spline import SplineInterpolation
+from acf.model4d.interpolation.temporal import TemporalInterpolation
+from acf.model4d.interpolation.trilinear import TrilinearInterpolation
+from acf.model4d.interpolation.vertical import VerticalInterpolation
+
+__all__ = [
+    "BilinearInterpolation",
+    "CubicInterpolation",
+    "InterpolationEngine",
+    "LinearInterpolation",
+    "SplineInterpolation",
+    "TemporalInterpolation",
+    "TrilinearInterpolation",
+    "VerticalInterpolation",
+]
 

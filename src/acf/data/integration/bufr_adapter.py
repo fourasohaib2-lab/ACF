@@ -10,7 +10,6 @@ from acf.data.dataset import Dataset
 
 
 class BUFRAdapter:
-
     supported_extensions = [
         ".bufr",
         ".buf",

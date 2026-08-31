@@ -1,6 +1,5 @@
 """Double-moment bulk microphysics parameterization engine."""
 
-from typing import Dict, Tuple
 import numpy as np
 
 
@@ -27,7 +26,7 @@ class MicrophysicsEngine:
         self.latent_heat_vap = 2.501e6  # J/kg
         self.latent_heat_fusion = 3.34e5  # J/kg
 
-    def initialize_hydrometeors(self, shape: Tuple[int, ...]) -> Dict[str, np.ndarray]:
+    def initialize_hydrometeors(self, shape: tuple[int, ...]) -> dict[str, np.ndarray]:
         """Initialize mixing ratio tensors (kg/kg) and number concentrations (#/m^3)."""
         return {
             "qc": np.zeros(shape, dtype=np.float64),  # Cloud water
@@ -45,8 +44,8 @@ class MicrophysicsEngine:
         }
 
     def compute_water_content(
-        self, state_hydros: Dict[str, np.ndarray], air_density: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, state_hydros: dict[str, np.ndarray], air_density: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Compute Liquid Water Content (LWC) and Ice Water Content (IWC) in g/m^3.
 
         Args:
@@ -59,21 +58,17 @@ class MicrophysicsEngine:
         # LWC = rho_air * (qc + qr) * 1000
         lwc = air_density * (state_hydros["qc"] + state_hydros["qr"]) * 1000.0
         # IWC = rho_air * (qi + qs + qg + qh) * 1000
-        iwc = (
-            air_density
-            * (state_hydros["qi"] + state_hydros["qs"] + state_hydros["qg"] + state_hydros["qh"])
-            * 1000.0
-        )
+        iwc = air_density * (state_hydros["qi"] + state_hydros["qs"] + state_hydros["qg"] + state_hydros["qh"]) * 1000.0
         return lwc, iwc
 
     def step(
         self,
-        hydros: Dict[str, np.ndarray],
+        hydros: dict[str, np.ndarray],
         temp: np.ndarray,
         q_vap: np.ndarray,
         air_density: np.ndarray,
         dt: float = 60.0,
-    ) -> Tuple[Dict[str, np.ndarray], np.ndarray]:
+    ) -> tuple[dict[str, np.ndarray], np.ndarray]:
         """Advance microphysical phase changes over time step dt.
 
         Args:

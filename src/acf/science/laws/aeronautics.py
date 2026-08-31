@@ -3,6 +3,7 @@ Aeronautical Meteorology & Aerodynamics Laws
 """
 
 import math
+
 from acf.science.laws.base_law import AtmosphericLaw
 
 AERONAUTICAL_LAWS = [
@@ -19,7 +20,10 @@ AERONAUTICAL_LAWS = [
         },
         units={"T": "K", "T0": "K", "L": "K/m", "z": "m"},
         description="Atmosphère normalisée par l’OACI (ICAO Standard Atmosphere Doc 7488) pour le calage altimétrique et la navigation aérienne.",
-        references=["ICAO Doc 7488/3 - Manual of the ICAO Standard Atmosphere", "WMO Aeronautical Meteorology Standards"],
+        references=[
+            "ICAO Doc 7488/3 - Manual of the ICAO Standard Atmosphere",
+            "WMO Aeronautical Meteorology Standards",
+        ],
         limitations=["Valable dans la troposphère jusqu'à la tropopause standard (11 000 m)."],
         compute_func=lambda altitude_m, T0=288.15, lapse_rate=0.0065: T0 - lapse_rate * altitude_m,
     ),
@@ -112,7 +116,7 @@ AERONAUTICAL_LAWS = [
         description="Force aérodynamique perpendiculaire au vecteur vitesse incidente générée par l'aile en vol.",
         references=["ICAO Flight Performance Manual", "Anderson (2017)"],
         limitations=["Nécessite la connaissance expérimentale ou numérique du coefficient CL."],
-        compute_func=lambda density, velocity, surface_area, CL: 0.5 * density * (velocity ** 2) * surface_area * CL,
+        compute_func=lambda density, velocity, surface_area, CL: 0.5 * density * (velocity**2) * surface_area * CL,
     ),
     AtmosphericLaw(
         key="aerodynamic_drag",
@@ -130,6 +134,6 @@ AERONAUTICAL_LAWS = [
         description="Force aérodynamique opposée au mouvement de l'aéronef dans l'air.",
         references=["ICAO Performance & Fuel Planning Manual", "Anderson (2017)"],
         limitations=["Dépend fortement de la configuration géométrique de l'appareil."],
-        compute_func=lambda density, velocity, surface_area, CD: 0.5 * density * (velocity ** 2) * surface_area * CD,
+        compute_func=lambda density, velocity, surface_area, CD: 0.5 * density * (velocity**2) * surface_area * CD,
     ),
 ]

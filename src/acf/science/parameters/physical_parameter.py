@@ -5,7 +5,7 @@ Physical Parameter Representation & Comprehensive Metadata Model
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -21,35 +21,35 @@ class PhysicalParameter:
     unit: str
     description: str
     physical_meaning: str
-    aliases: List[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
     abbreviation: str = ""
     category: str = ""
-    alternative_units: List[str] = field(default_factory=list)
+    alternative_units: list[str] = field(default_factory=list)
     dimensions: str = ""
     governing_equation: str = ""
     latex_equation: str = ""
-    variables: Dict[str, str] = field(default_factory=dict)
-    assumptions: List[str] = field(default_factory=list)
-    applicability: List[str] = field(default_factory=list)
-    limitations: List[str] = field(default_factory=list)
+    variables: dict[str, str] = field(default_factory=dict)
+    assumptions: list[str] = field(default_factory=list)
+    applicability: list[str] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
     valid_range: str = ""
     cf_standard_name: str = ""
     grib2_code: str = ""
     bufr_code: str = ""
     netcdf_name: str = ""
-    observation_systems: List[str] = field(default_factory=list)
-    numerical_models: List[str] = field(default_factory=list)
-    satellite_products: List[str] = field(default_factory=list)
-    radar_products: List[str] = field(default_factory=list)
-    aviation_applications: List[str] = field(default_factory=list)
-    climatology_applications: List[str] = field(default_factory=list)
-    references: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    derived_parameters: List[str] = field(default_factory=list)
-    related_laws: List[str] = field(default_factory=list)
-    calculation_methods: List[str] = field(default_factory=list)
+    observation_systems: list[str] = field(default_factory=list)
+    numerical_models: list[str] = field(default_factory=list)
+    satellite_products: list[str] = field(default_factory=list)
+    radar_products: list[str] = field(default_factory=list)
+    aviation_applications: list[str] = field(default_factory=list)
+    climatology_applications: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    derived_parameters: list[str] = field(default_factory=list)
+    related_laws: list[str] = field(default_factory=list)
+    calculation_methods: list[str] = field(default_factory=list)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """
         Retourne un dictionnaire résumant l'ensemble des propriétés et métadonnées du paramètre.
         """

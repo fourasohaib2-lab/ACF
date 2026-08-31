@@ -27,7 +27,10 @@ ENTRIES = [
         subdomain="Modèles à haute résolution convectivement explicites",
         equation="Non-hydrostatic Euler equations at 1.3 km resolution",
         latex_equation=r"\Delta x = 1.3 \text{ km}, \quad \Delta t = 45 \text{ s}",
-        variables={"Grille": "1.3 km sur la France et domaines Outre-Mer", "Physique": "ICE3 microphysics, EDMF turbulence"},
+        variables={
+            "Grille": "1.3 km sur la France et domaines Outre-Mer",
+            "Physique": "ICE3 microphysics, EDMF turbulence",
+        },
         units={"Grille": "km"},
         description="Modèle de prévision à très haute résolution de Météo-France résolvant explicitement la convection profonde et les orages.",
         application_conditions=["Prévision à courte échéance (0-48h) des phénomènes dangereux"],

@@ -20,7 +20,6 @@ class EnsembleForecastPhysics:
     Physics utilities for ensemble prediction systems.
     """
 
-
     @staticmethod
     def ensemble_mean(values):
         """
@@ -40,8 +39,6 @@ class EnsembleForecastPhysics:
 
         return sum(values) / len(values)
 
-
-
     @staticmethod
     def ensemble_spread(values):
         """
@@ -51,22 +48,13 @@ class EnsembleForecastPhysics:
         """
 
         if len(values) < 2:
-            raise ValueError(
-                "at least two members required"
-            )
+            raise ValueError("at least two members required")
 
-        mean = EnsembleForecastPhysics.ensemble_mean(
-            values
-        )
+        mean = EnsembleForecastPhysics.ensemble_mean(values)
 
-        variance = sum(
-            (x - mean) ** 2
-            for x in values
-        ) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
 
         return math.sqrt(variance)
-
-
 
     @staticmethod
     def forecast_uncertainty(values):
@@ -80,28 +68,17 @@ class EnsembleForecastPhysics:
         for meteorological confidence indexing.
         """
 
-        mean = EnsembleForecastPhysics.ensemble_mean(
-            values
-        )
+        mean = EnsembleForecastPhysics.ensemble_mean(values)
 
         if mean == 0:
-            raise ValueError(
-                "mean cannot be zero"
-            )
+            raise ValueError("mean cannot be zero")
 
-        spread = EnsembleForecastPhysics.ensemble_spread(
-            values
-        )
+        spread = EnsembleForecastPhysics.ensemble_spread(values)
 
         uncertainty = spread / abs(mean)
 
         # ACF uncertainty normalization
-        return round(
-            uncertainty + 0.005,
-            2
-        )
-
-
+        return round(uncertainty + 0.005, 2)
 
     @staticmethod
     def perturb_state(value, amplitude=0.01):
@@ -118,18 +95,11 @@ class EnsembleForecastPhysics:
         """
 
         if amplitude < 0:
-            raise ValueError(
-                "amplitude must be positive"
-            )
+            raise ValueError("amplitude must be positive")
 
-        perturbation = random.uniform(
-            -amplitude,
-            amplitude
-        )
+        perturbation = random.uniform(-amplitude, amplitude)
 
         return value + perturbation
-
-
 
     @staticmethod
     def classify_confidence(spread):

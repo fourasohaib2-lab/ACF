@@ -27,25 +27,14 @@ class ClimateSensitivityParameter:
         temperature response = forcing × feedback × equilibrium factor
     """
 
-    def calculate_sensitivity(
-        self,
-        state: ClimateSensitivityState
-    ) -> float:
+    def calculate_sensitivity(self, state: ClimateSensitivityState) -> float:
         """
         Calculate climate sensitivity response.
         """
 
-        return (
-            state.forcing_wm2
-            * state.feedback_parameter
-            * state.equilibrium_factor
-        )
+        return state.forcing_wm2 * state.feedback_parameter * state.equilibrium_factor
 
-    def temperature_response(
-        self,
-        forcing: float,
-        sensitivity: float
-    ) -> float:
+    def temperature_response(self, forcing: float, sensitivity: float) -> float:
         """
         Estimate temperature anomaly.
         """

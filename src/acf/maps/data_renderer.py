@@ -8,8 +8,8 @@ Connexion entre:
 - CartopyRenderer
 """
 
-from acf.maps.renderers.scientific_renderer import ScientificRenderer
 from acf.maps.renderers.cartopy_renderer import CartopyRenderer
+from acf.maps.renderers.scientific_renderer import ScientificRenderer
 
 
 class DataRenderer:
@@ -53,7 +53,5 @@ class DataRenderer:
         return {
             "scientific": self.scientific.status(),
             "cartopy": self.cartopy.status(),
-            "current_layer": (
-                self.current_layer.summary() if hasattr(self.current_layer, "summary") else None
-            ),
+            "current_layer": (self.current_layer.summary() if hasattr(self.current_layer, "summary") else None),
         }

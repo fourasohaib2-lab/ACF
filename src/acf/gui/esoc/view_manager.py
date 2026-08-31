@@ -1,37 +1,14 @@
 """Central Earth View & Projections Manager supporting Phase 3 & Phase 4 Scientific Layers (ACF-UI-013)."""
 
-from typing import List
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
     QHBoxLayout,
     QLabel,
-    QComboBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt
 
-
-class CentralMapCanvasPlaceholder(QWidget):
-    """Central interactive Earth Map Canvas display placeholder."""
-
-    def __init__(self, title: str = "GLOBAL EARTH INTERACTIVE MAP") -> None:
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.label = QLabel(f"🌍 {title}")
-        self.label.setStyleSheet(
-            "font-size: 16px; font-weight: bold; color: #81D4FA; border: 2px dashed #0288D1; padding: 20px;"
-        )
-        layout.addWidget(self.label)
-
-        self.layer_info = QLabel("Active Layers: Satellite RGB | Radar Mosaic | 2m Temp | Wind Vectors | MSLP")
-        self.layer_info.setStyleSheet("color: #B0BEC5; font-size: 11px;")
-        layout.addWidget(self.layer_info)
-
-    def set_active_layers(self, layers: List[str]) -> None:
-        """Update layer info display text."""
-        self.layer_info.setText("Active Layers: " + " | ".join(layers))
+from acf.gui.map.map_canvas import MapCanvas
 
 
 class ViewManager(QWidget):
@@ -102,10 +79,10 @@ class ViewManager(QWidget):
 
         layout.addWidget(ctrl_bar)
 
-        self.map_canvas = CentralMapCanvasPlaceholder("ACF UNIFIED EARTH SYSTEM MAP CANVAS")
+        self.map_canvas = MapCanvas()
         layout.addWidget(self.map_canvas)
 
-        self.active_layers: List[str] = [
+        self.active_layers: list[str] = [
             "Satellite RGB",
             "Radar Mosaic",
             "2m Temp",
@@ -116,6 +93,7 @@ class ViewManager(QWidget):
 
     def _on_view_mode_changed(self, mode_name: str) -> None:
         self.current_view_mode = mode_name
+        self.map_canvas.set_projection(mode_name)
         self.map_canvas.label.setText(f"🌍 ACF MAP CANVAS [{mode_name.upper()}]")
 
     def _on_quick_layer_changed(self, layer_name: str) -> None:
@@ -123,12 +101,12 @@ class ViewManager(QWidget):
             self.active_layers.append(layer_name)
             self.map_canvas.set_active_layers(self.active_layers)
 
-    def set_layers(self, layers: List[str]) -> None:
+    def set_layers(self, layers: list[str]) -> None:
         """Synchronize active map layer list."""
         self.active_layers = layers
         self.map_canvas.set_active_layers(layers)
 
-    def toggle_layer(self, layer_name: str) -> List[str]:
+    def toggle_layer(self, layer_name: str) -> list[str]:
         """Toggle inclusion of layer_name in active_layers list."""
         if layer_name in self.active_layers:
             self.active_layers.remove(layer_name)

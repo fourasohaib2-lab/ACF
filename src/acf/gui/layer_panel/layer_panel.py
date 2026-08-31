@@ -8,14 +8,13 @@ Professional layer management panel.
 """
 
 from PySide6.QtCore import Qt
-
 from PySide6.QtWidgets import (
-    QWidget,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QSlider,
     QVBoxLayout,
-    QHBoxLayout,
+    QWidget,
 )
 
 from .layer_tree import LayerTree
@@ -46,7 +45,7 @@ class LayerPanel(QWidget):
 
         title = QLabel("Layers")
 
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         title.setStyleSheet(
             """
@@ -95,7 +94,7 @@ class LayerPanel(QWidget):
 
         layout.addWidget(QLabel("Opacity"))
 
-        self.opacity_slider = QSlider(Qt.Horizontal)
+        self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
 
         self.opacity_slider.setRange(0, 100)
 
@@ -110,4 +109,3 @@ class LayerPanel(QWidget):
     def tree(self):
 
         return self.layer_tree
-

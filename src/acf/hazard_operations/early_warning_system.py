@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Global Early Warning System (EWS) Module (Phase 5)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EarlyWarningSystem:
@@ -13,7 +13,7 @@ class EarlyWarningSystem:
     WARNING_LEVELS = ["GREEN", "YELLOW", "ORANGE", "RED"]
 
     @classmethod
-    def get_warning_level(cls, risk_score: float = 0.85) -> Dict[str, Any]:
+    def get_warning_level(cls, risk_score: float = 0.85) -> dict[str, Any]:
         """Détermine le niveau d'alerte universel (GREEN, YELLOW, ORANGE, RED)."""
         if risk_score >= 0.8:
             level = "RED (Emergency)"

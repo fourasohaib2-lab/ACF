@@ -37,10 +37,7 @@ class CloudRadiativeInteractionPhysics:
         """
         Calcul du rayonnement solaire absorbé.
         """
-        return round(
-            incoming_radiation * (1 - cloud_albedo),
-            10
-        )
+        return round(incoming_radiation * (1 - cloud_albedo), 10)
 
     @staticmethod
     def infrared_trapping(emitted_radiation, cloud_emissivity):
@@ -50,51 +47,29 @@ class CloudRadiativeInteractionPhysics:
         Plus l'émissivité est élevée,
         plus le rayonnement IR est retenu.
         """
-        return round(
-            emitted_radiation * cloud_emissivity,
-            10
-        )
+        return round(emitted_radiation * cloud_emissivity, 10)
 
     @staticmethod
-    def cloud_radiative_forcing(
-        shortwave_effect,
-        longwave_effect
-    ):
+    def cloud_radiative_forcing(shortwave_effect, longwave_effect):
         """
         Forçage radiatif total des nuages.
 
         CRF = effet courte longueur d'onde
               + effet longue longueur d'onde
         """
-        return round(
-            shortwave_effect + longwave_effect,
-            10
-        )
+        return round(shortwave_effect + longwave_effect, 10)
 
     @staticmethod
-    def cloud_temperature_response(
-        surface_temperature,
-        cloud_cover_fraction
-    ):
+    def cloud_temperature_response(surface_temperature, cloud_cover_fraction):
         """
         Influence de la couverture nuageuse
         sur la température apparente.
         """
-        return round(
-            surface_temperature *
-            (1 - 0.1 * cloud_cover_fraction),
-            10
-        )
+        return round(surface_temperature * (1 - 0.1 * cloud_cover_fraction), 10)
 
     @staticmethod
-    def outgoing_longwave_balance(
-        emitted_energy,
-        trapped_energy
-    ):
+    def outgoing_longwave_balance(emitted_energy, trapped_energy):
         """
         Bilan énergétique infrarouge sortant.
         """
-        return round(
-            emitted_energy - trapped_energy,
-            10
-        )
+        return round(emitted_energy - trapped_energy, 10)

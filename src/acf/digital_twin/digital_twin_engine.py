@@ -6,13 +6,15 @@ Digital Twin Core Engine Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
+
 from acf.digital_twin.planet_state import GlobalEarthState, PlanetState
 
 
 @dataclass
 class SimulationState:
     """État d'avancement de la simulation du Digital Twin."""
+
     simulation_id: str
     target_lead_time: str  # e.g., "+24h", "+100 years"
     is_running: bool
@@ -32,7 +34,7 @@ class DigitalTwinEngine:
         """Retourne l'état physique synchronisé unique de la Terre."""
         return self.planet_state_mgr.current_state
 
-    def run_digital_twin_cycle(self, lead_time_horizon: str = "+24h") -> Dict[str, Any]:
+    def run_digital_twin_cycle(self, lead_time_horizon: str = "+24h") -> dict[str, Any]:
         """Exécute un cycle complet d'assimilation et de prévision couplée du Digital Twin."""
         state = self.planet_state_mgr.get_planet_status()
         sim_state = SimulationState(

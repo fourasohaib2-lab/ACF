@@ -1,7 +1,7 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-MODELS -   Init  
+MODELS -   Init
 
 Purpose:
 --------
@@ -26,4 +26,3 @@ Scientific Context:
 Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
-

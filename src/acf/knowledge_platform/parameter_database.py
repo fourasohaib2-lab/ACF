@@ -5,11 +5,9 @@ Global Meteorological Parameter Database Module
 (GlobalParameterDatabase containing exhaustive 28-field schemas for all meteorological domains)
 """
 
-from typing import Dict, List, Optional
 from acf.knowledge_platform.parameter_schema import MeteorologicalParameterSchema
 
-
-PARAMETERS_DB: Dict[str, MeteorologicalParameterSchema] = {
+PARAMETERS_DB: dict[str, MeteorologicalParameterSchema] = {
     # ----------------------------------------------------
     # 1. ATMOSPHERIC STATE
     # ----------------------------------------------------
@@ -77,7 +75,6 @@ PARAMETERS_DB: Dict[str, MeteorologicalParameterSchema] = {
         climate_applications=["Stratospheric circulation dynamics"],
         machine_learning_applications=["Physics-informed neural networks (PINN) loss constraint"],
     ),
-
     # ----------------------------------------------------
     # 2. DYNAMICS
     # ----------------------------------------------------
@@ -113,7 +110,6 @@ PARAMETERS_DB: Dict[str, MeteorologicalParameterSchema] = {
         climate_applications=["Synoptic storm track climatology"],
         machine_learning_applications=["Neural vorticity field surrogates"],
     ),
-
     # ----------------------------------------------------
     # 3. CONVECTION
     # ----------------------------------------------------
@@ -149,7 +145,6 @@ PARAMETERS_DB: Dict[str, MeteorologicalParameterSchema] = {
         climate_applications=["Convective instability trends under global warming"],
         machine_learning_applications=["Severe weather risk classification models"],
     ),
-
     # ----------------------------------------------------
     # 4. OCEANOGRAPHY
     # ----------------------------------------------------
@@ -185,7 +180,6 @@ PARAMETERS_DB: Dict[str, MeteorologicalParameterSchema] = {
         climate_applications=["ENSO Monitoring & Global Warming Trend Indicator"],
         machine_learning_applications=["Neural SST spatial reconstruction"],
     ),
-
     # ----------------------------------------------------
     # 5. HYDROLOGY
     # ----------------------------------------------------
@@ -230,16 +224,16 @@ class GlobalParameterDatabase:
     """
 
     @classmethod
-    def get(cls, key: str) -> Optional[MeteorologicalParameterSchema]:
+    def get(cls, key: str) -> MeteorologicalParameterSchema | None:
         """Retourne le schéma complet d'un paramètre par sa clé."""
         return PARAMETERS_DB.get(key.lower())
 
     @classmethod
-    def list_all_keys(cls) -> List[str]:
+    def list_all_keys(cls) -> list[str]:
         """Retourne toutes les clés de paramètres enregistrées."""
         return list(PARAMETERS_DB.keys())
 
     @classmethod
-    def get_by_domain(cls, domain: str) -> List[MeteorologicalParameterSchema]:
+    def get_by_domain(cls, domain: str) -> list[MeteorologicalParameterSchema]:
         """Filtre les paramètres par domaine scientifique."""
         return [p for p in PARAMETERS_DB.values() if p.domain.lower() == domain.lower()]

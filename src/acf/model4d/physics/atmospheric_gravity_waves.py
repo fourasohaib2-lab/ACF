@@ -12,7 +12,6 @@ Modèle simplifié des ondes de gravité atmosphériques :
 - dissipation
 """
 
-
 from dataclasses import dataclass
 from math import pi
 
@@ -39,7 +38,6 @@ class AtmosphericGravityWave:
     def __init__(self, state: GravityWaveState):
         self.state = state
 
-
     def phase_speed(self) -> float:
         """
         Vitesse de phase de l'onde.
@@ -48,35 +46,21 @@ class AtmosphericGravityWave:
         if self.state.wavelength <= 0:
             return 0.0
 
-        return (
-            self.state.stability_frequency
-            * self.state.wavelength
-            / (2 * pi)
-        )
-
+        return self.state.stability_frequency * self.state.wavelength / (2 * pi)
 
     def energy(self) -> float:
         """
         Energie simplifiée de l'onde.
         """
 
-        return (
-            0.5
-            * self.state.density
-            * self.state.amplitude ** 2
-        )
-
+        return 0.5 * self.state.density * self.state.amplitude**2
 
     def propagation_speed(self) -> float:
         """
         Vitesse totale de propagation.
         """
 
-        return (
-            self.phase_speed()
-            + self.state.wind_speed
-        )
-
+        return self.phase_speed() + self.state.wind_speed
 
     def vertical_displacement(self) -> float:
         """
@@ -85,17 +69,12 @@ class AtmosphericGravityWave:
 
         return self.state.amplitude
 
-
     def dissipation(self) -> float:
         """
         Perte énergétique.
         """
 
-        return (
-            self.energy()
-            * self.state.dissipation_rate
-        )
-
+        return self.energy() * self.state.dissipation_rate
 
     def simulate(self) -> dict:
         """

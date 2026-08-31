@@ -2,8 +2,8 @@
 Base Layer
 """
 
-class BaseLayer:
 
+class BaseLayer:
     def __init__(self, name):
 
         self.name = name
@@ -20,10 +20,8 @@ class BaseLayer:
 
         value = float(value)
 
-        if value < 0:
-            value = 0
+        value = max(value, 0)
 
-        if value > 1:
-            value = 1
+        value = min(value, 1)
 
         self.opacity = value

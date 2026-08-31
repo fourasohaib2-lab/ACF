@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Camera Controller Module (2D/3D Perspective, Orbit & Flight Navigation)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CameraController:
@@ -21,7 +21,7 @@ class CameraController:
         self.pitch_deg = -90.0  # -90° = vue du dessus
         self.roll_deg = 0.0
         self.fov_deg = 60.0
-        self.bookmarks: Dict[str, Dict[str, float]] = {
+        self.bookmarks: dict[str, dict[str, float]] = {
             "Global": {"lat": 0.0, "lon": 0.0, "altitude_km": 12000.0, "pitch_deg": -90.0},
             "Europe": {"lat": 48.0, "lon": 10.0, "altitude_km": 2500.0, "pitch_deg": -90.0},
             "North_America": {"lat": 40.0, "lon": -100.0, "altitude_km": 4000.0, "pitch_deg": -90.0},
@@ -57,7 +57,7 @@ class CameraController:
             return True
         return False
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """Retourne l'état complet du système de caméra."""
         return {
             "mode": self.mode,

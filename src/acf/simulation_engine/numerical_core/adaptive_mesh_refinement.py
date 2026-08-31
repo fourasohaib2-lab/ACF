@@ -1,7 +1,7 @@
 """Dynamic Adaptive Mesh Refinement (AMR) engine."""
 
-from typing import List, Dict
 import numpy as np
+
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
@@ -50,15 +50,13 @@ class AdaptiveMeshRefinement:
         # Normalized feature scores
         norm_grad_p = (grad_p - np.mean(grad_p)) / (np.std(grad_p) + 1e-8)
         norm_grad_t = (grad_t - np.mean(grad_t)) / (np.std(grad_t) + 1e-8)
-        norm_vort = (np.abs(vorticity) - np.mean(np.abs(vorticity))) / (
-            np.std(np.abs(vorticity)) + 1e-8
-        )
+        norm_vort = (np.abs(vorticity) - np.mean(np.abs(vorticity))) / (np.std(np.abs(vorticity)) + 1e-8)
 
         combined_score = norm_grad_p + norm_grad_t + norm_vort
         refinement_mask = combined_score > grad_threshold
         return refinement_mask
 
-    def get_refined_subgrid_bounds(self, refinement_mask: np.ndarray) -> List[Dict[str, float]]:
+    def get_refined_subgrid_bounds(self, refinement_mask: np.ndarray) -> list[dict[str, float]]:
         """Identify bounding boxes for regions requiring AMR high-resolution sub-grids.
 
         Returns:

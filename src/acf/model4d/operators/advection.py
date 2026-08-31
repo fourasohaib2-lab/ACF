@@ -33,10 +33,7 @@ class Advection:
 
         size = min(len(velocity), len(gradient))
 
-        return sum(
-            velocity[i] * gradient[i]
-            for i in range(size)
-        )
+        return sum(velocity[i] * gradient[i] for i in range(size))
 
     @staticmethod
     def horizontal(u, dphi_dx, v, dphi_dy):
@@ -44,10 +41,7 @@ class Advection:
         Advection horizontale 2D.
         """
 
-        return (
-            u * dphi_dx +
-            v * dphi_dy
-        )
+        return u * dphi_dx + v * dphi_dy
 
     @staticmethod
     def vertical(w, dphi_dz):

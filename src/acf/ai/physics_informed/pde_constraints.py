@@ -6,7 +6,6 @@ Physics-Informed AI PDE Residual Losses & Conservation Constraints Module
 """
 
 import math
-from typing import Dict
 
 
 class PDEPhysicsLossEvaluator:
@@ -29,7 +28,9 @@ class PDEPhysicsLossEvaluator:
         return abs(dq_dt + advection_q - source_sink_q)
 
     @staticmethod
-    def geostrophic_balance_residual(u_actual: float, u_geostrophic: float, v_actual: float, v_geostrophic: float) -> float:
+    def geostrophic_balance_residual(
+        u_actual: float, u_geostrophic: float, v_actual: float, v_geostrophic: float
+    ) -> float:
         """Résidu de l'équilibre géostrophique en atmosphère libre : V_actual - V_geostrophic = 0."""
         du = u_actual - u_geostrophic
         dv = v_actual - v_geostrophic
@@ -41,7 +42,7 @@ class PDEPhysicsLossEvaluator:
         return abs(dp_dz + rho * g)
 
     @classmethod
-    def evaluate_total_physics_loss(cls, predictions: Dict[str, float]) -> Dict[str, float]:
+    def evaluate_total_physics_loss(cls, predictions: dict[str, float]) -> dict[str, float]:
         """
         Calcule les différentes pénalités physiques sur un vecteur de prédiction d'IA.
         """

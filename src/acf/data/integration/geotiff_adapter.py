@@ -27,4 +27,3 @@ class GeoTIFFAdapter:
     def supports(self, filepath: Path):
 
         return filepath.suffix.lower() in self.supported_extensions
-

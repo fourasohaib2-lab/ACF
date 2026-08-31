@@ -3,15 +3,14 @@ AI Dashboard Widget
 """
 
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QLabel,
     QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class AIDashboard(QWidget):
-
     def __init__(self):
 
         super().__init__()
@@ -49,9 +48,7 @@ class AIDashboard(QWidget):
 
     def set_parameters(self, parameters):
 
-        self.parameters.setPlainText(
-            "\n".join(parameters)
-        )
+        self.parameters.setPlainText("\n".join(parameters))
 
     ##################################################
 
@@ -60,11 +57,7 @@ class AIDashboard(QWidget):
         lines = []
 
         for alert in alerts:
-
-            lines.append(
-                f"[{alert['level'].upper()}] "
-                f"{alert['message']}"
-            )
+            lines.append(f"[{alert['level'].upper()}] {alert['message']}")
 
         self.alerts.setPlainText("\n".join(lines))
 
@@ -72,6 +65,4 @@ class AIDashboard(QWidget):
 
     def set_forecast(self, report):
 
-        self.forecast.setPlainText(
-            "\n".join(report)
-        )
+        self.forecast.setPlainText("\n".join(report))

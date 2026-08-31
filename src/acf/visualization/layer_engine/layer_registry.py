@@ -4,20 +4,28 @@ Atmospheric Complexity Framework (ACF)
 Scientific Layer Registry Module (500+ Earth System Layer Catalogue Across 15 Domains)
 """
 
-from typing import Dict, List, Optional
 from acf.visualization.layer_engine.layer_metadata import LayerDefinition
 
-
 DOMAINS_15 = [
-    "01 Atmosphere Dynamics", "02 Thermodynamics", "03 Moisture",
-    "04 Clouds Microphysics", "05 Convection", "06 Precipitation",
-    "07 Ocean", "08 Hydrology", "09 Cryosphere", "10 Land Surface",
-    "11 Biosphere", "12 Atmospheric Chemistry", "13 Air Quality",
-    "14 Space Weather", "15 AI Digital Twin"
+    "01 Atmosphere Dynamics",
+    "02 Thermodynamics",
+    "03 Moisture",
+    "04 Clouds Microphysics",
+    "05 Convection",
+    "06 Precipitation",
+    "07 Ocean",
+    "08 Hydrology",
+    "09 Cryosphere",
+    "10 Land Surface",
+    "11 Biosphere",
+    "12 Atmospheric Chemistry",
+    "13 Air Quality",
+    "14 Space Weather",
+    "15 AI Digital Twin",
 ]
 
 
-LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
+LAYER_REGISTRY_DB: dict[str, LayerDefinition] = {
     # 01 Atmosphere Dynamics
     "atm.temperature.850hpa": LayerDefinition(
         layer_id="atm.temperature.850hpa",
@@ -43,7 +51,6 @@ LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
         resolution="9 km",
         vertical_level="500 hPa",
     ),
-
     # 02 Thermodynamics
     "thermo.theta_e": LayerDefinition(
         layer_id="thermo.theta_e",
@@ -55,7 +62,6 @@ LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
         resolution="1.3 km",
         vertical_level="Surface",
     ),
-
     # 05 Convection
     "conv.cape": LayerDefinition(
         layer_id="conv.cape",
@@ -70,7 +76,6 @@ LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
         vertical_level="Surface",
         dependencies=["thermo.theta_e", "atm.temperature.850hpa"],
     ),
-
     # 07 Ocean
     "ocean.sst": LayerDefinition(
         layer_id="ocean.sst",
@@ -84,7 +89,6 @@ LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
         resolution="1/12°",
         vertical_level="Surface",
     ),
-
     # 08 Hydrology
     "hydro.river_discharge": LayerDefinition(
         layer_id="hydro.river_discharge",
@@ -98,7 +102,6 @@ LAYER_REGISTRY_DB: Dict[str, LayerDefinition] = {
         resolution="5 km",
         vertical_level="Surface",
     ),
-
     # 15 AI Digital Twin
     "ai.graphcast_10d": LayerDefinition(
         layer_id="ai.graphcast_10d",
@@ -117,13 +120,13 @@ class LayerRegistry:
     """Registre canonique d'accès et d'indexation des couches scientifiques ACF."""
 
     @classmethod
-    def get_layer(cls, layer_id: str) -> Optional[LayerDefinition]:
+    def get_layer(cls, layer_id: str) -> LayerDefinition | None:
         return LAYER_REGISTRY_DB.get(layer_id.lower())
 
     @classmethod
-    def list_all_layers(cls) -> List[LayerDefinition]:
+    def list_all_layers(cls) -> list[LayerDefinition]:
         return list(LAYER_REGISTRY_DB.values())
 
     @classmethod
-    def list_by_domain(cls, domain_name: str) -> List[LayerDefinition]:
+    def list_by_domain(cls, domain_name: str) -> list[LayerDefinition]:
         return [item for item in LAYER_REGISTRY_DB.values() if domain_name.lower() in item.domain.lower()]

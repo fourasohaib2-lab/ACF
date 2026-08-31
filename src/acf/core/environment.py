@@ -2,8 +2,8 @@
 Environment information.
 """
 
-import platform
 import pathlib
+import platform
 
 
 def operating_system():

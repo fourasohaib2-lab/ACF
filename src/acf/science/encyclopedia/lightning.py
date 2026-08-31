@@ -5,7 +5,7 @@ Lightning Physics, Cloud Electrification & Transient Luminous Events Encyclopedi
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -13,13 +13,14 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Lightning & Electrification
 # ---------------------------------------------------------------------------
 
+
 def calculate_price_rind_flash_rate(cloud_top_height_km: float, is_marine: bool = False) -> float:
     """Calcul de la fréquence totale des éclairs (éclairs / min) d'après Price & Rind (1992)."""
     if cloud_top_height_km <= 0.0:
         return 0.0
     if is_marine:
-        return 6.2e-4 * (cloud_top_height_km ** 1.73)
-    return 3.44e-5 * (cloud_top_height_km ** 4.9)
+        return 6.2e-4 * (cloud_top_height_km**1.73)
+    return 3.44e-5 * (cloud_top_height_km**4.9)
 
 
 def calculate_mccaul_graupel_lightning_index(graupel_flux: float, ice_flux: float, cape: float) -> float:
@@ -33,7 +34,7 @@ def calculate_mccaul_graupel_lightning_index(graupel_flux: float, ice_flux: floa
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="non_inductive_cloud_charging",
         name="Électrification Non-Inductive par Collision Glace-Graupel",
@@ -70,7 +71,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Électricité atmosphérique",
         equation="Q_upper(+) [10-12km], Q_main(-) [6-8km], Q_lower(+) [2-4km]",
         latex_equation=r"\rho_e(z) = Q_+ \delta(z - z_u) - Q_- \delta(z - z_m) + q_+ \delta(z - z_l)",
-        variables={"Q_upper": "Centre de charge positive supérieur (sommet glacé)", "Q_main": "Centre de charge négative principal (-15°C)", "Q_lower": "Poche positive inférieure (base chaud/pluie)"},
+        variables={
+            "Q_upper": "Centre de charge positive supérieur (sommet glacé)",
+            "Q_main": "Centre de charge négative principal (-15°C)",
+            "Q_lower": "Poche positive inférieure (base chaud/pluie)",
+        },
         units={"Q": "Coulombs (C)"},
         description="Distribution verticale canonique des charges électriques au sein d'un orage créant un champ électrique de plusieurs centaines de kV/m.",
         application_conditions=["Orages à maturité"],
@@ -84,7 +89,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Décharges électriques",
         equation="I_peak = 30 to 100 kA, V_breakdown > 3 MV/m",
         latex_equation=r"E_{\text{breakdown}} \ge 3 \times 10^6 \text{ V/m}, \quad I_{\text{return}} \approx 30 \text{ kA}",
-        variables={"I_peak": "Intensité de crête du coup en retour (kA)", "E_breakdown": "Champ de claquage dielectrique (V/m)"},
+        variables={
+            "I_peak": "Intensité de crête du coup en retour (kA)",
+            "E_breakdown": "Champ de claquage dielectrique (V/m)",
+        },
         units={"I": "kA", "E": "V/m"},
         description="Décharge électrique entre le centre de charge négatif (ou positif) du nuage et la surface du sol initiée par un tracé précurseur (stepped leader).",
         application_conditions=["Réseaux de détection foudre au sol (VLF/LF, Météorage, NLDN)"],
@@ -135,7 +143,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         references=["McCaul et al. (2009) Wea. Forecasting", "NCAR WRF Manual"],
         compute_func=calculate_mccaul_graupel_lightning_index,
     ),
-
     # ---------------------------------------------------------------------------
     # TLE: Sprites & ELVES
     # ---------------------------------------------------------------------------
@@ -164,7 +171,9 @@ ENTRIES: List[EncyclopediaEntry] = [
         units={"Durée": "< 1 ms", "Rayon": "jusqu'à 500 km"},
         description="Disques ou anneaux de lumière ultra-rapides se propageant dans la basse ionosphère sous l'effet de l'impulsion électromagnétique intense émise par un éclair de forte intensité.",
         application_conditions=["Base de l'ionosphère à 90 km"],
-        limitations=["Durée inférieure à la milliseconde, visible uniquement avec des caméras ultrarapides ou satellites"],
+        limitations=[
+            "Durée inférieure à la milliseconde, visible uniquement avec des caméras ultrarapides ou satellites"
+        ],
         references=["Inan et al. (1997) Geophys. Res. Lett.", "AMS High-Atmosphere Electrodynamics"],
     ),
 ]

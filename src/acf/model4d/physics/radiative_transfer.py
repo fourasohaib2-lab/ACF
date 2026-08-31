@@ -26,11 +26,8 @@ class RadiativeTransferPhysics:
 
     SOLAR_CONSTANT = 1361.0
 
-
     @staticmethod
-    def stefan_boltzmann_flux(
-        temperature: float
-    ) -> float:
+    def stefan_boltzmann_flux(temperature: float) -> float:
         """
         Thermal emission flux.
 
@@ -38,21 +35,12 @@ class RadiativeTransferPhysics:
         """
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature must be positive"
-            )
+            raise ValueError("Temperature must be positive")
 
-        return (
-            RadiativeTransferPhysics.STEFAN_BOLTZMANN
-            * temperature ** 4
-        )
-
+        return RadiativeTransferPhysics.STEFAN_BOLTZMANN * temperature**4
 
     @staticmethod
-    def absorbed_solar_flux(
-        solar_flux: float,
-        albedo: float
-    ) -> float:
+    def absorbed_solar_flux(solar_flux: float, albedo: float) -> float:
         """
         Absorbed solar radiation.
 
@@ -60,22 +48,15 @@ class RadiativeTransferPhysics:
         """
 
         if solar_flux < 0:
-            raise ValueError(
-                "Solar flux cannot be negative"
-            )
+            raise ValueError("Solar flux cannot be negative")
 
         if not 0 <= albedo <= 1:
-            raise ValueError(
-                "Albedo must be between 0 and 1"
-            )
+            raise ValueError("Albedo must be between 0 and 1")
 
         return solar_flux * (1 - albedo)
 
-
     @staticmethod
-    def atmospheric_transmission(
-        optical_depth: float
-    ) -> float:
+    def atmospheric_transmission(optical_depth: float) -> float:
         """
         Beer-Lambert transmission.
 
@@ -83,20 +64,12 @@ class RadiativeTransferPhysics:
         """
 
         if optical_depth < 0:
-            raise ValueError(
-                "Optical depth cannot be negative"
-            )
+            raise ValueError("Optical depth cannot be negative")
 
-        return math.exp(
-            -optical_depth
-        )
-
+        return math.exp(-optical_depth)
 
     @staticmethod
-    def emitted_radiation(
-        emissivity: float,
-        temperature: float
-    ) -> float:
+    def emitted_radiation(emissivity: float, temperature: float) -> float:
         """
         Grey-body emission.
 
@@ -104,29 +77,15 @@ class RadiativeTransferPhysics:
         """
 
         if not 0 <= emissivity <= 1:
-            raise ValueError(
-                "Emissivity must be between 0 and 1"
-            )
+            raise ValueError("Emissivity must be between 0 and 1")
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature must be positive"
-            )
+            raise ValueError("Temperature must be positive")
 
-        return (
-            emissivity
-            *
-            RadiativeTransferPhysics.STEFAN_BOLTZMANN
-            *
-            temperature ** 4
-        )
-
+        return emissivity * RadiativeTransferPhysics.STEFAN_BOLTZMANN * temperature**4
 
     @staticmethod
-    def radiative_equilibrium(
-        incoming_flux: float,
-        emissivity: float = 1.0
-    ) -> float:
+    def radiative_equilibrium(incoming_flux: float, emissivity: float = 1.0) -> float:
         """
         Equilibrium temperature.
 
@@ -134,29 +93,15 @@ class RadiativeTransferPhysics:
         """
 
         if incoming_flux <= 0:
-            raise ValueError(
-                "Incoming flux must be positive"
-            )
+            raise ValueError("Incoming flux must be positive")
 
         if not 0 < emissivity <= 1:
-            raise ValueError(
-                "Invalid emissivity"
-            )
+            raise ValueError("Invalid emissivity")
 
-        return (
-            incoming_flux /
-            (
-                emissivity
-                *
-                RadiativeTransferPhysics.STEFAN_BOLTZMANN
-            )
-        ) ** 0.25
-
+        return (incoming_flux / (emissivity * RadiativeTransferPhysics.STEFAN_BOLTZMANN)) ** 0.25
 
     @staticmethod
-    def classify_radiative_state(
-        net_flux: float
-    ) -> str:
+    def classify_radiative_state(net_flux: float) -> str:
         """
         Classify atmospheric radiative balance.
         """
@@ -168,4 +113,3 @@ class RadiativeTransferPhysics:
             return "cooling"
 
         return "equilibrium"
-

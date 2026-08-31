@@ -1,25 +1,26 @@
-"""ESOC Left System Explorer Sidebar with Global Search & Right Multi-Tab Inspector (ACF-UI-013)."""
+"""ESOC Left System Explorer Sidebar with Global Search & Right Multi-Tab Inspector (ACF-HPC-002)."""
 
-from typing import Callable, Optional
+from collections.abc import Callable
+
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QTreeWidget,
-    QTreeWidgetItem,
+    QPushButton,
     QTabWidget,
     QTextEdit,
-    QComboBox,
-    QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class ESOCLeftSidebar(QWidget):
     """Left Sidebar: Universal Global Search Bar + System Explorer navigation tree."""
 
-    def __init__(self, on_select_callback: Optional[Callable[[str], None]] = None) -> None:
+    def __init__(self, on_select_callback: Callable[[str], None] | None = None) -> None:
         super().__init__()
         self.on_select_callback = on_select_callback
 
@@ -30,7 +31,6 @@ class ESOCLeftSidebar(QWidget):
         header.setStyleSheet("font-weight: bold; font-size: 12px; color: #4FC3F7;")
         layout.addWidget(header)
 
-        # Universal Global Search Bar
         search_box = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Universal Search (Modules, Parameters, Maps, AI)...")
@@ -58,7 +58,12 @@ class ESOCLeftSidebar(QWidget):
                 "Volcanoes",
                 "Geology",
             ],
-            "Forecast": ["Short-Range NWP", "Medium-Range (15 days)", "Global Circulation"],
+            "Forecast": [
+                "Short-Range NWP",
+                "Medium-Range (15 days)",
+                "Global Circulation",
+                "One-Click Forecast Pipeline",
+            ],
             "Assimilation": ["4D-Var Solver", "EnKF (50-member)", "Hybrid 4DEnVar", "Quality Control"],
             "Simulation": ["Coupled Earth Solver", "Finite Volume", "Spectral Solver", "AMR"],
             "Digital Twin": ["Present Earth", "Historical Replay", "2030", "2050", "2100", "2300"],
@@ -76,7 +81,15 @@ class ESOCLeftSidebar(QWidget):
             "Output": ["NetCDF4 Files", "Cloud Zarr Stores", "GRIB2 Datasets", "GeoTIFF Maps"],
             "Settings": ["Workspace Modes", "Layer Preferences", "API Keys", "System Config"],
             "Plugins": ["Custom Physics Extensions", "AI Model Plug-ins"],
-            "HPC": ["MPI Domain Topology", "CUDA GPU Kernels", "Checkpoints", "Memory Bandwidth"],
+            "HPC": [
+                "HPC Profiles",
+                "Job Explorer",
+                "Storage & Scratch",
+                "Remote Terminal",
+                "CUDA GPU Monitor",
+                "MPI Domain Topology",
+                "Benchmarks",
+            ],
         }
 
         self._populate_tree(self.categories)

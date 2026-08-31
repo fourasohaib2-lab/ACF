@@ -39,10 +39,7 @@ class NetCDFReader(BaseReader):
         self.detector = CFDetector()
 
     def can_read(self, filename):
-        return (
-            Path(filename).suffix.lower()
-            in self.SUPPORTED_EXTENSIONS
-        )
+        return Path(filename).suffix.lower() in self.SUPPORTED_EXTENSIONS
 
     def read(self, filename):
         filename = Path(filename)

@@ -5,12 +5,13 @@ Global Airport & Aeronautical Infrastructure Database Module (ICAO/IATA)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
 class AirportInfo:
     """Description d'un aérodrome international OACI."""
+
     icao_code: str
     iata_code: str
     name: str
@@ -19,12 +20,12 @@ class AirportInfo:
     latitude: float
     longitude: float
     elevation_ft: float
-    runways: List[Dict[str, Any]]
-    ils_categories: List[str]
+    runways: list[dict[str, Any]]
+    ils_categories: list[str]
     magnetic_variation_deg: float
 
 
-AIRPORT_REGISTRY: Dict[str, AirportInfo] = {
+AIRPORT_REGISTRY: dict[str, AirportInfo] = {
     "lfpg": AirportInfo(
         icao_code="LFPG",
         iata_code="CDG",
@@ -82,7 +83,7 @@ class AirportDatabase:
     """Base de données et moteur d'infrastructure des aéroports mondiaux."""
 
     @classmethod
-    def get_airport(cls, icao_or_iata: str) -> Optional[AirportInfo]:
+    def get_airport(cls, icao_or_iata: str) -> AirportInfo | None:
         key = icao_or_iata.lower()
         if key in AIRPORT_REGISTRY:
             return AIRPORT_REGISTRY[key]
@@ -92,5 +93,5 @@ class AirportDatabase:
         return None
 
     @classmethod
-    def list_airports(cls) -> List[str]:
+    def list_airports(cls) -> list[str]:
         return list(AIRPORT_REGISTRY.keys())

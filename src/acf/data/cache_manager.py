@@ -4,20 +4,17 @@ Smart Dataset Cache Manager
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-datetime.now(UTC)
 
 @dataclass
 class CacheEntry:
-
     dataset: object
     created: datetime
     last_access: datetime
 
 
 class CacheManager:
-
     def __init__(self, max_items=10):
 
         self.max_items = max_items
@@ -25,7 +22,7 @@ class CacheManager:
 
     def add(self, key, dataset):
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         if key in self._cache:
             del self._cache[key]
@@ -46,7 +43,7 @@ class CacheManager:
 
         entry = self._cache.pop(key)
 
-        entry.last_access = datetime.utcnow()
+        entry.last_access = datetime.now(UTC)
 
         self._cache[key] = entry
 

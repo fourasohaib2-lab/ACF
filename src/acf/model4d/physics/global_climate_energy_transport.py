@@ -48,10 +48,7 @@ class GlobalClimateEnergyTransport:
         """
         Atmospheric + ocean heat transport.
         """
-        return (
-            state.ocean_transport
-            + state.atmospheric_transport
-        )
+        return state.ocean_transport + state.atmospheric_transport
 
     def energy_balance(self, state: ClimateEnergyState) -> float:
         """
@@ -66,10 +63,7 @@ class GlobalClimateEnergyTransport:
 
         absorbed = self.absorbed_solar_energy(state)
 
-        loss = (
-            state.outgoing_longwave
-            + self.total_heat_transport(state)
-        )
+        loss = state.outgoing_longwave + self.total_heat_transport(state)
 
         return absorbed - loss
 

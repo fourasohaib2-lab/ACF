@@ -6,17 +6,17 @@ Astrobiology & Planetary Habitability Engine Module (Phase 8)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class HabitabilityAssessment:
     """Bilan d'habitabilité et détection de biosignatures."""
+
     target_name: str
     habitability_index_pct: float
     liquid_water_probability_pct: float
     radiation_shielding_score: float
-    detected_biosignatures: List[str]
+    detected_biosignatures: list[str]
     is_habitable: bool
 
 

@@ -1,7 +1,7 @@
 """Primitive equation atmospheric forecast solver."""
 
-from typing import Dict
 import numpy as np
+
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
@@ -36,7 +36,7 @@ class AtmosphericModel:
         f_coriolis = 2.0 * self.omega_earth * np.sin(lat_rad)
         return f_coriolis[:, np.newaxis]  # shape: (n_lat, 1)
 
-    def initialize_state(self) -> Dict[str, np.ndarray]:
+    def initialize_state(self) -> dict[str, np.ndarray]:
         """Generate a physically consistent baseline atmospheric state dictionary."""
         shape_2d = (self.grid.n_lat, self.grid.n_lon)
         shape_3d = (self.grid.n_levels, self.grid.n_lat, self.grid.n_lon)
@@ -48,9 +48,7 @@ class AtmosphericModel:
 
         state = {
             "T": temp_3d,
-            "P": self.grid.compute_vertical_pressure_profile(
-                np.full(shape_2d, 101325.0, dtype=np.float64)
-            ),
+            "P": self.grid.compute_vertical_pressure_profile(np.full(shape_2d, 101325.0, dtype=np.float64)),
             "U": np.random.normal(10.0, 2.0, size=shape_3d),
             "V": np.random.normal(0.0, 1.0, size=shape_3d),
             "q": np.clip(
@@ -64,7 +62,7 @@ class AtmosphericModel:
         }
         return state
 
-    def step(self, state: Dict[str, np.ndarray], dt: float = 60.0) -> Dict[str, np.ndarray]:
+    def step(self, state: dict[str, np.ndarray], dt: float = 60.0) -> dict[str, np.ndarray]:
         """Integrate primitive equations over time step dt.
 
         Args:

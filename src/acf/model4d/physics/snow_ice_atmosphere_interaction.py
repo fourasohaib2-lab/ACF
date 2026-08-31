@@ -33,7 +33,6 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return precipitation * snow_fraction
 
-
     @staticmethod
     def snow_melt_energy(mass, latent_heat=334):
         """
@@ -44,7 +43,6 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return mass * latent_heat
 
-
     @staticmethod
     def snow_water_equivalent(snow_depth, density=100):
         """
@@ -53,7 +51,6 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return snow_depth * density / 1000
 
-
     @staticmethod
     def ice_albedo_effect(solar_flux, albedo):
         """
@@ -61,7 +58,6 @@ class SnowIceAtmosphereInteractionPhysics:
 
         """
         return solar_flux * albedo
-
 
     @staticmethod
     def absorbed_solar_energy(solar_flux, albedo):
@@ -75,7 +71,6 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return round(solar_flux * (1 - albedo), 10)
 
-
     @staticmethod
     def freezing_potential(temperature, threshold=273):
         """
@@ -84,14 +79,12 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return threshold - temperature
 
-
     @staticmethod
     def surface_cooling(temperature, snow_temperature):
         """
         Temperature difference between atmosphere and snow surface.
         """
         return temperature - snow_temperature
-
 
     @staticmethod
     def ice_insulation(thickness, conductivity=2.2):
@@ -101,7 +94,6 @@ class SnowIceAtmosphereInteractionPhysics:
         """
         return thickness / conductivity
 
-
     @staticmethod
     def freeze_thaw_cycle(freezing_days, thaw_days):
         """
@@ -109,7 +101,6 @@ class SnowIceAtmosphereInteractionPhysics:
 
         """
         return freezing_days + thaw_days
-
 
     @staticmethod
     def snow_cover_effect(area, fraction):

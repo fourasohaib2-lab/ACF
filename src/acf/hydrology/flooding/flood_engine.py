@@ -5,7 +5,7 @@ Operational Flood Forecasting & Risk Inundation Engine Module (Phase 4)
 (River Floods, Flash Floods, Hydrographs, Return Period T_return, Peak Discharge Qp)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class FloodForecastEngine:
@@ -25,7 +25,7 @@ class FloodForecastEngine:
         precip_3h_mm: float,
         soil_saturation_pct: float,
         basin_slope_m_km: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Évalue le risque de crue éclair (Flash Flood) dans un sous-bassin versant réactif."""
         flash_index = (precip_3h_mm / 30.0) * (soil_saturation_pct / 100.0) * (1.0 + basin_slope_m_km / 10.0)
 

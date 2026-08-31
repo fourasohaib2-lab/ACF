@@ -27,6 +27,7 @@ Provides foundational capabilities for numerical weather prediction, atmospheric
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
 
+
 class VegetationAtmosphereCouplingPhysics:
     """
     Vegetation-Atmosphere Interaction Physics
@@ -72,4 +73,3 @@ class VegetationAtmosphereCouplingPhysics:
     @staticmethod
     def surface_exchange_rate(atmosphere_flux, vegetation_flux):
         return atmosphere_flux + vegetation_flux
-

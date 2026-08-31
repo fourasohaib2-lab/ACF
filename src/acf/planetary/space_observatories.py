@@ -6,21 +6,21 @@ Space Observatories Registry Module (Phase 9)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class SpaceObservatory:
     """Description d'un observatoire astronomique spatial ou au sol."""
+
     name: str
     agency: str
     orbit_type: str  # Sun-Earth L2, LEO, Ground-based
-    primary_sensors: List[str]
+    primary_sensors: list[str]
     spectral_coverage: str  # Optical, Infrared, UV, X-Ray
-    planetary_applications: List[str]
+    planetary_applications: list[str]
 
 
-OBSERVATORY_CATALOG: Dict[str, SpaceObservatory] = {
+OBSERVATORY_CATALOG: dict[str, SpaceObservatory] = {
     "jwst": SpaceObservatory(
         name="James Webb Space Telescope (JWST)",
         agency="NASA / ESA / CSA",
@@ -52,9 +52,9 @@ class ObservatoryRegistry:
     """Registre des grands observatoires astronomiques et spatiaux."""
 
     @classmethod
-    def get_observatory(cls, key: str) -> Optional[SpaceObservatory]:
+    def get_observatory(cls, key: str) -> SpaceObservatory | None:
         return OBSERVATORY_CATALOG.get(key.lower())
 
     @classmethod
-    def list_observatories(cls) -> List[str]:
+    def list_observatories(cls) -> list[str]:
         return list(OBSERVATORY_CATALOG.keys())

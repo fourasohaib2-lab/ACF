@@ -92,4 +92,3 @@ class Precipitation:
         self.rain_rate = max(self.rain_rate, 0.0)
 
         return self.rain_rate
-

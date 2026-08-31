@@ -14,7 +14,6 @@ class ValidationReport(dict):
 
 
 class DatasetValidator:
-
     REQUIRED_ATTRIBUTES = (
         "name",
         "variables",
@@ -57,11 +56,13 @@ class DatasetValidator:
 
         valid = len(errors) == 0
 
-        return ValidationReport({
-            "valid": valid,
-            "errors": errors,
-            "warnings": warnings,
-        })
+        return ValidationReport(
+            {
+                "valid": valid,
+                "errors": errors,
+                "warnings": warnings,
+            }
+        )
 
     def is_valid(self, dataset):
         report = self.validate(dataset)

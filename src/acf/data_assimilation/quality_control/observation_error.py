@@ -3,7 +3,6 @@ Observation Error Covariance & Error Modeling Module (Obs = Value + Error)
 """
 
 
-
 class ObservationErrorModel:
     """Modélisation de l'erreur d'observation (Instrumental + Représentativité + Biais)."""
 

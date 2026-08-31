@@ -5,7 +5,7 @@ AEOS Cluster Manager & Distributed Computing Module (Phase 4)
 (ClusterManager supporting Local, Multi-core, MPI, Slurm, Kubernetes, Cloud Workers, Task Balancing)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class ClusterManager:
@@ -16,7 +16,7 @@ class ClusterManager:
     SUPPORTED_BACKENDS = ["Local", "Multi-core", "MPI", "Slurm", "Kubernetes", "CloudWorkers"]
 
     @classmethod
-    def get_cluster_status(cls, backend: str = "Slurm") -> Dict[str, Any]:
+    def get_cluster_status(cls, backend: str = "Slurm") -> dict[str, Any]:
         """Retourne l'état des nœuds et workers du cluster distribué."""
         if backend not in cls.SUPPORTED_BACKENDS:
             backend = "Local"

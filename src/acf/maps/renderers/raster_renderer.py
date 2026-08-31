@@ -5,9 +5,9 @@ Raster Renderer
 
 
 class RasterRenderer:
+    def __init__(self, canvas=None):
 
-    def __init__(self):
-
+        self.canvas = canvas
         self.field = None
         self.colormap = "viridis"
 
@@ -41,17 +41,13 @@ class RasterRenderer:
 
         self.field = None
 
-    def render(self):
+    def render(self, field=None, *args, **kwargs):
 
-        if not self.has_field():
-            return False
+        if field is not None:
+            self.set_field(field)
 
-        return True
+        return self.has_field()
 
     def __repr__(self):
 
-        return (
-            f"RasterRenderer("
-            f"colormap='{self.colormap}', "
-            f"alpha={self.alpha})"
-        )
+        return f"RasterRenderer(colormap='{self.colormap}', alpha={self.alpha})"

@@ -33,7 +33,6 @@ class IonosphericDynamicsPhysics:
 
         return solar_flux / neutral_density
 
-
     @staticmethod
     def electron_density(ionization, recombination):
         """
@@ -44,7 +43,6 @@ class IonosphericDynamicsPhysics:
         """
         return ionization - recombination
 
-
     @staticmethod
     def recombination_rate(electron_density, coefficient):
         """
@@ -54,7 +52,6 @@ class IonosphericDynamicsPhysics:
         R = Ne * coefficient
         """
         return electron_density * coefficient
-
 
     @staticmethod
     def plasma_frequency(electron_density):
@@ -67,8 +64,7 @@ class IonosphericDynamicsPhysics:
         if electron_density < 0:
             raise ValueError("electron_density cannot be negative")
 
-        return round(electron_density ** 0.5, 6)
-
+        return round(electron_density**0.5, 6)
 
     @staticmethod
     def solar_ionization_effect(solar_flux, efficiency):
@@ -80,7 +76,6 @@ class IonosphericDynamicsPhysics:
         """
         return round(solar_flux * efficiency, 6)
 
-
     @staticmethod
     def ionospheric_temperature(base_temperature, heating):
         """
@@ -91,14 +86,12 @@ class IonosphericDynamicsPhysics:
         """
         return base_temperature + heating
 
-
     @staticmethod
     def electron_temperature_change(initial_temperature, energy_input):
         """
         Electron temperature response.
         """
         return initial_temperature + energy_input
-
 
     @staticmethod
     def total_electron_content(electron_density, altitude):
@@ -109,7 +102,6 @@ class IonosphericDynamicsPhysics:
         TEC = Ne * altitude
         """
         return electron_density * altitude
-
 
     @staticmethod
     def ionosphere_stability(index):
@@ -124,11 +116,9 @@ class IonosphericDynamicsPhysics:
 
         return "normal"
 
-
     @staticmethod
     def geomagnetic_disturbance_effect(storm_index):
         """
         Geomagnetic storm influence.
         """
         return round(storm_index * 10, 6)
-

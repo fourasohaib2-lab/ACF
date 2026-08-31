@@ -3,7 +3,6 @@ Doppler Radar Mosaic & QPE Ingestion Module (Z = a * R^b)
 """
 
 
-
 class RadarIngestor:
     """Gestionnaire d'ingestion des réflectivités radar Z et vitesses Doppler."""
 

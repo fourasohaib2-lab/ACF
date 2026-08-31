@@ -6,23 +6,23 @@ Global Hydrology Database & Watershed Core Module (Phase 1)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class WatershedInfo:
     """Description scientifique d'un bassin versant / bassin hydrographique."""
+
     watershed_id: str
     name: str  # e.g., "Bassin de la Seine"
     major_river: str  # "Seine"
     area_km2: float
     main_channel_length_km: float
     average_slope_m_km: float
-    land_use_types: List[str]
-    tributaries: List[str]
+    land_use_types: list[str]
+    tributaries: list[str]
 
 
-WATERSHED_REGISTRY: Dict[str, WatershedInfo] = {
+WATERSHED_REGISTRY: dict[str, WatershedInfo] = {
     "seine_basin": WatershedInfo(
         watershed_id="seine_basin",
         name="Bassin Versant de la Seine",
@@ -62,9 +62,9 @@ class HydrologyDatabase:
         return precipitation_mm - evapotranspiration_mm - runoff_mm
 
     @classmethod
-    def get_watershed(cls, key: str) -> Optional[WatershedInfo]:
+    def get_watershed(cls, key: str) -> WatershedInfo | None:
         return WATERSHED_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_watersheds(cls) -> List[str]:
+    def list_watersheds(cls) -> list[str]:
         return list(WATERSHED_REGISTRY.keys())

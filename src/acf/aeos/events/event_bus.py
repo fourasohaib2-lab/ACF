@@ -5,16 +5,18 @@ Planetary Event Bus Module (Phase 10)
 (PlanetaryEventBus publish/subscribe system for Earth System events)
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
+from typing import Any
 
 
 @dataclass
 class PlanetaryEvent:
     """Événement système planétaire."""
+
     event_id: str
     event_type: str  # ForecastUpdated, ObservationReceived, EarthquakeDetected, CycloneDetected, SolarStormDetected, FloodDetected, VolcanoDetected, AlertIssued, MissionCompleted
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     timestamp_utc: str
 
 
@@ -24,7 +26,7 @@ class PlanetaryEventBus:
     """
 
     def __init__(self):
-        self.subscribers: Dict[str, List[Callable[[PlanetaryEvent], None]]] = {}
+        self.subscribers: dict[str, list[Callable[[PlanetaryEvent], None]]] = {}
 
     def subscribe(self, event_type: str, callback: Callable[[PlanetaryEvent], None]) -> None:
         """S'abonne à un type d'événement planétaire."""

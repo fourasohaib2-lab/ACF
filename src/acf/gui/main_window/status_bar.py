@@ -48,23 +48,16 @@ class ACFStatusBar:
         latitude,
     ):
 
-        self.coordinates.setText(
-            f"Lon: {longitude:.2f}   Lat: {latitude:.2f}"
-        )
+        self.coordinates.setText(f"Lon: {longitude:.2f}   Lat: {latitude:.2f}")
 
     ##################################################
 
     def set_zoom(self, zoom):
 
-        self.zoom.setText(
-            f"Zoom: {zoom:.1f}x"
-        )
+        self.zoom.setText(f"Zoom: {zoom:.1f}x")
 
     ##################################################
 
     def set_projection(self, projection):
 
-        self.projection.setText(
-            f"Projection: {projection}"
-        )
-
+        self.projection.setText(f"Projection: {projection}")

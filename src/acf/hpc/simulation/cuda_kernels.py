@@ -9,9 +9,7 @@ class CUDAKernelManager:
     def __init__(self) -> None:
         self.block_size = (16, 16)
 
-    def dispatch_advection_kernel(
-        self, u: np.ndarray, v: np.ndarray, scalar: np.ndarray, dt: float
-    ) -> np.ndarray:
+    def dispatch_advection_kernel(self, u: np.ndarray, v: np.ndarray, scalar: np.ndarray, dt: float) -> np.ndarray:
         """Dispatch CUDA advection stencil operation.
 
         Args:

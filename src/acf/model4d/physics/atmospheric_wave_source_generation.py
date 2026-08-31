@@ -30,60 +30,35 @@ class AtmosphericWaveSourceGeneration:
         self.name = "Atmospheric Wave Source Generation"
         self.version = "8.94"
 
-    def convection_source(
-        self,
-        state: WaveSourceState
-    ) -> float:
+    def convection_source(self, state: WaveSourceState) -> float:
         """
         Génération d'onde par convection.
         """
 
-        return (
-            state.convection_index *
-            state.instability
-        )
+        return state.convection_index * state.instability
 
-    def orographic_source(
-        self,
-        state: WaveSourceState
-    ) -> float:
+    def orographic_source(self, state: WaveSourceState) -> float:
         """
         Génération d'ondes par relief montagneux.
         """
 
-        return (
-            state.mountain_height *
-            state.jet_speed
-            / 1000
-        )
+        return state.mountain_height * state.jet_speed / 1000
 
-    def frontal_source(
-        self,
-        state: WaveSourceState
-    ) -> float:
+    def frontal_source(self, state: WaveSourceState) -> float:
         """
         Génération par gradient frontal.
         """
 
-        return (
-            state.frontal_gradient *
-            state.instability
-        )
+        return state.frontal_gradient * state.instability
 
-    def jet_source(
-        self,
-        state: WaveSourceState
-    ) -> float:
+    def jet_source(self, state: WaveSourceState) -> float:
         """
         Génération par jet stream.
         """
 
-        return state.jet_speed ** 2 / 100
+        return state.jet_speed**2 / 100
 
-    def total_source_energy(
-        self,
-        state: WaveSourceState
-    ) -> float:
+    def total_source_energy(self, state: WaveSourceState) -> float:
         """
         Energie totale générée.
         """
@@ -99,10 +74,7 @@ class AtmosphericWaveSourceGeneration:
 
         return self.convection_source(state)
 
-    def classify_source(
-        self,
-        state: WaveSourceState
-    ) -> str:
+    def classify_source(self, state: WaveSourceState) -> str:
         """
         Classification de la source.
         """
@@ -117,10 +89,7 @@ class AtmosphericWaveSourceGeneration:
 
         return "Weak wave source"
 
-    def simulate(
-        self,
-        state: WaveSourceState
-    ) -> dict:
+    def simulate(self, state: WaveSourceState) -> dict:
         """
         Simulation complète.
         """
@@ -129,8 +98,6 @@ class AtmosphericWaveSourceGeneration:
             "module": self.name,
             "version": self.version,
             "source_type": state.source_type,
-            "energy":
-                self.total_source_energy(state),
-            "classification":
-                self.classify_source(state)
+            "energy": self.total_source_energy(state),
+            "classification": self.classify_source(state),
         }

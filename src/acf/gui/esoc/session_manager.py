@@ -1,8 +1,8 @@
 """Session manager for automatic workspace state, panel layouts, and settings persistence (ACF-UI-013)."""
 
-from typing import Dict, Any, Optional
-import os
 import json
+import os
+from typing import Any
 
 
 class SessionManager:
@@ -10,9 +10,9 @@ class SessionManager:
 
     def __init__(self, session_filepath: str = "esoc_session_config.json") -> None:
         self.session_filepath = session_filepath
-        self.current_session: Dict[str, Any] = self._default_session_state()
+        self.current_session: dict[str, Any] = self._default_session_state()
 
-    def _default_session_state(self) -> Dict[str, Any]:
+    def _default_session_state(self) -> dict[str, Any]:
         """Generate default configuration state dictionary."""
         return {
             "workspace_mode": "Meteorologist",
@@ -55,7 +55,7 @@ class SessionManager:
             },
         }
 
-    def save_session(self, session_data: Optional[Dict[str, Any]] = None) -> bool:
+    def save_session(self, session_data: dict[str, Any] | None = None) -> bool:
         """Serialize session state dictionary to disk JSON file."""
         if session_data is not None:
             self.current_session.update(session_data)
@@ -67,7 +67,7 @@ class SessionManager:
         except Exception:
             return False
 
-    def load_session(self) -> Dict[str, Any]:
+    def load_session(self) -> dict[str, Any]:
         """Read session configuration from disk JSON file if available."""
         if os.path.exists(self.session_filepath):
             try:

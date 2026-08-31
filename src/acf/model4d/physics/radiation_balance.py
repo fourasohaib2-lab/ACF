@@ -12,7 +12,6 @@ class RadiationBalancePhysics:
 
     STEFAN_BOLTZMANN = 5.670374419e-8
 
-
     @staticmethod
     def outgoing_longwave_radiation(
         temperature: float,
@@ -22,17 +21,11 @@ class RadiationBalancePhysics:
         """
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature must be positive"
-            )
+            raise ValueError("Temperature must be positive")
 
-        radiation = (
-            RadiationBalancePhysics.STEFAN_BOLTZMANN
-            * temperature ** 4
-        )
+        radiation = RadiationBalancePhysics.STEFAN_BOLTZMANN * temperature**4
 
         return radiation / 10.01
-
 
     @staticmethod
     def net_radiation(
@@ -44,7 +37,6 @@ class RadiationBalancePhysics:
         """
 
         return incoming - outgoing
-
 
     @staticmethod
     def radiative_equilibrium(
@@ -58,12 +50,9 @@ class RadiationBalancePhysics:
         """
 
         if emitted == 0:
-            raise ValueError(
-                "Emission cannot be zero"
-            )
+            raise ValueError("Emission cannot be zero")
 
         return absorbed / emitted
-
 
     @staticmethod
     def greenhouse_effect(
@@ -75,10 +64,6 @@ class RadiationBalancePhysics:
         """
 
         if surface_flux <= 0:
-            raise ValueError(
-                "Surface flux must be positive"
-            )
+            raise ValueError("Surface flux must be positive")
 
-        return (
-            surface_flux - outgoing_flux
-        ) / surface_flux
+        return (surface_flux - outgoing_flux) / surface_flux

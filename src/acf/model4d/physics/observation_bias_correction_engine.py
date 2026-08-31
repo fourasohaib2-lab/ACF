@@ -134,9 +134,7 @@ class ObservationBiasCorrectionEngine:
     ) -> float:
 
         return round(
-            self.systematic_bias(state)
-            - self.temperature_bias(state)
-            - self.humidity_bias(state),
+            self.systematic_bias(state) - self.temperature_bias(state) - self.humidity_bias(state),
             2,
         )
 
@@ -168,8 +166,6 @@ class ObservationBiasCorrectionEngine:
     ) -> float:
 
         return round(
-            self.corrected_observation(state)
-            * state.observation_quality
-            / 10.0,
+            self.corrected_observation(state) * state.observation_quality / 10.0,
             2,
         )

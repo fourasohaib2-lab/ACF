@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class EcosystemRestorationProject:
     """Projet de restauration d'écosystème et de puits de carbone naturel."""
+
     project_name: str
     target_ecosystem: str  # Forests, Wetlands, Mangroves, Peatlands, Coral Reefs
     area_hectares: float

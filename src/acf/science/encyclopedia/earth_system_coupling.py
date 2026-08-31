@@ -2,11 +2,10 @@
 Earth System Coupling, Climate Feedbacks & Global Cycles Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="earth_system_coupled_model",
         name="Couplage Système Terre (Atmosphère-Océan-Glace-Hydrologie-Biochimie)",

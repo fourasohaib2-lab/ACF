@@ -31,7 +31,6 @@ from acf.catalog.catalog_entry import CatalogEntry
 
 
 class ScientificCatalog:
-
     def __init__(self):
 
         self.entries = {}
@@ -64,8 +63,4 @@ class ScientificCatalog:
 
     def by_category(self, category):
 
-        return [
-            e
-            for e in self.entries.values()
-            if e.category == category
-        ]
+        return [e for e in self.entries.values() if e.category == category]

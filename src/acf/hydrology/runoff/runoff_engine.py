@@ -5,8 +5,6 @@ Precipitation-Runoff Models & River Routing Module (Phase 2)
 (SCS Curve Number Method, Green-Ampt Infiltration, Muskingum River Routing)
 """
 
-from typing import Dict
-
 
 class RunoffEngine:
     """
@@ -14,7 +12,7 @@ class RunoffEngine:
     """
 
     @staticmethod
-    def scs_curve_number_runoff(precipitation_mm: float, curve_number: float) -> Dict[str, float]:
+    def scs_curve_number_runoff(precipitation_mm: float, curve_number: float) -> dict[str, float]:
         """
         Calcul du ruissellement direct Q par la méthode du Curve Number (SCS / USDA NRCS).
         S = (25400 / CN) - 254 (rétention potentielle maximale en mm).
@@ -37,7 +35,9 @@ class RunoffEngine:
         }
 
     @staticmethod
-    def muskingum_routing(inflow_i0: float, inflow_i1: float, outflow_q0: float, k_hours: float, x_factor: float, dt_hours: float) -> float:
+    def muskingum_routing(
+        inflow_i0: float, inflow_i1: float, outflow_q0: float, k_hours: float, x_factor: float, dt_hours: float
+    ) -> float:
         """
         Calcul du routage de crue en rivière par la méthode de Muskingum.
         C0 = (-K*X + 0.5*dt) / D

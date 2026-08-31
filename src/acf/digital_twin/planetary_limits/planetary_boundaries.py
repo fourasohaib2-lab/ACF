@@ -4,14 +4,14 @@ Atmospheric Complexity Framework (ACF)
 Planetary Boundaries Simulator Module (Phase 5)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryBoundariesSimulator:
     """Simulateur des 9 limites planétaires (Planetary Boundaries)."""
 
     @classmethod
-    def audit_planetary_boundaries(cls) -> Dict[str, Any]:
+    def audit_planetary_boundaries(cls) -> dict[str, Any]:
         """Évalue l'état actuel des limites planétaires."""
         return {
             "climate_change": {"status": "TRANSGRESSED", "co2_ppm": 422.5, "boundary_limit": 350.0},

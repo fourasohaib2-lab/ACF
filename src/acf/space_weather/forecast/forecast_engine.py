@@ -5,7 +5,7 @@ Operational Space Weather Forecast & Multi-Horizon Prediction Engine Module (Pha
 (Flares, CME Arrival, Kp Index, Dst Index, Auroral Probability, Lead Times 24h/48h/72h/7d)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class SpaceWeatherForecastEngine:
@@ -18,9 +18,9 @@ class SpaceWeatherForecastEngine:
         sunspot_number: float = 150.0,
         cme_speed_km_s: float = 1200.0,
         imf_bz_nt: float = -12.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Génère un bulletin complet de prévision du temps spatial Soleil-Terre."""
-        cme_lead_time_hours = (1.5e8 / (cme_speed_km_s * 3600.0))  # Distance Terre-Soleil / V_cme
+        cme_lead_time_hours = 1.5e8 / (cme_speed_km_s * 3600.0)  # Distance Terre-Soleil / V_cme
 
         predicted_kp = 4.0 + (cme_speed_km_s / 400.0) + (abs(imf_bz_nt) / 3.0) if imf_bz_nt < 0 else 3.0
         predicted_kp = min(9.0, predicted_kp)

@@ -7,7 +7,7 @@ Pan Controller
 Handles map dragging.
 """
 
-from PySide6.QtCore import QObject, Signal, QPoint
+from PySide6.QtCore import QObject, QPoint, Signal
 
 
 class PanController(QObject):
@@ -80,12 +80,9 @@ class PanController(QObject):
     def status(self):
 
         return {
-
             "dragging": self.dragging,
-
             "position": (
                 self.last_position.x(),
                 self.last_position.y(),
             ),
-
         }

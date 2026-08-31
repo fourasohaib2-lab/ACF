@@ -6,23 +6,23 @@ Tectonic Plates & Continental Drift Module (Phase 2)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class Plate:
     """Description scientifique d'une plaque tectonique lithosphérique."""
+
     plate_id: str
     name: str
     velocity_cm_year: float
     azimuth_deg: float
     area_million_km2: float
     plate_type: str  # e.g., "Oceanic", "Continental", "Mixed"
-    boundary_types: List[str]
-    subduction_zones: List[str]
+    boundary_types: list[str]
+    subduction_zones: list[str]
 
 
-TECTONIC_PLATES_REGISTRY: Dict[str, Plate] = {
+TECTONIC_PLATES_REGISTRY: dict[str, Plate] = {
     "pacific_plate": Plate(
         plate_id="pacific_plate",
         name="Pacific Plate",
@@ -70,9 +70,9 @@ class PlateDatabase:
     """Base de données et registre des 14 grandes plaques tectoniques mondiales."""
 
     @classmethod
-    def get_plate(cls, key: str) -> Optional[Plate]:
+    def get_plate(cls, key: str) -> Plate | None:
         return TECTONIC_PLATES_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_plates(cls) -> List[str]:
+    def list_plates(cls) -> list[str]:
         return list(TECTONIC_PLATES_REGISTRY.keys())

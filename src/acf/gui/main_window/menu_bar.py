@@ -80,4 +80,3 @@ class ACFMenuBar:
 
         help_menu.addAction(QAction("Documentation", self.window))
         help_menu.addAction(QAction("About ACF", self.window))
-

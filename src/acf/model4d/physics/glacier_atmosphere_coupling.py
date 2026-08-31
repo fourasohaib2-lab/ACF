@@ -35,7 +35,6 @@ class GlacierAtmosphereCouplingPhysics:
 
         return energy / latent_heat
 
-
     @staticmethod
     def albedo_feedback(incoming_radiation, albedo):
         """
@@ -46,7 +45,6 @@ class GlacierAtmosphereCouplingPhysics:
         value = incoming_radiation * (1 - albedo)
 
         return round(value, 10)
-
 
     @staticmethod
     def glacier_temperature_change(energy, heat_capacity):
@@ -60,7 +58,6 @@ class GlacierAtmosphereCouplingPhysics:
 
         return energy / heat_capacity
 
-
     @staticmethod
     def sublimation_rate(ice_loss, time):
         """
@@ -73,7 +70,6 @@ class GlacierAtmosphereCouplingPhysics:
 
         return ice_loss / time
 
-
     @staticmethod
     def meltwater_generation(ice_mass, melt_fraction):
         """
@@ -83,7 +79,6 @@ class GlacierAtmosphereCouplingPhysics:
         """
         return ice_mass * melt_fraction
 
-
     @staticmethod
     def glacier_energy_balance(shortwave, longwave):
         """
@@ -92,7 +87,6 @@ class GlacierAtmosphereCouplingPhysics:
         net = shortwave - longwave
         """
         return shortwave - longwave
-
 
     @staticmethod
     def glacier_retreat(distance, years):
@@ -106,14 +100,12 @@ class GlacierAtmosphereCouplingPhysics:
 
         return distance / years
 
-
     @staticmethod
     def atmospheric_warming_effect(glacier_loss, factor):
         """
         Atmospheric response due to glacier loss.
         """
         return glacier_loss * factor
-
 
     @staticmethod
     def ice_surface_temperature(surface_energy, thermal_capacity):
@@ -125,7 +117,6 @@ class GlacierAtmosphereCouplingPhysics:
 
         return surface_energy / thermal_capacity
 
-
     @staticmethod
     def glacier_mass_balance(accumulation, ablation):
         """
@@ -134,4 +125,3 @@ class GlacierAtmosphereCouplingPhysics:
         balance = accumulation - ablation
         """
         return accumulation - ablation
-

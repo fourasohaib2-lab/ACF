@@ -1,6 +1,7 @@
 """Tropical and extratropical cyclone simulation engine."""
 
-from typing import Dict, Any
+from typing import Any
+
 import numpy as np
 
 
@@ -18,9 +19,7 @@ class CycloneSimulator:
     def __init__(self) -> None:
         pass
 
-    def detect_cyclone_center(
-        self, slp: np.ndarray, lats: np.ndarray, lons: np.ndarray
-    ) -> Dict[str, Any]:
+    def detect_cyclone_center(self, slp: np.ndarray, lats: np.ndarray, lons: np.ndarray) -> dict[str, Any]:
         """Locate central pressure minimum and maximum wind radius.
 
         Args:

@@ -8,7 +8,6 @@ from acf.importers.wmo.importer import WMOImporter
 
 
 class ImporterManager:
-
     def __init__(self):
         self._importers = {}
         self.register("cf", CFImporter())
@@ -43,10 +42,10 @@ class ImporterManager:
 
 
 class DataManager:
-
     def __init__(self, registry=None):
         from acf.importers.factory import ReaderFactory
         from acf.importers.registry import ReaderRegistry
+
         if registry is None:
             registry = ReaderRegistry()
         self.factory = ReaderFactory(registry)

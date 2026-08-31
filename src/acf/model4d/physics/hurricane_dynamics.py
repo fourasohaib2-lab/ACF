@@ -21,7 +21,6 @@ class HurricaneDynamicsPhysics:
         """
         return initial_pressure - final_pressure
 
-
     @staticmethod
     def wind_speed_from_pressure(pressure_drop):
         """
@@ -32,16 +31,12 @@ class HurricaneDynamicsPhysics:
         """
         return round((pressure_drop * 1.6) ** 0.5, 3)
 
-
     @staticmethod
     def wind_speed_from_pressure_drop(pressure_drop):
         """
         Alias compatibility.
         """
-        return HurricaneDynamicsPhysics.wind_speed_from_pressure(
-            pressure_drop
-        )
-
+        return HurricaneDynamicsPhysics.wind_speed_from_pressure(pressure_drop)
 
     @staticmethod
     def hurricane_category(wind_speed):
@@ -59,14 +54,12 @@ class HurricaneDynamicsPhysics:
         else:
             return 5
 
-
     @staticmethod
     def eyewall_strength(wind_speed, factor):
         """
         Eyewall intensity index.
         """
         return wind_speed * factor
-
 
     @staticmethod
     def storm_surge_height(wind_speed, coefficient):
@@ -75,7 +68,6 @@ class HurricaneDynamicsPhysics:
         """
         return wind_speed * coefficient
 
-
     @staticmethod
     def coriolis_force(speed, latitude_factor):
         """
@@ -83,17 +75,12 @@ class HurricaneDynamicsPhysics:
         """
         return speed * latitude_factor
 
-
     @staticmethod
     def coriolis_effect(speed, latitude_factor):
         """
         Compatibility alias.
         """
-        return HurricaneDynamicsPhysics.coriolis_force(
-            speed,
-            latitude_factor
-        )
-
+        return HurricaneDynamicsPhysics.coriolis_force(speed, latitude_factor)
 
     @staticmethod
     def hurricane_energy(mass, velocity):
@@ -104,7 +91,6 @@ class HurricaneDynamicsPhysics:
         """
         return mass * velocity
 
-
     @staticmethod
     def rainfall_rate(amount, duration):
         """
@@ -112,14 +98,12 @@ class HurricaneDynamicsPhysics:
         """
         return amount / duration
 
-
     @staticmethod
     def track_speed(distance, time):
         """
         Hurricane movement speed.
         """
         return distance / time
-
 
     @staticmethod
     def intensification_rate(old_pressure, new_pressure):

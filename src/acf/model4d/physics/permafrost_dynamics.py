@@ -102,4 +102,3 @@ class PermafrostDynamicsPhysics:
         Emission méthane.
         """
         return thawed_volume * methane_factor
-

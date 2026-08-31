@@ -6,7 +6,6 @@ from acf.models.base_model import BaseWeatherModel
 
 
 class ERA5Model(BaseWeatherModel):
-
     name = "ERA5"
 
     supported_extensions = (

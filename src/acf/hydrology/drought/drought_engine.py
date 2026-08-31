@@ -5,7 +5,7 @@ Hydrological & Agricultural Drought Monitoring Engine Module (Phase 7)
 (SPI, SPEI, Soil Moisture Drought Index SMDI, Streamflow Drought Index SDI)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class HydrologicalDroughtEngine:
@@ -14,7 +14,7 @@ class HydrologicalDroughtEngine:
     """
 
     @staticmethod
-    def classify_spi_drought(spi_value: float) -> Dict[str, str]:
+    def classify_spi_drought(spi_value: float) -> dict[str, str]:
         """Classifie le niveau de sécheresse selon l'indice SPI (OMM Standard)."""
         if spi_value >= 2.0:
             cat = "Extremely Wet"
@@ -34,7 +34,9 @@ class HydrologicalDroughtEngine:
         return {"spi_value": str(round(spi_value, 2)), "drought_category": cat}
 
     @classmethod
-    def evaluate_basin_drought_status(cls, monthly_streamflow_m3_s: List[float], mean_streamflow_m3_s: float) -> Dict[str, Any]:
+    def evaluate_basin_drought_status(
+        cls, monthly_streamflow_m3_s: list[float], mean_streamflow_m3_s: float
+    ) -> dict[str, Any]:
         """Évalue l'indice de sécheresse des cours d'eau (Streamflow Drought Index SDI)."""
         if not monthly_streamflow_m3_s or mean_streamflow_m3_s <= 0:
             return {"sdi": 0.0, "status": "Normal"}

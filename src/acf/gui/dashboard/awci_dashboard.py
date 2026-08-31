@@ -5,19 +5,19 @@ AWCI Dashboard
 Complete AWCI dashboard with gauge, decomposition, profile, timeline.
 """
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
+from typing import Any
+
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from typing import Optional, Dict, Any
-
-from .awci_gauge import AWCIGauge
 from .awci_decomposition import AWCIDecomposition
+from .awci_gauge import AWCIGauge
 
 
 class AWCIDashboard(QWidget):
     """Complete AWCI Dashboard."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         self.gauge = AWCIGauge()
@@ -49,7 +49,7 @@ class AWCIDashboard(QWidget):
         # Bottom: Info
         info = QLabel("SYNTHETIC VIEW • One map to understand the complexity")
         info.setStyleSheet("color: #606080; font-size: 10px; padding: 5px; border-top: 1px solid #2a2a4a;")
-        info.setAlignment(Qt.AlignCenter)
+        info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
 
         self.setLayout(layout)
@@ -68,10 +68,10 @@ class AWCIDashboard(QWidget):
             }
         """)
 
-    def update_with_awci_result(self, result: Dict[str, Any]):
+    def update_with_awci_result(self, result: dict[str, Any]):
         """Update dashboard with AWCI result."""
-        self.gauge.set_score(result.get('awci', 0))
-        self.decomposition.set_decomposition(result.get('decomposition', {}))
+        self.gauge.set_score(result.get("awci", 0))
+        self.decomposition.set_decomposition(result.get("decomposition", {}))
 
-    def set_data(self, awci_result: Dict[str, Any]):
+    def set_data(self, awci_result: dict[str, Any]):
         self.update_with_awci_result(awci_result)

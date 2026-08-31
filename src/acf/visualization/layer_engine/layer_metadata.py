@@ -6,7 +6,7 @@ Layer Metadata & LayerDefinition Struct Module
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -33,9 +33,9 @@ class LayerDefinition:
     opacity: float = 1.0
     visible: bool = True
     locked: bool = False
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convertit la définition de couche en dictionnaire sérialisable."""
         return {
             "layer_id": self.layer_id,

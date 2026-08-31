@@ -51,7 +51,7 @@ class Cryosphere:
     def albedo(ice_fraction):
         """
         Albédo cryosphérique.
-        
+
         ice_fraction:
         0 -> surface libre
         1 -> glace complète
@@ -61,10 +61,7 @@ class Cryosphere:
         ice_albedo = 0.85
         water_albedo = 0.10
 
-        return (
-            ice_fraction * ice_albedo
-            + (1 - ice_fraction) * water_albedo
-        )
+        return ice_fraction * ice_albedo + (1 - ice_fraction) * water_albedo
 
     @staticmethod
     def heat_flux(temperature_difference, conductivity=2.2):
@@ -79,4 +76,3 @@ class Cryosphere:
         Variation d'épaisseur de glace.
         """
         return freezing - melting
-

@@ -117,19 +117,7 @@ class ObservationQualityControlEngine:
         state: ObservationQualityControlState,
     ) -> bool:
 
-        if state.temperature < 150:
-            return True
-
-        if state.temperature > 340:
-            return True
-
-        if state.humidity < 0:
-            return True
-
-        if state.humidity > 100:
-            return True
-
-        return False
+        return state.temperature < 150 or state.temperature > 340 or state.humidity < 0 or state.humidity > 100
 
     def quality_control_update(
         self,
@@ -155,8 +143,6 @@ class ObservationQualityControlEngine:
     ) -> float:
 
         return round(
-            self.observation_reliability(state)
-            * state.observation_quality
-            / 100.0,
+            self.observation_reliability(state) * state.observation_quality / 100.0,
             2,
         )

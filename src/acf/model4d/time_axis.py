@@ -9,9 +9,9 @@ Represents the temporal axis of a 4D atmospheric field.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 from uuid import uuid4
-from copy import deepcopy
 
 
 class TimeAxis:
@@ -42,7 +42,7 @@ class TimeAxis:
     def add(self, value):
 
         if isinstance(value, str):
-            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            value = datetime.fromisoformat(value)
 
         self.times.append(value)
 
@@ -137,17 +137,11 @@ class TimeAxis:
     def summary(self):
 
         return {
-
             "count": len(self.times),
-
             "first": self.first,
-
             "last": self.last,
-
             "step_hours": self.step_hours,
-
             "validated": self.validated,
-
         }
 
     ##################################################

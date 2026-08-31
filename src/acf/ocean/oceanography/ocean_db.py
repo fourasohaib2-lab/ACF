@@ -6,7 +6,7 @@ Global Physical Oceanography & Ocean Database Module (Phase 1)
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class PhysicalOceanographyEngine:
@@ -44,7 +44,7 @@ class OceanDatabase:
     """Base de données et registre des grandes masses d'eau et bassins océaniques mondiaux."""
 
     @classmethod
-    def get_ocean_basin_info(cls, basin_name: str) -> Dict[str, Any]:
+    def get_ocean_basin_info(cls, basin_name: str) -> dict[str, Any]:
         b = basin_name.lower()
         if "atlantique" in b or "atlantic" in b:
             return {

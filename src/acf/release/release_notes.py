@@ -4,14 +4,14 @@ Atmospheric Complexity Framework (ACF)
 Release Notes Generator Module
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class ReleaseNotesGenerator:
     """Générateur officiel des notes de version ACF v1.0."""
 
     @classmethod
-    def generate_release_notes(cls) -> Dict[str, Any]:
+    def generate_release_notes(cls) -> dict[str, Any]:
         return {
             "title": "Atmospheric Complexity Framework (ACF) Version 1.0 Production Release Notes",
             "version": "1.0.0",

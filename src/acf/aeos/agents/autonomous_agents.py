@@ -5,7 +5,7 @@ Autonomous Scientific Agents Module (Phase 11)
 (AgentManager supervising MeteorologyAgent, OceanAgent, HydrologyAgent, ClimateAgent, CryosphereAgent, GeologyAgent, SpaceWeatherAgent, ForecastAgent, DecisionAgent, KnowledgeAgent)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class AutonomousAgent:
@@ -92,10 +92,10 @@ class AgentManager:
             KnowledgeAgent(),
         ]
 
-    def list_agents(self) -> List[str]:
+    def list_agents(self) -> list[str]:
         return [agent.name for agent in self.agents]
 
-    def run_all_agents(self) -> Dict[str, Any]:
+    def run_all_agents(self) -> dict[str, Any]:
         results = {}
         for agent in self.agents:
             results[agent.name] = {

@@ -51,11 +51,7 @@ class PolarVortexDynamics:
         plus le vortex est intense.
         """
 
-        intensity = (
-            state.wind_speed
-            * state.temperature_gradient
-            * state.stability_index
-        )
+        intensity = state.wind_speed * state.temperature_gradient * state.stability_index
 
         return round(intensity, 3)
 

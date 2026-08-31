@@ -14,7 +14,6 @@ Sprint 8.25
 """
 
 
-
 class ModelCouplingPhysics:
     """
     Physics engine for multi-component model coupling.
@@ -40,11 +39,7 @@ class ModelCouplingPhysics:
             Coupling coefficient
         """
 
-        values = [
-            atmosphere,
-            ocean,
-            land
-        ]
+        values = [atmosphere, ocean, land]
 
         if any(v < 0 for v in values):
             raise ValueError("Coupling values must be positive")
@@ -56,7 +51,6 @@ class ModelCouplingPhysics:
 
         return round(total / len(values), 4)
 
-
     @staticmethod
     def energy_exchange(surface_flux, ocean_flux):
         """
@@ -67,7 +61,6 @@ class ModelCouplingPhysics:
             raise ValueError("Flux must be positive")
 
         return round(abs(surface_flux - ocean_flux), 4)
-
 
     @staticmethod
     def coupling_balance(atmosphere, ocean):
@@ -85,7 +78,6 @@ class ModelCouplingPhysics:
 
         return "ocean_dominant"
 
-
     @staticmethod
     def feedback_factor(initial, coupled):
         """
@@ -97,31 +89,15 @@ class ModelCouplingPhysics:
 
         return round((coupled - initial) / initial, 4)
 
-
     @staticmethod
-    def climate_system_index(
-        atmosphere,
-        ocean,
-        land,
-        cryosphere
-    ):
+    def climate_system_index(atmosphere, ocean, land, cryosphere):
         """
         Global coupled climate index.
         """
 
-        components = [
-            atmosphere,
-            ocean,
-            land,
-            cryosphere
-        ]
+        components = [atmosphere, ocean, land, cryosphere]
 
         if any(c < 0 for c in components):
-            raise ValueError(
-                "Climate components must be positive"
-            )
+            raise ValueError("Climate components must be positive")
 
-        return round(
-            sum(components) / len(components),
-            4
-        )
+        return round(sum(components) / len(components), 4)

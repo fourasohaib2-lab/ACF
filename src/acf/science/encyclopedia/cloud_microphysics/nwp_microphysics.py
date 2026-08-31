@@ -4,11 +4,12 @@ Atmospheric Complexity Framework (ACF)
 NWP Cloud Microphysics Schemes Encyclopedia Module (WRF, AROME, ECMWF IFS, ICON)
 """
 
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-SCHEMES: List[Dict[str, Any]] = [
+SCHEMES: list[dict[str, Any]] = [
     # --- WRF SCHEMES ---
     {
         "key": "wrf_thompson_scheme",
@@ -45,7 +46,11 @@ SCHEMES: List[Dict[str, Any]] = [
         "subdomain": "Schémas NWP WRF",
         "equation": "Prognostic: qc, qr, qi, qs, qg, qh + N_c, N_r et CCN",
         "latex_equation": r"\frac{\partial N_{ccn}}{\partial t} = -\nabla \cdot (\mathbf{u} N_{ccn}) + S_{ccn}",
-        "variables": {"6 hydrométéores": "qc, qr, qi, qs, qg, qh", "N_c, N_r": "Nombre gouttelettes & pluie", "N_ccn": "Noyaux de condensation (m⁻³)"},
+        "variables": {
+            "6 hydrométéores": "qc, qr, qi, qs, qg, qh",
+            "N_c, N_r": "Nombre gouttelettes & pluie",
+            "N_ccn": "Noyaux de condensation (m⁻³)",
+        },
         "units": {"q": "kg/kg", "N": "m⁻³"},
         "description": "Extension à double moment du schéma WSM6 incluant la prédiction explicite des noyaux de condensation (CCN) et des concentrations de gouttelettes d'eau nuageuse.",
         "application_conditions": ["Études d'interactions aérosols-nuages et précipitations intenses"],
@@ -80,7 +85,6 @@ SCHEMES: List[Dict[str, Any]] = [
         "limitations": ["Paramétrisation 1-moment de base"],
         "references": ["Tao et al. (2003) Meteorol. Atmos. Phys.", "NASA GSFC Microphysics ATBD"],
     },
-
     # --- AROME / METEO-FRANCE SCHEMES ---
     {
         "key": "arome_ice3_scheme",
@@ -124,7 +128,6 @@ SCHEMES: List[Dict[str, Any]] = [
         "limitations": ["Très coûteux en mémoire et temps GPU/CPU"],
         "references": ["Vié et al. (2016) Geosci. Model Dev.", "CNRM / Météo-France"],
     },
-
     # --- ECMWF IFS SCHEMES ---
     {
         "key": "ecmwf_ifs_cloud_scheme",
@@ -133,7 +136,11 @@ SCHEMES: List[Dict[str, Any]] = [
         "subdomain": "Schémas NWP ECMWF",
         "equation": "Prognostic: Fraction nuageuse a, q_l, q_i, q_r, q_s (Tiedtke-Forbes)",
         "latex_equation": r"\frac{\partial a}{\partial t} = A(a) + S_{\text{form}} - S_{\text{evap}}, \quad \frac{\partial q_l}{\partial t} = A(q_l) + S_{\text{cond}} - S_{\text{auto}}",
-        "variables": {"a": "Fraction couvrant la grille (0 à 1)", "ql, qi": "Eau et glace nuageuses", "qr, qs": "Pluie et neige pronostiques"},
+        "variables": {
+            "a": "Fraction couvrant la grille (0 à 1)",
+            "ql, qi": "Eau et glace nuageuses",
+            "qr, qs": "Pluie et neige pronostiques",
+        },
         "units": {"a": "dimensionless", "q": "kg/kg"},
         "description": "Schéma pronostique de fraction nuageuse et d'hydrométéores (Tiedtke 1993, Forbes et al. 2011) utilisé dans le modèle global de l'ECMWF.",
         "application_conditions": ["Prévision numérique globale à l'échelle du globe (ECMWF IFS)"],
@@ -154,7 +161,6 @@ SCHEMES: List[Dict[str, Any]] = [
         "limitations": ["Dépendance à la fonction d'émissivité des cirrus"],
         "references": ["ECMWF IFS Documentation Part IV: Physical Processes", "WMO NWP Docs"],
     },
-
     # --- ICON SCHEME ---
     {
         "key": "icon_seifert_beheng",
@@ -163,7 +169,10 @@ SCHEMES: List[Dict[str, Any]] = [
         "subdomain": "Schémas NWP ICON",
         "equation": "Prognostic: Mass (q_x) & Number (N_x) for 6 hydrometeor classes (qc, qr, qi, qs, qg, qh)",
         "latex_equation": r"\frac{\partial N_x}{\partial t} + \nabla \cdot (\mathbf{u} N_x) = S_{N,x}, \quad \frac{\partial q_x}{\partial t} + \nabla \cdot (\mathbf{u} q_x) = S_{q,x}",
-        "variables": {"6 espèces": "Gouttelettes, Pluie, Glace, Neige, Graupel, Grêle", "N_x": "Concentrations numériques (m⁻³)"},
+        "variables": {
+            "6 espèces": "Gouttelettes, Pluie, Glace, Neige, Graupel, Grêle",
+            "N_x": "Concentrations numériques (m⁻³)",
+        },
         "units": {"q": "kg/kg", "N": "m⁻³"},
         "description": "Schéma microphysique à 2 moments avancé utilisé dans le modèle ICON du DWD (Deutscher Wetterdienst) prédisant la masse et le nombre de 6 catégories d'hydrométéores.",
         "application_conditions": ["Modèle ICON à grille icosaédrique (résolutions globales et régionales)"],

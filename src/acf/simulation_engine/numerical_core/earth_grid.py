@@ -1,7 +1,8 @@
 """Global Earth spherical grid and coordinate transformation manager."""
 
 from enum import Enum
-from typing import Dict, Any
+from typing import Any
+
 import numpy as np
 
 # Physical constant for Earth mean radius (m)
@@ -92,7 +93,7 @@ class EarthGrid:
             p_3d[k, :, :] = self.a_coeff[k] + self.b_coeff[k] * p_surface
         return p_3d
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export grid metadata dictionary."""
         return {
             "n_lat": self.n_lat,

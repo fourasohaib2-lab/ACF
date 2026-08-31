@@ -6,7 +6,6 @@ from acf.catalogs.hub import CatalogHub
 
 
 class ScientificSearch:
-
     def __init__(self):
 
         self.hub = CatalogHub()

@@ -1,7 +1,8 @@
 """CMIP6 Shared Socioeconomic Pathways (SSP) scenario driver."""
 
 from enum import Enum
-from typing import Dict
+from typing import Any
+
 import numpy as np
 
 
@@ -24,7 +25,7 @@ class CMIP6Engine:
     def __init__(self, scenario: SSPScenario = SSPScenario.SSP2_45) -> None:
         self.scenario = scenario
 
-    def get_ghg_concentrations(self, year: float) -> Dict[str, float]:
+    def get_ghg_concentrations(self, year: float) -> dict[str, Any]:
         """Compute projected GHG concentration for given year under active SSP scenario.
 
         Args:
@@ -61,6 +62,3 @@ class CMIP6Engine:
             "N2O_ppb": float(n2o),
             "radiative_forcing_wm2": float(erf),
         }
-
-
-

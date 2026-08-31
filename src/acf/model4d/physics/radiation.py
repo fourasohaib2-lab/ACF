@@ -18,10 +18,7 @@ class Radiation:
     STEFAN_BOLTZMANN = 5.670374419e-8
 
     @staticmethod
-    def stefan_boltzmann(
-        temperature: float,
-        emissivity: float = 1.0
-    ) -> float:
+    def stefan_boltzmann(temperature: float, emissivity: float = 1.0) -> float:
         """
         Calculate emitted radiation flux.
 
@@ -35,14 +32,10 @@ class Radiation:
         Returns:
             W/m²
         """
-        return emissivity * Radiation.STEFAN_BOLTZMANN * temperature ** 4
-
+        return emissivity * Radiation.STEFAN_BOLTZMANN * temperature**4
 
     @staticmethod
-    def net_balance(
-        incoming: float,
-        outgoing: float
-    ) -> float:
+    def net_balance(incoming: float, outgoing: float) -> float:
         """
         Net radiation balance.
 
@@ -51,12 +44,8 @@ class Radiation:
         """
         return incoming - outgoing
 
-
     @staticmethod
-    def shortwave(
-        solar: float,
-        albedo: float
-    ) -> float:
+    def shortwave(solar: float, albedo: float) -> float:
         """
         Absorbed shortwave radiation.
 
@@ -64,16 +53,12 @@ class Radiation:
         """
         return solar * (1 - albedo)
 
-
     @staticmethod
-    def longwave(
-        surface_temperature: float
-    ) -> float:
+    def longwave(surface_temperature: float) -> float:
         """
         Surface longwave emission.
         """
         return Radiation.stefan_boltzmann(surface_temperature)
-
 
     @staticmethod
     def category(value: float) -> str:

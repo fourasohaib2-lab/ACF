@@ -5,7 +5,7 @@ Earthquake Early Warning System (EEWS) Module (Phase 6)
 (P-wave Detection, S-wave Lead Time Warning, PGA Ground Motion, Exposed Population)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EarthquakeWarningEngine:
@@ -19,7 +19,7 @@ class EarthquakeWarningEngine:
         detection_delay_seconds: float = 3.0,
         vp_km_s: float = 6.0,
         vs_km_s: float = 3.5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcul du délai d'avertissement utile avant l'arrivée des ondes S destructrices."""
         t_p = distance_epicenter_km / vp_km_s
         t_s = distance_epicenter_km / vs_km_s

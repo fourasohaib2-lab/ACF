@@ -28,11 +28,13 @@ class DatasetRegistry:
         self._datasets_dict[dataset_id] = dataset
         if dataset not in self._datasets_list:
             self._datasets_list.append(dataset)
-        self.history.append({
-            "action": "register",
-            "dataset": getattr(dataset, "name", str(dataset_id)),
-            "time": datetime.now().isoformat(),
-        })
+        self.history.append(
+            {
+                "action": "register",
+                "dataset": getattr(dataset, "name", str(dataset_id)),
+                "time": datetime.now().isoformat(),
+            }
+        )
         return dataset_id
 
     def add(self, dataset):
@@ -86,5 +88,5 @@ class DatasetRegistry:
     def summary(self):
         return {
             "datasets": self.count(),
-            "formats": list(set(getattr(d, "filetype", "") for d in self.all() if hasattr(d, "filetype"))),
+            "formats": list({getattr(d, "filetype", "") for d in self.all() if hasattr(d, "filetype")}),
         }

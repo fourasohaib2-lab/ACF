@@ -32,7 +32,7 @@ class DatasetMapper:
         )
 
         copied.variables = dict(dataset.variables)
-        copied.dimensions = list(dataset.dimensions)
+        copied.dimensions = dict(dataset.dimensions)
         copied.metadata = dict(dataset.metadata)
         copied.validated = dataset.validated
 

@@ -3,7 +3,6 @@ Ocean-Sea Ice Thermal & Mechanical Coupling Module
 """
 
 
-
 class OceanSeaIceCoupling:
     """Couplage thermique et dynamique entre l'océan et la banquise."""
 

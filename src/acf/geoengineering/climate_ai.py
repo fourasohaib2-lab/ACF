@@ -5,7 +5,7 @@ Climate Intervention AI & Geoengineering Decision Engine Module (Phase 7)
 (ClimateDecisionEngine implementing Observation -> Diagnosis -> Simulation -> Evaluation -> Recommendations)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class ClimateDecisionEngine:
@@ -14,7 +14,7 @@ class ClimateDecisionEngine:
     """
 
     @classmethod
-    def evaluate_intervention_strategy(cls, target_cooling_k: float = 1.0) -> Dict[str, Any]:
+    def evaluate_intervention_strategy(cls, target_cooling_k: float = 1.0) -> dict[str, Any]:
         """Génère la séquence d'évaluation autonome de stratégie d'intervention climatique."""
         return {
             "target_cooling_k": target_cooling_k,

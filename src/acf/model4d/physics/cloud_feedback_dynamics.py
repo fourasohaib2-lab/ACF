@@ -33,59 +33,34 @@ class CloudFeedbackDynamics:
     Simplified cloud feedback engine.
     """
 
-
-    def cloud_formation(
-        self,
-        state: CloudState
-    ) -> float:
+    def cloud_formation(self, state: CloudState) -> float:
         """
         Estimate cloud formation potential.
         """
 
-        value = (
-            state.humidity
-            * state.convection_strength
-        )
+        value = state.humidity * state.convection_strength
 
         return round(value, 6)
 
-
-    def albedo_effect(
-        self,
-        state: CloudState
-    ) -> float:
+    def albedo_effect(self, state: CloudState) -> float:
         """
         Cooling effect from reflected solar radiation.
         """
 
-        value = (
-            state.cloud_fraction
-            * state.solar_reflection
-        )
+        value = state.cloud_fraction * state.solar_reflection
 
         return round(value, 6)
 
-
-    def greenhouse_cloud_effect(
-        self,
-        state: CloudState
-    ) -> float:
+    def greenhouse_cloud_effect(self, state: CloudState) -> float:
         """
         Warming effect from infrared trapping.
         """
 
-        value = (
-            state.cloud_fraction
-            * state.infrared_trapping
-        )
+        value = state.cloud_fraction * state.infrared_trapping
 
         return round(value, 6)
 
-
-    def cloud_feedback_balance(
-        self,
-        state: CloudState
-    ) -> float:
+    def cloud_feedback_balance(self, state: CloudState) -> float:
         """
         Net cloud climate feedback.
 
@@ -96,19 +71,11 @@ class CloudFeedbackDynamics:
         cooling
         """
 
-        value = (
-            self.greenhouse_cloud_effect(state)
-            -
-            self.albedo_effect(state)
-        )
+        value = self.greenhouse_cloud_effect(state) - self.albedo_effect(state)
 
         return round(value, 6)
 
-
-    def feedback_state(
-        self,
-        state: CloudState
-    ) -> str:
+    def feedback_state(self, state: CloudState) -> str:
         """
         Classify cloud feedback.
         """

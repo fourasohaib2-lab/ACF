@@ -6,12 +6,12 @@ Global Meteorological Reanalysis Database Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class ReanalysisDatasetInfo:
     """Description d'un jeu de données de réanalyse météorologique/climatologique."""
+
     key: str
     name: str
     institution: str
@@ -20,11 +20,11 @@ class ReanalysisDatasetInfo:
     vertical_levels: int
     temporal_resolution: str
     data_assimilation_system: str
-    key_variables: List[str]
-    references: List[str]
+    key_variables: list[str]
+    references: list[str]
 
 
-REANALYSIS_REGISTRY: Dict[str, ReanalysisDatasetInfo] = {
+REANALYSIS_REGISTRY: dict[str, ReanalysisDatasetInfo] = {
     "era5": ReanalysisDatasetInfo(
         key="era5",
         name="ERA5 Reanalysis (ECMWF)",
@@ -80,9 +80,9 @@ class ReanalysisEngine:
     """Moteur de recherche des réanalyses météorologiques mondiales."""
 
     @classmethod
-    def get(cls, key: str) -> Optional[ReanalysisDatasetInfo]:
+    def get(cls, key: str) -> ReanalysisDatasetInfo | None:
         return REANALYSIS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_datasets(cls) -> List[str]:
+    def list_datasets(cls) -> list[str]:
         return list(REANALYSIS_REGISTRY.keys())

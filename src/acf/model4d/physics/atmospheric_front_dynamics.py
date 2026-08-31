@@ -21,7 +21,6 @@ Sprint:
 """
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
@@ -88,10 +87,7 @@ class AtmosphericFrontDynamics:
         lifting_rate: float,
     ) -> float:
 
-        probability = (
-            abs(humidity_gradient) * 40
-            + lifting_rate * 60
-        )
+        probability = abs(humidity_gradient) * 40 + lifting_rate * 60
 
         return min(round(probability, 2), 100.0)
 
@@ -115,7 +111,7 @@ class AtmosphericFrontDynamics:
     def diagnose(
         self,
         state: FrontState,
-    ) -> Dict:
+    ) -> dict:
 
         intensity = self.calculate_front_intensity(
             state.temperature_gradient,

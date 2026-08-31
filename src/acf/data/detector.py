@@ -4,8 +4,6 @@ ACF Data Format Detector
 Automatic detection of meteorological and Earth observation data formats.
 """
 
-from pathlib import Path
-
 
 class FormatDetector:
     """
@@ -22,6 +20,9 @@ class FormatDetector:
         "CSV": [".csv", ".tsv"],
         "JSON": [".json", ".geojson"],
         "XML": [".xml", ".kml"],
+        "FA": [".fa", ".fa.gz"],
+        "LFA": [".lfa"],
+        "LFI": [".lfi"],
         "ZARR": [".zarr"],
         "PARQUET": [".parquet", ".pq"],
         "ARROW": [".arrow", ".ipc"],
@@ -30,17 +31,17 @@ class FormatDetector:
     @classmethod
     def detect(cls, filepath) -> str:
         """Détecte le format canonique d'un fichier à partir de son extension ou de sa structure."""
-        path = Path(filepath)
-        extension = path.suffix.lower()
+        path_str = str(filepath).lower()
 
         for name, extensions in cls.FORMATS.items():
-            if extension in extensions:
-                return name
+            for ext in extensions:
+                if path_str.endswith(ext):
+                    return name
 
         return "UNKNOWN"
 
     @classmethod
-    def supported_formats(cls):
+    def supported_formats(cls) -> list[str]:
         """Retourne la liste des formats supportés."""
         return list(cls.FORMATS.keys())
 

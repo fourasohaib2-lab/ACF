@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Operational Implementation Roadmap & Certification Standards Module
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ImplementationRoadmap:
@@ -21,7 +21,7 @@ class ImplementationRoadmap:
         "JMA (Japan Meteorological Agency)",
     ]
 
-    ROADMAP_STAGES: List[Dict[str, Any]] = [
+    ROADMAP_STAGES: list[dict[str, Any]] = [
         {
             "stage": "Stage 1 — Knowledge Integration & Schema Harmonization",
             "status": "COMPLETED (MISSION ACF-XXX)",
@@ -40,7 +40,7 @@ class ImplementationRoadmap:
     ]
 
     @classmethod
-    def get_roadmap_summary(cls) -> Dict[str, Any]:
+    def get_roadmap_summary(cls) -> dict[str, Any]:
         """Retourne la synthèse de la roadmap opérationnelle."""
         return {
             "framework_target": "Global Operational Meteorological Center Parity",

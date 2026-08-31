@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Planetary Digital Twin Dashboard & AWCI 3D Globe Workspace Integration Module (Phase 9)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryDashboard:
@@ -13,7 +13,7 @@ class PlanetaryDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Planetary Digital Twin."""
         return {
             "workspace_name": "PLANETARY DIGITAL TWIN",

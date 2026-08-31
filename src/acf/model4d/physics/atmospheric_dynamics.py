@@ -16,7 +16,6 @@ Contains:
 - Relative flow dynamics
 """
 
-
 import math
 
 
@@ -41,10 +40,7 @@ class AtmosphericDynamicsPhysics:
         if latitude < -90 or latitude > 90:
             raise ValueError("Invalid latitude")
 
-        return 2 * AtmosphericDynamicsPhysics.EARTH_ROTATION * math.sin(
-            math.radians(latitude)
-        )
-
+        return 2 * AtmosphericDynamicsPhysics.EARTH_ROTATION * math.sin(math.radians(latitude))
 
     @staticmethod
     def coriolis_force(velocity, latitude, mass=1):
@@ -58,18 +54,10 @@ class AtmosphericDynamicsPhysics:
 
         f = AtmosphericDynamicsPhysics.coriolis_parameter(latitude)
 
-        return round(
-            mass * f * velocity,
-            6
-        )
-
+        return round(mass * f * velocity, 6)
 
     @staticmethod
-    def pressure_gradient_force(
-        pressure_difference,
-        density,
-        distance
-    ):
+    def pressure_gradient_force(pressure_difference, density, distance):
         """
         Pressure gradient force.
 
@@ -82,99 +70,55 @@ class AtmosphericDynamicsPhysics:
         if distance <= 0:
             raise ValueError("Distance must be positive")
 
-        return round(
-            pressure_difference /
-            (density * distance),
-            6
-        )
-
+        return round(pressure_difference / (density * distance), 6)
 
     @staticmethod
-    def geostrophic_wind(
-        pressure_gradient,
-        latitude,
-        density=1.225
-    ):
+    def geostrophic_wind(pressure_gradient, latitude, density=1.225):
         """
         Geostrophic wind.
 
         Vg = PGF / f
         """
 
-        f = abs(
-            AtmosphericDynamicsPhysics.coriolis_parameter(
-                latitude
-            )
-        )
+        f = abs(AtmosphericDynamicsPhysics.coriolis_parameter(latitude))
 
         if f == 0:
-            raise ValueError(
-                "Geostrophic wind undefined at equator"
-            )
+            raise ValueError("Geostrophic wind undefined at equator")
 
-        return round(
-            pressure_gradient /
-            (density * f),
-            3
-        )
-
+        return round(pressure_gradient / (density * f), 3)
 
     @staticmethod
-    def horizontal_advection(
-        wind_speed,
-        gradient
-    ):
+    def horizontal_advection(wind_speed, gradient):
         """
         Horizontal scalar advection.
 
         A = -V.grad(phi)
         """
 
-        return round(
-            -wind_speed * gradient,
-            6
-        )
-
+        return round(-wind_speed * gradient, 6)
 
     @staticmethod
-    def divergence(
-        du_dx,
-        dv_dy
-    ):
+    def divergence(du_dx, dv_dy):
         """
         Horizontal divergence.
 
         div(V)=du/dx+dv/dy
         """
 
-        return round(
-            du_dx + dv_dy,
-            6
-        )
-
+        return round(du_dx + dv_dy, 6)
 
     @staticmethod
-    def vorticity(
-        dv_dx,
-        du_dy
-    ):
+    def vorticity(dv_dx, du_dy):
         """
         Relative vorticity.
 
         ζ=dv/dx-du/dy
         """
 
-        return round(
-            dv_dx - du_dy,
-            6
-        )
-
+        return round(dv_dx - du_dy, 6)
 
     @staticmethod
-    def potential_vorticity(
-        absolute_vorticity,
-        static_stability
-    ):
+    def potential_vorticity(absolute_vorticity, static_stability):
         """
         Simplified potential vorticity.
 
@@ -182,23 +126,12 @@ class AtmosphericDynamicsPhysics:
         """
 
         if static_stability <= 0:
-            raise ValueError(
-                "Static stability must be positive"
-            )
+            raise ValueError("Static stability must be positive")
 
-        return round(
-            absolute_vorticity /
-            static_stability,
-            6
-        )
-
+        return round(absolute_vorticity / static_stability, 6)
 
     @staticmethod
-    def rossby_number(
-        velocity,
-        latitude,
-        length_scale
-    ):
+    def rossby_number(velocity, latitude, length_scale):
         """
         Rossby number.
 
@@ -206,23 +139,11 @@ class AtmosphericDynamicsPhysics:
         """
 
         if length_scale <= 0:
-            raise ValueError(
-                "Length scale must be positive"
-            )
+            raise ValueError("Length scale must be positive")
 
-        f = abs(
-            AtmosphericDynamicsPhysics.coriolis_parameter(
-                latitude
-            )
-        )
+        f = abs(AtmosphericDynamicsPhysics.coriolis_parameter(latitude))
 
         if f == 0:
-            raise ValueError(
-                "Rossby number undefined at equator"
-            )
+            raise ValueError("Rossby number undefined at equator")
 
-        return round(
-            velocity /
-            (f * length_scale),
-            6
-        )
+        return round(velocity / (f * length_scale), 6)

@@ -28,7 +28,11 @@ ENTRIES = [
         subdomain="Radar Doppler",
         equation="V_r = (fd * c) / (2 * f0)",
         latex_equation=r"V_r = \frac{f_d c}{2 f_0}",
-        variables={"fd": "Décalage de fréquence Doppler", "f0": "Fréquence d'émission radar", "c": "Vitesse de la lumière"},
+        variables={
+            "fd": "Décalage de fréquence Doppler",
+            "f0": "Fréquence d'émission radar",
+            "c": "Vitesse de la lumière",
+        },
         units={"Vr": "m/s", "fd": "Hz"},
         description="Vitesse du vent et des précipitations projetée le long de l'axe du faisceau radar (détection des mésocyclones et microrafales).",
         application_conditions=["Cibles mobiles (gouttes de pluie, glace, insectes)"],

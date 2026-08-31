@@ -6,23 +6,23 @@ Climate Indices & Teleconnection Patterns Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class ClimateIndexInfo:
     """Description scientifique d'un indice climatique ou mode de téléconnexion."""
+
     key: str
     name: str
     domain: str
     region: str
     calculation_method: str
     latex_formula: str
-    physical_impacts: List[str]
-    references: List[str]
+    physical_impacts: list[str]
+    references: list[str]
 
 
-CLIMATE_INDICES_REGISTRY: Dict[str, ClimateIndexInfo] = {
+CLIMATE_INDICES_REGISTRY: dict[str, ClimateIndexInfo] = {
     "enso_nino34": ClimateIndexInfo(
         key="enso_nino34",
         name="El Niño / Southern Oscillation (NINO3.4 & ONI)",
@@ -94,9 +94,9 @@ class ClimateIndicesEngine:
     """Moteur de recherche des indices climatiques et téléconnexions."""
 
     @classmethod
-    def get(cls, key: str) -> Optional[ClimateIndexInfo]:
+    def get(cls, key: str) -> ClimateIndexInfo | None:
         return CLIMATE_INDICES_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_indices(cls) -> List[str]:
+    def list_indices(cls) -> list[str]:
         return list(CLIMATE_INDICES_REGISTRY.keys())

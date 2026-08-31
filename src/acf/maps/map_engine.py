@@ -4,7 +4,6 @@ ACF Map Engine (Canonical Implementation)
 
 
 class MapEngine:
-
     def __init__(self):
         self.layers = []
         self.figures = []

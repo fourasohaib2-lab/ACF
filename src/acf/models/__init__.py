@@ -1,29 +1,21 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-MODELS -   Init  
+MODELS Package
 
-Purpose:
---------
-Numerical Weather Prediction (NWP) model drivers for GFS, ECMWF IFS/ERA5, AROME, ARPEGE, WRF, and ICON.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the models subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.models module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Numerical Weather Prediction (NWP) model drivers and ingestion adapters for AROME, ARPEGE, ALADIN, GFS, IFS, ERA5, WRF, and ICON.
 """
 
+from acf.models.aladin import ALADINIngestionAdapter
+from acf.models.arome import AROMEIngestionAdapter
+from acf.models.arpege import ARPEGEIngestionAdapter
+from acf.models.base_model import BaseWeatherModel
+from acf.models.forecast_config import ForecastConfig
+
+__all__ = [
+    "ALADINIngestionAdapter",
+    "AROMEIngestionAdapter",
+    "ARPEGEIngestionAdapter",
+    "BaseWeatherModel",
+    "ForecastConfig",
+]

@@ -1,6 +1,5 @@
 """MPI distributed domain decomposition for HPC clusters."""
 
-from typing import Tuple
 import numpy as np
 
 
@@ -31,7 +30,7 @@ class MPIDomainDecomposition:
         self.local_nlat = global_nlat // n_proc_lat
         self.local_nlon = global_nlon // n_proc_lon
 
-    def get_local_bounds(self) -> Tuple[int, int, int, int]:
+    def get_local_bounds(self) -> tuple[int, int, int, int]:
         """Return (lat_start, lat_end, lon_start, lon_end) index bounds for local process."""
         lat_start = self.rank_lat * self.local_nlat
         lat_end = lat_start + self.local_nlat

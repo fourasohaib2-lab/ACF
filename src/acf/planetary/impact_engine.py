@@ -7,7 +7,6 @@ Cosmic Impact Physics Engine Module (Phase 3)
 
 from dataclasses import dataclass
 
-
 JOULES_PER_MEGATON_TNT = 4.184e15  # Joules per Mt TNT
 GRAVITY_EARTH = 9.80665  # m/s^2
 
@@ -15,6 +14,7 @@ GRAVITY_EARTH = 9.80665  # m/s^2
 @dataclass
 class ImpactSeverity:
     """Description physique de la sévérité d'un impact cosmique."""
+
     kinetic_energy_joules: float
     megatons_tnt: float
     crater_diameter_km: float
@@ -33,7 +33,7 @@ class ImpactEngine:
     def calculate_kinetic_energy(cls, mass_kg: float, velocity_m_s: float) -> float:
         """
         Calcule l'énergie cinétique d'impact : E = 0.5 * m * v^2
-        
+
         Equations:
             E = \\frac{1}{2} m v^2
         """
@@ -45,14 +45,22 @@ class ImpactEngine:
         return energy_joules / JOULES_PER_MEGATON_TNT
 
     @classmethod
-    def estimate_crater_diameter_km(cls, diameter_m: float, velocity_m_s: float, density_impactor: float = 2500.0, density_target: float = 2700.0) -> float:
+    def estimate_crater_diameter_km(
+        cls, diameter_m: float, velocity_m_s: float, density_impactor: float = 2500.0, density_target: float = 2700.0
+    ) -> float:
         """
         Estime le diamètre du cratère d'impact par la formule empirique d'échelle de Collins et al. (2005).
-        
+
         Equations:
             D_{\\text{crater}} = 1.161 \\cdot \\left(\\frac{\\rho_i}{\\rho_t}\\right)^{0.33} \\cdot d_i^{0.78} \\cdot v_i^{0.44} \\cdot g^{-0.22}
         """
-        d_km = 1.161 * ((density_impactor / density_target) ** (0.33)) * (diameter_m**0.78) * (velocity_m_s**0.44) * (GRAVITY_EARTH ** -0.22)
+        d_km = (
+            1.161
+            * ((density_impactor / density_target) ** (0.33))
+            * (diameter_m**0.78)
+            * (velocity_m_s**0.44)
+            * (GRAVITY_EARTH**-0.22)
+        )
         return d_km / 1000.0
 
     @classmethod

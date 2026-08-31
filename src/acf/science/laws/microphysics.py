@@ -18,7 +18,10 @@ MICROPHYSICS_LAWS = [
         },
         units={"P_auto": "kg/(kg·s)", "k_auto": "s⁻¹", "qc, qc_crit": "kg/kg"},
         description="Conversion des gouttelettes de nuage en gouttes de pluie lorsque le seuil critique d'eau condensée est dépassé.",
-        references=["Kessler, E. (1969). On the Distribution and Continuity of Water Substance in Atmospheric Circulations.", "NOAA Technical Reports"],
+        references=[
+            "Kessler, E. (1969). On the Distribution and Continuity of Water Substance in Atmospheric Circulations.",
+            "NOAA Technical Reports",
+        ],
         limitations=["Schéma à 1 moment (bulk single-moment microphysics)."],
         compute_func=lambda qc, qc_crit=0.0005, k_auto=0.001: k_auto * max(qc - qc_crit, 0.0),
     ),
@@ -37,7 +40,7 @@ MICROPHYSICS_LAWS = [
         description="Captation des gouttelettes en suspension par les gouttes de pluie en chute libre.",
         references=["Kessler (1969)", "Rogers & Yau (1989) A Short Course in Cloud Physics"],
         limitations=["Approximation empirique pour schémas bulk."],
-        compute_func=lambda qc, qr, k_coll=2.2: k_coll * qc * (qr ** 0.875),
+        compute_func=lambda qc, qr, k_coll=2.2: k_coll * qc * (qr**0.875),
     ),
     AtmosphericLaw(
         key="ice_crystal_nucleation",

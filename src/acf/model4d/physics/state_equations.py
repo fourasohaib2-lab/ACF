@@ -20,8 +20,8 @@ class StateEquations:
     Atmospheric thermodynamic state equations.
     """
 
-    R_DRY_AIR = 287.05       # J/(kg K)
-    GAMMA = 1.4              # Air heat capacity ratio
+    R_DRY_AIR = 287.05  # J/(kg K)
+    GAMMA = 1.4  # Air heat capacity ratio
 
     @staticmethod
     def pressure(density, temperature):
@@ -42,9 +42,7 @@ class StateEquations:
         if temperature == 0:
             raise ValueError("Temperature cannot be zero")
 
-        return pressure / (
-            StateEquations.R_DRY_AIR * temperature
-        )
+        return pressure / (StateEquations.R_DRY_AIR * temperature)
 
     @staticmethod
     def virtual_temperature(temperature, humidity):
@@ -65,11 +63,7 @@ class StateEquations:
         if temperature <= 0:
             raise ValueError("Temperature must be positive")
 
-        return sqrt(
-            StateEquations.GAMMA *
-            StateEquations.R_DRY_AIR *
-            temperature
-        )
+        return sqrt(StateEquations.GAMMA * StateEquations.R_DRY_AIR * temperature)
 
     @staticmethod
     def stability(value):

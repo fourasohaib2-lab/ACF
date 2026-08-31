@@ -12,18 +12,13 @@ Provides physical calculations related to atmospheric fronts:
 """
 
 
-
-
 class AtmosphericFrontsPhysics:
     """
     Atmospheric front dynamics calculations.
     """
 
     @staticmethod
-    def temperature_gradient(
-        temperature_difference,
-        distance
-    ):
+    def temperature_gradient(temperature_difference, distance):
         """
         Temperature gradient.
 
@@ -42,11 +37,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_difference / distance
 
-
     @staticmethod
-    def frontal_strength(
-        gradient
-    ):
+    def frontal_strength(gradient):
         """
         Front intensity index.
 
@@ -58,12 +50,8 @@ class AtmosphericFrontsPhysics:
 
         return abs(gradient) * 100
 
-
     @staticmethod
-    def thermal_advection(
-        wind_speed,
-        temperature_gradient
-    ):
+    def thermal_advection(wind_speed, temperature_gradient):
         """
         Thermal advection.
 
@@ -78,12 +66,8 @@ class AtmosphericFrontsPhysics:
 
         return -wind_speed * temperature_gradient
 
-
     @staticmethod
-    def front_speed(
-        pressure_gradient,
-        density
-    ):
+    def front_speed(pressure_gradient, density):
         """
         Simplified frontal propagation speed.
 
@@ -95,12 +79,8 @@ class AtmosphericFrontsPhysics:
 
         return pressure_gradient / density
 
-
     @staticmethod
-    def frontogenesis(
-        temperature_gradient,
-        deformation
-    ):
+    def frontogenesis(temperature_gradient, deformation):
         """
         Frontogenesis function.
 
@@ -111,12 +91,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_gradient * deformation
 
-
     @staticmethod
-    def frontal_zone_width(
-        gradient,
-        temperature_difference
-    ):
+    def frontal_zone_width(gradient, temperature_difference):
         """
         Width of frontal zone.
 
@@ -128,12 +104,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_difference / gradient
 
-
     @staticmethod
-    def baroclinic_instability(
-        temperature_gradient,
-        vertical_shear
-    ):
+    def baroclinic_instability(temperature_gradient, vertical_shear):
         """
         Simple baroclinic instability index.
 
@@ -144,12 +116,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_gradient * vertical_shear
 
-
     @staticmethod
-    def warm_front_intensity(
-        temperature_difference,
-        speed
-    ):
+    def warm_front_intensity(temperature_difference, speed):
         """
         Warm front intensity.
 
@@ -160,12 +128,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_difference * speed
 
-
     @staticmethod
-    def cold_front_intensity(
-        temperature_difference,
-        speed
-    ):
+    def cold_front_intensity(temperature_difference, speed):
         """
         Cold front intensity.
 
@@ -176,12 +140,8 @@ class AtmosphericFrontsPhysics:
 
         return temperature_difference * speed * 1.2
 
-
     @staticmethod
-    def frontal_convergence(
-        wind_change,
-        distance
-    ):
+    def frontal_convergence(wind_change, distance):
         """
         Wind convergence near front.
 

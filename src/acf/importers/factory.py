@@ -12,11 +12,8 @@ import importlib
 import inspect
 import pkgutil
 
-import acf.importers.readers as importers_readers_package
-
 
 class ReaderFactory:
-
     def __init__(self, registry=None):
         self._readers = []
         if registry is not None:
@@ -32,10 +29,16 @@ class ReaderFactory:
         Recherche automatiquement tous les lecteurs.
         """
         self._readers = []
-        self._discover_in_package(importers_readers_package, "acf.importers.readers")
+        try:
+            import acf.importers.readers as importers_readers_package
+
+            self._discover_in_package(importers_readers_package, "acf.importers.readers")
+        except Exception:
+            pass
 
         try:
             import acf.data.readers as data_readers_package
+
             self._discover_in_package(data_readers_package, "acf.data.readers")
         except Exception:
             pass
@@ -52,7 +55,11 @@ class ReaderFactory:
                 if cls.__module__ != module.__name__:
                     continue
 
-                if cls.__name__.endswith("Reader") and cls.__name__ not in ("BaseReader", "Reader") and cls not in registered_classes:
+                if (
+                    cls.__name__.endswith("Reader")
+                    and cls.__name__ not in ("BaseReader", "Reader")
+                    and cls not in registered_classes
+                ):
                     try:
                         instance = cls()
                         self.register(instance)

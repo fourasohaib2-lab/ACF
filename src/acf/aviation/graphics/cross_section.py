@@ -5,7 +5,7 @@ Flight Route Vertical Cross-Section Engine Module
 (Temperature, Humidity, Wind, CAT, Icing, Tropopause Height, Theta Along Flight Path)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class FlightCrossSectionEngine:
@@ -20,7 +20,7 @@ class FlightCrossSectionEngine:
         arr_lat: float,
         arr_lon: float,
         num_waypoints: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Génère le profil vertical interpolé le long de la route de vol."""
         waypoints = []
         for i in range(num_waypoints):
@@ -28,15 +28,17 @@ class FlightCrossSectionEngine:
             lat = dep_lat + fraction * (arr_lat - dep_lat)
             lon = dep_lon + fraction * (arr_lon - dep_lon)
 
-            waypoints.append({
-                "step": i,
-                "latitude": round(lat, 4),
-                "longitude": round(lon, 4),
-                "tropopause_fl": 380,
-                "cat_index_edr": 0.12 if i not in [4, 5] else 0.48,  # Moderate/Severe CAT at waypoints 4-5
-                "icing_risk": "NONE" if i < 7 else "MODERATE",
-                "jet_stream_core_kt": 110.0,
-            })
+            waypoints.append(
+                {
+                    "step": i,
+                    "latitude": round(lat, 4),
+                    "longitude": round(lon, 4),
+                    "tropopause_fl": 380,
+                    "cat_index_edr": 0.12 if i not in [4, 5] else 0.48,  # Moderate/Severe CAT at waypoints 4-5
+                    "icing_risk": "NONE" if i < 7 else "MODERATE",
+                    "jet_stream_core_kt": 110.0,
+                }
+            )
 
         return {
             "route_waypoints": waypoints,

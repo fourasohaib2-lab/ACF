@@ -2,10 +2,8 @@
 WMO Official Code Tables Encyclopedia & Decoder Module (Table 4677 Present Weather, Table 0513 Clouds)
 """
 
-from typing import Dict
-
 # WMO Code Table 4677 - Present Weather WW
-PRESENT_WEATHER_WMO_CODE_TABLE_4677: Dict[int, str] = {
+PRESENT_WEATHER_WMO_CODE_TABLE_4677: dict[int, str] = {
     0: "Atmosphere claire sans developpement convectif",
     1: "Nuages se dissipant progressivement",
     2: "Etat du ciel globalement inchange",
@@ -30,7 +28,7 @@ PRESENT_WEATHER_WMO_CODE_TABLE_4677: Dict[int, str] = {
 }
 
 # WMO Code Table 0513 - Cloud Genera C
-CLOUD_GENERA_WMO_CODE_TABLE_0513: Dict[str, str] = {
+CLOUD_GENERA_WMO_CODE_TABLE_0513: dict[str, str] = {
     "Ci": "Cirrus (Nuage eleve filandreux)",
     "Cc": "Cirrocumulus (Nuage eleve moutonne)",
     "Cs": "Cirrostratus (Voile eleve produisant un halo)",

@@ -5,7 +5,6 @@ Scientific Exception Manager Module
 """
 
 
-
 class ExceptionManager:
     """Classificateur d'exceptions scientifiques et de tolérance aux pannes."""
 

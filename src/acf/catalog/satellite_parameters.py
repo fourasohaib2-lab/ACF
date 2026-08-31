@@ -33,11 +33,9 @@ from acf.catalog.catalog_entry import CatalogEntry
 def register_satellite(catalog):
 
     parameters = [
-
         ####################################################
         # BRIGHTNESS TEMPERATURE
         ####################################################
-
         CatalogEntry(
             parameter_id="bt_ir108",
             standard_name="brightness_temperature",
@@ -46,9 +44,8 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="TOA",
             renderer="Raster",
-            colormap="infrared"
+            colormap="infrared",
         ),
-
         CatalogEntry(
             parameter_id="bt_wv062",
             standard_name="brightness_temperature",
@@ -57,9 +54,8 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="TOA",
             renderer="Raster",
-            colormap="water_vapor"
+            colormap="water_vapor",
         ),
-
         CatalogEntry(
             parameter_id="bt_vis006",
             standard_name="toa_bidirectional_reflectance",
@@ -68,13 +64,11 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="TOA",
             renderer="Raster",
-            colormap="visible"
+            colormap="visible",
         ),
-
         ####################################################
         # CLOUD PRODUCTS
         ####################################################
-
         CatalogEntry(
             parameter_id="cth",
             standard_name="cloud_top_height",
@@ -83,9 +77,8 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="Atmosphere",
             renderer="Raster",
-            colormap="cloud_height"
+            colormap="cloud_height",
         ),
-
         CatalogEntry(
             parameter_id="ctt",
             standard_name="cloud_top_temperature",
@@ -94,9 +87,8 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="Atmosphere",
             renderer="Raster",
-            colormap="temperature"
+            colormap="temperature",
         ),
-
         CatalogEntry(
             parameter_id="cot",
             standard_name="cloud_optical_thickness",
@@ -105,13 +97,11 @@ def register_satellite(catalog):
             category="Satellite",
             level_type="Atmosphere",
             renderer="Raster",
-            colormap="clouds"
+            colormap="clouds",
         ),
-
         ####################################################
         # RADAR
         ####################################################
-
         CatalogEntry(
             parameter_id="dbz",
             standard_name="equivalent_reflectivity_factor",
@@ -120,9 +110,8 @@ def register_satellite(catalog):
             category="Radar",
             level_type="Volume",
             renderer="Raster",
-            colormap="reflectivity"
+            colormap="reflectivity",
         ),
-
         CatalogEntry(
             parameter_id="vrad",
             standard_name="radial_velocity",
@@ -131,9 +120,8 @@ def register_satellite(catalog):
             category="Radar",
             level_type="Volume",
             renderer="Raster",
-            colormap="velocity"
+            colormap="velocity",
         ),
-
         CatalogEntry(
             parameter_id="zdr",
             standard_name="differential_reflectivity",
@@ -142,9 +130,8 @@ def register_satellite(catalog):
             category="Radar",
             level_type="Volume",
             renderer="Raster",
-            colormap="zdr"
+            colormap="zdr",
         ),
-
         CatalogEntry(
             parameter_id="kdp",
             standard_name="specific_differential_phase",
@@ -153,9 +140,8 @@ def register_satellite(catalog):
             category="Radar",
             level_type="Volume",
             renderer="Raster",
-            colormap="kdp"
+            colormap="kdp",
         ),
-
         CatalogEntry(
             parameter_id="rhohv",
             standard_name="cross_correlation_ratio",
@@ -164,9 +150,8 @@ def register_satellite(catalog):
             category="Radar",
             level_type="Volume",
             renderer="Raster",
-            colormap="rhohv"
-        )
-
+            colormap="rhohv",
+        ),
     ]
 
     for p in parameters:

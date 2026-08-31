@@ -3,17 +3,18 @@
 Professional ACF Main Window (Backward-compatible ESOC subclass wrapper).
 """
 
-from typing import Optional, Any
+from typing import Any
+
 from acf.gui.esoc.esoc_window import ESOCWindow
 from acf.gui.layer_panel.layer_panel import LayerPanel
-from acf.gui.map.map_canvas import MapCanvas
 from acf.gui.main_window.property_panel import PropertyPanel
+from acf.gui.map.map_canvas import MapCanvas
 
 
 class MainWindow(ESOCWindow):
     """Legacy MainWindow subclass wrapping ESOCWindow for complete backward compatibility."""
 
-    def __init__(self, parent: Optional[Any] = None) -> None:
+    def __init__(self, parent: Any | None = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle("Atmospheric Complexity Framework — Unified ESOC")

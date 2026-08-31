@@ -2,5 +2,6 @@
 ECMWF Parameter Catalog
 """
 
+from typing import Any
 
-ECMWF_PARAMETERS = {}
+ECMWF_PARAMETERS: dict[str, Any] = {}

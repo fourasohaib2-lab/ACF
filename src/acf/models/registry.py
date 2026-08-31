@@ -4,7 +4,6 @@ Model Registry
 
 
 class ModelRegistry:
-
     def __init__(self):
         self._models = {}
 

@@ -31,7 +31,6 @@ from acf.validation.rule import ValidationRule
 
 
 class ParameterValidator:
-
     def __init__(self):
 
         self.rules = {}
@@ -57,7 +56,4 @@ class ParameterValidator:
         if rule.minimum is not None and value < rule.minimum:
             return False
 
-        if rule.maximum is not None and value > rule.maximum:
-            return False
-
-        return True
+        return rule.maximum is None or value <= rule.maximum

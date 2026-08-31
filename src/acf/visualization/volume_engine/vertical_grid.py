@@ -4,9 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Vertical Coordinate & Atmospheric Stratification System Module (Phase 3)
 """
 
-from typing import List
-
-
 PRESSURE_LEVELS_HPA = [1000, 925, 850, 700, 500, 400, 300, 250, 200, 150, 100, 70, 50, 30, 10]
 
 
@@ -14,7 +11,7 @@ class VerticalCoordinateSystem:
     """Système de coordonnées verticales (Pression hPa, Sigma Hybride, Eta, Altitude géométrique)."""
 
     @classmethod
-    def get_standard_pressure_levels(cls) -> List[int]:
+    def get_standard_pressure_levels(cls) -> list[int]:
         return PRESSURE_LEVELS_HPA
 
     @classmethod

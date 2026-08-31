@@ -6,12 +6,12 @@ Earth Anomaly Detection Engine Module (Phase 5)
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class DetectedEarthAnomaly:
     """Description d'une anomalie détectée sur la Terre."""
+
     anomaly_id: str
     domain: str
     anomaly_type: str
@@ -26,7 +26,7 @@ class EarthAnomalyEngine:
     """
 
     @classmethod
-    def scan_for_anomalies(cls) -> List[DetectedEarthAnomaly]:
+    def scan_for_anomalies(cls) -> list[DetectedEarthAnomaly]:
         """Scanne le vecteur d'état planétaire et identifie les anomalies en cours."""
         return [
             DetectedEarthAnomaly(

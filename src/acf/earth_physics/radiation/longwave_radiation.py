@@ -10,4 +10,4 @@ class LongwaveRadiationModel:
 
     @classmethod
     def blackbody_emittance(cls, temp_k: float, emissivity: float = 1.0) -> float:
-        return emissivity * cls.STEFAN_BOLTZMANN * (temp_k ** 4)
+        return emissivity * cls.STEFAN_BOLTZMANN * (temp_k**4)

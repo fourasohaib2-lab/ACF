@@ -54,7 +54,6 @@ class VerticalAxis:
     def remove(self, level):
 
         if level in self.levels:
-
             self.levels.remove(level)
 
             self.touch()
@@ -124,19 +123,12 @@ class VerticalAxis:
     def summary(self):
 
         return {
-
             "count": self.count,
-
             "first": self.first,
-
             "last": self.last,
-
             "unit": self.unit,
-
             "axis_type": self.axis_type,
-
             "validated": self.validated,
-
         }
 
     ##################################################

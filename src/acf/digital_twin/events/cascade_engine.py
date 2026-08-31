@@ -6,12 +6,13 @@ Multi-Hazard Cascade Risk Engine & Disaster Chain Graph Module (Phase 5)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
 class CascadingRiskChain:
     """Chaîne d'événements en cascade à travers plusieurs sous-systèmes de la Terre."""
+
     trigger_event: str
     primary_hazard: str
     secondary_hazard: str
@@ -24,7 +25,7 @@ class RiskCascadeGraph:
     """Représentation sous forme de graphe des dépendances de risques en cascade."""
 
     @classmethod
-    def get_standard_cascades(cls) -> List[CascadingRiskChain]:
+    def get_standard_cascades(cls) -> list[CascadingRiskChain]:
         return [
             CascadingRiskChain(
                 trigger_event="Tropical Cyclone (Cat 4/5)",
@@ -67,7 +68,7 @@ class CascadeRiskEngine:
     """
 
     @classmethod
-    def evaluate_active_cascades(cls) -> Dict[str, Any]:
+    def evaluate_active_cascades(cls) -> dict[str, Any]:
         """Analyse et détecte toutes les chaînes de risques en cascade actives sur la planète."""
         cascades = RiskCascadeGraph.get_standard_cascades()
 

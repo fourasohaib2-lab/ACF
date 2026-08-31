@@ -4,11 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Meteorological Satellite Remote Sensing, Spectral Channels & Algorithms Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     # --- SATELLITES ---
     EncyclopediaEntry(
         key="sat_meteosat_series",
@@ -80,7 +79,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Satellite polaire défilant"],
         references=["NOAA NESDIS VIIRS Technical Documentation", "AMS Remote Sensing"],
     ),
-
     # --- SPECTRAL CHANNELS ---
     EncyclopediaEntry(
         key="sat_channel_visible",
@@ -138,7 +136,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Sensibilité réduite pour les nuages très bas proches de la surface"],
         references=["Menzel et al. (1983) J. Climate Appl. Meteor.", "EUMETSAT NWP SAF"],
     ),
-
     # --- ALGORITHMS ---
     EncyclopediaEntry(
         key="cloud_mask_algorithm",

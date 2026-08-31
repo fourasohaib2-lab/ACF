@@ -27,7 +27,10 @@ ENTRIES = [
         subdomain="Canaux spectraux",
         equation="BT_wv = T_eff of upper tropospheric water vapor layer",
         latex_equation=r"BT_{\text{WV}} \propto \int B_\lambda(T(z)) \frac{d\tau_{\text{WV}}}{dz} dz",
-        variables={"BT": "Température de brillance (K)", "WV": "Absorption par la bande de vibration de l'eau à 6.2 µm"},
+        variables={
+            "BT": "Température de brillance (K)",
+            "WV": "Absorption par la bande de vibration de l'eau à 6.2 µm",
+        },
         units={"BT": "K"},
         description="Canal satellite mesurant le rayonnement émis par la vapeur d'eau dans la moyenne et haute troposphère (détection des thalwegs et jet-stream).",
         application_conditions=["Troposphère moyenne et haute (400-200 hPa)"],

@@ -15,7 +15,6 @@ from uuid import uuid4
 
 
 class Domain4D:
-
     def __init__(self):
 
         self.id = str(uuid4())
@@ -89,27 +88,15 @@ class Domain4D:
     def summary(self):
 
         return {
-
             "name": self.name,
-
             "model": self.model,
-
             "projection": self.projection,
-
             "resolution": self.resolution,
-
             "validated": self.validated,
-
         }
 
     ##################################################
 
     def __repr__(self):
 
-        return (
-
-            f"Domain4D(name='{self.name}', "
-
-            f"model='{self.model}')"
-
-        )
+        return f"Domain4D(name='{self.name}', model='{self.model}')"

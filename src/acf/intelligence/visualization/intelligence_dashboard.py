@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Earth Intelligence Dashboard & AWCI Mission Control Module (Phase 12)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EarthIntelligenceDashboard:
@@ -13,7 +13,7 @@ class EarthIntelligenceDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Earth Intelligence Mission Control."""
         return {
             "workspace_name": "EARTH INTELLIGENCE MISSION CONTROL",

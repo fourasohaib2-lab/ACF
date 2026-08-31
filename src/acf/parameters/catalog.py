@@ -28,9 +28,7 @@ physical modeling, and spatial-temporal analysis within the Atmospheric Complexi
 """
 
 
-
 class ParameterCatalog:
-
     def __init__(self):
 
         self.parameters = {}

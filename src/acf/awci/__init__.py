@@ -10,7 +10,7 @@ from .normalizer import Normalizer
 from .weights import WeightsManager
 
 __all__ = [
-    'AWCICalculator',
-    'Normalizer',
-    'WeightsManager',
+    "AWCICalculator",
+    "Normalizer",
+    "WeightsManager",
 ]

@@ -5,7 +5,7 @@ Interplanetary Climate Comparative Engine Module (Phase 6)
 (PlanetaryClimateEngine comparing general circulation, Hadley cells, greenhouse effect, and seasonal cycles)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class PlanetaryClimateEngine:
@@ -14,7 +14,7 @@ class PlanetaryClimateEngine:
     """
 
     @classmethod
-    def compare_climates(cls) -> Dict[str, Any]:
+    def compare_climates(cls) -> dict[str, Any]:
         """Génère un tableau comparatif des dynamiques climatiques interplanétaires."""
         return {
             "Earth": {

@@ -2,9 +2,8 @@
 Artificial Intelligence Engine
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-datetime.now(UTC)
 
 class AIEngine:
     """
@@ -35,11 +34,7 @@ class AIEngine:
 
     def analyze(self, dataset):
 
-        result = {
-            "timestamp": datetime.utcnow(),
-            "status": "success",
-            "dataset": str(type(dataset).__name__)
-        }
+        result = {"timestamp": datetime.now(UTC), "status": "success", "dataset": str(type(dataset).__name__)}
 
         self.history.append(result)
 

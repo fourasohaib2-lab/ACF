@@ -19,7 +19,6 @@ class AtmosphericChemistryAerosolCouplingPhysics:
 
     MODULE_NAME = "Atmospheric Chemistry Aerosol Coupling Physics"
 
-
     @staticmethod
     def pm25_concentration(emission_rate, removal_rate):
         """
@@ -36,7 +35,6 @@ class AtmosphericChemistryAerosolCouplingPhysics:
 
         return emission_rate - removal_rate
 
-
     @staticmethod
     def pm10_fraction(pm10, pm25):
         """
@@ -50,7 +48,6 @@ class AtmosphericChemistryAerosolCouplingPhysics:
             raise ValueError("PM2.5 cannot exceed PM10")
 
         return pm10 - pm25
-
 
     @staticmethod
     def sulfate_aerosol_formation(so2_concentration, oxidation_rate):
@@ -66,7 +63,6 @@ class AtmosphericChemistryAerosolCouplingPhysics:
 
         return so2_concentration * oxidation_rate
 
-
     @staticmethod
     def black_carbon_radiative_effect(concentration, absorption_efficiency):
         """
@@ -77,12 +73,9 @@ class AtmosphericChemistryAerosolCouplingPhysics:
             raise ValueError("Black carbon concentration must be positive")
 
         if not 0 <= absorption_efficiency <= 1:
-            raise ValueError(
-                "Absorption efficiency must be between 0 and 1"
-            )
+            raise ValueError("Absorption efficiency must be between 0 and 1")
 
         return concentration * absorption_efficiency
-
 
     @staticmethod
     def aerosol_cloud_nucleation(aerosol_number, activation_ratio):
@@ -94,29 +87,22 @@ class AtmosphericChemistryAerosolCouplingPhysics:
             raise ValueError("Aerosol number must be positive")
 
         if not 0 <= activation_ratio <= 1:
-            raise ValueError(
-                "Activation ratio must be between 0 and 1"
-            )
+            raise ValueError("Activation ratio must be between 0 and 1")
 
         return aerosol_number * activation_ratio
 
-
     @staticmethod
-    def chemistry_radiative_feedback(
-        aerosol_loading,
-        radiative_factor
-    ):
+    def chemistry_radiative_feedback(aerosol_loading, radiative_factor):
         """
         Aerosol chemical-radiative feedback.
         """
 
         return aerosol_loading * radiative_factor
 
-
     @staticmethod
     def module_status():
         return {
             "module": AtmosphericChemistryAerosolCouplingPhysics.MODULE_NAME,
             "status": "active",
-            "domain": "atmospheric chemistry and aerosols"
+            "domain": "atmospheric chemistry and aerosols",
         }

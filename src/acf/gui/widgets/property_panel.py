@@ -28,15 +28,14 @@ physical modeling, and spatial-temporal analysis within the Atmospheric Complexi
 """
 
 from PySide6.QtWidgets import (
-    QWidget,
     QLabel,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 
 class PropertyPanel(QWidget):
-
     def __init__(self):
         super().__init__()
 
@@ -51,9 +50,7 @@ class PropertyPanel(QWidget):
         self.editor = QTextEdit()
         self.editor.setReadOnly(True)
 
-        self.editor.setPlainText(
-            "No object selected."
-        )
+        self.editor.setPlainText("No object selected.")
 
         layout.addWidget(title)
         layout.addWidget(self.editor)

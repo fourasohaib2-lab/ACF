@@ -19,7 +19,7 @@ class BulkRichardsonNumber:
         if shear == 0:
             raise ValueError("shear must not be zero")
 
-        return (2.0 * cape) / (shear ** 2)
+        return (2.0 * cape) / (shear**2)
 
     @staticmethod
     def category(value: float) -> str:

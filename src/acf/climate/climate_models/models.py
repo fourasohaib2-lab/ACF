@@ -6,12 +6,12 @@ Global Earth System & Climate Models Registry Module
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class ClimateModelInfo:
     """Description scientifique complète d'un modèle du système Terre / Climat."""
+
     key: str
     name: str
     institution: str
@@ -23,12 +23,12 @@ class ClimateModelInfo:
     carbon_cycle: str
     coupler: str
     spatial_resolution: str
-    strengths: List[str]
-    limitations: List[str]
-    references: List[str]
+    strengths: list[str]
+    limitations: list[str]
+    references: list[str]
 
 
-CLIMATE_MODELS_REGISTRY: Dict[str, ClimateModelInfo] = {
+CLIMATE_MODELS_REGISTRY: dict[str, ClimateModelInfo] = {
     "cesm2": ClimateModelInfo(
         key="cesm2",
         name="CESM2 (Community Earth System Model v2)",
@@ -116,9 +116,9 @@ class ClimateModelEngine:
     """Moteur de consultation des modèles du Système Terre."""
 
     @classmethod
-    def get_model(cls, key: str) -> Optional[ClimateModelInfo]:
+    def get_model(cls, key: str) -> ClimateModelInfo | None:
         return CLIMATE_MODELS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls) -> list[str]:
         return list(CLIMATE_MODELS_REGISTRY.keys())

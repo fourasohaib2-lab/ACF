@@ -26,17 +26,14 @@ class Dashboard:
         self.panels = {}
 
         if isinstance(window, str):
-
             self.name = window
             self.window = None
 
         else:
-
             self.window = window
             self.name = "Dashboard"
 
             if self.window is not None:
-
                 self.layout = DashboardLayout(self.window)
 
     ##################################################
@@ -44,7 +41,6 @@ class Dashboard:
     def initialize(self):
 
         if self.layout is not None:
-
             self.panels = self.layout.build()
 
     ##################################################
@@ -63,29 +59,23 @@ class Dashboard:
         explorer = self.panels.get("explorer")
 
         if explorer and hasattr(explorer, "clear"):
-
             explorer.clear()
 
         map_view = self.panels.get("map")
 
         if map_view:
-
             if hasattr(map_view, "clear"):
-
                 map_view.clear()
 
             if hasattr(map_view, "setText"):
-
                 map_view.setText("Map View (No Project)")
 
         properties = self.panels.get("properties")
 
         if properties:
-
             widget = properties.widget()
 
             if widget and hasattr(widget, "clear"):
-
                 widget.clear()
 
     ##################################################
@@ -108,9 +98,7 @@ class Dashboard:
         """
 
         return {
-
             "name": self.name,
-
         }
 
     ##################################################
@@ -121,8 +109,4 @@ class Dashboard:
         Create dashboard from dictionary.
         """
 
-        return cls(
-
-            data.get("name", "Dashboard")
-
-        )
+        return cls(data.get("name", "Dashboard"))

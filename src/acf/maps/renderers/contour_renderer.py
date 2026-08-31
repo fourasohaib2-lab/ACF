@@ -5,9 +5,9 @@ Contour Renderer
 
 
 class ContourRenderer:
+    def __init__(self, canvas=None):
 
-    def __init__(self):
-
+        self.canvas = canvas
         self.field = None
         self.levels = []
 
@@ -39,17 +39,13 @@ class ContourRenderer:
 
         return self.field is not None
 
-    def render(self):
+    def render(self, field=None, *args, **kwargs):
 
-        if not self.has_field():
-            return False
+        if field is not None:
+            self.set_field(field)
 
-        return True
+        return self.has_field()
 
     def __repr__(self):
 
-        return (
-            f"ContourRenderer("
-            f"levels={len(self.levels)}, "
-            f"color='{self.color}')"
-        )
+        return f"ContourRenderer(levels={len(self.levels)}, color='{self.color}')"

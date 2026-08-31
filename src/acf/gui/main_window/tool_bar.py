@@ -23,9 +23,7 @@ class ACFToolBar:
 
         self.toolbar.setFloatable(False)
 
-        self.toolbar.setToolButtonStyle(
-            Qt.ToolButtonTextUnderIcon
-        )
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
         self.build()
 

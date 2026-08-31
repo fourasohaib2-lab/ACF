@@ -6,7 +6,7 @@ Tsunami Wave Dynamics & Inundation Warning Engine Module (Phase 9)
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class TsunamiForecastEngine:
@@ -21,7 +21,9 @@ class TsunamiForecastEngine:
         return math.sqrt(max(0.0, g * water_depth_m))
 
     @staticmethod
-    def greens_law_coastal_amplification(h1_open_ocean_m: float, d1_open_ocean_m: float, d2_coastal_depth_m: float) -> float:
+    def greens_law_coastal_amplification(
+        h1_open_ocean_m: float, d1_open_ocean_m: float, d2_coastal_depth_m: float
+    ) -> float:
         """Loi de Green pour l'amplification de la hauteur de vague à l'approche de la côte H2 = H1 * (d1/d2)^(1/4)."""
         if d2_coastal_depth_m <= 0:
             return h1_open_ocean_m
@@ -33,7 +35,7 @@ class TsunamiForecastEngine:
         fault_depth_km: float,
         distance_to_coast_km: float,
         ocean_depth_m: float = 4000.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Évalue le risque de tsunami généré par un séisme sous-marin."""
         is_tsunamigenic = (earthquake_mw >= 7.0) and (fault_depth_km <= 100.0)
 

@@ -6,7 +6,7 @@ Atmospheric Complexity Framework (ACF)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -22,7 +22,7 @@ class AtmosphericVolume:
     has_chemistry: bool = True
     data_shape: tuple = (360, 180, 50, 24)
 
-    def get_volume_metadata(self) -> Dict[str, Any]:
+    def get_volume_metadata(self) -> dict[str, Any]:
         """Retourne la synthèse des métadonnées du volume atmosphérique 4D."""
         return {
             "variable_name": self.variable_name,

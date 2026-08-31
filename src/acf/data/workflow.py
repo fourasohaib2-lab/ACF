@@ -4,7 +4,6 @@ ACF Workflow Engine
 
 
 class Workflow:
-
     def __init__(self, name):
 
         self.name = name
@@ -24,7 +23,6 @@ class Workflow:
         current = dataset
 
         for step in self.steps:
-
             current = step["function"](current)
 
         return current

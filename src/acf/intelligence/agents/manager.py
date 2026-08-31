@@ -5,7 +5,7 @@ Multi-Agent Scientific AI Manager Module (Phase 2)
 (ScientificAgentManager supervising Meteorology, Ocean, Hydrology, Climate, Space Weather, Geology agents)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ScientificAgentManager:
@@ -14,7 +14,7 @@ class ScientificAgentManager:
     """
 
     @classmethod
-    def get_registered_agents(cls) -> List[str]:
+    def get_registered_agents(cls) -> list[str]:
         return [
             "MeteorologyAgent",
             "ClimateAgent",
@@ -27,7 +27,7 @@ class ScientificAgentManager:
         ]
 
     @classmethod
-    def run_collaborative_agent_assessment(cls) -> Dict[str, Any]:
+    def run_collaborative_agent_assessment(cls) -> dict[str, Any]:
         """Exécute une évaluation collaborative multi-agents."""
         return {
             "active_agents_count": 8,

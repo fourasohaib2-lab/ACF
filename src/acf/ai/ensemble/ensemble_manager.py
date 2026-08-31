@@ -6,7 +6,7 @@ AI & NWP Ensemble Forecasting & Probabilistic Verification Module
 """
 
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 
 class EnsembleManager:
@@ -14,7 +14,7 @@ class EnsembleManager:
     Gestionnaire et analyseur statistique d'ensembles de prévision numérique et stochastique d'IA.
     """
 
-    def __init__(self, member_values: List[float]):
+    def __init__(self, member_values: list[float]):
         self.members = sorted(member_values)
         self.n_members = len(member_values)
 
@@ -81,10 +81,10 @@ class EnsembleManager:
         if not self.members:
             return 0.0
         term1 = sum(abs(x - observation) for x in self.members) / self.n_members
-        term2 = sum(abs(x - y) for x in self.members for y in self.members) / (2.0 * (self.n_members ** 2))
+        term2 = sum(abs(x - y) for x in self.members for y in self.members) / (2.0 * (self.n_members**2))
         return term1 - term2
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Résumé statistique complet de l'ensemble."""
         return {
             "n_members": self.n_members,

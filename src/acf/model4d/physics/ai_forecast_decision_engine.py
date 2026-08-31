@@ -49,7 +49,6 @@ class AIForecastDecisionEngine:
     AI operational decision layer for Model4D.
     """
 
-
     def decision_score(
         self,
         state: AIForecastDecisionState,
@@ -72,7 +71,6 @@ class AIForecastDecisionEngine:
             2,
         )
 
-
     def confidence_level(
         self,
         state: AIForecastDecisionState,
@@ -91,8 +89,6 @@ class AIForecastDecisionEngine:
             return "MEDIUM"
 
         return "LOW"
-
-
 
     def recommended_action(
         self,
@@ -114,8 +110,6 @@ class AIForecastDecisionEngine:
             return "NORMAL_OPERATION"
 
         return "INCREASE_MONITORING"
-
-
 
     def priority_level(
         self,
@@ -143,8 +137,6 @@ class AIForecastDecisionEngine:
 
         return 2
 
-
-
     def automatic_response(
         self,
         state: AIForecastDecisionState,
@@ -156,23 +148,13 @@ class AIForecastDecisionEngine:
         action = self.recommended_action(state)
 
         response_map = {
-
-            "ACTIVATE_MAXIMUM_ALERT":
-                "Immediate emergency meteorological response required",
-
-            "ISSUE_WEATHER_WARNING":
-                "Issue official weather warning",
-
-            "INCREASE_MONITORING":
-                "Increase forecast monitoring frequency",
-
-            "NORMAL_OPERATION":
-                "Continue standard forecasting workflow",
+            "ACTIVATE_MAXIMUM_ALERT": "Immediate emergency meteorological response required",
+            "ISSUE_WEATHER_WARNING": "Issue official weather warning",
+            "INCREASE_MONITORING": "Increase forecast monitoring frequency",
+            "NORMAL_OPERATION": "Continue standard forecasting workflow",
         }
 
         return response_map[action]
-
-
 
     def model4d_ready(
         self,
@@ -182,13 +164,7 @@ class AIForecastDecisionEngine:
         Validate Model4D operational readiness.
         """
 
-        return (
-            state.confidence >= 70
-            and state.forecast_quality >= 70
-            and state.observation_quality >= 70
-        )
-
-
+        return state.confidence >= 70 and state.forecast_quality >= 70 and state.observation_quality >= 70
 
     def decision_update(
         self,
@@ -199,22 +175,10 @@ class AIForecastDecisionEngine:
         """
 
         return {
-
-            "decision_score":
-                self.decision_score(state),
-
-            "confidence_level":
-                self.confidence_level(state),
-
-            "recommended_action":
-                self.recommended_action(state),
-
-            "priority_level":
-                self.priority_level(state),
-
-            "automatic_response":
-                self.automatic_response(state),
-
-            "model4d_ready":
-                self.model4d_ready(state),
+            "decision_score": self.decision_score(state),
+            "confidence_level": self.confidence_level(state),
+            "recommended_action": self.recommended_action(state),
+            "priority_level": self.priority_level(state),
+            "automatic_response": self.automatic_response(state),
+            "model4d_ready": self.model4d_ready(state),
         }

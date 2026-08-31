@@ -5,7 +5,7 @@ Global Earth System Operations Platform UI/UX Engine (MISSION ACF-UI-001)
 (EarthSystemOperationsPlatform unifying all 45 engineering domains in one world-class professional UI layout)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EarthSystemOperationsPlatform:
@@ -34,7 +34,7 @@ class EarthSystemOperationsPlatform:
     }
 
     @classmethod
-    def get_platform_metadata(cls) -> Dict[str, Any]:
+    def get_platform_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration ergonomique et la métadonnée d'interface d'ACF-UI-001."""
         return {
             "platform_name": "ACF Earth System Operations Platform v1.0",

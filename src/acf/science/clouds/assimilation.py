@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 Cloud Data Assimilation Engine
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class CloudDataAssimilationEngine:
@@ -28,15 +28,17 @@ class CloudDataAssimilationEngine:
         self,
         source: str,
         file_format: str,
-        raw_field_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        raw_field_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Ingère et valide un champ nuageux issu de modèles ou de satellites.
         """
         if source not in self.SUPPORTED_SOURCES:
             raise ValueError(f"Source de données non supportée: '{source}'. Sources valides: {self.SUPPORTED_SOURCES}")
         if file_format not in self.SUPPORTED_FORMATS:
-            raise ValueError(f"Format de fichier non supporté: '{file_format}'. Formats valides: {self.SUPPORTED_FORMATS}")
+            raise ValueError(
+                f"Format de fichier non supporté: '{file_format}'. Formats valides: {self.SUPPORTED_FORMATS}"
+            )
 
         # Standardize cloud variables
         qc = raw_field_data.get("cloud_water", 0.0)
@@ -57,8 +59,8 @@ class CloudDataAssimilationEngine:
             "quality_flag": "PASSED_QUALITY_CONTROL",
         }
 
-    def list_supported_sources(self) -> List[str]:
+    def list_supported_sources(self) -> list[str]:
         return self.SUPPORTED_SOURCES
 
-    def list_supported_formats(self) -> List[str]:
+    def list_supported_formats(self) -> list[str]:
         return self.SUPPORTED_FORMATS

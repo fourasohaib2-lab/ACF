@@ -31,24 +31,14 @@ class OceanHeatUptakeDynamics:
         absorbed heat / thermal capacity
     """
 
-    def absorbed_heat(
-        self,
-        state: OceanHeatState
-    ) -> float:
+    def absorbed_heat(self, state: OceanHeatState) -> float:
         """
         Calculate effective ocean heat absorption.
         """
 
-        return (
-            state.heat_flux
-            * state.mixing_efficiency
-        )
+        return state.heat_flux * state.mixing_efficiency
 
-
-    def temperature_change(
-        self,
-        state: OceanHeatState
-    ) -> float:
+    def temperature_change(self, state: OceanHeatState) -> float:
         """
         Calculate ocean temperature response.
         """
@@ -57,25 +47,14 @@ class OceanHeatUptakeDynamics:
 
         return absorbed / state.ocean_capacity
 
-
-    def future_temperature(
-        self,
-        state: OceanHeatState
-    ) -> float:
+    def future_temperature(self, state: OceanHeatState) -> float:
         """
         Estimate future ocean temperature.
         """
 
-        return (
-            state.initial_temperature
-            + self.temperature_change(state)
-        )
+        return state.initial_temperature + self.temperature_change(state)
 
-
-    def climate_memory(
-        self,
-        state: OceanHeatState
-    ) -> str:
+    def climate_memory(self, state: OceanHeatState) -> str:
         """
         Classify ocean thermal inertia.
         """

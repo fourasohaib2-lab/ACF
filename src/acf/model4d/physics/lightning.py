@@ -36,7 +36,6 @@ class Lightning:
 
         return voltage * current * duration
 
-
     @staticmethod
     def flash_density(flashes, area):
         """
@@ -48,7 +47,6 @@ class Lightning:
             raise ValueError("Area must be positive")
 
         return flashes / area
-
 
     @staticmethod
     def storm_index(cape, moisture, instability):
@@ -71,7 +69,6 @@ class Lightning:
 
         return cape * moisture * instability
 
-
     @staticmethod
     def charge_separation(cloud_water, ice_content):
         """
@@ -83,7 +80,6 @@ class Lightning:
             raise ValueError("Cloud parameters must be positive")
 
         return cloud_water * ice_content
-
 
     @staticmethod
     def lightning_probability(storm_index):

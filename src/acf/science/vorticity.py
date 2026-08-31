@@ -33,4 +33,3 @@ class Vorticity:
             return "Moderate"
 
         return "Strong"
-

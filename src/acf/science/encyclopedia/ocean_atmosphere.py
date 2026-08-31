@@ -4,7 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Ocean-Atmosphere Coupled Dynamics, Surface Fluxes & Teleconnections Encyclopedia Module
 """
 
-from typing import List
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -12,7 +11,10 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Ocean-Atmosphere Exchanges
 # ---------------------------------------------------------------------------
 
-def calculate_sensible_heat_flux(rho: float, cp: float, u10: float, ts_k: float, ta_k: float, ch: float = 1.1e-3) -> float:
+
+def calculate_sensible_heat_flux(
+    rho: float, cp: float, u10: float, ts_k: float, ta_k: float, ch: float = 1.1e-3
+) -> float:
     """Calcul du flux de chaleur sensible H = rho * cp * Ch * U10 * (Ts - Ta) en W/m²."""
     return rho * cp * ch * u10 * (ts_k - ta_k)
 
@@ -22,7 +24,14 @@ def calculate_latent_heat_flux(rho: float, lv: float, u10: float, qs: float, qa:
     return rho * lv * ce * u10 * (qs - qa)
 
 
-def calculate_nao_index(slp_azores_hpa: float, slp_iceland_hpa: float, mean_azores: float = 1022.0, mean_iceland: float = 1000.0, std_azores: float = 5.0, std_iceland: float = 8.0) -> float:
+def calculate_nao_index(
+    slp_azores_hpa: float,
+    slp_iceland_hpa: float,
+    mean_azores: float = 1022.0,
+    mean_iceland: float = 1000.0,
+    std_azores: float = 5.0,
+    std_iceland: float = 8.0,
+) -> float:
     """Calcul de l'indice de l'Oscillation Nord-Atlantique (NAO)."""
     norm_azores = (slp_azores_hpa - mean_azores) / std_azores
     norm_iceland = (slp_iceland_hpa - mean_iceland) / std_iceland
@@ -33,7 +42,7 @@ def calculate_nao_index(slp_azores_hpa: float, slp_iceland_hpa: float, mean_azor
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="sensible_heat_flux_bulk",
         name="Flux de Chaleur Sensible Océan-Atmosphère",
@@ -41,7 +50,14 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Échanges de surface",
         equation="H = rho * cp * Ch * U10 * (Ts - Ta)",
         latex_equation=r"H = \rho c_p C_h U_{10} (T_s - T_a)",
-        variables={"rho": "Masse volumique de l'air (kg/m³)", "cp": "1004 J/(kg·K)", "Ch": "Coefficient de transfert neutre (~1.1e-3)", "U10": "Vent à 10m (m/s)", "Ts": "SST (K)", "Ta": "Température air à 2m (K)"},
+        variables={
+            "rho": "Masse volumique de l'air (kg/m³)",
+            "cp": "1004 J/(kg·K)",
+            "Ch": "Coefficient de transfert neutre (~1.1e-3)",
+            "U10": "Vent à 10m (m/s)",
+            "Ts": "SST (K)",
+            "Ta": "Température air à 2m (K)",
+        },
         units={"H": "W/m²"},
         description="Transfert d'énergie thermique par conduction et convection directe entre la surface de l'océan et l'air marin superposé.",
         application_conditions=["Couche limite de surface marine"],
@@ -56,7 +72,12 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Échanges de surface",
         equation="LE = rho * Lv * Ce * U10 * (qs - qa)",
         latex_equation=r"LE = \rho L_v C_e U_{10} (q_s - q_a)",
-        variables={"Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)", "Ce": "Coefficient d'évaporation (~1.1e-3)", "qs": "Humidité spécifique à saturation à la SST", "qa": "Humidité de l'air"},
+        variables={
+            "Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)",
+            "Ce": "Coefficient d'évaporation (~1.1e-3)",
+            "qs": "Humidité spécifique à saturation à la SST",
+            "qa": "Humidité de l'air",
+        },
         units={"LE": "W/m²"},
         description="Transfert d'énergie associée à l'évaporation de l'eau de mer, composante majeure du bilan thermique des océans tropicaux et moteur des cyclones.",
         application_conditions=["Interface mer-air"],
@@ -71,7 +92,10 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Variabilité climatique couplée",
         equation="Couplage Océan-Atmosphère Pacifique Tropical: SST Niño 3.4 & SOI Index",
         latex_equation=r"\text{SOI} = 10 \times \left[ \frac{\text{SLP}_{\text{Tahiti}}^* - \text{SLP}_{\text{Darwin}}^*}{\sigma_{\Delta p}} \right]",
-        variables={"SST_Nino3.4": "Anomalie de température Pacifique équatorial central (°C)", "SOI": "Southern Oscillation Index"},
+        variables={
+            "SST_Nino3.4": "Anomalie de température Pacifique équatorial central (°C)",
+            "SOI": "Southern Oscillation Index",
+        },
         units={"SST_anomaly": "°C", "SOI": "dimensionless"},
         description="Mode majeur de variabilité interannuelle du climat terrestre résultant du couplage entre la circulation atmosphérique de Walker et les températures de surface du Pacifique.",
         application_conditions=["Pacifique équatorial"],

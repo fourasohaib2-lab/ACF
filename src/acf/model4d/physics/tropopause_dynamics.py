@@ -54,10 +54,7 @@ class TropopauseDynamics:
             "pressure": state.pressure,
         }
 
-    def tropopause_height_estimate(
-        self,
-        latitude: float
-    ):
+    def tropopause_height_estimate(self, latitude: float):
         """
         Estimate tropopause height.
 
@@ -65,17 +62,11 @@ class TropopauseDynamics:
         lower near poles.
         """
 
-        height = (
-            17000
-            - 8000 * abs(latitude) / 90
-        )
+        height = 17000 - 8000 * abs(latitude) / 90
 
         return max(height, 8000)
 
-    def stability_index(
-        self,
-        lapse_rate: float
-    ):
+    def stability_index(self, lapse_rate: float):
         """
         Stability indicator.
         """
@@ -84,24 +75,15 @@ class TropopauseDynamics:
 
         return reference - lapse_rate
 
-    def exchange_probability(
-        self,
-        temperature_gradient: float
-    ):
+    def exchange_probability(self, temperature_gradient: float):
         """
         Approximate exchange intensity
         between troposphere and stratosphere.
         """
 
-        return min(
-            1.0,
-            abs(temperature_gradient) / 20
-        )
+        return min(1.0, abs(temperature_gradient) / 20)
 
-    def simulate(
-        self,
-        state: TropopauseState
-    ):
+    def simulate(self, state: TropopauseState):
         """
         Run tropopause simulation.
         """
@@ -110,13 +92,7 @@ class TropopauseDynamics:
 
         return {
             "layer": layer["layer"],
-            "stability": self.stability_index(
-                state.lapse_rate
-            ),
-            "exchange": self.exchange_probability(
-                state.lapse_rate
-            ),
-            "tropopause_height": self.tropopause_height_estimate(
-                state.latitude
-            )
+            "stability": self.stability_index(state.lapse_rate),
+            "exchange": self.exchange_probability(state.lapse_rate),
+            "tropopause_height": self.tropopause_height_estimate(state.latitude),
         }

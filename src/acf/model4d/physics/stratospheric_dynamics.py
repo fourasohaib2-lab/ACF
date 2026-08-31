@@ -12,7 +12,6 @@ Models:
 - Vertical transport
 """
 
-
 from dataclasses import dataclass
 
 
@@ -38,20 +37,14 @@ class StratosphericDynamics:
         Compute atmospheric stability response.
         """
 
-        return (
-            state.stability_index
-            + state.temperature_gradient * 0.01
-        )
+        return state.stability_index + state.temperature_gradient * 0.01
 
     def calculate_circulation_strength(self, state: StratosphericState):
         """
         Estimate circulation intensity.
         """
 
-        return (
-            state.wind_speed
-            * state.stability_index
-        )
+        return state.wind_speed * state.stability_index
 
     def ozone_feedback(self, state: StratosphericState):
         """

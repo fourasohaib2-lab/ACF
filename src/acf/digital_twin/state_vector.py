@@ -6,7 +6,7 @@ Global Earth State Vector Module (Phase 2)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -49,7 +49,7 @@ class GlobalEarthStateVector:
     ai_model_active: str = "GraphCast + NeuralGCM Ensemble"
     prediction_confidence_pct: float = 92.5
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Exporte le vecteur d'état complet sous forme de dictionnaire."""
         return {
             "atmosphere": {

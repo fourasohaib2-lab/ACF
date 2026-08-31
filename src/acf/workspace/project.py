@@ -27,13 +27,9 @@ class Project:
 
     version: str = "0.1.0"
 
-    created: str = field(
-        default_factory=lambda: datetime.now().isoformat()
-    )
+    created: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    modified: str = field(
-        default_factory=lambda: datetime.now().isoformat()
-    )
+    modified: str = field(default_factory=lambda: datetime.now().isoformat())
 
     # =====================================================
     # Ressources
@@ -128,8 +124,4 @@ class Project:
 
     def __repr__(self):
 
-        return (
-            f"Project("
-            f"name='{self.name}', "
-            f"version='{self.version}')"
-        )
+        return f"Project(name='{self.name}', version='{self.version}')"

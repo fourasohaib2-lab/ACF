@@ -9,7 +9,6 @@ from copy import deepcopy
 
 
 class InterpolationEngine:
-
     def __init__(self):
 
         self.algorithm = "nearest"
@@ -56,13 +55,9 @@ class InterpolationEngine:
     def available_methods(self):
 
         return [
-
             "nearest",
-
             "linear",
-
             "bilinear",
-
         ]
 
     ##################################################
@@ -70,21 +65,12 @@ class InterpolationEngine:
     def summary(self):
 
         return {
-
             "algorithm": self.algorithm,
-
             "methods": self.available_methods(),
-
         }
 
     ##################################################
 
     def __repr__(self):
 
-        return (
-
-            f"InterpolationEngine("
-
-            f"algorithm='{self.algorithm}')"
-
-        )
+        return f"InterpolationEngine(algorithm='{self.algorithm}')"

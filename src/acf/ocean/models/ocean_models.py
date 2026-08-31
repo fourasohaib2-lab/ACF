@@ -6,24 +6,24 @@ Global Ocean Numerical Circulation Models Registry (Phase 5)
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass
 class OceanModelInfo:
     """Description scientifique d'un modèle numérique de circulation océanique."""
+
     key: str
     name: str
     institution: str
     governing_equations: str
     vertical_coordinate: str  # e.g., "z-star", "Isopycnal", "Sigma", "Hybrid z-isopycnal"
     spatial_resolution: str
-    strengths: List[str]
-    limitations: List[str]
-    references: List[str]
+    strengths: list[str]
+    limitations: list[str]
+    references: list[str]
 
 
-OCEAN_MODELS_REGISTRY: Dict[str, OceanModelInfo] = {
+OCEAN_MODELS_REGISTRY: dict[str, OceanModelInfo] = {
     "nemo": OceanModelInfo(
         key="nemo",
         name="NEMO (Nucleus for European Modelling of the Ocean)",
@@ -64,9 +64,9 @@ class OceanModelEngine:
     """Moteur de consultation des modèles de circulation océanique."""
 
     @classmethod
-    def get_model(cls, key: str) -> Optional[OceanModelInfo]:
+    def get_model(cls, key: str) -> OceanModelInfo | None:
         return OCEAN_MODELS_REGISTRY.get(key.lower())
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls) -> list[str]:
         return list(OCEAN_MODELS_REGISTRY.keys())

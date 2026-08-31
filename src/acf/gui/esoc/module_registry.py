@@ -2,35 +2,31 @@
 
 import importlib
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
-from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
-from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
+from acf.ai.simulation.neural_operator import NeuralOperatorEngine
+from acf.hpc.simulation.checkpoint import CheckpointManager
+from acf.hpc.simulation.cuda_kernels import CUDAKernelManager
+from acf.hpc.simulation.gpu_solver import GPUSolver
+from acf.hpc.simulation.mpi_domain import MPIDomainDecomposition
 from acf.simulation_engine.atmosphere_solver.atmospheric_model import AtmosphericModel
 from acf.simulation_engine.atmosphere_solver.convection_engine import ConvectionEngine
 from acf.simulation_engine.atmosphere_solver.microphysics_engine import MicrophysicsEngine
-from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
-from acf.simulation_engine.ocean_solver.wave_model import WaveModel
-from acf.simulation_engine.land_solver.soil_model import SoilModel
-from acf.simulation_engine.land_solver.vegetation_model import VegetationModel
-from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
-
+from acf.simulation_engine.climate_scenarios.cmip6 import CMIP6Engine, SSPScenario
+from acf.simulation_engine.climate_scenarios.ssp_engine import SSPEngine
+from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 from acf.simulation_engine.ensemble_prediction.ensemble_engine import EarthEnsembleEngine
 from acf.simulation_engine.ensemble_prediction.probability_engine import ProbabilityEngine
 from acf.simulation_engine.extreme_events.cyclone import CycloneSimulator
-from acf.simulation_engine.extreme_events.storm import SevereStormSimulator
 from acf.simulation_engine.extreme_events.flood import FloodSimulator
+from acf.simulation_engine.extreme_events.storm import SevereStormSimulator
 from acf.simulation_engine.extreme_events.wildfire import WildfireSimulator
-
-from acf.simulation_engine.climate_scenarios.cmip6 import CMIP6Engine, SSPScenario
-from acf.simulation_engine.climate_scenarios.ssp_engine import SSPEngine
-
-from acf.ai.simulation.neural_operator import NeuralOperatorEngine
-
-from acf.hpc.simulation.gpu_solver import GPUSolver
-from acf.hpc.simulation.mpi_domain import MPIDomainDecomposition
-from acf.hpc.simulation.cuda_kernels import CUDAKernelManager
-from acf.hpc.simulation.checkpoint import CheckpointManager
+from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
+from acf.simulation_engine.land_solver.soil_model import SoilModel
+from acf.simulation_engine.land_solver.vegetation_model import VegetationModel
+from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
+from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
+from acf.simulation_engine.ocean_solver.wave_model import WaveModel
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +35,8 @@ class ModuleRegistry:
     """Central registry dynamically discovering, building system trees, and supporting universal search across all ACF modules."""
 
     def __init__(self) -> None:
-        self.modules: Dict[str, Any] = {}
-        self.search_index: List[Dict[str, str]] = []
+        self.modules: dict[str, Any] = {}
+        self.search_index: list[dict[str, str]] = []
         self._initialize_all_subsystems()
         self._auto_discover_packages()
         self._build_search_index()
@@ -123,24 +119,33 @@ class ModuleRegistry:
         self._safe_import_register("hydrology", "acf.hydrology", "HydrologyEngine")
         self._safe_import_register("air_quality", "acf.science.encyclopedia.chemistry", "ChemistryEngine")
         self._safe_import_register("production_dashboard", "acf.gui.dashboard", "DashboardManager")
-        self._safe_import_register("visualization", "acf.visualization.ai_forecast_center", "AIForecastIntelligenceVisualizationCenter")
+        self._safe_import_register(
+            "visualization", "acf.visualization.ai_forecast_center", "AIForecastIntelligenceVisualizationCenter"
+        )
+        self._safe_import_register("hpc_connector", "acf.hpc_connector", "HPCConnectionManager")
 
     def _build_search_index(self) -> None:
         """Populate global search index with modules, classes, parameters, and commands."""
         self.search_index.clear()
-        
+
         # 1. Registered modules
         for key, instance in self.modules.items():
             if instance is not None:
                 cls_name = instance.__class__.__name__
-                self.search_index.append({"type": "module", "name": key, "category": "Subsystem", "detail": f"Class: {cls_name}"})
+                self.search_index.append(
+                    {"type": "module", "name": key, "category": "Subsystem", "detail": f"Class: {cls_name}"}
+                )
 
         # 2. Scientific Parameters
         params = [
             ("2m Temperature (T2M)", "Atmospheric Property", "Surface air temperature at 2 meters"),
             ("Mean Sea Level Pressure (MSLP)", "Synoptic Weather", "Atmospheric pressure reduced to mean sea level"),
             ("10m Wind Speed (U10/V10)", "Wind Vector", "Horizontal wind vector components at 10 meters"),
-            ("CAPE / CIN Instability", "Severe Convective Storms", "Convective Available Potential Energy / Inhibition"),
+            (
+                "CAPE / CIN Instability",
+                "Severe Convective Storms",
+                "Convective Available Potential Energy / Inhibition",
+            ),
             ("Sea Surface Temperature (SST)", "Ocean Hydrodynamics", "Temperature of top ocean layer"),
             ("Fourier Neural Operator (FNO)", "AI Surrogate Model", "Neural operator for 1000x NWP acceleration"),
             ("4D-Var Data Assimilation", "Data Assimilation", "Four-Dimensional Variational Data Assimilation"),
@@ -149,11 +154,11 @@ class ModuleRegistry:
         for name, cat, det in params:
             self.search_index.append({"type": "parameter", "name": name, "category": cat, "detail": det})
 
-    def global_search(self, query: str) -> List[Dict[str, str]]:
+    def global_search(self, query: str) -> list[dict[str, str]]:
         """Perform universal search across modules, classes, parameters, and datasets."""
         if not query or len(query.strip()) == 0:
             return []
-        
+
         q = query.lower().strip()
         results = []
         for item in self.search_index:
@@ -161,10 +166,25 @@ class ModuleRegistry:
                 results.append(item)
         return results
 
-    def build_system_tree(self) -> Dict[str, Any]:
+    def build_system_tree(self) -> dict[str, Any]:
         """Generate a hierarchical tree of packages, modules, classes, and public methods."""
         tree = {
-            "Earth System": ["Atmosphere", "Ocean", "Hydrology", "Cryosphere", "Biosphere", "Land Surface", "Carbon Cycle", "Atmospheric Chemistry", "Air Quality", "Aerosols", "Dust", "Wildfires", "Volcanoes", "Geology"],
+            "Earth System": [
+                "Atmosphere",
+                "Ocean",
+                "Hydrology",
+                "Cryosphere",
+                "Biosphere",
+                "Land Surface",
+                "Carbon Cycle",
+                "Atmospheric Chemistry",
+                "Air Quality",
+                "Aerosols",
+                "Dust",
+                "Wildfires",
+                "Volcanoes",
+                "Geology",
+            ],
             "Forecast": ["Short-Range NWP", "Medium-Range (15 days)", "Global Circulation"],
             "Assimilation": ["4D-Var Solver", "EnKF (50-member)", "Hybrid 4DEnVar", "Quality Control"],
             "Simulation": ["Coupled Earth Solver", "Finite Volume", "Spectral Solver", "AMR"],
@@ -187,19 +207,19 @@ class ModuleRegistry:
         }
         return tree
 
-    def get_module(self, name: str) -> Optional[Any]:
+    def get_module(self, name: str) -> Any | None:
         """Retrieve instantiated subsystem by module key name."""
         return self.modules.get(name)
 
-    def list_modules(self) -> List[str]:
+    def list_modules(self) -> list[str]:
         """List all registered module keys."""
-        return sorted(list(self.modules.keys()))
+        return sorted(self.modules.keys())
 
     def is_connected(self, name: str) -> bool:
         """Verify if target subsystem is instantiated and operational."""
         return name in self.modules and self.modules[name] is not None
 
-    def get_system_status_summary(self) -> Dict[str, Any]:
+    def get_system_status_summary(self) -> dict[str, Any]:
         """Return connectivity status dictionary for all registered engines."""
         return {
             "total_modules": len(self.modules),

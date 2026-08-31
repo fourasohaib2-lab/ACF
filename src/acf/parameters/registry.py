@@ -6,7 +6,6 @@ from acf.parameters.parameter import Parameter
 
 
 class ParameterRegistry:
-
     def __init__(self):
         self._parameters = {}
         self.parameters = self._parameters
@@ -37,17 +36,7 @@ class ParameterRegistry:
         return list(self._parameters.values())
 
     def categories(self):
-        return sorted(
-            {
-                p.category
-                for p in self._parameters.values()
-                if hasattr(p, "category") and p.category
-            }
-        )
+        return sorted({p.category for p in self._parameters.values() if hasattr(p, "category") and p.category})
 
     def by_category(self, category):
-        return [
-            p
-            for p in self._parameters.values()
-            if getattr(p, "category", None) == category
-        ]
+        return [p for p in self._parameters.values() if getattr(p, "category", None) == category]

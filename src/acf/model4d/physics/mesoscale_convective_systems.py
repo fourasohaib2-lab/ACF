@@ -14,7 +14,6 @@ Description:
     - propagation du système
 """
 
-
 from dataclasses import dataclass
 from math import sqrt
 
@@ -41,7 +40,6 @@ class MesoscaleConvectiveSystem:
     def __init__(self, state: MCSState):
         self.state = state
 
-
     def convective_energy(self) -> float:
         """
         Energie convective disponible.
@@ -51,7 +49,6 @@ class MesoscaleConvectiveSystem:
 
         return self.state.cape * (self.state.moisture / 100)
 
-
     def organization_index(self) -> float:
         """
         Organisation du système convectif.
@@ -59,11 +56,7 @@ class MesoscaleConvectiveSystem:
         Combine cisaillement et organisation interne.
         """
 
-        return (
-            self.state.wind_shear * 0.5
-            + self.state.organization * 0.5
-        )
-
+        return self.state.wind_shear * 0.5 + self.state.organization * 0.5
 
     def precipitation_intensity(self) -> float:
         """
@@ -72,11 +65,7 @@ class MesoscaleConvectiveSystem:
 
         energy = self.convective_energy()
 
-        return (
-            sqrt(max(energy, 0))
-            + self.state.moisture * 0.05
-        )
-
+        return sqrt(max(energy, 0)) + self.state.moisture * 0.05
 
     def propagation_speed(self) -> float:
         """
@@ -85,22 +74,14 @@ class MesoscaleConvectiveSystem:
         Influence du cisaillement et de l'énergie.
         """
 
-        return (
-            self.state.wind_shear
-            + sqrt(max(self.convective_energy(), 0))
-        )
-
+        return self.state.wind_shear + sqrt(max(self.convective_energy(), 0))
 
     def stability_index(self) -> float:
         """
         Indice de stabilité atmosphérique.
         """
 
-        return (
-            self.state.temperature
-            - self.state.cape * 0.01
-        )
-
+        return self.state.temperature - self.state.cape * 0.01
 
     def simulate(self) -> dict:
         """

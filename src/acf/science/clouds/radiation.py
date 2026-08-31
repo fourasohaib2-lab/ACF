@@ -5,7 +5,7 @@ Cloud Radiation Engine
 """
 
 import math
-from typing import Dict
+
 from acf.science.clouds.base import CloudProcess
 from acf.science.clouds.registry import CloudScientificRegistry
 
@@ -72,7 +72,7 @@ class CloudRadiationEngine:
 
     def infrared_emission(self, temp_top_k: float, emissivity: float = 0.95) -> float:
         """Calcule le flux IR émis = epsilon * sigma * T^4."""
-        return emissivity * self.SIGMA * (temp_top_k ** 4)
+        return emissivity * self.SIGMA * (temp_top_k**4)
 
     def transmission(self, i0: float, optical_depth: float) -> float:
         """Calcule I = I0 * exp(-tau)."""
@@ -86,7 +86,7 @@ class CloudRadiationEngine:
         temp_surface_k: float = 288.15,
         temp_cloud_top_k: float = 240.15,
         emissivity: float = 0.95,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calcule le forçage radiatif nuageux (SWCF, LWCF et Forçage Net).
         """
@@ -94,7 +94,7 @@ class CloudRadiationEngine:
         swcf = -solar_incident_w_m2 * (cloud_albedo_val - clear_sky_albedo)
 
         # Longwave cloud forcing (greenhouse warming effect)
-        olr_clear = self.SIGMA * (temp_surface_k ** 4)
+        olr_clear = self.SIGMA * (temp_surface_k**4)
         olr_cloud = self.infrared_emission(temp_cloud_top_k, emissivity)
         lwcf = olr_clear - olr_cloud
 

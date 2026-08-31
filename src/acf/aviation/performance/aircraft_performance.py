@@ -5,7 +5,7 @@ Aircraft Operational Performance & Atmospheric Mechanics Module (ISA, Density Al
 """
 
 import math
-from typing import Dict
+from typing import Any
 
 
 class AircraftPerformanceEngine:
@@ -14,7 +14,7 @@ class AircraftPerformanceEngine:
     """
 
     @staticmethod
-    def isa_atmosphere(altitude_m: float) -> Dict[str, float]:
+    def isa_atmosphere(altitude_m: float) -> dict[str, float]:
         """Calcul des variables de l'Atmosphère Standard Internationale (OACI ISA)."""
         t0 = 288.15  # K (15°C)
         p0 = 101325.0  # Pa (1013.25 hPa)
@@ -43,7 +43,7 @@ class AircraftPerformanceEngine:
         }
 
     @staticmethod
-    def wind_components(runway_heading_deg: float, wind_dir_deg: float, wind_speed_kt: float) -> Dict[str, float]:
+    def wind_components(runway_heading_deg: float, wind_dir_deg: float, wind_speed_kt: float) -> dict[str, Any]:
         """Calcul des composantes de vent debout/arrière (Headwind/Tailwind) et vent traversier (Crosswind)."""
         angle_rad = math.radians(wind_dir_deg - runway_heading_deg)
         headwind = wind_speed_kt * math.cos(angle_rad)
