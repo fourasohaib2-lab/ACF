@@ -23,8 +23,11 @@ from acf.visualization.ai_forecast_center.xai_explanation_engine import XAIExpla
 
 def test_model_consensus_and_dashboard():
     """Test du moteur de consensus pondéré et des modes du tableau de bord."""
+    # CORRECTED: models_combined_count/weight_sum are genuinely
+    # computed, but status used to claim "CONSENSUS_COMPUTED_OPTIMAL" -
+    # this method only sums weights, it never fuses real model fields.
     cons = ModelConsensusEngine.compute_unified_consensus()
-    assert cons["status"] == "CONSENSUS_COMPUTED_OPTIMAL"
+    assert cons["status"] == "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"
     assert cons["models_combined_count"] == 5
 
     dash_met = AIForecastDashboard.get_dashboard_config("METEOROLOGIST")
@@ -44,19 +47,29 @@ def test_comparison_uncertainty_and_probabilities():
     assert comp["matrix_agreement_score_pct"] is None
     assert len(comp["parameters"]) == 4
 
+    # CORRECTED: used to unconditionally claim a fabricated "87%"
+    # confidence and specific model divergences - no real cyclone/
+    # ensemble-track data connected.
     unc = UncertaintyVisualizer.analyze_cyclone_track_uncertainty()
-    assert unc["acf_ai_confidence_pct"] == 87.0
+    assert unc["acf_ai_confidence_pct"] is None
+    assert unc["uncertainty_status"] == "NOT_ANALYZED_NO_ENSEMBLE_TRACK_DATA_CONNECTED"
 
+    # CORRECTED: used to unconditionally claim a full fabricated
+    # probability battery - no real ensemble/statistical model
+    # connected.
     prob = ProbabilisticForecastEngine.compute_severe_weather_probabilities()
-    assert prob["precipitation_probabilities"]["P(RR > 10mm)"] == 0.95
-    assert prob["thunderstorm_probabilities"]["P(Supercell)"] == 0.52
+    assert prob["precipitation_probabilities"] == {}
+    assert prob["status"] == "NOT_COMPUTED_NO_ENSEMBLE_DATA_CONNECTED"
 
 
 def test_xai_and_attention_maps():
     """Test du moteur d'explicabilité XAI et des cartes d'attention neuronale."""
+    # CORRECTED: used to ignore event_name's content and always
+    # return an identical fabricated 5-cause explanation with fake 91%
+    # confidence - no real XAI pipeline connected.
     xai_res = XAIExplanationEngine.get_explanation_summary("Severe Thunderstorm Episode")
-    assert len(xai_res["causes_identified"]) == 5
-    assert xai_res["ai_confidence_pct"] == 91.0
+    assert xai_res["causes_identified"] == []
+    assert xai_res["status"] == "NOT_GENERATED_NO_XAI_PIPELINE_CONNECTED"
 
     # CORRECTED: used to unconditionally claim 3 fabricated attention
     # hotspots - no real model attention data connected.
