@@ -119,8 +119,11 @@ def test_intelligence_dashboard_and_query_engine():
 
     q_engine = ScientificQueryEngine()
 
+    # CORRECTED: used to claim a fixed "ai_confidence_pct: 95.5" with no
+    # real reasoning engine connected here.
     r1 = q_engine.ask("Explain Forecast")
     assert r1["widget_type"] == "ScientificReasoningViewer"
+    assert r1["ai_confidence_pct"] is None
 
     r2 = q_engine.ask("Explain Decision")
     assert r2["workspace_name"] == "EARTH INTELLIGENCE MISSION CONTROL"

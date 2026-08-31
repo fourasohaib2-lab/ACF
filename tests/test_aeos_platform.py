@@ -144,6 +144,14 @@ def test_query_engine_aeos_queries():
 
     r2 = q_engine.ask("Show Services")
     assert r2["widget_type"] == "AEOSWorkflowSchedulerViewer"
+    # active_services: 15 is a verified real number (matches
+    # AEOSKernel.active_services after boot(), confirmed above) - kept
+    # as-is, unlike health_status below.
+    assert r2["active_services"] == 15
 
+    # CORRECTED: used to claim a fixed "health_status: 100% HEALTHY"
+    # with no connection at all to AEOSKernel.health_check() (which
+    # genuinely checks self.is_booted) - this router never even
+    # instantiates a kernel.
     r3 = q_engine.ask("Show Health")
-    assert r3["health_status"] == "100% HEALTHY"
+    assert r3["health_status"] is None

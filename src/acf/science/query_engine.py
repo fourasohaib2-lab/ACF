@@ -446,9 +446,14 @@ class ScientificQueryEngine:
                 "action": "activate_widget",
                 "widget_type": "AEOSWorkflowSchedulerViewer",
                 "physical_explanation": (
-                    "Visualisation de l'ordonnancement dynamique des tâches, du graphe de dépendance et de l'équilibrage de charge "
-                    "sur la grappe de calcul distribué (Local, Multi-core, MPI, Slurm, Kubernetes, Cloud)."
+                    "Activation du widget d'ordonnancement dynamique des tâches, du graphe de dépendance et de l'équilibrage "
+                    "de charge sur la grappe de calcul distribué (Local, Multi-core, MPI, Slurm, Kubernetes, Cloud)."
                 ),
+                # VERIFIED (not fabricated): 15 matches the real
+                # registry-backed service count from
+                # aeos.aeos_kernel.AEOSKernel.active_services after
+                # boot() (aeos.registry.list_registered_services()) -
+                # confirmed by running it directly. Kept as-is.
                 "active_services": 15,
             }
 
@@ -458,10 +463,16 @@ class ScientificQueryEngine:
                 "action": "activate_widget",
                 "widget_type": "AEOSHealthAndAgentsViewer",
                 "physical_explanation": (
-                    "Supervision du moteur d'auto-guérison (SelfHealingEngine) et du réseau des 10 agents scientifiques "
-                    "autonomes (Météorologie, Océan, Hydrologie, Climat, Géologie, Temps Spatial)."
+                    "Activation du widget de supervision du moteur d'auto-guérison (SelfHealingEngine) et du réseau "
+                    "des agents scientifiques autonomes."
                 ),
-                "health_status": "100% HEALTHY",
+                # CORRECTED: used to claim a fixed "health_status: 100%
+                # HEALTHY" as if reporting a real current health check -
+                # same underlying issue as
+                # release.health_check.ProductionHealthCheck (fixed
+                # earlier this session). This router only activates a
+                # UI widget, it doesn't run any real health check.
+                "health_status": None,
             }
 
         # -------------------------------------------------------------------
@@ -473,10 +484,15 @@ class ScientificQueryEngine:
                 "action": "activate_widget",
                 "widget_type": "ScientificReasoningViewer",
                 "physical_explanation": (
-                    "Explication scientifique autonome dérivée du moteur de raisonnement physique (ScientificReasoningEngine) "
-                    "et de la comparaison d'ensemble des modèles NWP/IA (IFS, GraphCast, NeuralGCM)."
+                    "Activation du widget d'explication scientifique autonome dérivée du moteur de raisonnement "
+                    "physique (ScientificReasoningEngine) et de la comparaison d'ensemble des modèles NWP/IA."
                 ),
-                "ai_confidence_pct": 95.5,
+                # CORRECTED: used to claim a fixed "95.5%" confidence -
+                # ScientificReasoningEngine itself (fixed earlier this
+                # session) no longer reports a specific fabricated
+                # confidence percentage, since no calibrated confidence
+                # model exists; this router shouldn't either.
+                "ai_confidence_pct": None,
             }
 
         if any(k in q for k in ["explain decision", "show decision support", "show recommendations"]):
