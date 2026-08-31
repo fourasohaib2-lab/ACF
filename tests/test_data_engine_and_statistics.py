@@ -3,9 +3,14 @@ Atmospheric Complexity Framework (ACF)
 
 Data Engine & Dataset Statistics Test Suite
 
-acf.data.engine.DataEngine and acf.data.engine.dataset_statistics.
+`from acf.data.engine import DataEngine` resolves to the
+`acf.data.engine` PACKAGE (data/engine/__init__.py aliases
+DataEngine = DatasetEngine from dataset_engine.py) - Python's import
+resolution always finds that package before the sibling
+data/engine.py module of the same name, which is therefore genuinely
+unreachable dead code (flagged with its own NOTE, not tested here).
 DatasetStatistics previously had 0% coverage - no test file imported
-either module at all.
+it at all.
 """
 
 import math
