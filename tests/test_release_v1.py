@@ -4,39 +4,39 @@ Atmospheric Complexity Framework (ACF)
 ACF Version 1.0 Production Release Test Suite (MISSION ACF-045)
 """
 
-from acf.release.release_manager import ReleaseManager
+from acf.release.benchmark import BenchmarkSuite
 from acf.release.boot_manager import BootManager
-from acf.release.startup_sequence import StartupSequence
-from acf.release.shutdown_sequence import ShutdownSequence
+from acf.release.build_system import BuildSystem
+from acf.release.cloud_support import CloudSupport
 from acf.release.configuration import ProductionConfiguration
 from acf.release.dependency_validator import DependencyValidator
-from acf.release.environment import EnvironmentDetector
-from acf.release.runtime import ProductionRuntime
-from acf.release.service_loader import ServiceLoader
-from acf.release.package_validator import PackageValidator
-from acf.release.health_check import ProductionHealthCheck
-from acf.release.diagnostics import ProductionDiagnostics
-from acf.release.benchmark import BenchmarkSuite
-from acf.release.performance_report import PerformanceReportGenerator
-from acf.release.release_notes import ReleaseNotesGenerator
-from acf.release.version_manager import VersionManager
-from acf.release.license_manager import LicenseManager
-from acf.release.build_system import BuildSystem
 from acf.release.deployment import DeploymentEngine
+from acf.release.diagnostics import ProductionDiagnostics
 from acf.release.docker_support import DockerSupport
-from acf.release.kubernetes_support import KubernetesSupport
-from acf.release.slurm_support import SlurmSupport
-from acf.release.cloud_support import CloudSupport
-from acf.release.installer import ProductionInstaller
-from acf.release.updater import ProductionUpdater
-from acf.release.migration import MigrationManager
-from acf.release.logging_configuration import LoggingConfiguration
+from acf.release.documentation_builder import DocumentationBuilder
+from acf.release.environment import EnvironmentDetector
 from acf.release.error_handler import ProductionErrorHandler
 from acf.release.exception_manager import ExceptionManager
-from acf.release.security_manager import SecurityManager
+from acf.release.health_check import ProductionHealthCheck
+from acf.release.installer import ProductionInstaller
 from acf.release.integrity_checker import IntegrityChecker
-from acf.release.documentation_builder import DocumentationBuilder
+from acf.release.kubernetes_support import KubernetesSupport
+from acf.release.license_manager import LicenseManager
+from acf.release.logging_configuration import LoggingConfiguration
+from acf.release.migration import MigrationManager
+from acf.release.package_validator import PackageValidator
+from acf.release.performance_report import PerformanceReportGenerator
 from acf.release.production_dashboard import AWCIProductionDashboard
+from acf.release.release_manager import ReleaseManager
+from acf.release.release_notes import ReleaseNotesGenerator
+from acf.release.runtime import ProductionRuntime
+from acf.release.security_manager import SecurityManager
+from acf.release.service_loader import ServiceLoader
+from acf.release.shutdown_sequence import ShutdownSequence
+from acf.release.slurm_support import SlurmSupport
+from acf.release.startup_sequence import StartupSequence
+from acf.release.updater import ProductionUpdater
+from acf.release.version_manager import VersionManager
 
 
 def test_release_manager_and_versioning():
@@ -70,8 +70,15 @@ def test_configuration_dependencies_and_runtime():
     cfg = ProductionConfiguration.get_config()
     assert cfg["environment"] == "PRODUCTION"
 
+    # CORRECTED: validate_all_dependencies() used to claim every
+    # dependency (including "cuda: 12.4 PASS", "mpi: OpenMPI 5.0 PASS")
+    # unconditionally passed - false in this environment (no
+    # GPU-enabled torch, no mpi4py, verified). Now genuinely checks
+    # via importlib.
     deps = DependencyValidator.validate_all_dependencies()
-    assert deps["overall_status"] == "ALL_DEPENDENCIES_VALIDATED"
+    assert deps["overall_status"] == "CORE_DEPENDENCIES_PRESENT"
+    assert deps["cuda"] == "NOT_INSTALLED"
+    assert "PRESENT" in deps["numpy"]
 
     env = EnvironmentDetector.detect_environment()
     assert env["slurm_detected"] is True
@@ -86,8 +93,11 @@ def test_services_health_and_diagnostics():
     serv = ServiceLoader.load_services()
     assert serv["discovery_status"] == "ALL_SERVICES_LOADED"
 
+    # CORRECTED: validate_package_integrity() used to claim
+    # "VERIFIED_VALID / PASS" with no package artifact to check
+    # anything against - nothing was ever hashed.
     pkg = PackageValidator.validate_package_integrity()
-    assert pkg["integrity"] == "VERIFIED_VALID"
+    assert pkg["integrity"] == "NOT_VERIFIED_NO_PACKAGE_ARTIFACT_PROVIDED"
 
     health = ProductionHealthCheck.check_health()
     assert health["overall_health"] == "100% HEALTHY"
@@ -108,8 +118,13 @@ def test_benchmarks_and_performance_reports():
     notes = ReleaseNotesGenerator.generate_release_notes()
     assert len(notes["highlights"]) >= 5
 
+    # CORRECTED: verify_licenses() used to unconditionally claim
+    # "Apache 2.0 / Open Science License, 100% COMPLIANT" without
+    # checking anything (ACF's real LICENSE file is MIT). Now genuinely
+    # reads the project's real LICENSE file.
     lic = LicenseManager.verify_licenses()
-    assert lic["compliance"] == "100% COMPLIANT"
+    assert lic["license_file_found"] is True
+    assert "MIT" in lic["license_first_line"]
 
 
 def test_packaging_deployment_and_infrastructure():
@@ -156,8 +171,13 @@ def test_installer_updater_logging_and_security():
     sec = SecurityManager.audit_security()
     assert sec["security_status"] == "SECURE"
 
+    # CORRECTED: verify_integrity() used to return a fake truncated
+    # hash ("3a8f90...b4e2") and "100% INTEGRITY VERIFIED" - nothing
+    # was ever hashed. Now reports the real current git commit SHA.
     integ = IntegrityChecker.verify_integrity()
-    assert integ["verification_status"] == "100% INTEGRITY VERIFIED"
+    assert integ["is_real_data"] is True
+    assert integ["git_commit_sha"] is not None
+    assert len(integ["git_commit_sha"]) == 40  # real git SHA-1 hex length
 
 
 def test_documentation_and_production_dashboard():
