@@ -136,12 +136,27 @@ def test_master_dashboard_and_executive_reporting():
 
 def test_performance_profiler_and_health_monitor():
     """Test du profilé de performance et du moniteur de santé globale."""
+    # CORRECTED: profile_framework() used to return fixed fake
+    # telemetry ("HIGH PERFORMANCE / OPTIMAL" always) - now reports
+    # real psutil-measured CPU/RAM (or honestly reports psutil is
+    # absent), so the exact status can legitimately vary with real
+    # system load. Check the real, meaningful invariants instead.
     prof = PerformanceProfiler.profile_framework()
-    assert prof["performance_status"] == "HIGH PERFORMANCE / OPTIMAL"
+    assert prof["performance_status"] in ("NORMAL", "ELEVATED", "HIGH_LOAD", "UNKNOWN_PSUTIL_NOT_INSTALLED")
+    if prof["is_real_data"]:
+        assert 0.0 <= prof["cpu_utilization_pct"] <= 100.0
+        assert prof["ram_used_gb"] > 0
 
+    # CORRECTED: check_health() used to unconditionally report "100%
+    # HEALTHY" for all 7 subsystems regardless of their actual state -
+    # now genuinely imports each subsystem's package and reports real
+    # per-subsystem status.
     health = HealthMonitor.check_health()
     assert isinstance(health, HealthReport)
-    assert health.overall_health == "100% HEALTHY"
+    assert "HEALTHY" in health.overall_health
+    assert all(
+        status.startswith("HEALTHY") or status.startswith("FAILED") for status in health.subsystem_statuses.values()
+    )
 
     doc_index = DocumentationIndexer.index_framework_documentation()
     assert doc_index["index_status"] == "UP_TO_DATE"
