@@ -53,12 +53,19 @@ def test_release_manager_and_versioning():
 
 def test_boot_startup_and_shutdown_sequences():
     """Test des séquences de démarrage à 20 étapes et d'arrêt de production."""
+    # CORRECTED: execute_boot() used to unconditionally claim
+    # "SUCCESS" with 21 active services and a fake 1250ms duration -
+    # no real boot sequence runs here.
     boot = BootManager.execute_boot()
-    assert boot["boot_status"] == "SUCCESS"
+    assert boot["boot_status"] == "NOT_BOOTED_NO_REAL_BOOT_SEQUENCE_EXECUTED"
 
+    # CORRECTED: run_startup() used to claim all 20 planned steps were
+    # "completed" and status "PRODUCTION_READY_V1.0" just by counting
+    # the static STEPS list length - none were actually executed.
     startup = StartupSequence.run_startup()
-    assert startup["steps_completed_count"] == 20
-    assert startup["startup_status"] == "PRODUCTION_READY_V1.0"
+    assert startup["planned_steps_count"] == 20
+    assert startup["steps_completed_count"] == 0
+    assert startup["startup_status"] == "NOT_STARTED_STEPS_NOT_EXECUTED"
 
     shutdown = ShutdownSequence.run_shutdown()
     assert shutdown["status"] == "SHUTDOWN_CLEAN"
@@ -131,9 +138,12 @@ def test_services_health_and_diagnostics():
 
 def test_benchmarks_and_performance_reports():
     """Test de la suite de bancs d'essai et des rapports de performance."""
+    # CORRECTED: run_benchmarks() used to unconditionally claim
+    # specific fabricated numbers (12.5ms inference, 60 FPS...) with
+    # no real benchmark harness ever executed.
     bench = BenchmarkSuite.run_benchmarks()
-    assert bench["ai_inference_speed_ms"] < 20.0
-    assert bench["visualization_fps"] == 60.0
+    assert bench["ai_inference_speed_ms"] is None
+    assert bench["benchmark_status"] == "NOT_RUN_NO_BENCHMARK_HARNESS_IMPLEMENTED"
 
     report = PerformanceReportGenerator.generate_report()
     assert report["overall_grade"] == "A+"
@@ -152,11 +162,18 @@ def test_benchmarks_and_performance_reports():
 
 def test_packaging_deployment_and_infrastructure():
     """Test d'empaquetage, de déploiement, Docker, Kubernetes, Slurm et Cloud."""
+    # CORRECTED: build_packages() used to unconditionally claim
+    # fabricated artifact filenames (with a wrong hardcoded version)
+    # and "SUCCESS" - no build tool was ever invoked.
     bs = BuildSystem.build_packages()
-    assert bs["build_status"] == "SUCCESS"
+    assert bs["build_status"] == "NOT_BUILT_NO_BUILD_INVOKED"
+    assert bs["wheel"] is None
 
+    # CORRECTED: deploy() used to unconditionally claim
+    # "DEPLOYED_AND_ACTIVE" regardless of target_env, with no real
+    # deployment backend connected.
     dep = DeploymentEngine.deploy("HPC_SLURM")
-    assert dep["deployment_status"] == "DEPLOYED_AND_ACTIVE"
+    assert dep["deployment_status"] == "NOT_DEPLOYED_NO_DEPLOYMENT_BACKEND_CONNECTED"
 
     dock = DockerSupport.generate_docker_manifests()
     assert "Dockerfile" in dock["dockerfile"]
@@ -167,14 +184,22 @@ def test_packaging_deployment_and_infrastructure():
     slurm = SlurmSupport.generate_slurm_script()
     assert slurm["nodes"] == 16
 
+    # CORRECTED: get_cloud_config() used to claim status "CLOUD_READY"
+    # implying live cloud integration - no cloud SDK is even a
+    # declared dependency of this project. The target list itself is
+    # a genuine static plan, kept under a renamed key.
     cloud = CloudSupport.get_cloud_config()
-    assert "AWS" in cloud["supported_clouds"]
+    assert "AWS" in cloud["planned_cloud_targets"]
+    assert cloud["status"] == "NOT_INTEGRATED_NO_CLOUD_SDK_CONNECTED"
 
 
 def test_installer_updater_logging_and_security():
     """Test de l'installeur, mis-à-jour, journaux, sécurité et vérification d'intégrité."""
+    # CORRECTED: run_installation() used to claim "SUCCESSFULLY_INSTALLED"
+    # with a hardcoded wrong version ("1.0.0") - no real install step ran.
     inst = ProductionInstaller.run_installation()
-    assert inst["installation_status"] == "SUCCESSFULLY_INSTALLED"
+    assert inst["installation_status"] == "NOT_INSTALLED_NO_INSTALL_STEP_EXECUTED"
+    assert inst["current_package_version"] == "0.1.0"
 
     upd = ProductionUpdater.check_for_updates()
     assert upd["update_available"] is False
@@ -211,9 +236,14 @@ def test_installer_updater_logging_and_security():
 
 def test_documentation_and_production_dashboard():
     """Test de la génération des 11 manuels et des métadonnées AWCI v1.0."""
+    # CORRECTED: build_all_documentation() used to claim all 11 planned
+    # manuals were "compiled" just by counting the static list length -
+    # no real doc-generation step ran.
     doc = DocumentationBuilder.build_all_documentation()
-    assert doc["compiled_manuals_count"] == 11
+    assert doc["planned_manuals_count"] == 11
+    assert doc["compiled_manuals_count"] == 0
     assert "Developer Guide" in doc["manuals"]
+    assert doc["build_status"] == "NOT_BUILT_NO_DOC_GENERATION_EXECUTED"
 
     dash = AWCIProductionDashboard.get_dashboard_metadata()
     assert dash["workspace_name"] == "ACF v1.0 PRODUCTION MASTER DASHBOARD"
