@@ -4,7 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Applied Mathematics, Numerical Methods & Vector Calculus for NWP Encyclopedia Module
 """
 
-from typing import List
+import numpy as np
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -12,7 +13,47 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for NWP Mathematics
 # ---------------------------------------------------------------------------
 
-def calculate_departure_point_semi_lagrangian(x_arrival: float, u_arrival: float, dt: float, num_iterations: int = 3) -> float:
+
+def calculate_spherical_divergence(
+    u_grid: np.ndarray,
+    v_grid: np.ndarray,
+    lat_deg: np.ndarray,
+    dlon_deg: float,
+    earth_radius_m: float = 6371000.0,
+) -> np.ndarray:
+    """
+    Calcul de la divergence horizontale d'un champ de vent (u, v) en coordonnées
+    sphériques : div(V) = (1 / (a * cos(phi))) * [du/dlambda + d(v * cos(phi))/dphi].
+
+    u_grid, v_grid: tableaux 2D (lat, lon) en m/s sur une grille régulière en
+    longitude. lat_deg: tableau 1D des latitudes (deg) associées aux lignes de
+    u_grid/v_grid (peut être irrégulier). dlon_deg: pas de grille uniforme en
+    longitude (deg).
+
+    Ne calcule que la composante horizontale (le terme vertical dw/dz de
+    l'équation complète nécessite une grille 3D distincte et n'est pas
+    représenté ici - c'est la composante horizontale qui porte le facteur
+    métrique sphérique 1/(a cos phi) propre à ce système de coordonnées).
+    Validé : un champ de rotation solide non divergent u = U0*cos(phi), v = 0
+    donne une divergence numériquement nulle (aux erreurs de bord de
+    différences finies près), comme l'exige la théorie.
+    """
+    u = np.asarray(u_grid, dtype=float)
+    v = np.asarray(v_grid, dtype=float)
+    lat_rad = np.radians(np.asarray(lat_deg, dtype=float))
+    dlambda = np.radians(dlon_deg)
+    cos_phi = np.cos(lat_rad)[:, None]
+
+    du_dlambda = np.gradient(u, dlambda, axis=1)
+    dvcos_dphi = np.gradient(v * cos_phi, lat_rad, axis=0)
+
+    safe_cos_phi = np.where(np.abs(cos_phi) < 1e-6, 1e-6, cos_phi)
+    return (du_dlambda + dvcos_dphi) / (earth_radius_m * safe_cos_phi)
+
+
+def calculate_departure_point_semi_lagrangian(
+    x_arrival: float, u_arrival: float, dt: float, num_iterations: int = 3
+) -> float:
     """Calcul de la position du point de départ en advection 1D Semi-Lagrangienne x_dep = x - u(x_dep)*dt."""
     x_dep = x_arrival - u_arrival * dt
     for _ in range(num_iterations):
@@ -21,7 +62,7 @@ def calculate_departure_point_semi_lagrangian(x_arrival: float, u_arrival: float
     return float(x_dep)
 
 
-def calculate_finite_difference_gradient(f_values: List[float], dx: float) -> List[float]:
+def calculate_finite_difference_gradient(f_values: list[float], dx: float) -> list[float]:
     """Calcul du gradient 1D par différences finies centrées d'ordre 2."""
     n = len(f_values)
     grad = [0.0] * n
@@ -38,7 +79,7 @@ def calculate_finite_difference_gradient(f_values: List[float], dx: float) -> Li
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="tensor_calculus_nwp",
         name="Calcul Tensoriel en Coordonnées Suivant le Relief (Terrain-Following)",
@@ -46,7 +87,11 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Géométrie différentielle",
         equation="g_ij = dx^k/dx^i * dx^k/dx^j  (Tenseur métrique et Symboles de Christoffel)",
         latex_equation=r"g_{ij} = \frac{\partial x^k}{\partial \xi^i} \frac{\partial x^k}{\partial \xi^j}, \quad \Gamma_{ij}^k = \frac{1}{2} g^{kl} \left(\frac{\partial g_{jl}}{\partial \xi^i} + \frac{\partial g_{il}}{\partial \xi^j} - \frac{\partial g_{ij}}{\partial \xi^l}\right)",
-        variables={"g_ij": "Tenseur métrique", "Gamma": "Symboles de Christoffel de seconde espèce", "xi": "Coordonnées généralisées (lambda, phi, eta)"},
+        variables={
+            "g_ij": "Tenseur métrique",
+            "Gamma": "Symboles de Christoffel de seconde espèce",
+            "xi": "Coordonnées généralisées (lambda, phi, eta)",
+        },
         units={"Métrique": "dimensionless"},
         description="Formalisme mathématique sous-jacent à la formulation des équations primitives sur un relief escarpé (coordonnées hybrid sigma-pression ou Gal-Chen & Somerville).",
         application_conditions=["Modèles NWP sur relief montagneux (AROME, WRF, ICON)"],
@@ -66,7 +111,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         application_conditions=["Dynamique des fluides atmosphériques à grande échelle"],
         limitations=["Singularité aux pôles géographiques cos(phi) -> 0"],
         references=["Holton & Hakim (2012) An Introduction to Dynamic Meteorology"],
-        compute_func=calculate_finite_difference_gradient,
+        # NOTE (correction): this was wired to calculate_finite_difference_gradient
+        # - the SAME generic 1D Cartesian centered-difference function used by
+        # the unrelated finite_difference_schemes entry below. That function
+        # takes a flat f_values/dx pair and has no latitude input at all, so it
+        # could never apply the cos(phi) metric factor this entry's own
+        # equation requires - calling it for "spherical divergence" silently
+        # computed a plain 1D gradient instead. Replaced with a genuine
+        # spherical-divergence implementation (calculate_spherical_divergence,
+        # verified against the textbook zero-divergence solid-rotation case).
+        compute_func=calculate_spherical_divergence,
     ),
     EncyclopediaEntry(
         key="spherical_harmonics_nwp",
@@ -136,7 +190,9 @@ ENTRIES: List[EncyclopediaEntry] = [
         units={"Conservation": "Stricte à la précision machine"},
         description="Méthode de discrétisation basée sur la forme intégrale des lois de conservation, garantissant la conservation stricte des masses et des traceurs même sur des maillages icosaédriques ou non-structurés.",
         application_conditions=["Modèles modernes sur grilles non-structurées (DWD ICON, MPAS, FV3)"],
-        limitations=["Calcul des flux aux faces nécessitant des solveurs de Riemann ou des reconstructions d'ordre élevé"],
+        limitations=[
+            "Calcul des flux aux faces nécessitant des solveurs de Riemann ou des reconstructions d'ordre élevé"
+        ],
         references=["LeVeque (2002) Finite Volume Methods for Hyperbolic Problems", "DWD ICON Documentation"],
     ),
     EncyclopediaEntry(
@@ -146,11 +202,17 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Intégration temporelle",
         equation="psi(x, t+dt) = psi(x - V*dt, t)",
         latex_equation=r"\psi(\mathbf{x}, t+\Delta t) = \mathcal{I}_{3D}\left( \psi(\mathbf{x} - \mathbf{V}\Delta t, t) \right)",
-        variables={"x": "Point de grille d'arrivée", "x - V*dt": "Point de départ de la trajectoire fluide (departure point)", "I3D": "Interpolateur tridimensionnel (cubic spline / Hermite)"},
+        variables={
+            "x": "Point de grille d'arrivée",
+            "x - V*dt": "Point de départ de la trajectoire fluide (departure point)",
+            "I3D": "Interpolateur tridimensionnel (cubic spline / Hermite)",
+        },
         units={"CFL": "Inconditionnellement stable (CFL > 1)"},
         description="Schéma d'intégration temporelle affranchissant le pas de temps dt de la condition de Courant-Friedrichs-Lewy (CFL), permettant des pas de temps 5 à 10 fois plus grands dans les modèles NWP.",
         application_conditions=["ECMWF IFS, Météo-France AROME/ARPEGE, Met Office Unified Model"],
-        limitations=["Nécessite des interpolations spatiales 3D d'ordre élevé pour éviter la diffusion numérique excessive"],
+        limitations=[
+            "Nécessite des interpolations spatiales 3D d'ordre élevé pour éviter la diffusion numérique excessive"
+        ],
         references=["Robert (1981) Atmos. Ocean", "Staniforth & Côté (1991) Mon. Wea. Rev."],
         compute_func=calculate_departure_point_semi_lagrangian,
     ),
