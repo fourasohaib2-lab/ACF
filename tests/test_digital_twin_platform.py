@@ -27,10 +27,15 @@ def test_digital_twin_engine_and_state_vector():
     assert d["atmosphere"]["temp_2m_c"] == 16.0
     assert d["space_weather"]["kp_index"] == 5.0
 
+    # CORRECTED: progress_pct/simulation_id used to unconditionally
+    # claim a completed cycle (100.0, a fixed literal id) with no real
+    # assimilation/forecast cycle ever run.
     engine = DigitalTwinEngine()
     cycle = engine.run_digital_twin_cycle(lead_time_horizon="+48h")
     assert "DestinE Equivalent" in cycle["engine"]
-    assert cycle["simulation"]["horizon"] == "+48h"
+    assert cycle["simulation"]["horizon"] == "+48h"  # genuinely echoed
+    assert cycle["simulation"]["progress"] is None
+    assert cycle["status"] == "NOT_RUN_NO_ASSIMILATION_FORECAST_CYCLE_CONNECTED"
 
 
 def test_earth_synchronization_engine():
@@ -64,10 +69,21 @@ def test_cross_domain_coupling_physics():
 
 
 def test_cascade_risk_engine():
-    """Test du moteur de risques en cascade multi-domaines (Cyclone, Séisme, Tempête solaire)."""
+    """
+    Test du moteur de risques en cascade multi-domaines (Cyclone, Séisme, Tempête solaire).
+
+    CORRECTED: used to unconditionally claim the static reference
+    catalog of KNOWN cascade patterns was the set of cascades
+    "actively" detected right now, with no real hazard-detection
+    pipeline connected. The catalog itself (known_cascade_patterns) is
+    a genuine, honest reference knowledge base and is kept.
+    """
     cascades = CascadeRiskEngine.evaluate_active_cascades()
-    assert cascades["active_cascades_count"] >= 4
-    assert "Cyclone" in cascades["cascades"][0]["trigger"]
+    assert cascades["active_cascades_count"] == 0
+    assert cascades["cascades"] == []
+    assert cascades["known_cascade_patterns_count"] >= 4
+    assert "Cyclone" in cascades["known_cascade_patterns"][0]["trigger"]
+    assert cascades["status"] == "NOT_DETECTED_NO_LIVE_HAZARD_DATA_CONNECTED"
 
 
 def test_planetary_knowledge_graph_and_ai_reasoning():
@@ -106,11 +122,22 @@ def test_operations_center_and_briefing_reports():
 
 
 def _test_ops_and_reports():
+    """
+    CORRECTED: get_global_operations_status() used to unconditionally
+    report 3 fixed fabricated situations (a fake Category 4 typhoon
+    naming real places, a fake Mw 7.2 earthquake) with a frozen fake
+    timestamp; generate_planetary_briefing_markdown() used to report a
+    fake +1.15°C anomaly and fake active cyclones/earthquake for ANY
+    call, with 0 real domain data connected in either case.
+    """
     ops = EarthOperationsCenter.get_global_operations_status()
-    assert ops.total_red_alerts >= 1
+    assert ops.total_red_alerts == 0
+    assert ops.active_situations == []
 
     report = PlanetaryReportGenerator.generate_planetary_briefing_markdown()
     assert "# Global Earth System Digital Twin Daily Report" in report
+    assert "NOT SYNCHRONIZED" in report
+    assert "+1.15" not in report
 
 
 def test_query_engine_digital_twin_queries():

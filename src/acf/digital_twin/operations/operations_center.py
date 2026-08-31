@@ -6,6 +6,7 @@ Global Earth Operations Center & Planetary Alert Board Module (Phase 10)
 """
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -36,34 +37,23 @@ class EarthOperationsCenter:
 
     @classmethod
     def get_global_operations_status(cls) -> GlobalAlertBoard:
-        """Retourne le bilan opérationnel planétaire fusionné."""
-        situations = [
-            OperationalSituation(
-                situation_id="SIT-2026-001",
-                domain="Weather & Ocean",
-                headline="Category 4 Super Typhoon Threatening East Asia Coast",
-                severity="RED / CATASTROPHIC",
-                affected_regions=["East China Sea", "Taiwan Strait", "Ryukyu Islands"],
-            ),
-            OperationalSituation(
-                situation_id="SIT-2026-002",
-                domain="Space Weather",
-                headline="Strong G3 Geomagnetic Storm Active (Kp=7.5)",
-                severity="ORANGE / SEVERE",
-                affected_regions=["High-Latitude Auroral Oval", "Polar Flight Routes"],
-            ),
-            OperationalSituation(
-                situation_id="SIT-2026-003",
-                domain="Geology",
-                headline="Mw 7.2 Subduction Earthquake Off Japan Coast",
-                severity="ORANGE / TSUNAMI ADVISORY",
-                affected_regions=["Honshu Pacific Coast"],
-            ),
-        ]
+        """
+        Retourne le bilan opérationnel planétaire fusionné.
 
+        NOTE (correction — operationally dangerous): this used to
+        unconditionally report 3 fixed fabricated situations - a fake
+        Category 4 typhoon threatening named real places (East China
+        Sea, Taiwan Strait, Ryukyu Islands), a fake G3 geomagnetic
+        storm, and a fake Mw 7.2 earthquake off Japan - with a fixed
+        "timestamp_utc": "2026-08-02T08:00:00Z" (frozen, not even a
+        real current time) and fixed alert counts, for ANY call. An
+        operator glancing at this "Global Operations Center" board on
+        a quiet day would see 3 fabricated active catastrophes. Not
+        fabricated.
+        """
         return GlobalAlertBoard(
-            timestamp_utc="2026-08-02T08:00:00Z",
-            total_red_alerts=1,
-            total_orange_alerts=2,
-            active_situations=situations,
+            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            total_red_alerts=0,
+            total_orange_alerts=0,
+            active_situations=[],
         )

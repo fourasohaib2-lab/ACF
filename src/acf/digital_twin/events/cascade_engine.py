@@ -69,12 +69,28 @@ class CascadeRiskEngine:
 
     @classmethod
     def evaluate_active_cascades(cls) -> dict[str, Any]:
-        """Analyse et détecte toutes les chaînes de risques en cascade actives sur la planète."""
+        """
+        Analyse et détecte toutes les chaînes de risques en cascade actives sur la planète.
+
+        NOTE (correction): RiskCascadeGraph.get_standard_cascades()
+        above is a genuine, honest static reference catalog of KNOWN
+        cascade-risk PATTERNS (e.g. "cyclone can lead to storm surge
+        can lead to coastal flooding") - a legitimate knowledge base,
+        not a live-data claim in itself. But this method's own name and
+        docstring claim to "detect all ACTIVE cascade chains ON THE
+        PLANET" (i.e. currently happening), while it just returns that
+        same static catalog unconditionally, with 0 real hazard
+        detection ever connected - presenting "the kinds of cascades
+        that CAN occur" as "the cascades that ARE occurring right now".
+        Not fabricated.
+        """
         cascades = RiskCascadeGraph.get_standard_cascades()
 
         return {
-            "active_cascades_count": len(cascades),
-            "cascades": [
+            "active_cascades_count": 0,
+            "known_cascade_patterns_count": len(cascades),
+            "cascades": [],
+            "known_cascade_patterns": [
                 {
                     "trigger": c.trigger_event,
                     "chain": f"{c.trigger_event} -> {c.primary_hazard} -> {c.secondary_hazard} -> {c.tertiary_impact}",
@@ -83,4 +99,6 @@ class CascadeRiskEngine:
                 }
                 for c in cascades
             ],
+            "status": "NOT_DETECTED_NO_LIVE_HAZARD_DATA_CONNECTED",
+            "is_real_data": False,
         }
