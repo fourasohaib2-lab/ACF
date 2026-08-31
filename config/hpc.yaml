@@ -1,0 +1,54 @@
+# ACF HPC Operational Configuration (ACF-HPC-001)
+
+cluster:
+  name: Fennec
+  scheduler: Slurm
+
+partition:
+  default: Researches
+
+monitor:
+  refresh_seconds: 10
+
+execution_mode: "hybrid"  # Modes: local, cluster, hybrid, gpu, mpi, distributed
+
+local_profile:
+  hostname: "local_workstation"
+  cpu_cores: 16
+  gpu_available: true
+  gpu_type: "NVIDIA A100 80GB"
+  scratch_dir: "/tmp/acf_scratch"
+
+cluster_profiles:
+  fennec:
+    hostname: "fennec"
+    login_node: "login2.fennec.meteo.dz"
+    username: "sfoura"
+    scheduler: "slurm"
+    partition: "Researches"
+    account: ""
+    default_nodes: 1
+    default_ntasks_per_node: 32
+    default_gpus_per_node: 0
+    walltime: "24:00:00"
+    home: "/onm/dem/home/sfoura"
+    working_directory: "/onm/dem/home/sfoura/ACF"
+    scratch_dir: "/mnt/beegfs"
+    python: "/usr/bin/python3"
+    module_loads:
+      - "gnu9/9.4.0"
+      - "openmpi4/4.1.1"
+      - "cdo/2.3.0"
+      - "nco/5.0.5"
+
+auto_sync:
+  enabled: true
+  interval_seconds: 30
+  sync_datasets: true
+  sync_checkpoints: true
+  sync_results: true
+
+security:
+  ssh_key_path: "~/.ssh/id_rsa"
+  verify_host_keys: true
+  encrypted_vault: true

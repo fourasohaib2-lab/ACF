@@ -1,0 +1,9 @@
+model: "AROME"
+resolution_km: 1.3
+domain: "Algerie_Nord"
+physics_scheme: "AROME_3D"
+surface_model: "SURFEX"
+default_nodes: 4
+default_ntasks: 32
+default_gpus: 4
+walltime: "02:00:00"

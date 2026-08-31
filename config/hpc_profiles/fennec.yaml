@@ -1,0 +1,30 @@
+# ACF HPC Profile: Fennec Cluster (ONM HPC)
+
+cluster:
+  name: Fennec
+  scheduler: Slurm
+  login_node: login2.fennec.meteo.dz
+
+partition:
+  default: Researches
+  available:
+    - Researches
+    - Operational
+    - Debug
+
+resources:
+  default_nodes: 1
+  default_tasks_per_node: 32
+  max_walltime: "72:00:00"
+  scratch_dir: "/mnt/beegfs"
+
+environment:
+  modules:
+    - gnu9/9.4.0
+    - openmpi4/4.1.1
+    - cdo/2.3.0
+    - nco/5.0.5
+    - epygram/2.1.0
+
+monitor:
+  refresh_seconds: 10
