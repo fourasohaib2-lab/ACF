@@ -13,7 +13,6 @@ Provides atmospheric stability diagnostics:
 - Stability index
 """
 
-
 import math
 
 
@@ -22,15 +21,10 @@ class StabilityPhysics:
     Atmospheric stability calculations.
     """
 
-
     GRAVITY = 9.81
 
-
     @staticmethod
-    def brunt_vaisala_frequency(
-        gradient,
-        temperature=300
-    ):
+    def brunt_vaisala_frequency(gradient, temperature=300):
         """
         Calculate Brunt-Vaisala frequency.
 
@@ -53,30 +47,15 @@ class StabilityPhysics:
         """
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature must be positive"
-            )
+            raise ValueError("Temperature must be positive")
 
         if gradient <= 0:
-            raise ValueError(
-                "Gradient must be positive"
-            )
+            raise ValueError("Gradient must be positive")
 
-
-        return math.sqrt(
-            StabilityPhysics.GRAVITY
-            *
-            gradient
-            /
-            temperature
-        )
-
-
+        return math.sqrt(StabilityPhysics.GRAVITY * gradient / temperature)
 
     @staticmethod
-    def static_stability(
-        gradient
-    ):
+    def static_stability(gradient):
         """
         Calculate static stability.
 
@@ -86,31 +65,37 @@ class StabilityPhysics:
         """
 
         if gradient <= 0:
-            raise ValueError(
-                "Gradient must be positive"
-            )
-
+            raise ValueError("Gradient must be positive")
 
         return gradient * 0.03
 
-
-
     @staticmethod
-    def richardson_number(
-        brunt_frequency,
-        wind_shear
-    ):
+    def richardson_number(brunt_frequency, wind_shear):
         """
         Calculate Richardson number.
 
         Formula:
 
-            Ri = N / (du/dz)^2
+            Ri = N^2 / (du/dz)^2
+
+        NOTE (correction — Physics Guard): the docstring itself
+        documented "Ri = N / (du/dz)^2" (N to the first power) and the
+        implementation matched that - but the real, standard gradient
+        Richardson number (e.g. Holton, "An Introduction to Dynamic
+        Meteorology") is Ri = N^2/(du/dz)^2, a ratio of two squared
+        frequencies and therefore dimensionless; N/(du/dz)^2 has units
+        of seconds, not a dimensionless ratio. This method had zero
+        test coverage (unlike the sibling
+        AtmosphericStabilityPhysics.richardson_number() in
+        atmospheric_stability.py, which already correctly implements
+        Ri = N^2/shear^2 and is tested), so nothing was locked into the
+        bug. Not fabricated.
 
         Parameters
         ----------
         brunt_frequency : float
-            Stability frequency.
+            Stability frequency N (s^-1), e.g. from
+            brunt_vaisala_frequency() above.
 
         wind_shear : float
             Vertical wind shear.
@@ -122,23 +107,12 @@ class StabilityPhysics:
         """
 
         if wind_shear <= 0:
-            raise ValueError(
-                "Wind shear must be positive"
-            )
+            raise ValueError("Wind shear must be positive")
 
-
-        return (
-            brunt_frequency
-            /
-            (wind_shear ** 2)
-        )
-
-
+        return (brunt_frequency**2) / (wind_shear**2)
 
     @staticmethod
-    def classify_stability(
-        richardson
-    ):
+    def classify_stability(richardson):
         """
         Classify atmospheric stability.
 
@@ -152,20 +126,13 @@ class StabilityPhysics:
         if richardson >= 0.03:
             return "stable"
 
-
         if richardson >= 0.01:
             return "neutral"
 
-
         return "unstable"
 
-
-
     @staticmethod
-    def potential_temperature(
-        temperature,
-        pressure
-    ):
+    def potential_temperature(temperature, pressure):
         """
         Calculate potential temperature.
 
@@ -175,29 +142,15 @@ class StabilityPhysics:
         """
 
         if temperature <= 0:
-            raise ValueError(
-                "Temperature must be positive"
-            )
+            raise ValueError("Temperature must be positive")
 
         if pressure <= 0:
-            raise ValueError(
-                "Pressure must be positive"
-            )
+            raise ValueError("Pressure must be positive")
 
-
-        return (
-            temperature
-            *
-            (1000 / pressure)
-            ** 0.286
-        )
-
-
+        return temperature * (1000 / pressure) ** 0.286
 
     @staticmethod
-    def stability_index(
-        gradient
-    ):
+    def stability_index(gradient):
         """
         Stability index.
 
@@ -207,13 +160,6 @@ class StabilityPhysics:
         """
 
         if gradient <= 0:
-            raise ValueError(
-                "Gradient must be positive"
-            )
+            raise ValueError("Gradient must be positive")
 
-
-        return (
-            StabilityPhysics.GRAVITY
-            *
-            gradient
-        )
+        return StabilityPhysics.GRAVITY * gradient
