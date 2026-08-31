@@ -5,8 +5,7 @@ Multi-Model Confidence & Consensus Engine Module
 (ConfidenceEngine comparing IFS, AROME, ICON, WRF, GFS, GraphCast, NeuralGCM, Pangu, FourCastNet, AIFS)
 """
 
-from typing import Any, Dict
-
+from typing import Any
 
 MODELS_LIST = ["IFS", "AROME", "ICON", "WRF", "GFS", "GraphCast", "NeuralGCM", "Pangu", "FourCastNet", "AIFS"]
 
@@ -17,12 +16,24 @@ class ConfidenceEngine:
     """
 
     @classmethod
-    def evaluate_multi_model_confidence(cls) -> Dict[str, Any]:
-        """Analyse le consensus et les divergences entre les modèles physiques et IA."""
+    def evaluate_multi_model_confidence(cls) -> dict[str, Any]:
+        """
+        Analyse le consensus et les divergences entre les modèles physiques et IA.
+
+        NOTE (correction): models_consulted is a genuine static list of
+        supported models, but consensus_summary/disagreement_summary/
+        recommended_best_model/overall_confidence_pct used to
+        unconditionally claim a fixed, specific fabricated model
+        comparison ("High consensus on 500 hPa trough position...",
+        "92.5%" confidence) with 0 parameters and no real multi-model
+        run ever compared. Not fabricated.
+        """
         return {
             "models_consulted": MODELS_LIST,
-            "consensus_summary": "High consensus on 500 hPa trough position (+/- 35 km) across IFS, GraphCast and AIFS",
-            "disagreement_summary": "Disagreement on local convective precipitation peak over Alps between AROME and ICON",
-            "recommended_best_model": "GraphCast (Global synoptic) + AROME (Convective scale)",
-            "overall_confidence_pct": 92.5,
+            "consensus_summary": None,
+            "disagreement_summary": None,
+            "recommended_best_model": None,
+            "overall_confidence_pct": None,
+            "status": "NOT_EVALUATED_NO_MULTI_MODEL_RUN_CONNECTED",
+            "is_real_data": False,
         }

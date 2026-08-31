@@ -5,7 +5,7 @@ Scientific Reasoning Engine Module
 (ScientificReasoningEngine building physics-based causal reasoning chains)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class ScientificReasoningEngine:
@@ -14,16 +14,24 @@ class ScientificReasoningEngine:
     """
 
     @classmethod
-    def deduce_causal_chain(cls, phenomenon: str = "supercell_hail") -> Dict[str, Any]:
-        """Déduit la chaîne causale physique d'un phénomène météorologique."""
+    def deduce_causal_chain(cls, phenomenon: str = "supercell_hail") -> dict[str, Any]:
+        """
+        Déduit la chaîne causale physique d'un phénomène météorologique.
+
+        NOTE (correction): phenomenon was genuinely echoed, but the
+        physical_laws/reasoning_steps/conclusion used to always describe
+        supercell hail formation regardless of what phenomenon was
+        actually queried - a query for phenomenon="drought" would still
+        get the supercell-hail causal chain. No real causal-graph
+        reasoning pipeline is connected here (see also master_graph.py's
+        MasterKnowledgeGraph.infer(), correctly fixed earlier this
+        session for the same reason). Not fabricated.
+        """
         return {
             "phenomenon": phenomenon,
-            "physical_laws": ["Archimedes Buoyancy", "Clausius-Clapeyron", "Vorticity Conservation"],
-            "reasoning_steps": [
-                "1. Diurnal solar heating increases surface Theta_e",
-                "2. Parcel rises past LFC, generating high CAPE (> 2000 J/kg)",
-                "3. Strong 0-6 km shear introduces tilting, forming a rotating mesocyclone",
-                "4. Updraft w > 25 m/s suspends supercooled hail embryos in the mixed-phase zone (-15°C)",
-            ],
-            "conclusion": "High probability of severe hail > 3 cm diameter",
+            "physical_laws": [],
+            "reasoning_steps": [],
+            "conclusion": None,
+            "status": "NOT_DEDUCED_NO_CAUSAL_REASONING_PIPELINE_CONNECTED",
+            "is_real_data": False,
         }

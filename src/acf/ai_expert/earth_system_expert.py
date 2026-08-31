@@ -5,7 +5,7 @@ Earth System Multi-Sphere Reasoning Expert Module
 (EarthSystemExpert coordinating Atmosphere, Ocean, Hydrology, Cryosphere, Space Weather, Air Quality)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class EarthSystemExpert:
@@ -14,14 +14,26 @@ class EarthSystemExpert:
     """
 
     @classmethod
-    def evaluate_global_earth_state(cls) -> Dict[str, Any]:
-        """Génère l'état d'évaluation multi-sphère du système Terre."""
+    def evaluate_global_earth_state(cls) -> dict[str, Any]:
+        """
+        Génère l'état d'évaluation multi-sphère du système Terre.
+
+        NOTE (correction - operationally dangerous): this used to
+        unconditionally claim specific fabricated conditions across all
+        7 spheres (including a named "local flood alert in Danube
+        catchment") for ANY call, with 0 parameters and no real
+        multi-sphere data connected - a caller could be misled into
+        believing an actual flood alert or seismic event was detected
+        when nothing was ever queried. Not fabricated.
+        """
         return {
-            "atmosphere": "Stable tropospheric thermal lapse rate with active extratropical storm track",
-            "ocean": "SST anomaly +0.8°C in Equatorial Pacific (ENSO Weak El Niño State)",
-            "hydrology": "Normal streamflow in major European river basins; local flood alert in Danube catchment",
-            "cryosphere": "Arctic sea ice extent at seasonal minimum within 10th percentile climatology",
-            "space_weather": "Solar Wind velocity 450 km/s, Quiet Geomagnetic field (Kp 2)",
-            "air_quality": "PM2.5 below EU threshold across Western Europe",
-            "geology": "Minor seismicity catalogued in Mediterranean fault lines",
+            "atmosphere": None,
+            "ocean": None,
+            "hydrology": None,
+            "cryosphere": None,
+            "space_weather": None,
+            "air_quality": None,
+            "geology": None,
+            "status": "NOT_EVALUATED_NO_MULTI_SPHERE_DATA_CONNECTED",
+            "is_real_data": False,
         }

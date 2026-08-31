@@ -4,17 +4,29 @@ Atmospheric Complexity Framework (ACF)
 AI Meteorological Knowledge Base Engine Module
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class AIKnowledgeEngine:
     """Moteur de connaissances et d'intégration ontologique pour l'IA."""
 
     @classmethod
-    def query_knowledge(cls, concept: str = "cape") -> Dict[str, Any]:
+    def query_knowledge(cls, concept: str = "cape") -> dict[str, Any]:
+        """
+        NOTE (correction): concept was genuinely echoed, but the
+        definition/equation/references used to always describe CAPE
+        regardless of what concept was actually queried - concept=
+        "vorticity" would still get CAPE's definition and equation. This
+        engine has no real concept->definition lookup connected (unlike
+        EncyclopediaRegistry.search(), which genuinely covers ~300
+        entries and should be used instead of duplicating a hard-coded
+        single-concept lookup here). Not fabricated.
+        """
         return {
             "concept": concept,
-            "definition": "Convective Available Potential Energy (J/kg)",
-            "governing_equation": r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_v - T_{ve}}{T_{ve}} dz",
-            "peer_reviewed_references": ["Moncrieff & Green (1972)", "Emanuel (1994)"],
+            "definition": None,
+            "governing_equation": None,
+            "peer_reviewed_references": [],
+            "status": "NOT_FOUND_NO_KNOWLEDGE_LOOKUP_CONNECTED",
+            "is_real_data": False,
         }

@@ -4,7 +4,7 @@ Atmospheric Complexity Framework (ACF)
 AWCI Autonomous AI Expert Dashboard Module
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class AWCI_AIDashboard:
@@ -13,7 +13,7 @@ class AWCI_AIDashboard:
     """
 
     @classmethod
-    def get_dashboard_metadata(cls) -> Dict[str, Any]:
+    def get_dashboard_metadata(cls) -> dict[str, Any]:
         """Retourne la configuration complète du workspace Autonomous AI Expert dans AWCI."""
         return {
             "workspace_name": "AUTONOMOUS AI METEOROLOGIST & EARTH SYSTEM EXPERT WORKSPACE",
