@@ -22,9 +22,12 @@ from acf.data_assimilation.quality_control.qc_engine import ObservationQCEngine
 
 def test_observation_ingestion_engine():
     """Test de l'ingestion des satellites, radars, stations sol et bouées océaniques ARGO."""
+    # CORRECTED: constellation was genuinely echoed, but this used to
+    # also claim 4 fixed "variables_ingested" and "STREAM_INGESTED_SUCCESS"
+    # with 0 real satellite data connection.
     sat = SatelliteIngestor.ingest_satellite_stream("NOAA GOES")
-    assert sat["status"] == "STREAM_INGESTED_SUCCESS"
-    assert "Cloud Cover" in sat["variables_ingested"]
+    assert sat["status"] == "NOT_INGESTED_NO_SATELLITE_DATA_CONNECTION"
+    assert sat["variables_ingested"] == []
 
     qpe = RadarIngestor.compute_qpe_rainfall_rate(45.0)
     assert qpe > 0.0

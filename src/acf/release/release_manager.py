@@ -5,7 +5,7 @@ ACF Version 1.0 Production Release Manager Module
 (ReleaseManager coordinating semantic versioning, build metadata, and official certification)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class ReleaseManager:
@@ -19,14 +19,28 @@ class ReleaseManager:
     COMPILATION_DATE = "2026-08-02"
 
     @classmethod
-    def get_release_info(cls) -> Dict[str, Any]:
-        """Retourne la synthèse officielle de la release de production."""
+    def get_release_info(cls) -> dict[str, Any]:
+        """
+        Retourne la synthèse officielle de la release de production.
+
+        NOTE (correction): VERSION/RELEASE_ID/BUILD_NUMBER/
+        COMPILATION_DATE are genuine declared build metadata, and
+        supported_platforms/target_parity are a genuine declared
+        target scope, but "certification_status": "PLATINUM CERTIFIED
+        / PRODUCTION READY" used to be claimed unconditionally - the
+        same false certification independently fabricated by
+        master.scientific_certification.ScientificCertificationEngine
+        (fixed earlier this session) and duplicated in
+        release.production_dashboard.AWCIProductionDashboard and twice
+        in science.query_engine.ScientificQueryEngine (all fixed this
+        session). No real audit backs this claim.
+        """
         return {
             "version": cls.VERSION,
             "release_id": cls.RELEASE_ID,
             "build_number": cls.BUILD_NUMBER,
             "compilation_date": cls.COMPILATION_DATE,
-            "certification_status": "PLATINUM CERTIFIED / PRODUCTION READY",
+            "certification_status": "NOT_CERTIFIED_NO_AUDIT_PERFORMED",
             "supported_platforms": ["Linux", "HPC Slurm", "Kubernetes", "Docker", "Cloud"],
             "target_parity": ["ECMWF", "NOAA", "NASA ESO", "EUMETSAT", "Météo-France"],
         }

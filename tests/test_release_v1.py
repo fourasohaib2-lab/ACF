@@ -41,10 +41,16 @@ from acf.release.version_manager import VersionManager
 
 def test_release_manager_and_versioning():
     """Test du ReleaseManager et de la gestion de version v1.0.0."""
+    # CORRECTED: version/release_id are genuine declared build
+    # metadata, but certification_status used to claim "PLATINUM
+    # CERTIFIED / PRODUCTION READY" - the same false certification
+    # independently fabricated in 3 other places this session
+    # (ScientificCertificationEngine, AWCIProductionDashboard,
+    # ScientificQueryEngine x2), none backed by a real audit.
     info = ReleaseManager.get_release_info()
     assert info["version"] == "1.0.0"
     assert info["release_id"] == "ACF-V1.0-PRODUCTION-OFFICIAL"
-    assert info["certification_status"] == "PLATINUM CERTIFIED / PRODUCTION READY"
+    assert info["certification_status"] == "NOT_CERTIFIED_NO_AUDIT_PERFORMED"
 
     assert VersionManager.get_version() == "1.0.0"
     parsed = VersionManager.parse_version("1.0.0")
@@ -245,6 +251,11 @@ def test_documentation_and_production_dashboard():
     assert "Developer Guide" in doc["manuals"]
     assert doc["build_status"] == "NOT_BUILT_NO_DOC_GENERATION_EXECUTED"
 
+    # CORRECTED: workspace_name/sections are a genuine static UI
+    # descriptor, but certification/overall_status used to claim
+    # "PLATINUM CERTIFIED / PRODUCTION OPERATIONAL" - same false
+    # certification pattern found duplicated across 4 other places
+    # this session, none backed by a real audit.
     dash = AWCIProductionDashboard.get_dashboard_metadata()
     assert dash["workspace_name"] == "ACF v1.0 PRODUCTION MASTER DASHBOARD"
-    assert dash["overall_status"] == "PRODUCTION_OPERATIONAL_READY"
+    assert dash["overall_status"] == "NOT_VERIFIED_NO_OPERATIONAL_READINESS_CHECK_PERFORMED"
