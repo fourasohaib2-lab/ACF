@@ -27,6 +27,30 @@ def calculate_rain_rate_from_z(z_dbz: float, a: float = 200.0, b: float = 1.6) -
     return (z_linear / a) ** (1.0 / b)
 
 
+def calculate_qpe_accumulation(z_dbz: float, duration_hours: float = 1.0, a: float = 200.0, b: float = 1.6) -> float:
+    """
+    Calcul de l'estimation quantitative de précipitation accumulée QPE (mm) :
+    R_accumulated = R(Z) * duration, approximation à taux constant de
+    l'intégrale sum_t R(Z, ZDR, KDP) dt documentée par cette entrée.
+
+    NOTE (correction): the "qpe_quantitative_precipitation_estimation"
+    entry's compute_func used to be calculate_rain_rate_from_z directly
+    - a real, correct instantaneous rain-rate formula (mm/h), but not
+    what this entry itself claims to compute: its own equation is an
+    explicit time accumulation (R_accumulated = sum_t R*dt) and its
+    declared units are "QPE: mm" (an accumulated depth), not mm/h. That
+    mismatch meant calling calculate() on this entry silently returned
+    a rate where an accumulated depth was documented. duration_hours
+    defaults to 1.0 (the most common operational QPE product, "1-hour
+    QPE") so existing rate-shaped callers are numerically unaffected.
+    Only the base Z-R rate term is used (ZDR/KDP polarimetric
+    refinements are a documented real limitation, not fabricated).
+    """
+    if duration_hours <= 0.0:
+        return 0.0
+    return calculate_rain_rate_from_z(z_dbz, a=a, b=b) * duration_hours
+
+
 def calculate_doppler_radial_velocity(
     v_wind: float, wind_dir_deg: float, radar_azimuth_deg: float, elevation_deg: float = 0.0
 ) -> float:
@@ -139,9 +163,12 @@ ENTRIES: list[EncyclopediaEntry] = [
         units={"QPE": "mm"},
         description="Combinaison d'estimations radar et de données pluviométriques au sol pour produire des cartes d'accumulation de précipitation haute résolution pour l'hydrologie.",
         application_conditions=["Prévention des crues éclairs et gestion des bassins versants"],
-        limitations=["Incertitudes liées au masquage du relief et aux échos parasitaires (clutter)"],
+        limitations=[
+            "Incertitudes liées au masquage du relief et aux échos parasitaires (clutter)",
+            "N'utilise que le terme Z-R de base (raffinements polarimétriques ZDR/KDP non intégrés)",
+        ],
         references=["WMO Hydrological Radar Manual", "NOAA MRMS QPE", "Météo-France PANTHERE"],
-        compute_func=calculate_rain_rate_from_z,
+        compute_func=calculate_qpe_accumulation,
     ),
     EncyclopediaEntry(
         key="doppler_velocity_dealiasing",
