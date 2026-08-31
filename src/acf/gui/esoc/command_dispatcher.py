@@ -1,8 +1,9 @@
 """Command dispatcher, thread-safe event bus, and Phase 12 product generator (ACF-UI-013)."""
 
-from typing import Dict, Any, Callable
-import os
-from PySide6.QtCore import QObject, Signal, QThreadPool, QRunnable
+from collections.abc import Callable
+from typing import Any
+
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 
 
 class WorkerRunnable(QRunnable):
@@ -33,7 +34,7 @@ class CommandDispatcher(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self._command_handlers: Dict[str, Callable[..., Any]] = {}
+        self._command_handlers: dict[str, Callable[..., Any]] = {}
         self.thread_pool = QThreadPool.globalInstance()
 
     def register_command(self, command_name: str, handler: Callable[..., Any]) -> None:
@@ -46,17 +47,35 @@ class CommandDispatcher(QObject):
         self.thread_pool.start(worker)
 
     def export_product(self, product_format: str, output_path: str) -> str:
-        """Phase 12 Product Exporter: PNG, SVG, PDF, NetCDF4, GRIB2, GeoTIFF, COG, Zarr, CSV, GeoJSON, MP4, GIF."""
-        self.log_message_emitted.emit("INFO", f"Exporting product format [{product_format.upper()}] to {output_path}")
-        
-        os.makedirs(os.path.dirname(output_path), exist_ok=True) if os.path.dirname(output_path) else None
-        
-        # Create output placeholder file
-        with open(output_path, "w") as f:
-            f.write(f"ACF Product Export Format: {product_format.upper()}\n")
+        """Phase 12 Product Exporter: PNG, SVG, PDF, NetCDF4, GRIB2, GeoTIFF, COG, Zarr, CSV, GeoJSON, MP4, GIF.
 
-        self.product_exported.emit(product_format, output_path)
-        return output_path
+        NOTE (correction): this used to write the identical one-line text
+        string ("ACF Product Export Format: <FMT>") into `output_path`
+        for ANY of the 12 claimed formats - a ".png" export got a text
+        file, a "NetCDF4" export got the same text file, none of them
+        real content in the requested format - then unconditionally
+        emitted `product_exported` and returned the path as if a genuine
+        export had happened. This method has no data parameter at all
+        (only `product_format` and `output_path`), so there is no real
+        simulation state or figure available here to serialize even in
+        principle; real per-format writers exist elsewhere in this
+        codebase (e.g. simulation_engine/output/netcdf_writer.py,
+        zarr_writer.py, tested and genuinely functional) but operate on
+        actual state/lats/lons/levels data this method was never given.
+        Verified via grep: this method has zero callers anywhere in the
+        codebase and zero test coverage - nothing currently depends on
+        its exact return contract. Rather than keep fabricating a
+        same-looking-regardless-of-format placeholder file, this now
+        honestly raises instead of claiming an export that didn't happen.
+        """
+        raise NotImplementedError(
+            f"export_product({product_format!r}, {output_path!r}) needs real simulation/figure "
+            "data to serialize - none is passed to this method. Previously wrote an identical "
+            "placeholder text file regardless of the requested format and claimed success; "
+            "removed rather than left silently wrong. Wire a real per-format writer (see "
+            "simulation_engine/output/netcdf_writer.py and zarr_writer.py for working examples) "
+            "with actual data once this method has something real to export."
+        )
 
     def dispatch(self, command_name: str, **kwargs: Any) -> Any:
         """Execute a registered command and emit notification signals.
@@ -82,7 +101,5 @@ class CommandDispatcher(QObject):
             self.command_executed.emit(command_name, result_dict)
             return result
         else:
-            self.log_message_emitted.emit(
-                "WARNING", f"No handler registered for command: {command_name}"
-            )
+            self.log_message_emitted.emit("WARNING", f"No handler registered for command: {command_name}")
             return None
