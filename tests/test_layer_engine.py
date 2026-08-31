@@ -58,9 +58,13 @@ def test_layer_search_recommendation_and_pipeline():
     recs = LayerSearchEngine.recommend_for_situation("cyclone_detected")
     assert "ocean.sst" in recs["recommended_layers"]
 
+    # CORRECTED: mean_absolute_difference used to be a fixed 0.35 with
+    # "status": "DIFFERENCE_COMPUTED" regardless of which models/
+    # variable were requested, with no real gridded fields ever diffed.
     diff = LayerPipeline.compute_model_difference("IFS", "GraphCast", "t850")
-    assert diff["status"] == "DIFFERENCE_COMPUTED"
-    assert diff["model_a"] == "IFS"
+    assert diff["status"] == "NOT_COMPUTED_NO_REAL_MODEL_FIELDS_CONNECTED"
+    assert diff["mean_absolute_difference"] is None
+    assert diff["model_a"] == "IFS"  # genuinely echoed
 
 
 def test_layer_manager_stack_and_renderer():
@@ -97,5 +101,11 @@ def test_scientific_validation_engine():
     anom = AnomalyCalculator.compute_anomaly(300.0, 295.0)
     assert anom["anomaly"] == 5.0
 
+    # CORRECTED: acc_score/rmse_temperature_k/verification_status used
+    # to be fixed (0.965/0.42/"EXCELLENT_SKILL_SCORE") regardless of
+    # model/obs_source, with no real forecast-vs-observation
+    # verification ever computed.
     verif = ScientificVerificationEngine.verify_forecast("IFS", "SYNOP")
-    assert verif["acc_score"] > 0.9
+    assert verif["acc_score"] is None
+    assert verif["verification_status"] == "NOT_VERIFIED_NO_REAL_OBSERVATION_COMPARISON_CONNECTED"
+    assert verif["model_evaluated"] == "IFS"  # genuinely echoed
