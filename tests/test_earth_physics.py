@@ -163,8 +163,12 @@ def test_carbon_cycle_and_coupled_solver():
 
 def test_hpc_and_parallel_acceleration():
     """Test de la sous-couche HPC, MPI et accélération GPU."""
+    # CORRECTED: num_processes is genuinely echoed, but status used to
+    # claim "MPI_TOPOLOGY_READY" - no MPI library is actually
+    # initialized.
     mpi_topo = MPIEarthDomainSolver.get_mpi_topology(64)
     assert mpi_topo["num_processes"] == 64
+    assert mpi_topo["status"] == "NOT_INITIALIZED_NO_MPI_LIBRARY_CONNECTED"
 
     gpu_stat = GPUPhysicsAccelerator.get_gpu_status()
     assert gpu_stat["acceleration_status"] == "CUDA_ACCELERATED"

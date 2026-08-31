@@ -92,8 +92,16 @@ def test_analysis_state_vector_and_neural_da():
 
 def test_data_catalog_and_streaming():
     """Test du catalogue de données multi-format et du moteur de streaming."""
+    # CORRECTED: supported_formats is a genuine static declared scope,
+    # but status used to claim "DATA_CATALOG_ACTIVE" - no real storage
+    # backend is connected.
     cat = DataCatalogEngine.get_catalog_summary()
     assert "GRIB2" in cat["supported_formats"]
+    assert cat["status"] == "NOT_CONNECTED_NO_STORAGE_BACKEND_CONFIGURED"
 
+    # CORRECTED: used to claim a fabricated "128.5 Mbps" live
+    # throughput and "STREAMING_ACTIVE" - no real streaming connection
+    # exists.
     stream = StreamingEngine.get_stream_status()
-    assert stream["status"] == "STREAMING_ACTIVE"
+    assert stream["status"] == "NOT_STREAMING_NO_CONNECTION_ESTABLISHED"
+    assert stream["throughput_mbps"] is None
