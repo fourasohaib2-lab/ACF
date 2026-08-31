@@ -4,10 +4,11 @@ Atmospheric Complexity Framework (ACF)
 Scientific Query Engine (System Expert & Physical AI Ask Interface)
 """
 
-from typing import Any, Dict
-from acf.science.parameters.engine import ParameterEngine
-from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from typing import Any
+
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from acf.science.parameters.engine import ParameterEngine
 
 
 class ScientificQueryEngine:
@@ -19,7 +20,7 @@ class ScientificQueryEngine:
         self.graph = KnowledgeGraphEngine()
         self.param_engine = ParameterEngine()
 
-    def ask(self, question: str) -> Dict[str, Any]:
+    def ask(self, question: str) -> dict[str, Any]:
         """
         Répond scientifiquement à une question en fournissant l'explication physique,
         la chaîne causale, les équations, les paramètres importants et les références.
@@ -29,7 +30,11 @@ class ScientificQueryEngine:
         # -------------------------------------------------------------------
         # MISSION ACF-044 Natural Language Queries (Real-Time Earth Monitoring)
         # -------------------------------------------------------------------
-        if q in ["show live earth", "live earth", "continuous monitoring"] or "show real-time monitoring" in q or "show realtime monitoring" in q:
+        if (
+            q in ["show live earth", "live earth", "continuous monitoring"]
+            or "show real-time monitoring" in q
+            or "show realtime monitoring" in q
+        ):
             return {
                 "question": question,
                 "action": "activate_workspace",
@@ -43,27 +48,41 @@ class ScientificQueryEngine:
             }
 
         if q in ["show telemetry", "show cluster telemetry"] or "show hpc telemetry" in q:
+            # CORRECTED: this used to embed fixed fake "current"
+            # telemetry numbers (CPU 14.2%, GPU 32.5%...) in the
+            # explanation text as if reporting live values - the same
+            # fabricated numbers that monitoring.telemetry_engine.TelemetryEngine
+            # used to claim (fixed earlier this session to report real
+            # host CPU/RAM via psutil and honestly decline the rest).
+            # This router only activates a UI widget; it does not
+            # itself measure anything, so it no longer asserts numbers.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "TelemetryEngineViewer",
                 "physical_explanation": (
-                    "Affichage de la télémétrie matérielle et logicielle : "
-                    "CPU 14.2%, GPU 32.5% (18.2 GB vRAM), Réseau 10.5 Gbps, Latence moyenne 0.85 ms sur 16 nœuds."
+                    "Activation du widget de télémétrie matérielle et logicielle "
+                    "(CPU, RAM, GPU, réseau, latence, nœuds de calcul)."
                 ),
-                "system_status": "HIGH PERFORMANCE / OPTIMAL",
+                "system_status": "NOT_MEASURED_SEE_TELEMETRYENGINE_FOR_LIVE_VALUES",
             }
 
         if q in ["show earth health", "earth health", "santé planétaire"]:
+            # CORRECTED: this used to claim a fixed fake
+            # "planet_health_score_pct: 74.5" - the same fabricated
+            # number that monitoring.earth_health.EarthHealthMonitor
+            # and digital_twin.planetary_dashboard.PlanetaryDashboard
+            # independently used to claim (both fixed earlier this
+            # session). This router only activates a UI widget.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "EarthHealthViewer",
                 "physical_explanation": (
-                    "Indice de santé globale de la Terre : 74.5/100. "
-                    "Suivi en temps réel de la résilience du système Terre et des 6 limites planétaires dépassées."
+                    "Activation du widget de santé globale de la Terre "
+                    "(indice de résilience du système Terre et limites planétaires)."
                 ),
-                "planet_health_score_pct": 74.5,
+                "planet_health_score_pct": None,
             }
 
         if q in ["show alerts", "current alerts", "alertes en cours"]:
@@ -79,13 +98,20 @@ class ScientificQueryEngine:
             }
 
         if q in ["show streaming", "observation stream"]:
+            # CORRECTED: this used to embed fixed fake throughput
+            # numbers (4500 stations/sec, 3900 ARGO buoys...) - the
+            # same fabricated numbers that
+            # monitoring.observation_stream.ObservationStreamEngine
+            # used to claim (fixed earlier this session to honestly
+            # report no real ingestion pipeline connected). This
+            # router only activates a UI widget.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "ObservationStreamEngineViewer",
                 "physical_explanation": (
-                    "Supervision du streaming d'observation : 4500 stations Synop/sec, 3900 bouées ARGO, "
-                    "1200 rapports avions AMDAR/min et 9 constellations de satellites."
+                    "Activation du widget de supervision du streaming d'observation "
+                    "(stations SYNOP, bouées ARGO, rapports AMDAR, constellations satellites)."
                 ),
             }
 
@@ -109,8 +135,12 @@ class ScientificQueryEngine:
                     "d'alertes par serveur WebSocket haut débit avec latence < 1 ms."
                 ),
                 "architecture_components": [
-                    "GlobalRealtimeMonitor", "TelemetryEngine", "ObservationStreamEngine",
-                    "OperationalWebSocketServer", "EarthAnomalyMonitor", "EarthHealthMonitor"
+                    "GlobalRealtimeMonitor",
+                    "TelemetryEngine",
+                    "ObservationStreamEngine",
+                    "OperationalWebSocketServer",
+                    "EarthAnomalyMonitor",
+                    "EarthHealthMonitor",
                 ],
             }
 
@@ -187,7 +217,10 @@ class ScientificQueryEngine:
         # -------------------------------------------------------------------
         # MISSION ACF-041 Natural Language Queries (Master Framework & Integration)
         # -------------------------------------------------------------------
-        if any(k in q for k in ["show master", "show framework", "show modules", "show capabilities", "explain architecture"]):
+        if any(
+            k in q
+            for k in ["show master", "show framework", "show modules", "show capabilities", "explain architecture"]
+        ):
             return {
                 "question": question,
                 "action": "activate_workspace",
@@ -282,7 +315,9 @@ class ScientificQueryEngine:
         # -------------------------------------------------------------------
         # MISSION ACF-039 Natural Language Queries (Planetary Defense & Science)
         # -------------------------------------------------------------------
-        if any(k in q for k in ["show asteroids", "show neo", "show comets", "show planetary defense", "explain asteroid"]):
+        if any(
+            k in q for k in ["show asteroids", "show neo", "show comets", "show planetary defense", "explain asteroid"]
+        ):
             return {
                 "question": question,
                 "action": "activate_workspace",
@@ -439,7 +474,16 @@ class ScientificQueryEngine:
         # -------------------------------------------------------------------
         # MISSION ACF-036 Natural Language Queries (Digital Twin & Planetary Engine)
         # -------------------------------------------------------------------
-        if any(k in q for k in ["show earth twin", "show planet state", "show global state", "show planet dashboard", "digital twin"]):
+        if any(
+            k in q
+            for k in [
+                "show earth twin",
+                "show planet state",
+                "show global state",
+                "show planet dashboard",
+                "digital twin",
+            ]
+        ):
             return {
                 "question": question,
                 "action": "activate_workspace",
@@ -941,7 +985,11 @@ class ScientificQueryEngine:
                 ),
                 "causal_chain": "Trade Wind Weakening -> Reduced Upwelling -> East Pacific Warming -> Walker Cell Disruption -> Global Teleconnections",
                 "latex_equation": r"\text{ONI} = \overline{\text{SST}_{\text{NINO3.4}} - \text{SST}_{\text{climatology}}}^{\,3\text{ mois}}",
-                "impacts": ["Sécheresses en Australie/Indonésie", "Inondations au Pérou", "Modification des trajectoires des tempêtes synoptiques"],
+                "impacts": [
+                    "Sécheresses en Australie/Indonésie",
+                    "Inondations au Pérou",
+                    "Modification des trajectoires des tempêtes synoptiques",
+                ],
                 "references": ["Trenberth (1997) BAMS", "IPCC AR6 WG1"],
             }
 
@@ -994,7 +1042,11 @@ class ScientificQueryEngine:
                     "L'indice de sécheresse standardisé WMO est le SPI (Standardized Precipitation Index) et le SPEI (incorporant l'évapotranspiration) : "
                     "SPI <= -2.0 correspond à une sécheresse extrême, tandis que SPI >= +2.0 correspond à une humidité extrême."
                 ),
-                "drought_indices": ["SPI (Standardized Precipitation Index)", "SPEI (Evapotranspiration-based)", "PDSI (Palmer Drought Severity Index)"],
+                "drought_indices": [
+                    "SPI (Standardized Precipitation Index)",
+                    "SPEI (Evapotranspiration-based)",
+                    "PDSI (Palmer Drought Severity Index)",
+                ],
                 "references": ["WMO-No. 1090 SPI User Guide", "McKee et al. (1993)"],
             }
 
@@ -1046,7 +1098,9 @@ class ScientificQueryEngine:
                     "3) Un forçage synoptique d'altitude (divergence de ligne de jet et advection de vorticité)."
                 ),
                 "causal_chain": "Moisture Advection + Synoptic Forcing -> Strong Updrafts -> Cloud Water Coalescence -> Heavy Precipitation",
-                "equations": [r"P = \int_{z_0}^{z_{\text{top}}} \rho_{\text{air}} \cdot w \cdot \frac{\partial q_v}{\partial z} dz"],
+                "equations": [
+                    r"P = \int_{z_0}^{z_{\text{top}}} \rho_{\text{air}} \cdot w \cdot \frac{\partial q_v}{\partial z} dz"
+                ],
                 "key_variables": ["PWV (mm)", "IVT (kg/m/s)", "CAPE (J/kg)", "Vertical Velocity w (m/s)"],
                 "references": ["Lam et al. (2023) Science", "Doswell et al. (1996)"],
             }
@@ -1069,7 +1123,11 @@ class ScientificQueryEngine:
                 "references": ["Bauer et al. (2015) Nature", "Price et al. (2024) GenCast Paper"],
             }
 
-        if "compare graphcast and ifs" in q or ("graphcast" in q and "ifs" in q) or ("compare ecmwf and graphcast" in q):
+        if (
+            "compare graphcast and ifs" in q
+            or ("graphcast" in q and "ifs" in q)
+            or ("compare ecmwf and graphcast" in q)
+        ):
             return {
                 "question": question,
                 "physical_explanation": (
@@ -1108,7 +1166,11 @@ class ScientificQueryEngine:
                     "2) Cisaillement vertical du vent (Shear 0-6 km > 15 m/s et Helicity SREH > 150 m²/s²), "
                     "3) Contenu en vapeur d'eau (PWV > 35 mm et IVT > 300 kg/m/s)."
                 ),
-                "risk_indices": ["Energy Helicity Index (EHI)", "Significant Severe Parameter (STP)", "MESH Hail Index"],
+                "risk_indices": [
+                    "Energy Helicity Index (EHI)",
+                    "Significant Severe Parameter (STP)",
+                    "MESH Hail Index",
+                ],
                 "references": ["NOAA SPC Severe Weather Manual", "Doswell (2001)"],
             }
 
@@ -1257,7 +1319,11 @@ class ScientificQueryEngine:
                     "0000 (< 50 m), 0500 (500 m), 1500 (1500 m), 9999 (Visibilité >= 10 km, ou CAVOK). "
                     "Aux USA, elle est codée en Miles Statutaires (ex: 1/4SM, 3SM, 10SM)."
                 ),
-                "examples": {"9999": ">= 10 km (Visibilité illimitée)", "0800": "800 mètres", "10SM": "10 Miles Statutaires (16 km)"},
+                "examples": {
+                    "9999": ">= 10 km (Visibilité illimitée)",
+                    "0800": "800 mètres",
+                    "10SM": "10 Miles Statutaires (16 km)",
+                },
                 "references": ["ICAO Annex 3 Section 4.6", "WMO-No. 782 Aerodrome Reports Guide"],
             }
 
@@ -1301,7 +1367,9 @@ class ScientificQueryEngine:
                     "2) L'advection d'air chaud et humide dans les basses couches combinée au refroidissement adiabatique ou synoptique en altitude."
                 ),
                 "causal_chain": "Surface Heating + Low-Level Moisture Advection -> Increased Theta_e -> Higher Buoyancy -> Increased CAPE",
-                "equations": [r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_{v,\text{parcel}} - T_{v,\text{env}}}{T_{v,\text{env}}} dz"],
+                "equations": [
+                    r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_{v,\text{parcel}} - T_{v,\text{env}}}{T_{v,\text{env}}} dz"
+                ],
                 "parameters": {"CAPE": "J/kg", "Theta_e": "K", "Lapse_Rate": "K/km"},
                 "references": ["NOAA SPC Severe Weather Manual", "Emanuel (1994)"],
             }
@@ -1318,7 +1386,13 @@ class ScientificQueryEngine:
                     "Seifert & Beheng 2-Moment Scheme (DWD ICON)",
                     "Lin-Farley-Orville Scheme (WRF)",
                 ],
-                "prognostic_species": ["q_c (eau nuageuse)", "q_i (glace)", "q_r (pluie)", "q_s (neige)", "q_g (graupel)"],
+                "prognostic_species": [
+                    "q_c (eau nuageuse)",
+                    "q_i (glace)",
+                    "q_r (pluie)",
+                    "q_s (neige)",
+                    "q_g (graupel)",
+                ],
                 "references": ["Thompson et al. (2008)", "Morrison et al. (2005)", "Lac et al. (2018)"],
             }
 
@@ -1350,8 +1424,11 @@ class ScientificQueryEngine:
                     "Terra/Aqua MODIS & Suomi NPP VIIRS (Volcanic Ash Detection)",
                     "CALIPSO / EarthCARE Lidar (Profil vertical des aérosols de cendres)",
                 ],
-                "applications": ["Centre d'Avis de Cendres Volcaniques (ICAO VAAC)", "Sécurité des vols transcontinentaux"],
-                "references":["ICAO Doc 9766 Volcanic Ash", "Prata (1989) J. Geophys. Res."],
+                "applications": [
+                    "Centre d'Avis de Cendres Volcaniques (ICAO VAAC)",
+                    "Sécurité des vols transcontinentaux",
+                ],
+                "references": ["ICAO Doc 9766 Volcanic Ash", "Prata (1989) J. Geophys. Res."],
             }
 
         if "bergeron" in q or "processus de bergeron" in q:
@@ -1387,7 +1464,14 @@ class ScientificQueryEngine:
                     "HARMONIE-AROME (Consortium ACCORD - 26 services météo européens)",
                     "Meso-NH (CNRS / Météo-France Cloud Resolving Model)",
                 ],
-                "microphysics_species": ["q_c (eau nuageuse)", "q_i (glace)", "q_r (pluie)", "q_s (neige)", "q_g (graupel)", "q_h (grêle)"],
+                "microphysics_species": [
+                    "q_c (eau nuageuse)",
+                    "q_i (glace)",
+                    "q_r (pluie)",
+                    "q_s (neige)",
+                    "q_g (graupel)",
+                    "q_h (grêle)",
+                ],
                 "references": ["Lac et al. (2018) Geosci. Model Dev."],
             }
 
@@ -1402,7 +1486,11 @@ class ScientificQueryEngine:
                     "Supercellule Mesocyclonique (Classic, HP, LP)",
                     "Ligne de grain / Bow Echo (QLCS)",
                 ],
-                "necessary_conditions": ["w_max > 25 m/s", "Sursaturation en phase mixte (-10°C à -25°C)", "Forte présence de graupels et eau surfondue"],
+                "necessary_conditions": [
+                    "w_max > 25 m/s",
+                    "Sursaturation en phase mixte (-10°C à -25°C)",
+                    "Forte présence de graupels et eau surfondue",
+                ],
                 "references": ["WMO Cloud Atlas (2017)", "Knight & Knight (2001) Hail Physics"],
             }
 
@@ -1435,7 +1523,9 @@ class ScientificQueryEngine:
                     "ascendante depuis le niveau de libre convection (LFC) jusqu'au niveau d'équilibre (EL)."
                 ),
                 "causal_chain": "Surface heating -> Instability -> CAPE -> Updraft",
-                "equations": [r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_{v,\text{parcel}} - T_{v,\text{env}}}{T_{v,\text{env}}} dz"],
+                "equations": [
+                    r"\text{CAPE} = \int_{z_{\text{LFC}}}^{z_{\text{EL}}} g \frac{T_{v,\text{parcel}} - T_{v,\text{env}}}{T_{v,\text{env}}} dz"
+                ],
                 "parameters": {"CAPE": "J/kg", "LFC": "m", "EL": "m"},
                 "units": "J/kg",
                 "references": param.references if param else ["WMO Severe Weather Manual", "NOAA SPC"],
@@ -1448,8 +1538,26 @@ class ScientificQueryEngine:
             return {
                 "question": question,
                 "physical_explanation": "Les paramètres météorologiques dépendant directement de l'humidité relative ou spécifique de l'air sont :",
-                "dependent_parameters": param_names if param_names else ["Température Virtuelle (Tv)", "Température Potentielle Équivalente (Theta_e)", "CAPE", "CIN", "Rapport de Mélange (w)", "Eau Liquide Nuageuse (qc)"],
-                "dependent_keys": param_keys if param_keys else ["virtual_temperature", "equivalent_potential_temperature", "CAPE", "CIN", "mixing_ratio", "cloud_water"],
+                "dependent_parameters": param_names
+                if param_names
+                else [
+                    "Température Virtuelle (Tv)",
+                    "Température Potentielle Équivalente (Theta_e)",
+                    "CAPE",
+                    "CIN",
+                    "Rapport de Mélange (w)",
+                    "Eau Liquide Nuageuse (qc)",
+                ],
+                "dependent_keys": param_keys
+                if param_keys
+                else [
+                    "virtual_temperature",
+                    "equivalent_potential_temperature",
+                    "CAPE",
+                    "CIN",
+                    "mixing_ratio",
+                    "cloud_water",
+                ],
                 "references": ["WMO Atmospheric Thermodynamics Manual"],
             }
 
@@ -1466,8 +1574,11 @@ class ScientificQueryEngine:
                     "Himawari-8/9 AHI (JMA Band 14)",
                     "MetOp IASI / Terra-Aqua MODIS (Cloud Top Temperature Retrieval)",
                 ],
-                "applications": ["Détection du sommet des Cumulonimbus (Overshooting Tops)", "Prévision d'orage immédiat (Nowcasting)"],
-                "references":["EUMETSAT MSG User Guide", "NOAA GOES-R Series Product Definition"],
+                "applications": [
+                    "Détection du sommet des Cumulonimbus (Overshooting Tops)",
+                    "Prévision d'orage immédiat (Nowcasting)",
+                ],
+                "references": ["EUMETSAT MSG User Guide", "NOAA GOES-R Series Product Definition"],
             }
 
         # Default convective storm response
@@ -1505,18 +1616,26 @@ class ScientificQueryEngine:
             "physical_explanation": explanation_text,
             "causal_chain": chain_info.get("explanation", ""),
             "detailed_chain_steps": chain_info.get("chain", []),
-            "equations": equations if equations else [r"z_{\text{LCL}} = 125(T-T_d)", r"\text{CAPE} = \int g \frac{T_v - T_{ve}}{T_{ve}} dz"],
+            "equations": equations
+            if equations
+            else [r"z_{\text{LCL}} = 125(T-T_d)", r"\text{CAPE} = \int g \frac{T_v - T_{ve}}{T_{ve}} dz"],
             "parameters": {
                 "CAPE": "J/kg (Énergie potentielle d'ascendance)",
                 "Updraft_w_max": "m/s (Vitesse maximale du courant ascendant)",
                 "Freezing_level": "m (Altitude du niveau 0°C)",
                 "LWC": "g/m³ (Liquid Water Content)",
             },
-            "references": references if references else ["WMO International Cloud Atlas (2017)", "Knight & Knight (2001) Hailstorm Physics", "Pruppacher & Klett (1997)"],
+            "references": references
+            if references
+            else [
+                "WMO International Cloud Atlas (2017)",
+                "Knight & Knight (2001) Hailstorm Physics",
+                "Pruppacher & Klett (1997)",
+            ],
         }
 
 
-def ask(question: str) -> Dict[str, Any]:
+def ask(question: str) -> dict[str, Any]:
     """Fonction raccourci globale acf.science.ask()."""
     engine = ScientificQueryEngine()
     return engine.ask(question)

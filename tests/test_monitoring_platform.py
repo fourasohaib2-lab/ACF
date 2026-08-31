@@ -129,8 +129,13 @@ def test_monitoring_dashboard_and_query_engine():
     r2 = qe.ask("Show Telemetry")
     assert r2["widget_type"] == "TelemetryEngineViewer"
 
+    # CORRECTED: used to claim a fixed fake "74.5" - the same
+    # fabricated number independently claimed by EarthHealthMonitor
+    # and PlanetaryDashboard (both fixed earlier this session). This
+    # router only activates a UI widget, it doesn't measure anything.
     r3 = qe.ask("Show Earth Health")
-    assert r3["planet_health_score_pct"] == 74.5
+    assert r3["planet_health_score_pct"] is None
+    assert r3["widget_type"] == "EarthHealthViewer"
 
     r4 = qe.ask("Show Alerts")
     assert r4["widget_type"] == "OperationalAlertDispatcherViewer"
