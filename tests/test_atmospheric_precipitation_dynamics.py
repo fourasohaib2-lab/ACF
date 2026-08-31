@@ -2,166 +2,66 @@
 Atmospheric Precipitation Dynamics
 Sprint 9.21
 
-Module de dynamique des précipitations atmosphériques :
-- formation pluie/neige/grêle
-- transitions de phase eau-glace
-- accumulation
-- interaction nuages-précipitations
+REWRITTEN: this file used to contain only a stray, out-of-date
+duplicate copy of PrecipitationState/AtmosphericPrecipitationDynamics
+with zero `def test_*` functions - pytest collected the file but ran
+no tests from it, so the real source module had 0% coverage and was
+never actually verified. The duplicate had also drifted out of sync
+with the real source (different field/method names entirely),
+confirming it was stale copy-paste content rather than a real
+reference. Replaced with real tests importing and exercising the
+actual current source class.
 """
 
-from dataclasses import dataclass
+import pytest
+
+from acf.model4d.physics.atmospheric_precipitation_dynamics import (
+    AtmosphericPrecipitationDynamics,
+    PrecipitationState,
+)
 
 
-@dataclass
-class PrecipitationState:
-    cloud_water: float
-    ice_content: float
-    temperature: float
-    vertical_velocity: float
-    humidity: float
-    aerosol_loading: float
+@pytest.fixture
+def dynamics():
+    return AtmosphericPrecipitationDynamics()
 
 
-
-class AtmosphericPrecipitationDynamics:
-
-
-    def __init__(self):
-        self.name = "Atmospheric Precipitation Dynamics"
-        self.version = "9.21"
+@pytest.fixture
+def state():
+    return PrecipitationState(
+        humidity=0.8, condensation_rate=2.0, convection_intensity=1.5, precipitation_efficiency=0.6
+    )
 
 
-
-    def precipitation_formation(
-        self,
-        state: PrecipitationState
-    ) -> float:
-        """
-        Formation des précipitations.
-        """
-
-        result = (
-            state.cloud_water
-            +
-            state.ice_content
-            -
-            state.aerosol_loading
-            / 3
-        )
-
-        return round(result, 1)
+def test_condensation_amount(dynamics, state):
+    result = dynamics.condensation_amount(state)
+    assert result == pytest.approx(state.humidity * state.condensation_rate * 0.1)
 
 
-
-    def rainfall_rate(
-        self,
-        state: PrecipitationState
-    ) -> float:
-        """
-        Taux de pluie.
-        """
-
-        if state.temperature > 0:
-
-            result = (
-                state.cloud_water
-                *
-                state.humidity
-                *
-                0.001
-            )
-
-            return round(result, 1)
-
-        return 0.0
+def test_precipitation_rate(dynamics, state):
+    result = dynamics.precipitation_rate(state)
+    expected = round(
+        state.humidity * state.condensation_rate * state.convection_intensity * state.precipitation_efficiency * 0.1,
+        2,
+    )
+    assert result == pytest.approx(expected)
 
 
-
-    def snowfall_rate(
-        self,
-        state: PrecipitationState
-    ) -> float:
-        """
-        Taux de neige.
-        """
-
-        if state.temperature <= 0:
-
-            return round(
-                state.ice_content,
-                1
-            )
-
-        return 0.0
+def test_precipitation_efficiency_method(dynamics, state):
+    result = dynamics.precipitation_efficiency(state)
+    assert result == pytest.approx(state.condensation_rate * state.convection_intensity * state.precipitation_efficiency)
 
 
-
-    def hail_probability(
-        self,
-        state: PrecipitationState
-    ) -> float:
-        """
-        Probabilité de grêle.
-        """
-
-        result = (
-            state.vertical_velocity
-            *
-            state.ice_content
-            *
-            0.01
-        )
-
-        return round(result, 1)
+def test_water_state(dynamics, state):
+    result = dynamics.water_state(state)
+    assert result == pytest.approx(state.humidity * state.condensation_rate)
 
 
-
-    def phase_transition(
-        self,
-        state: PrecipitationState
-    ) -> int:
-        """
-        Transition de phase eau/glace.
-        """
-
-        result = int(
-            state.ice_content
-        )
-
-        return result
+def test_cloud_conversion(dynamics, state):
+    result = dynamics.cloud_conversion(state)
+    assert result == pytest.approx(round(state.humidity * state.precipitation_efficiency * 0.05, 2))
 
 
-
-    def precipitation_accumulation(
-        self,
-        state: PrecipitationState
-    ) -> int:
-        """
-        Accumulation totale.
-        """
-
-        result = (
-            state.cloud_water
-            +
-            state.ice_content
-        )
-
-        return int(result)
-
-
-
-    def cloud_precipitation_interaction(
-        self,
-        state: PrecipitationState
-    ) -> float:
-        """
-        Interaction nuage-précipitation.
-        """
-
-        result = (
-            state.aerosol_loading
-            *
-            0.12
-        )
-
-        return round(result, 1)
+def test_precipitation_state_default_efficiency():
+    default_state = PrecipitationState(humidity=0.5, condensation_rate=1.0, convection_intensity=1.0)
+    assert default_state.precipitation_efficiency == 1.0

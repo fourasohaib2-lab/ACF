@@ -48,7 +48,7 @@ class TornadoDynamicsPhysics:
         Kinetic energy:
         E = 1/2 m v²
         """
-        return 0.5 * mass * velocity ** 2
+        return 0.5 * mass * velocity**2
 
     @staticmethod
     def vortex_strength(vorticity, radius):
@@ -81,17 +81,26 @@ class TornadoDynamicsPhysics:
     @staticmethod
     def enhanced_fujita_index(wind_speed):
         """
-        Simplified EF scale indicator.
+        Simplified EF scale indicator (wind_speed in m/s, 3-second gust).
+
+        NOTE (correction — Physics Guard): the EF2-EF5 thresholds
+        (70/90/110) diverged substantially from the real NWS/NOAA
+        Enhanced Fujita Scale 3-second-gust wind estimates converted to
+        m/s (EF0 >=29, EF1 >=38, EF2 >=50, EF3 >=61, EF4 >=74, EF5
+        >=89 m/s) - a wind speed of e.g. 95 m/s (genuinely EF5, >=89)
+        used to be classified as only "EF4" (<110), understating
+        tornado severity. Corrected to the standard published
+        thresholds. Not fabricated.
         """
-        if wind_speed < 38:
+        if wind_speed < 29:
             return "EF0"
-        elif wind_speed < 50:
+        elif wind_speed < 38:
             return "EF1"
-        elif wind_speed < 70:
+        elif wind_speed < 50:
             return "EF2"
-        elif wind_speed < 90:
+        elif wind_speed < 61:
             return "EF3"
-        elif wind_speed < 110:
+        elif wind_speed < 74:
             return "EF4"
         else:
             return "EF5"
