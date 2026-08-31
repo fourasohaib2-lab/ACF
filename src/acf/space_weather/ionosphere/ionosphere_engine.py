@@ -5,14 +5,12 @@ Ionosphere Dynamics, Total Electron Content (TEC) & Radio Blackout Module (Phase
 (TEC in TECU, foF2, MUF, GNSS Delay, NOAA Radio Blackout Scale R1-R5)
 """
 
-from typing import Dict
-
 
 class RadioBlackoutScale:
     """Classification des pannes de radio HF selon l'échelle NOAA Radio Blackouts (R1 à R5)."""
 
     @staticmethod
-    def classify_xray_radio_blackout(xray_flux_w_m2: float) -> Dict[str, str]:
+    def classify_xray_radio_blackout(xray_flux_w_m2: float) -> dict[str, str]:
         """Détermine le niveau de dégradation HF (R1 à R5) selon le flux de rayons X GOES."""
         if xray_flux_w_m2 >= 2e-3:
             scale = "R5 - Extreme Radio Blackout"
@@ -46,11 +44,29 @@ class IonosphereEngine:
         Delta s = (40.3 / f²) * TEC (1 TECU = 10^16 électrons/m²).
         """
         tec_el_m2 = tec_tecu * 1e16
-        delay_m = (40.3 / (frequency_hz ** 2)) * tec_el_m2
+        delay_m = (40.3 / (frequency_hz**2)) * tec_el_m2
         return delay_m
 
     @staticmethod
     def maximum_usable_frequency_muf_mhz(fof2_mhz: float, distance_km: float = 3000.0) -> float:
-        """Calcul approximatif de la fréquence maximale utilisable MUF = foF2 * M(3000)."""
+        """
+        Calcul approximatif de la fréquence maximale utilisable MUF = foF2 * M(3000).
+
+        NOTE (found, NOT changed — Physics Guard): distance_km is
+        accepted but m_factor is hardcoded to the M(3000) value (valid,
+        by definition, only at the standard 3000km reference distance -
+        which matches this function's own default). The real M-factor
+        genuinely varies with circuit distance (and with ionospheric
+        layer height h'F2), but that relationship is an empirical/
+        tabulated curve (ITU-R recommendations; see e.g. Davies,
+        "Ionospheric Radio", 1990) rather than a simple closed-form
+        formula - inventing a specific numeric M(D) formula here without
+        a citable source would risk replacing one unfounded constant
+        with another. Calling this with distance_km != 3000 silently
+        still applies M(3000), which is only approximately correct.
+        Flagged rather than "corrected" with an unverified formula -
+        same situation as LayerPermissionEngine.check_layer_access()'s
+        NOTE.
+        """
         m_factor = 3.0  # Facteur M(3000) standard
         return fof2_mhz * m_factor

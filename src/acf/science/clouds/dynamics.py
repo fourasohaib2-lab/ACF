@@ -5,6 +5,7 @@ Cloud Dynamics Engine
 """
 
 import math
+
 from acf.science.clouds.base import CloudProcess
 from acf.science.clouds.registry import CloudScientificRegistry
 
@@ -24,7 +25,11 @@ class CloudDynamicsEngine:
                 name="Flux de Masse Convectif",
                 domain="Dynamique Nuageuse",
                 equation="M = rho * w * sigma",
-                variables={"rho": "Masse volumique (kg/m³)", "w": "Vitesse d'ascendance (m/s)", "sigma": "Fraction surfacique couverte [0, 1]"},
+                variables={
+                    "rho": "Masse volumique (kg/m³)",
+                    "w": "Vitesse d'ascendance (m/s)",
+                    "sigma": "Fraction surfacique couverte [0, 1]",
+                },
                 units={"M": "kg/(m²·s)"},
                 description="Flux de masse vertical ascendant transporté par les cellules convectives.",
                 references=["Tiedtke (1989) Mon. Wea. Rev.", "ECMWF Convection Documentation"],
@@ -66,7 +71,9 @@ class CloudDynamicsEngine:
             return 0.0
         return math.sqrt(2.0 * cape)
 
-    def entrainment_detrainment(self, mass_flux: float, entrainment_rate: float = 1e-4, detrainment_rate: float = 1e-4, dz: float = 100.0) -> float:
+    def entrainment_detrainment(
+        self, mass_flux: float, entrainment_rate: float = 1e-4, detrainment_rate: float = 1e-4, dz: float = 100.0
+    ) -> float:
         """Calcule la variation du flux de masse avec l'altitude dM/dz * dz."""
         return (entrainment_rate - detrainment_rate) * mass_flux * dz
 
@@ -75,5 +82,24 @@ class CloudDynamicsEngine:
         return current_top_z + updraft_w * dt
 
     def navier_stokes_vertical(self, density: float, buoyancy_force: float, drag_force: float = 0.0) -> float:
-        """Accélération verticale dw/dt = buoyancy - drag."""
+        """
+        Accélération verticale dw/dt = buoyancy - drag.
+
+        NOTE (found, NOT changed — Physics Guard): density is accepted
+        but unused. Whether that is a bug depends on an ambiguity this
+        class doesn't resolve elsewhere: in most cloud-dynamics
+        treatments (e.g. Emanuel 1994, "Atmospheric Convection"),
+        "buoyancy force" B already denotes buoyancy *per unit mass*
+        (m/s^2, i.e. an acceleration - matching this method's own
+        stated equation dw/dt = buoyancy - drag with no other term),
+        in which case density genuinely has nothing to divide by and
+        the current formula is dimensionally correct as written. If
+        instead buoyancy_force/drag_force were meant as true forces per
+        unit volume (N/m^3), density should divide them (a = F/m). No
+        other call site in this codebase disambiguates which
+        convention was intended, and guessing wrong would silently
+        introduce a real unit error rather than fix one, so this is
+        flagged rather than "corrected" either way — same situation as
+        LayerPermissionEngine.check_layer_access()'s NOTE.
+        """
         return buoyancy_force - drag_force

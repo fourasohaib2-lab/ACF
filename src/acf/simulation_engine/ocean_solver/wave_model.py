@@ -1,6 +1,5 @@
 """Spectral ocean surface wave model."""
 
-from typing import Dict
 import numpy as np
 
 
@@ -24,10 +23,27 @@ class WaveModel:
 
     def compute_significant_wave_height(
         self, wind_speed_10m: np.ndarray, fetch_km: float = 100.0
-    ) -> Dict[str, np.ndarray]:
-        """Compute wave parameters using empirical Pierson-Moskowitz / Hasselmann formulas.
+    ) -> dict[str, np.ndarray]:
+        """Compute wave parameters using the SMB/SPM fetch-limited wave growth formulas.
 
-        Hs = 0.243 * (U10^2 / g)
+        NOTE (correction — Physics Guard): fetch_km was genuinely
+        accepted (with a docstring citing fetch-dependent "Hasselmann
+        formulas") but unused - the formula actually implemented,
+        Hs = 0.243*(U10^2/g), is the *fully-developed sea* (infinite
+        fetch/duration) Pierson-Moskowitz limit, so any short-fetch
+        case (an enclosed bay, a developing storm) got the same,
+        systematically too-high wave height as an open-ocean fully-
+        developed sea. Replaced with the standard fetch-limited SMB
+        formula (Shore Protection Manual / Coastal Engineering Manual,
+        US Army Corps of Engineers):
+            g*Hs/U^2 = 0.283 * tanh[0.0125*(g*F/U^2)^0.42]
+            g*Tp/U   = 7.54  * tanh[0.077 *(g*F/U^2)^0.25]
+        which correctly reduces to the fully-developed limit
+        (tanh -> 1) as fetch_km -> infinity, matching the previous
+        formula's coefficient (0.283 here vs 0.243 previously - both
+        values appear in the literature depending on drag-coefficient
+        assumptions; 0.283 is kept as the SMB formula's own internal
+        fully-developed limit for consistency with its Tp term).
 
         Args:
             wind_speed_10m (np.ndarray): 10-meter wind speed array (m/s).
@@ -36,13 +52,16 @@ class WaveModel:
         Returns:
             Dict[str, np.ndarray]: Dictionary containing Hs (m), Tp (s), and Wave Energy (J/m^2).
         """
-        u10 = np.maximum(wind_speed_10m, 0.0)
+        u10 = np.maximum(wind_speed_10m, 0.01)  # avoid divide-by-zero in the dimensionless fetch term
+        fetch_m = max(fetch_km, 0.0) * 1000.0
 
-        # Significant wave height Hs (m)
-        hs = 0.243 * (u10**2 / self.g)
+        dimensionless_fetch = self.g * fetch_m / (u10**2)
 
-        # Peak period Tp ~ 8.13 * (U10 / g)
-        tp = 8.13 * (u10 / self.g)
+        # Significant wave height Hs (m) - fetch-limited SMB formula
+        hs = 0.283 * (u10**2 / self.g) * np.tanh(0.0125 * dimensionless_fetch**0.42)
+
+        # Peak period Tp (s) - fetch-limited SMB formula
+        tp = 7.54 * (u10 / self.g) * np.tanh(0.077 * dimensionless_fetch**0.25)
 
         # Total wave energy density E = 1/16 * rho * g * Hs^2
         rho_water = 1025.0

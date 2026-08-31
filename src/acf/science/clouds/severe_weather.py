@@ -5,7 +5,7 @@ Severe Weather Cloud Module
 """
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 
 class SevereWeatherCloudModule:
@@ -51,9 +51,26 @@ class SevereWeatherCloudModule:
 
         return term1 + term2 + term3 + term4
 
-    def hail_risk_assessment(self, cape_j_kg: float, freezing_level_m: float, updraft_w_max: float) -> Dict[str, Any]:
+    def hail_risk_assessment(self, cape_j_kg: float, freezing_level_m: float, updraft_w_max: float) -> dict[str, Any]:
         """
         Évalue le risque de grêle sévère sous un Cumulonimbus.
+
+        NOTE (found, NOT changed — Physics Guard): freezing_level_m is
+        accepted but unused. This is a real, well-established predictor
+        (hail survives to the surface based on how far it falls through
+        the above-freezing melting layer - a low freezing level means
+        even modest hail reaches the ground, a high freezing level
+        means it largely melts first), but the specific quantitative
+        relationship (melt rate vs. fall distance/time, hailstone size,
+        environment humidity) requires real melting-model physics
+        (e.g. Rasmussen & Heymsfield 1987) that this simplified
+        CAPE/updraft-only proxy doesn't attempt, and I don't have a
+        specific citable numeric correction formula I'm confident
+        enough in to substitute for the current (also approximate)
+        CAPE/updraft thresholds without risking replacing one
+        unfounded number with another. Flagged rather than "corrected"
+        with an invented formula - same situation as
+        LayerPermissionEngine.check_layer_access()'s NOTE.
         """
         hail_diameter_cm = 0.0
         if cape_j_kg > 2000 and updraft_w_max > 30.0:
@@ -77,7 +94,7 @@ class SevereWeatherCloudModule:
         cape_j_kg: float,
         storm_relative_helicity_m2_s2: float,
         bulk_shear_0_6km_m_s: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calcule les indicateurs de supercellule (Supercell Composite Parameter SCP & EHI).
         """

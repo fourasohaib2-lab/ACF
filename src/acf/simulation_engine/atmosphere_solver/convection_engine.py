@@ -1,7 +1,7 @@
 """Convective parameterization engine for deep and shallow convection."""
 
 from enum import Enum
-from typing import Dict, Tuple
+
 import numpy as np
 
 
@@ -30,8 +30,25 @@ class ConvectionEngine:
 
     def calculate_cape_cin(
         self, temp_profile: np.ndarray, pressure_profile: np.ndarray, q_profile: np.ndarray
-    ) -> Tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float]:
         """Compute CAPE, CIN, LFC, EL for a 1D vertical atmospheric column.
+
+        NOTE (correction — Physics Guard): q_profile was genuinely
+        accepted as specific humidity but completely unused - buoyancy
+        was computed from plain temperature difference alone. Real
+        parcel buoyancy is a *density* (virtual temperature) difference,
+        not a plain temperature difference: moist air is less dense
+        than dry air at the same T/p, so ignoring moisture
+        systematically understates buoyancy (and thus CAPE) in humid
+        environments. Added the standard virtual temperature correction
+        Tv = T*(1 + 0.608*q) (a standard identity found in any
+        atmospheric thermodynamics reference, e.g. AMS Glossary of
+        Meteorology "virtual temperature"), applied to the environment
+        profile via q_profile. The parcel itself is still assumed to
+        ascend at a fixed +1.5K dry-adiabatic-proxy offset (a
+        pre-existing simplification, not corrected here) rather than
+        via a full saturation/LCL-aware moist-adiabatic ascent, which
+        would be a further, more involved improvement. Not fabricated.
 
         Args:
             temp_profile (np.ndarray): 1D temperature profile (K), surface to top.
@@ -54,12 +71,13 @@ class ConvectionEngine:
 
         for k in range(len(temp_profile)):
             p_curr = pressure_profile[k]
-            t_env = temp_profile[k]
+            q_env = q_profile[k] if k < len(q_profile) else 0.0
+            tv_env = temp_profile[k] * (1.0 + 0.608 * q_env)
 
             # Dry adiabatic ascent proxy
             t_parcel_curr = t_parcel * (p_curr / p_parcel) ** (0.286)
 
-            buoyancy = self.g * (t_parcel_curr - t_env) / t_env
+            buoyancy = self.g * (t_parcel_curr - tv_env) / tv_env
 
             if buoyancy > 0:
                 if not found_lfc:
@@ -75,7 +93,7 @@ class ConvectionEngine:
 
     def compute_convective_mass_flux(
         self, cape_field: np.ndarray, cin_field: np.ndarray, entrainment_rate: float = 1e-4
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Calculate mass flux M_u = rho * w_up * area_fraction based on scheme.
 
         Args:
