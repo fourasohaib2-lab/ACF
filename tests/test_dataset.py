@@ -40,7 +40,6 @@ def test_dimension():
     ds.set_dimension("time", 24)
 
     assert ds.dimensions["time"] == 24
-from acf.data.dataset import Dataset
 
 
 def test_dataset():

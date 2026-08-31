@@ -1,11 +1,12 @@
+from typing import ClassVar
+
 from acf.io.base_reader import BaseReader
-from acf.io.registry import ReaderRegistry
 from acf.io.factory import ReaderFactory
+from acf.io.registry import ReaderRegistry
 
 
 class DummyReader(BaseReader):
-
-    extensions = [".abc"]
+    extensions: ClassVar[list[str]] = [".abc"]
 
     def can_read(self, filename):
 

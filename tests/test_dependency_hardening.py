@@ -3,7 +3,6 @@ Tests for ACF-018 Dependency Graph Optimization & Architecture Hardening
 """
 
 import importlib
-import pytest
 
 
 def test_canonical_imports_clean():
@@ -24,6 +23,7 @@ def test_legacy_imports_clean():
 
 def test_maps_no_longer_depends_on_visualization():
     import sys
+
     # Clear cached modules to test clean import graph
     for mod in list(sys.modules.keys()):
         if mod.startswith("acf.visualization"):
@@ -39,14 +39,15 @@ def test_maps_no_longer_depends_on_visualization():
 
 
 def test_search_and_aliases_no_circular_import():
-    from acf.parameters.search import ParameterSearch
     from acf.parameters.aliases import ParameterAliases
+    from acf.parameters.search import ParameterSearch
 
     aliases = ParameterAliases()
     aliases.add("t2m", "TMP")
     assert aliases.resolve("t2m") == "TMP"
 
     from acf.parameters.registry import ParameterRegistry
+
     registry = ParameterRegistry()
     search = ParameterSearch(registry)
     assert search is not None

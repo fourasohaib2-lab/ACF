@@ -7,13 +7,9 @@ from acf.data.integration.dataset_mapper import DatasetMapper
 def test_mapper():
 
     ds = Dataset(
-
         name="ERA5",
-
         filepath=Path("/tmp/test.nc"),
-
         filetype="NetCDF",
-
     )
 
     mapper = DatasetMapper()
@@ -26,13 +22,9 @@ def test_mapper():
 def test_copy():
 
     ds = Dataset(
-
         name="GFS",
-
         filepath=Path("/tmp/gfs.nc"),
-
         filetype="NetCDF",
-
     )
 
     mapper = DatasetMapper()

@@ -22,52 +22,34 @@ def test_jet_stream():
 
     engine = AdvancedAtmosphericDynamicsEngine()
 
-    assert (
-        engine.jet_stream_analysis(build_state())
-        ==
-        54.0
-    )
+    assert engine.jet_stream_analysis(build_state()) == 54.0
 
 
 def test_vorticity():
 
     engine = AdvancedAtmosphericDynamicsEngine()
 
-    assert (
-        engine.vorticity_analysis(build_state())
-        ==
-        68.0
-    )
+    assert engine.vorticity_analysis(build_state()) == 68.0
 
 
 def test_dynamic_lift():
 
     engine = AdvancedAtmosphericDynamicsEngine()
 
-    assert (
-        engine.dynamic_lift_index(build_state())
-        ==
-        78.33
-    )
+    assert engine.dynamic_lift_index(build_state()) == 78.33
 
 
 def test_regime():
 
     engine = AdvancedAtmosphericDynamicsEngine()
 
-    assert (
-        engine.circulation_regime(build_state())
-        ==
-        "ACTIVE_DYNAMIC_REGIME"
-    )
+    assert engine.circulation_regime(build_state()) == "ACTIVE_DYNAMIC_REGIME"
 
 
 def test_update():
 
     engine = AdvancedAtmosphericDynamicsEngine()
 
-    result = engine.dynamics_update(
-        build_state()
-    )
+    result = engine.dynamics_update(build_state())
 
     assert result["regime"] == "ACTIVE_DYNAMIC_REGIME"

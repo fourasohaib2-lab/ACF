@@ -16,4 +16,3 @@ def test_ocean_catalog():
     assert catalog.exists("sit")
 
     assert len(catalog.all()) >= 39
-

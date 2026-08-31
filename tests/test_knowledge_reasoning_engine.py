@@ -4,12 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Knowledge & Reasoning Engine Test Suite
 """
 
-import pytest
-import acf.science
-from acf.science.encyclopedia.knowledge_graph.nodes import KnowledgeNode
-from acf.science.encyclopedia.knowledge_graph.relations import KnowledgeRelation
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.science.encyclopedia.knowledge_graph.nodes import KnowledgeNode
 from acf.science.encyclopedia.knowledge_graph.reasoning import KnowledgeReasoningEngine
+from acf.science.encyclopedia.knowledge_graph.relations import KnowledgeRelation
 from acf.science.query_engine import ScientificQueryEngine, ask
 
 

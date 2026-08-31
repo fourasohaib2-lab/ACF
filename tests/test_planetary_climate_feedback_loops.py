@@ -65,7 +65,4 @@ def test_climate_response():
         ocean_memory=1,
     )
 
-    assert (
-        model.climate_response(state)
-        == "amplifying warming"
-    )
+    assert model.climate_response(state) == "amplifying warming"

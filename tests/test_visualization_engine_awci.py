@@ -4,12 +4,17 @@ Atmospheric Complexity Framework (ACF)
 Universal 2D/3D/4D Visualization Engine & AWCI Workstation Test Suite (MISSION ACF-027)
 """
 
-from acf.visualization.scene.scene_manager import VisualizationScene
 from acf.visualization.camera.camera_controller import CameraController
-from acf.visualization.layers.scientific_layers import ParticleFlowLayer, IsosurfaceLayer, RadarVolumeLayer, SatelliteRGBLayer
-from acf.visualization.timeline.timeline_controller import TimelineController
-from acf.visualization.legends.color_tables import ColorTableRegistry
 from acf.visualization.gpu.gpu_backend import GPUBackend
+from acf.visualization.layers.scientific_layers import (
+    IsosurfaceLayer,
+    ParticleFlowLayer,
+    RadarVolumeLayer,
+    SatelliteRGBLayer,
+)
+from acf.visualization.legends.color_tables import ColorTableRegistry
+from acf.visualization.scene.scene_manager import VisualizationScene
+from acf.visualization.timeline.timeline_controller import TimelineController
 from acf.visualization.widgets.awci_dashboard import AWCIDashboardEngine
 
 

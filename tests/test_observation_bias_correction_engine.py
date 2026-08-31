@@ -22,89 +22,63 @@ def test_satellite_bias_score():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.satellite_bias_score(create_state())
-        == 18.0
-    )
+    assert model.satellite_bias_score(create_state()) == 18.0
 
 
 def test_radar_bias_score():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.radar_bias_score(create_state())
-        == 15.84
-    )
+    assert model.radar_bias_score(create_state()) == 15.84
 
 
 def test_synop_bias_score():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.synop_bias_score(create_state())
-        == 14.56
-    )
+    assert model.synop_bias_score(create_state()) == 14.56
 
 
 def test_metar_bias_score():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.metar_bias_score(create_state())
-        == 13.35
-    )
+    assert model.metar_bias_score(create_state()) == 13.35
 
 
 def test_radiosonde_bias_score():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.radiosonde_bias_score(create_state())
-        == 13.02
-    )
+    assert model.radiosonde_bias_score(create_state()) == 13.02
 
 
 def test_temperature_bias():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.temperature_bias(create_state())
-        == 0.2
-    )
+    assert model.temperature_bias(create_state()) == 0.2
 
 
 def test_humidity_bias():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.humidity_bias(create_state())
-        == 0.5
-    )
+    assert model.humidity_bias(create_state()) == 0.5
 
 
 def test_systematic_bias():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.systematic_bias(create_state())
-        == 14.95
-    )
+    assert model.systematic_bias(create_state()) == 14.95
 
 
 def test_bias_correction_update():
 
     model = ObservationBiasCorrectionEngine()
 
-    result = model.bias_correction_update(
-        create_state()
-    )
+    result = model.bias_correction_update(create_state())
 
     assert result["satellite"] == 18.0
     assert result["radar"] == 15.84
@@ -122,7 +96,4 @@ def test_bias_index():
 
     model = ObservationBiasCorrectionEngine()
 
-    assert (
-        model.bias_index(create_state())
-        == 11.4
-    )
+    assert model.bias_index(create_state()) == 11.4

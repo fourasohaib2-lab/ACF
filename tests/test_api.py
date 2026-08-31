@@ -14,9 +14,7 @@ def test_analysis():
 
     api = ACFAPI()
 
-    dataset = {
-        "temperature": np.array([10,20,30])
-    }
+    dataset = {"temperature": np.array([10, 20, 30])}
 
     report = api.analyze(dataset)
 
@@ -27,16 +25,9 @@ def test_alerts():
 
     api = ACFAPI()
 
-    api.register_alert_rule(
-        "temperature",
-        40,
-        "warning",
-        "Extreme Heat"
-    )
+    api.register_alert_rule("temperature", 40, "warning", "Extreme Heat")
 
-    dataset = {
-        "temperature": np.array([42])
-    }
+    dataset = {"temperature": np.array([42])}
 
     alerts = api.alerts(dataset)
 

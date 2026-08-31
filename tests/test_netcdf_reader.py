@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import xarray as xr
 
 from acf.data.readers.netcdf_reader import NetCDFReader

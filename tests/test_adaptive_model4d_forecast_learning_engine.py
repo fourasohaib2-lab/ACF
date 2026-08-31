@@ -16,13 +16,11 @@ def build_state():
     )
 
 
-
 def test_forecast_error():
 
     engine = AdaptiveModel4DForecastLearningEngine()
 
     assert engine.forecast_error(build_state()) == 5
-
 
 
 def test_bias_correction():
@@ -32,7 +30,6 @@ def test_bias_correction():
     assert engine.bias_correction(build_state()) == 3.25
 
 
-
 def test_adaptive_weight():
 
     engine = AdaptiveModel4DForecastLearningEngine()
@@ -40,13 +37,11 @@ def test_adaptive_weight():
     assert engine.adaptive_model_weight(build_state()) == 89.5
 
 
-
 def test_learning_score():
 
     engine = AdaptiveModel4DForecastLearningEngine()
 
     assert engine.learning_score(build_state()) == 84.75
-
 
 
 def test_model_update():

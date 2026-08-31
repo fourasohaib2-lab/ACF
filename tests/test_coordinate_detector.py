@@ -2,13 +2,13 @@ from acf.data.engine.coordinate_detector import CoordinateDetector
 
 
 class DummyDataset:
-
-    dimensions = [
-        "time",
-        "latitude",
-        "longitude",
-        "level",
-    ]
+    def __init__(self):
+        self.dimensions = [
+            "time",
+            "latitude",
+            "longitude",
+            "level",
+        ]
 
 
 def test_coordinate_detector():

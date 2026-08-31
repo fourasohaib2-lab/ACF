@@ -4,7 +4,6 @@ from acf.model4d.physics.atmospheric_convection_dynamics import (
 )
 
 
-
 def test_buoyancy():
 
     model = AtmosphericConvectionDynamics()
@@ -18,7 +17,6 @@ def test_buoyancy():
     )
 
     assert model.calculate_buoyancy(state) == 2.0
-
 
 
 def test_instability_index():
@@ -36,7 +34,6 @@ def test_instability_index():
     assert model.instability_index(state) == 3
 
 
-
 def test_convective_energy():
 
     model = AtmosphericConvectionDynamics()
@@ -50,7 +47,6 @@ def test_convective_energy():
     )
 
     assert model.convective_energy(state) == 1.0
-
 
 
 def test_heat_transport():
@@ -68,7 +64,6 @@ def test_heat_transport():
     assert model.vertical_heat_transport(state) == 2.5
 
 
-
 def test_unstable_convection():
 
     model = AtmosphericConvectionDynamics()
@@ -81,12 +76,7 @@ def test_unstable_convection():
         vertical_velocity=10,
     )
 
-    assert (
-        model.convection_state(state)
-        ==
-        "unstable_convection"
-    )
-
+    assert model.convection_state(state) == "unstable_convection"
 
 
 def test_stable_atmosphere():
@@ -101,8 +91,4 @@ def test_stable_atmosphere():
         vertical_velocity=1,
     )
 
-    assert (
-        model.convection_state(state)
-        ==
-        "stable_atmosphere"
-    )
+    assert model.convection_state(state) == "stable_atmosphere"

@@ -5,10 +5,7 @@ def test_discovery():
 
     factory = ReaderFactory()
 
-    readers = [
-        reader.__class__.__name__
-        for reader in factory.readers()
-    ]
+    readers = [reader.__class__.__name__ for reader in factory.readers()]
 
     assert "NetCDFReader" in readers
     assert "GRIBReader" in readers

@@ -20,57 +20,34 @@ def test_error_correction():
 
     engine = AdaptiveForecastControlEngine()
 
-    assert (
-        engine.error_correction_index(build_state())
-        ==
-        87.5
-    )
+    assert engine.error_correction_index(build_state()) == 87.5
 
 
 def test_confidence():
 
     engine = AdaptiveForecastControlEngine()
 
-    assert (
-        engine.confidence_adjustment(build_state())
-        ==
-        87.0
-    )
+    assert engine.confidence_adjustment(build_state()) == 87.0
 
 
 def test_parameter_control():
 
     engine = AdaptiveForecastControlEngine()
 
-    assert (
-        engine.parameter_control_index(build_state())
-        ==
-        87.17
-    )
+    assert engine.parameter_control_index(build_state()) == 87.17
 
 
 def test_decision():
 
     engine = AdaptiveForecastControlEngine()
 
-    assert (
-        engine.control_decision(build_state())
-        ==
-        "OPTIMAL_MODEL_CONTROL"
-    )
+    assert engine.control_decision(build_state()) == "OPTIMAL_MODEL_CONTROL"
 
 
 def test_update():
 
     engine = AdaptiveForecastControlEngine()
 
-    result = engine.control_update(
-        build_state()
-    )
+    result = engine.control_update(build_state())
 
-    assert (
-        result["decision"]
-        ==
-        "OPTIMAL_MODEL_CONTROL"
-    )
-
+    assert result["decision"] == "OPTIMAL_MODEL_CONTROL"

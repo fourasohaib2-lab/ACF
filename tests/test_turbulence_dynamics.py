@@ -1,3 +1,5 @@
+import pytest
+
 from acf.model4d.physics.turbulence_dynamics import (
     TurbulenceDynamics,
     TurbulenceState,
@@ -15,10 +17,7 @@ def test_tke():
 def test_intensity():
     model = TurbulenceDynamics()
 
-    value = model.turbulence_intensity(
-        4,
-        10
-    )
+    value = model.turbulence_intensity(4, 10)
 
     assert value == 0.2
 
@@ -26,10 +25,7 @@ def test_intensity():
 def test_diffusivity():
     model = TurbulenceDynamics()
 
-    value = model.eddy_diffusivity(
-        50,
-        2
-    )
+    value = model.eddy_diffusivity(50, 2)
 
     assert value == 100
 
@@ -37,10 +33,7 @@ def test_diffusivity():
 def test_timescale():
     model = TurbulenceDynamics()
 
-    value = model.dissipation_timescale(
-        10,
-        2
-    )
+    value = model.dissipation_timescale(10, 2)
 
     assert value == 5
 
@@ -48,12 +41,7 @@ def test_timescale():
 def test_analysis():
     model = TurbulenceDynamics()
 
-    state = TurbulenceState(
-        wind_speed=10,
-        velocity_variance=4,
-        dissipation_rate=2,
-        mixing_length=50
-    )
+    state = TurbulenceState(wind_speed=10, velocity_variance=4, dissipation_rate=2, mixing_length=50)
 
     result = model.analyze(state)
 
@@ -76,28 +64,19 @@ def test_version():
 def test_negative_variance():
     model = TurbulenceDynamics()
 
-    try:
+    with pytest.raises(ValueError):
         model.turbulent_kinetic_energy(-1)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_zero_wind():
     model = TurbulenceDynamics()
 
-    try:
+    with pytest.raises(ValueError):
         model.turbulence_intensity(1, 0)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_negative_mixing():
     model = TurbulenceDynamics()
 
-    try:
+    with pytest.raises(ValueError):
         model.eddy_diffusivity(-1, 2)
-        assert False
-    except ValueError:
-        assert True

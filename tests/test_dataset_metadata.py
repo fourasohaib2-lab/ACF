@@ -2,22 +2,15 @@ from acf.data.engine.dataset_metadata import DatasetMetadata
 
 
 class DummyDataset:
-
-    name = "ERA5"
-
-    variables = ["t", "u"]
-
-    dimensions = ["time", "lat", "lon"]
-
-    metadata = {
-
-        "model": "ERA5",
-
-        "institution": "ECMWF",
-
-        "source": "Copernicus",
-
-    }
+    def __init__(self):
+        self.name = "ERA5"
+        self.variables = ["t", "u"]
+        self.dimensions = ["time", "lat", "lon"]
+        self.metadata = {
+            "model": "ERA5",
+            "institution": "ECMWF",
+            "source": "Copernicus",
+        }
 
 
 def test_metadata():

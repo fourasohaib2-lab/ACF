@@ -20,10 +20,7 @@ def test_detector():
         filetype="NetCDF",
     )
 
-    dataset.set_metadata(
-        "institution",
-        "ECMWF"
-    )
+    dataset.set_metadata("institution", "ECMWF")
 
     model = detector.detect(dataset)
 

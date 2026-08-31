@@ -4,18 +4,18 @@ Atmospheric Complexity Framework (ACF)
 Global Planetary Resilience, Cosmic Hazard & Interplanetary Observation Platform Test Suite (MISSION ACF-039)
 """
 
-from acf.planetary.planetary_database import PlanetaryDatabase, NearEarthObject, PotentialHazard, ImpactScenario, PlanetaryDefenseRegistry
-from acf.planetary.orbital_mechanics import OrbitalMechanicsEngine
+from acf.planetary.astrobiology import HabitabilityAssessment, HabitabilityEngine
+from acf.planetary.awci_planetary_dashboard import PlanetaryDefenseDashboard
+from acf.planetary.cosmic_hazards import CosmicHazardEngine
+from acf.planetary.exoplanets import ExoplanetDatabase
 from acf.planetary.impact_engine import ImpactEngine, ImpactSeverity
 from acf.planetary.impact_tsunami import ImpactTsunamiEngine
-from acf.planetary.planetary_atmospheres import PlanetaryAtmosphereEngine, PlanetaryAtmosphere
-from acf.planetary.planetary_climate import PlanetaryClimateEngine
-from acf.planetary.exoplanets import ExoplanetDatabase, Exoplanet
-from acf.planetary.astrobiology import HabitabilityEngine, HabitabilityAssessment
-from acf.planetary.space_observatories import ObservatoryRegistry, SpaceObservatory
-from acf.planetary.cosmic_hazards import CosmicHazardEngine, CosmicRiskLevel, ThreatAssessment
+from acf.planetary.orbital_mechanics import OrbitalMechanicsEngine
 from acf.planetary.planetary_ai import PlanetaryReasoningEngine
-from acf.planetary.awci_planetary_dashboard import PlanetaryDefenseDashboard
+from acf.planetary.planetary_atmospheres import PlanetaryAtmosphereEngine
+from acf.planetary.planetary_climate import PlanetaryClimateEngine
+from acf.planetary.planetary_database import PlanetaryDatabase, PlanetaryDefenseRegistry, PotentialHazard
+from acf.planetary.space_observatories import ObservatoryRegistry
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -55,7 +55,9 @@ def test_impact_engine_and_tsunami_hydrodynamics():
     assert impact.is_global_extinction_event is True
     assert impact.megatons_tnt > 1.0e7
 
-    tsunami = ImpactTsunamiEngine.simulate_ocean_impact_tsunami(impactor_diameter_m=1000.0, distance_from_impact_km=500.0)
+    tsunami = ImpactTsunamiEngine.simulate_ocean_impact_tsunami(
+        impactor_diameter_m=1000.0, distance_from_impact_km=500.0
+    )
     assert tsunami["initial_deep_water_wave_height_m"] > 10.0
     assert tsunami["coastal_runup_height_m"] > tsunami["deep_water_height_at_target_m"]
 

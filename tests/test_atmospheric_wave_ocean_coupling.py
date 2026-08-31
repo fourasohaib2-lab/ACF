@@ -4,27 +4,17 @@ Atmospheric Wave Ocean Coupling
 """
 
 from acf.model4d.physics.atmospheric_wave_ocean_coupling import (
+    AtmosphericWaveOceanCoupling,
     AtmosphericWaveState,
     OceanSurfaceState,
-    AtmosphericWaveOceanCoupling,
 )
 
 
 def create_states():
 
-    wave = AtmosphericWaveState(
-        amplitude=5,
-        frequency=0.2,
-        wavelength=100,
-        phase=0
-    )
+    wave = AtmosphericWaveState(amplitude=5, frequency=0.2, wavelength=100, phase=0)
 
-    ocean = OceanSurfaceState(
-        sea_surface_temperature=300,
-        mixed_layer_depth=50,
-        current_velocity=2,
-        surface_stress=0.8
-    )
+    ocean = OceanSurfaceState(sea_surface_temperature=300, mixed_layer_depth=50, current_velocity=2, surface_stress=0.8)
 
     return wave, ocean
 
@@ -58,10 +48,7 @@ def test_momentum_exchange():
 
     model = AtmosphericWaveOceanCoupling()
 
-    value = model.calculate_momentum_exchange(
-        wave,
-        ocean
-    )
+    value = model.calculate_momentum_exchange(wave, ocean)
 
     assert value > 0
 
@@ -72,10 +59,7 @@ def test_heat_flux():
 
     model = AtmosphericWaveOceanCoupling()
 
-    value = model.calculate_heat_flux_exchange(
-        wave,
-        ocean
-    )
+    value = model.calculate_heat_flux_exchange(wave, ocean)
 
     assert value > 0
 
@@ -86,10 +70,7 @@ def test_energy_transfer():
 
     model = AtmosphericWaveOceanCoupling()
 
-    value = model.calculate_energy_transfer(
-        wave,
-        ocean
-    )
+    value = model.calculate_energy_transfer(wave, ocean)
 
     assert value > 0
 
@@ -100,9 +81,7 @@ def test_damping():
 
     model = AtmosphericWaveOceanCoupling()
 
-    damping = model.calculate_wave_damping(
-        ocean
-    )
+    damping = model.calculate_wave_damping(ocean)
 
     assert 0 < damping <= 1
 
@@ -113,10 +92,7 @@ def test_simulation():
 
     model = AtmosphericWaveOceanCoupling()
 
-    result = model.simulate(
-        wave,
-        ocean
-    )
+    result = model.simulate(wave, ocean)
 
     assert result.energy_transfer > 0
     assert result.climate_interaction_index > 0
@@ -124,25 +100,15 @@ def test_simulation():
 
 def test_negative_current():
 
-    wave = AtmosphericWaveState(
-        amplitude=3,
-        frequency=0.1,
-        wavelength=50
-    )
+    wave = AtmosphericWaveState(amplitude=3, frequency=0.1, wavelength=50)
 
     ocean = OceanSurfaceState(
-        sea_surface_temperature=290,
-        mixed_layer_depth=20,
-        current_velocity=-5,
-        surface_stress=0.5
+        sea_surface_temperature=290, mixed_layer_depth=20, current_velocity=-5, surface_stress=0.5
     )
 
     model = AtmosphericWaveOceanCoupling()
 
-    result = model.simulate(
-        wave,
-        ocean
-    )
+    result = model.simulate(wave, ocean)
 
     assert result.damping_factor < 1
 
@@ -153,10 +119,7 @@ def test_complete_result():
 
     model = AtmosphericWaveOceanCoupling()
 
-    result = model.simulate(
-        wave,
-        ocean
-    )
+    result = model.simulate(wave, ocean)
 
     assert hasattr(result, "momentum_exchange")
     assert hasattr(result, "heat_flux_exchange")

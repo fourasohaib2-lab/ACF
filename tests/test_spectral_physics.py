@@ -26,29 +26,21 @@ def test_spectral_energy():
 
 def test_fourier_component():
 
-    value = SpectralPhysics.fourier_component(
-        1,
-        0
-    )
+    value = SpectralPhysics.fourier_component(1, 0)
 
     assert value == 1
 
 
 def test_filter():
 
-    result = SpectralPhysics.spectral_filter(
-        [1, 5, 10],
-        5
-    )
+    result = SpectralPhysics.spectral_filter([1, 5, 10], 5)
 
     assert result == [1, 5, 0.0]
 
 
 def test_dominant_mode():
 
-    value = SpectralPhysics.dominant_wavenumber(
-        [1, 8, 3]
-    )
+    value = SpectralPhysics.dominant_wavenumber([1, 8, 3])
 
     assert value == 1
 
@@ -56,26 +48,22 @@ def test_dominant_mode():
 def test_negative_wavelength():
 
     with pytest.raises(ValueError):
-
         SpectralPhysics.wavelength_to_wavenumber(-1)
 
 
 def test_negative_wavenumber():
 
     with pytest.raises(ValueError):
-
         SpectralPhysics.wavenumber_to_wavelength(-1)
 
 
 def test_negative_energy():
 
     with pytest.raises(ValueError):
-
         SpectralPhysics.spectral_energy(-2)
 
 
 def test_empty_spectrum():
 
     with pytest.raises(ValueError):
-
         SpectralPhysics.dominant_wavenumber([])

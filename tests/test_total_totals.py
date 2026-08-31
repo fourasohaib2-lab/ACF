@@ -14,15 +14,9 @@ def test_total_totals():
 
 def test_category_extreme():
 
-    assert (
-        TotalTotals.category(60.0)
-        == "Extreme"
-    )
+    assert TotalTotals.category(60.0) == "Extreme"
 
 
 def test_category_low():
 
-    assert (
-        TotalTotals.category(35.0)
-        == "Low"
-    )
+    assert TotalTotals.category(35.0) == "Low"

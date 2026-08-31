@@ -3,7 +3,8 @@ Tests for ACF-019 Scientific Knowledge Engine Foundation
 """
 
 import pytest
-from acf.science import ScientificRegistry, AtmosphericLaw
+
+from acf.science import AtmosphericLaw, ScientificRegistry
 
 
 def test_scientific_registry_get():

@@ -18,7 +18,6 @@ def test_net_radiation():
     assert model.net_radiation(state) == 17
 
 
-
 def test_greenhouse_effect():
 
     model = AtmosphericRadiativeBalance()
@@ -33,7 +32,6 @@ def test_greenhouse_effect():
     assert model.greenhouse_effect(state) == 6
 
 
-
 def test_energy_balance_warming():
 
     model = AtmosphericRadiativeBalance()
@@ -46,7 +44,6 @@ def test_energy_balance_warming():
     )
 
     assert model.energy_balance_status(state) == "warming"
-
 
 
 def test_energy_balance_cooling():

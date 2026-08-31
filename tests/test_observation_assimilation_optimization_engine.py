@@ -23,60 +23,42 @@ def test_assimilation_weight():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.assimilation_weight(create_state())
-        == 76.0
-    )
+    assert model.assimilation_weight(create_state()) == 76.0
 
 
 def test_multi_sensor_optimization():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.multi_sensor_optimization(create_state())
-        == 54.72
-    )
+    assert model.multi_sensor_optimization(create_state()) == 54.72
 
 
 def test_spatial_consistency():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.spatial_consistency(create_state())
-        == 17.0
-    )
+    assert model.spatial_consistency(create_state()) == 17.0
 
 
 def test_temporal_consistency():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.temporal_consistency(create_state())
-        == 13.2
-    )
+    assert model.temporal_consistency(create_state()) == 13.2
 
 
 def test_residual_error():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.residual_error(create_state())
-        == 9.0
-    )
+    assert model.residual_error(create_state()) == 9.0
 
 
 def test_optimized_assimilation():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.optimized_assimilation(create_state())
-        == 28.31
-    )
+    assert model.optimized_assimilation(create_state()) == 28.31
 
 
 def test_optimization_update():
@@ -97,10 +79,7 @@ def test_optimization_index():
 
     model = ObservationAssimilationOptimizationEngine()
 
-    assert (
-        model.optimization_index(create_state())
-        == 23.21
-    )
+    assert model.optimization_index(create_state()) == 23.21
 
 
 def test_model4d_ready():

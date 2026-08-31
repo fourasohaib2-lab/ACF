@@ -2,8 +2,22 @@
 Tests for ACF-016 Importers Consolidation & Compatibility Shims
 """
 
-import pytest
-
+from acf.data.bufr_reader import BufrReader as DirectBufrReader
+from acf.data.factory import ReaderFactory as DirectReaderFactory
+from acf.data.grib_reader import GribReader as DirectGribReader
+from acf.data.netcdf_reader import NetCDFReader as DirectNetCDFReader
+from acf.data.readers import (
+    BaseReader as DataBaseReader,
+)
+from acf.data.readers import (
+    CFDetector as DataCFDetector,
+)
+from acf.data.readers import (
+    GRIBReader as DataGRIBReader,
+)
+from acf.data.readers import (
+    NetCDFReader as DataNetCDFReader,
+)
 from acf.importers import (
     BaseImporter,
     BaseReader,
@@ -18,25 +32,18 @@ from acf.importers import (
     ReaderFactory,
     ReaderRegistry,
 )
-
 from acf.io import (
     BaseReader as IOBaseReader,
-    ReaderFactory as IOReaderFactory,
-    ReaderRegistry as IOReaderRegistry,
+)
+from acf.io import (
     DataManager as IODataManager,
 )
-
-from acf.data.readers import (
-    BaseReader as DataBaseReader,
-    NetCDFReader as DataNetCDFReader,
-    GRIBReader as DataGRIBReader,
-    CFDetector as DataCFDetector,
+from acf.io import (
+    ReaderFactory as IOReaderFactory,
 )
-
-from acf.data.bufr_reader import BufrReader as DirectBufrReader
-from acf.data.grib_reader import GribReader as DirectGribReader
-from acf.data.netcdf_reader import NetCDFReader as DirectNetCDFReader
-from acf.data.factory import ReaderFactory as DirectReaderFactory
+from acf.io import (
+    ReaderRegistry as IOReaderRegistry,
+)
 from acf.standards.ecmwf.loader import ECMWFLoader
 
 

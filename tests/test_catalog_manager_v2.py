@@ -2,7 +2,6 @@ from acf.catalogs.catalog_manager import CatalogManager
 
 
 class DummyCatalog:
-
     pass
 
 

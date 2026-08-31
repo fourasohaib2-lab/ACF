@@ -6,11 +6,7 @@ from acf.data.metadata_inspector import MetadataInspector
 
 def test_metadata():
 
-    ds = Dataset(
-        name="ERA5",
-        filepath=Path("/tmp/test.nc"),
-        filetype="NetCDF"
-    )
+    ds = Dataset(name="ERA5", filepath=Path("/tmp/test.nc"), filetype="NetCDF")
 
     ds.add_variable("t2m")
     ds.add_variable("u10")

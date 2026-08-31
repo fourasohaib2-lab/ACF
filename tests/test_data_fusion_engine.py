@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from acf.data.dataset import Dataset
 from acf.data.fusion.data_fusion_engine import DataFusionEngine
 
@@ -45,8 +47,5 @@ def test_merge_dimensions():
 
 def test_empty():
 
-    try:
+    with pytest.raises(ValueError):
         DataFusionEngine().merge()
-        assert False
-    except ValueError:
-        assert True

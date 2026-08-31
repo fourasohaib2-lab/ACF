@@ -1,5 +1,6 @@
+import pytest
+
 from acf.model4d.physics.waves import Waves
-import math
 
 
 def test_wavelength():
@@ -23,35 +24,23 @@ def test_gravity_wave_speed():
 
 
 def test_negative_period_wavelength():
-    try:
+    with pytest.raises(ValueError):
         Waves.wavelength(10, -1)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_zero_period_frequency():
-    try:
+    with pytest.raises(ValueError):
         Waves.frequency(0)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_zero_period_phase_speed():
-    try:
+    with pytest.raises(ValueError):
         Waves.phase_speed(100, 0)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_negative_height():
-    try:
+    with pytest.raises(ValueError):
         Waves.gravity_wave_speed(-10)
-        assert False
-    except ValueError:
-        assert True
 
 
 def test_frequency_relation():
@@ -61,4 +50,3 @@ def test_frequency_relation():
 def test_wave_consistency():
     c = Waves.phase_speed(200, 20)
     assert c == 10
-

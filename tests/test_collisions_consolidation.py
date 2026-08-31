@@ -2,34 +2,24 @@
 Tests for ACF-017 Class Collision Resolution & Compatibility Shims
 """
 
-import pytest
-
-from acf.parameters.parameter import Parameter as CanonicalParameter
-from acf.core.parameter import Parameter as CoreParameter
-
-from acf.parameters.registry import ParameterRegistry as CanonicalParameterRegistry
-from acf.core.parameter_registry import ParameterRegistry as CoreParameterRegistry
-
+from acf.catalog.dataset_registry import DatasetRegistry as CanonicalDatasetRegistry
 from acf.catalog.manager import CatalogManager as CanonicalCatalogManager
 from acf.catalogs.catalog_manager import CatalogManager as CatalogsCatalogManager
-
-from acf.catalog.dataset_registry import DatasetRegistry as CanonicalDatasetRegistry
+from acf.core.parameter import Parameter as CoreParameter
+from acf.core.parameter_registry import ParameterRegistry as CoreParameterRegistry
 from acf.data.dataset_registry import DatasetRegistry as DataDatasetRegistry
-
 from acf.data.dataset_validator import DatasetValidator as CanonicalDatasetValidator
 from acf.data.engine.dataset_validator import DatasetValidator as EngineDatasetValidator
-
-from acf.gui.main_window.main_window import MainWindow as CanonicalMainWindow
 from acf.gui.main_window import MainWindow as LegacyMainWindow
-
-from acf.maps.map_engine import MapEngine as CanonicalMapEngine
+from acf.gui.main_window.main_window import MainWindow as CanonicalMainWindow
 from acf.maps.engine import MapEngine as LegacyMapEngine
-
-from acf.science.divergence import Divergence as ScienceDivergence
+from acf.maps.map_engine import MapEngine as CanonicalMapEngine
 from acf.model4d.operators.divergence import Divergence as OperatorDivergence
-
-from acf.science.dynamics import Dynamics as ScienceDynamics
 from acf.model4d.physics.dynamics import Dynamics as PhysicsDynamics
+from acf.parameters.parameter import Parameter as CanonicalParameter
+from acf.parameters.registry import ParameterRegistry as CanonicalParameterRegistry
+from acf.science.divergence import Divergence as ScienceDivergence
+from acf.science.dynamics import Dynamics as ScienceDynamics
 
 
 def test_parameter_collision_resolution():

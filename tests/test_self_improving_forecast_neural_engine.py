@@ -23,13 +23,11 @@ def test_improvement_gain():
     assert engine.improvement_gain(build_state()) == 5
 
 
-
 def test_corrected_accuracy():
 
     engine = SelfImprovingForecastNeuralEngine()
 
     assert engine.corrected_accuracy(build_state()) == 84
-
 
 
 def test_learning_score():
@@ -39,17 +37,11 @@ def test_learning_score():
     assert engine.neural_learning_score(build_state()) == 87
 
 
-
 def test_status():
 
     engine = SelfImprovingForecastNeuralEngine()
 
-    assert (
-        engine.optimization_status(build_state())
-        ==
-        "ACTIVE_LEARNING"
-    )
-
+    assert engine.optimization_status(build_state()) == "ACTIVE_LEARNING"
 
 
 def test_learning_update():

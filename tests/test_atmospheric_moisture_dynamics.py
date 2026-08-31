@@ -45,10 +45,7 @@ def test_dew_point():
 
     model = AtmosphericMoistureDynamics()
 
-    assert isinstance(
-        model.dew_point(create_state()),
-        float
-    )
+    assert isinstance(model.dew_point(create_state()), float)
 
 
 def test_cloud_formation_rate():

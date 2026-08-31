@@ -1,5 +1,6 @@
-from acf.model4d.physics.chemistry import Chemistry
 import pytest
+
+from acf.model4d.physics.chemistry import Chemistry
 
 
 def test_mixing_ratio():

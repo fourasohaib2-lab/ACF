@@ -4,18 +4,18 @@ Atmospheric Complexity Framework (ACF)
 Global Operational Space Weather, Space Environment & Heliophysics Test Suite (MISSION ACF-034)
 """
 
-from acf.space_weather.solar.solar_database import SolarDatabase, SolarFlareEngine, CoronalMassEjectionInfo
-from acf.space_weather.solar_wind.solar_wind_engine import SolarWindEngine, InterplanetaryMagneticField
+from acf.science.query_engine import ScientificQueryEngine
+from acf.space_weather.alerts.space_alerts import SpaceWeatherAlertEngine
+from acf.space_weather.aviation.aviation_space_weather import AviationSpaceWeatherEngine
+from acf.space_weather.forecast.forecast_engine import SpaceWeatherForecastEngine
 from acf.space_weather.geomagnetism.geomagnetic_engine import GeomagneticEngine, GeomagneticStormScale
 from acf.space_weather.ionosphere.ionosphere_engine import IonosphereEngine, RadioBlackoutScale
 from acf.space_weather.magnetosphere.radiation_belts import RadiationBeltsEngine
-from acf.space_weather.satellites.spacecraft_effects import SatelliteImpactEngine, SATELLITE_REGISTRY
-from acf.space_weather.aviation.aviation_space_weather import AviationSpaceWeatherEngine
-from acf.space_weather.models.space_models import SpaceWeatherModelEngine, SPACE_WEATHER_MODELS_REGISTRY
-from acf.space_weather.observations.observatories import SpaceObservatoryEngine, SPACE_OBSERVATORIES_REGISTRY
-from acf.space_weather.forecast.forecast_engine import SpaceWeatherForecastEngine
-from acf.space_weather.alerts.space_alerts import SpaceWeatherAlertEngine
-from acf.science.query_engine import ScientificQueryEngine
+from acf.space_weather.models.space_models import SPACE_WEATHER_MODELS_REGISTRY, SpaceWeatherModelEngine
+from acf.space_weather.observations.observatories import SPACE_OBSERVATORIES_REGISTRY, SpaceObservatoryEngine
+from acf.space_weather.satellites.spacecraft_effects import SATELLITE_REGISTRY, SatelliteImpactEngine
+from acf.space_weather.solar.solar_database import CoronalMassEjectionInfo, SolarDatabase, SolarFlareEngine
+from acf.space_weather.solar_wind.solar_wind_engine import InterplanetaryMagneticField, SolarWindEngine
 
 
 def test_solar_physics_and_flares():
@@ -88,7 +88,9 @@ def test_radiation_belts_and_satellites():
 
 def test_aviation_space_weather():
     """Test de la dose de radiation cosmique et des bulletins OACI SWX."""
-    rad = AviationSpaceWeatherEngine.calculate_polar_flight_radiation_dose(flight_level=390, solar_proton_event_s_scale=2)
+    rad = AviationSpaceWeatherEngine.calculate_polar_flight_radiation_dose(
+        flight_level=390, solar_proton_event_s_scale=2
+    )
     assert rad["total_radiation_dose_usv_h"] > 30.0
     assert rad["risk_level"] == "HIGH"
 
@@ -112,7 +114,9 @@ def test_space_weather_forecast_and_alerts():
     fcst = f_engine.generate_space_weather_forecast(sunspot_number=160.0, cme_speed_km_s=1400.0, imf_bz_nt=-15.0)
     assert fcst["predicted_max_kp_index"] >= 7.0
 
-    alerts = SpaceWeatherAlertEngine.evaluate_system_alerts(kp_index=8.5, xray_flux_w_m2=2e-4, proton_flux_gt_10mev=2000.0)
+    alerts = SpaceWeatherAlertEngine.evaluate_system_alerts(
+        kp_index=8.5, xray_flux_w_m2=2e-4, proton_flux_gt_10mev=2000.0
+    )
     assert len(alerts) >= 3
 
 

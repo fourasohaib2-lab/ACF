@@ -21,17 +21,8 @@ def test_positive():
 
 def test_category():
 
-    assert (
-        PotentialVorticity.category(5e-7)
-        == "Weak"
-    )
+    assert PotentialVorticity.category(5e-7) == "Weak"
 
-    assert (
-        PotentialVorticity.category(2e-6)
-        == "Moderate"
-    )
+    assert PotentialVorticity.category(2e-6) == "Moderate"
 
-    assert (
-        PotentialVorticity.category(1e-5)
-        == "Strong"
-    )
+    assert PotentialVorticity.category(1e-5) == "Strong"

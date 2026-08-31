@@ -1,5 +1,5 @@
-from acf.ai.plugins.plugin_manager import PluginManager
 from acf.ai.plugins.demo_plugin import DemoPlugin
+from acf.ai.plugins.plugin_manager import PluginManager
 
 
 def test_plugin_registration():
@@ -19,13 +19,7 @@ def test_plugin_execution():
 
     manager.register(DemoPlugin())
 
-    result = manager.analyze(
-        "demo",
-        {
-            "temperature": 25,
-            "pressure": 1015
-        }
-    )
+    result = manager.analyze("demo", {"temperature": 25, "pressure": 1015})
 
     assert result["status"] == "ok"
 

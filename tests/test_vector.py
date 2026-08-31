@@ -70,4 +70,3 @@ def test_names():
 
     assert "wind" in names
     assert "current" in names
-

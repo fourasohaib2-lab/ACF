@@ -22,23 +22,16 @@ def test_hazard_level():
     assert engine.hazard_level(build_state()) == "EXTREME"
 
 
-
 def test_confidence_level():
     engine = NaturalLanguageWeatherIntelligenceEngine()
 
     assert engine.confidence_level(build_state()) == "HIGH"
 
 
-
 def test_model_interpretation():
     engine = NaturalLanguageWeatherIntelligenceEngine()
 
-    assert (
-        engine.model_interpretation(build_state())
-        ==
-        "Les modèles numériques présentent une forte convergence."
-    )
-
+    assert engine.model_interpretation(build_state()) == "Les modèles numériques présentent une forte convergence."
 
 
 def test_generate_weather_explanation():
@@ -48,7 +41,6 @@ def test_generate_weather_explanation():
 
     assert "Algeria" in result
     assert "EXTREME" in result
-
 
 
 def test_bulletin_summary():

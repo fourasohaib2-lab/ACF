@@ -5,9 +5,7 @@ def test_latlon_projection():
 
     detector = ProjectionDetector()
 
-    attrs = {
-        "grid_mapping_name": "latitude_longitude"
-    }
+    attrs = {"grid_mapping_name": "latitude_longitude"}
 
     assert detector.detect(attrs) == "latlon"
 
@@ -16,9 +14,7 @@ def test_lambert_projection():
 
     detector = ProjectionDetector()
 
-    attrs = {
-        "grid_mapping_name": "lambert_conformal_conic"
-    }
+    attrs = {"grid_mapping_name": "lambert_conformal_conic"}
 
     assert detector.detect(attrs) == "lambert"
 
@@ -27,9 +23,7 @@ def test_mercator_projection():
 
     detector = ProjectionDetector()
 
-    attrs = {
-        "grid_mapping_name": "mercator"
-    }
+    attrs = {"grid_mapping_name": "mercator"}
 
     assert detector.detect(attrs) == "mercator"
 
@@ -41,17 +35,15 @@ def test_unknown_projection():
     attrs = {}
 
     assert detector.detect(attrs) == "unknown"
-from acf.data.engine.projection_detector import ProjectionDetector
 
 
 class DummyDataset:
-
-    dimensions = [
-        "latitude",
-        "longitude",
-    ]
-
-    metadata = {}
+    def __init__(self):
+        self.dimensions = [
+            "latitude",
+            "longitude",
+        ]
+        self.metadata = {}
 
 
 def test_projection_detector():

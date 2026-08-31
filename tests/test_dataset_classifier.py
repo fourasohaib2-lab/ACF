@@ -2,10 +2,8 @@ from acf.data.engine.dataset_classifier import DatasetClassifier
 
 
 class Dummy:
-
-    metadata = {
-        "model": "WRF"
-    }
+    def __init__(self):
+        self.metadata = {"model": "WRF"}
 
 
 def test_classifier():

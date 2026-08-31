@@ -1,6 +1,6 @@
 from acf.model4d.physics.atmospheric_wave_climate_ocean_feedback import (
     AtmosphericWaveClimateOceanFeedback,
-    AtmosphericWaveClimateOceanState
+    AtmosphericWaveClimateOceanState,
 )
 
 
@@ -8,20 +8,12 @@ def test_creation():
 
     model = AtmosphericWaveClimateOceanFeedback()
 
-    assert (
-        model.name
-        ==
-        "Atmospheric Wave Climate Ocean Feedback"
-    )
+    assert model.name == "Atmospheric Wave Climate Ocean Feedback"
 
 
 def test_feedback():
 
-    state = AtmosphericWaveClimateOceanState(
-        wave_energy=20,
-        ocean_temperature=25,
-        climate_feedback=5
-    )
+    state = AtmosphericWaveClimateOceanState(wave_energy=20, ocean_temperature=25, climate_feedback=5)
 
     model = AtmosphericWaveClimateOceanFeedback()
 
@@ -33,11 +25,7 @@ def test_feedback():
 def test_simulation():
 
     state = AtmosphericWaveClimateOceanState(
-        wave_energy=30,
-        ocean_temperature=20,
-        climate_feedback=10,
-        humidity_flux=5,
-        ocean_current_strength=8
+        wave_energy=30, ocean_temperature=20, climate_feedback=10, humidity_flux=5, ocean_current_strength=8
     )
 
     model = AtmosphericWaveClimateOceanFeedback()

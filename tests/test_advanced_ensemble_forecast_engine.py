@@ -11,7 +11,6 @@ def build_state():
         wrf=79,
         icon=84,
         ecmwf=91,
-
         model_agreement=88,
         observation_support=92,
         atmospheric_predictability=85,

@@ -2,47 +2,37 @@
 
 import os
 import tempfile
+
 import numpy as np
-import pytest
 
-from acf.simulation_engine.numerical_core.earth_grid import EarthGrid, GridResolution
-from acf.simulation_engine.numerical_core.finite_volume_solver import FiniteVolumeSolver
-from acf.simulation_engine.numerical_core.spectral_solver import SpectralSolver
-from acf.simulation_engine.numerical_core.adaptive_mesh_refinement import AdaptiveMeshRefinement
-
+from acf.ai.simulation.neural_operator import AIFrameworkType, NeuralOperatorEngine
+from acf.hpc.simulation.checkpoint import CheckpointManager
+from acf.hpc.simulation.cuda_kernels import CUDAKernelManager
+from acf.hpc.simulation.gpu_solver import GPUSolver
+from acf.hpc.simulation.mpi_domain import MPIDomainDecomposition
 from acf.simulation_engine.atmosphere_solver.atmospheric_model import AtmosphericModel
 from acf.simulation_engine.atmosphere_solver.convection_engine import ConvectionEngine, ConvectionScheme
 from acf.simulation_engine.atmosphere_solver.microphysics_engine import MicrophysicsEngine
-
-from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
-from acf.simulation_engine.ocean_solver.wave_model import WaveModel
-
-from acf.simulation_engine.land_solver.soil_model import SoilModel
-from acf.simulation_engine.land_solver.vegetation_model import VegetationModel
-from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
-
-from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
-
-from acf.simulation_engine.ensemble_prediction.ensemble_engine import EarthEnsembleEngine
-from acf.simulation_engine.ensemble_prediction.probability_engine import ProbabilityEngine
-
-from acf.simulation_engine.extreme_events.cyclone import CycloneSimulator
-from acf.simulation_engine.extreme_events.storm import SevereStormSimulator
-from acf.simulation_engine.extreme_events.flood import FloodSimulator
-from acf.simulation_engine.extreme_events.wildfire import WildfireSimulator
-
 from acf.simulation_engine.climate_scenarios.cmip6 import CMIP6Engine, SSPScenario
 from acf.simulation_engine.climate_scenarios.ssp_engine import SSPEngine
-
+from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
+from acf.simulation_engine.ensemble_prediction.ensemble_engine import EarthEnsembleEngine
+from acf.simulation_engine.ensemble_prediction.probability_engine import ProbabilityEngine
+from acf.simulation_engine.extreme_events.cyclone import CycloneSimulator
+from acf.simulation_engine.extreme_events.flood import FloodSimulator
+from acf.simulation_engine.extreme_events.storm import SevereStormSimulator
+from acf.simulation_engine.extreme_events.wildfire import WildfireSimulator
+from acf.simulation_engine.land_solver.carbon_flux import CarbonFluxModel
+from acf.simulation_engine.land_solver.soil_model import SoilModel
+from acf.simulation_engine.land_solver.vegetation_model import VegetationModel
+from acf.simulation_engine.numerical_core.adaptive_mesh_refinement import AdaptiveMeshRefinement
+from acf.simulation_engine.numerical_core.earth_grid import EarthGrid, GridResolution
+from acf.simulation_engine.numerical_core.finite_volume_solver import FiniteVolumeSolver
+from acf.simulation_engine.numerical_core.spectral_solver import SpectralSolver
+from acf.simulation_engine.ocean_solver.ocean_model import OceanModel
+from acf.simulation_engine.ocean_solver.wave_model import WaveModel
 from acf.simulation_engine.output.netcdf_writer import NetcdfWriter
 from acf.simulation_engine.output.zarr_writer import ZarrWriter
-
-from acf.ai.simulation.neural_operator import NeuralOperatorEngine, AIFrameworkType
-
-from acf.hpc.simulation.gpu_solver import GPUSolver
-from acf.hpc.simulation.mpi_domain import MPIDomainDecomposition
-from acf.hpc.simulation.cuda_kernels import CUDAKernelManager
-from acf.hpc.simulation.checkpoint import CheckpointManager
 
 
 def test_earth_grid():
@@ -110,7 +100,7 @@ def test_convection_engine():
     t_prof = np.linspace(290, 210, 10)
     p_prof = np.linspace(100000, 20000, 10)
     q_prof = np.full(10, 0.01)
-    cape, cin, lfc, el = engine.calculate_cape_cin(t_prof, p_prof, q_prof)
+    cape, cin, _lfc, _el = engine.calculate_cape_cin(t_prof, p_prof, q_prof)
     assert cape >= 0.0 and cin >= 0.0
 
     cape_2d = np.full((5, 5), 1500.0)
@@ -123,11 +113,11 @@ def test_microphysics_engine():
     micro = MicrophysicsEngine()
     hydros = micro.initialize_hydrometeors((4, 10, 10))
     density = np.full((4, 10, 10), 1.2)
-    lwc, iwc = micro.compute_water_content(hydros, density)
+    lwc, _iwc = micro.compute_water_content(hydros, density)
     assert lwc.shape == (4, 10, 10)
     temp = np.full((4, 10, 10), 280.0)
     q_vap = np.full((4, 10, 10), 0.005)
-    updated_h, updated_q = micro.step(hydros, temp, q_vap, density, dt=60.0)
+    updated_h, _updated_q = micro.step(hydros, temp, q_vap, density, dt=60.0)
     assert "qc" in updated_h
 
 

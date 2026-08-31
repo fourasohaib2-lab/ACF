@@ -1,6 +1,6 @@
 from acf.model4d.physics.probabilistic_extreme_weather_intelligence_engine import (
-    ProbabilisticExtremeWeatherIntelligenceEngine,
     ExtremeWeatherIntelligenceState,
+    ProbabilisticExtremeWeatherIntelligenceEngine,
 )
 
 
@@ -9,7 +9,6 @@ def build_state():
         ensemble_mean=85,
         uncertainty=10,
         confidence=90,
-
         temperature_anomaly=75,
         precipitation_anomaly=85,
         wind_anomaly=65,
@@ -97,7 +96,6 @@ def test_low_risk_scenario():
         ensemble_mean=40,
         uncertainty=5,
         confidence=80,
-
         temperature_anomaly=10,
         precipitation_anomaly=15,
         wind_anomaly=20,

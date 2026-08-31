@@ -11,13 +11,11 @@ def build_state():
         wrf=79,
         icon=84,
         ecmwf=91,
-
         arpege_quality=90,
         arome_quality=92,
         wrf_quality=88,
         icon_quality=91,
         ecmwf_quality=95,
-
         forecast_consistency=87,
         observation_quality=92,
         atmosphere_stability=85,

@@ -4,13 +4,13 @@ Atmospheric Complexity Framework (ACF)
 Global Operational Hydrology, Flood Forecasting & Water Resources Test Suite (MISSION ACF-033)
 """
 
-from acf.hydrology.core.hydro_db import HydrologyDatabase, WatershedInfo
-from acf.hydrology.runoff.runoff_engine import RunoffEngine
-from acf.hydrology.models.hydro_models import HydrologicalModelEngine, HYDROLOGICAL_MODELS_REGISTRY
-from acf.hydrology.flooding.flood_engine import FloodForecastEngine
-from acf.hydrology.soil_groundwater.soil_groundwater import SoilHydrologyEngine, GroundwaterEngine
+from acf.hydrology.core.hydro_db import HydrologyDatabase
 from acf.hydrology.drought.drought_engine import HydrologicalDroughtEngine
+from acf.hydrology.flooding.flood_engine import FloodForecastEngine
+from acf.hydrology.models.hydro_models import HYDROLOGICAL_MODELS_REGISTRY, HydrologicalModelEngine
 from acf.hydrology.observations.hydro_obs import HydrologicalObservationEngine
+from acf.hydrology.runoff.runoff_engine import RunoffEngine
+from acf.hydrology.soil_groundwater.soil_groundwater import GroundwaterEngine, SoilHydrologyEngine
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -33,7 +33,9 @@ def test_runoff_and_routing_engine():
     assert scs["runoff_mm"] > 10.0
     assert scs["initial_abstraction_mm"] > 0.0
 
-    q_out = RunoffEngine.muskingum_routing(inflow_i0=100.0, inflow_i1=150.0, outflow_q0=90.0, k_hours=12.0, x_factor=0.2, dt_hours=3.0)
+    q_out = RunoffEngine.muskingum_routing(
+        inflow_i0=100.0, inflow_i1=150.0, outflow_q0=90.0, k_hours=12.0, x_factor=0.2, dt_hours=3.0
+    )
     assert q_out > 80.0
 
 
@@ -55,7 +57,9 @@ def test_flood_forecast_engine():
     t_return = FloodForecastEngine.return_period_weibull(rank=1, total_years=99)
     assert abs(t_return - 100.0) < 1e-4
 
-    flash = FloodForecastEngine().evaluate_flash_flood_risk(precip_3h_mm=65.0, soil_saturation_pct=90.0, basin_slope_m_km=15.0)
+    flash = FloodForecastEngine().evaluate_flash_flood_risk(
+        precip_3h_mm=65.0, soil_saturation_pct=90.0, basin_slope_m_km=15.0
+    )
     assert flash["alert_color"] == "RED"
     assert "CRITICAL" in flash["risk_level"]
 
@@ -74,7 +78,9 @@ def test_hydrological_drought_engine():
     spi = HydrologicalDroughtEngine.classify_spi_drought(spi_value=-2.3)
     assert spi["drought_category"] == "Extreme Drought"
 
-    sdi = HydrologicalDroughtEngine.evaluate_basin_drought_status(monthly_streamflow_m3_s=[10.0], mean_streamflow_m3_s=50.0)
+    sdi = HydrologicalDroughtEngine.evaluate_basin_drought_status(
+        monthly_streamflow_m3_s=[10.0], mean_streamflow_m3_s=50.0
+    )
     assert "Emergency" in sdi["status"]
 
 

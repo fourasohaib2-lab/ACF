@@ -10,10 +10,7 @@ from acf.model4d.physics.polar_vortex_dynamics import (
 
 def test_creation():
 
-    state = PolarVortexState(
-        wind_speed=40,
-        temperature_gradient=15
-    )
+    state = PolarVortexState(wind_speed=40, temperature_gradient=15)
 
     assert state.wind_speed == 40
     assert state.temperature_gradient == 15
@@ -21,10 +18,7 @@ def test_creation():
 
 def test_default_stability():
 
-    state = PolarVortexState(
-        wind_speed=40,
-        temperature_gradient=15
-    )
+    state = PolarVortexState(wind_speed=40, temperature_gradient=15)
 
     assert state.stability_index == 1.0
 
@@ -33,10 +27,7 @@ def test_simulation():
 
     model = PolarVortexDynamics()
 
-    state = PolarVortexState(
-        wind_speed=40,
-        temperature_gradient=15
-    )
+    state = PolarVortexState(wind_speed=40, temperature_gradient=15)
 
     result = model.simulate(state)
 
@@ -47,11 +38,7 @@ def test_simulation():
 
 def test_hemisphere():
 
-    state = PolarVortexState(
-        wind_speed=30,
-        temperature_gradient=10,
-        hemisphere="south"
-    )
+    state = PolarVortexState(wind_speed=30, temperature_gradient=10, hemisphere="south")
 
     model = PolarVortexDynamics()
 
@@ -62,11 +49,7 @@ def test_hemisphere():
 
 def test_custom_stability():
 
-    state = PolarVortexState(
-        wind_speed=20,
-        temperature_gradient=10,
-        stability_index=2
-    )
+    state = PolarVortexState(wind_speed=20, temperature_gradient=10, stability_index=2)
 
     assert state.stability_index == 2
 
@@ -75,10 +58,7 @@ def test_weak_vortex():
 
     model = PolarVortexDynamics()
 
-    state = PolarVortexState(
-        wind_speed=5,
-        temperature_gradient=5
-    )
+    state = PolarVortexState(wind_speed=5, temperature_gradient=5)
 
     result = model.simulate(state)
 
@@ -89,10 +69,7 @@ def test_moderate_vortex():
 
     model = PolarVortexDynamics()
 
-    state = PolarVortexState(
-        wind_speed=20,
-        temperature_gradient=15
-    )
+    state = PolarVortexState(wind_speed=20, temperature_gradient=15)
 
     result = model.simulate(state)
 
@@ -115,9 +92,6 @@ def test_name():
 
 def test_state_structure():
 
-    state = PolarVortexState(
-        wind_speed=50,
-        temperature_gradient=20
-    )
+    state = PolarVortexState(wind_speed=50, temperature_gradient=20)
 
     assert hasattr(state, "stability_index")

@@ -77,18 +77,14 @@ def test_state():
 
 def test_cape():
 
-    state = MCSState(
-        1000, 10, 50, 280, 5, 50
-    )
+    state = MCSState(1000, 10, 50, 280, 5, 50)
 
     assert state.cape == 1000
 
 
 def test_example():
 
-    from acf.model4d.physics.mesoscale_convective_systems import (
-        create_example_mcs
-    )
+    from acf.model4d.physics.mesoscale_convective_systems import create_example_mcs
 
     assert create_example_mcs() is not None
 

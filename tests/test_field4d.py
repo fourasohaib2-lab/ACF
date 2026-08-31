@@ -1,5 +1,5 @@
-from acf.model4d.field4d import Field4D
 from acf.model4d.domain4d import Domain4D
+from acf.model4d.field4d import Field4D
 
 
 def test_create():

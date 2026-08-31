@@ -72,4 +72,3 @@ def test_repr():
     engine = InterpolationEngine()
 
     assert "InterpolationEngine" in repr(engine)
-

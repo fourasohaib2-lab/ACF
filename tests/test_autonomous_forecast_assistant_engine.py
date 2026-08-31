@@ -27,12 +27,10 @@ def test_available_models():
     assert engine.available_models(build_state()) == 4
 
 
-
 def test_model_consensus():
     engine = AutonomousForecastAssistantEngine()
 
     assert engine.model_consensus(build_state()) == 85.0
-
 
 
 def test_risk_assessment():
@@ -41,22 +39,16 @@ def test_risk_assessment():
     assert engine.risk_assessment(build_state()) == "HIGH"
 
 
-
 def test_forecast_reliability():
     engine = AutonomousForecastAssistantEngine()
 
     assert engine.forecast_reliability(build_state()) == 82.5
 
 
-
 def test_assistant_decision():
     engine = AutonomousForecastAssistantEngine()
 
-    assert (
-        engine.assistant_decision(build_state())
-        == "GENERATE_WEATHER_WARNING"
-    )
-
+    assert engine.assistant_decision(build_state()) == "GENERATE_WEATHER_WARNING"
 
 
 def test_summary():

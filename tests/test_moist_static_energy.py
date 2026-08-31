@@ -40,4 +40,3 @@ def test_invalid_humidity():
             1000.0,
             -0.01,
         )
-

@@ -2,10 +2,9 @@ from acf.data.engine.grid_detector import GridDetector
 
 
 class DummyDataset:
-
-    dimensions = ["time", "latitude", "longitude"]
-
-    metadata = {}
+    def __init__(self):
+        self.dimensions = ["time", "latitude", "longitude"]
+        self.metadata = {}
 
 
 def test_grid_detector():

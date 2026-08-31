@@ -16,64 +16,42 @@ def build_state():
     )
 
 
-
 def test_instability():
 
     engine = WeatherCausalReasoningEngine()
 
-    assert (
-        engine.instability_analysis(build_state())
-        ==
-        78.5
-    )
-
+    assert engine.instability_analysis(build_state()) == 78.5
 
 
 def test_convection_probability():
 
     engine = WeatherCausalReasoningEngine()
 
-    result = engine.convection_probability(
-        build_state()
-    )
+    result = engine.convection_probability(build_state())
 
     assert result == 75.94
-
 
 
 def test_causes():
 
     engine = WeatherCausalReasoningEngine()
 
-    result = engine.causal_explanation(
-        build_state()
-    )
+    result = engine.causal_explanation(build_state())
 
-    assert (
-        "HIGH_LOW_LEVEL_HUMIDITY"
-        in result["causes"]
-    )
-
+    assert "HIGH_LOW_LEVEL_HUMIDITY" in result["causes"]
 
 
 def test_risk():
 
     engine = WeatherCausalReasoningEngine()
 
-    assert (
-        engine.risk_assessment(build_state())
-        ==
-        "CONVECTIVE_RISK"
-    )
-
+    assert engine.risk_assessment(build_state()) == "CONVECTIVE_RISK"
 
 
 def test_update():
 
     engine = WeatherCausalReasoningEngine()
 
-    result = engine.reasoning_update(
-        build_state()
-    )
+    result = engine.reasoning_update(build_state())
 
     assert result["risk"] == "CONVECTIVE_RISK"

@@ -1,5 +1,6 @@
-from acf.model4d.physics.aerosols import Aerosols
 import pytest
+
+from acf.model4d.physics.aerosols import Aerosols
 
 
 def test_concentration():

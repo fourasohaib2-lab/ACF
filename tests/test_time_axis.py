@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from acf.model4d.time_axis import TimeAxis
 
 

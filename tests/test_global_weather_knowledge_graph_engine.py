@@ -18,29 +18,20 @@ def build_event():
     )
 
 
-
 def test_signature():
 
     engine = GlobalWeatherKnowledgeGraphEngine()
 
-    result = engine.create_weather_signature(
-        build_event()
-    )
+    result = engine.create_weather_signature(build_event())
 
     assert result["event_id"] == "STORM_001"
-
 
 
 def test_risk():
 
     engine = GlobalWeatherKnowledgeGraphEngine()
 
-    assert (
-        engine.risk_classification(build_event())
-        ==
-        "SIGNIFICANT_EVENT"
-    )
-
+    assert engine.risk_classification(build_event()) == "SIGNIFICANT_EVENT"
 
 
 def test_similarity():
@@ -55,10 +46,8 @@ def test_similarity():
             first,
             second,
         )
-        ==
-        100.0
+        == 100.0
     )
-
 
 
 def test_analogue():
@@ -67,22 +56,16 @@ def test_analogue():
 
     result = engine.find_weather_analogue(
         build_event(),
-        [
-            build_event()
-        ],
+        [build_event()],
     )
 
     assert result["analogue_event"] == "STORM_001"
-
 
 
 def test_update():
 
     engine = GlobalWeatherKnowledgeGraphEngine()
 
-    result = engine.knowledge_update(
-        build_event()
-    )
+    result = engine.knowledge_update(build_event())
 
     assert result["risk"] == "SIGNIFICANT_EVENT"
-

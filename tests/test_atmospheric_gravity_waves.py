@@ -4,10 +4,9 @@ Atmospheric Gravity Waves
 Sprint 8.85
 """
 
-
 from acf.model4d.physics.atmospheric_gravity_waves import (
-    GravityWaveState,
     AtmosphericGravityWave,
+    GravityWaveState,
 )
 
 
@@ -73,31 +72,19 @@ def test_state():
 
     wave = create_wave()
 
-    assert isinstance(
-        wave.state,
-        GravityWaveState
-    )
+    assert isinstance(wave.state, GravityWaveState)
 
 
 def test_wavelength():
 
-    state = GravityWaveState(
-        0.01,
-        50,
-        10000,
-        10,
-        1,
-        0.01
-    )
+    state = GravityWaveState(0.01, 50, 10000, 10, 1, 0.01)
 
     assert state.wavelength == 10000
 
 
 def test_example():
 
-    from acf.model4d.physics.atmospheric_gravity_waves import (
-        create_example_wave
-    )
+    from acf.model4d.physics.atmospheric_gravity_waves import create_example_wave
 
     assert create_example_wave() is not None
 
@@ -107,4 +94,3 @@ def test_positive_energy():
     wave = create_wave()
 
     assert wave.energy() >= 0
-

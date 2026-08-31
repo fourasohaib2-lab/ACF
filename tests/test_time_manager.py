@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from acf.time.time_manager import TimeManager
 
@@ -7,10 +7,7 @@ def test_loading():
 
     manager = TimeManager()
 
-    times = [
-        datetime(2026,1,1)+timedelta(hours=i)
-        for i in range(5)
-    ]
+    times = [datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(hours=i) for i in range(5)]
 
     manager.load(times)
 
@@ -21,10 +18,7 @@ def test_navigation():
 
     manager = TimeManager()
 
-    times = [
-        datetime(2026,1,1)+timedelta(hours=i)
-        for i in range(3)
-    ]
+    times = [datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(hours=i) for i in range(3)]
 
     manager.load(times)
 

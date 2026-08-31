@@ -1,7 +1,4 @@
-from acf.model4d.physics.cloud_atmosphere_interaction import (
-    CloudAtmosphereState,
-    CloudAtmosphereInteraction
-)
+from acf.model4d.physics.cloud_atmosphere_interaction import CloudAtmosphereInteraction, CloudAtmosphereState
 
 
 def create_state():
@@ -13,7 +10,7 @@ def create_state():
         cloud_ice=2,
         vertical_velocity=5,
         radiation_flux=250,
-        precipitation=1
+        precipitation=1,
     )
 
 

@@ -18,4 +18,3 @@ def test_converter():
     assert parameter.code == "t2m"
     assert parameter.unit == "K"
     assert parameter.category == "Temperature"
-

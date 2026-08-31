@@ -4,10 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Global Parameter Database & Scientific Reasoning Test Suite (MISSION ACF-023)
 """
 
-from acf.science.parameters.physical_parameter import PhysicalParameter
-from acf.science.parameters.engine import ParameterEngine
-from acf.science.query_engine import ScientificQueryEngine, ask
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.science.parameters.engine import ParameterEngine
+from acf.science.parameters.physical_parameter import PhysicalParameter
+from acf.science.query_engine import ScientificQueryEngine
 
 
 def test_physical_parameter_metadata():

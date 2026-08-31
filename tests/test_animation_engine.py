@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from acf.animation.animation_engine import AnimationEngine
 from acf.time.time_manager import TimeManager
@@ -23,10 +23,7 @@ def test_navigation():
 
     manager = TimeManager()
 
-    manager.load([
-        datetime(2026,1,1)+timedelta(hours=i)
-        for i in range(4)
-    ])
+    manager.load([datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(hours=i) for i in range(4)])
 
     engine = AnimationEngine(manager)
 

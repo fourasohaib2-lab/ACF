@@ -19,7 +19,6 @@ def test_cloud_formation():
     assert model.cloud_formation(state) == 4.0
 
 
-
 def test_albedo_effect():
 
     model = CloudFeedbackDynamics()
@@ -33,7 +32,6 @@ def test_albedo_effect():
     )
 
     assert model.albedo_effect(state) == 5.0
-
 
 
 def test_greenhouse_cloud_effect():
@@ -51,7 +49,6 @@ def test_greenhouse_cloud_effect():
     assert model.greenhouse_cloud_effect(state) == 10.0
 
 
-
 def test_positive_feedback():
 
     model = CloudFeedbackDynamics()
@@ -64,7 +61,4 @@ def test_positive_feedback():
         infrared_trapping=20,
     )
 
-    assert (
-        model.feedback_state(state)
-        == "positive_cloud_feedback"
-    )
+    assert model.feedback_state(state) == "positive_cloud_feedback"

@@ -1,6 +1,6 @@
 from acf.model4d.physics.atmospheric_aerosol_dynamics import (
-    AtmosphericAerosolDynamics,
     AerosolState,
+    AtmosphericAerosolDynamics,
 )
 
 

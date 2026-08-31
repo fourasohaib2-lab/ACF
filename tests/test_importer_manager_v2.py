@@ -14,4 +14,3 @@ def test_importers():
     assert manager.get("wmo") is not None
 
     assert manager.names() == ["cf", "ecmwf", "wmo"]
-

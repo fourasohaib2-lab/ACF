@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from acf.data.integration.adapter_factory import AdapterFactory
 
 
@@ -49,17 +51,7 @@ def test_factory_csv():
 
 
 def test_factory_unknown():
-
     factory = AdapterFactory()
 
-    try:
-
+    with pytest.raises(ValueError):
         factory.load(Path("/tmp/test.xyz"))
-
-    except ValueError:
-
-        assert True
-
-    else:
-
-        assert False

@@ -1,5 +1,6 @@
-from acf.model4d.physics.lightning import Lightning
 import pytest
+
+from acf.model4d.physics.lightning import Lightning
 
 
 def test_energy():

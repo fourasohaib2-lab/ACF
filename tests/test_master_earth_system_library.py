@@ -4,11 +4,17 @@ Atmospheric Complexity Framework (ACF)
 Master Earth System Library & Query Engine Expansion Test Suite (MISSION ACF-024)
 """
 
-from acf.science.encyclopedia.registry import EncyclopediaRegistry
-from acf.science.encyclopedia.chemistry_extended import calculate_leighton_ozone_photoequilibrium, calculate_dry_deposition_velocity
-from acf.science.encyclopedia.severe_weather_library import calculate_ehi_index, calculate_integrated_vapor_transport_ivt
+from acf.science.encyclopedia.chemistry_extended import (
+    calculate_dry_deposition_velocity,
+    calculate_leighton_ozone_photoequilibrium,
+)
 from acf.science.encyclopedia.radar_meteorology_library import calculate_specific_differential_phase_kdp
-from acf.science.query_engine import ScientificQueryEngine, ask
+from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from acf.science.encyclopedia.severe_weather_library import (
+    calculate_ehi_index,
+    calculate_integrated_vapor_transport_ivt,
+)
+from acf.science.query_engine import ScientificQueryEngine
 
 
 def test_chemistry_computations():

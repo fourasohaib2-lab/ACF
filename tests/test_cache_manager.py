@@ -8,11 +8,7 @@ def test_cache():
 
     cache = CacheManager()
 
-    ds = Dataset(
-        name="ERA5",
-        filepath=Path("/tmp/test.nc"),
-        filetype="NetCDF"
-    )
+    ds = Dataset(name="ERA5", filepath=Path("/tmp/test.nc"), filetype="NetCDF")
 
     cache.add("era5", ds)
 
@@ -25,35 +21,18 @@ def test_cache():
     assert loaded.name == "ERA5"
 
     cache.remove("era5")
-
     assert cache.size() == 0
-from pathlib import Path
-
-from acf.data.cache_manager import CacheManager
-from acf.data.dataset import Dataset
 
 
-def test_cache():
+def test_cache_2():
 
     cache = CacheManager(max_items=2)
 
-    ds1 = Dataset(
-        name="ERA5",
-        filepath=Path("/tmp/a.nc"),
-        filetype="NetCDF"
-    )
+    ds1 = Dataset(name="ERA5", filepath=Path("/tmp/a.nc"), filetype="NetCDF")
 
-    ds2 = Dataset(
-        name="GFS",
-        filepath=Path("/tmp/b.nc"),
-        filetype="NetCDF"
-    )
+    ds2 = Dataset(name="GFS", filepath=Path("/tmp/b.nc"), filetype="NetCDF")
 
-    ds3 = Dataset(
-        name="ICON",
-        filepath=Path("/tmp/c.nc"),
-        filetype="NetCDF"
-    )
+    ds3 = Dataset(name="ICON", filepath=Path("/tmp/c.nc"), filetype="NetCDF")
 
     cache.add("a", ds1)
     cache.add("b", ds2)

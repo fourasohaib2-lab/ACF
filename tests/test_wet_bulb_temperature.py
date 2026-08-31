@@ -1,6 +1,6 @@
-from acf.science.wet_bulb_temperature import WetBulbTemperature
-
 import pytest
+
+from acf.science.wet_bulb_temperature import WetBulbTemperature
 
 
 def test_wet_bulb():

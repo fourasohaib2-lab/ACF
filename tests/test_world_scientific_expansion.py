@@ -4,12 +4,15 @@ Atmospheric Complexity Framework (ACF)
 Master World Scientific Expansion Test Suite
 """
 
-from acf.science.encyclopedia.registry import EncyclopediaRegistry
-from acf.science.encyclopedia.hydrology.surface_hydrology import calculate_horton_infiltration, calculate_rational_peak_runoff
-from acf.science.encyclopedia.cloud_physics.wmo_cloud_taxonomy import calculate_hallett_mossop_splintering
-from acf.science.encyclopedia.remote_sensing_extended import calculate_gps_ro_refractivity, calculate_radar_zdr
 from acf.science.encyclopedia.aviation_extended import calculate_density_altitude, calculate_hydroplaning_speed_knots
+from acf.science.encyclopedia.cloud_physics.wmo_cloud_taxonomy import calculate_hallett_mossop_splintering
+from acf.science.encyclopedia.hydrology.surface_hydrology import (
+    calculate_horton_infiltration,
+    calculate_rational_peak_runoff,
+)
 from acf.science.encyclopedia.mathematics_advanced import calculate_cfl_number
+from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from acf.science.encyclopedia.remote_sensing_extended import calculate_gps_ro_refractivity, calculate_radar_zdr
 
 
 def test_hydrology_computations():

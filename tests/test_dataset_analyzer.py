@@ -7,10 +7,7 @@ def test_summary():
 
     analyzer = DatasetAnalyzer()
 
-    dataset = {
-        "temperature": np.array([[20,21],[22,23]]),
-        "pressure": np.array([[1010,1012],[1011,1013]])
-    }
+    dataset = {"temperature": np.array([[20, 21], [22, 23]]), "pressure": np.array([[1010, 1012], [1011, 1013]])}
 
     result = analyzer.summary(dataset)
 
@@ -23,9 +20,7 @@ def test_statistics():
 
     analyzer = DatasetAnalyzer()
 
-    dataset = {
-        "temperature": np.array([10,20,30])
-    }
+    dataset = {"temperature": np.array([10, 20, 30])}
 
     report = analyzer.analyze(dataset)
 

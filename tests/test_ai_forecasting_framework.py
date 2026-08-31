@@ -4,11 +4,11 @@ Atmospheric Complexity Framework (ACF)
 AI Forecasting Framework Test Suite (MISSION ACF-028)
 """
 
-from acf.ai.neural_models.models import NeuralWeatherModelEngine, NEURAL_MODELS_REGISTRY
-from acf.ai.physics_informed.pde_constraints import PDEPhysicsLossEvaluator
-from acf.ai.ensemble.ensemble_manager import EnsembleManager
-from acf.ai.uncertainty.uncertainty_engine import UncertaintyQuantificationEngine
 from acf.ai.decision_support.decision_engine import ForecastDecisionEngine
+from acf.ai.ensemble.ensemble_manager import EnsembleManager
+from acf.ai.neural_models.models import NEURAL_MODELS_REGISTRY, NeuralWeatherModelEngine
+from acf.ai.physics_informed.pde_constraints import PDEPhysicsLossEvaluator
+from acf.ai.uncertainty.uncertainty_engine import UncertaintyQuantificationEngine
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -34,13 +34,15 @@ def test_pde_physics_loss_evaluator():
     l_moist = PDEPhysicsLossEvaluator.moisture_conservation_residual(dq_dt=0.05, advection_q=-0.05)
     assert abs(l_moist) < 1e-5
 
-    losses = PDEPhysicsLossEvaluator.evaluate_total_physics_loss({
-        "divergence_wind": 0.001,
-        "dq_dt": 0.01,
-        "adv_q": -0.01,
-        "u": 10.0,
-        "u_geo": 10.0,
-    })
+    losses = PDEPhysicsLossEvaluator.evaluate_total_physics_loss(
+        {
+            "divergence_wind": 0.001,
+            "dq_dt": 0.01,
+            "adv_q": -0.01,
+            "u": 10.0,
+            "u_geo": 10.0,
+        }
+    )
     assert losses["is_physically_consistent"] is True
 
 

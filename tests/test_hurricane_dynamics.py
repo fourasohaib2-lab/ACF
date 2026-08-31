@@ -2,79 +2,50 @@ from acf.model4d.physics.hurricane_dynamics import HurricaneDynamicsPhysics
 
 
 def test_pressure_drop():
-    value = HurricaneDynamicsPhysics.pressure_drop(
-        1010,
-        950
-    )
+    value = HurricaneDynamicsPhysics.pressure_drop(1010, 950)
     assert value == 60
 
 
 def test_wind_speed():
-    value = HurricaneDynamicsPhysics.wind_speed_from_pressure(
-        2500
-    )
+    value = HurricaneDynamicsPhysics.wind_speed_from_pressure(2500)
     assert round(value, 3) == 63.246
 
 
 def test_hurricane_category():
-    value = HurricaneDynamicsPhysics.hurricane_category(
-        140
-    )
+    value = HurricaneDynamicsPhysics.hurricane_category(140)
     assert value == 5
 
 
 def test_eyewall_strength():
-    value = HurricaneDynamicsPhysics.eyewall_strength(
-        50,
-        2
-    )
+    value = HurricaneDynamicsPhysics.eyewall_strength(50, 2)
     assert value == 100
 
 
 def test_storm_surge():
-    value = HurricaneDynamicsPhysics.storm_surge_height(
-        30,
-        1.5
-    )
+    value = HurricaneDynamicsPhysics.storm_surge_height(30, 1.5)
     assert value == 45
 
 
 def test_coriolis_effect():
-    value = HurricaneDynamicsPhysics.coriolis_force(
-        10,
-        5
-    )
+    value = HurricaneDynamicsPhysics.coriolis_force(10, 5)
     assert value == 50
 
 
 def test_hurricane_energy():
-    value = HurricaneDynamicsPhysics.hurricane_energy(
-        200,
-        300
-    )
+    value = HurricaneDynamicsPhysics.hurricane_energy(200, 300)
     assert value == 60000
 
 
 def test_rainfall_rate():
-    value = HurricaneDynamicsPhysics.rainfall_rate(
-        200,
-        10
-    )
+    value = HurricaneDynamicsPhysics.rainfall_rate(200, 10)
     assert value == 20
 
 
 def test_track_speed():
-    value = HurricaneDynamicsPhysics.track_speed(
-        600,
-        10
-    )
+    value = HurricaneDynamicsPhysics.track_speed(600, 10)
     assert value == 60
 
 
 def test_intensification_rate():
-    value = HurricaneDynamicsPhysics.intensification_rate(
-        980,
-        950
-    )
+    value = HurricaneDynamicsPhysics.intensification_rate(980, 950)
     assert value == 30
-
