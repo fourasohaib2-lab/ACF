@@ -88,9 +88,14 @@ def test_analysis_state_vector_and_neural_da():
     assert summary["status"] == "ANALYSIS_STATE_PRODUCED"
     assert summary["variables_count"] == 10
 
+    # CORRECTED: used to multiply innovation_vector by a fixed 0.85 and
+    # present the result as a "Physics-Informed Graph Neural Network"
+    # correction - no neural network of any kind is trained or
+    # evaluated anywhere in this codebase.
     neural_da = NeuralDataAssimilation.compute_ai_correction(0.42)
-    assert neural_da["status"] == "NEURAL_ASSIMILATION_COMPLETE"
-    assert neural_da["ai_correction_applied"] > 0.0
+    assert neural_da["status"] == "NOT_CORRECTED_NO_TRAINED_MODEL_CONNECTED"
+    assert neural_da["ai_correction_applied"] is None
+    assert neural_da["innovation_input"] == 0.42  # genuinely echoed
 
 
 def test_data_catalog_and_streaming():

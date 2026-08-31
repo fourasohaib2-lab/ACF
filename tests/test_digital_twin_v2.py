@@ -68,15 +68,23 @@ def test_planetary_boundaries_and_geoengineering():
 
 def test_ai_digital_twin_assistant_and_experiments():
     """Test de l'assistant IA prospective et de la gestion des expériences."""
+    # CORRECTED: used to unconditionally claim a fixed "+3.0K"
+    # simulated warming and fixed sphere impacts for ANY query,
+    # regardless of what was actually asked.
     ai_res = AIDigitalTwinAssistant.analyze_scenario_query("Que se passe-t-il si la température augmente de 3°C ?")
-    assert ai_res["status"] == "DIGITAL_TWIN_SIMULATION_COMPLETE"
-    assert ai_res["ai_confidence_score"] == 84.0
-    assert "Atmosphere" in ai_res["sphere_impacts"]
+    assert ai_res["status"] == "NOT_SIMULATED_NO_DIGITAL_TWIN_RUN_CONNECTED"
+    assert ai_res["ai_confidence_score"] is None
+    assert ai_res["sphere_impacts"] == {}
 
+    # CORRECTED: used to unconditionally claim "EXPERIMENT_EXECUTED"
+    # with a fixed 100-year duration, with no real simulation ever run.
     exp = ExperimentManager.create_experiment("EXP-2026-001")
-    assert exp["status"] == "EXPERIMENT_EXECUTED"
-    assert exp["duration_years"] == 100
+    assert exp["status"] == "NOT_EXECUTED_NO_SIMULATION_RUN_CONNECTED"
+    assert exp["duration_years"] is None
+    assert exp["experiment_id"] == "EXP-2026-001"  # genuinely echoed
 
+    # DigitalTwinVisualizer's mode list is genuine static UI
+    # configuration (available view options), not fabricated data.
     vis = DigitalTwinVisualizer.get_visualization_modes()
     assert vis["status"] == "VISUALIZER_READY"
     assert len(vis["modes"]) >= 5
