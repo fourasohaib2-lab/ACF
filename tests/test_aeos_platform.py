@@ -130,9 +130,17 @@ def test_mission_control_dashboard_and_reporting():
     meta = MissionControlDashboard.get_dashboard_metadata()
     assert meta["workspace_name"] == "AEOS MISSION CONTROL CENTER"
 
+    # CORRECTED: used to unconditionally embed fabricated figures
+    # ("100% HEALTHY", "15/15 microservices", "93.8% Model Consensus",
+    # "14.5% CPU / 22.0% RAM" - the exact same fake CPU/RAM pair
+    # independently found in AEOSKernel.health_check(), fixed earlier
+    # this session) regardless of report_type or any real system
+    # state - no AEOSKernel instance is connected here.
     report = AEOSReportGenerator.generate_report("Operational")
     assert report["format"] == "Markdown"
     assert "Autonomous Earth Operating System" in report["content"]
+    assert "93.8%" not in report["content"]
+    assert report["is_real_data"] is False
 
 
 def test_query_engine_aeos_queries():
