@@ -1,0 +1,81 @@
+{
+  "timestamp": "20260817_092826",
+  "start_time": "2026-08-17T09:26:39.414794+00:00",
+  "configuration": {
+    "MAX_ITERATIONS": 1000,
+    "MAX_CONTEXT_LINES": 10,
+    "MAX_TOKENS": 96,
+    "TIMEOUT": 420,
+    "SLEEP_AFTER_TIMEOUT": 60,
+    "MAX_FILE_BYTES": 2097152,
+    "TARGET_CODES": [
+      "C401",
+      "C414",
+      "DTZ003",
+      "DTZ005",
+      "F811",
+      "F821",
+      "F841",
+      "I001",
+      "PIE810",
+      "PLW1510",
+      "RUF012",
+      "RUF013",
+      "UP007"
+    ],
+    "IGNORE_CODES": [
+      "BLE001",
+      "E722",
+      "S110"
+    ],
+    "RUFF_AUTOFIX_CODES": [
+      "C401",
+      "C414",
+      "I001",
+      "PIE810",
+      "UP007"
+    ]
+  },
+  "iterations": 1,
+  "initial_target_errors": 1,
+  "final_target_errors": 0,
+  "fixed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "ignored": 1,
+  "other_errors": 6,
+  "fixed_by_target_code": {
+    "F811": 1,
+    "PLW1510": 0,
+    "C401": 0,
+    "PIE810": 0,
+    "UP007": 0,
+    "F821": 0,
+    "F841": 0,
+    "RUF012": 0,
+    "RUF013": 0,
+    "DTZ003": 0,
+    "DTZ005": 0,
+    "C414": 0,
+    "I001": 0
+  },
+  "ignored_by_code": {
+    "S110": 0,
+    "BLE001": 0,
+    "E722": 1
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "duration": 106.9441676800052,
+      "validation": "PASS",
+      "detail": ""
+    }
+  ],
+  "remaining_errors": []
+}

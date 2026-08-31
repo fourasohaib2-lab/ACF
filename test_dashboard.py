@@ -2,23 +2,24 @@
 """Test AWCI Dashboard."""
 
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+
+from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
 
 def create_test_data():
     return {
-        'awci': 62.5,
-        'decomposition': {
-            'dynamic': 40.0,
-            'thermodynamic': 30.0,
-            'convective': 20.0,
-            'microphysical': 10.0,
-            'topographic': 8.0,
-            'temporal': 7.0,
-            'confidence': 5.0,
-        }
+        "awci": 62.5,
+        "decomposition": {
+            "dynamic": 40.0,
+            "thermodynamic": 30.0,
+            "convective": 20.0,
+            "microphysical": 10.0,
+            "topographic": 8.0,
+            "temporal": 7.0,
+            "confidence": 5.0,
+        },
     }
 
 

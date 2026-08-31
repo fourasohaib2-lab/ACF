@@ -3,67 +3,73 @@
 Performs static analysis of the entire ACF source tree and generates LaTeX documentation in docs/latex/.
 """
 
-import os
-import sys
-import subprocess
 import logging
-from typing import Dict, Any, List
+import os
+import subprocess
+from typing import Any
 
 logger = logging.getLogger("acf.docgen")
 logging.basicConfig(level=logging.INFO)
 
 
-def analyze_codebase(root_dir: str = ".") -> Dict[str, Any]:
+def analyze_codebase(root_dir: str = ".") -> dict[str, Any]:
     """Perform recursive static analysis across the codebase."""
-    stats = {
-        "modules": 0,
-        "classes": 0,
-        "functions": 0,
-        "loc": 0,
-        "packages": set(),
-        "package_stats": {},
-    }
+    packages: set[str] = set()
+    package_stats: dict[str, dict[str, int]] = {}
+    modules_count = 0
+    classes_count = 0
+    functions_count = 0
+    loc_count = 0
 
     src_dir = os.path.join(root_dir, "src")
-    for root, dirs, files in os.walk(src_dir):
+    for root, _dirs, files in os.walk(src_dir):
         rel_path = os.path.relpath(root, src_dir)
         pkg_name = rel_path.replace(os.sep, ".") if rel_path != "." else "acf"
-        stats["packages"].add(pkg_name)
-        
-        if pkg_name not in stats["package_stats"]:
-            stats["package_stats"][pkg_name] = {"modules": 0, "classes": 0, "functions": 0, "loc": 0}
+        packages.add(pkg_name)
+
+        if pkg_name not in package_stats:
+            package_stats[pkg_name] = {"modules": 0, "classes": 0, "functions": 0, "loc": 0}
 
         for f in files:
             if f.endswith(".py"):
-                stats["modules"] += 1
-                stats["package_stats"][pkg_name]["modules"] += 1
+                modules_count += 1
+                package_stats[pkg_name]["modules"] += 1
                 file_path = os.path.join(root, f)
                 try:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as fp:
                         lines = fp.readlines()
-                        stats["loc"] += len(lines)
-                        stats["package_stats"][pkg_name]["loc"] += len(lines)
+                        loc_count += len(lines)
+                        package_stats[pkg_name]["loc"] += len(lines)
                         for line in lines:
                             line_str = line.strip()
                             if line_str.startswith("class "):
-                                stats["classes"] += 1
-                                stats["package_stats"][pkg_name]["classes"] += 1
+                                classes_count += 1
+                                package_stats[pkg_name]["classes"] += 1
                             elif line_str.startswith("def "):
-                                stats["functions"] += 1
-                                stats["package_stats"][pkg_name]["functions"] += 1
+                                functions_count += 1
+                                package_stats[pkg_name]["functions"] += 1
                 except Exception as e:
                     logger.warning(f"Could not read {file_path}: {e}")
 
-    stats["packages_count"] = len(stats["packages"])
+    stats: dict[str, Any] = {
+        "modules": modules_count,
+        "classes": classes_count,
+        "functions": functions_count,
+        "loc": loc_count,
+        "packages": packages,
+        "package_stats": package_stats,
+        "packages_count": len(packages),
+    }
     return stats
 
 
-def generate_latex_source(stats: Dict[str, Any], output_dir: str = "docs/latex") -> str:
+def generate_latex_source(stats: dict[str, Any], output_dir: str = "docs/latex") -> str:
     """Generate professional LaTeX documentation files."""
     os.makedirs(output_dir, exist_ok=True)
     main_tex_path = os.path.join(output_dir, "main.tex")
 
-    latex_content = r"""\documentclass[11pt,a4paper,oneside]{report}
+    latex_content = (
+        r"""\documentclass[11pt,a4paper,oneside]{report}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -83,7 +89,7 @@ def generate_latex_source(stats: Dict[str, Any], output_dir: str = "docs/latex")
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
-    filecolor=magenta,      
+    filecolor=magenta,
     urlcolor=cyan,
     pdftitle={ACF Version 1.0 Complete Technical Documentation},
     pdfauthor={Atmospheric Complexity Framework Team},
@@ -95,21 +101,21 @@ def generate_latex_source(stats: Dict[str, Any], output_dir: str = "docs/latex")
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
 \lstdefinestyle{mystyle}{
-    backgroundcolor=\color{backcolour},   
+    backgroundcolor=\color{backcolour},
     commentstyle=\color{codegreen},
     keywordstyle=\color{magenta},
     numberstyle=\tiny\color{codegray},
     stringstyle=\color{codepurple},
     basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
     showstringspaces=false,
-    showtabs=false,                  
+    showtabs=false,
     tabsize=2
 }
 \lstset{style=mystyle}
@@ -132,17 +138,27 @@ Global Earth Numerical Simulation, Data Assimilation \& ESOC Operations Core}
 \chapter*{Preface \& Engineering Executive Summary}
 \addcontentsline{toc}{chapter}{Preface \& Engineering Executive Summary}
 
-This document represents the official, comprehensive technical documentation for the \textbf{Atmospheric Complexity Framework (ACF) Version 1.0}. 
+This document represents the official, comprehensive technical documentation for the \textbf{Atmospheric Complexity Framework (ACF) Version 1.0}.
 
 ACF is a scientific Python platform for numerical weather prediction (NWP), atmospheric analysis, 3D visualization, data assimilation, climate scenario modeling, Digital Twin simulations, and AI-accelerated meteorological research.
 
 \section*{Key Engineering Statistics}
 \begin{itemize}
-    \item \textbf{Total Python Modules:} """ + str(stats["modules"]) + r"""
-    \item \textbf{Total Object-Oriented Classes:} """ + str(stats["classes"]) + r"""
-    \item \textbf{Total Callable Functions \& Methods:} """ + str(stats["functions"]) + r"""
-    \item \textbf{Total Source Lines of Code (LOC):} """ + str(stats["loc"]) + r"""
-    \item \textbf{Registered Scientific Packages:} """ + str(stats["packages_count"]) + r"""
+    \item \textbf{Total Python Modules:} """
+        + str(stats["modules"])
+        + r"""
+    \item \textbf{Total Object-Oriented Classes:} """
+        + str(stats["classes"])
+        + r"""
+    \item \textbf{Total Callable Functions \& Methods:} """
+        + str(stats["functions"])
+        + r"""
+    \item \textbf{Total Source Lines of Code (LOC):} """
+        + str(stats["loc"])
+        + r"""
+    \item \textbf{Registered Scientific Packages:} """
+        + str(stats["packages_count"])
+        + r"""
     \item \textbf{Passing Unit Tests:} 2091 (100\% Pass Rate)
 \end{itemize}
 
@@ -232,11 +248,21 @@ Supports CMIP6 SSP1-1.9 to SSP5-8.5 trajectories, geoengineering solar radiation
 \toprule
 \textbf{Metric} & \textbf{Value} \\
 \midrule
-Total Python Packages & """ + str(stats["packages_count"]) + r""" \\
-Total Python Modules & """ + str(stats["modules"]) + r""" \\
-Total Classes & """ + str(stats["classes"]) + r""" \\
-Total Functions/Methods & """ + str(stats["functions"]) + r""" \\
-Total Lines of Code (LOC) & """ + str(stats["loc"]) + r""" \\
+Total Python Packages & """
+        + str(stats["packages_count"])
+        + r""" \\
+Total Python Modules & """
+        + str(stats["modules"])
+        + r""" \\
+Total Classes & """
+        + str(stats["classes"])
+        + r""" \\
+Total Functions/Methods & """
+        + str(stats["functions"])
+        + r""" \\
+Total Lines of Code (LOC) & """
+        + str(stats["loc"])
+        + r""" \\
 Passing Unit Tests & 2,091 \\
 Test Coverage & > 95\% \\
 \bottomrule
@@ -245,6 +271,7 @@ Test Coverage & > 95\% \\
 
 \end{document}
 """
+    )
 
     with open(main_tex_path, "w", encoding="utf-8") as f:
         f.write(latex_content)
@@ -256,7 +283,7 @@ def compile_pdf(tex_file: str) -> bool:
     """Compile LaTeX file to PDF using pdflatex."""
     tex_dir = os.path.dirname(tex_file)
     file_name = os.path.basename(tex_file)
-    
+
     logger.info(f"Compiling {tex_file} using pdflatex...")
     try:
         # Run pdflatex twice to resolve TOC and page numbers
@@ -264,8 +291,8 @@ def compile_pdf(tex_file: str) -> bool:
             res = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", file_name],
                 cwd=tex_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
+                check=False,
                 text=True,
             )
             if res.returncode != 0:
@@ -278,6 +305,7 @@ def compile_pdf(tex_file: str) -> bool:
         if os.path.exists(pdf_path):
             os.rename(pdf_path, target_pdf)
             import shutil
+
             shutil.copy(target_pdf, root_pdf)
             logger.info(f"Successfully generated PDF: {root_pdf}")
             return True
@@ -290,7 +318,9 @@ def main() -> None:
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     logger.info("Scanning ACF codebase for static documentation generation...")
     stats = analyze_codebase(root_dir)
-    logger.info(f"Discovered: {stats['modules']} modules, {stats['classes']} classes, {stats['functions']} functions, {stats['loc']} LOC across {stats['packages_count']} packages.")
+    logger.info(
+        f"Discovered: {stats['modules']} modules, {stats['classes']} classes, {stats['functions']} functions, {stats['loc']} LOC across {stats['packages_count']} packages."
+    )
 
     tex_file = generate_latex_source(stats, os.path.join(root_dir, "docs", "latex"))
     logger.info(f"Generated LaTeX source at: {tex_file}")

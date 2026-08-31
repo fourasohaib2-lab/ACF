@@ -1,8 +1,6 @@
 import sys
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QMainWindow
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 app = QApplication(sys.argv)
 

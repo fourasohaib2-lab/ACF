@@ -12,3 +12,4 @@ shapely
 rasterio
 h5py
 PySide6
+paramiko
