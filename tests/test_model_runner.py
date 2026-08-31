@@ -9,10 +9,19 @@ unconditionally claiming success, with no real job ever submitted,
 cancelled, or tracked (RemoteExecutor is SSH-only by design, so the
 default "local" scheduler has no real local-execution backend wired
 up - see scheduler_interface.py's NOTE (correction) docstrings). The
-file-based parts of the pipeline (prepare_case, collect_outputs,
-archive) are genuinely real and are still exercised and asserted as
-before; the scheduler-dependent parts now assert the honest
-NOT_SUBMITTED outcome instead of a fabricated success.
+file-based parts of the pipeline (prepare_case, archive) are genuinely
+real and are still exercised and asserted as before; the scheduler-
+dependent parts now assert the honest NOT_SUBMITTED outcome instead of
+a fabricated success.
+
+FURTHER CORRECTED (this pass): collect_outputs() was NOT actually
+"genuinely real" in the no-real-job case as originally claimed above -
+when no real output files existed (the normal case with no scheduler
+backend), it fabricated a placeholder file named exactly like a real
+Meteo-France ARPEGE/AROME output (`ICMSH<model>+0024.fa`) containing
+only placeholder text. test_cancel_restart_archive() below used to
+assert `len(outputs) >= 1` on this fabricated file; now asserts the
+honestly-empty result instead.
 """
 
 from pathlib import Path
@@ -70,10 +79,34 @@ def test_cancel_restart_archive(tmp_path: Path):
     re_res = runner.restart(job_id, checkpoint_step=12)
     assert re_res["status"] == "NOT_SUBMITTED_NO_SCHEDULER_BACKEND_WIRED"
 
-    # collect_outputs()/archive() are genuine file operations
-    # (independent of whether any real job ran) - unaffected.
+    # CORRECTED: collect_outputs() used to fabricate a placeholder file
+    # named exactly like a real Meteo-France ARPEGE/AROME forecast
+    # output (ICMSH<model>+0024.fa) when nothing real was ever produced
+    # - honestly empty now, since no real job actually ran.
     outputs = runner.collect_outputs(job_id, str(tmp_path / "outs"))
-    assert len(outputs) >= 1
+    assert outputs == []
 
+    # archive() itself is still a genuine file operation: it creates a
+    # real archive directory regardless of whether any real output
+    # existed to copy into it.
     arch = runner.archive(job_id, str(tmp_path / "arch"))
     assert Path(arch).exists()
+
+
+def test_collect_outputs_copies_genuinely_real_output_files(tmp_path: Path):
+    """When real output files DO exist in the job's work directory, they must be genuinely copied, not faked."""
+    runner = UniversalModelRunner()
+    res = runner.submit("AROME", {"nodes": 1})
+    job_id = res["job_id"]
+
+    work_dir = Path(runner.active_runs[job_id]["work_dir"])
+    work_dir.mkdir(parents=True, exist_ok=True)
+    real_output = work_dir / "ICMSHAROM+0006.fa"
+    real_output.write_bytes(b"genuinely real forecast binary payload")
+
+    outputs = runner.collect_outputs(job_id, str(tmp_path / "outs"))
+
+    assert len(outputs) == 1
+    collected = Path(outputs[0])
+    assert collected.name == "ICMSHAROM+0006.fa"
+    assert collected.read_bytes() == b"genuinely real forecast binary payload"

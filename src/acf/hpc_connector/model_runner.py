@@ -167,6 +167,24 @@ mpirun -np {nodes * cpus} acf_{model_upper.lower()}_binary --namelist=fort.4
     def collect_outputs(self, job_id: str, target_dir: str) -> list[str]:
         """
         Collects output forecast datasets (FA, GRIB2, NetCDF) into target directory.
+
+        NOTE (correction - operationally dangerous): when no real output
+        files were found in the job's work directory (the normal case
+        with no real scheduler backend wired in - see submit_job()'s
+        "NOT_SUBMITTED_NO_SCHEDULER_BACKEND_WIRED" fix earlier this
+        session), this used to fabricate a placeholder file named
+        `ICMSH<model>+0024.fa` - the EXACT real Meteo-France ARPEGE/
+        AROME/ALADIN forecast output naming convention (ICMSH prefix,
+        +HHHH forecast-hour suffix) - containing only the literal text
+        "ACF NWP Forecast Output Data" instead of real binary forecast
+        data. Because the filename looks completely genuine, any
+        downstream tool or operator checking file existence/naming
+        without validating actual content could be misled into believing
+        a real 24h forecast completed when nothing did - the same
+        "realistic-looking fake data" danger class as the METAR/TAF/
+        SIGMET/hazard-alert fabrications fixed earlier this session, just
+        not previously recognized as such when the scheduler chain was
+        fixed. Now returns honestly empty rather than fabricating a file.
         """
         record = self.active_runs.get(job_id)
         src_dir = Path(record["work_dir"]) if record else Path(f"/tmp/acf_runs/{job_id}")
@@ -181,15 +199,6 @@ mpirun -np {nodes * cpus} acf_{model_upper.lower()}_binary --namelist=fort.4
                     dest_file = dest_dir / file_path.name
                     dest_file.write_bytes(file_path.read_bytes())
                     collected_files.append(str(dest_file))
-
-        if not collected_files:
-            dummy_out = (
-                dest_dir / f"ICMSH{record.get('model_name', 'AROME')}+0024.fa"
-                if record
-                else dest_dir / "forecast_output.nc"
-            )
-            dummy_out.write_text("ACF NWP Forecast Output Data", encoding="utf-8")
-            collected_files.append(str(dummy_out))
 
         return collected_files
 
