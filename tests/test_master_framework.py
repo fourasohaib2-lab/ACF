@@ -4,21 +4,21 @@ Atmospheric Complexity Framework (ACF)
 Global Interstellar Master Framework Test Suite (MISSION ACF-041)
 """
 
-from acf.master.master_engine import ACFMasterEngine, MasterRuntime, ExecutionContext
-from acf.master.module_registry import GlobalModuleRegistry
-from acf.master.capabilities import ScientificCapabilityRegistry
-from acf.master.science_gateway import MasterScienceGateway
-from acf.master.scientific_certification import ScientificCertificationEngine, CertificationReport
-from acf.master.equation_validator import EquationValidator
-from acf.master.traceability import EquationTrace
-from acf.master.master_graph import MasterKnowledgeGraph
-from acf.master.workflow_master import MasterWorkflowEngine
 from acf.master.awci_master_dashboard import MasterDashboard
-from acf.master.master_report import MasterExecutiveReport
-from acf.master.performance import PerformanceProfiler
-from acf.master.health_monitor import HealthMonitor, HealthReport
+from acf.master.capabilities import ScientificCapabilityRegistry
 from acf.master.documentation_index import DocumentationIndexer
+from acf.master.equation_validator import EquationValidator
+from acf.master.health_monitor import HealthMonitor, HealthReport
+from acf.master.master_engine import ACFMasterEngine
+from acf.master.master_graph import MasterKnowledgeGraph
+from acf.master.master_report import MasterExecutiveReport
 from acf.master.master_settings import MasterSettings
+from acf.master.module_registry import GlobalModuleRegistry
+from acf.master.performance import PerformanceProfiler
+from acf.master.science_gateway import MasterScienceGateway
+from acf.master.scientific_certification import CertificationReport, ScientificCertificationEngine
+from acf.master.traceability import EquationTrace
+from acf.master.workflow_master import MasterWorkflowEngine
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -79,8 +79,17 @@ def test_scientific_certification_and_equation_validator():
     assert cert.certification_level == "CERTIFIED_PLATINUM"
     assert cert.si_compliance_pct == 100.0
 
+    # CORRECTED: validate_equation used to always report
+    # is_dimensional_correct=True/VALIDATED regardless of content - a
+    # fake validator. Now honestly distinguishes real well-formedness
+    # checks it does perform from dimensional analysis it does not.
     val = EquationValidator.validate_equation("E = 0.5*m*v^2", {"m": "kg", "v": "m/s"}, "WMO")
-    assert val["validation_status"] == "VALIDATED"
+    assert val["validation_status"] == "WELL_FORMED_ONLY_NOT_DIMENSIONALLY_VERIFIED"
+    assert val["is_dimensional_correct"] is None  # honestly not verified, not a fake True
+    assert val["is_well_formed"] is True
+
+    val_malformed = EquationValidator.validate_equation("not an equation", {}, "WMO")
+    assert val_malformed["validation_status"] == "MALFORMED"
 
     trace = EquationTrace(
         law_name="Vis-Viva Equation",
