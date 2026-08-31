@@ -4,9 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Physical Parameter Reasoning Engine
 """
 
-from typing import Any, Dict, List, Optional
-from acf.science.parameters.physical_parameter import PhysicalParameter
+from typing import Any
+
 from acf.science.parameters.definitions import PHYSICAL_PARAMETERS
+from acf.science.parameters.physical_parameter import PhysicalParameter
 from acf.science.registry import ScientificRegistry
 
 
@@ -15,7 +16,7 @@ class ParameterEngine:
     Moteur de raisonnement et d'explication physique des paramètres météorologiques et aéronautiques.
     """
 
-    _parameters: Dict[str, PhysicalParameter] = {}
+    _parameters: dict[str, PhysicalParameter] = {}
     _initialized: bool = False
 
     def __init__(self):
@@ -27,17 +28,40 @@ class ParameterEngine:
             return
         cls._parameters.clear()
         for param in PHYSICAL_PARAMETERS:
+            cls._check_no_collision(param)
             cls._parameters[param.key] = param
         cls._initialized = True
+
+    @classmethod
+    def _check_no_collision(cls, param: PhysicalParameter) -> None:
+        """
+        NOTE (hardening, not a fix - no collision currently exists in
+        PHYSICAL_PARAMETERS, verified): mirrors the collision guard added
+        to EncyclopediaRegistry.register() after that registry was found
+        to have 5 real silent key collisions. This registry's single
+        source list (PHYSICAL_PARAMETERS) is currently collision-free,
+        but the same "silent `dict[key] = value` overwrite with no
+        detection" pattern existed here too - added preventively so any
+        future accidental duplicate key fails loudly instead of silently
+        shadowing an existing parameter.
+        """
+        existing = cls._parameters.get(param.key)
+        if existing is not None and existing is not param:
+            raise ValueError(
+                f"ParameterEngine key collision: '{param.key}' is already registered "
+                f"(existing: {existing.name!r}; new: {param.name!r}). "
+                "Give the new parameter a distinct key instead of silently overwriting the existing one."
+            )
 
     def register(self, param: PhysicalParameter):
         """
         Enregistre un nouveau paramètre physique.
         """
         self._ensure_initialized()
+        self._check_no_collision(param)
         self._parameters[param.key] = param
 
-    def get(self, key_or_name: str) -> Optional[PhysicalParameter]:
+    def get(self, key_or_name: str) -> PhysicalParameter | None:
         """
         Récupère un paramètre physique par sa clé canonique ou son nom.
         """
@@ -51,7 +75,7 @@ class ParameterEngine:
                 return param
         return None
 
-    def dependencies(self, key_or_name: str) -> List[PhysicalParameter]:
+    def dependencies(self, key_or_name: str) -> list[PhysicalParameter]:
         """
         Retourne la liste des paramètres physiques dont dépend directement ce paramètre.
         """
@@ -65,7 +89,7 @@ class ParameterEngine:
                 res.append(dep_param)
         return res
 
-    def dependents(self, key_or_name: str) -> List[PhysicalParameter]:
+    def dependents(self, key_or_name: str) -> list[PhysicalParameter]:
         """
         Retourne la liste des paramètres qui dépendent de ce paramètre.
         """
@@ -79,7 +103,7 @@ class ParameterEngine:
                 res.append(p)
         return res
 
-    def related_laws(self, key_or_name: str) -> List[Any]:
+    def related_laws(self, key_or_name: str) -> list[Any]:
         """
         Retourne la liste des lois scientifiques (AtmosphericLaw) associées à ce paramètre.
         """
@@ -93,7 +117,7 @@ class ParameterEngine:
                 laws.append(law)
         return laws
 
-    def explain(self, key_or_name: str) -> Dict[str, Any]:
+    def explain(self, key_or_name: str) -> dict[str, Any]:
         """
         Génère une explication physique complète de l'origine, des équations, et des dépendances d'un paramètre.
         """
@@ -126,7 +150,7 @@ class ParameterEngine:
             "calculation_methods": param.calculation_methods,
         }
 
-    def dependency_tree(self, key_or_name: str) -> Dict[str, Any]:
+    def dependency_tree(self, key_or_name: str) -> dict[str, Any]:
         """
         Construit l'arbre complet des dépendances montantes et des impacts descendants d'un paramètre.
         """
@@ -140,7 +164,7 @@ class ParameterEngine:
             "dependents": [p.key for p in self.dependents(param.key)],
         }
 
-    def list_parameters(self, domain: Optional[str] = None) -> List[PhysicalParameter]:
+    def list_parameters(self, domain: str | None = None) -> list[PhysicalParameter]:
         """
         Liste tous les paramètres physiques enregistrés, filtrés optionnellement par domaine.
         """
@@ -150,9 +174,9 @@ class ParameterEngine:
         dom_lower = domain.lower()
         return [p for p in self._parameters.values() if dom_lower in p.domain.lower()]
 
-    def domains(self) -> List[str]:
+    def domains(self) -> list[str]:
         """
         Liste les domaines physiques disponibles.
         """
         self._ensure_initialized()
-        return sorted(list(set(p.domain for p in self._parameters.values())))
+        return sorted({p.domain for p in self._parameters.values()})

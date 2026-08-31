@@ -3,6 +3,7 @@ Tests for ACF-020 Physical Parameter Engine
 """
 
 import pytest
+
 from acf.science import ParameterEngine, PhysicalParameter
 
 
@@ -64,7 +65,18 @@ def test_parameter_engine_dependency_tree():
 
 
 test_domains_coverage_data = [
-    ("Atmosphère", ["temperature", "pressure", "density", "geopotential_height", "humidity", "mixing_ratio", "virtual_temperature"]),
+    (
+        "Atmosphère",
+        [
+            "temperature",
+            "pressure",
+            "density",
+            "geopotential_height",
+            "humidity",
+            "mixing_ratio",
+            "virtual_temperature",
+        ],
+    ),
     ("Dynamique", ["wind_u", "wind_v", "vorticity", "divergence", "potential_vorticity", "deformation"]),
     ("Thermodynamique", ["potential_temperature", "equivalent_potential_temperature", "CAPE", "CIN"]),
     ("Microphysique", ["cloud_water", "rain_water", "ice", "snow", "graupel"]),
@@ -80,3 +92,33 @@ def test_parameter_engine_domain_coverage(domain_name, expected_params):
     keys = [p.key for p in domain_params]
     for expected in expected_params:
         assert expected in keys, f"Parameter '{expected}' missing from domain '{domain_name}'"
+
+
+def test_parameter_engine_register_raises_on_key_collision():
+    """
+    NOTE (hardening, not a fix - no collision currently exists in
+    PHYSICAL_PARAMETERS, verified): mirrors the collision guard added to
+    EncyclopediaRegistry.register() after that registry was found to have
+    5 real silent key collisions across its many independently-imported
+    modules. This registry's single source list (PHYSICAL_PARAMETERS) is
+    currently collision-free, but the same "silent dict[key] = value
+    overwrite with no detection" pattern existed here too.
+    """
+    engine = ParameterEngine()
+    existing = engine.get("potential_temperature")
+    assert existing is not None
+
+    dupe = PhysicalParameter(
+        key="potential_temperature",
+        name="deliberately colliding test parameter",
+        symbol="x",
+        unit="K",
+        domain="Test",
+        description="d",
+        physical_meaning="d",
+    )
+    with pytest.raises(ValueError, match="key collision"):
+        engine.register(dupe)
+
+    # The original parameter must be untouched - no partial/silent overwrite.
+    assert engine.get("potential_temperature") is existing
