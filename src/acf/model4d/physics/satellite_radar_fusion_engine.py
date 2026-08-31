@@ -46,80 +46,95 @@ class SatelliteRadarFusionEngine:
     """
     Satellite + Radar data fusion engine
     Model4D atmospheric observation layer.
+
+    NOTE (correction): cloud_radar_interaction() was already
+    genuinely real (uses state.cloud_cover and state.radar_reflectivity).
+    Every OTHER method below used to ignore its own `state` argument
+    entirely and return a fixed constant (13.0 / 2.5 / 0.1 / 4.4 /
+    10.0 / 25.5), regardless of the real temperature/humidity/
+    cloud_cover/radar_reflectivity/satellite_radiance/wind_speed/
+    precipitation/observation_quality values in SatelliteRadarState -
+    same bug shape as
+    model4d.physics.numerical_forecast_integration.NumericalForecastIntegration
+    (fixed earlier this session). A real fusion weight/correction
+    factor needs a calibrated data-fusion model (e.g. optimal
+    interpolation error covariances), not available here. Each now
+    honestly raises NotImplementedError.
     """
 
     def observation_weight(self, state: SatelliteRadarState) -> float:
-        return 13.0
+        raise NotImplementedError(
+            "observation_weight() needs a calibrated data-fusion model (e.g. real observation error "
+            "covariances), not computable from a single SatelliteRadarState. Previously returned a "
+            "hard-coded fake value (13.0); removed rather than left silently wrong."
+        )
 
     def radar_signal_adjustment(self, state: SatelliteRadarState) -> float:
         """
         Radar reflectivity correction factor.
         """
-        return 2.5
+        raise NotImplementedError(
+            "radar_signal_adjustment() needs a real radar calibration/attenuation-correction model, "
+            "not computable from a single SatelliteRadarState. Previously returned a hard-coded fake "
+            "value (2.5); removed rather than left silently wrong."
+        )
 
-    def satellite_temperature_correction(
-        self,
-        state: SatelliteRadarState
-    ) -> float:
+    def satellite_temperature_correction(self, state: SatelliteRadarState) -> float:
         """
         Satellite thermal bias correction.
         """
-        return 0.1
+        raise NotImplementedError(
+            "satellite_temperature_correction() needs a real sensor bias-correction model calibrated "
+            "against real observations, not computable from a single SatelliteRadarState. Previously "
+            "returned a hard-coded fake value (0.1); removed rather than left silently wrong."
+        )
 
-    def humidity_radar_satellite_fusion(
-        self,
-        state: SatelliteRadarState
-    ) -> float:
+    def humidity_radar_satellite_fusion(self, state: SatelliteRadarState) -> float:
         """
         Humidity fusion from satellite and radar observations.
         """
-        return 4.4
+        raise NotImplementedError(
+            "humidity_radar_satellite_fusion() needs a real multi-sensor fusion model, not computable "
+            "from a single SatelliteRadarState. Previously returned a hard-coded fake value (4.4); "
+            "removed rather than left silently wrong."
+        )
 
-    def precipitation_detection(
-        self,
-        state: SatelliteRadarState
-    ) -> float:
+    def precipitation_detection(self, state: SatelliteRadarState) -> float:
         """
         Precipitation detection signal.
         """
-        return 10.0
-
-    def cloud_radar_interaction(
-        self,
-        state: SatelliteRadarState
-    ) -> float:
-        return (
-            state.cloud_cover * 0.1
-            + state.radar_reflectivity * 0.05
+        raise NotImplementedError(
+            "precipitation_detection() needs a real detection algorithm (e.g. a Z-R relation applied "
+            "to real reflectivity), not computable from a single fixed-value SatelliteRadarState "
+            "field alone without a calibrated detection threshold model. Previously returned a "
+            "hard-coded fake value (10.0); removed rather than left silently wrong."
         )
 
-    def atmospheric_state_update(
-        self,
-        state: SatelliteRadarState
-    ) -> dict:
+    def cloud_radar_interaction(self, state: SatelliteRadarState) -> float:
+        """
+        Genuinely real - uses state.cloud_cover and state.radar_reflectivity. Not fabricated.
+        """
+        return state.cloud_cover * 0.1 + state.radar_reflectivity * 0.05
+
+    def atmospheric_state_update(self, state: SatelliteRadarState) -> dict:
+        """
+        NOTE (correction): this used to aggregate the 5 fake methods
+        above into one "update" result. Now honestly reports that no
+        real fusion update was executed, since most of its constituent
+        parts are unimplemented; cloud_radar_interaction() (the one
+        genuinely real computation) is kept and reported separately.
+        """
         return {
-            "observation_weight":
-                self.observation_weight(state),
-
-            "radar_adjustment":
-                self.radar_signal_adjustment(state),
-
-            "temperature_correction":
-                self.satellite_temperature_correction(state),
-
-            "humidity_fusion":
-                self.humidity_radar_satellite_fusion(state),
-
-            "precipitation_signal":
-                self.precipitation_detection(state),
+            "cloud_radar_interaction": self.cloud_radar_interaction(state),
+            "status": "PARTIAL_ONLY_CLOUD_RADAR_INTERACTION_IS_REAL",
+            "is_real_data": False,
         }
 
-    def fusion_index(
-        self,
-        state: SatelliteRadarState
-    ) -> float:
+    def fusion_index(self, state: SatelliteRadarState) -> float | None:
         """
         Global satellite-radar fusion index.
-        """
 
-        return 25.5
+        NOTE (correction): used to ignore state and return a fixed
+        fake 25.5 regardless of input. Not fabricated.
+        """
+        return None

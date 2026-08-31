@@ -1,3 +1,16 @@
+"""
+REWRITTEN: every method used to ignore its own `state` argument and
+return a fixed constant (18.5/245/310.0/7.5/35.0/12.8) regardless of
+the real state passed in - same bug shape as the already-fixed
+model4d.physics.numerical_forecast_integration.NumericalForecastIntegration.
+A real Earth-system coupling coefficient needs the spatial grid and
+real physical exchange formulas, not just a single point state - so
+each method now honestly raises NotImplementedError instead of
+returning an invented number.
+"""
+
+import pytest
+
 from acf.model4d.physics.advanced_climate_coupling import (
     AdvancedClimateCoupling,
     AdvancedClimateState,
@@ -18,61 +31,49 @@ def create_state():
     )
 
 
-def test_atmosphere_ocean_coupling():
+def test_atmosphere_ocean_coupling_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.atmosphere_ocean_coupling(create_state())
-        == 18.5
-    )
 
 
-def test_cloud_feedback_coupling():
+def test_cloud_feedback_coupling_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.cloud_feedback_coupling(create_state())
-        == 245
-    )
 
 
-def test_radiation_energy_balance():
+def test_radiation_energy_balance_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.radiation_energy_balance(create_state())
-        == 310.0
-    )
 
 
-def test_moisture_climate_coupling():
+def test_moisture_climate_coupling_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.moisture_climate_coupling(create_state())
-        == 7.5
-    )
 
 
-def test_ocean_heat_transport():
+def test_ocean_heat_transport_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.ocean_heat_transport(create_state())
-        == 35.0
-    )
 
 
-def test_climate_stability_index():
+def test_climate_stability_index_not_implemented():
 
     model = AdvancedClimateCoupling()
 
-    assert (
+    with pytest.raises(NotImplementedError):
         model.climate_stability_index(create_state())
-        == 12.8
-    )
