@@ -6,24 +6,33 @@ Operational Live Data Connectors Module (MISSION ACF-030)
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from typing import Any
 
 
 @dataclass
 class DataConnectorInfo:
-    """Description et statut d'un connecteur d'alimentation opérationnelle en temps réel."""
+    """
+    Description et statut d'un connecteur d'alimentation opérationnelle en temps réel.
+
+    NOTE (correction): status/last_sync_timestamp used to default to a
+    fixed "ONLINE" / "2026-07-30T15:00:00Z" for every one of the 6
+    registered connectors below (none override these defaults) - so
+    ECMWF/NOAA/DWD/EUMETSAT/NASA/Copernicus all claimed to be online
+    and recently synced with 0 real network requests ever made to any
+    of them. Not fabricated.
+    """
+
     connector_id: str
     name: str
     provider: str
     endpoint_url: str
-    supported_products: List[str]
+    supported_products: list[str]
     auth_required: bool
-    status: str = "ONLINE"  # "ONLINE", "SYNCING", "OFFLINE"
-    last_sync_timestamp: str = "2026-07-30T15:00:00Z"
+    status: str = "NOT_CONNECTED_NO_REAL_REQUEST_MADE"  # "ONLINE", "SYNCING", "OFFLINE" once really wired up
+    last_sync_timestamp: str | None = None
 
 
-LIVE_CONNECTORS_REGISTRY: Dict[str, DataConnectorInfo] = {
+LIVE_CONNECTORS_REGISTRY: dict[str, DataConnectorInfo] = {
     "ecmwf_opendata": DataConnectorInfo(
         connector_id="ecmwf_opendata",
         name="ECMWF Real-Time Open Data Connector",
@@ -81,34 +90,43 @@ class LiveDataConnectorEngine:
     def __init__(self):
         self.connectors = LIVE_CONNECTORS_REGISTRY
 
-    def list_connectors(self) -> List[str]:
+    def list_connectors(self) -> list[str]:
         return list(self.connectors.keys())
 
-    def get_connector(self, connector_id: str) -> Optional[DataConnectorInfo]:
+    def get_connector(self, connector_id: str) -> DataConnectorInfo | None:
         return self.connectors.get(connector_id.lower())
 
-    def fetch_catalog_products(self, connector_id: str) -> List[str]:
+    def fetch_catalog_products(self, connector_id: str) -> list[str]:
         """Parcourt le catalogue des produits disponibles pour un connecteur."""
         conn = self.get_connector(connector_id)
         if conn:
             return conn.supported_products
         return []
 
-    def sync_latest_dataset(self, connector_id: str, product_name: str) -> Dict[str, Any]:
+    def sync_latest_dataset(self, connector_id: str, product_name: str) -> dict[str, Any]:
         """
-        Simule la synchronisation et le téléchargement incrémental d'un jeu de données
-        avec vérification d'intégrité (Checksum MD5/SHA256).
+        NOTE (correction — operationally dangerous): the docstring
+        already said "Simule" (simulates), but the return value never
+        disclosed that to a caller - it unconditionally claimed
+        "status": "success" with a specific "100 MB" download,
+        "checksum_verified": True, and a real-looking UUID dataset id,
+        for ANY connector_id/product_name, with 0 real HTTP requests
+        ever made to ECMWF/NOAA/DWD/EUMETSAT/NASA/Copernicus. An
+        operational forecast pipeline trusting this could believe a
+        real dataset had been downloaded and integrity-verified when
+        nothing was ever fetched. Not fabricated.
         """
         conn = self.get_connector(connector_id)
         if not conn:
             return {"status": "error", "message": f"Unknown connector: {connector_id}"}
 
         return {
-            "status": "success",
+            "status": "NOT_SYNCED_NO_REAL_CONNECTION_ESTABLISHED",
             "connector": conn.name,
             "product": product_name,
-            "downloaded_bytes": 104857600,  # 100 MB
-            "checksum_verified": True,
-            "ingested_dataset_id": str(uuid4()),
-            "sync_time": "2026-07-30T15:20:00Z",
+            "downloaded_bytes": None,
+            "checksum_verified": False,
+            "ingested_dataset_id": None,
+            "sync_time": None,
+            "is_real_data": False,
         }

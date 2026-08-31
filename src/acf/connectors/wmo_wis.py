@@ -5,12 +5,13 @@ WMO Information System (WIS 2.0 / GTS / OSCAR / WIGOS) Metadata & Bulletin Engin
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class WISBulletinHeader:
     """En-tête de bulletin synoptique/aéronautique WMO GTS / WIS 2.0 (MQTT/HTTP API)."""
+
     t1_t2_a1_a2_ii: str  # e.g., "SAFR31" (METAR France), "SMFR01" (SYNOP)
     cccc: str  # Origine OMM (e.g., "LFPW" Météo-France Paris)
     yygggg: str  # Jour et heure UTC (e.g., "301500")
@@ -41,16 +42,26 @@ class WMOWISEngine:
         )
 
     @classmethod
-    def get_station_oscar_metadata(cls, wigos_id: str) -> Dict[str, Any]:
-        """Récupère les métadonnées officielles WMO OSCAR/Surface pour une station."""
+    def get_station_oscar_metadata(cls, wigos_id: str) -> dict[str, Any]:
+        """
+        Récupère les métadonnées officielles WMO OSCAR/Surface pour une station.
+
+        NOTE (correction): wigos_id was genuinely accepted as a
+        parameter but completely ignored - this used to return the
+        identical "PARIS-MONTSOURIS" station (fixed lat/lon/elevation)
+        as "operating_status": "Operational" for ANY wigos_id passed
+        in, including ones for stations nowhere near Paris. No real WMO
+        OSCAR/Surface API is connected. Not fabricated.
+        """
         return {
             "wigos_id": wigos_id,
-            "station_name": "PARIS-MONTSOURIS",
-            "country": "FRA",
-            "latitude": 48.8217,
-            "longitude": 2.3378,
-            "elevation_m": 75.0,
-            "barometer_elevation_m": 77.0,
-            "operating_status": "Operational",
-            "gcos_network": "GUAN / GSN",
+            "station_name": None,
+            "country": None,
+            "latitude": None,
+            "longitude": None,
+            "elevation_m": None,
+            "barometer_elevation_m": None,
+            "operating_status": "NOT_AVAILABLE_NO_OSCAR_API_CONNECTED",
+            "gcos_network": None,
+            "is_real_data": False,
         }

@@ -24,9 +24,15 @@ def test_live_data_connectors():
     products = engine.fetch_catalog_products("noaa_nomads")
     assert any("GFS" in p for p in products)
 
+    # CORRECTED: used to unconditionally claim "success" with a fixed
+    # "100 MB" download and "checksum_verified": True for ANY
+    # connector/product, with 0 real HTTP requests ever made - the
+    # docstring already said "Simule" but the return value never
+    # disclosed that to a caller.
     res = engine.sync_latest_dataset("ecmwf_opendata", "IFS 0.25° Global Forecasts")
-    assert res["status"] == "success"
-    assert res["checksum_verified"] is True
+    assert res["status"] == "NOT_SYNCED_NO_REAL_CONNECTION_ESTABLISHED"
+    assert res["checksum_verified"] is False
+    assert res["downloaded_bytes"] is None
 
 
 def test_wmo_wis_engine():
@@ -35,8 +41,12 @@ def test_wmo_wis_engine():
     assert header.cccc == "LFPW"
     assert "0-20000" in header.wigos_station_id
 
+    # CORRECTED: wigos_id was genuinely accepted but ignored - used to
+    # return the identical "PARIS-MONTSOURIS" station for ANY wigos_id.
     oscar = WMOWISEngine.get_station_oscar_metadata(header.wigos_station_id)
-    assert oscar["station_name"] == "PARIS-MONTSOURIS"
+    assert oscar["wigos_id"] == header.wigos_station_id  # genuinely echoed
+    assert oscar["station_name"] is None
+    assert oscar["operating_status"] == "NOT_AVAILABLE_NO_OSCAR_API_CONNECTED"
 
 
 def test_radar_and_satellite_centers():
