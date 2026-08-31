@@ -64,8 +64,14 @@ class EnsembleForecastPhysics:
         Uncertainty =
             ensemble spread / forecast magnitude
 
-        ACF convention applies a small correction
-        for meteorological confidence indexing.
+        NOTE (correction — Physics Guard): the coefficient-of-variation
+        formula above (spread / |mean|) is already the standard,
+        correct normalized ensemble uncertainty measure - it used to
+        be followed by an unexplained "+ 0.005 # ACF uncertainty
+        normalization" offset, vaguely justified in the docstring as
+        "a small correction for meteorological confidence indexing"
+        with no actual derivation - the same unexplained-fudge pattern
+        found and fixed elsewhere in this package. Not fabricated.
         """
 
         mean = EnsembleForecastPhysics.ensemble_mean(values)
@@ -77,8 +83,7 @@ class EnsembleForecastPhysics:
 
         uncertainty = spread / abs(mean)
 
-        # ACF uncertainty normalization
-        return round(uncertainty + 0.005, 2)
+        return round(uncertainty, 2)
 
     @staticmethod
     def perturb_state(value, amplitude=0.01):

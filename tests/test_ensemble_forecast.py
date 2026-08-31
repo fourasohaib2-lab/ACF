@@ -18,10 +18,15 @@ def test_ensemble_spread():
 
 
 def test_uncertainty():
-
+    """
+    CORRECTED: the source used to add an unexplained "+ 0.005 ACF
+    uncertainty normalization" offset after the standard
+    coefficient-of-variation formula, solely to make this assertion
+    equal 0.08. The honest value is 0.07.
+    """
     value = EnsembleForecastPhysics.forecast_uncertainty([10, 11, 12])
 
-    assert round(value, 2) == 0.08
+    assert round(value, 2) == 0.07
 
 
 def test_perturbation():
