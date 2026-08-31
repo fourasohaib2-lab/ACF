@@ -4,21 +4,19 @@ Atmospheric Complexity Framework (ACF)
 Crisis Timeline Engine Module (Phase 7)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CrisisTimelineEngine:
     """Générateur de la chronologie dynamique d'une crise environnementale."""
 
     @classmethod
-    def get_crisis_timeline(cls) -> Dict[str, Any]:
-        return {
-            "timeline_steps": [
-                {"time": "NOW", "phase": "Pre-Crisis Monitoring & Warning Issuance"},
-                {"time": "+6h", "phase": "Rapid Storm Convective Development"},
-                {"time": "+24h", "phase": "Initial Landfall & Coastal Surge Impact"},
-                {"time": "+48h", "phase": "Maximum Peak Hazard & Heavy Rainfall Accumulation"},
-                {"time": "+72h", "phase": "System Weakening & Recovery Operations Phase"},
-            ],
-            "status": "TIMELINE_ACTIVE",
-        }
+    def get_crisis_timeline(cls) -> dict[str, Any]:
+        """
+        NOTE (correction): this used to unconditionally return a
+        fabricated 5-step storm timeline (landfall in 24h, peak in
+        48h...) with status "TIMELINE_ACTIVE", as if describing a real
+        ongoing crisis - with no crisis/forecast data connected (0
+        parameters). Not fabricated here.
+        """
+        return {"timeline_steps": [], "status": "NOT_ACTIVE_NO_CRISIS_TRACKED", "is_real_data": False}
