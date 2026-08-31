@@ -4,23 +4,23 @@ Atmospheric Complexity Framework (ACF)
 Global Geology, Geophysics, Seismology & Natural Hazards Test Suite (MISSION ACF-035)
 """
 
-from acf.geology.geology_database import GeologyDatabase, EarthLayer
-from acf.geology.tectonic_plates import PlateDatabase, Plate
-from acf.geology.faults import FaultDatabase, FaultSegment
-from acf.geology.seismology import EarthquakeDatabase, MomentTensor, SeismologyEngine
-from acf.geology.seismic_waves import SeismicWaveEngine
-from acf.geology.earthquake_warning import EarthquakeWarningEngine
-from acf.geology.volcanoes import VolcanoDatabase, Volcano
-from acf.geology.volcanic_physics import VolcanicPhysicsEngine
-from acf.geology.tsunami_engine import TsunamiForecastEngine
-from acf.geology.landslides import SlopeStabilityEngine
-from acf.geology.geodesy import GeodesyEngine
-from acf.geology.gravity import GravityEngine
-from acf.geology.geomagnetism import SolidEarthGeomagneticEngine
-from acf.geology.hazards import HazardEngine
-from acf.geology.observatories import GeologicalObservatoryEngine, GEOLOGICAL_OBSERVATORIES_REGISTRY
 from acf.geology.awci_geology_dashboard import GeologyCenterDashboard
+from acf.geology.earthquake_warning import EarthquakeWarningEngine
+from acf.geology.faults import FaultDatabase
+from acf.geology.geodesy import GeodesyEngine
 from acf.geology.geology_ai import GeologicalReasoningEngine
+from acf.geology.geology_database import GeologyDatabase
+from acf.geology.geomagnetism import SolidEarthGeomagneticEngine
+from acf.geology.gravity import GravityEngine
+from acf.geology.hazards import HazardEngine
+from acf.geology.landslides import SlopeStabilityEngine
+from acf.geology.observatories import GEOLOGICAL_OBSERVATORIES_REGISTRY, GeologicalObservatoryEngine
+from acf.geology.seismic_waves import SeismicWaveEngine
+from acf.geology.seismology import EarthquakeDatabase, SeismologyEngine
+from acf.geology.tectonic_plates import PlateDatabase
+from acf.geology.tsunami_engine import TsunamiForecastEngine
+from acf.geology.volcanic_physics import VolcanicPhysicsEngine
+from acf.geology.volcanoes import VolcanoDatabase
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -104,7 +104,9 @@ def test_volcanoes_and_volcanic_physics():
     assert vesuvius is not None
     assert vesuvius.vei_max == 5
 
-    mogi = VolcanicPhysicsEngine.mogi_surface_displacement_m(radial_distance_m=1000.0, chamber_depth_m=5000.0, volume_change_m3=1e7)
+    mogi = VolcanicPhysicsEngine.mogi_surface_displacement_m(
+        radial_distance_m=1000.0, chamber_depth_m=5000.0, volume_change_m3=1e7
+    )
     assert mogi["vertical_displacement_m"] > 0.0
 
     plume_h = VolcanicPhysicsEngine.volcanic_plume_height_km(volumetric_eruption_rate_m3_s=1e5)
@@ -116,19 +118,31 @@ def test_tsunami_forecast_engine():
     c_ms = TsunamiForecastEngine.tsunami_wave_celerity_m_s(water_depth_m=4000.0)
     assert c_ms > 190.0  # ~198 m/s (~712 km/h)
 
-    green_h = TsunamiForecastEngine.greens_law_coastal_amplification(h1_open_ocean_m=0.5, d1_open_ocean_m=4000.0, d2_coastal_depth_m=10.0)
+    green_h = TsunamiForecastEngine.greens_law_coastal_amplification(
+        h1_open_ocean_m=0.5, d1_open_ocean_m=4000.0, d2_coastal_depth_m=10.0
+    )
     assert green_h > 2.0  # m
 
-    tsunami_haz = TsunamiForecastEngine().evaluate_tsunami_hazard(earthquake_mw=8.5, fault_depth_km=15.0, distance_to_coast_km=200.0)
+    tsunami_haz = TsunamiForecastEngine().evaluate_tsunami_hazard(
+        earthquake_mw=8.5, fault_depth_km=15.0, distance_to_coast_km=200.0
+    )
     assert tsunami_haz["warning_level"] == "RED / TSUNAMI WARNING"
 
 
 def test_slope_stability_and_landslides():
     """Test du Facteur de Sécurité FS et de l'évaluation du risque de glissement de terrain."""
-    fs = SlopeStabilityEngine.factor_of_safety(cohesion_kpa=10.0, normal_stress_kpa=100.0, pore_water_pressure_kpa=20.0, friction_angle_deg=30.0, shear_stress_kpa=50.0)
+    fs = SlopeStabilityEngine.factor_of_safety(
+        cohesion_kpa=10.0,
+        normal_stress_kpa=100.0,
+        pore_water_pressure_kpa=20.0,
+        friction_angle_deg=30.0,
+        shear_stress_kpa=50.0,
+    )
     assert fs > 1.0
 
-    ls_risk = SlopeStabilityEngine.evaluate_landslide_trigger_risk(slope_angle_deg=35.0, rainfall_24h_mm=120.0, soil_saturation_pct=95.0)
+    ls_risk = SlopeStabilityEngine.evaluate_landslide_trigger_risk(
+        slope_angle_deg=35.0, rainfall_24h_mm=120.0, soil_saturation_pct=95.0
+    )
     assert "CRITICAL" in ls_risk["landslide_risk"]
 
 
@@ -172,6 +186,29 @@ def test_geology_ai_and_query_engine():
     """Test de l'IA explicative et des requêtes du ScientificQueryEngine."""
     ai_eq = GeologicalReasoningEngine.explain_earthquake_physics()
     assert "Rebound" in ai_eq["phenomenon"]
+
+
+def test_explain_earthquake_physics_varies_by_fault_type():
+    """
+    CORRECTED: `fault_type` used to be accepted but never referenced -
+    the exact same generic subduction-megathrust explanation was
+    returned regardless of the fault type passed in.
+    """
+    megathrust = GeologicalReasoningEngine.explain_earthquake_physics("Subduction Megathrust")
+    strike_slip = GeologicalReasoningEngine.explain_earthquake_physics("Strike-Slip")
+    normal = GeologicalReasoningEngine.explain_earthquake_physics("Normal")
+
+    assert megathrust["causal_chain"] != strike_slip["causal_chain"]
+    assert megathrust["causal_chain"] != normal["causal_chain"]
+    assert strike_slip["causal_chain"] != normal["causal_chain"]
+    assert "Compressional" in megathrust["stress_regime"]
+    assert "Cisaillement horizontal" in strike_slip["stress_regime"]
+    assert "Extensionnel" in normal["stress_regime"]
+    assert strike_slip["fault_type"] == "Strike-Slip"
+
+    # Unrecognized fault type falls back to the (still correct) default rather than erroring.
+    unknown = GeologicalReasoningEngine.explain_earthquake_physics("Some Unknown Fault")
+    assert unknown["causal_chain"] == megathrust["causal_chain"]
 
     q_engine = ScientificQueryEngine()
 
