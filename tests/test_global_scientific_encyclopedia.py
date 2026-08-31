@@ -5,48 +5,49 @@ Global Scientific Encyclopedia Expansion Test Suite (MISSION ACF-022)
 """
 
 import pytest
-import acf.science
-from acf.science.encyclopedia.registry import EncyclopediaRegistry
-from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
-from acf.science.encyclopedia.knowledge_sources.sources_indexer import KnowledgeSourcesIndexer
-from acf.science.query_engine import ScientificQueryEngine, ask
-from acf.science.encyclopedia.physical_laws.thermodynamics_laws import (
-    calculate_ideal_gas_pressure,
-    calculate_virtual_temperature,
-    calculate_potential_temperature,
-    calculate_equivalent_potential_temperature,
-    calculate_clausius_clapeyron_es,
-    calculate_mixing_ratio,
-    calculate_specific_humidity,
-    calculate_relative_humidity,
+
+from acf.science.encyclopedia.aerodynamics.isa_atmosphere import (
+    calculate_isa_pressure,
+    calculate_isa_temperature,
+    calculate_mach_number,
+    calculate_speed_of_sound,
+)
+from acf.science.encyclopedia.boundary_layer import (
+    calculate_bulk_richardson_number,
+    calculate_log_wind_profile,
+    calculate_obukhov_length,
 )
 from acf.science.encyclopedia.dynamics import (
     calculate_coriolis_parameter,
-    calculate_geostrophic_wind_speed,
     calculate_ertel_potential_vorticity,
+    calculate_geostrophic_wind_speed,
     calculate_rossby_number,
 )
-from acf.science.encyclopedia.boundary_layer import (
-    calculate_obukhov_length,
-    calculate_bulk_richardson_number,
-    calculate_log_wind_profile,
-)
-from acf.science.encyclopedia.radiation import (
-    calculate_planck_radiance,
-    calculate_stefan_boltzmann_flux,
-    calculate_beer_lambert_attenuation,
+from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.science.encyclopedia.knowledge_sources.sources_indexer import KnowledgeSourcesIndexer
+from acf.science.encyclopedia.physical_laws.thermodynamics_laws import (
+    calculate_clausius_clapeyron_es,
+    calculate_equivalent_potential_temperature,
+    calculate_ideal_gas_pressure,
+    calculate_mixing_ratio,
+    calculate_potential_temperature,
+    calculate_relative_humidity,
+    calculate_specific_humidity,
+    calculate_virtual_temperature,
 )
 from acf.science.encyclopedia.precipitation import (
+    calculate_hailstone_density,
     calculate_marshall_palmer_nd,
     calculate_raindrop_terminal_velocity,
-    calculate_hailstone_density,
 )
-from acf.science.encyclopedia.aerodynamics.isa_atmosphere import (
-    calculate_isa_temperature,
-    calculate_isa_pressure,
-    calculate_speed_of_sound,
-    calculate_mach_number,
+from acf.science.encyclopedia.radar_extended import calculate_nyquist_velocity
+from acf.science.encyclopedia.radiation import (
+    calculate_beer_lambert_attenuation,
+    calculate_planck_radiance,
+    calculate_stefan_boltzmann_flux,
 )
+from acf.science.encyclopedia.registry import EncyclopediaRegistry
+from acf.science.query_engine import ask
 
 
 def test_registry_initialization_and_entry_count():
@@ -123,6 +124,28 @@ def test_radiation_laws():
 
     i_trans = calculate_beer_lambert_attenuation(100.0, 0.5)
     assert 0.0 < i_trans < 100.0
+
+
+def test_radar_nyquist_velocity():
+    """
+    Test de la vitesse de Nyquist radar Doppler.
+
+    CORRECTED: the "doppler_velocity_dealiasing" encyclopedia entry
+    used to be registered with a compute_func (calculate_doppler_radial_velocity,
+    a real but unrelated wind-projection formula) that didn't match its
+    own documented equation ("V_max (Nyquist) = lambda * PRF / 4") -
+    found via literature verification, not the earlier fake-data hunt.
+    Now registered with calculate_nyquist_velocity, which genuinely
+    implements that formula.
+    """
+    # 10 GHz radar (wavelength = c/f = 3e8/10e9 = 0.03 m), PRF 10 kHz
+    # -> 75 m/s (270 km/h), a standard textbook example.
+    v_nyquist = calculate_nyquist_velocity(wavelength_m=0.03, prf_hz=10000.0)
+    assert v_nyquist == pytest.approx(75.0)
+
+    entry = EncyclopediaRegistry.get("doppler_velocity_dealiasing")
+    assert entry is not None
+    assert entry.calculate(wavelength_m=0.03, prf_hz=10000.0) == pytest.approx(75.0)
 
 
 def test_precipitation_microphysics():

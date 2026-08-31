@@ -5,7 +5,7 @@ Weather Radar Principles, Products, Doppler & Dual Polarization Encyclopedia Mod
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -13,11 +13,12 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Weather Radar
 # ---------------------------------------------------------------------------
 
+
 def calculate_radar_reflectivity_z(r_mm_h: float, a: float = 200.0, b: float = 1.6) -> float:
     """Calcul de la réflectivité Z (mm^6/m^3) à partir du taux de pluie R (mm/h) via Z = a * R^b."""
     if r_mm_h <= 0.0:
         return 0.0
-    return a * (r_mm_h ** b)
+    return a * (r_mm_h**b)
 
 
 def calculate_rain_rate_from_z(z_dbz: float, a: float = 200.0, b: float = 1.6) -> float:
@@ -26,7 +27,9 @@ def calculate_rain_rate_from_z(z_dbz: float, a: float = 200.0, b: float = 1.6) -
     return (z_linear / a) ** (1.0 / b)
 
 
-def calculate_doppler_radial_velocity(v_wind: float, wind_dir_deg: float, radar_azimuth_deg: float, elevation_deg: float = 0.0) -> float:
+def calculate_doppler_radial_velocity(
+    v_wind: float, wind_dir_deg: float, radar_azimuth_deg: float, elevation_deg: float = 0.0
+) -> float:
     """Calcul de la vitesse radiale Doppler mesurée par le radar (m/s)."""
     rad_wind = math.radians(wind_dir_deg)
     rad_az = math.radians(radar_azimuth_deg)
@@ -34,11 +37,31 @@ def calculate_doppler_radial_velocity(v_wind: float, wind_dir_deg: float, radar_
     return v_wind * math.cos(rad_el) * math.cos(rad_wind - rad_az)
 
 
+def calculate_nyquist_velocity(wavelength_m: float, prf_hz: float) -> float:
+    """
+    Calcul de la vitesse maximale non ambiguë (Nyquist) V = lambda * PRF / 4, en m/s.
+
+    NOTE (correction): the "doppler_velocity_dealiasing" entry below
+    used to be registered with calculate_doppler_radial_velocity as
+    its compute_func - a real, correct formula (radial projection of
+    wind onto the radar beam), but NOT the formula the entry itself
+    documents ("V_max (Nyquist) = lambda * PRF / 4"). Calling
+    calculate() on that entry returned a real-looking number
+    unrelated to the equation shown next to it - found via literature
+    verification of the entry's documented formula, not the earlier
+    fake-data hunt. This function implements the formula the entry
+    actually names (verified: e.g. 10 GHz, PRF 10 kHz -> ~75 m/s,
+    matches standard references), and the entry's compute_func is
+    switched to it below.
+    """
+    return (wavelength_m * prf_hz) / 4.0
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="radar_reflectivity_z_r_relation",
         name="Équation Radar & Relation Z-R de Marshall-Palmer",
@@ -46,12 +69,21 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Équation fondamentale du radar",
         equation="Z = a * R^b  (Marshall-Palmer: Z = 200 * R^1.6)",
         latex_equation=r"Z = \int N(D) D^6 dD = a R^b \quad \implies \text{dBZ} = 10 \log_{10}(Z)",
-        variables={"Z": "Réflectivité linéaire (mm⁶/m³)", "R": "Intensité de pluie (mm/h)", "a": "Facteur empirique (200 pour pluie stratiforme)", "b": "Exposant (1.6)"},
+        variables={
+            "Z": "Réflectivité linéaire (mm⁶/m³)",
+            "R": "Intensité de pluie (mm/h)",
+            "a": "Facteur empirique (200 pour pluie stratiforme)",
+            "b": "Exposant (1.6)",
+        },
         units={"Z": "mm⁶/m³", "dBZ": "dBZ", "R": "mm/h"},
         description="Relation empirique reliant la réflectivité radar équivalente Z au taux de précipitation R au sol en fonction de la distribution des tailles de gouttes.",
         application_conditions=["Estimation des précipitations par radar monopolarisé (QPE)"],
         limitations=["Dépendance du type de précipitation (pluie stratiforme vs convective, neige, grêle)"],
-        references=["Marshall & Palmer (1948) J. Meteor.", "WMO Radar Meteorology Guide", "DWD / Météo-France Radar Manuals"],
+        references=[
+            "Marshall & Palmer (1948) J. Meteor.",
+            "WMO Radar Meteorology Guide",
+            "DWD / Météo-France Radar Manuals",
+        ],
         compute_func=calculate_radar_reflectivity_z,
     ),
     EncyclopediaEntry(
@@ -124,7 +156,7 @@ ENTRIES: List[EncyclopediaEntry] = [
         application_conditions=["Détection des rotation mésocycloniques et des fronts de rafales"],
         limitations=["Dilemme de Nyquist (compromis portée maximale vs vitesse maximale)"],
         references=["Doviak & Zrnic (1993) Doppler Radar and Weather Observations"],
-        compute_func=calculate_doppler_radial_velocity,
+        compute_func=calculate_nyquist_velocity,
     ),
     EncyclopediaEntry(
         key="dual_polarization_radar",
@@ -133,12 +165,21 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Polarmétrie radar",
         equation="ZDR = 10 log(Zh / Zv),  KDP = d(PhiDP)/dr,  RhoHV = Cross-correlation",
         latex_equation=r"Z_{\text{DR}} = 10 \log_{10}\left(\frac{Z_H}{Z_V}\right), \quad K_{\text{DP}} = \frac{1}{2}\frac{\partial \Phi_{\text{DP}}}{\partial r}, \quad \rho_{hv} = \frac{|\langle S_{hh} S_{vv}^*\rangle|}{\sqrt{\langle |S_{hh}|^2\rangle \langle |S_{vv}|^2\rangle}}",
-        variables={"ZDR": "Réflectivité différentielle", "KDP": "Phase spécifique différentielle (°/km)", "RhoHV": "Coefficient de corrélation croisée"},
+        variables={
+            "ZDR": "Réflectivité différentielle",
+            "KDP": "Phase spécifique différentielle (°/km)",
+            "RhoHV": "Coefficient de corrélation croisée",
+        },
         units={"ZDR": "dB", "KDP": "°/km", "RhoHV": "dimensionless (0 à 1)"},
         description="Émission et réception simultanées d'impulsions à polarisation horizontale et verticale permettant d'identifier la forme, la nature et le type d'hydrométéores (pluie, neige, grêle, insecte).",
-        application_conditions=["Classification automatique des hydrométéores (Hydrometeor Classification Algorithm - HCA)"],
+        application_conditions=[
+            "Classification automatique des hydrométéores (Hydrometeor Classification Algorithm - HCA)"
+        ],
         limitations=["Nécessite des calibrations matérielles extrêmement rigoureuses"],
-        references=["Bringi & Chandrasekar (2001) Polarimetric Radar Meteorology", "NOAA / DWD / Météo-France Dual-Pol Manuals"],
+        references=[
+            "Bringi & Chandrasekar (2001) Polarimetric Radar Meteorology",
+            "NOAA / DWD / Météo-France Dual-Pol Manuals",
+        ],
     ),
 ]
 
