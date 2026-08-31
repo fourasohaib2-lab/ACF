@@ -20,12 +20,26 @@ def test_icao_met_decoder():
     assert metar.wind_speed_kt == 18
     assert metar.wind_gust_kt == 28
 
+    # CORRECTED: icao_code was genuinely extracted from raw_taf, but
+    # this used to also claim a fixed fake forecast (fabricated
+    # TEMPO/wind/weather group) regardless of the actual TAF text -
+    # same operationally dangerous pattern as the METAR decoder bug
+    # (fixed earlier this session). A real TAF period parser isn't
+    # implemented yet; forecast_periods is now honestly empty rather
+    # than fabricated.
     taf = ICAOMetDecoder.decode_taf("TAF LFPG 020600Z 0206/0312 24015KT 9999 NSW")
     assert taf.icao_code == "LFPG"
+    assert taf.forecast_periods == []
 
+    # CORRECTED: this used to unconditionally return the exact same
+    # fabricated SIGMET (fixed FIR/phenomenon/severity/levels)
+    # regardless of the actual SIGMET text - a SIGMET for a completely
+    # different FIR and phenomenon would decode identically. A real
+    # SIGMET parser isn't implemented yet; every field except the
+    # preserved raw_text is now honestly empty rather than fabricated.
     sigmet = ICAOMetDecoder.decode_sigmet("LFFF SIGMET 2 VALID 020800/021200 LFPW- LFFF PARIS FIR EMBD TS")
-    assert sigmet.phenomenon == "EMBD TS"
-    assert sigmet.severity == "SEV"
+    assert sigmet.phenomenon == ""
+    assert sigmet.raw_text == "LFFF SIGMET 2 VALID 020800/021200 LFPW- LFFF PARIS FIR EMBD TS"
 
 
 def test_aviation_hazards_registry():
