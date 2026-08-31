@@ -2,40 +2,42 @@
 Earth System Physics Core Engine Test Suite (MISSION ACF-DT-001)
 """
 
-from acf.earth_physics.atmospheric_dynamics.primitive_equations import AtmosphericPrimitiveEquations
+import pytest
+
 from acf.earth_physics.atmospheric_dynamics.coriolis import CoriolisParam
-from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
-from acf.earth_physics.atmospheric_dynamics.potential_vorticity import ErtelsPotentialVorticity
 from acf.earth_physics.atmospheric_dynamics.geostrophic_balance import GeostrophicBalance
-from acf.earth_physics.thermodynamics.thermodynamic_equations import ThermodynamicEquations
-from acf.earth_physics.thermodynamics.equation_of_state import IdealGasEquationOfState
-from acf.earth_physics.thermodynamics.moist_physics import MoistAtmospherePhysics
-from acf.earth_physics.thermodynamics.phase_changes import WaterPhaseChanges
-from acf.earth_physics.radiation.solar_radiation import SolarRadiationModel
-from acf.earth_physics.radiation.longwave_radiation import LongwaveRadiationModel
-from acf.earth_physics.radiation.radiative_balance import RadiativeBalanceSolver
-from acf.earth_physics.radiation.greenhouse_effect import GreenhouseEffectModel
-from acf.earth_physics.ocean_physics.ocean_dynamics import OceanPrimitiveEquations
-from acf.earth_physics.ocean_physics.circulation import OceanCirculationModel
-from acf.earth_physics.ocean_physics.mixing import OceanVerticalMixing
-from acf.earth_physics.ocean_physics.sea_ice_interaction import OceanSeaIceCoupling
-from acf.earth_physics.cryosphere_physics.glacier_model import GlacierMassBalance
-from acf.earth_physics.cryosphere_physics.ice_sheet import IceSheetDynamics
-from acf.earth_physics.cryosphere_physics.sea_ice import SeaIceThermodynamics
-from acf.earth_physics.cryosphere_physics.permafrost import PermafrostThawModel
-from acf.earth_physics.land_surface.soil_model import SoilModel
-from acf.earth_physics.land_surface.vegetation import VegetationModel
-from acf.earth_physics.land_surface.albedo import SurfaceAlbedoModel
-from acf.earth_physics.land_surface.evapotranspiration import EvapotranspirationModel
+from acf.earth_physics.atmospheric_dynamics.potential_vorticity import ErtelsPotentialVorticity
+from acf.earth_physics.atmospheric_dynamics.primitive_equations import AtmosphericPrimitiveEquations
+from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
 from acf.earth_physics.carbon_cycle.carbon_flux import GlobalCarbonFlux
 from acf.earth_physics.carbon_cycle.ocean_carbon import OceanCarbonBiologicalPump
 from acf.earth_physics.carbon_cycle.terrestrial_carbon import TerrestrialCarbonSink
+from acf.earth_physics.coupled_solver.conservation import ConservationEngine
 from acf.earth_physics.coupled_solver.earth_solver import EarthSolver
 from acf.earth_physics.coupled_solver.timestep_manager import AdaptiveTimestepManager
-from acf.earth_physics.coupled_solver.conservation import ConservationEngine
-from acf.hpc.mpi_solver import MPIEarthDomainSolver
-from acf.hpc.gpu_acceleration import GPUPhysicsAccelerator
+from acf.earth_physics.cryosphere_physics.glacier_model import GlacierMassBalance
+from acf.earth_physics.cryosphere_physics.ice_sheet import IceSheetDynamics
+from acf.earth_physics.cryosphere_physics.permafrost import PermafrostThawModel
+from acf.earth_physics.cryosphere_physics.sea_ice import SeaIceThermodynamics
+from acf.earth_physics.land_surface.albedo import SurfaceAlbedoModel
+from acf.earth_physics.land_surface.evapotranspiration import EvapotranspirationModel
+from acf.earth_physics.land_surface.soil_model import SoilModel
+from acf.earth_physics.land_surface.vegetation import VegetationModel
+from acf.earth_physics.ocean_physics.circulation import OceanCirculationModel
+from acf.earth_physics.ocean_physics.mixing import OceanVerticalMixing
+from acf.earth_physics.ocean_physics.ocean_dynamics import OceanPrimitiveEquations
+from acf.earth_physics.ocean_physics.sea_ice_interaction import OceanSeaIceCoupling
+from acf.earth_physics.radiation.greenhouse_effect import GreenhouseEffectModel
+from acf.earth_physics.radiation.longwave_radiation import LongwaveRadiationModel
+from acf.earth_physics.radiation.radiative_balance import RadiativeBalanceSolver
+from acf.earth_physics.radiation.solar_radiation import SolarRadiationModel
+from acf.earth_physics.thermodynamics.equation_of_state import IdealGasEquationOfState
+from acf.earth_physics.thermodynamics.moist_physics import MoistAtmospherePhysics
+from acf.earth_physics.thermodynamics.phase_changes import WaterPhaseChanges
+from acf.earth_physics.thermodynamics.thermodynamic_equations import ThermodynamicEquations
 from acf.hpc.distributed_grid import DistributedGridTopology
+from acf.hpc.gpu_acceleration import GPUPhysicsAccelerator
+from acf.hpc.mpi_solver import MPIEarthDomainSolver
 from acf.hpc.parallel_scheduler import ParallelTaskScheduler
 
 
@@ -92,8 +94,13 @@ def test_ocean_cryosphere_and_land_physics():
     amoc = OceanCirculationModel.amoc_transport_sverdrup()
     assert amoc["amoc_strength_sv"] == 17.5
 
-    mld = OceanVerticalMixing.mixed_layer_depth_m(0.1, 100.0)
-    assert mld == 45.0
+    # CORRECTED: mixed_layer_depth_m used to always return the
+    # hard-coded fake value 45.0 regardless of input. Real MLD needs a
+    # density profile or time-integrated bulk model, neither available
+    # from (wind_stress, heat_flux) alone - now raises instead of
+    # faking precision.
+    with pytest.raises(NotImplementedError):
+        OceanVerticalMixing.mixed_layer_depth_m(0.1, 100.0)
 
     heat_ice = OceanSeaIceCoupling.compute_heat_flux_to_ice(2.0)
     assert heat_ice > 0.0
