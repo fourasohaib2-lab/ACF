@@ -222,9 +222,17 @@ def test_query_engine_master_queries():
 
     r1 = q_engine.ask("Show Master")
     assert r1["workspace_name"] == "ACF MASTER FRAMEWORK UNIFIED CONTROL CENTER"
+    # CORRECTED: used to claim "... Platinum Certified" - the same
+    # false certification independently fabricated by
+    # ScientificCertificationEngine (see cert.certification_level
+    # above, fixed earlier this session).
+    assert "Platinum" not in r1["active_product"]
 
     r2 = q_engine.ask("Show Science")
     assert r2["widget_type"] == "MasterScienceGatewayViewer"
+    # CORRECTED: used to claim "PLATINUM CERTIFIED (100% SI &
+    # Literature Traceability)" with no real audit ever performed.
+    assert r2["certification_level"] == "NOT_CERTIFIED_NO_AUDIT_PERFORMED"
 
     r3 = q_engine.ask("Show Earth")
     assert r3["workspace_name"] == "PLANETARY DIGITAL TWIN"

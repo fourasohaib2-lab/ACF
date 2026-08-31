@@ -137,8 +137,11 @@ def test_monitoring_dashboard_and_query_engine():
     assert r3["planet_health_score_pct"] is None
     assert r3["widget_type"] == "EarthHealthViewer"
 
+    # CORRECTED: used to claim a fixed "active_alert_level: ORANGE /
+    # RED" as if reporting a real current alert state.
     r4 = qe.ask("Show Alerts")
     assert r4["widget_type"] == "OperationalAlertDispatcherViewer"
+    assert r4["active_alert_level"] is None
 
     r5 = qe.ask("Show Streaming")
     assert r5["widget_type"] == "ObservationStreamEngineViewer"

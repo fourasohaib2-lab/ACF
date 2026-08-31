@@ -86,15 +86,21 @@ class ScientificQueryEngine:
             }
 
         if q in ["show alerts", "current alerts", "alertes en cours"]:
+            # CORRECTED: used to claim a fixed "active_alert_level:
+            # ORANGE / RED" as if reporting a real current alert state
+            # - same underlying issue as
+            # hazard_operations.alert_generator.AlertGenerator (fixed
+            # earlier this session). This router only activates a UI
+            # widget, it doesn't track any real alert state.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "OperationalAlertDispatcherViewer",
                 "physical_explanation": (
-                    "Diffusion et routage prioritaire des alertes opérationnelles (Niveaux GREEN à BLACK) "
-                    "vers AWCI, le centre d'urgence et les systèmes d'aide à la décision."
+                    "Activation du widget de diffusion et de routage des alertes opérationnelles "
+                    "(Niveaux GREEN à BLACK) vers AWCI, le centre d'urgence et les systèmes d'aide à la décision."
                 ),
-                "active_alert_level": "ORANGE / RED",
+                "active_alert_level": None,
             }
 
         if q in ["show streaming", "observation stream"]:
@@ -148,15 +154,23 @@ class ScientificQueryEngine:
         # MISSION ACF-043 Natural Language Queries (AI Meteorologist & Expert)
         # -------------------------------------------------------------------
         if "explain today's forecast" in q or "explain today forecast" in q:
+            # CORRECTED: this used to claim a specific fabricated
+            # "today's" synoptic situation (a named North Atlantic
+            # cyclone deepening at +40 hPa/24h, CAPE 1800 J/kg over
+            # South-Western Europe) regardless of the actual date or
+            # any real forecast run - the same underlying issue as
+            # hazard_operations.hazard_detection_engine.HazardDetectionEngine
+            # (fixed earlier this session, flagged as the single most
+            # operationally dangerous finding of the session). This
+            # router only activates a UI workspace, it has no real
+            # forecast data connected.
             return {
                 "question": question,
                 "action": "activate_workspace",
                 "workspace_name": "AUTONOMOUS AI METEOROLOGIST & EARTH SYSTEM EXPERT WORKSPACE",
-                "physical_explanation": (
-                    "Extratropical cyclone deepening over North Atlantic (+40 hPa/24h) with strong jet streak divergence at 300 hPa. "
-                    "Convective instability over South-Western Europe (CAPE 1800 J/kg) favoring organized squall line."
-                ),
+                "physical_explanation": "Activation du workspace de diagnostic prévisionnel quotidien de l'IA Météorologiste.",
                 "active_product": "AIMeteorologist Daily Forecast Diagnostic",
+                "is_real_data": False,
             }
 
         if "why is heavy rain expected" in q or "heavy rain expected" in q:
@@ -182,27 +196,38 @@ class ScientificQueryEngine:
             }
 
         if q in ["show uncertainty", "incertitude"]:
+            # CORRECTED: used to claim a fixed "Ensemble Spread = 2.1
+            # sigma" and "uncertainty_level: MODERATE" as if reporting
+            # a real current ensemble run - no ensemble data is
+            # connected here. This router only activates a UI widget.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "UncertaintyQuantificationViewer",
                 "physical_explanation": (
-                    "Quantification des incertitudes épistémiques (structure des modèles d'IA/NWP) "
-                    "et aléatoires (dispersion d'ensemble / Ensemble Spread = 2.1 sigma)."
+                    "Activation du widget de quantification des incertitudes épistémiques "
+                    "(structure des modèles d'IA/NWP) et aléatoires (dispersion d'ensemble)."
                 ),
-                "uncertainty_level": "MODERATE",
+                "uncertainty_level": None,
             }
 
         if "recommend emergency actions" in q or "recommend emergency" in q:
+            # CORRECTED: this used to claim a specific fabricated
+            # emergency response plan (named barrier closures, a
+            # "secteur 4" evacuation) and "priority: HIGH" regardless
+            # of whether any real hazard was detected - same
+            # underlying issue as
+            # hazard_operations.evacuation_planner.EvacuationPlanner
+            # (fixed earlier this session). This router only activates
+            # a UI widget, it has no real hazard/emergency data
+            # connected.
             return {
                 "question": question,
                 "action": "activate_widget",
                 "widget_type": "SectorialRecommendationViewer",
-                "physical_explanation": (
-                    "Recommandations de sécurité civile : 1) Prémobilisation des secours en zone cotière, "
-                    "2) Fermeture des barrières anti-submersion, 3) Évacuation préventive du secteur 4."
-                ),
-                "priority": "HIGH",
+                "physical_explanation": "Activation du widget de recommandations sectorielles de sécurité civile.",
+                "priority": None,
+                "is_real_data": False,
             }
 
         if "generate operational briefing" in q or "operational briefing" in q:
@@ -229,7 +254,14 @@ class ScientificQueryEngine:
                     "Activation du Master Framework unifié d'ACF (40 missions d'ingénierie intégrées). "
                     "Découverte automatique des 21 modules principaux et des 13 catégories de capacités scientifiques."
                 ),
-                "active_product": "ACF Master Engine v41.0 Platinum Certified",
+                # CORRECTED: used to claim "Platinum Certified" - the
+                # same false certification independently fabricated by
+                # master.scientific_certification.ScientificCertificationEngine
+                # (fixed earlier this session: audit_framework() used to
+                # unconditionally claim "CERTIFIED_PLATINUM / 450
+                # equations audited / 100% SI compliance" with no real
+                # audit ever performed).
+                "active_product": "ACF Master Engine v41.0",
             }
 
         if q == "show earth":
@@ -253,7 +285,14 @@ class ScientificQueryEngine:
                     "Façade scientifique unifiée MasterScienceGateway offrant un accès standardisé aux fonctions "
                     "forecast(), simulate(), analyze(), query(), compute(), reason(), optimize() et visualize()."
                 ),
-                "certification_level": "PLATINUM CERTIFIED (100% SI & Literature Traceability)",
+                # CORRECTED: used to claim "PLATINUM CERTIFIED (100% SI
+                # & Literature Traceability)" - the same false
+                # certification independently fabricated by
+                # master.scientific_certification.ScientificCertificationEngine
+                # (fixed earlier this session) and by the "show
+                # master" block above (also fixed this batch). None of
+                # the 3 was ever a real audit result.
+                "certification_level": "NOT_CERTIFIED_NO_AUDIT_PERFORMED",
             }
 
         # -------------------------------------------------------------------
