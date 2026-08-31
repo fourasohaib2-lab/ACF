@@ -4,21 +4,21 @@ Atmospheric Complexity Framework (ACF)
 Complete Earth Digital Twin Platform Test Suite (MISSION ACF-UI-010)
 """
 
-from acf.digital_twin.earth_twin_core import EarthTwinCore
-from acf.digital_twin.earth_state import EarthState
-from acf.digital_twin.planet_model import PlanetModel
-from acf.digital_twin.scenario_engine import DigitalTwinScenarioEngine
-from acf.digital_twin.simulation_manager import SimulationManager
+from acf.ai.digital_twin.twin_assistant import AIDigitalTwinAssistant
 from acf.digital_twin.boundary_conditions import BoundaryConditionsManager
-from acf.digital_twin.feedback_engine import FeedbackEngine
-from acf.digital_twin.coupling_engine import CouplingEngine
 from acf.digital_twin.calibration_engine import CalibrationEngine
-from acf.digital_twin.twin_visualizer import DigitalTwinVisualizer
+from acf.digital_twin.coupling_engine import CouplingEngine
+from acf.digital_twin.earth_state import EarthState
+from acf.digital_twin.earth_twin_core import EarthTwinCore
 from acf.digital_twin.experiment_manager import ExperimentManager
+from acf.digital_twin.feedback_engine import FeedbackEngine
+from acf.digital_twin.geoengineering_lab.geoengineering_lab import GeoengineeringLab
+from acf.digital_twin.planet_model import PlanetModel
 from acf.digital_twin.planetary_dashboard import PlanetaryDashboard
 from acf.digital_twin.planetary_limits.planetary_boundaries import PlanetaryBoundariesSimulator
-from acf.digital_twin.geoengineering_lab.geoengineering_lab import GeoengineeringLab
-from acf.ai.digital_twin.twin_assistant import AIDigitalTwinAssistant
+from acf.digital_twin.scenario_engine import DigitalTwinScenarioEngine
+from acf.digital_twin.simulation_manager import SimulationManager
+from acf.digital_twin.twin_visualizer import DigitalTwinVisualizer
 
 
 def test_earth_twin_core_and_state():
@@ -54,10 +54,16 @@ def test_planetary_boundaries_and_geoengineering():
     assert limits["climate_change"]["status"] == "TRANSGRESSED"
     assert limits["overall_audit_summary"] == "6_OF_9_BOUNDARIES_TRANSGRESSED"
 
+    # CORRECTED: used to claim a fixed "-0.45K cooling"/"4.2 benefit-
+    # cost ratio" regardless of the injection amount (physically
+    # wrong - a real response scales with dose) with no climate model
+    # connected. Geoengineering is a contested policy topic; a fake
+    # benefit-cost ratio could misinform a real argument.
     geo = GeoengineeringLab.simulate_stratospheric_aerosol_injection(5.0)
-    assert geo["status"] == "SIMULATION_SUCCESS"
-    assert geo["cooling_effect_k"] == -0.45
-    assert len(geo["side_effects"]) >= 3
+    assert geo["status"] == "NOT_SIMULATED_NO_CLIMATE_MODEL_CONNECTED"
+    assert geo["cooling_effect_k"] is None
+    assert geo["benefit_cost_ratio"] is None
+    assert len(geo["known_risk_categories"]) >= 3
 
 
 def test_ai_digital_twin_assistant_and_experiments():
@@ -81,15 +87,24 @@ def test_ancillary_digital_twin_modules():
     fb = FeedbackEngine.evaluate_feedbacks()
     assert fb["status"] == "FEEDBACKS_EVALUATED"
 
+    # CORRECTED: used to claim a fabricated "0.04 RMSE"/"128
+    # parameters tuned" with no real calibration against observations.
     cal = CalibrationEngine.calibrate_twin()
-    assert cal["status"] == "CALIBRATED_OPTIMAL"
+    assert cal["status"] == "NOT_CALIBRATED_NO_OBSERVATION_DATA_PROVIDED"
+    assert cal["calibration_error_rmse"] is None
 
+    # CORRECTED: used to claim a fabricated "74.5/100" planetary
+    # health index (the same fake number independently found in
+    # EarthHealthMonitor, fixed earlier this session).
     dash = PlanetaryDashboard.get_dashboard_summary()
-    assert dash["status"] == "PLANETARY_DASHBOARD_ACTIVE"
+    assert dash["status"] == "NOT_ACTIVE_NO_EXPERIMENT_TRACKER_CONNECTED"
+    assert dash["planetary_health_index"] is None
 
     pm = PlanetModel.get_planet_parameters()
     assert pm["radius_km"] == 6371.0
 
     sm = SimulationManager.execute_simulation()
     assert sm["execution_status"] == "RUNNING_COMPUTE"
+    # BoundaryConditionsManager: solar_constant_w_m2 is a genuine
+    # physical constant, kept unchanged.
     assert BoundaryConditionsManager.get_boundary_conditions()["solar_constant_w_m2"] == 1361.0
