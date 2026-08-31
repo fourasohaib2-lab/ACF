@@ -7,7 +7,6 @@ Map Scene
 Scientific visualization scene controller.
 """
 
-
 from PySide6.QtCore import QObject, Signal
 
 
@@ -16,13 +15,11 @@ class MapScene(QObject):
     Central scene controller for map visualization.
     """
 
-
     sceneChanged = Signal()
 
     layerAdded = Signal(object)
 
     layerRemoved = Signal(str)
-
 
     ##################################################
 
@@ -36,7 +33,6 @@ class MapScene(QObject):
 
         self.initialized = False
 
-
     ##################################################
 
     def initialize(self):
@@ -47,7 +43,6 @@ class MapScene(QObject):
         self.initialized = True
 
         self.sceneChanged.emit()
-
 
     ##################################################
 
@@ -60,7 +55,6 @@ class MapScene(QObject):
 
         self.refresh()
 
-
     ##################################################
 
     def add_layer(
@@ -69,13 +63,11 @@ class MapScene(QObject):
     ):
 
         if layer not in self.layers:
-
             self.layers.append(layer)
 
             self.layerAdded.emit(layer)
 
             self.sceneChanged.emit()
-
 
     ##################################################
 
@@ -85,19 +77,14 @@ class MapScene(QObject):
     ):
 
         for layer in self.layers:
-
             if layer.id == layer_id:
-
                 self.layers.remove(layer)
 
-                self.layerRemoved.emit(
-                    layer_id
-                )
+                self.layerRemoved.emit(layer_id)
 
                 self.sceneChanged.emit()
 
                 return
-
 
     ##################################################
 
@@ -107,55 +94,46 @@ class MapScene(QObject):
 
         self.sceneChanged.emit()
 
-
     ##################################################
 
     def refresh(self):
 
         if self.visualization_manager is None:
-
             return
 
         manager = self.visualization_manager
 
-        self.layers = (
-            manager.layer_manager.layers()
-        )
+        self.layers = manager.layer_manager.layers()
 
         self.sceneChanged.emit()
-
 
     ##################################################
 
     def render(self, axes):
-
         """
         Render all visible layers.
+
+        NOTE: no rendering backend is wired up yet - this iterates
+        visible layers but performs no draw call against `axes`
+        (previously a silent no-op with only a "futur renderer system"
+        comment; no caller or test currently depends on this method -
+        verified). Left honestly incomplete rather than faked, per the
+        per-layer renderer system planned for this scene controller.
         """
 
         for layer in self.layers:
-
             if not layer.visible:
-
                 continue
 
-            # futur renderer system
-            pass
-
+            # futur renderer system: dispatch layer.render(axes) once a
+            # concrete per-layer renderer backend is wired up here.
 
     ##################################################
 
     def status(self):
 
         return {
-
             "layers": len(self.layers),
-
-            "visualization_manager":
-                self.visualization_manager
-                is not None,
-
-            "initialized":
-                self.initialized,
-
+            "visualization_manager": self.visualization_manager is not None,
+            "initialized": self.initialized,
         }
