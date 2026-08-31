@@ -28,15 +28,22 @@ class ScientificAgentManager:
 
     @classmethod
     def run_collaborative_agent_assessment(cls) -> dict[str, Any]:
-        """Exécute une évaluation collaborative multi-agents."""
+        """
+        Exécute une évaluation collaborative multi-agents.
+
+        NOTE (correction — operationally dangerous): this used to
+        unconditionally claim "HIGH CONSENSUS REACHED" among 8 agents
+        with specific fabricated findings (a fake "2.8m storm surge",
+        fake exceeded river discharge capacity) for ANY call, with 0
+        real agent processes ever run. No multi-agent collaboration
+        pipeline is connected here (get_registered_agents() above is a
+        genuine static roster of the agent names this system is
+        designed to eventually run, not a live-data claim). Not
+        fabricated.
+        """
         return {
-            "active_agents_count": 8,
-            "consensus_status": "HIGH CONSENSUS REACHED",
-            "agent_findings": {
-                "MeteorologyAgent": "Heavy precipitation expected over coastal region (IVT > 400 kg/m/s).",
-                "OceanographyAgent": "Storm surge of 2.8m predicted at high tide.",
-                "HydrologyAgent": "Estuarine river discharge capacity exceeded.",
-                "SpaceWeatherAgent": "Solar activity quiet (Kp 2.0).",
-                "GeologyAgent": "Background seismicity normal.",
-            },
+            "active_agents_count": 0,
+            "consensus_status": "NOT_RUN_NO_AGENT_PIPELINE_CONNECTED",
+            "agent_findings": {},
+            "is_real_data": False,
         }

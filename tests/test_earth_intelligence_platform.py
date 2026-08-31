@@ -48,9 +48,13 @@ def test_multi_agent_manager():
     assert "MeteorologyAgent" in agents
     assert "DigitalTwinCoordinatorAgent" in agents
 
+    # CORRECTED: used to unconditionally claim "HIGH CONSENSUS REACHED"
+    # among 8 agents with fabricated findings (a fake 2.8m storm
+    # surge), with 0 real agent pipeline ever run.
     assessment = ScientificAgentManager.run_collaborative_agent_assessment()
-    assert assessment["active_agents_count"] == 8
-    assert "HIGH CONSENSUS" in assessment["consensus_status"]
+    assert assessment["active_agents_count"] == 0
+    assert assessment["consensus_status"] == "NOT_RUN_NO_AGENT_PIPELINE_CONNECTED"
+    assert assessment["agent_findings"] == {}
 
 
 def test_hypothesis_engine_and_physics_validator():
@@ -78,30 +82,55 @@ def test_forecast_reasoning_and_model_comparison():
 
 
 def test_earth_anomaly_engine():
-    """Test de la détection d'anomalies terrestres multi-domaines."""
+    """
+    Test de la détection d'anomalies terrestres multi-domaines.
+
+    CORRECTED: used to unconditionally return 2 fixed fabricated
+    anomalies (a fake "+4.2 sigma heatwave" at 98% confidence, a fake
+    X2.4 solar flare) for ANY call, with no real planetary state
+    vector ever scanned.
+    """
     anomalies = EarthAnomalyEngine.scan_for_anomalies()
-    assert len(anomalies) >= 2
-    assert "Heatwave" in anomalies[0].anomaly_type
+    assert anomalies == []
 
 
 def test_decision_support_and_emergency_optimization():
-    """Test du support décisionnel et de l'optimisation des évacuations de crise."""
+    """
+    Test du support décisionnel et de l'optimisation des évacuations de crise.
+
+    CORRECTED: generate_recommendations() used to unconditionally
+    return a fabricated CRITICAL "Issue Coastal Evacuation Order for
+    Zone B" citing a fake "3.2m storm surge"; optimize_evacuation_plan()
+    used to name specific fake evacuation routes and a fixed "6.5 hour"
+    clearance time regardless of population_count - both with 0 real
+    risk/road-network data connected.
+    """
     recs = DecisionSupportEngine.generate_recommendations()
-    assert len(recs) >= 2
-    assert recs[0].priority_level == "CRITICAL"
+    assert recs == []
 
     evac = EmergencyOptimizationEngine.optimize_evacuation_plan(population_count=100000)
-    assert evac["estimated_clearance_time_hours"] < 10.0
+    assert evac["status"] == "NOT_OPTIMIZED_NO_ROAD_NETWORK_DATA_CONNECTED"
+    assert evac["estimated_clearance_time_hours"] is None
+    assert evac["target_population"] == 100000  # genuinely echoed
 
 
 def test_mission_planner_and_explanation_engine():
     """Test du planificateur autonome et du moteur d'explication physique."""
+    # CORRECTED: used to unconditionally claim all 4 tasks were
+    # "ACTIVE / RUNNING" or "ACTIVE / SCHEDULED" with no real task
+    # scheduler connected. Task names/intervals are kept as a
+    # documented roadmap, but status no longer falsely claims execution.
     tasks = MissionPlanner.get_active_workflows()
     assert len(tasks) >= 4
     assert tasks[0].schedule_interval_minutes > 0
+    assert tasks[0].status == "NOT_SCHEDULED"
 
+    # CORRECTED: used to unconditionally claim a fabricated "96.4%
+    # transparency confidence score" regardless of forecast_id or any
+    # real forecast/alert data.
     exp = ScientificExplanationEngine.explain_forecast_decision("FCST-01")
-    assert exp["transparency_confidence_score"] > 90.0
+    assert exp["transparency_confidence_score"] is None
+    assert exp["forecast_id"] == "FCST-01"  # genuinely echoed
 
 
 def test_knowledge_evolution_and_executive_reports():
@@ -117,9 +146,15 @@ def test_knowledge_evolution_and_executive_reports():
     assert audit["consistency_status"] == "NOT_VERIFIED_NO_AUTOMATED_CONSISTENCY_CHECK"
     assert audit["total_laws_registered"] > 0
 
+    # CORRECTED: used to unconditionally report a fabricated Category 4
+    # typhoon, a fake X2.4 solar flare, and a fake Mw 6.8 earthquake
+    # with a recommended "Level-3 Coastal Evacuation" for EVERY call,
+    # with 0 real domain data connected.
     rep = AutonomousReportGenerator.generate_executive_intelligence_report()
     assert rep["format"] == "Markdown"
     assert "EARTH INTELLIGENCE" in rep["content"]
+    assert "NO REAL DOMAIN DATA SOURCES CONNECTED" in rep["content"]
+    assert "Category 4 Typhoon" not in rep["content"]
 
 
 def test_intelligence_dashboard_and_query_engine():

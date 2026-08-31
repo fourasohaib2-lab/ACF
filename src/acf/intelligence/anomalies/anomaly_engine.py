@@ -27,22 +27,18 @@ class EarthAnomalyEngine:
 
     @classmethod
     def scan_for_anomalies(cls) -> list[DetectedEarthAnomaly]:
-        """Scanne le vecteur d'état planétaire et identifie les anomalies en cours."""
-        return [
-            DetectedEarthAnomaly(
-                anomaly_id="ANOM-001",
-                domain="Atmosphere",
-                anomaly_type="Extreme Heatwave Anomaly (+4.2 sigma)",
-                severity_level="RED / SEVERE",
-                confidence_pct=98.0,
-                physical_origin="Omega Atmospheric Blocking Pattern",
-            ),
-            DetectedEarthAnomaly(
-                anomaly_id="ANOM-002",
-                domain="Space Weather",
-                anomaly_type="Solar X-Ray Flare (X2.4)",
-                severity_level="ORANGE / HIGH",
-                confidence_pct=99.5,
-                physical_origin="Active Region AR13664 Magnetic Reconnection",
-            ),
-        ]
+        """
+        Scanne le vecteur d'état planétaire et identifie les anomalies en cours.
+
+        NOTE (correction — operationally dangerous): this used to
+        unconditionally return the same 2 fixed fabricated anomalies
+        for ANY call, with 0 parameters and no real planetary state
+        vector ever scanned - a fake "+4.2 sigma heatwave" at "98%
+        confidence" and a fake "X2.4 solar flare" at "99.5%
+        confidence". A caller trusting this "autonomous anomaly
+        detection" could believe two genuine severe events were
+        actively occurring when nothing was ever scanned. Not
+        fabricated - now returns an empty list rather than fabricated
+        detections.
+        """
+        return []
