@@ -5,7 +5,8 @@ Complete WMO Cloud Classification & Microphysical Processes Encyclopedia Module
 """
 
 import math
-from typing import Any, Dict, List
+from typing import Any
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -13,7 +14,7 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # 1. Classification OMM Complète (10 Genres)
 # ---------------------------------------------------------------------------
 
-WMO_GENRES: List[Dict[str, Any]] = [
+WMO_GENRES: list[dict[str, Any]] = [
     {
         "key": "wmo_cirrus",
         "name": "Cirrus (Ci)",
@@ -131,9 +132,16 @@ for g in WMO_GENRES:
         },
         units={"Altitude": "m", "Température": "°C"},
         description=f"Genre nuageux officiel WMO. Précipitation: {g['precipitation']}. Danger aéronautique: {g['aviation_hazard']}.",
-        application_conditions=["Atlas International des Nuages OMM (WMO-No. 407)", "Observations météo aviation (ICAO Annex 3)"],
+        application_conditions=[
+            "Atlas International des Nuages OMM (WMO-No. 407)",
+            "Observations météo aviation (ICAO Annex 3)",
+        ],
         limitations=["Variabilité régionale selon la latitude et la saison"],
-        references=["WMO International Cloud Atlas (2017)", "ICAO Annex 3 Manual", "Météo-France Guide du Météorologiste"],
+        references=[
+            "WMO International Cloud Atlas (2017)",
+            "ICAO Annex 3 Manual",
+            "Météo-France Guide du Météorologiste",
+        ],
     )
     EncyclopediaRegistry.register(entry)
 
@@ -141,6 +149,7 @@ for g in WMO_GENRES:
 # ---------------------------------------------------------------------------
 # 2. Formation & Thermodynamic Niveaux Convectifs
 # ---------------------------------------------------------------------------
+
 
 def calculate_lcl_height(temp_c: float, dewpoint_c: float) -> float:
     """Calcul approché de l'altitude du LCL (Niveau de Condensation par Ascendance): z_LCL = 125 * (T - Td)."""
@@ -187,7 +196,10 @@ EncyclopediaRegistry.register(
         subdomain="Thermodynamique des nuages",
         equation="z_LFC = Level where parcel Tv becomes warmer than environmental Tv",
         latex_equation=r"z_{\text{LFC}}: T_{v,\text{parcel}}(z) = T_{v,\text{env}}(z) \quad (\text{avec } \frac{dT_v}{dz} > 0)",
-        variables={"Tv_parcel": "Température virtuelle de la parcelle", "Tv_env": "Température virtuelle de l'environnement"},
+        variables={
+            "Tv_parcel": "Température virtuelle de la parcelle",
+            "Tv_env": "Température virtuelle de l'environnement",
+        },
         units={"z_LFC": "m"},
         description="Altitude à partir de laquelle une parcelle d'air ascendante devient plus chaude que son environnement et s'élève spontanément par flottabilité.",
         application_conditions=["Sondage thermodynamique (SKEW-T / Emagramme)"],
@@ -220,10 +232,21 @@ EncyclopediaRegistry.register(
 # 3. Processus Microphysiques Fondamentaux
 # ---------------------------------------------------------------------------
 
+
 def bergeron_findeisen_diff(temp_c: float) -> float:
-    """Calcule la différence de pression de vapeur saturante (e_w - e_i) en Pa."""
+    """Calcule la différence de pression de vapeur saturante (e_w - e_i) en Pa.
+
+    NOTE (correction): e_i's coefficients used 22.58/273.16 - close to but not
+    matching the standard Alduchov & Eskridge (1996) ice-formula fit
+    (611.21, 22.587, 273.86; verified via WebSearch), and 273.16 (the triple
+    point of water in Kelvin) is a suspicious value to see as a Magnus-form
+    denominator offset rather than the fitted 273.86. Numerical impact was
+    small (~1% in the typical subzero range) but corrected to the standard
+    reference coefficients per the golden rule (most-cited source). e_w
+    (Bolton 1980 / Magnus-Tetens: 611.2, 17.67, 243.5) was already exact.
+    """
     e_w = 611.2 * math.exp((17.67 * temp_c) / (temp_c + 243.5))
-    e_i = 611.2 * math.exp((22.58 * temp_c) / (temp_c + 273.16))
+    e_i = 611.21 * math.exp((22.587 * temp_c) / (temp_c + 273.86))
     return max(e_w - e_i, 0.0)
 
 
@@ -237,7 +260,7 @@ def kessler_autoconversion_rate(qc: float, qc0: float = 1.0e-3, k_conv: float = 
     return k_conv * max(qc - qc0, 0.0)
 
 
-MICROPHYSICAL_PROCESSES = [
+MICROPHYSICAL_PROCESSES: list[dict[str, Any]] = [
     {
         "key": "bergeron_findeisen_process",
         "name": "Effet Bergeron-Findeisen-Wegener",
@@ -247,7 +270,12 @@ MICROPHYSICAL_PROCESSES = [
         "variables": {"temp_c": "Température sous zéro (°C)", "delta_e": "Différence e_w - e_i (Pa)"},
         "units": {"delta_e": "Pa"},
         "description": "Croissance rapide des cristaux de glace aux dépens des gouttelettes d'eau surfrondue en raison du gradient de pression de vapeur saturante.",
-        "references": ["Bergeron (1935)", "Findeisen (1938)", "WMO Microphysics Guide"],
+        "references": [
+            "Bergeron (1935)",
+            "Findeisen (1938)",
+            "WMO Microphysics Guide",
+            "Alduchov & Eskridge (1996) J. Appl. Meteor. (ice saturation vapor pressure fit)",
+        ],
         "compute_func": bergeron_findeisen_diff,
     },
     {
@@ -256,7 +284,11 @@ MICROPHYSICAL_PROCESSES = [
         "subdomain": "Microphysique chaude",
         "equation": "dr/dt = K * (r1 + r2)^2",
         "latex_equation": r"\frac{dr}{dt} = K (r_1 + r_2)^2 E(r_1, r_2)",
-        "variables": {"r1": "Rayon goutte collectrice (m)", "r2": "Rayon goutte collectée (m)", "K": "Noyau de collection (m³/s)"},
+        "variables": {
+            "r1": "Rayon goutte collectrice (m)",
+            "r2": "Rayon goutte collectée (m)",
+            "K": "Noyau de collection (m³/s)",
+        },
         "units": {"dr_dt": "m/s"},
         "description": "Grossissement des gouttes de pluie par choc et fusion entre gouttes de vitesses terminales différentes dans les nuages chauds.",
         "references": ["Pruppacher & Klett (1997)", "AMS Cloud Physics"],
@@ -399,6 +431,7 @@ for p in MICROPHYSICAL_PROCESSES:
 # ---------------------------------------------------------------------------
 # 4. Classificateur WMO
 # ---------------------------------------------------------------------------
+
 
 class WMOCloudClassifier:
     """

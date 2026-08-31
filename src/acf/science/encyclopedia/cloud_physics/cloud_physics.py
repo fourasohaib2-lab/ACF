@@ -5,7 +5,7 @@ Cloud Physics, Nucleation, Microphysics & Hydrometeors Encyclopedia Module
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -13,25 +13,32 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # Computational Functions for Cloud Physics
 # ---------------------------------------------------------------------------
 
+
 def calculate_homogeneous_nucleation_rate(temp_c: float) -> float:
-    """Calcul approximatif du taux de nucléation homogène de la glace en sous-refroidissement J(T)."""
-    if temp_c >= -35.0:
+    """Calcul approximatif du taux de nucléation homogène de la glace en sous-refroidissement J(T).
+
+    NOTE (correction): used a -35°C cutoff, inconsistent with this entry's
+    own equation/description text (both state the standard, widely-cited
+    -38°C homogeneous-freezing threshold for pure water droplets - the
+    "limitations" field's -35°C was the odd one out). Aligned to -38°C.
+    """
+    if temp_c >= -38.0:
         return 0.0
-    return math.exp(0.5 * (-temp_c - 35.0))
+    return math.exp(0.5 * (-temp_c - 38.0))
 
 
 def calculate_two_moment_size_distribution(n0: float, lambda_param: float, diameter_m: float, mu: float = 0.0) -> float:
     """Calcul de la distribution en taille de gouttes N(D) = N0 * D^mu * exp(-lambda * D) (Gamma distribution)."""
     if diameter_m <= 0.0 or lambda_param <= 0.0:
         return 0.0
-    return n0 * (diameter_m ** mu) * math.exp(-lambda_param * diameter_m)
+    return n0 * (diameter_m**mu) * math.exp(-lambda_param * diameter_m)
 
 
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     # --- NUCLEATION ---
     EncyclopediaEntry(
         key="homogeneous_nucleation_ice",
@@ -40,11 +47,14 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Microphysique",
         equation="J_hom = A * exp(-Delta_G_crit / (k_B * T)) à T < -38 deg C",
         latex_equation=r"J_{\text{hom}}(T) = C \exp\left(-\frac{\Delta G^*}{k_B T}\right), \quad T \le -38^\circ\text{C}",
-        variables={"J_hom": "Taux de congélation spontanée (cm⁻³·s⁻¹)", "Delta_G": "Énergie libre critique de germination"},
+        variables={
+            "J_hom": "Taux de congélation spontanée (cm⁻³·s⁻¹)",
+            "Delta_G": "Énergie libre critique de germination",
+        },
         units={"J": "cm⁻³·s⁻¹"},
         description="Congélation spontanée des gouttelettes d'eau pure surfondue sans présence de noyaux glaçogènes lorsque la température descend en dessous de -38°C (235.15 K).",
         application_conditions=["Troposphère supérieure et cirrus"],
-        limitations=["Inexistante au-dessus de -35°C dans l'atmosphère rélle"],
+        limitations=["Inexistante au-dessus de -38°C dans l'atmosphère réelle"],
         references=["Pruppacher & Klett (1997)", "Koop et al. (2000) Nature"],
         compute_func=calculate_homogeneous_nucleation_rate,
     ),
@@ -62,7 +72,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Faible concentration d'INP à haute température (-5°C à -15°C)"],
         references=["Meyers et al. (1992) J. Appl. Meteor.", "DeMott et al. (2010) PNAS"],
     ),
-
     # --- PHASE TRANSITIONS ---
     EncyclopediaEntry(
         key="cloud_condensation_process",
@@ -99,14 +108,16 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Changements de phase",
         equation="dq_i/dt = 4 * C_crystal * (e - e_i) / Term_thermo",
         latex_equation=r"\frac{dq_i}{dt} = \frac{4\pi C (S_i - 1)}{\frac{L_s^2}{K R_v T^2} + \frac{1}{\rho q_{si} D_v}}",
-        variables={"Si": "Sursaturation par rapport à la glace (e / e_i)", "C": "Capacité géométrique du cristal de glace"},
+        variables={
+            "Si": "Sursaturation par rapport à la glace (e / e_i)",
+            "C": "Capacité géométrique du cristal de glace",
+        },
         units={"dq/dt": "kg/(kg·s)"},
         description="Transfert direct de vapeur d'eau vers la phase solide (déposition) ou de la glace vers la vapeur (sublimation) sans passer par la phase liquide.",
         application_conditions=["Nuages glacés et cirrus entre -10°C et -50°C"],
         limitations=["Forme géométrique des cristaux modifiant la constante C (plaques, aiguilles, dendrites)"],
         references=["Bergeron (1935)", "Pruppacher & Klett (1997)"],
     ),
-
     # --- HYDROMETEOR SPECIES ---
     EncyclopediaEntry(
         key="hydrometeor_cloud_water",
@@ -178,7 +189,6 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Nécessite la modélisation à 2 moments pour séparer graupel et grêle"],
         references=["Rutledge & Hobbs (1984)", "AROME ICE3 Scheme Manual"],
     ),
-
     # --- TWO MOMENT MICROPHYSICS ---
     EncyclopediaEntry(
         key="two_moment_microphysics_scheme",
