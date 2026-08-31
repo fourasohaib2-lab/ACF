@@ -3,13 +3,14 @@ Atmosphere Standard OACI (ISA), Barometric Formulas & Aerodynamic Parameters Mod
 """
 
 import math
-from typing import List
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
 # ---------------------------------------------------------------------------
 # Computational Functions for ISA Atmosphere & Aerodynamics
 # ---------------------------------------------------------------------------
+
 
 def calculate_isa_temperature(altitude_m: float) -> float:
     """Température ISA en K jusqu'à 11000m (Troposphère)."""
@@ -54,7 +55,7 @@ def calculate_mach_number(velocity_m_s: float, temp_k: float) -> float:
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
 
-ENTRIES: List[EncyclopediaEntry] = [
+ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="isa_standard_atmosphere_model",
         name="Atmosphère Normale OACI (Standard Atmosphere ISA)",
@@ -69,6 +70,36 @@ ENTRIES: List[EncyclopediaEntry] = [
         limitations=["Atmosphère idéale moyenne (ne reflète pas les conditions météo réelles du jour)"],
         references=["ICAO Doc 7488 / Manual of the ICAO Standard Atmosphere", "ISO 2533:1975"],
         compute_func=calculate_isa_temperature,
+    ),
+    EncyclopediaEntry(
+        # NOTE (addition, not a correction): the "isa_standard_atmosphere_model"
+        # entry above documents both T(z) and p(z) but its single compute_func
+        # only ever exposed T(z) - calculate_isa_pressure(), a genuinely correct
+        # implementation of the entry's own p(z) formula, was already defined in
+        # this file but never wired to any entry or called anywhere in the
+        # codebase (verified via grep). Verified numerically against standard
+        # ISA table values (0/5000/11000/15000 m all within 0.05%). Registered
+        # as its own entry per the golden rule (every real law gets registered)
+        # rather than left orphaned.
+        key="isa_standard_atmosphere_pressure",
+        name="Pression de l'Atmosphère Normale OACI (ISA Pressure Profile)",
+        domain="Aéronautique",
+        subdomain="Atmosphère de référence",
+        equation="p(z) = p0 * (1 - Gamma*z/T0)^(g/(R*Gamma))  [z<=11km]  ;  p(z) = p_11km * exp(-g*(z-11000)/(R*T_strat))  [z>11km]",
+        latex_equation=r"p(z) = p_0 \left(1 - \frac{\Gamma z}{T_0}\right)^{\frac{g}{R\Gamma}} \; (z \le 11\text{km}), \quad p(z) = p_{11\text{km}} e^{-\frac{g(z-11000)}{R T_{\text{strat}}}} \; (z > 11\text{km})",
+        variables={
+            "p0": "1013.25 hPa (101325 Pa) au niveau de la mer",
+            "T0": "288.15 K",
+            "Gamma": "6.5 K/km (lapse rate troposphérique)",
+            "g": "9.80665 m/s²",
+            "R": "287.0528 J/(kg·K) (constante spécifique de l'air sec)",
+        },
+        units={"p": "Pa"},
+        description="Profil vertical de pression de l'atmosphère normale OACI, formule barométrique troposphérique jusqu'à 11 km puis isotherme stratosphérique au-delà, utilisée pour le calage altimétrique standard (QNE).",
+        application_conditions=["Altimétrie aéronautique et performances d'avions"],
+        limitations=["Atmosphère idéale moyenne (ne reflète pas les conditions météo réelles du jour)"],
+        references=["ICAO Doc 7488 / Manual of the ICAO Standard Atmosphere", "ISO 2533:1975"],
+        compute_func=calculate_isa_pressure,
     ),
     EncyclopediaEntry(
         key="mach_number_flight",
@@ -92,7 +123,12 @@ ENTRIES: List[EncyclopediaEntry] = [
         subdomain="Mécanique des fluides",
         equation="Re = (rho * V * L) / mu",
         latex_equation=r"Re = \frac{\rho V L}{\mu} = \frac{V L}{\nu}",
-        variables={"rho": "Masse volumique (kg/m³)", "V": "Vitesse (m/s)", "L": "Longueur caractéristique de la corde d'aile (m)", "mu": "Viscosité dynamique"},
+        variables={
+            "rho": "Masse volumique (kg/m³)",
+            "V": "Vitesse (m/s)",
+            "L": "Longueur caractéristique de la corde d'aile (m)",
+            "mu": "Viscosité dynamique",
+        },
         units={"Re": "dimensionless"},
         description="Rapport entre les forces d'inertie et les forces de viscosité au sein de l'écoulement. Régit la transition de la couche limite de laminaire à turbulente.",
         application_conditions=["Soufflerie, conception d'aéronefs et simulation CFD"],
