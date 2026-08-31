@@ -4,20 +4,19 @@ Atmospheric Complexity Framework (ACF)
 Global Integrated Earth System Digital Twin Platform Test Suite (MISSION ACF-036)
 """
 
-from acf.digital_twin.planet_state import GlobalEarthState, PlanetState
-from acf.digital_twin.state_vector import GlobalEarthStateVector
-from acf.digital_twin.digital_twin_engine import DigitalTwinEngine, SimulationState
-from acf.digital_twin.synchronization.earth_synchronizer import EarthSynchronizationEngine, CouplingReport, SynchronizationReport
+from acf.digital_twin.ai.digital_reasoning import DigitalTwinReasoningEngine
 from acf.digital_twin.coupling.atmosphere_ocean import AtmosphereOceanCouplingEngine
 from acf.digital_twin.coupling.earthquake_tsunami import EarthquakeTsunamiCouplingEngine
 from acf.digital_twin.coupling.space_weather_atmosphere import SpaceWeatherAtmosphereCouplingEngine
-from acf.digital_twin.events.cascade_engine import CascadeRiskEngine, RiskCascadeGraph
+from acf.digital_twin.digital_twin_engine import DigitalTwinEngine
+from acf.digital_twin.events.cascade_engine import CascadeRiskEngine
 from acf.digital_twin.knowledge_graph.earth_graph import PlanetaryKnowledgeGraph
-from acf.digital_twin.ai.digital_reasoning import DigitalTwinReasoningEngine
-from acf.digital_twin.scenarios.future_projection import PlanetaryScenarioEngine
-from acf.digital_twin.visualization.digital_twin_dashboard import PlanetaryDashboard
-from acf.digital_twin.operations.operations_center import EarthOperationsCenter, OperationalSituation, GlobalAlertBoard
+from acf.digital_twin.operations.operations_center import EarthOperationsCenter
 from acf.digital_twin.reports.planetary_report import PlanetaryReportGenerator
+from acf.digital_twin.scenarios.future_projection import PlanetaryScenarioEngine
+from acf.digital_twin.state_vector import GlobalEarthStateVector
+from acf.digital_twin.synchronization.earth_synchronizer import EarthSynchronizationEngine
+from acf.digital_twin.visualization.digital_twin_dashboard import PlanetaryDashboard
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -36,9 +35,17 @@ def test_digital_twin_engine_and_state_vector():
 
 def test_earth_synchronization_engine():
     """Test du moteur de synchronisation et des rapports de couplage."""
+    # CORRECTED: used to unconditionally claim "SYNCHRONIZED" status
+    # and specific fabricated coupling-strength percentages
+    # (98.5/99.0/97.2/100.0/96.8) and "EXCELLENT (100% CONVERGENCE)"
+    # regardless of any real cross-domain data exchange. The domain
+    # pairs/flux_variable names are a genuine static declared coupling
+    # scope, kept.
     sync_report = EarthSynchronizationEngine.synchronize_all_components()
     assert sync_report.coupled_domains_count >= 5
-    assert "EXCELLENT" in sync_report.synchronization_quality
+    assert sync_report.synchronization_quality == "NOT_SYNCHRONIZED_NO_REAL_DATA_EXCHANGE_CONNECTED"
+    assert all(r.coupling_status == "NOT_SYNCHRONIZED" for r in sync_report.coupling_reports)
+    assert all(r.coupling_strength_pct is None for r in sync_report.coupling_reports)
 
 
 def test_cross_domain_coupling_physics():
@@ -72,8 +79,13 @@ def test_planetary_knowledge_graph_and_ai_reasoning():
     link = PlanetaryKnowledgeGraph.explain_planetary_link("Space Weather", "Atmosphere")
     assert "Joule heating" in link["physical_coupling_explanation"]
 
+    # CORRECTED: the branch selection and explanatory text are genuine
+    # (real physical thresholds), but this used to also claim a fixed
+    # fabricated "ai_confidence_pct" (94.2 for this branch) regardless
+    # of any real evidence - no calibrated confidence model exists.
     ai_exp = DigitalTwinReasoningEngine.explain_system_event("Tropical Cyclone")
-    assert ai_exp["ai_confidence_pct"] > 90.0
+    assert ai_exp["ai_confidence_pct"] is None
+    assert "26.5" in ai_exp["explanation"]
 
 
 def test_scenario_projections_and_dashboard():
@@ -89,9 +101,8 @@ def test_scenario_projections_and_dashboard():
     assert dash["workspace_name"] == "PLANETARY DIGITAL TWIN"
 
 
-test_operations_center_and_briefing_reports = lambda: (
+def test_operations_center_and_briefing_reports():
     _test_ops_and_reports()
-)
 
 
 def _test_ops_and_reports():
