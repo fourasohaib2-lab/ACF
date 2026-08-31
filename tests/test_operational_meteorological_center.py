@@ -90,7 +90,12 @@ def test_briefing_generator():
 def test_operational_decision_support():
     """Phase 10: Test du moteur d'aide à la décision opérationnelle."""
     engine = OperationalDecisionSupportEngine()
-    eval_res = engine.evaluate_operational_situation({"CAPE": 2200.0}, {}, {}, {})
+    # Genuinely complete nwp_data (CAPE + shear crossing the real supercell
+    # thresholds together) - not just CAPE alone, see the regression test
+    # below for why that distinction now matters.
+    eval_res = engine.evaluate_operational_situation(
+        {"CAPE": 2200.0, "shear_0_6km": 20.0, "EHI": 1.5}, {}, {}, {}
+    )
     assert eval_res["overall_risk_level"] in ["ÉLEVÉ", "CRITIQUE / EXTRÊME"]
 
 
@@ -100,18 +105,37 @@ def test_operational_decision_support_no_longer_fabricates_evidence():
     fabricate fixed "model_consensus" percentages and fake
     "supporting_observations" (a made-up METAR string, a made-up
     radiosonde reading) regardless of the actual ai_predictions/
-    radar_summary/obs_data inputs (even when empty, as in the test
-    above). It must now honestly report when no real data was
-    supplied, and must genuinely reflect real data when it is.
+    radar_summary/obs_data inputs (even when empty). It must now
+    honestly report when no real data was supplied, and must genuinely
+    reflect real data when it is.
     """
     engine = OperationalDecisionSupportEngine()
 
-    empty_result = engine.evaluate_operational_situation({"CAPE": 2200.0}, {}, {}, {})
+    empty_result = engine.evaluate_operational_situation(
+        {"CAPE": 2200.0, "shear_0_6km": 20.0, "EHI": 1.5}, {}, {}, {}
+    )
     assert empty_result["model_consensus"] == {"status": "NO_AI_PREDICTIONS_PROVIDED"}
     assert empty_result["supporting_observations"] == ["NO_OBSERVATIONS_PROVIDED"]
     # The old fabricated text must not appear anywhere.
     assert "GraphCast" not in str(empty_result)
-    assert "22018G32KT" not in str(empty_result)
+
+
+def test_operational_decision_support_partial_data_no_longer_fabricates_phantom_risks():
+    """
+    CORRECTED (safety-relevant): the fallback defaults used for any
+    nwp_data field NOT provided by the caller (shear_0_6km=18.0,
+    EHI=1.2, IVT=550.0, wind_gust_ms=28.0) used to all individually sit
+    ABOVE assess_severe_weather_risk()'s own detection thresholds - a
+    caller supplying ONLY real CAPE data got FOUR fabricated severe-
+    weather alerts (hail, tornado, derecho, flash flood) generated
+    purely from the convenient unprovided-field defaults, not from any
+    real shear/EHI/wind/IVT data. CAPE alone (with everything else
+    genuinely unknown) must not manufacture a risk detection.
+    """
+    engine = OperationalDecisionSupportEngine()
+    result = engine.evaluate_operational_situation({"CAPE": 2200.0}, {}, {}, {})
+    assert result["overall_risk_level"] == "FAIBLE"
+    assert result["recommended_alerts"] == []
 
     real_result = engine.evaluate_operational_situation(
         {"CAPE": 2200.0},

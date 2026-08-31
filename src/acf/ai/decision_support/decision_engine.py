@@ -4,9 +4,10 @@ Atmospheric Complexity Framework (ACF)
 AI-Assisted Operational Forecast Decision & Risk Assessment Engine
 """
 
-from typing import Any, Dict
-from acf.science.parameters.engine import ParameterEngine
+from typing import Any
+
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
+from acf.science.parameters.engine import ParameterEngine
 
 
 class ForecastDecisionEngine:
@@ -18,7 +19,7 @@ class ForecastDecisionEngine:
         self.param_engine = ParameterEngine()
         self.graph = KnowledgeGraphEngine()
 
-    def assess_severe_weather_risk(self, atmospheric_state: Dict[str, float]) -> Dict[str, Any]:
+    def assess_severe_weather_risk(self, atmospheric_state: dict[str, float]) -> dict[str, Any]:
         """
         Évalue automatiquement le niveau de risque pour les phénomènes météorologiques violents
         et génère les recommandations opérationnelles assorties d'explications physiques.

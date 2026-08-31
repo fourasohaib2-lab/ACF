@@ -45,13 +45,28 @@ class OperationalDecisionSupportEngine:
         genuinely used when they contain data, and the response
         honestly reports when they don't, instead of fabricating
         content to fill the gap.
+
+        FURTHER CORRECTED (this pass): the fallback defaults used for
+        any nwp_data field NOT provided by the caller (shear_0_6km=18.0,
+        EHI=1.2, IVT=550.0, wind_gust_ms=28.0, CAPE=2000.0) were all
+        individually ABOVE assess_severe_weather_risk()'s own detection
+        thresholds (shear>=15, EHI>=1.0, IVT>=500, wind_gust>=25,
+        CAPE>=1500) - meaning a caller supplying ONLY {"CAPE": 2200.0}
+        (genuinely real CAPE, everything else unknown) got FOUR
+        fabricated severe-weather alerts (hail, tornado, derecho, flash
+        flood) generated purely from the convenient unprovided-field
+        defaults, not from any real shear/EHI/wind/IVT data. Now
+        defaults to 0.0 (a genuine "no signal" baseline, matching
+        assess_severe_weather_risk()'s own internal .get(key, 0.0)
+        convention) so a field the caller never supplied cannot
+        silently manufacture a risk detection.
         """
         state = {
-            "CAPE": nwp_data.get("CAPE", 2000.0),
-            "shear_0_6km": nwp_data.get("shear_0_6km", 18.0),
-            "EHI": nwp_data.get("EHI", 1.2),
-            "IVT": nwp_data.get("IVT", 550.0),
-            "wind_gust_ms": nwp_data.get("wind_gust_ms", 28.0),
+            "CAPE": nwp_data.get("CAPE", 0.0),
+            "shear_0_6km": nwp_data.get("shear_0_6km", 0.0),
+            "EHI": nwp_data.get("EHI", 0.0),
+            "IVT": nwp_data.get("IVT", 0.0),
+            "wind_gust_ms": nwp_data.get("wind_gust_ms", 0.0),
         }
 
         assessment = self.base_engine.assess_severe_weather_risk(state)
