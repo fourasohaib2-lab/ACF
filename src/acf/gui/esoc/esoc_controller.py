@@ -6,6 +6,8 @@ from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_workspace import WorkspaceManager
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.session_manager import SessionManager
+from acf.simulation_engine.climate_scenarios.cmip6 import SSPScenario
+from acf.simulation_engine.climate_scenarios.ssp_engine import SSPEngine
 
 
 class ESOCController:
@@ -102,12 +104,32 @@ class ESOCController:
         return {"status": "NOT_ASSESSED_NO_HAZARD_DETECTION_ENGINE_CONNECTED", "hazards_assessed": False}
 
     def handle_run_climate(self, ssp: str = "SSP2-4.5") -> dict[str, Any]:
-        """Compute climate scenario projection."""
+        """Compute climate scenario projection.
+
+        NOTE (correction): `ssp` was accepted but never used - the
+        registry's "ssp_engine" module is a single SSPEngine instance
+        constructed once at startup with a hard-coded SSP2-4.5 scenario
+        (module_registry.py), and SSPEngine.evaluate_horizon(target_year)
+        has no way to take a scenario per call (SSPScenario is bound at
+        SSPEngine.__init__ time, not evaluate_horizon() time) - so ANY
+        `ssp` value passed here (e.g. "SSP5-8.5") silently evaluated
+        SSP2-4.5 instead. The registry module presence is still checked
+        (as a real "is this subsystem available" signal), but the actual
+        evaluation now constructs a scenario-specific SSPEngine for the
+        requested `ssp`, genuinely honoring the caller's choice.
+        """
         ssp_eng = self.registry.get_module("ssp_engine")
-        if ssp_eng:
-            res = ssp_eng.evaluate_horizon(2050)
-            return {"status": "SUCCESS", "projection": res}
-        return {"status": "ERROR"}
+        if not ssp_eng:
+            return {"status": "ERROR"}
+
+        try:
+            scenario = SSPScenario(ssp)
+        except ValueError:
+            valid = [s.value for s in SSPScenario]
+            return {"status": "ERROR", "reason": f"unknown SSP scenario {ssp!r} - valid: {valid}"}
+
+        res = SSPEngine(scenario).evaluate_horizon(2050)
+        return {"status": "SUCCESS", "projection": res}
 
     def handle_verify_forecast(self) -> dict[str, Any]:
         """
