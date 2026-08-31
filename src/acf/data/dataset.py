@@ -7,8 +7,9 @@ Dataset Core Object
 Internal representation of meteorological datasets.
 """
 
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
+from typing import Any
 from uuid import uuid4
 
 
@@ -49,11 +50,11 @@ class Dataset:
         # Containers
         #
 
-        self.variables = {}
+        self.variables: dict[str, Any] = {}
 
-        self.dimensions = {}
+        self.dimensions: dict[str, Any] = {}
 
-        self.metadata = {}
+        self.metadata: dict[str, Any] = {}
 
         self.attributes = self.metadata
 
@@ -63,13 +64,13 @@ class Dataset:
 
         self.validated = False
 
-        self.errors = []
+        self.errors: list[Any] = []
 
         #
         # Dates
         #
 
-        self.created = datetime.now().isoformat()
+        self.created = datetime.now(timezone.utc).isoformat()
 
         self.modified = self.created
 
@@ -123,7 +124,7 @@ class Dataset:
     def add_dimension(
         self,
         name: str,
-        size: int,
+        size: int | None,
     ):
 
         self.dimensions[name] = size
@@ -179,7 +180,7 @@ class Dataset:
         self.touch()
 
     ##################################################
-    # Metadata
+    # Metadata & Attributes
     ##################################################
 
     def set_metadata(
@@ -202,6 +203,45 @@ class Dataset:
         return self.metadata.get(name)
 
     ##################################################
+
+    def has_metadata(
+        self,
+        name: str,
+    ) -> bool:
+
+        return name in self.metadata
+
+    ##################################################
+
+    def set_attribute(
+        self,
+        name: str,
+        value,
+    ):
+
+        self.attributes[name] = value
+
+        self.touch()
+
+    ##################################################
+
+    def get_attribute(
+        self,
+        name: str,
+    ):
+
+        return self.attributes.get(name)
+
+    ##################################################
+
+    def has_attribute(
+        self,
+        name: str,
+    ) -> bool:
+
+        return name in self.attributes
+
+    ##################################################
     # Validation
     ##################################################
 
@@ -210,11 +250,9 @@ class Dataset:
         self.errors = []
 
         if not self.name:
-
             self.errors.append("Dataset name missing")
 
         if not self.variables:
-
             self.errors.append("No variables found")
 
         self.validated = len(self.errors) == 0
@@ -227,7 +265,7 @@ class Dataset:
 
     def touch(self):
 
-        self.modified = datetime.now().isoformat()
+        self.modified = datetime.now(timezone.utc).isoformat()
 
     ##################################################
 
@@ -248,23 +286,14 @@ class Dataset:
     def summary(self):
 
         return {
-
             "id": self.id,
-
             "name": self.name,
-
             "source": self.source,
-
             "filetype": self.filetype,
-
             "variables": self.variable_names,
-
             "dimensions": self.dimension_names,
-
             "validated": self.validated,
-
             "errors": self.errors,
-
         }
 
     ##################################################
@@ -277,11 +306,4 @@ class Dataset:
 
     def __repr__(self):
 
-        return (
-
-            f"Dataset("
-            f"name='{self.name}', "
-            f"type='{self.filetype}', "
-            f"variables={len(self.variables)})"
-
-        )
+        return f"Dataset(name='{self.name}', type='{self.filetype}', variables={len(self.variables)})"

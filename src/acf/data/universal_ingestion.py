@@ -5,12 +5,14 @@ Universal Earth Observation Data Ingestion Engine
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 from acf.data.dataset import Dataset
 from acf.data.detector import FormatDetector
-from acf.science.parameters.engine import ParameterEngine
+from acf.data.readers.epygram_reader import EPyGrAMReader
 from acf.science.encyclopedia.knowledge_graph.graph_engine import KnowledgeGraphEngine
 from acf.science.encyclopedia.knowledge_graph.nodes import KnowledgeNode
+from acf.science.parameters.engine import ParameterEngine
 
 
 class UniversalDataIngestionEngine:
@@ -22,7 +24,7 @@ class UniversalDataIngestionEngine:
         self.param_engine = ParameterEngine()
         self.graph = KnowledgeGraphEngine()
 
-    def ingest(self, filepath: str | Path, dataset_name: Optional[str] = None) -> Dataset:
+    def ingest(self, filepath: str | Path, dataset_name: str | None = None) -> Dataset:
         """
         Ingère automatiquement un fichier de n'importe quel format supporté,
         extrait ses métadonnées, associe les paramètres aux registres scientifiques
@@ -34,6 +36,28 @@ class UniversalDataIngestionEngine:
         name = dataset_name or path.stem
         dataset = Dataset(name=name, filepath=path, filetype=filetype, source="UniversalIngestion")
 
+        # Ingestion spécifique via EPyGrAM pour FA / LFA / LFI
+        if filetype in ["FA", "LFA", "LFI"]:
+            reader = EPyGrAMReader()
+            with reader.open(path) as r:
+                geom = r.geometry()
+                meta = r.metadata()
+                fields = r.list_fields()
+                proj = r.projection()
+                dom = r.domain()
+                tval = r.time_validity()
+                vlevels = r.vertical_levels()
+
+                dataset.set_metadata("epygram", meta)
+                dataset.set_metadata("geometry", geom)
+                dataset.set_metadata("fields", fields)
+                dataset.set_metadata("projection", proj)
+                dataset.set_metadata("domain", dom)
+                dataset.set_metadata("time_validity", tval)
+                dataset.set_metadata("vertical_levels", vlevels)
+                dataset.set_attribute("projection", proj)
+                dataset.set_attribute("domain_grid", geom.get("grid_type", "Lambert93"))
+
         # 1. Extraction automatique des coordonnées & grille
         spatial_meta = self._extract_spatial_metadata(path, filetype)
         time_meta = self._extract_temporal_metadata(path)
@@ -42,13 +66,20 @@ class UniversalDataIngestionEngine:
         dataset.set_metadata("spatial", spatial_meta)
         dataset.set_metadata("temporal", time_meta)
         dataset.set_metadata("provenance", provenance_meta)
-        dataset.set_metadata("crs", spatial_meta.get("crs", "EPSG:4326"))
-        dataset.set_metadata("bounding_box", spatial_meta.get("bounding_box", {}))
+        # NOTE (correction): the ".get(key, EPSG:4326 / {} / 181 / 360 / 1)"
+        # fallbacks here used to mask _extract_spatial_metadata()/
+        # _extract_temporal_metadata()'s own fabrication with a second
+        # layer of fabricated defaults. Both helpers are now honest
+        # (they return None rather than omitting the key), so these
+        # plain lookups correctly propagate that "not extracted" state
+        # instead of quietly substituting another invented value.
+        dataset.set_metadata("crs", spatial_meta.get("crs"))
+        dataset.set_metadata("bounding_box", spatial_meta.get("bounding_box"))
 
         # Dimensions canoniques
-        dataset.add_dimension("lat", spatial_meta.get("n_lat", 181))
-        dataset.add_dimension("lon", spatial_meta.get("n_lon", 360))
-        dataset.add_dimension("time", time_meta.get("n_times", 1))
+        dataset.add_dimension("lat", spatial_meta.get("n_lat"))
+        dataset.add_dimension("lon", spatial_meta.get("n_lon"))
+        dataset.add_dimension("time", time_meta.get("n_times"))
 
         # 2. Ingestion des variables & cartographie des paramètres physiques
         variables_dict = self._detect_and_map_variables(path, filetype)
@@ -89,42 +120,74 @@ class UniversalDataIngestionEngine:
 
         return dataset
 
-    def _extract_spatial_metadata(self, path: Path, filetype: str) -> Dict[str, Any]:
+    def _extract_spatial_metadata(self, path: Path, filetype: str) -> dict[str, Any]:
+        """
+        NOTE (correction): this used to unconditionally claim a fixed
+        global 1deg regular lat-lon grid ("EPSG:4326", 181x360) for
+        EVERY ingested file regardless of filetype or content - a
+        1.3km AROME domain and a global IFS grid would get byte-
+        identical "spatial metadata". No real GRIB2/NetCDF grid reader
+        is wired up here (unlike the FA/LFA/LFI path above, which
+        genuinely uses EPyGrAMReader, fixed earlier this session). Not
+        fabricated.
+        """
         return {
-            "crs": "EPSG:4326",
-            "bounding_box": {"min_lat": -90.0, "max_lat": 90.0, "min_lon": -180.0, "max_lon": 180.0},
-            "n_lat": 181,
-            "n_lon": 360,
-            "resolution_deg": 1.0,
-            "grid_type": "regular_ll",
+            "crs": None,
+            "bounding_box": None,
+            "n_lat": None,
+            "n_lon": None,
+            "resolution_deg": None,
+            "grid_type": None,
+            "status": "NOT_EXTRACTED_NO_GRID_READER_WIRED_FOR_THIS_FORMAT",
         }
 
-    def _extract_temporal_metadata(self, path: Path) -> Dict[str, Any]:
+    def _extract_temporal_metadata(self, path: Path) -> dict[str, Any]:
+        """
+        NOTE (correction): this used to unconditionally claim a fixed
+        "2026-07-30" reference/valid time and "12h lead time" for
+        EVERY ingested file regardless of its actual content. Not
+        fabricated.
+        """
         return {
-            "reference_time": "2026-07-30T00:00:00Z",
-            "valid_time": "2026-07-30T12:00:00Z",
-            "lead_time_hours": 12,
-            "n_times": 1,
+            "reference_time": None,
+            "valid_time": None,
+            "lead_time_hours": None,
+            "n_times": None,
+            "status": "NOT_EXTRACTED_NO_TIME_READER_WIRED_FOR_THIS_FORMAT",
         }
 
-    def _extract_provenance_metadata(self, path: Path, filetype: str) -> Dict[str, Any]:
+    def _extract_provenance_metadata(self, path: Path, filetype: str) -> dict[str, Any]:
+        """
+        NOTE (correction): source_file/format are genuinely derived
+        from the real arguments, but institution/model_name/run_cycle
+        used to be fixed guesses ("Météo-France / WMO Operational
+        Center", "ARPEGE / AROME / ALADIN / IFS", "00Z") claimed
+        regardless of the file's actual content - no real header/
+        provenance reader is wired up for this format. Not fabricated.
+        """
         return {
-            "institution": "WMO / Operational NWP Center",
-            "model_name": "IFS / AROME / GFS",
-            "run_cycle": "00Z",
+            "institution": None,
+            "model_name": None,
+            "run_cycle": None,
             "source_file": path.name,
             "format": filetype,
+            "status": "NOT_EXTRACTED_NO_PROVENANCE_READER_WIRED_FOR_THIS_FORMAT",
         }
 
-    def _detect_and_map_variables(self, path: Path, filetype: str) -> Dict[str, Dict[str, Any]]:
-        return {
-            "temperature": {"unit": "K", "long_name": "Air Temperature at 2m", "cf_standard_name": "air_temperature", "grib2_code": "0,0,0"},
-            "pressure": {"unit": "Pa", "long_name": "Surface Pressure", "cf_standard_name": "air_pressure", "grib2_code": "0,3,0"},
-            "humidity": {"unit": "%", "long_name": "Relative Humidity", "cf_standard_name": "relative_humidity", "grib2_code": "0,1,1"},
-            "CAPE": {"unit": "J/kg", "long_name": "Convective Available Potential Energy", "cf_standard_name": "atmosphere_convective_available_potential_energy", "grib2_code": "0,7,6"},
-            "wind_u": {"unit": "m/s", "long_name": "Eastward Wind", "cf_standard_name": "eastward_wind", "grib2_code": "0,2,2"},
-            "wind_v": {"unit": "m/s", "long_name": "Northward Wind", "cf_standard_name": "northward_wind", "grib2_code": "0,2,3"},
-        }
+    def _detect_and_map_variables(self, path: Path, filetype: str) -> dict[str, dict[str, Any]]:
+        """
+        NOTE (correction): this used to unconditionally claim the same
+        fixed 6-variable list (temperature/pressure/humidity/CAPE/
+        wind_u/wind_v) was present in EVERY ingested file regardless of
+        filetype or actual content - a radar reflectivity file or a
+        soil-moisture dataset would get the exact same "detected"
+        variable list as an AROME forecast. No real GRIB2/NetCDF/BUFR
+        variable-table reader is wired up here (eccodes and netCDF4
+        are installed in this environment - see
+        release.dependency_validator, fixed earlier this session - but
+        no code here actually calls them). Not fabricated.
+        """
+        return {}
 
     def _run_quality_control(self, dataset: Dataset):
         dataset.errors = []
@@ -155,4 +218,6 @@ class UniversalDataIngestionEngine:
         for var_name in dataset.variable_names:
             param = self.param_engine.get(var_name)
             if param:
-                self.graph.add_edge(ds_key, param.key, relation="contains_parameter", cause="Automatic variable mapping")
+                self.graph.add_edge(
+                    ds_key, param.key, relation="contains_parameter", cause="Automatic variable mapping"
+                )
