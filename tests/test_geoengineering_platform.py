@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Global Geoengineering, Climate Intervention & Planetary Boundaries Platform Test Suite (MISSION ACF-040)
 """
 
+import pytest
+
 from acf.geoengineering.awci_geoengineering_dashboard import PlanetaryBoundariesDashboard
 from acf.geoengineering.carbon_cycle import CarbonCycleEngine, CarbonFluxes, CarbonReservoirs
 from acf.geoengineering.carbon_removal import CarbonRemovalEngine, CDRTechniqueResult
@@ -39,6 +41,15 @@ def test_solar_radiation_management_engine():
     mcb = SolarRadiationManagementEngine.simulate_marine_cloud_brightening(sea_salt_injection_rate_t_s=100.0)
     assert mcb.radiative_forcing_w_m2 < 0.0
 
+    # CORRECTED: regional_monsoon_disruption_pct used to grow
+    # unbounded past 100% for large (but plausible) injection rates -
+    # a "% reduction" cannot physically exceed 100%. See
+    # solar_radiation_management.py.
+    sai_large = SolarRadiationManagementEngine.simulate_stratospheric_aerosol_injection(
+        so2_injection_megatons_per_year=200.0
+    )
+    assert sai_large.regional_monsoon_disruption_pct == 100.0
+
 
 def test_carbon_removal_and_restoration_engines():
     """Test des techniques d'élimination du CO2 (DAC, ERW) et de la restauration des écosystèmes."""
@@ -63,6 +74,12 @@ def test_greenhouse_gas_and_carbon_cycle_engines():
     assert isinstance(ghg_prop, GHGProperties)
     assert ghg_prop.gwp_100 == 23500.0
 
+    # CORRECTED: an unrecognized gas key used to silently fall back to
+    # CO2's properties, mislabeled as if it were the requested gas
+    # (e.g. "hfc" - named in this module's own docstring as covered,
+    # but never in GHG_REGISTRY). See greenhouse_gases.py.
+    assert GreenhouseGasEngine.get_ghg_properties("hfc") is None
+
     cycle = CarbonCycleEngine.get_current_state()
     assert "reservoirs" in cycle
     assert isinstance(cycle["reservoirs"], CarbonReservoirs)
@@ -72,9 +89,24 @@ def test_greenhouse_gas_and_carbon_cycle_engines():
 
 def test_climate_ai_and_scenario_engine():
     """Test du moteur de décision par IA et des projections d'émissions CMIP6/SSP."""
-    decision = ClimateDecisionEngine.evaluate_intervention_strategy(target_cooling_k=1.0)
-    assert "7_scientific_report" in decision
-    assert decision["target_cooling_k"] == 1.0
+    # CORRECTED: every field of this pipeline used to be a fixed
+    # narrative string identical regardless of target_cooling_k (e.g.
+    # a claimed "IPCC AR6 / WMO Compliant Assessment Report"). Now the
+    # SAI deployment is genuinely computed from target_cooling_k via
+    # SolarRadiationManagementEngine's own real formula, and the
+    # scenario/report claims that require a real climate model are
+    # honestly None instead of fabricated. See climate_ai.py.
+    decision_small = ClimateDecisionEngine.evaluate_intervention_strategy(target_cooling_k=0.5)
+    decision_large = ClimateDecisionEngine.evaluate_intervention_strategy(target_cooling_k=2.0)
+    assert decision_small["target_cooling_k"] == 0.5
+    # A larger cooling target must require more SO2, not the same fixed amount.
+    assert (
+        decision_large["required_sai_so2_megatons_per_year"]
+        > decision_small["required_sai_so2_megatons_per_year"]
+    )
+    assert decision_small["required_sai_deployment"].global_temperature_cooling_k == pytest.approx(0.5, rel=1e-6)
+    assert decision_small["multi_decade_scenario_pathway"] is None
+    assert decision_small["scientific_report"] is None
 
     ssp = ClimateScenarioEngine.get_scenario("ssp2_45")
     assert isinstance(ssp, SSPScenario)

@@ -47,5 +47,15 @@ class GreenhouseGasEngine:
         return 5.35 * math.log(c_ppm / c0_ppm)
 
     @classmethod
-    def get_ghg_properties(cls, gas_key: str) -> GHGProperties:
-        return GHG_REGISTRY.get(gas_key.lower(), GHG_REGISTRY["co2"])
+    def get_ghg_properties(cls, gas_key: str) -> GHGProperties | None:
+        """
+        Retourne les propriétés radiatives du GES demandé, ou None si inconnu.
+
+        NOTE (correction — silent mislabeling): an unrecognized gas_key
+        (e.g. "hfc"/"pfc" - both named in this module's own docstring
+        as covered gases but never added to GHG_REGISTRY - or a typo)
+        used to silently fall back to CO2's properties, mislabeled as
+        if it were the requested gas. get_ghg_properties("hfc") used
+        to return a GHGProperties(gas_name="Carbon Dioxide", ...).
+        """
+        return GHG_REGISTRY.get(gas_key.lower())

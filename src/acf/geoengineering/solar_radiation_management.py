@@ -38,7 +38,13 @@ class SolarRadiationManagementEngine:
         """
         forcing = -0.45 * so2_injection_megatons_per_year
         cooling = abs(CLIMATE_SENSITIVITY_LAMBDA * forcing)
-        disruption = 1.2 * so2_injection_megatons_per_year  # % de réduction des précipitations en mousson Asie/Afrique
+        # % de réduction des précipitations en mousson Asie/Afrique - approximation
+        # linéaire non calibrée au-delà des scénarios de déploiement typiques (jusqu'à
+        # ~5-10 Mt SO2/an) ; clampée à 100% (une "réduction" ne peut pas dépasser
+        # l'intégralité des précipitations - le modèle linéaire non-clampé donnait
+        # des valeurs physiquement impossibles > 100% pour de gros scénarios
+        # d'injection, par ex. 120% à 100 Mt SO2/an).
+        disruption = min(100.0, 1.2 * so2_injection_megatons_per_year)
 
         return SRMResult(
             technique_name="Stratospheric Aerosol Injection (SAI)",
