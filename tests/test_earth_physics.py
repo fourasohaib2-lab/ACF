@@ -28,6 +28,7 @@ from acf.earth_physics.ocean_physics.mixing import OceanVerticalMixing
 from acf.earth_physics.ocean_physics.ocean_dynamics import OceanPrimitiveEquations
 from acf.earth_physics.ocean_physics.sea_ice_interaction import OceanSeaIceCoupling
 from acf.earth_physics.radiation.greenhouse_effect import GreenhouseEffectModel
+from acf.science.surface_fire import PenmanMonteithFAO56
 from acf.earth_physics.radiation.longwave_radiation import LongwaveRadiationModel
 from acf.earth_physics.radiation.radiative_balance import RadiativeBalanceSolver
 from acf.earth_physics.radiation.solar_radiation import SolarRadiationModel
@@ -126,8 +127,26 @@ def test_ocean_cryosphere_and_land_physics():
     alb = SurfaceAlbedoModel.compute_effective_albedo("Forest", 50.0)
     assert 0.4 < alb < 0.5
 
+    # CORRECTED: this module's own title/docstring used to call this
+    # "Équation de Penman-Monteith" despite the formula having no vapor
+    # pressure deficit, wind speed, or resistance terms - not actually
+    # Penman-Monteith. Docstrings fixed to honestly label it a
+    # simplified linear proxy and point to the real, reference-verified
+    # implementation (science/surface_fire.py's PenmanMonteithFAO56).
     pet = EvapotranspirationModel.potential_evapotranspiration_mm_day(200.0, 25.0)
     assert pet > 0.0
+    assert "PAS l'équation de" in EvapotranspirationModel.__doc__
+    real_pet = PenmanMonteithFAO56.calculate(
+        net_radiation_mj_m2_day=200.0 * 0.0864,  # W/m^2 -> MJ/m^2/day
+        soil_heat_flux_mj_m2_day=0.0,
+        temperature_c=25.0,
+        wind_speed_2m_m_s=2.0,
+        actual_vapor_pressure_kpa=1.5,
+    )
+    # The two must NOT coincidentally agree - proof this proxy is a
+    # genuinely different (simplified) calculation, not an equivalent
+    # reformulation of real Penman-Monteith.
+    assert pet != pytest.approx(real_pet, rel=0.05)
 
 
 def test_carbon_cycle_and_coupled_solver():
