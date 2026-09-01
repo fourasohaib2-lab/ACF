@@ -393,3 +393,45 @@ def test_geodesy_laws_registered_in_scientific_registry():
 
     utm = ScientificRegistry.get("utm_zone_selection")
     assert utm.calculate(longitude_deg=3.0) == 31
+
+
+def test_lcc_2sp_law_matches_pyproj_ground_truth():
+    """
+    _lcc_2sp_forward()'s actual body (Snyder 1987 formulas 15-1..15-4) had
+    zero test coverage - only registration was checked above, never a real
+    calculate() call. Cross-verified numerically against PROJ's own LCC
+    implementation (independent ground truth ACF already depends on) rather
+    than trusting the formula transcription by inspection alone.
+    """
+    lcc = ScientificRegistry.get("lambert_conformal_conic_2sp")
+    lat1, lat2, lat0, lon0 = 44.0, 49.0, 46.5, 3.0  # France Lambert-93-like
+    lat, lon = 48.8566, 2.3522  # Paris
+
+    result = lcc.calculate(
+        lat_deg=lat, lon_deg=lon, lat1_deg=lat1, lat2_deg=lat2, lat0_deg=lat0, lon0_deg=lon0
+    )
+
+    proj_str = f"+proj=lcc +lat_1={lat1} +lat_2={lat2} +lat_0={lat0} +lon_0={lon0} +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+    transformer = pyproj.Transformer.from_crs("EPSG:4326", pyproj.CRS.from_proj4(proj_str), always_xy=True)
+    expected_x, expected_y = transformer.transform(lon, lat)
+
+    assert result["easting_m"] == pytest.approx(expected_x, abs=1e-3)
+    assert result["northing_m"] == pytest.approx(expected_y, abs=1e-3)
+
+
+def test_albers_equal_area_law_matches_pyproj_ground_truth():
+    """Same cross-verification as the LCC test above, for _albers_equal_area_forward() (Snyder 14-1..14-4)."""
+    albers = ScientificRegistry.get("albers_equal_area_conic")
+    lat1, lat2, lat0, lon0 = 29.5, 45.5, 23.0, -96.0  # USA Albers-like
+    lat, lon = 39.7392, -104.9903  # Denver
+
+    result = albers.calculate(
+        lat_deg=lat, lon_deg=lon, lat1_deg=lat1, lat2_deg=lat2, lat0_deg=lat0, lon0_deg=lon0
+    )
+
+    proj_str = f"+proj=aea +lat_1={lat1} +lat_2={lat2} +lat_0={lat0} +lon_0={lon0} +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+    transformer = pyproj.Transformer.from_crs("EPSG:4326", pyproj.CRS.from_proj4(proj_str), always_xy=True)
+    expected_x, expected_y = transformer.transform(lon, lat)
+
+    assert result["easting_m"] == pytest.approx(expected_x, abs=1e-3)
+    assert result["northing_m"] == pytest.approx(expected_y, abs=1e-3)
