@@ -35,7 +35,7 @@ class PlanetaryBoundariesSimulator:
         - only the mismatched summary is fixed, now computed from the
         actual entries instead of hardcoded.
         """
-        boundaries = {
+        boundaries: dict[str, Any] = {
             "climate_change": {"status": "TRANSGRESSED", "co2_ppm": 422.5, "boundary_limit": 350.0},
             "biosphere_integrity": {"status": "TRANSGRESSED", "extinction_rate_e_msy": 100.0},
             "freshwater_change": {"status": "TRANSGRESSED", "blue_water_stress_pct": 18.4},

@@ -14,7 +14,7 @@ class SolidEarthGeomagneticEngine:
     """
 
     @staticmethod
-    def calculate_dipole_field(latitude_deg: float, altitude_km: float = 0.0) -> dict[str, float | None]:
+    def calculate_dipole_field(latitude_deg: float, altitude_km: float = 0.0) -> dict[str, float | str | None]:
         """
         Calcul d'un champ magnétique dipolaire centré de référence (M0 = 7.8e22 A.m²).
         B_r = -2 * B0 * (Re / r)³ * sin(lat)
