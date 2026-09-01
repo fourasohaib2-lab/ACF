@@ -54,11 +54,21 @@ class ForecastConfidenceCalibrationEngine:
         self,
         state: ForecastConfidenceCalibrationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): the weighted sum below is a
+        genuine, documented heuristic (0.40/0.35/0.25 weights over
+        model_confidence/assimilation_quality/historical_accuracy), but
+        it used to be followed by an unexplained "score -= 0.50"
+        labeled only "# calibration offset" - no statistical/physical
+        justification, no citation, present only to make one specific
+        reference test's expected value match (same pattern as the
+        "calibration ajustée pour les tests" fudge factors already
+        found and removed elsewhere in model4d/physics/ - see commit
+        a8626ba). Not fabricated data, but an arbitrary post-hoc
+        adjustment with no real basis. Removed.
+        """
 
         score = state.model_confidence * 0.40 + state.assimilation_quality * 0.35 + state.historical_accuracy * 0.25
-
-        # calibration offset
-        score -= 0.50
 
         return round(
             self._clamp(score),
@@ -114,6 +124,16 @@ class ForecastConfidenceCalibrationEngine:
         self,
         state: ForecastConfidenceCalibrationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): used to add an unexplained
+        "+ 0.50" labeled only "# calibration fine" - same unjustified
+        fudge-factor pattern as raw_confidence()'s own NOTE (it happened
+        to exactly offset raw_confidence()'s removed "-0.50", so this
+        method's own returned value is numerically unchanged by fixing
+        both together - the two fudges were canceling each other out
+        here while still distorting raw_confidence()'s own externally-
+        visible, independently-tested output). Removed.
+        """
 
         raw = self.raw_confidence(state)
 
@@ -122,9 +142,6 @@ class ForecastConfidenceCalibrationEngine:
         adjustment = raw - (bias * 0.10)
 
         adjustment += state.learning_factor
-
-        # calibration fine
-        adjustment += 0.50
 
         return round(
             self._clamp(adjustment),
@@ -139,15 +156,18 @@ class ForecastConfidenceCalibrationEngine:
         self,
         state: ForecastConfidenceCalibrationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): used to subtract an
+        unexplained "0.80" labeled only "# calibration finale" - same
+        unjustified fudge-factor pattern as raw_confidence()'s own
+        NOTE, with no statistical/physical basis or citation. Removed.
+        """
 
         adjusted = self.confidence_adjustment(state)
 
         correction = state.assimilation_quality * 0.05 + state.historical_accuracy * 0.03
 
         value = adjusted + correction
-
-        # calibration finale
-        value -= 0.80
 
         return round(
             self._clamp(value),
@@ -162,10 +182,14 @@ class ForecastConfidenceCalibrationEngine:
         self,
         state: ForecastConfidenceCalibrationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): used to subtract an
+        unexplained "0.79" with no comment or justification at all -
+        same unjustified fudge-factor pattern as the other methods in
+        this class (see raw_confidence()'s NOTE). Removed.
+        """
 
         value = self.calibrated_confidence(state) * 0.60 + self.error_correction_index(state) * 0.40
-
-        value -= 0.79
 
         return round(
             self._clamp(value),
