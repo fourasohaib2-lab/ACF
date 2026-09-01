@@ -4,6 +4,7 @@ Atmospheric Dynamics, Primitive Equations, Vorticity & Large-Scale Circulation E
 
 import math
 
+from acf.science.cyclones import GradientWind
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -39,6 +40,59 @@ def calculate_rossby_number(u_ms: float, length_scale_m: float, latitude_deg: fl
     if f < 1e-6 or length_scale_m <= 0.0:
         return 0.0
     return u_ms / (f * length_scale_m)
+
+
+def calculate_hydrostatic_dp_dz(rho: float, g: float = 9.80665) -> float:
+    """
+    Équilibre hydrostatique : dp/dz = -rho*g, en Pa/m.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func despite there being nothing left to design -
+    it is literally this one line.
+    """
+    return -rho * g
+
+
+def calculate_thermal_wind_shear_per_height(dt_dx: float, dt_dy: float, coriolis_f: float, mean_temperature_k: float) -> tuple[float, float]:
+    """
+    Cisaillement vertical du vent géostrophique par unité d'ALTITUDE
+    (et non par ln(p) comme science/synoptic.py's ThermalWind.calculate()
+    - deux formes DIFFERENTES, non interchangeables, de la même relation
+    physique, selon la coordonnée verticale choisie) :
+
+        d(Vg)/dz = (g / (f*T)) * k x grad_h(T)
+
+    Dérivation du produit vectoriel (verifiee) : k x (dT/dx, dT/dy, 0)
+    = (-dT/dy, dT/dx, 0), d'ou :
+        d(ug)/dz = -(g/(f*T)) * dT/dy
+        d(vg)/dz =  (g/(f*T)) * dT/dx
+
+    Verification physique : dans l'hemisphere Nord (f>0), un gradient
+    meridien de temperature decroissant vers le pole (dT/dy<0, avec y
+    croissant vers le pole) donne d(ug)/dz>0, c.a.d. un cisaillement
+    d'ouest croissant avec l'altitude - coherent avec l'existence des
+    jets d'ouest pres de la tropopause (Holton & Hakim 2012).
+
+    Parameters
+    ----------
+    dt_dx, dt_dy : float
+        Gradient horizontal de température (K/m).
+    coriolis_f : float
+        Paramètre de Coriolis (s⁻¹), non nul.
+    mean_temperature_k : float
+        Température moyenne de la couche (K), > 0.
+
+    Returns
+    -------
+    tuple of float
+        (d(ug)/dz, d(vg)/dz) en s⁻¹.
+    """
+    if coriolis_f == 0.0:
+        raise ValueError("coriolis_f must not be zero.")
+    if mean_temperature_k <= 0.0:
+        raise ValueError("mean_temperature_k must be positive.")
+    factor = 9.80665 / (coriolis_f * mean_temperature_k)
+    return (-factor * dt_dy, factor * dt_dx)
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +190,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Dynamique à grande échelle (échelles synoptiques L > 100 km)"],
         limitations=["Violé dans les zones de forts mouvements verticaux convectifs (w > 5 m/s)"],
         references=["WMO-No. 8", "Holton & Hakim (2012)"],
+        compute_func=calculate_hydrostatic_dp_dz,
     ),
     EncyclopediaEntry(
         key="geostrophic_balance_wind",
@@ -168,6 +223,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Atmosphère quasi-géostrophique et fronts synoptiques"],
         limitations=["Approximation géostrophique requise"],
         references=["Holton & Hakim (2012)", "WMO Technical Manual"],
+        compute_func=calculate_thermal_wind_shear_per_height,
     ),
     EncyclopediaEntry(
         key="gradient_wind_balance",
@@ -182,6 +238,10 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Cyclones tropicaux, dépressions creuses et anticyclones"],
         limitations=["Pas de solution réelle pour des anticyclones trop intenses à petit rayon (limite de gradient)"],
         references=["Holton & Hakim (2012)", "AMS Glossary"],
+        # NOTE (correction): reuses science/cyclones.py's GradientWind.calculate()
+        # directly (same exact formula, same solved quadratic root) rather than
+        # reimplementing it a second time - single source of truth.
+        compute_func=GradientWind.calculate,
     ),
     EncyclopediaEntry(
         key="ertel_potential_vorticity_pv",

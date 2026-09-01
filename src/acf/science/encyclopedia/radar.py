@@ -5,6 +5,21 @@ Meteorological Radar Encyclopedia Domain
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+_SPEED_OF_LIGHT_M_S = 2.99792458e8
+
+
+def calculate_doppler_radial_velocity(doppler_shift_hz: float, transmit_frequency_hz: float) -> float:
+    """
+    Vitesse radiale Doppler : Vr = (fd*c) / (2*f0), en m/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    if transmit_frequency_hz == 0.0:
+        raise ValueError("transmit_frequency_hz must not be zero.")
+    return (doppler_shift_hz * _SPEED_OF_LIGHT_M_S) / (2.0 * transmit_frequency_hz)
+
+
 ENTRIES = [
     EncyclopediaEntry(
         key="radar_marshall_palmer_zr",
@@ -38,6 +53,7 @@ ENTRIES = [
         application_conditions=["Cibles mobiles (gouttes de pluie, glace, insectes)"],
         limitations=["Mesure uniquement la composante radiale de vitesse"],
         references=["Doviak & Zrnic (1993) Doppler Radar and Weather Observations"],
+        compute_func=calculate_doppler_radial_velocity,
     ),
 ]
 

@@ -5,6 +5,33 @@ Aerosols & Atmospheric Chemistry Encyclopedia Domain
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_ozone_photostationary_state(j_no2: float, no2_conc: float, k_o3_no: float, no_conc: float) -> float:
+    """
+    Cycle de Leighton : [O3] = (j_NO2*[NO2]) / (k_O3_NO*[NO]).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    denom = k_o3_no * no_conc
+    if denom == 0.0:
+        raise ValueError("k_o3_no * no_conc must not be zero.")
+    return (j_no2 * no2_conc) / denom
+
+
+def calculate_dry_deposition_velocity(ra: float, rb: float, rc: float) -> float:
+    """
+    Vitesse de dépôt sec : vd = 1 / (Ra+Rb+Rc), en m/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    total_resistance = ra + rb + rc
+    if total_resistance == 0.0:
+        raise ValueError("Ra + Rb + Rc must not be zero.")
+    return 1.0 / total_resistance
+
+
 ENTRIES = [
     EncyclopediaEntry(
         key="tropospheric_ozone_photostationary_state",
@@ -19,6 +46,7 @@ ENTRIES = [
         application_conditions=["Troposphère ensoleillée sans COV massifs"],
         limitations=["Perturbé par la chimie des radicaux peroxydes (RO2)"],
         references=["Seinfeld & Pandis (2016) Atmospheric Chemistry and Physics", "WMO GAW Reports"],
+        compute_func=calculate_ozone_photostationary_state,
     ),
     EncyclopediaEntry(
         key="dry_deposition_velocity",
@@ -37,6 +65,7 @@ ENTRIES = [
         application_conditions=["Couche limite de surface"],
         limitations=["Dépend de la rugosité de surface et du diamètre des particules"],
         references=["Wesely (1989) Atmos. Environ.", "Seinfeld & Pandis (2016)"],
+        compute_func=calculate_dry_deposition_velocity,
     ),
 ]
 

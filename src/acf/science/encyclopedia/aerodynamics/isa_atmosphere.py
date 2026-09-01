@@ -51,6 +51,33 @@ def calculate_mach_number(velocity_m_s: float, temp_k: float) -> float:
     return velocity_m_s / a
 
 
+def calculate_reynolds_number(density: float, velocity: float, length: float, dynamic_viscosity: float) -> float:
+    """
+    Re = (rho*V*L) / mu.
+
+    Algébriquement identique à science/laws/aeronautics.py's
+    'reynolds_number' entry - non dupliqué comme second calcul
+    indépendant, seulement ré-exprimé ici dans le style local à ce
+    fichier (fonctions calculate_* autonomes) pour combler ce registre
+    d'entrée qui n'avait aucun compute_func malgré une équation
+    entièrement explicite.
+    """
+    if dynamic_viscosity == 0.0:
+        raise ValueError("dynamic_viscosity must not be zero.")
+    return (density * velocity * length) / dynamic_viscosity
+
+
+def calculate_aerodynamic_drag(density: float, velocity: float, surface_area: float, drag_coefficient: float) -> float:
+    """
+    D = 0.5*rho*V^2*S*Cx, en N.
+
+    Algébriquement identique à science/laws/aeronautics.py's
+    'aerodynamic_drag' entry - même remarque que
+    calculate_reynolds_number() ci-dessus.
+    """
+    return 0.5 * density * (velocity**2) * surface_area * drag_coefficient
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -134,6 +161,9 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Soufflerie, conception d'aéronefs et simulation CFD"],
         limitations=["Re très élevé (> 10^7) pour les avions commerciaux"],
         references=["Reynolds (1883)", "Anderson (2017)"],
+        # NOTE (correction): equation field is fully explicit but this entry
+        # had no compute_func - wired to calculate_reynolds_number() above.
+        compute_func=calculate_reynolds_number,
     ),
     EncyclopediaEntry(
         key="aerodynamic_drag_force",
@@ -148,6 +178,9 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Vol d'aéronef"],
         limitations=["Augmentation drastique de la traînée d'onde en régime transsonique"],
         references=["Anderson (2017)", "ICAO Mechanics"],
+        # NOTE (correction): equation field is fully explicit but this entry
+        # had no compute_func - wired to calculate_aerodynamic_drag() above.
+        compute_func=calculate_aerodynamic_drag,
     ),
     EncyclopediaEntry(
         key="aerodynamic_stall_hazard",

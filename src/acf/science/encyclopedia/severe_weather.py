@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Severe Weather, Storm Kinematics, Hail & Severe Local Storms Encyclopedia Module
 """
 
+import math
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -25,6 +27,43 @@ def calculate_storm_relative_helicity(
         v_mean = 0.5 * (v_profile[i] + v_profile[i + 1]) - storm_v
         srh += (u_mean * dv) - (v_mean * du)
     return float(srh)
+
+
+def calculate_hail_growth_rate(radius_m: float, collection_efficiency: float, fall_velocity_m_s: float, updraft_velocity_m_s: float, lwc_kg_m3: float) -> float:
+    """
+    Taux de croissance de la grêle par capture d'eau surfondue :
+    dM_h/dt = pi*R^2*E_h*|Vh-w|*LWC, en kg/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Uses |Vh-w| (absolute relative velocity) per
+    the entry's own latex_equation, not the signed form in its plain
+    "equation" string - collection rate must be non-negative regardless
+    of whether the hailstone falls faster or slower than the updraft.
+    """
+    if radius_m < 0.0:
+        raise ValueError("radius_m must be non-negative.")
+    if lwc_kg_m3 < 0.0:
+        raise ValueError("lwc_kg_m3 must be non-negative.")
+    relative_velocity = abs(fall_velocity_m_s - updraft_velocity_m_s)
+    return math.pi * (radius_m**2) * collection_efficiency * relative_velocity * lwc_kg_m3
+
+
+def calculate_tangential_velocity_free_vortex(angular_momentum_constant: float, radius_m: float) -> float:
+    """
+    Vitesse tangentielle d'un vortex libre (conservation du moment
+    cinétique, modèle idéalisé de Rankine hors du coeur du vortex) :
+    v_theta = C / r, en m/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Valid only OUTSIDE the vortex core (the region
+    of the Rankine combined vortex model this "v_theta*r=Constant"
+    relation actually describes) - inside the core, v_theta grows
+    linearly with r instead (solid-body rotation), a different regime
+    this simple free-vortex form does not cover.
+    """
+    if radius_m <= 0.0:
+        raise ValueError("radius_m must be positive.")
+    return angular_momentum_constant / radius_m
 
 
 def estimate_hail_size_mesh(mesh_mm: float) -> str:
@@ -99,6 +138,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Zone de fort courant ascendant (w > 20 m/s) entre 0°C et -40°C"],
         limitations=["Requis un temps de résidence prolongé dans le courant ascendant"],
         references=["Pruppacher & Klett (1997)", "Nelson (1983) J. Atmos. Sci.", "AMS Hail Physics"],
+        compute_func=calculate_hail_growth_rate,
     ),
     EncyclopediaEntry(
         # NOTE (correction): this entry's compute_func used to be
@@ -164,6 +204,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         ],
         limitations=["Échelle spatiale fine (quelques dizaines à centaines de mètres)"],
         references=["Davies-Jones (2015) Atmos. Res.", "Enhanced Fujita Scale (NOAA / NWS)"],
+        compute_func=calculate_tangential_velocity_free_vortex,
     ),
     EncyclopediaEntry(
         key="bow_echo_structure",

@@ -95,10 +95,18 @@ def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     directly computable from its own documented "equation" field. This
     tool's own jitter-sensitivity probe independently confirmed none of
     the 6 are flagged "insensitive" (see the sibling test below).
+
+    95 -> 105: a further pass wired 10 more (reynolds_number_flow,
+    aerodynamic_drag_force, hydrostatic_equilibrium_law,
+    thermal_wind_relation, gradient_wind_balance, doppler_radial_velocity,
+    tropospheric_ozone_photostationary_state, dry_deposition_velocity,
+    hail_growth_model, tornado_vortex_dynamics) - see
+    tests/test_encyclopedia_compute_func_gaps_batch2.py. Again none of
+    the 10 are flagged "insensitive".
     """
     result = adapter.run_verify()
-    assert result.total_computable == 95
-    assert result.checked == 95
+    assert result.total_computable == 105
+    assert result.checked == 105
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 
