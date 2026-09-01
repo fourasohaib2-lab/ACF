@@ -67,7 +67,12 @@ TECTONIC_PLATES_REGISTRY: dict[str, Plate] = {
 
 
 class PlateDatabase:
-    """Base de données et registre des 14 grandes plaques tectoniques mondiales."""
+    """
+    Base de données et registre des grandes plaques tectoniques mondiales.
+
+    NOTE (correction): docstring used to claim "14 grandes plaques" -
+    only 4 are actually registered (Pacific, Eurasian, African, Nazca).
+    """
 
     @classmethod
     def get_plate(cls, key: str) -> Plate | None:

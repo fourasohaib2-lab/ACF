@@ -63,6 +63,21 @@ def test_flood_forecast_engine():
     assert flash["alert_color"] == "RED"
     assert "CRITICAL" in flash["risk_level"]
 
+    # CORRECTED: estimated_peak_discharge_m3_s used to be
+    # precip_3h_mm * 12.5 regardless of basin size - a dimensionally
+    # impossible mm->m3/s conversion with no drainage area involved.
+    assert flash["estimated_peak_discharge_m3_s"] is None  # no basin_area_km2 supplied
+
+    small_basin = FloodForecastEngine().evaluate_flash_flood_risk(
+        precip_3h_mm=65.0, soil_saturation_pct=90.0, basin_slope_m_km=15.0, basin_area_km2=10.0
+    )
+    large_basin = FloodForecastEngine().evaluate_flash_flood_risk(
+        precip_3h_mm=65.0, soil_saturation_pct=90.0, basin_slope_m_km=15.0, basin_area_km2=1000.0
+    )
+    assert small_basin["estimated_peak_discharge_m3_s"] > 0.0
+    # Peak discharge must genuinely scale with drainage area now.
+    assert large_basin["estimated_peak_discharge_m3_s"] > 50 * small_basin["estimated_peak_discharge_m3_s"]
+
 
 def test_soil_and_groundwater_engine():
     """Test des calculs d'humidité du sol et de la loi de Darcy."""
