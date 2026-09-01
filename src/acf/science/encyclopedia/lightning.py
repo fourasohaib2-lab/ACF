@@ -30,6 +30,24 @@ def calculate_mccaul_graupel_lightning_index(graupel_flux: float, ice_flux: floa
     return 0.05 * math.sqrt(cape) * (graupel_flux * ice_flux) ** 0.5
 
 
+def calculate_graupel_ice_charge_separation_rate(graupel_concentration: float, ice_concentration: float, collision_cross_section: float, relative_velocity: float, charge_transfer: float) -> float:
+    """
+    Densité de courant de charge (forme bulk / non résolue en taille) :
+    J_charge = N_graupel*N_ice*CrossSection*|V_rel|*delta_q, en C/(m^3*s).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. This is the bulk (single representative-value)
+    simplification of the entry's own full double integral over the
+    graupel/ice size distributions (latex_equation) - the same relation
+    between a bulk plain-text formula and a size-resolved latex integral
+    already accepted elsewhere in ACF's encyclopedia (e.g.
+    graupel_ice_collision_charging's own sibling formulas). |V_rel|
+    (absolute value) since charging depends on collision rate, which
+    cannot be negative regardless of which hydrometeor falls faster.
+    """
+    return graupel_concentration * ice_concentration * collision_cross_section * abs(relative_velocity) * charge_transfer
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -63,6 +81,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Noyau convectif au-dessus de l'isotherme 0°C"],
         limitations=["Modélisation dépendant de la précision du schéma microphysique"],
         references=["Deierling et al. (2008) J. Geophys. Res.", "AMS Lightning Physics"],
+        compute_func=calculate_graupel_ice_charge_separation_rate,
     ),
     EncyclopediaEntry(
         key="cloud_tripole_structure",

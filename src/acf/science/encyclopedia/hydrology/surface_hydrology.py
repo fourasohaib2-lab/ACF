@@ -19,6 +19,18 @@ def calculate_horton_infiltration(f0: float, fc: float, k: float, time_hours: fl
     return fc + (f0 - fc) * math.exp(-k * time_hours)
 
 
+def calculate_green_ampt_infiltration_rate(saturated_hydraulic_conductivity: float, wetting_front_suction: float, moisture_deficit: float, cumulative_infiltration: float) -> float:
+    """
+    f(t) = Ks * (1 + psi*Delta_theta / F(t)), en mm/h.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    if cumulative_infiltration <= 0.0:
+        raise ValueError("cumulative_infiltration (F(t)) must be positive.")
+    return saturated_hydraulic_conductivity * (1.0 + (wetting_front_suction * moisture_deficit) / cumulative_infiltration)
+
+
 def calculate_rational_peak_runoff(c: float, i_mm_h: float, area_km2: float) -> float:
     """Calcul du débit de pointe par la méthode rationnelle Q = (C * I * A) / 3.6 en m³/s."""
     if i_mm_h < 0.0 or area_km2 < 0.0:
@@ -64,6 +76,7 @@ ENTRIES: list[EncyclopediaEntry] = [
             "WMO Hydrological Manual",
             "Chow et al. (1988) Applied Hydrology",
         ],
+        compute_func=calculate_green_ampt_infiltration_rate,
     ),
     EncyclopediaEntry(
         key="horton_infiltration_law",

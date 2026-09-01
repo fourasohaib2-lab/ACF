@@ -130,10 +130,14 @@ def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     and a new one - van_der_waals_real_gas's covolume_b must stay small
     relative to molar_volume (V > b), which the generic same-range jitter
     routinely violated - fixed with _SMALL_POSITIVE_NAMES.
+
+    132 -> 134: a small final pass wired green_ampt_infiltration_model
+    and graupel_ice_collision_charging - see
+    tests/test_encyclopedia_compute_func_gaps_batch5.py.
     """
     result = adapter.run_verify()
-    assert result.total_computable == 132
-    assert result.checked == 132
+    assert result.total_computable == 134
+    assert result.checked == 134
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 
