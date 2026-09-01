@@ -245,6 +245,19 @@ def recommend_projection(
     data_crs : Any
         The CRS the data is currently in (defaults to WGS84, ACF's
         standard storage CRS).
+
+        NOTE (found, NOT changed - Physics Guard, flagged by
+        `ruff --select ARG`): currently accepted but not used - the
+        recommendation is driven purely by analysis_type/bounds/region,
+        never by what CRS the data happens to already be in. Kept in
+        the signature for forward API compatibility (mission section 9
+        documents it as part of this function's contract) and as a
+        natural place to later add a "data is already in the
+        recommended CRS, no reprojection needed" check without a
+        breaking signature change - not yet implemented since that
+        needs a real CRS-equality comparison (data_crs may arrive as an
+        EPSG string, a pyproj.CRS, a WKT string, etc.) this function
+        doesn't currently perform.
     region : str, optional
         Explicit region hint ("north_algeria"). If not given, the
         region is auto-detected from `bounds` when possible - this
