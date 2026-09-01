@@ -12,6 +12,7 @@ from acf.hpc_connector.scheduler_interface import (
     SlurmScheduler,
 )
 from acf.hpc_connector.file_transfer import FileTransferManager
+from acf.hpc_connector.remote_terminal import RemoteTerminalShell
 from acf.hpc_connector.security import HPCSecurityManager
 from acf.hpc_connector.ssh_connector import SSHConnector
 
@@ -138,6 +139,31 @@ def test_file_transfer_manager_honest_status_when_no_real_sftp(tmp_path):
     # missing file's placeholder.
     missing_checksum = manager.compute_sha256(str(tmp_path / "does_not_exist.nc"))
     assert missing_checksum == "NO_CHECKSUM_FILE_NOT_FOUND"
+
+
+def test_remote_terminal_shell_open_shell_honest_when_no_real_channel():
+    """
+    CORRECTED: RemoteTerminalShell.open_shell() used to unconditionally
+    return True even when invoke_shell() raised (the default outcome in
+    this offline environment, same root cause as the SFTP fix above:
+    is_alive() is honestly True with no real transport, so invoke_shell()
+    is attempted on an unconnected client and raises) or when no live
+    connector/client was available at all. self.channel stays None in
+    both cases - the return value must reflect that, not claim success.
+    """
+    ssh = SSHConnector(hostname="login2.fennec.meteo.dz", username="sfoura")
+    assert ssh.connect() is True
+    assert ssh.is_alive() is True
+
+    terminal = RemoteTerminalShell(connector=ssh)
+    opened = terminal.open_shell()
+    assert opened is False
+    assert terminal.channel is None
+
+    # send_command() must still work via its documented fallback (direct
+    # SSH execution) even though no persistent channel was opened.
+    output = terminal.send_command("echo hello")
+    assert isinstance(output, str)
 
 
 def test_hpc_connection_manager_fennec_workflow():

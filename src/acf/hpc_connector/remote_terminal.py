@@ -14,17 +14,37 @@ class RemoteTerminalShell:
         self.channel = None
 
     def open_shell(self) -> bool:
-        """Invoke persistent interactive shell channel."""
+        """
+        Invoke persistent interactive shell channel.
+
+        NOTE (correction): used to unconditionally `return True` even
+        when self.connector.is_alive()/self.connector.client were
+        falsy (no attempt made at all) or invoke_shell() raised (caught,
+        logged as WARNING, then still fell through to `return True`) -
+        same fake-success pattern already fixed this session for
+        SSHConnector.upload()/download(). Since is_alive() is honestly
+        True even in this offline dev environment (no real FENNEC
+        transport - see SSHConnector.connect()'s own NOTE) while
+        self.client is a real-but-unconnected paramiko.SSHClient(),
+        invoke_shell() raising here is the default path in this
+        environment, not a rare edge case. self.channel stays None on
+        any failure; now returns True only when a real channel object
+        was actually obtained.
+        """
         if self.connector.is_alive() and self.connector.client:
             try:
                 self.channel = self.connector.client.invoke_shell()
-                if self.channel is not None:
-                    self.channel.settimeout(2.0)
-                log_hpc_event("INFO", "Persistent Paramiko interactive shell channel opened.")
-                return True
             except Exception as e:
                 log_hpc_event("WARNING", f"Failed to invoke interactive shell: {e}")
-        return True
+                self.channel = None
+        else:
+            log_hpc_event("WARNING", "Cannot open interactive shell: no live SSH connection/client.")
+
+        if self.channel is not None:
+            self.channel.settimeout(2.0)
+            log_hpc_event("INFO", "Persistent Paramiko interactive shell channel opened.")
+            return True
+        return False
 
     def send_command(self, cmd: str) -> str:
         """Send command to persistent shell and stream response."""
