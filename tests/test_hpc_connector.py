@@ -141,7 +141,23 @@ def test_environment_manager():
     env = EnvironmentManager()
     res = env.setup_environment(["gcc/12.2.0", "eccodes/2.30.0", "openmpi/4.1.5"])
     assert "loaded_modules" in res
-    assert "gcc/12.2.0" in res["loaded_modules"]
+
+    # CORRECTED: "loaded_modules" used to unconditionally list every
+    # REQUESTED module name regardless of whether `module load` genuinely
+    # succeeded remotely - get_loaded_modules()'s own docstring promises
+    # "active" modules, not merely requested ones. In this offline test
+    # environment (no real FENNEC SSH transport), no load can genuinely
+    # be confirmed, so it must honestly report none loaded rather than
+    # echo back the request.
+    assert res["load_success"] is False
+    assert res["loaded_modules"] == []
+
+    # CORRECTED: ModuleLoader.discover_modules() used to run `module
+    # avail` and then completely discard its result, returning a
+    # hardcoded catalog as if it had genuinely been discovered.
+    discovered = env.module_loader.discover_modules()
+    assert discovered["is_real_data"] is False
+    assert "compilers" in discovered  # honest labeled fallback catalog, not live detection
 
 
 def test_paramiko_ssh_and_executor():
