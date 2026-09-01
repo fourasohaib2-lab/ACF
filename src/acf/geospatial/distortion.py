@@ -94,8 +94,33 @@ def assess_distortion(crs_input: Any, bounds: tuple[float, float, float, float])
         )
 
     method_name = (crs.coordinate_operation.method_name or "").lower() if crs.coordinate_operation else ""
-    is_conformal = any(term in method_name for term in ("mercator", "conformal", "stereographic")) or None
-    is_equal_area = "equal area" in method_name or "albers" in method_name or None
+    conformal_hit = any(term in method_name for term in ("mercator", "conformal", "stereographic"))
+    equal_area_hit = "equal area" in method_name or "albers" in method_name
+
+    # NOTE (correction): "any(...) or None" (and the equivalent
+    # "expr or None" below it) can only ever produce True or None -
+    # `False or None` evaluates to None, never False - so a CRS whose
+    # method name confidently matched the *other* category (e.g.
+    # "albers equal area", definitely NOT conformal) was reported as
+    # is_conformal=None ("unknown") instead of the knowable False.
+    # Conformality and equal-area are mutually exclusive properties
+    # for named map projections (a non-trivial projection cannot
+    # preserve both angles and area), so a confident hit on one
+    # category lets the other be reported as a confident False rather
+    # than downgraded to unknown.
+    if conformal_hit:
+        is_conformal: bool | None = True
+    elif equal_area_hit:
+        is_conformal = False
+    else:
+        is_conformal = None
+
+    if equal_area_hit:
+        is_equal_area: bool | None = True
+    elif conformal_hit:
+        is_equal_area = False
+    else:
+        is_equal_area = None
 
     geod = Geod(ellps="WGS84")
     true_distance_m = geod.inv(min_lon, min_lat, max_lon, max_lat)[2]

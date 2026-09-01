@@ -320,6 +320,27 @@ def test_area_computation_uses_equal_area_projection_not_web_mercator():
     assert abs(albers_report.area_distortion_pct) < 1.0
 
 
+def test_distortion_confidently_reports_false_not_just_unknown():
+    """
+    CORRECTED: is_conformal/is_equal_area used to be built as
+    "any(...) or None", which can only ever produce True or None -
+    `False or None` evaluates to None - so a CRS whose method name
+    confidently matched the OTHER category (e.g. Albers, definitely
+    NOT conformal) was reported as is_conformal=None ("unknown")
+    instead of the knowable False. See distortion.py.
+    """
+    albers_report = distortion.assess_distortion(
+        "+proj=aea +lat_1=32 +lat_2=36 +lat_0=34 +lon_0=3 +datum=WGS84 +units=m",
+        NORTH_ALGERIA_SINGLE_ZONE,
+    )
+    assert albers_report.is_equal_area is True
+    assert albers_report.is_conformal is False  # known NOT conformal, not just "unknown"
+
+    utm_report = distortion.assess_distortion("EPSG:32631", NORTH_ALGERIA_SINGLE_ZONE)
+    assert utm_report.is_conformal is True
+    assert utm_report.is_equal_area is False  # known NOT equal-area, not just "unknown"
+
+
 # ---------------------------------------------------------------------------
 # Metadata (mission section 13)
 # ---------------------------------------------------------------------------
