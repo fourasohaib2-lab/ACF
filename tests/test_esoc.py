@@ -104,6 +104,34 @@ def test_esoc_widgets(qapp):
     assert "Climate" in st.lbl_workspace.text()
 
 
+def test_esoc_right_sidebar_discloses_illustrative_content(qapp):
+    """
+    CORRECTED: ESOCRightSidebar's 7 inspector tabs used to present
+    fixed values (a selected grid cell's temperature/wind, CAPE/CIN
+    diagnostics, a corrupted "SHA256 checksum", a fake running
+    forecast log, GPU/TFLOPS performance numbers) as if live, with no
+    real selection/dataset/simulation/HPC feed connected. Clicking
+    "Render Plot" also used to unconditionally claim a plot was
+    generated with no plot ever actually produced. See
+    esoc_sidebar.py's own NOTE (correction).
+    """
+    sb_right = ESOCRightSidebar()
+
+    for tab in (
+        sb_right.tab_props,
+        sb_right.tab_diag,
+        sb_right.tab_meta,
+        sb_right.tab_sim,
+        sb_right.tab_logs,
+        sb_right.tab_perf,
+    ):
+        assert "Example Layout" in tab.toPlainText()
+
+    sb_right._render_plot()
+    assert "[NOT IMPLEMENTED]" in sb_right.txt_ai.toPlainText()
+    assert "generated successfully" not in sb_right.txt_ai.toPlainText()
+
+
 def test_esoc_controller_and_window(qapp):
     window = ESOCWindow()
     meta = ESOCWindow.get_esoc_metadata()

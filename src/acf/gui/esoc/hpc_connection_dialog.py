@@ -107,19 +107,39 @@ class HPCConnectionDialog(QDialog):
         main_layout.addLayout(btn_box)
 
     def _test_connection(self) -> None:
-        QMessageBox.information(
+        """
+        NOTE (correction — dangerous fabrication): this used to
+        unconditionally claim "Successfully verified SSH connectivity"
+        with a fixed fake "Latency: 12 ms", regardless of whether any
+        connection was ever attempted - there is no socket/SSH/
+        paramiko call anywhere in this class. An operator testing a
+        completely unreachable or misconfigured host would still be
+        told the connection succeeded. Same fabricated-success pattern
+        already fixed in this same package's HPCTerminalPanel (see its
+        "[NOT CONNECTED]" disclosure) - this dialog was evidently
+        missed in that pass. Not fabricated.
+        """
+        QMessageBox.warning(
             self,
             "HPC Connection Test",
-            f"Successfully verified SSH connectivity to {self.input_user.text()}@{self.input_host.text()}!\n"
-            f"Scheduler: {self.combo_scheduler.currentText()}\n"
-            f"Latency: 12 ms",
+            "[NOT CONNECTED]: no real SSH/network connection is attempted by this dialog - "
+            f"{self.input_user.text()}@{self.input_host.text()} was never actually contacted.",
         )
 
     def _save_profile(self) -> None:
-        QMessageBox.information(
+        """
+        NOTE (correction — dangerous fabrication): this used to
+        unconditionally claim the profile was "Saved... to
+        config/hpc_profiles/" - no file is written anywhere in this
+        method. An operator could believe their connection settings
+        were persisted when nothing was written to disk. Not
+        fabricated.
+        """
+        QMessageBox.warning(
             self,
             "Save HPC Profile",
-            f"Saved profile '{self.combo_profile.currentText()}' to config/hpc_profiles/",
+            f"[NOT SAVED]: no real profile storage is connected here - '{self.combo_profile.currentText()}' "
+            "was not written to disk. Use get_connection_config() and persist it yourself if needed.",
         )
 
     def _connect_hpc(self) -> None:

@@ -1,4 +1,22 @@
-"""ESOC Left System Explorer Sidebar with Global Search & Right Multi-Tab Inspector (ACF-HPC-002)."""
+"""ESOC Left System Explorer Sidebar with Global Search & Right Multi-Tab Inspector (ACF-HPC-002).
+
+NOTE (correction — fabricated "live" inspector tabs): ESOCRightSidebar's
+7 tabs used to unconditionally display specific fixed values at widget
+construction time - a selected grid cell's temperature/wind/SST, CAPE/
+CIN/tornado-parameter diagnostics, a SHA256 "checksum" (itself
+corrupted - a truncated copy of the well-known SHA256-of-empty-string
+example hash), a running data-assimilation/forecast log, and GPU/TFLOPS
+performance numbers - none connected to any real selection, dataset,
+simulation, or HPC telemetry feed (this file has no such connection
+available at all). This is the same fabricated-panel-content pattern
+already found and fixed across 20 of 26 other ESOC operator panels
+(see panel_manager.py's own NOTE (correction) entries and its shared
+_example_layout_disclaimer() helper, reused here rather than
+reinvented) - this file was evidently missed in that pass. Clicking
+"Render Plot" also used to unconditionally append "[PLOT RENDERED]:
+... generated successfully" with no plot ever actually rendered
+anywhere (no chart widget, no matplotlib figure). Not fabricated.
+"""
 
 from collections.abc import Callable
 
@@ -15,6 +33,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from acf.gui.esoc.panel_manager import _example_layout_disclaimer
 
 
 class ESOCLeftSidebar(QWidget):
@@ -135,10 +155,15 @@ class ESOCRightSidebar(QWidget):
         self.tabs = QTabWidget()
 
         # 1. Properties Tab
+        tab_props_container = QWidget()
+        props_layout = QVBoxLayout(tab_props_container)
+        props_layout.setContentsMargins(0, 0, 0, 0)
+        props_layout.addWidget(_example_layout_disclaimer())
         self.tab_props = QTextEdit()
         self.tab_props.setReadOnly(True)
         self.tab_props.setText(
-            "Selected Entity: Global Grid cell (45.0°N, 10.0°E)\n"
+            "Example Layout (values below are illustrative, not tied to any real selection):\n"
+            "• Selected Entity: Global Grid cell (45.0°N, 10.0°E)\n"
             "• Resolution: 25 km\n"
             "• Vertical Levels: 32 Hybrid Sigma-Pressure\n"
             "• 2m Temperature: 288.15 K (15.0°C)\n"
@@ -148,12 +173,17 @@ class ESOCRightSidebar(QWidget):
             "• SST Anomaly: +0.42°C\n"
             "• Soil Moisture: 0.28 m^3/m^3"
         )
+        props_layout.addWidget(self.tab_props)
 
         # 2. Diagnostics Tab
+        tab_diag_container = QWidget()
+        diag_layout = QVBoxLayout(tab_diag_container)
+        diag_layout.setContentsMargins(0, 0, 0, 0)
+        diag_layout.addWidget(_example_layout_disclaimer())
         self.tab_diag = QTextEdit()
         self.tab_diag.setReadOnly(True)
         self.tab_diag.setText(
-            "Diagnostic Metrics:\n"
+            "Example Layout (values below are illustrative, not computed from any real sounding):\n"
             "• CAPE: 1420 J/kg\n"
             "• CIN: 18 J/kg\n"
             "• Bulk Shear (0-6km): 24.5 m/s\n"
@@ -161,52 +191,74 @@ class ESOCRightSidebar(QWidget):
             "• Significant Tornado (STP): 1.1\n"
             "• FWI Fire Weather Index: 34.2 (Extreme)"
         )
+        diag_layout.addWidget(self.tab_diag)
 
         # 3. Metadata Tab
+        tab_meta_container = QWidget()
+        meta_layout = QVBoxLayout(tab_meta_container)
+        meta_layout.setContentsMargins(0, 0, 0, 0)
+        meta_layout.addWidget(_example_layout_disclaimer())
         self.tab_meta = QTextEdit()
         self.tab_meta.setReadOnly(True)
         self.tab_meta.setText(
-            "Dataset Metadata:\n"
+            "Example Layout (values below are illustrative, not read from any real dataset):\n"
             "• Standard: WMO / CF-1.8 Compliant\n"
             "• Ingestion Source: Sentinel-3 OLCI & GOES-16\n"
             "• Projection: WGS84 Spherical Ellipsoid\n"
             "• Grid Bounds: [-90, +90] Lat, [-180, +180] Lon\n"
-            "• Checksum SHA256: e3b0c44298fc1c149afbf4c8996fb924"
+            "• Checksum: not computed (no real file is connected to this example)"
         )
+        meta_layout.addWidget(self.tab_meta)
 
         # 4. Simulation Tab
+        tab_sim_container = QWidget()
+        sim_layout = QVBoxLayout(tab_sim_container)
+        sim_layout.setContentsMargins(0, 0, 0, 0)
+        sim_layout.addWidget(_example_layout_disclaimer())
         self.tab_sim = QTextEdit()
         self.tab_sim.setReadOnly(True)
         self.tab_sim.setText(
-            "Simulation Status:\n"
+            "Example Layout (values below are illustrative, not from any running simulation):\n"
             "• Engine: Coupled Earth Solver (ACF-DT-003)\n"
             "• Active Timestep: t = 60.0 s\n"
             "• Integration Step: 360 / 1440\n"
             "• CFL Condition Number: C = 0.32 (Stable)\n"
             "• Mass Conservation Error: < 1.2e-6"
         )
+        sim_layout.addWidget(self.tab_sim)
 
         # 5. Logs Tab
+        tab_logs_container = QWidget()
+        logs_layout = QVBoxLayout(tab_logs_container)
+        logs_layout.setContentsMargins(0, 0, 0, 0)
+        logs_layout.addWidget(_example_layout_disclaimer())
         self.tab_logs = QTextEdit()
         self.tab_logs.setReadOnly(True)
         self.tab_logs.setText(
+            "Example Layout (lines below are illustrative, not a real operational log):\n"
             "[INFO] Initialization complete.\n"
             "[INFO] Data Assimilation 4D-Var cycle converged in 12 iterations.\n"
             "[INFO] Forecast run started. HPC 128 MPI Ranks active.\n"
             "[WARNING] High CAPE detected over Central Plains."
         )
+        logs_layout.addWidget(self.tab_logs)
 
         # 6. Performance Tab
+        tab_perf_container = QWidget()
+        perf_layout = QVBoxLayout(tab_perf_container)
+        perf_layout.setContentsMargins(0, 0, 0, 0)
+        perf_layout.addWidget(_example_layout_disclaimer())
         self.tab_perf = QTextEdit()
         self.tab_perf.setReadOnly(True)
         self.tab_perf.setText(
-            "HPC Cluster Performance:\n"
+            "Example Layout (values below are illustrative, no HPC telemetry feed is connected here):\n"
             "• CPU Utilization: 14%\n"
             "• GPU Memory Usage: 18.4 / 80.0 GB (NVIDIA A100)\n"
             "• Compute Throughput: 19.5 TFLOPS\n"
             "• Frame Rate: 60 FPS (OpenGL 4.5 Rendering)\n"
             "• Memory Bandwidth: 1.5 TB/s"
         )
+        perf_layout.addWidget(self.tab_perf)
 
         # 7. AI Analysis & Scientific Plotting Tab
         self.tab_ai_plot = QWidget()
@@ -236,10 +288,11 @@ class ESOCRightSidebar(QWidget):
         btn_gen_chart.clicked.connect(self._render_plot)
         ai_layout.addWidget(btn_gen_chart)
 
+        ai_layout.addWidget(_example_layout_disclaimer())
         self.txt_ai = QTextEdit()
         self.txt_ai.setReadOnly(True)
         self.txt_ai.setText(
-            "AI Explanation (XAI):\n"
+            "Example Layout (AI explanation below is illustrative, not produced by any connected model):\n"
             "• Fourier Neural Operator detects baroclinic wave deepening.\n"
             "• Feature Importance: 500hPa vorticity (0.42) > SST (0.31) > Soil (0.18).\n"
             "• AI Confidence Evaluation: 94.6% calibrated.\n"
@@ -247,19 +300,26 @@ class ESOCRightSidebar(QWidget):
         )
         ai_layout.addWidget(self.txt_ai)
 
-        self.tabs.addTab(self.tab_props, "Properties")
-        self.tabs.addTab(self.tab_diag, "Diagnostics")
-        self.tabs.addTab(self.tab_meta, "Metadata")
-        self.tabs.addTab(self.tab_sim, "Simulation")
-        self.tabs.addTab(self.tab_logs, "Logs")
-        self.tabs.addTab(self.tab_perf, "Performance")
+        self.tabs.addTab(tab_props_container, "Properties")
+        self.tabs.addTab(tab_diag_container, "Diagnostics")
+        self.tabs.addTab(tab_meta_container, "Metadata")
+        self.tabs.addTab(tab_sim_container, "Simulation")
+        self.tabs.addTab(tab_logs_container, "Logs")
+        self.tabs.addTab(tab_perf_container, "Performance")
         self.tabs.addTab(self.tab_ai_plot, "AI Analysis & Plots")
 
         layout.addWidget(self.tabs)
 
     def _render_plot(self) -> None:
+        """
+        NOTE (correction): this used to unconditionally append
+        "[PLOT RENDERED]: ... generated successfully" regardless of
+        whether any plot was actually produced - no chart widget or
+        matplotlib figure is created anywhere in this method or class.
+        Not fabricated.
+        """
         chart_type = self.combo_chart.currentText()
-        self.txt_ai.append(f"\n[PLOT RENDERED]: {chart_type} generated successfully.")
+        self.txt_ai.append(f"\n[NOT IMPLEMENTED]: no real plotting backend is connected here for '{chart_type}'.")
 
     def set_properties_text(self, text: str) -> None:
         """Update properties tab display text."""
