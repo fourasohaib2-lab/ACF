@@ -259,3 +259,24 @@ def test_aladin_ingestion_adapter(tmp_path: Path):
     res = adapter.read_aladin_file(aladin_file)
     assert res["model"] == "ALADIN"
     assert res["geometry"]["resolution_x_meters"] == 7500.0
+
+
+def test_fa_adapters_do_not_false_positive_on_shared_extension(tmp_path: Path):
+    """
+    CORRECTED: ARPEGE, AROME and ALADIN all share the same FA/LFA file
+    format, but each adapter's detect() used to also match on that
+    bare extension alone (in addition to the model-name substring) -
+    so all three would return True for the same ambiguous filename
+    with no model name in it, making a shared ModelDetector's result
+    depend on arbitrary registry iteration order rather than the
+    file's actual model. See each adapter's ingestion_adapter.py.
+    """
+    ambiguous_file = tmp_path / "run_20260801.fa"
+    ambiguous_file.write_text("GENERIC FA DATA", encoding="utf-8")
+
+    assert ARPEGEIngestionAdapter().detect(ambiguous_file) is False
+    assert AROMEIngestionAdapter().detect(ambiguous_file) is False
+    assert ALADINIngestionAdapter().detect(ambiguous_file) is False
+
+    # The model-name substring itself still works, unaffected.
+    assert ARPEGEIngestionAdapter().detect(tmp_path / "arpege_run.fa") is True

@@ -26,9 +26,22 @@ class ALADINIngestionAdapter(BaseWeatherModel):
         self.reader = EPyGrAMReader()
 
     def detect(self, dataset: Any) -> bool:
-        """Detect if the dataset belongs to ALADIN NWP model."""
+        """
+        Detect if the dataset belongs to ALADIN NWP model.
+
+        NOTE (correction): ARPEGE, AROME and ALADIN all share the same
+        FA/LFA file format (see each adapter's supported_extensions) -
+        a bare ".fa"/".lfa" extension does not distinguish between
+        them at all. This used to also match on ".fa" alone, so any
+        of the three adapters registered together would all return
+        True for the same ambiguous filename (e.g. "run_20260801.fa"
+        with no model name in it), making ModelDetector's result
+        depend on arbitrary registry iteration order rather than the
+        file's actual model. Only the model-name substring is a
+        genuinely distinguishing signal here.
+        """
         path_str = str(dataset).lower() if dataset else ""
-        return "aladin" in path_str or path_str.endswith(".fa")
+        return "aladin" in path_str
 
     def variables(self) -> list[str]:
         """Return standard ALADIN model variable keys."""
