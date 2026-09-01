@@ -207,8 +207,16 @@ def test_installer_updater_logging_and_security():
     assert inst["installation_status"] == "NOT_INSTALLED_NO_INSTALL_STEP_EXECUTED"
     assert inst["current_package_version"] == "0.1.0"
 
+    # CORRECTED: check_for_updates() used to hardcode BOTH
+    # current_version and latest_version to "1.0.0" - the exact same
+    # wrong-version bug as run_installation() above, missed at the time
+    # since it lives in a sibling class. current_version now genuinely
+    # reflects the real installed version; latest_version is honestly
+    # unknown since no real update channel is connected.
     upd = ProductionUpdater.check_for_updates()
-    assert upd["update_available"] is False
+    assert upd["current_version"] == "0.1.0"
+    assert upd["latest_version"] is None
+    assert upd["update_available"] is None
 
     mig = MigrationManager.run_migrations()
     assert mig["status"] == "UP_TO_DATE"
