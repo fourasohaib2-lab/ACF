@@ -50,7 +50,20 @@ def decode_wmo_present_weather(code: int) -> str:
 def decode_metar_visibility(vis_code: str) -> float:
     """
     Decode la visibilite horizontale METAR en metres.
-    Exemples: '9999' -> 10000m (>= 10 km), '0500' -> 500m, '10SM' -> 16093m.
+    Exemples: '9999' -> 10000m (>= 10 km, convention METAR standard),
+    '0500' -> 500m, '10SM' -> 16093.4m.
+
+    Raises
+    ------
+    ValueError
+        Si le code ne correspond a aucun format METAR reconnu (numerique
+        4 chiffres, ou distance en statute miles suffixee 'SM'). Un code
+        illisible ne doit jamais etre silencieusement traduit en "10000m"
+        (>= 10 km, c.a.d. bonne visibilite) - ce serait une valeur
+        inventee et potentiellement dangereuse pour un usage aeronautique,
+        pas une decodification honnete (NOTE correction : cette fonction
+        renvoyait auparavant 10000.0 pour tout code non parseable,
+        confondant "visibilite excellente confirmee" avec "code illisible").
     """
     vis_code = vis_code.strip().upper()
     if vis_code == "9999":
@@ -58,10 +71,10 @@ def decode_metar_visibility(vis_code: str) -> float:
     if vis_code.endswith("SM"):
         try:
             miles = float(vis_code[:-2])
-            return miles * 1609.34
-        except ValueError:
-            return 10000.0
+        except ValueError as exc:
+            raise ValueError(f"Code de visibilite METAR illisible (format 'SM'): {vis_code!r}") from exc
+        return miles * 1609.34
     try:
         return float(vis_code)
-    except ValueError:
-        return 10000.0
+    except ValueError as exc:
+        raise ValueError(f"Code de visibilite METAR non reconnu: {vis_code!r}") from exc

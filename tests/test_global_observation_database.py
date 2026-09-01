@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 Global Observation Database, WMO Standards & Forward Operators Test Suite (MISSION ACF-025)
 """
 
+import pytest
+
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 from acf.science.observations.forward_operators import (
     observe_gnss_zenith_wet_delay_zwd,
@@ -66,6 +68,17 @@ def test_wmo_decoders():
 
     v10sm = decode_metar_visibility("10SM")
     assert v10sm > 16000.0
+
+    v0500 = decode_metar_visibility("0500")
+    assert v0500 == 500.0
+
+    # An unparseable code must never be silently reported as "10km+
+    # visibility" (a plausible-but-fabricated value) - it must raise.
+    with pytest.raises(ValueError):
+        decode_metar_visibility("GARBAGE")
+
+    with pytest.raises(ValueError):
+        decode_metar_visibility("ABCSM")
 
 
 def test_query_engine_phase14_observation_questions():
