@@ -4,6 +4,8 @@ registered alongside the CAPE/CIN physical fix and the canonical
 Bolton (1980) equivalent potential temperature.
 """
 
+import pytest
+
 from acf.science.registry import ScientificRegistry
 
 
@@ -39,6 +41,30 @@ def test_bolton_equivalent_potential_temperature_law_registered():
 def test_thermodynamics_domain_lists_new_laws():
     keys = {law.key for law in ScientificRegistry.list_laws(domain="Thermodynamique")}
     assert {"cape_buoyancy_integral", "cin_buoyancy_integral", "equivalent_potential_temperature_bolton_1980"} <= keys
+
+
+def test_clausius_clapeyron_law_returns_es_not_its_derivative():
+    """
+    CORRECTED: the 'equation' field previously stated only the
+    differential relation des/dT=... while calculate() actually returns
+    es(T) itself (a different quantity/unit, Pa not Pa/K) via the
+    empirical Bolton/Tetens fit - documentation now states both forms.
+    This test pins down that calculate() genuinely returns es(T): it
+    must match science/saturation_vapor_pressure.py's canonical
+    implementation exactly (same underlying Tetens formula, just
+    re-expressed directly in Kelvin) and increase with temperature.
+    """
+    from acf.science.saturation_vapor_pressure import SaturationVaporPressure
+
+    law = ScientificRegistry.get("clausius_clapeyron")
+    assert law is not None
+
+    es_290k = law.calculate(temperature=290.0)
+    es_300k = law.calculate(temperature=300.0)
+    assert es_300k > es_290k > 0
+
+    expected_pa = SaturationVaporPressure.calculate(290.0, is_kelvin=True) * 100.0
+    assert es_290k == pytest.approx(expected_pa, rel=1e-9)
 
 
 def test_ice_crystal_nucleation_law_registered_and_computes():

@@ -33,9 +33,13 @@ THERMODYNAMIC_LAWS = [
         key="clausius_clapeyron",
         name="Équation de Clausius-Clapeyron",
         domain="Thermodynamique",
-        equation="des/dT = (Lv * es) / (Rv * T^2)",
+        equation=(
+            "Loi différentielle : des/dT = (Lv * es) / (Rv * T^2). "
+            "calculate() retourne sa solution empirique intégrée (forme de Bolton/Tetens) : "
+            "es(T) = 611.2 * exp(17.67*(T-273.15) / (T-29.65))"
+        ),
         variables={
-            "es": "Pression de vapeur saturante",
+            "es": "Pression de vapeur saturante (ce que calculate() retourne)",
             "T": "Température absolue",
             "Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)",
             "Rv": "Constante spécifique de la vapeur d'eau (461.5 J/(kg·K))",
@@ -43,7 +47,29 @@ THERMODYNAMIC_LAWS = [
         units={"es": "Pa", "T": "K", "Lv": "J/kg", "Rv": "J/(kg·K)"},
         description="Régit l'augmentation de la pression de vapeur saturante de l'eau en fonction de la température (~7%/K).",
         references=["IPCC AR6 Physical Science Basis", "ECMWF Technical Memoranda"],
-        limitations=["Assume une vapeur d'eau se comportant comme un gaz parfait."],
+        limitations=[
+            "Assume une vapeur d'eau se comportant comme un gaz parfait.",
+            # NOTE (correction): the "equation" field used to state ONLY the
+            # differential relation des/dT=..., while calculate() actually
+            # returns es(T) itself (Pa) via the empirical Bolton/Tetens
+            # solution - a different physical quantity with different units
+            # (Pa, not Pa/K) from what the equation field implied. Now both
+            # forms are stated explicitly so a caller knows exactly which
+            # quantity calculate() returns. This compute_func is
+            # algebraically identical to science/saturation_vapor_pressure.py's
+            # SaturationVaporPressure.calculate() (verified: T-29.65 ==
+            # (T-273.15)+243.5, the same Tetens constant) - not a second,
+            # independent implementation, just re-expressed directly in
+            # Kelvin instead of first converting to Celsius.
+            "science/encyclopedia/physical_laws/thermodynamics_laws.py's separate "
+            "'clausius_clapeyron_equation' entry computes es(T) via the analytically-integrated "
+            "constant-Lv solution (es0*exp[(Lv/Rv)(1/T0-1/T)]) instead of this entry's empirical "
+            "Bolton/Tetens fit - both are legitimate, commonly cited approximations of the same "
+            "physical law, but they are NOT numerically identical (verified: they agree exactly "
+            "at T0=273.15K by construction, then diverge with warming - 0.87% apart at 290K, "
+            "2.0% at 300K, 3.5% at 310K); the Bolton/Tetens form used here is the more accurate "
+            "operational fit.",
+        ],
         compute_func=lambda temperature: 611.2 * math.exp((17.67 * (temperature - 273.15)) / (temperature - 29.65)),
     ),
     AtmosphericLaw(

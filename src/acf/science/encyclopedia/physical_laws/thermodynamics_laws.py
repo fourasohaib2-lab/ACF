@@ -314,17 +314,36 @@ LAWS: list[EncyclopediaEntry] = [
         name="Équation de Clausius-Clapeyron",
         domain="Thermodynamique Atmosphérique",
         subdomain="Changement de phase de l'eau",
-        equation="des/dT = (L_v * es) / (R_v * T^2)",
+        equation=(
+            "Loi différentielle : des/dT = (L_v * es) / (R_v * T^2). calculate_clausius_clapeyron_es() "
+            "retourne sa solution analytique intégrée (Lv, Rv constants) : "
+            "es(T) = es0 * exp[(Lv/Rv)*(1/T0 - 1/T)]"
+        ),
         latex_equation=r"\frac{de_s}{dT} = \frac{L_v e_s}{R_v T^2}",
         variables={
-            "es": "Pression de vapeur saturante (Pa)",
+            "es": "Pression de vapeur saturante (Pa) - ce que calculate_clausius_clapeyron_es() retourne",
             "Lv": "Chaleur latente de vaporisation (2.5e6 J/kg)",
             "Rv": "Constante vapeur d'eau (461.5 J/(kg·K))",
         },
         units={"es": "Pa", "T": "K"},
         description="Relation différentielle fondamentale décrivant l'augmentation exponentielle de la capacité de retention d'eau de l'air avec la température (~7% par K).",
         application_conditions=["Équilibre liquide-vapeur ou glace-vapeur"],
-        limitations=["Lv varie légèrement avec la température"],
+        limitations=[
+            "Lv varie légèrement avec la température",
+            # NOTE (correction): "equation" previously stated only the
+            # differential des/dT=... while calculate_clausius_clapeyron_es()
+            # (its own docstring: "es(T) via l'equation d'etat de
+            # Clausius-Clapeyron") actually returns es(T) itself (Pa), a
+            # different quantity/unit than des/dT (Pa/K) - now both forms
+            # are stated. This is the analytically-integrated, constant-Lv
+            # solution - different from science/laws/thermodynamics.py's
+            # 'clausius_clapeyron' entry, which uses the empirical
+            # Bolton/Tetens fit instead; the two are NOT numerically
+            # identical (they agree at T0=273.15K by construction, then
+            # diverge with warming - ~0.9% apart at 290K). Cross-referenced
+            # rather than silently duplicated per ACF's single-source-of-
+            # truth convention.
+        ],
         references=["Clausius (1850)", "Clapeyron (1834)", "WMO Technical Note"],
         compute_func=calculate_clausius_clapeyron_es,
     ),
