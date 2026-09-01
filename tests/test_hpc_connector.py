@@ -1,5 +1,7 @@
 """Unit test suite for ACF-HPC-101 Universal PythonResolver & SLURM Compute Node Environment Bootstrapper."""
 
+import sys
+
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.hpc_connector.arome_aladin_detector import AromeAladinDetector
 from acf.hpc_connector.cluster_detector import ClusterDetector
@@ -44,6 +46,15 @@ def test_python_resolver_versions():
     assert info["is_valid"] is True
     assert "python_path" in info
     assert "python_version" in info
+
+    # CORRECTED: there used to be no way to tell whether python_path/
+    # python_version were genuinely confirmed against a live remote probe
+    # or fell back to this process's own local sys.executable (still
+    # accurate, but not the same claim). In this offline test environment
+    # (no real FENNEC SSH transport), it must honestly report the local
+    # fallback was used, not a fabricated remote verification.
+    assert info["is_remote_verified"] is False
+    assert info["python_path"] == sys.executable
 
 
 def test_slurm_scheduler_dynamic_python():

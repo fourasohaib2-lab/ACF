@@ -74,7 +74,23 @@ class PythonResolver:
             return (0, 0, 0)
 
     def resolve_python(self, preferred_module: str | None = None) -> dict[str, Any]:
-        """Resolve the optimal Python executable and environment module."""
+        """Resolve the optimal Python executable and environment module.
+
+        NOTE (correction): the returned dict used to have no way to tell
+        whether python_path/python_version were genuinely confirmed
+        against a live remote probe or fell back to this process's own
+        local sys.executable/sys.version_info (a legitimate, accurate
+        fallback in itself - real facts about the interpreter actually
+        running ACF - but silently indistinguishable from a real remote
+        verification, and `is_valid` was unconditionally True either
+        way). Also replaced the fragile substring check
+        `"REMOTE STDOUT" in ver_str` (coupled to one specific offline-
+        placeholder text format) with RemoteExecutor's own honest
+        `is_simulated` flag, the mechanism actually built for this.
+        Added `is_remote_verified` so callers can now tell the two
+        cases apart; python_path/python_version/python_module's
+        existing values and fallback behavior are unchanged.
+        """
         log_hpc_event("INFO", "Resolving optimal Python interpreter for HPC execution...")
 
         best_resolution: dict[str, Any] = {
@@ -84,6 +100,7 @@ class PythonResolver:
             "is_virtualenv": hasattr(sys, "real_prefix")
             or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix),
             "is_valid": True,
+            "is_remote_verified": False,
         }
 
         # 1. Inspect Python Modules
@@ -97,10 +114,11 @@ class PythonResolver:
         for exe in executables:
             cmd = f"{exe} -c \"import sys; print(f'{{sys.version_info.major}}.{{sys.version_info.minor}}.{{sys.version_info.micro}}')\""
             res = self.executor.execute_command(cmd)
+            is_remote_verified = not res.get("is_simulated", True)
 
             if res.get("exit_code") == 0:
                 ver_str = res.get("stdout", "").strip()
-                if "REMOTE STDOUT" in ver_str:
+                if not is_remote_verified:
                     ver_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
                 ver_tuple = self._parse_version_tuple(ver_str)
@@ -111,7 +129,7 @@ class PythonResolver:
                     # Resolve absolute path
                     res_path = self.executor.execute_command(f"which {exe} 2>/dev/null || echo '{exe}'")
                     abs_path = res_path.get("stdout", "").strip()
-                    if "REMOTE STDOUT" in abs_path or not abs_path:
+                    if not is_remote_verified or not abs_path:
                         abs_path = exe if not exe.startswith("python") else sys.executable
 
                     best_resolution = {
@@ -120,6 +138,7 @@ class PythonResolver:
                         "python_module": selected_module,
                         "is_virtualenv": ".venv" in abs_path or "venv" in abs_path,
                         "is_valid": True,
+                        "is_remote_verified": is_remote_verified,
                     }
 
         log_hpc_event(
