@@ -11,10 +11,18 @@ def test_orographic_lifting():
 
 
 def test_adiabatic_cooling():
+    """
+    CORRECTED: used to use LAPSE_RATE (0.0065 K/m, the ISA
+    environmental/standard-atmosphere rate) for a parcel's own
+    adiabatic cooling, which is instead governed by the dry adiabatic
+    lapse rate G/CP (~0.00977 K/m) - a materially different (~50%
+    steeper) value. G and CP were already defined on this class but
+    never actually used anywhere until now.
+    """
 
     value = MountainPhysics.adiabatic_cooling(1000)
 
-    assert round(value, 2) == 6.5
+    assert round(value, 2) == 9.77
 
 
 def test_temperature():
@@ -32,10 +40,11 @@ def test_precipitation():
 
 
 def test_foehn():
+    """CORRECTED: same LAPSE_RATE-vs-DRY_ADIABATIC_LAPSE_RATE bug as adiabatic_cooling() - see its NOTE."""
 
     value = MountainPhysics.foehn_temperature(280, 1000)
 
-    assert round(value, 1) == 286.5
+    assert round(value, 1) == 289.8
 
 
 def test_flat():
