@@ -17,15 +17,24 @@ class RadiationBalancePhysics:
         temperature: float,
     ) -> float:
         """
-        Calculate normalized outgoing longwave radiation.
+        Calculate outgoing longwave radiation via the Stefan-Boltzmann law (W/m^2).
+
+        NOTE (correction — Physics Guard): this used to divide the
+        correct sigma*T^4 by an unexplained "10.01" - no physical
+        justification, no comment, and not a clean unit-conversion
+        factor. At T=288.15K (global mean surface temperature) the
+        real Stefan-Boltzmann emission is ~391 W/m^2 (the standard,
+        widely-cited figure for Earth's surface longwave emission,
+        e.g. in global energy budget diagrams) - dividing by 10.01
+        corrupted this to ~39 W/m^2, an order of magnitude off. The
+        existing test asserted directly on the corrupted ~39 value,
+        locking it in as if verified.
         """
 
         if temperature <= 0:
             raise ValueError("Temperature must be positive")
 
-        radiation = RadiationBalancePhysics.STEFAN_BOLTZMANN * temperature**4
-
-        return radiation / 10.01
+        return RadiationBalancePhysics.STEFAN_BOLTZMANN * temperature**4
 
     @staticmethod
     def net_radiation(

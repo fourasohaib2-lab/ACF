@@ -4,10 +4,18 @@ from acf.model4d.physics.radiation_balance import RadiationBalancePhysics
 
 
 def test_outgoing_longwave_radiation():
+    """
+    CORRECTED: used to divide the correct sigma*T^4 by an unexplained
+    "10.01", corrupting the real ~391 W/m^2 Stefan-Boltzmann emission
+    at T=288.15K down to ~39 W/m^2 (an order of magnitude off) - the
+    test used to assert directly on that corrupted value.
+    """
 
     value = RadiationBalancePhysics.outgoing_longwave_radiation(288.15)
 
-    assert round(value, 2) == 39.05
+    expected = RadiationBalancePhysics.STEFAN_BOLTZMANN * 288.15**4
+    assert value == pytest.approx(expected)
+    assert 385.0 < value < 395.0  # sanity check against the well-known ~391 W/m^2 figure
 
 
 def test_net_radiation():
