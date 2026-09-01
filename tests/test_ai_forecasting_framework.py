@@ -4,6 +4,8 @@ Atmospheric Complexity Framework (ACF)
 AI Forecasting Framework Test Suite (MISSION ACF-028)
 """
 
+import pytest
+
 from acf.ai.decision_support.decision_engine import ForecastDecisionEngine
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
 from acf.ai.neural_models.models import NEURAL_MODELS_REGISTRY, NeuralWeatherModelEngine
@@ -77,6 +79,19 @@ def test_uncertainty_quantification_engine():
     low, high = UncertaintyQuantificationEngine.calculate_confidence_interval(mean=25.0, std=1.0)
     assert low < 25.0 < high
 
+    # CORRECTED: any confidence_level other than exactly 0.95 used to
+    # silently get z=2.576 (the 99% CI z-score) regardless of what was
+    # actually requested - a 90% CI request returned a 99%-wide
+    # interval mislabeled as 90%. See uncertainty_engine.py's own NOTE
+    # (correction).
+    low_90, high_90 = UncertaintyQuantificationEngine.calculate_confidence_interval(
+        mean=25.0, std=1.0, confidence_level=0.90
+    )
+    assert (high_90 - low_90) < (high - low)  # a 90% CI must be narrower than the 95% CI
+
+    with pytest.raises(ValueError):
+        UncertaintyQuantificationEngine.calculate_confidence_interval(mean=25.0, std=1.0, confidence_level=0.73)
+
 
 def test_forecast_decision_engine():
     """Test du moteur de décision opérationnelle et d'évaluation des risques."""
@@ -93,6 +108,14 @@ def test_forecast_decision_engine():
     assert assessment["risk_level"] in ["ÉLEVÉ", "CRITIQUE / EXTRÊME"]
     assert len(assessment["detected_phenomena"]) >= 2
     assert "Supercellules" in assessment["detected_phenomena"][0] or "Grêle" in assessment["detected_phenomena"][0]
+
+    # CORRECTED: confidence_score used to be a fixed 0.90 regardless of
+    # input - identical for a "FAIBLE" (no risks detected) and a
+    # "CRITIQUE / EXTRÊME" assessment. This is a deterministic
+    # threshold check, not a probabilistic forecast, so there is no
+    # real statistical basis for a confidence number here. See
+    # decision_engine.py's own NOTE (correction).
+    assert assessment["confidence_score"] is None
     assert len(assessment["operational_warnings"]) >= 1
 
 

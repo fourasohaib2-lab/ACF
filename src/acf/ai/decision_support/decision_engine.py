@@ -33,7 +33,20 @@ class ForecastDecisionEngine:
 
         risks = []
         warnings = []
-        confidence = 0.90
+        # NOTE (correction): confidence_score used to be a fixed 0.90
+        # regardless of the input state - identical whether risk_level
+        # came out "FAIBLE" (no thresholds crossed at all) or
+        # "CRITIQUE / EXTRÊME" (every threshold crossed). This is a
+        # deterministic rule-based threshold check, not a probabilistic/
+        # ensemble forecast, so there is no real statistical basis here
+        # to compute a genuine confidence number from (unlike
+        # UncertaintyQuantificationEngine.decompose_uncertainty(), which
+        # does have real ensemble variance to compute one from).
+        # Honestly None instead, matching the same disclosure already
+        # used by every other "no real basis for a confidence number"
+        # engine in this package (emergency_assistant, digital_twin,
+        # atmosphere_explorer, xai/explanation_generator).
+        confidence = None
 
         # 1. Supercellules & Orages Violents
         if cape >= 1500.0 and shear >= 15.0:
