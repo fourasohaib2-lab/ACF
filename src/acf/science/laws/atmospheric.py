@@ -49,7 +49,7 @@ ATMOSPHERIC_LAWS = [
         key="virtual_temperature",
         name="Température Virtuelle",
         domain="Physique Atmosphérique",
-        equation="Tv = T * (1 + 0.61 * q)",
+        equation="Tv = T * (1 + 0.608 * q)",
         variables={
             "T": "Température de l'air",
             "q": "Humidité spécifique",
