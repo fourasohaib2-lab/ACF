@@ -2,13 +2,23 @@
 Atmospheric Complexity Framework (ACF)
 
 Forecast Verification Engine Module (Phase 11)
-(ETS, CSI, POD, FAR, HSS, ACC, CRPS, Brier Score, Taylor Diagram)
+(ETS, CSI, POD, FAR, HSS from a 2x2 contingency table)
+
+NOTE (correction): this module's docstring used to also claim ACC,
+CRPS, Brier Score and Taylor Diagram as capabilities of
+ForecastVerificationEngine, but none of those are implemented here.
+ACC is implemented separately in
+acf.verification.nwp_metrics.NWPVerificationMetrics.acc (same
+package); CRPS/Brier Score/Taylor Diagram live in
+acf.climate.verification.metrics and acf.ai.ensemble.ensemble_manager,
+unrelated classes in different packages.
 """
 
 
 class ForecastVerificationEngine:
     """
-    Moteur de vérification statistique des prédictions NWP & IA par rapport aux observations.
+    Moteur de vérification statistique des prédictions NWP & IA par rapport aux observations
+    (scores de table de contingence 2x2 : POD, FAR, CSI, ETS, HSS).
     """
 
     @staticmethod

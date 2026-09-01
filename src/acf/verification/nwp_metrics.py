@@ -62,13 +62,27 @@ class NWPVerificationMetrics:
     def contingency_table(forecast: Sequence[float], observation: Sequence[float], threshold: float) -> dict[str, int]:
         """
         Computes 2x2 contingency table (hits, false_alarms, misses, correct_negatives).
+
+        NOTE (correction): this used zip(..., strict=False), which
+        silently truncates to the shorter sequence on a length mismatch
+        instead of raising - every other method in this class
+        (rmse/bias/mae/acc) explicitly guards against mismatched
+        lengths. A caller passing misaligned forecast/observation
+        arrays would get a contingency table (and therefore POD/FAR/
+        CSI/ETS) silently computed over a wrong, truncated pairing
+        instead of an error.
         """
+        if len(forecast) != len(observation):
+            raise ValueError(
+                f"forecast and observation must have the same length, got {len(forecast)} and {len(observation)}"
+            )
+
         a = 0  # Hits
         b = 0  # False Alarms
         c = 0  # Misses
         d = 0  # Correct Negatives
 
-        for f, o in zip(forecast, observation, strict=False):
+        for f, o in zip(forecast, observation, strict=True):
             f_event = f >= threshold
             o_event = o >= threshold
 

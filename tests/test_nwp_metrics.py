@@ -2,6 +2,8 @@
 Unit test suite for NWPVerificationMetrics (ACF-NWP-001).
 """
 
+import pytest
+
 from acf.verification.nwp_metrics import NWPVerificationMetrics
 
 
@@ -31,3 +33,11 @@ def test_categorical_metrics():
     assert "ets" in eval_res
     assert 0.0 <= eval_res["pod"] <= 1.0
     assert 0.0 <= eval_res["far"] <= 1.0
+
+
+def test_contingency_table_rejects_mismatched_lengths():
+    """CORRECTED: used to silently truncate to the shorter sequence
+    (zip strict=False) instead of raising, unlike every continuous
+    metric in this class which explicitly guards against this."""
+    with pytest.raises(ValueError):
+        NWPVerificationMetrics.contingency_table([1.0, 2.0, 3.0], [1.0, 2.0], threshold=1.5)

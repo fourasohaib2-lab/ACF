@@ -101,6 +101,13 @@ def test_scientific_validation_engine():
     anom = AnomalyCalculator.compute_anomaly(300.0, 295.0)
     assert anom["anomaly"] == 5.0
 
+    # CORRECTED: standardized_anomaly_sigma used to divide by a
+    # hardcoded "1.5" with no physical basis regardless of the
+    # parameter/location, always looking like a genuine z-score.
+    assert anom["standardized_anomaly_sigma"] is None  # no real std dev supplied
+    anom_with_sigma = AnomalyCalculator.compute_anomaly(300.0, 295.0, climatological_std_dev=2.5)
+    assert anom_with_sigma["standardized_anomaly_sigma"] == 2.0
+
     # CORRECTED: acc_score/rmse_temperature_k/verification_status used
     # to be fixed (0.965/0.42/"EXCELLENT_SKILL_SCORE") regardless of
     # model/obs_source, with no real forecast-vs-observation
