@@ -44,12 +44,23 @@ class AWCIDashboardEngine:
         }
 
     def render_center_canvas(self) -> dict[str, Any]:
-        """Canvas Central: Rendu Carte 2D/3D/4D."""
+        """Canvas Central: Rendu Carte 2D/3D/4D.
+
+        NOTE (correction): "fps" used to be a hardcoded 60 regardless of
+        anything - this dashboard is a state/layout facade (see class
+        docstring: it returns plain dicts describing panel state, there
+        is no real render loop or frame timer anywhere in this stack -
+        GPUBackend.render_offscreen() itself only echoes back
+        width/height/lod, it doesn't measure a framerate either) so
+        there was never a real frame rate behind this number. Reported
+        as None (genuinely unmeasured) rather than a plausible-looking
+        but entirely fabricated "60".
+        """
         return {
             "scene_mode": self.scene.mode,
             "camera_position": self.camera.get_state()["position"],
             "active_layers": len(self.scene.layers),
-            "fps": 60,
+            "fps": None,
         }
 
     def render_right_inspector(self) -> dict[str, Any]:
@@ -74,13 +85,26 @@ class AWCIDashboardEngine:
         }
 
     def render_bottom_timeline(self) -> dict[str, Any]:
-        """Panneau Bas: Contrôle d'animation 4D, Sélecteur de niveau vertical & Barre d'état."""
+        """Panneau Bas: Contrôle d'animation 4D, Sélecteur de niveau vertical & Barre d'état.
+
+        NOTE (correction): same fabricated "fps": 60 as
+        render_center_canvas() - see its NOTE. Also: self.timeline
+        (TimelineController) is constructed here but nothing anywhere
+        in this codebase ever drives it forward on a real timer once
+        .play() is called (verified via grep: play()/next_frame() have
+        no caller besides direct test invocation) - play() genuinely
+        just flips a `playing` flag with no actual animation loop
+        behind it yet. Flagged here rather than "fixed" since wiring a
+        real Qt/GL timer loop is a larger feature this dashboard-state
+        facade doesn't have the infrastructure for; TimelineController
+        itself already reports frame/level state honestly.
+        """
         return {
             "timeline_state": self.timeline.state(),
             "mouse_position": self.mouse_position,
             "current_model": self.active_model,
             "projection": "EPSG:4326 (WGS84 Equirectangular)",
-            "fps": 60,
+            "fps": None,
         }
 
     def process_natural_language_query(self, user_query: str) -> dict[str, Any]:

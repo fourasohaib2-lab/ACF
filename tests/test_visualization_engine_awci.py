@@ -121,4 +121,11 @@ def test_awci_dashboard_engine():
     # Natural Language Query Interaction
     res = dashboard.process_natural_language_query("Show CAPE")
     assert res["dashboard_state"]["selected_parameter"] == "CAPE"
+
+    # CORRECTED: "fps" used to be a hardcoded 60 in both panels regardless
+    # of anything - this dashboard has no real render loop or frame timer
+    # anywhere in its stack, so there was never a real framerate behind
+    # that number. Now honestly reported as unmeasured.
+    assert summary["center_canvas"]["fps"] is None
+    assert summary["bottom_timeline"]["fps"] is None
     assert len(dashboard.scene.layers) >= 1
