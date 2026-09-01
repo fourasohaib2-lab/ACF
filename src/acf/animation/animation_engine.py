@@ -37,6 +37,15 @@ class AnimationEngine:
     ##################################################
 
     def next_frame(self):
+        """
+        NOTE (correction): self.loop was genuinely settable via
+        set_loop() but never actually consulted anywhere in this class
+        - TimeManager.next() clamps at the last frame and stays there,
+        so enabling loop mode had no effect at all on playback: it
+        silently never looped back to the first frame.
+        """
+        if self.loop and self.time_manager.index >= self.time_manager.count() - 1:
+            return self.time_manager.first()
 
         return self.time_manager.next()
 

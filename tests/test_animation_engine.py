@@ -36,3 +36,23 @@ def test_navigation():
     engine.stop()
 
     assert manager.index == 0
+
+
+def test_loop_mode():
+    """
+    CORRECTED: set_loop() used to have zero effect on playback -
+    next_frame() never consulted self.loop, so it silently stayed
+    clamped on the last frame instead of wrapping back to the first.
+    """
+    manager = TimeManager()
+    manager.load([datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(hours=i) for i in range(3)])
+    engine = AnimationEngine(manager)
+
+    engine.set_loop(True)
+    engine.next_frame()
+    engine.next_frame()
+    assert manager.index == 2  # last frame
+
+    looped = engine.next_frame()
+    assert manager.index == 0
+    assert looped == manager.current()
