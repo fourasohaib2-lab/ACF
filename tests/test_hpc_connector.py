@@ -102,6 +102,23 @@ def test_cluster_and_arome_detector():
     assert "has_arome" in stack
     assert "has_aladin" in stack
 
+    # CORRECTED: every `which <binary>` shell command used to embed its
+    # OWN guaranteed-success fallback (`|| echo 'AROME_FOUND'`) so a
+    # genuinely-missing binary could never actually be reported as
+    # missing, has_canari/has_odb/has_eccodes were hardcoded True with
+    # zero detection attempted, and models_detected was a fixed 5-item
+    # list regardless of what was actually "detected". In this offline
+    # test environment (no real FENNEC SSH transport), none of these
+    # binaries can genuinely be confirmed present.
+    assert stack["has_arome"] is False
+    assert stack["has_aladin"] is False
+    assert stack["has_canari"] is False
+    assert stack["has_odb"] is False
+    assert stack["has_eccodes"] is False
+    assert stack["eccodes_version"] is None
+    assert stack["models_detected"] == []
+    assert stack["operational_mode"] == "STANDARD_NWP"
+
 
 def test_security_manager():
     sec = HPCSecurityManager()
