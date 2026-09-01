@@ -23,6 +23,24 @@ from .layer_tree import LayerTree
 class LayerPanel(QWidget):
     """
     Professional layer panel.
+
+    NOTE (found, NOT changed - Physics Guard): add_button/remove_button/
+    up_button/down_button/opacity_slider are created here but never
+    connected to any handler, neither in this class nor by
+    gui.main_window.MainWindow (the only real instantiator, verified
+    via grep) - in the live app, clicking +/-/up/down or moving the
+    opacity slider currently does nothing. self.layer_tree (LayerTree)
+    does have genuine add_layer()/remove_layer() methods that COULD
+    back +/-, but MainWindow never calls them either (this panel is
+    never populated with real layers, and is entirely disconnected from
+    the app's real layer manager in gui.map.layers.layer_manager).
+    Reordering (up/down) has no backing capability anywhere in
+    LayerTree at all. Not fixed here: wiring this up would mean
+    inventing the intended UI flow (e.g. what "+" should prompt for)
+    and how this panel should connect to the real layer manager,
+    neither of which has an existing spec to implement against -
+    flagged rather than fabricated, same principle as
+    hpc_workflow.workflow_validator's own NOTE.
     """
 
     def __init__(self, parent=None):

@@ -81,6 +81,21 @@ class LayerPanel(QDockWidget):
     ##################################################
 
     def refresh(self):
+        """
+        NOTE (correction): this used to create 5 fixed category headers
+        (Meteorology, Satellite, Radar, Ocean, Terrain) but route every
+        real layer under "Meteorology" regardless of its actual nature
+        - the underlying layer objects (acf.gui.map.layers.layer_manager.LayerManager)
+        carry no category/domain attribute at all, so the other 4
+        headers could never be populated and would always render as
+        permanently empty, misleading category nodes. Not fabricated
+        data, but a misleading UI structure implying a categorization
+        capability that doesn't exist in the data model. Fixed to list
+        layers directly at the tree root rather than inventing a
+        categorization scheme with no real data behind it. This class
+        is currently unused/unwired anywhere else in the codebase
+        (verified via grep), so this had no live-app impact.
+        """
 
         if self.tree is None:
             return
@@ -90,13 +105,8 @@ class LayerPanel(QDockWidget):
         if self.layer_manager is None:
             return
 
-        meteorology = QTreeWidgetItem(self.tree, ["Meteorology"])
-        QTreeWidgetItem(self.tree, ["Satellite"])
-        QTreeWidgetItem(self.tree, ["Radar"])
-        QTreeWidgetItem(self.tree, ["Ocean"])
-        QTreeWidgetItem(self.tree, ["Terrain"])
         for layer in self.layer_manager.layers():
-            item = QTreeWidgetItem(meteorology, [layer.name])
+            item = QTreeWidgetItem(self.tree, [layer.name])
 
             item.setData(0, Qt.ItemDataRole.UserRole, layer.id)
 
