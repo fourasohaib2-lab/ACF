@@ -121,8 +121,16 @@ def test_ocean_cryosphere_and_land_physics():
     slr_contrib = IceSheetDynamics.sea_level_equivalent_contribution(361.8)
     assert slr_contrib == 1.0
 
-    ice_growth = SeaIceThermodynamics.ice_growth_rate_m_s(-10.0)
-    assert ice_growth > 0.0
+    # CORRECTED: used to be a flat linear proxy with no ice_thickness
+    # term - Stefan's law (what this class is named after) predicts
+    # growth rate INVERSELY proportional to current thickness (thicker
+    # ice insulates better and grows more slowly).
+    thin_ice_growth = SeaIceThermodynamics.ice_growth_rate_m_s(-10.0, ice_thickness_m=0.1)
+    thick_ice_growth = SeaIceThermodynamics.ice_growth_rate_m_s(-10.0, ice_thickness_m=2.0)
+    assert thin_ice_growth > 0.0
+    assert thin_ice_growth > thick_ice_growth  # thinner ice grows faster
+    with pytest.raises(ValueError):
+        SeaIceThermodynamics.ice_growth_rate_m_s(-10.0, ice_thickness_m=0.0)
 
     ch4 = PermafrostThawModel.compute_ch4_emission_megatons(0.5)
     assert ch4 > 0.0
