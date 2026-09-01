@@ -78,15 +78,29 @@ sessions parallèles :
   `geology/geomagnetism.py`) — pas des bugs préexistants, juste des annotations
   de type trop étroites pour leur propre valeur de retour.
 
-## 5. Ce qui reste hors de cette passe
+## 5. Couverture finale et ce qui reste hors de cette passe
 
-- `model4d/physics/` (~100 fichiers) et `science/` (~170 fichiers) n'ont pas été
-  audités à 100% — le rythme de découverte de bugs a nettement diminué sur les
-  derniers lots traités (volume_engine, layer_engine, radiation_balance), ce qui a
-  motivé la pause de la chasse active fichier par fichier au profit de cette passe
-  de validation et de consolidation.
+- `model4d/physics/` (152 fichiers) et `science/` (170 fichiers) sont maintenant
+  **audités à 100%**. Un recensement final (`git log --name-only` sur la période de
+  session) a montré que seuls 10 fichiers substantiels restaient non touchés (le
+  reste des fichiers "manquants" étaient des `__init__.py` triviaux de 5 à 13
+  lignes) — bien moins que l'estimation initiale d'environ 270 fichiers restants.
+  Ce dernier lot (`air_density.py`, `frontogenesis.py`, `geopotential_height.py`,
+  `specific_humidity.py`, `laws/atmospheric.py`, `laws/mathematics.py`,
+  `encyclopedia/mathematics.py`, `cryosphere_dynamics.py`,
+  `mesospheric_dynamics.py`, `waves.py`) a été lu intégralement (commit
+  `224e3fc`) : un seul bug réel trouvé — l'entrée `virtual_temperature` de
+  `science/laws/atmospheric.py` affichait l'équation avec le coefficient 0.61
+  alors que son `compute_func` utilisait 0.608 (incohérence interne, et
+  incohérente avec les deux entrées sœurs ailleurs dans le code qui utilisent
+  toutes deux 0.608) — corrigé. Les 9 autres fichiers étaient déjà corrects,
+  honnêtement étiquetés "simplifié"/"approximation" sans revendiquer de formule
+  nommée qu'ils n'implémentent pas.
 - Le remote git `origin` pointe vers `https://github.com/TON_COMPTE/ACF.git`, qui
-  ressemble à un placeholder jamais configuré — à corriger avant tout push/partage.
+  ressemble à un placeholder jamais configuré (`origin/develop` n'existe même pas
+  en local) — **tout ce travail n'existe donc que sur cette machine, sans
+  sauvegarde**. À corriger en priorité avant tout autre chose si ce travail doit
+  être conservé/partagé.
 - Un projet séparé et plus restreint — un outil réutilisable qui automatiserait une
   partie des contrôles faits manuellement ici (recherche de constantes suspectes,
   valeurs fabriquées, docstring vs implémentation) — a été évoqué mais volontairement
