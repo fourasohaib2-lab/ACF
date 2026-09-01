@@ -35,6 +35,7 @@ from acf.data.dataset import Dataset
 from acf.maps.auto_renderer import AutoRenderer
 from acf.maps.data_renderer import DataRenderer
 from acf.maps.layers.base_layer import BaseLayer
+from acf.maps.renderers.scientific_renderer import ScientificRenderer
 from acf.maps.visualization_manager import VisualizationManager
 
 
@@ -95,6 +96,29 @@ def test_auto_renderer_detects_variable_family_and_renders():
 
     with pytest.raises(ValueError):
         auto.render_dataset(ds, "wind", lon, lat, data)  # no wind-family variable in ds
+
+
+def test_scientific_renderer_colormap_lookup_is_not_none():
+    """
+    CORRECTED: ScientificRenderer.__init__() constructed an empty
+    ColormapManager (a generic registry with no built-in defaults, by
+    design - same convention as StandardsManager/CatalogManager) but
+    never populated it, so get_colormap() for temperature/wind/
+    pressure/humidity silently returned None instead of a usable
+    colormap name - while any OTHER, unrecognized variable name got the
+    "viridis" default. The 4 explicitly-supported categories were worse
+    off than an unmatched one.
+    """
+    renderer = ScientificRenderer()
+    assert renderer.get_colormap("temperature_2m") == "turbo"
+    assert renderer.get_colormap("wind_speed") == "plasma"
+    assert renderer.get_colormap("mslp_pressure") == "coolwarm"
+    assert renderer.get_colormap("relative_humidity") == "BrBG"
+    # An unrecognized variable still gets the honest default.
+    assert renderer.get_colormap("some_other_field") == "viridis"
+    # None of the above should ever surface as a bare None.
+    for var in ("temperature_2m", "wind_speed", "mslp_pressure", "relative_humidity", "some_other_field"):
+        assert renderer.get_colormap(var) is not None
 
 
 def test_visualization_manager_full_render_round_trip():
