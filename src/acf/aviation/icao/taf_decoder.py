@@ -124,7 +124,11 @@ def _parse_wind_visibility_weather_clouds(tokens: list[str], start: int, end: in
     elif idx < end:
         m = _VIS_M_RE.match(tokens[idx])
         if m:
-            period.visibility_m = float(m.group("vis"))
+            # NOTE (correction): same fix as aviation/icao/metar_decoder.py -
+            # "9999" is the WMO/ICAO sentinel for "visibility >= 10 km",
+            # not a literal 9999 m measurement.
+            raw_vis = m.group("vis")
+            period.visibility_m = 10000.0 if raw_vis == "9999" else float(raw_vis)
             idx += 1
 
     while idx < end:

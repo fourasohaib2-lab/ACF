@@ -44,7 +44,9 @@ def test_base_forecast_wind_visibility_clouds():
     assert base.wind_direction_deg == 240
     assert base.wind_speed_kt == 15.0
     assert base.wind_gust_kt is None
-    assert base.visibility_m == 9999.0
+    # "9999" is the WMO/ICAO sentinel for "visibility >= 10 km", not a
+    # literal 9999 m measurement - see _parse_wind_visibility_weather_clouds()'s NOTE.
+    assert base.visibility_m == 10000.0
     assert base.cloud_layers == [{"coverage": "SCT", "base_ft": 3000, "type": None}]
 
 

@@ -20,7 +20,9 @@ def test_basic_metar_matches_all_fields():
     assert r.wind_direction_deg == 240
     assert r.wind_speed_kt == 18.0
     assert r.wind_gust_kt == 28.0
-    assert r.visibility_m == 9999.0
+    # "9999" is the WMO/ICAO sentinel for "visibility >= 10 km", not a
+    # literal 9999 m measurement - see decode()'s own NOTE.
+    assert r.visibility_m == 10000.0
     assert r.present_weather == ["-RA"]
     assert r.cloud_layers == [{"coverage": "BKN", "base_ft": 2500, "type": None}]
     assert r.temperature_c == 18.0

@@ -168,7 +168,16 @@ class METARDecoder:
         elif idx < len(tokens):
             m = _VIS_M_RE.match(tokens[idx])
             if m:
-                visibility_m = float(m.group("vis"))
+                # NOTE (correction): "9999" is a defined WMO/ICAO sentinel
+                # meaning "visibility >= 10 km", not a literal measurement
+                # of 9999 m - the same convention already established and
+                # tested in science/observations/wmo_code_tables.py's
+                # decode_metar_visibility() elsewhere in ACF. This decoder
+                # used to report it as a literal 9999.0 m, one meter short
+                # of the actual documented meaning; the existing test
+                # even asserted directly on that wrong value.
+                raw_vis = m.group("vis")
+                visibility_m = 10000.0 if raw_vis == "9999" else float(raw_vis)
                 idx += 1
             else:
                 m = _VIS_SM_RE.match(tokens[idx])

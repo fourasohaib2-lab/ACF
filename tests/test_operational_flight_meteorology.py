@@ -39,7 +39,9 @@ def test_icao_met_decoder():
     assert base["change_type"] == "BASE"
     assert base["wind_direction_deg"] == 240
     assert base["wind_speed_kt"] == 15.0
-    assert base["visibility_m"] == 9999.0
+    # "9999" is the WMO/ICAO sentinel for "visibility >= 10 km", not a
+    # literal 9999 m measurement.
+    assert base["visibility_m"] == 10000.0
 
     # A TAF with real change groups: TEMPO fog + a FM group must decode distinctly.
     taf_full = ICAOMetDecoder.decode_taf(
