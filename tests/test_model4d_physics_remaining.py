@@ -56,7 +56,19 @@ def test_boundary_layer_stability_parameter():
 
 
 def test_boundary_layer_friction_velocity():
-    assert BoundaryLayerPhysics.friction_velocity(10.0) == pytest.approx(math.sqrt(0.025), rel=1e-3)
+    """
+    CORRECTED: used to compute sqrt(Cd * U) instead of the standard
+    bulk formula u* = sqrt(Cd) * U (from tau/rho = u*^2 = Cd*U^2) -
+    dimensionally inconsistent and functionally wrong (should scale
+    linearly with wind speed, not as its square root). The old
+    assertion re-derived the same buggy shape rather than checking
+    independently.
+    """
+    assert BoundaryLayerPhysics.friction_velocity(10.0) == pytest.approx(math.sqrt(0.0025) * 10.0, rel=1e-3)
+    # Linear scaling: doubling wind speed must double u* (not scale by sqrt(2)).
+    assert BoundaryLayerPhysics.friction_velocity(20.0) == pytest.approx(
+        2 * BoundaryLayerPhysics.friction_velocity(10.0), rel=1e-3
+    )
     with pytest.raises(ValueError):
         BoundaryLayerPhysics.friction_velocity(0.0)
 

@@ -84,9 +84,25 @@ class BoundaryLayerPhysics:
     def friction_velocity(wind_speed: float) -> float:
         """
         Estimate friction velocity.
+
+        Standard bulk aerodynamic formula: tau/rho = u*^2 = Cd * U^2,
+        so u* = sqrt(Cd) * U (linear in wind speed).
+
+        NOTE (correction - Physics Guard): this used to compute
+        sqrt(Cd * U) - applying the square root to the PRODUCT of the
+        drag coefficient and wind speed, rather than sqrt(Cd) times
+        wind speed. That is dimensionally inconsistent (sqrt(m/s) is
+        not a velocity) and functionally wrong (u* should scale
+        linearly with U, not as sqrt(U)) - at U=40 m/s it underestimated
+        u* by a factor of ~6 relative to the correct formula (0.32 m/s
+        vs the correct 2.0 m/s). The one existing test re-derived this
+        same buggy shape (`sqrt(0.0025 * 10)`) rather than checking it
+        independently.
         """
 
         if wind_speed <= 0:
             raise ValueError("Wind speed must be positive")
 
-        return round(math.sqrt(0.0025 * wind_speed), 3)
+        drag_coefficient = 0.0025
+
+        return round(math.sqrt(drag_coefficient) * wind_speed, 3)
