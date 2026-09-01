@@ -42,3 +42,27 @@ def test_unknown_operator():
 
     with pytest.raises(ValueError):
         engine.apply("unknown")
+
+
+def test_apply_gradient():
+    """
+    CORRECTED: engine.gradient()/apply("gradient", ...) used to call a
+    nonexistent Gradient.calculate() - always raised AttributeError.
+    """
+    engine = OperatorsEngine()
+
+    value = engine.apply("gradient", 2.0, 6.0, 2.0)
+    assert value == 1.0  # centered difference: (6-2)/(2*2)
+
+
+def test_apply_curl():
+    """
+    CORRECTED: engine.curl()/apply("curl", ...) used to call
+    Curl.compute() (a generic sum of raw arguments) instead of
+    Curl.calculate() (the real curl formula) - summing instead of
+    subtracting paired terms is physically meaningless for curl.
+    """
+    engine = OperatorsEngine()
+
+    value = engine.apply("curl", dw_dy=5.0, dv_dz=2.0, du_dz=1.0, dw_dx=0.0, dv_dx=3.0, du_dy=1.0)
+    assert value == (3.0, 1.0, 2.0)  # (dw_dy-dv_dz, du_dz-dw_dx, dv_dx-du_dy)
