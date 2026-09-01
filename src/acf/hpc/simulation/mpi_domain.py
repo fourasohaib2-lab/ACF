@@ -40,6 +40,29 @@ class MPIDomainDecomposition:
         return lat_start, lat_end, lon_start, lon_end
 
     def exchange_halo_boundaries(self, local_array: np.ndarray, halo_width: int = 1) -> np.ndarray:
-        """Exchange ghost cell boundaries with neighboring ranks (halo update)."""
-        # Return array with updated halo rows/columns
-        return local_array.copy()
+        """
+        Exchange ghost cell boundaries with neighboring ranks (halo update).
+
+        NOTE (correction): this used to silently return
+        local_array.copy() - a no-op that never touched the halo/
+        ghost rows or columns and never communicated with any other
+        rank - while its docstring and name claimed a real halo
+        exchange. Unlike the status-dict fabrications elsewhere in
+        this package, this one sits inside actual numerical simulation
+        code: a caller running a genuinely distributed simulation
+        across multiple ranks would silently get wrong (stale/
+        uninitialized) values at every domain boundary, with no error
+        raised. No MPI library is imported or initialized anywhere in
+        this codebase (same underlying gap as
+        hpc.mpi_solver.MPIEarthDomainSolver and
+        hpc.distributed_grid.DistributedGridTopology, both already
+        fixed), so a real exchange cannot be performed here - raising
+        is the honest behavior instead of returning silently-wrong
+        data. Currently unused elsewhere in the codebase and untested,
+        confirmed via search.
+        """
+        raise NotImplementedError(
+            "exchange_halo_boundaries: no MPI library is connected in this codebase - "
+            "cannot perform a real inter-rank halo exchange. "
+            "Returning local_array unchanged would silently produce wrong boundary values."
+        )

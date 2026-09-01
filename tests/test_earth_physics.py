@@ -189,11 +189,23 @@ def test_hpc_and_parallel_acceleration():
     assert mpi_topo["num_processes"] == 64
     assert mpi_topo["status"] == "NOT_INITIALIZED_NO_MPI_LIBRARY_CONNECTED"
 
+    # CORRECTED: used to unconditionally claim a fabricated
+    # "NVIDIA A100 / H100 Tensor Core" device with 0 real GPU probe.
+    # Now genuinely checks CuPy/CUDA (same pattern as GPUSolver in the
+    # same package) - honest either way depending on the environment.
     gpu_stat = GPUPhysicsAccelerator.get_gpu_status()
-    assert gpu_stat["acceleration_status"] == "CUDA_ACCELERATED"
+    assert gpu_stat["acceleration_status"] in ("CUDA_ACCELERATED", "NOT_ACCELERATED_NO_CUDA_DEVICE_CONNECTED")
+    assert isinstance(gpu_stat["is_real_data"], bool)
 
+    # CORRECTED: used to unconditionally claim "HALO_EXCHANGE_COMPLETE"
+    # with a fabricated "0.12ms" - no MPI library is connected.
     halos = DistributedGridTopology.exchange_halos()
-    assert halos["status"] == "HALO_EXCHANGE_COMPLETE"
+    assert halos["status"] == "NOT_EXCHANGED_NO_MPI_LIBRARY_CONNECTED"
+    assert halos["is_real_data"] is False
 
+    # CORRECTED: num_tasks was genuinely echoed, but status used to
+    # unconditionally claim "TASKS_SCHEDULED" - no Slurm backend is
+    # connected.
     sched = ParallelTaskScheduler.schedule_tasks(16)
     assert sched["scheduled_tasks_count"] == 16
+    assert sched["status"] == "NOT_SCHEDULED_NO_SLURM_BACKEND_CONNECTED"

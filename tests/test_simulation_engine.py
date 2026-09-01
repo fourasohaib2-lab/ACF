@@ -4,6 +4,7 @@ import os
 import tempfile
 
 import numpy as np
+import pytest
 
 from acf.ai.simulation.neural_operator import AIFrameworkType, NeuralOperatorEngine
 from acf.hpc.simulation.checkpoint import CheckpointManager
@@ -255,6 +256,15 @@ def test_hpc_modules():
     mpi = MPIDomainDecomposition(global_nlat=72, global_nlon=144, n_proc_lat=2, n_proc_lon=4, rank=0)
     bounds = mpi.get_local_bounds()
     assert bounds == (0, 36, 0, 36)
+
+    # CORRECTED: exchange_halo_boundaries() used to silently return
+    # local_array.copy() - a no-op claiming to be a real inter-rank
+    # halo exchange while never touching the ghost cells or
+    # communicating with any other rank. No MPI library is connected
+    # in this codebase, so it now raises instead of silently returning
+    # wrong boundary data.
+    with pytest.raises(NotImplementedError):
+        mpi.exchange_halo_boundaries(np.ones((10, 10)))
 
     cuda = CUDAKernelManager()
     u = np.ones((10, 10))

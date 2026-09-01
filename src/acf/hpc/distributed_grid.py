@@ -10,4 +10,17 @@ class DistributedGridTopology:
 
     @classmethod
     def exchange_halos(cls) -> dict[str, Any]:
-        return {"halo_depth": 2, "communication_time_ms": 0.12, "status": "HALO_EXCHANGE_COMPLETE"}
+        """
+        NOTE (correction): this used to unconditionally claim
+        "HALO_EXCHANGE_COMPLETE" with a fixed "0.12ms" communication
+        time, with 0 parameters and no real distributed run connected
+        - same underlying issue as hpc.mpi_solver.MPIEarthDomainSolver
+        (also fixed, in the same package): no MPI library is imported
+        or initialized anywhere in this codebase. Not fabricated.
+        """
+        return {
+            "halo_depth": 2,
+            "communication_time_ms": None,
+            "status": "NOT_EXCHANGED_NO_MPI_LIBRARY_CONNECTED",
+            "is_real_data": False,
+        }
