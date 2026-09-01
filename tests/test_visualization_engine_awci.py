@@ -95,8 +95,11 @@ def test_color_tables_registry():
 
 def test_gpu_backend():
     """Test du backend d'accélération GPU et LOD."""
+    # CORRECTED: compile_shaders()'s own docstring already said
+    # "Simule" (simulates) but used to unconditionally return True -
+    # no real OpenGL/WebGL context or shader compiler is ever invoked.
     gpu = GPUBackend(use_gpu=True)
-    assert gpu.compile_shaders() is True
+    assert gpu.compile_shaders() is False
 
     lod = gpu.calculate_lod(altitude_km=50.0)
     assert lod == 0
@@ -104,8 +107,21 @@ def test_gpu_backend():
     lod_high = gpu.calculate_lod(altitude_km=1500.0)
     assert lod_high == 2
 
+    # CORRECTED: used to unconditionally claim "success" and echo the
+    # constructor's use_gpu flag as "gpu_accelerated" with no FBO, no
+    # GPU context, and no rendering backend ever created.
     offscreen = gpu.render_offscreen(1920, 1080)
-    assert offscreen["status"] == "success"
+    assert offscreen["status"] == "NOT_RENDERED_NO_GPU_BACKEND_CONNECTED"
+    assert offscreen["gpu_accelerated"] is False
+
+    # CORRECTED: perform_frustum_culling() used to only compare
+    # latitude bounds - a tile entirely outside the camera's longitude
+    # range (but within its latitude range) was incorrectly visible.
+    out_of_view_lon = gpu.perform_frustum_culling(
+        bounding_box={"min_lat": 10.0, "max_lat": 20.0, "min_lon": 100.0, "max_lon": 110.0},
+        camera_bounds={"min_lat": 0.0, "max_lat": 30.0, "min_lon": -10.0, "max_lon": 10.0},
+    )
+    assert out_of_view_lon is False
 
 
 def test_awci_dashboard_engine():
