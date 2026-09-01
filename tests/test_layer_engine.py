@@ -76,6 +76,14 @@ def test_layer_manager_stack_and_renderer():
     assert summary["active_layers_count"] == 2
     assert summary["top_layer"] == "conv.cape"
 
+    # CORRECTED: remove_from_stack() used to unconditionally return True
+    # even for a layer_id that was never in the stack - a caller had no
+    # way to tell a genuine removal from a no-op.
+    assert lm.remove_from_stack("atm.temperature.850hpa") is True
+    assert lm.get_stack_summary()["active_layers_count"] == 1
+    assert lm.remove_from_stack("nonexistent.layer.id") is False
+    assert lm.get_stack_summary()["active_layers_count"] == 1
+
     # CORRECTED: rendered_layers_count/active_stack are genuinely
     # computed, but status used to claim "RENDERED_SUCCESS" via a
     # fixed "Vulkan" backend claim - no GPU backend is connected.

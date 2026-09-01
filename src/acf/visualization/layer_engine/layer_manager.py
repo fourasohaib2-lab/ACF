@@ -28,9 +28,17 @@ class LayerManager:
         return None
 
     def remove_from_stack(self, layer_id: str) -> bool:
-        """Retire une couche de la pile."""
+        """Retire une couche de la pile.
+
+        NOTE (correction): used to unconditionally return True even when
+        layer_id wasn't in the stack at all (the filtered list comprehension
+        just left active_stack unchanged) - a caller had no way to tell a
+        genuine removal from a no-op. Now returns True only if the stack
+        actually shrank.
+        """
+        before = len(self.active_stack)
         self.active_stack = [item for item in self.active_stack if item.layer_id != layer_id]
-        return True
+        return len(self.active_stack) < before
 
     def reorder_stack(self, new_order_layer_ids: list[str]) -> list[LayerDefinition]:
         """Réordonne l'ordre d'affichage de la pile (de fond en comble)."""
