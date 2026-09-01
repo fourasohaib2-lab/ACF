@@ -82,7 +82,18 @@ class EarthquakeDatabase:
 
     @classmethod
     def get_sample_earthquake(cls, event_id: str = "US2011TOHOKU") -> EarthquakeEvent:
-        """Génère une fiche de séisme majeur (ex: Tohoku 2011 Mw 9.1)."""
+        """
+        Génère une fiche de séisme majeur (ex: Tohoku 2011 Mw 9.1).
+
+        NOTE: `event_id` only relabels the returned record - this is a
+        single hardcoded illustrative example (the real 2011 Tohoku
+        earthquake), not a lookup into a real earthquake catalog/
+        database. Passing a different event_id does NOT change which
+        event's data is returned; it would silently attach Tohoku's
+        real coordinates/magnitude/PGA to a mismatched ID. The only
+        current caller uses the matching default ID (verified), so
+        this is a documented latent footgun, not an active bug.
+        """
         return EarthquakeEvent(
             event_id=event_id,
             latitude=38.297,
