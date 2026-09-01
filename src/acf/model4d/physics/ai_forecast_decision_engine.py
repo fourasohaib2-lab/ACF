@@ -55,6 +55,21 @@ class AIForecastDecisionEngine:
     ) -> float:
         """
         Compute global AI forecast decision score.
+
+        NOTE (correction - Physics Guard, operationally relevant): the
+        weighted sum above (0.55/0.15/0.10/0.10/-0.05 weights) is a
+        genuine, documented heuristic, but it used to be followed by an
+        unexplained "- 0.75" with no comment or justification anywhere
+        - the same unexplained-offset pattern already found and removed
+        in AdaptiveForecastControlEngine/ForecastConfidenceCalibrationEngine
+        elsewhere in model4d/physics/ this session. This score directly
+        drives recommended_action()/priority_level() (hazard-alert
+        escalation), so an arbitrary offset here could shift an
+        operational alert decision near a threshold with no physical
+        basis. For this class's own reference test state it happened
+        not to cross a threshold (77.0 fudged vs 77.75 honest, both in
+        the same 70-90 "ISSUE_WEATHER_WARNING" bracket), but that is
+        incidental, not a guarantee for other inputs. Removed.
         """
 
         score = (
@@ -63,7 +78,6 @@ class AIForecastDecisionEngine:
             + state.forecast_quality * 0.10
             + state.observation_quality * 0.10
             - state.uncertainty * 0.05
-            - 0.75
         )
 
         return round(

@@ -15,11 +15,16 @@ def build_high_risk_state():
 
 
 def test_decision_score():
+    """
+    CORRECTED: used to subtract an unexplained 0.75 with no comment or
+    justification, present only to make this exact assertion (77.0)
+    match. The honest weighted sum is 77.75.
+    """
     engine = AIForecastDecisionEngine()
 
     result = engine.decision_score(build_high_risk_state())
 
-    assert result == 77.0
+    assert result == 77.75
 
 
 def test_confidence_level():
