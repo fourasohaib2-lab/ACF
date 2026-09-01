@@ -69,8 +69,11 @@ logs/
 # tests/test_simulation_engine.py::test_output_writers). Anchored to
 # the repo root so it only matches the intended runtime dir.
 /output/
-tmp/
-temp/
+# Anchored for the same reason as /output/ above - defends against a
+# future src/ (or tests/tools/etc.) module/package that happens to be
+# named "tmp" or "temp" from being silently excluded the same way.
+/tmp/
+/temp/
 
 # Jupyter
 .ipynb_checkpoints/
