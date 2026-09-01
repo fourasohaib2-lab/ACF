@@ -39,7 +39,14 @@ def test_wmo_wis_engine():
     """Phase 2: Test du système d'information WMO WIS 2.0 et GTS."""
     header = WMOWISEngine.parse_gts_header("SAFR31 LFPW 301500")
     assert header.cccc == "LFPW"
-    assert "0-20000" in header.wigos_station_id
+
+    # CORRECTED: wigos_station_id used to be synthesized as
+    # "0-20000-0-LFPW" for every header - not a validly-formed WIGOS
+    # ID (the "20000" issuer namespace is reserved for legacy numeric
+    # WMO station numbers) and not even the right kind of identifier
+    # (cccc is the bulletin's collecting/relay center, not the
+    # reporting station - a single GTS header cannot identify one).
+    assert header.wigos_station_id is None
 
     # CORRECTED: wigos_id was genuinely accepted but ignored - used to
     # return the identical "PARIS-MONTSOURIS" station for ANY wigos_id.
