@@ -28,6 +28,7 @@ dependencies = [
     "rasterio",
     "h5py",
     "PySide6",
+    "metpy",
 ]
 
 [project.scripts]

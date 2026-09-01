@@ -12,14 +12,23 @@ here, only assembled and applied to real profile data.
 NOTE: CAPE/CIN are NOT computed from a SoundingProfile here. Doing so
 correctly requires simulating a parcel's dry- then moist-adiabatic
 ascent from a chosen starting level (surface/mixed-layer/most-unstable)
-through the environment — a genuine parcel-ascent model, which is a
-separate, larger piece of infrastructure ACF does not have yet
+through the environment — a genuine parcel-ascent model, which used to
+be a separate, larger piece of infrastructure ACF didn't have
 (distinct from CAPE.calculate()'s buoyancy integral, which already
 assumes you hand it a parcel temperature trace). Naively feeding the
 environmental temperature trace itself as the "parcel" would silently
 give CAPE=0 always (no buoyancy difference) — flagged as a real gap
 rather than producing a technically-callable but physically wrong
 result.
+
+UPDATE: that gap is now filled — see
+acf.science.parcel_ascent.ParcelAscentEngine, which takes a
+SoundingProfile (this class) and computes real surface-based/
+most-unstable/mixed-layer CAPE/CIN, LFC/EL, and the parcel-dependent
+severe-weather indices (Showalter, Lifted Index) via a genuine
+MetPy-backed parcel ascent. Not merged into this class directly to
+avoid a circular import (parcel_ascent.py imports SoundingProfile from
+here); call it separately on a SoundingProfile instance.
 
 Also implements precipitable water (PWAT), a simple, standard
 integral not requiring external verification: PWAT (mm) =
