@@ -118,6 +118,22 @@ class CloudThermodynamicsEngine:
     ) -> dict[str, Any]:
         """
         Effectue une analyse thermodynamique complète du profil vertical.
+
+        NOTE (found, NOT changed - Physics Guard): p_levels is accepted
+        but unused. This method lifts the parcel with FIXED lapse rates
+        (9.8 K/km dry - exact - then a flat 6.0 K/km "moist" rate below)
+        rather than a true pressure/temperature-dependent moist-adiabatic
+        lapse rate (which genuinely varies, roughly 4-9 K/km depending on
+        temperature and moisture) - a real, citable simplification (6°C/km
+        is a commonly-cited textbook "typical" moist-adiabatic value, e.g.
+        Wallace & Hobbs), not a fabricated formula, but it means p_levels
+        has nothing to feed into here. Zero callers anywhere in the
+        codebase (verified via grep), so no behavior currently depends on
+        this. For a genuine pressure-aware moist-adiabat parcel ascent,
+        see acf.science.parcel_ascent.ParcelAscentEngine (MetPy-backed,
+        added to close this exact gap for radiosonde.py's real profiles) -
+        cross-referenced here rather than silently guessing a p_levels-
+        dependent correction I can't verify.
         """
         # Parcel trajectory assuming surface air parcel
         t_sfc = t_env[0]

@@ -182,6 +182,22 @@ class CloudMicrophysicsEngine:
         return k_coll * qc * (qr**0.875)
 
     def rain_evaporation(self, qr: float, rh: float, temp_k: float = 288.15) -> float:
+        """
+        NOTE (found, NOT changed - Physics Guard): temp_k is accepted but
+        unused. Simplified Kessler-type evaporation parameterizations
+        commonly express the rate purely via the humidity deficit (1-RH)
+        and rain mixing ratio qr, folding temperature dependence (which
+        physically enters through saturation vapor pressure/ventilation
+        coefficient) into rh itself rather than as a separate term - in
+        which case this is dimensionally complete as written. Some
+        fuller schemes (e.g. Tripoli & Cotton 1980) do carry an explicit
+        T-dependent ventilation term instead. I don't have a specific
+        citable source pinning down whether *this* coefficient (1.41e-3)
+        and exponent (0.52) were derived with or without that term, so
+        can't safely add a temperature factor without risking a real
+        unit/magnitude error - flagged rather than guessed, same
+        situation as NavierStokesVertical's density NOTE in dynamics.py.
+        """
         if qr <= 0 or rh >= 1.0:
             return 0.0
         return 1.41e-3 * (1.0 - rh) * (qr**0.52)

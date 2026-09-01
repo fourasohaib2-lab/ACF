@@ -17,7 +17,19 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 def calculate_storm_relative_helicity(
     u_profile: list[float], v_profile: list[float], storm_u: float, storm_v: float, dz: float = 100.0
 ) -> float:
-    """Calcul de l'Hélicité Relative à l'Orage (SRH) en m²/s²."""
+    """
+    Calcul de l'Hélicité Relative à l'Orage (SRH) en m²/s².
+
+    NOTE (found, NOT changed - Physics Guard): dz is accepted but
+    unused - not a bug. The standard discrete SRH formula (Davies-Jones
+    1990) is SRH = sum[(u_mean-c_u)*dv - (v_mean-c_v)*du] across layers,
+    using level-to-level wind DIFFERENCES directly rather than a
+    derivative that would need dividing by layer thickness and then
+    multiplying back by it (which cancels regardless of dz's value) -
+    so dz genuinely has nothing to contribute here even though a level
+    spacing parameter looks like it should matter for a "per dz"
+    integral.
+    """
     srh = 0.0
     n = min(len(u_profile), len(v_profile))
     for i in range(n - 1):
