@@ -118,6 +118,20 @@ class AdvancedAtmosphericDynamicsEngine:
         self,
         state: AtmosphericDynamicsState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): this averages 4 equally-
+        weighted sub-scores, so the natural divisor is 4 - it used to
+        divide by an unexplained "3.75" instead, with no comment or
+        justification. For this class's own reference test state, that
+        shifted the result from 69.71 (which would classify as
+        MODERATE_DYNAMIC_REGIME, below the 70 threshold) to 74.35
+        (ACTIVE_DYNAMIC_REGIME) - i.e. the divisor was tuned
+        specifically to push one test case's classification across the
+        threshold, the same "constant reverse-engineered to force one
+        outcome" pattern already found elsewhere in model4d/physics/
+        this session, just expressed as a division instead of an
+        additive offset.
+        """
 
         total = (
             self.vorticity_analysis(state)
@@ -127,7 +141,7 @@ class AdvancedAtmosphericDynamicsEngine:
         )
 
         return round(
-            total / 3.75,
+            total / 4,
             2,
         )
 
