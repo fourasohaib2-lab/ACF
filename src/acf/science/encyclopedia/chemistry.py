@@ -7,6 +7,21 @@ Atmospheric Chemistry, Photochemistry & Aerosols Encyclopedia Module
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_heterogeneous_uptake_rate(uptake_coefficient: float, thermal_velocity: float, aerosol_surface_area: float, gas_concentration: float) -> float:
+    """
+    Taux de perte de gaz par réaction hétérogène sur des aérosols :
+    dn/dt = -0.25*gamma*v_th*A_aer*C_gas, en molec/(cm^3*s).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Sign per the entry's own latex_equation
+    (dC_gas/dt = -...) - a loss rate, negative by convention.
+    """
+    if not (0.0 <= uptake_coefficient <= 1.0):
+        raise ValueError("uptake_coefficient (gamma) must be in [0, 1].")
+    return -0.25 * uptake_coefficient * thermal_velocity * aerosol_surface_area * gas_concentration
+
+
 ENTRIES: list[EncyclopediaEntry] = [
     # --- GASES ---
     EncyclopediaEntry(
@@ -132,6 +147,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Nuages Stratosphériques Polaires (PSC) et aérosols troposphériques"],
         limitations=["Incertitudes sur les coefficients d'accommodation gamma"],
         references=["Jacob (1999) Atmos. Environ.", "IPCC AR6"],
+        compute_func=calculate_heterogeneous_uptake_rate,
     ),
     # --- AEROSOLS ---
     EncyclopediaEntry(
@@ -139,13 +155,36 @@ ENTRIES: list[EncyclopediaEntry] = [
         name="Aérosols de Poussières Minérales (Dust)",
         domain="Chimie Atmosphérique",
         subdomain="Aérosols naturels",
-        equation="Érosion éolienne des déserts: Flux_dust = C * U_star^3 * (1 - RH)",
+        # NOTE (correction): this plain-text "equation" field used to say
+        # "Flux_dust = C * U_star^3 * (1 - RH)" - inconsistent with this
+        # entry's OWN latex_equation, which uses a friction-velocity
+        # saltation-threshold ratio (u*t/u*), not relative humidity, and
+        # the two are not algebraically related (RH cannot substitute for
+        # u*t/u*) - almost certainly a transcription error. Corrected to
+        # match the latex form. compute_func deliberately NOT added:
+        # WebSearch on Gillette & Passi (1988) confirmed their empirical
+        # scheme is a power-law in u*/u*t with exponent n~=4, but did not
+        # yield a single, fully-specified, precisely-citable closed form
+        # matching either version of this entry's equation text - several
+        # different dust-emission schemes (Gillette & Passi 1988, White
+        # 1979, Marticorena & Bergametti 1995) use different exact forms.
+        # Implementing a specific numeric formula here without a verified
+        # primary-source match would be exactly the kind of fabrication
+        # this project's rules forbid - left honestly undefined, same
+        # treatment as the FWI/MEHS gap noted in science/surface_fire.py
+        # and science/precipitation.py.
+        equation="Érosion éolienne des déserts: Flux_dust = C * u_star^3 * (1 - u_star_t/u_star)",
         latex_equation=r"F_{\text{dust}} = C \cdot u_*^3 \left(1 - \frac{u_{*t}}{u_*}\right)",
         variables={"u_star": "Vitesse de frottement au sol", "u_star_t": "Seuil de saltation"},
         units={"Flux": "kg/(m²·s)"},
         description="Particules minérales soulevées par le vent dans les régions arides (Sahara, Gobi) transportées sur des milliers de kilomètres, absorbant le rayonnement solaire et servant de noyaux glaçogènes (IN).",
         application_conditions=["Transport transatlantique et épisodes de poussières sahariennes en Europe"],
-        limitations=["Large gamme de tailles (0.1 µm à 50 µm) difficile à discrétiser"],
+        limitations=[
+            "Large gamme de tailles (0.1 µm à 50 µm) difficile à discrétiser",
+            "Forme numérique exacte non re-vérifiée contre la source primaire (plusieurs "
+            "schémas distincts existent dans la littérature) - non implémentée pour éviter "
+            "de fabriquer une formule non vérifiée.",
+        ],
         references=["Gillette & Passi (1988)", "Copernicus CAMS Dust Forecasts"],
     ),
     EncyclopediaEntry(

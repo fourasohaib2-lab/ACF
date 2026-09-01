@@ -119,10 +119,21 @@ def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     run_verify() misclassified as a hard "exception" finding. Fixed by
     adding _UNIT_FRACTION_NAMES, the same class of fix as the existing
     int-coercion for range()-fed parameters.
+
+    119 -> 132: a further pass wired 13 more (first_law_thermodynamics_
+    encyclopedia, heterogeneous_nucleation_ice, cloud_condensation_process,
+    the 5 hydrometeor_* mixing-ratio entries, heterogeneous_aerosol_
+    interaction, lidar_atmospheric_profiling, radiative_transfer_equation,
+    aerodynamic_stall_hazard, van_der_waals_real_gas) - see
+    tests/test_encyclopedia_compute_func_gaps_batch4.py. Surfaced 2 more
+    tool gaps of the same _UNIT_FRACTION_NAMES class (uptake_coefficient)
+    and a new one - van_der_waals_real_gas's covolume_b must stay small
+    relative to molar_volume (V > b), which the generic same-range jitter
+    routinely violated - fixed with _SMALL_POSITIVE_NAMES.
     """
     result = adapter.run_verify()
-    assert result.total_computable == 119
-    assert result.checked == 119
+    assert result.total_computable == 132
+    assert result.checked == 132
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 

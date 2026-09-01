@@ -6,6 +6,7 @@ Fundamental Physical & Atmospheric Thermodynamics Laws Encyclopedia Module
 
 import math
 
+from acf.science.constants import UNIVERSAL_GAS_CONSTANT
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -157,6 +158,23 @@ def calculate_dewpoint_from_vapor_pressure(vapor_pressure_pa: float) -> float:
     return (243.5 * log_ratio) / denominator
 
 
+def calculate_van_der_waals_pressure(molar_volume: float, temperature_k: float, attraction_constant_a: float, covolume_b: float, gas_constant: float = UNIVERSAL_GAS_CONSTANT) -> float:
+    """
+    Pression d'un gaz réel (Van der Waals), résolue pour p :
+    p = R*T/(V-b) - a/V^2, en Pa.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Solved for p (the natural "solve for" variable,
+    consistent with the ideal-gas-law entry's own convention of solving
+    for p given rho/T). gas_constant defaults to ACF's canonical
+    science/constants.py UNIVERSAL_GAS_CONSTANT (8.314462618 J/(mol*K),
+    CODATA value) rather than a locally re-declared literal.
+    """
+    if molar_volume <= covolume_b:
+        raise ValueError("molar_volume must exceed covolume_b (V > b) for a physical solution.")
+    return (gas_constant * temperature_k) / (molar_volume - covolume_b) - attraction_constant_a / (molar_volume**2)
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -222,6 +240,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Hautes pressions et basses températures"],
         limitations=["Déviations légères pour les fluides supercritiques"],
         references=["Van der Waals (1873)", "Bohren & Albrecht (1998)"],
+        compute_func=calculate_van_der_waals_pressure,
     ),
     EncyclopediaEntry(
         key="virtual_temperature_law",

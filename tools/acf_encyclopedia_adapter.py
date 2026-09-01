@@ -247,7 +247,16 @@ _BOOL_LIKE_NAMES = {"is_marine", "is_kelvin", "wet_growth"}
 # run_verify() below currently has no way to distinguish from a real bug.
 # Same class of fix as the int-coercion above: give these a jitter that
 # stays inside their known-valid domain instead of guessing generically.
-_UNIT_FRACTION_NAMES = {"alpha_fresh", "alpha_wet", "alpha_min", "alpha_aged", "relative_humidity"}
+_UNIT_FRACTION_NAMES = {
+    "alpha_fresh", "alpha_wet", "alpha_min", "alpha_aged", "relative_humidity", "uptake_coefficient",
+}
+
+# Parameter names that must stay small relative to a companion parameter in
+# the same call (e.g. van_der_waals_real_gas's covolume_b << molar_volume) -
+# the generic jitter draws every parameter from the same range, so it
+# routinely violates that relative-magnitude constraint even though each
+# individual value looks reasonable on its own.
+_SMALL_POSITIVE_NAMES = {"covolume_b"}
 
 
 def _build_probe_kwargs(func: Any, probe_set: dict[str, float]) -> dict[str, Any] | None:
@@ -269,6 +278,9 @@ def _build_probe_kwargs(func: Any, probe_set: dict[str, float]) -> dict[str, Any
         elif name in _UNIT_FRACTION_NAMES:
             # Two distinct, deterministic, always-valid-domain fractions.
             kwargs[name] = 0.2 if probe_set["scale"] < 1.5 else 0.7
+        elif name in _SMALL_POSITIVE_NAMES:
+            # Two distinct, deterministic, always-small positive values.
+            kwargs[name] = 0.0001 if probe_set["scale"] < 1.5 else 0.0003
         elif annotation == "<class 'int'>" or annotation == "int":
             # Coerce int-annotated parameters (e.g. an iteration count fed to
             # range()) instead of passing a raw jittered float, which would

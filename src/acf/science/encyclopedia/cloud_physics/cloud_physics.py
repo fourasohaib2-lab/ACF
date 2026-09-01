@@ -34,6 +34,69 @@ def calculate_two_moment_size_distribution(n0: float, lambda_param: float, diame
     return n0 * (diameter_m**mu) * math.exp(-lambda_param * diameter_m)
 
 
+def calculate_heterogeneous_inp_concentration(n0: float, activation_rate: float, subzero_temp_c: float) -> float:
+    """
+    N_INP(T) = N_0 * exp(a * T_subzero), en L^-1.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Same simple exponential-in-subzero-temperature
+    FUNCTIONAL FORM as science/laws/microphysics.py's
+    'ice_crystal_nucleation' (Fletcher 1962) - but a genuinely
+    DIFFERENT, independently-cited empirical scheme (Meyers et al. 1992
+    / DeMott et al. 2010), with its own separately-fitted constants
+    (N_0, a here vs N0, b there) - several named INP parameterizations
+    in the cloud-physics literature share this same exp(constant *
+    subcooling) shape without being the same law, the same relationship
+    as Bolton vs Tetens for es(T) (science/laws/thermodynamics.py's
+    'clausius_clapeyron' NOTE). N_0 and a are empirical (no single
+    citable default verified) - required parameters, no invented
+    default, same reasoning as ice_crystal_nucleation.
+
+    Parameters
+    ----------
+    n0 : float
+        Concentration de référence N_0 (L^-1).
+    activation_rate : float
+        Taux d'activation a (K^-1, empirique).
+    subzero_temp_c : float
+        Sous-refroidissement T_subzero = -T(degC) (K, positif sous 0°C),
+        valide pour T < 0°C.
+    """
+    return n0 * math.exp(activation_rate * subzero_temp_c)
+
+
+def calculate_condensation_rate_simple(specific_humidity: float, saturation_specific_humidity: float, timescale_s: float) -> float:
+    """
+    dq_c/dt = max(0, q-q_sat) / dt, en kg/(kg*s).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Non-negative by construction (max(0, ...)) -
+    condensation never removes cloud water in this simplified form,
+    only evaporation (a separate entry/process) does.
+    """
+    if timescale_s <= 0.0:
+        raise ValueError("timescale_s must be positive.")
+    return max(0.0, specific_humidity - saturation_specific_humidity) / timescale_s
+
+
+def calculate_hydrometeor_mixing_ratio(species_mass_kg: float, air_mass_kg: float) -> float:
+    """
+    q_X = mass_X / mass_air, en kg/kg - la même formule de ratio de
+    mélange générique appliquée à chaque espèce d'hydrométéore
+    (cloud water qc, cloud ice qi, rain qr, snow qs, graupel qg) : une
+    seule implémentation réutilisée pour 5 entrées, pas 5
+    réimplémentations indépendantes du même ratio (RÈGLE D'OR).
+
+    NOTE (correction): each of the 5 hydrometeor entries' equation
+    field is fully explicit but had no compute_func.
+    """
+    if air_mass_kg <= 0.0:
+        raise ValueError("air_mass_kg must be positive.")
+    if species_mass_kg < 0.0:
+        raise ValueError("species_mass_kg must be non-negative.")
+    return species_mass_kg / air_mass_kg
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -71,6 +134,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Formation de glace entre 0°C et -38°C"],
         limitations=["Faible concentration d'INP à haute température (-5°C à -15°C)"],
         references=["Meyers et al. (1992) J. Appl. Meteor.", "DeMott et al. (2010) PNAS"],
+        compute_func=calculate_heterogeneous_inp_concentration,
     ),
     # --- PHASE TRANSITIONS ---
     EncyclopediaEntry(
@@ -86,6 +150,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Sursaturation par rapport à l'eau liquide (RH > 100%)"],
         limitations=["Nécessite la prise en compte du réchauffement par libération de chaleur latente"],
         references=["Pruppacher & Klett (1997)", "WMO Cloud Manual"],
+        compute_func=calculate_condensation_rate_simple,
     ),
     EncyclopediaEntry(
         key="cloud_evaporation_process",
@@ -132,6 +197,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Nuages chauds et zones surfondues des Cumulonimbus"],
         limitations=["Transformée en pluie par autoconversion et accrétion"],
         references=["WMO Microphysics", "ECMWF Physics Documentation"],
+        compute_func=calculate_hydrometeor_mixing_ratio,
     ),
     EncyclopediaEntry(
         key="hydrometeor_cloud_ice",
@@ -146,6 +212,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["T < 0°C dans les nuages stratiformes et convectifs"],
         limitations=["Sédimentation lente"],
         references=["WMO Microphysics", "Thompson et al. (2008)"],
+        compute_func=calculate_hydrometeor_mixing_ratio,
     ),
     EncyclopediaEntry(
         key="hydrometeor_rain",
@@ -160,6 +227,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Précipitations au sol sous l'isotherme 0°C"],
         limitations=["Rupture des gouttes (breakup) au-delà de D > 6 mm"],
         references=["Gunn & Kinzer (1949)", "Kessler (1969)"],
+        compute_func=calculate_hydrometeor_mixing_ratio,
     ),
     EncyclopediaEntry(
         key="hydrometeor_snow",
@@ -174,6 +242,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Précipitations solides hivernales"],
         limitations=["Grande variabilité de densité (50 à 300 kg/m³)"],
         references=["Lin et al. (1983)", "Thompson et al. (2008)"],
+        compute_func=calculate_hydrometeor_mixing_ratio,
     ),
     EncyclopediaEntry(
         key="hydrometeor_graupel",
@@ -188,6 +257,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Zone de phase mixte convective des Cumulonimbus"],
         limitations=["Nécessite la modélisation à 2 moments pour séparer graupel et grêle"],
         references=["Rutledge & Hobbs (1984)", "AROME ICE3 Scheme Manual"],
+        compute_func=calculate_hydrometeor_mixing_ratio,
     ),
     # --- TWO MOMENT MICROPHYSICS ---
     EncyclopediaEntry(

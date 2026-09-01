@@ -2,6 +2,8 @@
 Advanced Remote Sensing, Satellite Soundings, GPS Radio Occultation & Active Sensors Encyclopedia Module
 """
 
+import math
+
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
@@ -22,6 +24,25 @@ def calculate_gps_ro_refractivity(p_hpa: float, temp_k: float, e_hpa: float) -> 
 def calculate_radar_zdr(z_h_dbz: float, z_v_dbz: float) -> float:
     """Calcul de la réflectivité différentielle radar ZDR = Zh_dBZ - Zv_dBZ (dB)."""
     return z_h_dbz - z_v_dbz
+
+
+def calculate_lidar_backscatter_signal(system_constant: float, molecular_backscatter: float, aerosol_backscatter: float, optical_depth: float, range_m: float) -> float:
+    """
+    Signal de rétrodiffusion lidar (single-scattering lidar equation) :
+    P(z) = (C/z^2) * [beta_m(z)+beta_a(z)] * exp(-2*tau(z)), en W.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Implemented per this entry's OWN more complete
+    latex_equation (which includes the 1/z^2 range-dilution term
+    universal to any single-scattering range-resolved lidar equation)
+    rather than the plain "equation" field's abbreviated summary, which
+    omits it - the standard lidar equation always includes 1/z^2 as a
+    matter of physical necessity (inverse-square signal dilution with
+    range), so it is not optional.
+    """
+    if range_m <= 0.0:
+        raise ValueError("range_m must be positive.")
+    return (system_constant / (range_m**2)) * (molecular_backscatter + aerosol_backscatter) * math.exp(-2.0 * optical_depth)
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +94,11 @@ ENTRIES: list[EncyclopediaEntry] = [
         name="Lidar Atmosphérique Doppler & Rétrodiffusion (Aeolus, CALIPSO)",
         domain="Télédétection Atmosphérique",
         subdomain="Capteurs actifs optiques",
-        equation="Signal de rétrodiffusion P(z) = C * (beta_m(z) + beta_a(z)) * exp(-2*tau(z))",
+        # NOTE (correction): this plain-text field used to omit the 1/z^2
+        # range-dilution term present in this entry's own latex_equation -
+        # physically necessary for any single-scattering range-resolved
+        # lidar equation, not optional. Now consistent with the latex form.
+        equation="Signal de rétrodiffusion P(z) = (C/z^2) * (beta_m(z) + beta_a(z)) * exp(-2*tau(z))",
         latex_equation=r"P(z) = \frac{C}{z^2} \left[\beta_m(z) + \beta_a(z)\right] \exp\left(-2\int_0^z \alpha(z^\prime) dz^\prime\right)",
         variables={
             "beta_m": "Rétrodiffusion moléculaire (Rayleigh)",
@@ -85,6 +110,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Profils verticaux du vent et des aérosols en ciel clair ou nuages optiquement fins"],
         limitations=["Atténuation complète du faisceau laser par les nuages opaques (épaisses couvertures nuageuses)"],
         references=["ESA Aeolus Mission Reports", "Winker et al. (2009) CALIPSO J. Atmos. Oceanic Technol."],
+        compute_func=calculate_lidar_backscatter_signal,
     ),
     EncyclopediaEntry(
         key="polarimetric_radar_zdr",

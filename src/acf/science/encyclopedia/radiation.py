@@ -29,6 +29,20 @@ def calculate_planck_radiance(wavelength_m: float, temp_k: float) -> float:
     return c1 / ((wavelength_m**5) * (math.exp(exponent) - 1.0))
 
 
+def calculate_radiative_transfer_derivative(intensity: float, source_function: float, cos_zenith_angle: float) -> float:
+    """
+    dI_lambda/dtau = (-I_lambda + J_lambda) / mu.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Implemented per this entry's own more complete
+    latex_equation (mu*dI/dtau = -I+J, i.e. dI/dtau = (J-I)/mu) - the
+    plain "equation" field omits the mu = cos(zenith_angle) term.
+    """
+    if cos_zenith_angle == 0.0:
+        raise ValueError("cos_zenith_angle (mu) must not be zero.")
+    return (source_function - intensity) / cos_zenith_angle
+
+
 def calculate_rayleigh_cross_section(refractive_index: float, number_density: float, wavelength_m: float) -> float:
     """
     Section efficace de diffusion de Rayleigh :
@@ -151,7 +165,10 @@ ENTRIES: list[EncyclopediaEntry] = [
         name="Équation du Transfert Radiatif (RTE)",
         domain="Rayonnement Atmosphérique",
         subdomain="Transfert radiatif",
-        equation="dI_lambda / dtau = - I_lambda + J_lambda",
+        # NOTE (correction): this plain-text field used to omit the
+        # mu = cos(zenith_angle) term present in this entry's own
+        # latex_equation. Now consistent.
+        equation="dI_lambda / dtau = (J_lambda - I_lambda) / mu",
         latex_equation=r"\mu \frac{d I_\lambda}{d \tau_\lambda} = -I_\lambda(\tau_\lambda, \mu, \phi) + J_\lambda(\tau_\lambda, \mu, \phi)",
         variables={"J_lambda": "Fonction source spectrale (émission + diffusion multiple)", "mu": "cos(zenith_angle)"},
         units={"I": "W/(m²·sr·µm)"},
@@ -161,6 +178,7 @@ ENTRIES: list[EncyclopediaEntry] = [
             "Résolution numérique coûteuse nécessitant des approximations à 2 flux (two-stream approximation)"
         ],
         references=["Chandrasekhar (1960) Radiative Transfer", "Liou (2002)", "ECMWF EcRad Documentation"],
+        compute_func=calculate_radiative_transfer_derivative,
     ),
 ]
 

@@ -5,6 +5,23 @@ Atmospheric Thermodynamics Encyclopedia Domain
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_first_law_specific_heat(cp: float, dT: float, alpha: float, dp: float) -> float:
+    """
+    dq = cp*dT - alpha*dp, en J/kg.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. This is the THIRD entry in ACF with this exact
+    formula (science/laws/thermodynamics.py's 'first_law_thermodynamics',
+    encyclopedia/physical_laws/thermodynamics_laws.py's
+    'first_law_thermodynamics_atmos') - algebraically identical,
+    re-expressed locally per this file's own convention rather than
+    cross-imported for a one-line formula (same treatment as
+    aerodynamics/isa_atmosphere.py's Reynolds/drag entries).
+    """
+    return cp * dT - alpha * dp
+
+
 ENTRIES = [
     EncyclopediaEntry(
         key="virtual_temperature_encyclopedia",
@@ -48,6 +65,7 @@ ENTRIES = [
         application_conditions=["Système thermodynamique fermé"],
         limitations=["Processus quasi-statique"],
         references=["Bohren & Albrecht (1998) Atmospheric Thermodynamics"],
+        compute_func=calculate_first_law_specific_heat,
     ),
 ]
 

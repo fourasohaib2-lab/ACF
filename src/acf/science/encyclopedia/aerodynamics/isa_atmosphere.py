@@ -67,6 +67,19 @@ def calculate_reynolds_number(density: float, velocity: float, length: float, dy
     return (density * velocity * length) / dynamic_viscosity
 
 
+def calculate_is_stalled(angle_of_attack_deg: float, critical_angle_deg: float = 15.0) -> bool:
+    """
+    Décrochage : alpha > alpha_critique.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. critical_angle_deg defaults to the entry's own
+    documented "~15 deg" typical value (an approximate, aircraft-
+    dependent rule of thumb, not a universal constant - callers with a
+    known critical angle for a specific airfoil should supply it).
+    """
+    return angle_of_attack_deg > critical_angle_deg
+
+
 def calculate_aerodynamic_drag(density: float, velocity: float, surface_area: float, drag_coefficient: float) -> float:
     """
     D = 0.5*rho*V^2*S*Cx, en N.
@@ -195,6 +208,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Approche à basse vitesse, fortes turbulences et décrochage sous facteur de charge"],
         limitations=["Danger majeur en aéronautique nécessitant une alarme de décrochage"],
         references=["ICAO Flight Safety Manual", "Anderson (2017)"],
+        compute_func=calculate_is_stalled,
     ),
 ]
 
