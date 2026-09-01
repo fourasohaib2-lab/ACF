@@ -50,6 +50,15 @@ def test_atmospheric_dynamics_core():
     du = AtmosphericPrimitiveEquations.solve_momentum(10.0, 5.0, f, 0.01)
     assert "du_dt" in du
 
+    # CORRECTED: solve_momentum() only ever computed du_dt despite the
+    # module docstring advertising both du/dt and dv/dt - dv_dt (which
+    # needs u for its Coriolis term -f*u) was simply never implemented,
+    # which is why `u` was accepted but unused. Now genuinely computed.
+    momentum = AtmosphericPrimitiveEquations.solve_momentum(u=10.0, v=5.0, f=f, dp_dx=0.01, dp_dy=0.02)
+    assert momentum["dv_dt"] == pytest.approx(-f * 10.0 - (1.0 / 1.225) * 0.02)
+    # dp_dy defaults to 0.0, so omitting it must not silently change du_dt.
+    assert AtmosphericPrimitiveEquations.solve_momentum(10.0, 5.0, f, 0.01)["du_dt"] == du["du_dt"]
+
     rel_vort = VorticityCalculator.compute_relative_vorticity(0.002, 0.001)
     assert rel_vort == 0.001
 
