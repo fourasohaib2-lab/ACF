@@ -160,6 +160,17 @@ def test_coupled_earth_solver():
     next_cstate = coupled.step(cstate, dt=10.0)
     assert "T" in next_cstate and "Carbon_NEE" in next_cstate
 
+    # CORRECTED: forcing was documented (this method's own docstring and
+    # its stated master equation "X(t+dt) = M(X(t), Physics, Forcing, AI)")
+    # but never referenced in the body - passing a real forcing dict had
+    # silently zero effect. Now applied additively, same convention as
+    # ai_correction.
+    baseline = coupled.step(cstate, dt=10.0)
+    forced = coupled.step(cstate, dt=10.0, forcing={"SST": np.full_like(baseline["SST"], 2.0)})
+    assert np.allclose(forced["SST"], baseline["SST"] + 2.0)
+    # A forcing key with no matching state field must be safely ignored, not raise.
+    coupled.step(cstate, dt=10.0, forcing={"not_a_real_state_key": 5.0})
+
 
 def test_ensemble_and_probability_engine():
     grid = EarthGrid(n_lat=10, n_lon=20, n_levels=4)

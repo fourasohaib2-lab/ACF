@@ -78,6 +78,20 @@ class MicrophysicsEngine:
             air_density: Density of air (kg/m^3).
             dt: Timestep (s).
 
+        NOTE (found, NOT changed - Physics Guard, flagged by
+        `ruff --select ARG`): air_density is accepted but unused below -
+        every rate here (auto-conversion, freezing, melting) is
+        expressed purely as a fraction of the current mixing ratio per
+        second, and mixing ratios (kg/kg, already normalized by air
+        mass) are legitimately density-independent quantities in this
+        kind of simplified bulk scheme - unlike calculate_lwc_iwc()
+        just above, which genuinely needs air_density to convert a
+        mixing ratio into a volumetric concentration (g/m^3). Some
+        fuller Kessler-family schemes do fold air_density into specific
+        terms (e.g. sedimentation, ventilation-dependent evaporation),
+        neither of which this simplified step() implements, so there is
+        no clear place it would enter here without inventing a term.
+
         Returns:
             Tuple[Dict[str, np.ndarray], np.ndarray]: (Updated hydrometeors, Updated q_vap)
         """

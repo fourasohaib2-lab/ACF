@@ -208,6 +208,25 @@ class CoupledEarthSolver:
             "Carbon_NEE": carbon_metrics["NEE"],
         }
 
+        # Apply optional external forcing
+        # NOTE (correction): forcing was accepted and documented in this
+        # method's own docstring/equation ("X(t+dt) = M(X(t), Physics,
+        # Forcing, AI)") but never referenced anywhere in the body -
+        # passing a real solar/anthropogenic forcing dict silently had
+        # zero effect on the simulated state. No caller in the codebase
+        # currently passes a real forcing dict (verified via grep), so
+        # this closes a real but previously-inert gap rather than
+        # changing any existing behavior. Applied the same additive
+        # per-matching-key convention already established for
+        # ai_correction just below (the only precedent this function
+        # itself sets for what an optional external state-correction
+        # dict should do), applied first so ai_correction can still
+        # refine the forced state afterward.
+        if forcing is not None:
+            for key in forcing:
+                if key in next_state:
+                    next_state[key] += forcing[key]
+
         # Apply optional AI neural surrogate correction
         if ai_correction is not None:
             for key in ai_correction:
