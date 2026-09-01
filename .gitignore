@@ -60,7 +60,15 @@ logs/
 *.log
 
 # Runtime
-output/
+# NOTE (correction): "output/" (no leading slash) matched ANY directory
+# named "output" anywhere in the tree, not just a repo-root runtime
+# artifacts dir - this silently excluded the real source package
+# src/acf/simulation_engine/output/ (NetcdfWriter, ZarrWriter) from git
+# entirely, for the project's whole history (git log shows zero commits
+# ever touching those files despite them being real, tested code - see
+# tests/test_simulation_engine.py::test_output_writers). Anchored to
+# the repo root so it only matches the intended runtime dir.
+/output/
 tmp/
 temp/
 

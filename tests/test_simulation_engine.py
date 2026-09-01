@@ -239,6 +239,34 @@ def test_output_writers():
         assert os.path.exists(saved_zarr)
 
 
+def test_zarr_writer_propagates_genuine_write_failures(tmp_path, monkeypatch):
+    """
+    CORRECTED: write_zarr() used to catch bare `Exception` (redundant
+    with the ImportError case it also listed) around ds.to_zarr(), so
+    ANY real write failure - a bad state array, a genuine xarray/zarr
+    bug, disk issues - was silently swallowed and replaced with a fake
+    empty store (just {"zarr_format": 2}, no data) while still
+    returning the path as if the write had succeeded. Only the true
+    "optional zarr backend not installed" case (ImportError) should
+    trigger that metadata-only fallback; anything else must propagate.
+    """
+    import xarray as xr
+
+    from acf.simulation_engine.output.zarr_writer import ZarrWriter
+
+    def _boom(self, *args, **kwargs):
+        raise ValueError("simulated genuine write failure, not a missing dependency")
+
+    monkeypatch.setattr(xr.Dataset, "to_zarr", _boom)
+
+    zwriter = ZarrWriter(str(tmp_path / "test.zarr"))
+    state = {"T": np.zeros((4, 5))}
+    lats = np.linspace(-90, 90, 4)
+    lons = np.linspace(-180, 180, 5)
+    with pytest.raises(ValueError, match="simulated genuine write failure"):
+        zwriter.write_zarr(state, lats, lons)
+
+
 def test_neural_operator():
     neural = NeuralOperatorEngine(AIFrameworkType.FOURIER_NEURAL_OPERATOR)
     state = {"T": np.random.normal(288, 5, size=(10, 20))}
