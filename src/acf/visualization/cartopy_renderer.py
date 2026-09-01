@@ -64,5 +64,27 @@ class CartopyRenderer(CanonicalCartopyRenderer):
             "engine": "Cartopy",
         }
 
+    def clear(self):
+        """
+        Legacy clear helper.
+
+        NOTE (correction): create_map()/add_field()/status() are all
+        overridden here for the canvas-less legacy mode, but clear()
+        was not - a canvas-less instance (self.canvas is None, the
+        default) inherited CanonicalCartopyRenderer.clear(), which
+        unconditionally does self.canvas.figure.clear(), crashing with
+        AttributeError: 'NoneType' object has no attribute 'figure'.
+        Confirmed via acf.gui.widgets.map_view.MapView.clear() (this
+        widget always constructs this class with no canvas).
+        """
+        if self.canvas is not None:
+            super().clear()
+            return
+        if self.figure is not None:
+            plt.close(self.figure)
+        self.figure = None
+        self.axis = None
+        self.layers = []
+
 
 __all__ = ["CartopyRenderer"]

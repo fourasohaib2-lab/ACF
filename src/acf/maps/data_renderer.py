@@ -22,10 +22,23 @@ optional canvas, and the legacy create_map()/add_field()/status()
 methods this class calls - is
 acf.visualization.cartopy_renderer.CartopyRenderer, a compatibility
 facade explicitly built for exactly this headless/canvas-less usage.
+
+The import of that facade is deliberately deferred to __init__ rather
+than done at module level: acf.visualization.cartopy_renderer itself
+imports from acf.maps.renderers.cartopy_renderer, which - because
+Python always initializes a parent package before any of its
+submodules - forces acf/maps/__init__.py to run first; that __init__
+eagerly imports this very module (via auto_renderer.py). A
+module-level import here is therefore circular whenever something
+outside acf.maps imports acf.visualization.cartopy_renderer first
+(e.g. acf.gui.widgets.map_view - confirmed reproducing "ImportError:
+cannot import name 'CartopyRenderer' from partially initialized
+module"). Deferring the import to call time (when both modules are
+already fully initialized either way) sidesteps the cycle without
+restructuring either package.
 """
 
 from acf.maps.renderers.scientific_renderer import ScientificRenderer
-from acf.visualization.cartopy_renderer import CartopyRenderer
 
 
 class DataRenderer:
@@ -34,6 +47,8 @@ class DataRenderer:
     """
 
     def __init__(self):
+        from acf.visualization.cartopy_renderer import CartopyRenderer
+
         self.scientific = ScientificRenderer()
         self.cartopy = CartopyRenderer()
         self.current_layer = None

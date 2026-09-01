@@ -2,12 +2,25 @@
 ACF Scientific Map View
 
 Widget cartographique principal.
+
+NOTE (correction — wrong CartopyRenderer, name collision): this
+imported acf.maps.CartopyRenderer (re-exported from
+acf.maps.renderers.cartopy_renderer), whose __init__ requires a real
+GUI canvas object with no default and which has no create_map()/
+status() methods - not what this widget calls. MapView() crashed
+immediately on construction (TypeError: missing 1 required positional
+argument: 'canvas'), which meant DashboardLayout.build() - and so
+DashboardManager.initialize(), the real GUI dashboard's setup path -
+crashed too, with zero test coverage anywhere in this chain (same
+bug family, and the same fix, as acf/maps/data_renderer.py's own
+NOTE (correction) - see that module for the full explanation of which
+CartopyRenderer is the right one and why).
 """
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acf.maps import CartopyRenderer
+from acf.visualization.cartopy_renderer import CartopyRenderer
 
 
 class MapView(QWidget):
