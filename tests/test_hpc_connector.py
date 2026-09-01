@@ -136,6 +136,14 @@ def test_security_manager():
     assert isinstance(sec.has_valid_ssh_key(), bool)
     assert sec.validate_connection("login2.fennec.meteo.dz", "sfoura") is True
 
+    # CORRECTED: validate_connection() used to unconditionally return True
+    # for ANY host/user, including empty strings or shell-metacharacter-
+    # containing values - not a genuine validation despite the name.
+    assert sec.validate_connection("", "sfoura") is False
+    assert sec.validate_connection("login2.fennec.meteo.dz", "") is False
+    assert sec.validate_connection("host; rm -rf /", "sfoura") is False
+    assert sec.validate_connection("login2.fennec.meteo.dz", "user`whoami`") is False
+
 
 def test_environment_manager():
     env = EnvironmentManager()
