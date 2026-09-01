@@ -6,10 +6,26 @@ Connexion entre:
 - Layer
 - ScientificRenderer
 - CartopyRenderer
+
+NOTE (correction — wrong CartopyRenderer, name collision): this
+imported acf.maps.renderers.cartopy_renderer.CartopyRenderer, whose
+__init__ requires a real GUI canvas object (no default) and which has
+no create_map()/add_field()/status() methods - not what this class
+calls at all. DataRenderer() crashed immediately on construction
+(TypeError: missing 1 required positional argument: 'canvas'), and
+VisualizationManager() (maps/visualization_manager.py), which
+constructs a DataRenderer via AutoRenderer at __init__ time, crashed
+the same way - the entire maps/ visualization pipeline's central
+manager could not be instantiated at all, with zero test coverage
+anywhere to catch it. The class this module actually needs -
+optional canvas, and the legacy create_map()/add_field()/status()
+methods this class calls - is
+acf.visualization.cartopy_renderer.CartopyRenderer, a compatibility
+facade explicitly built for exactly this headless/canvas-less usage.
 """
 
-from acf.maps.renderers.cartopy_renderer import CartopyRenderer
 from acf.maps.renderers.scientific_renderer import ScientificRenderer
+from acf.visualization.cartopy_renderer import CartopyRenderer
 
 
 class DataRenderer:

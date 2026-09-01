@@ -2,10 +2,23 @@
 Atmospheric Complexity Framework (ACF)
 
 Visualization Manager
+
+NOTE (correction — wrong LayerManager, name collision): this imported
+acf.maps.layer_manager.LayerManager, whose interface (add(layer)/
+remove(name)/get(name)/...) does not have create_layer()/
+remove_layer()/status() at all - every method below that touches
+self.layer_manager (render(), remove_layer(), status()) called a
+method that does not exist on that class, an AttributeError one
+call away from VisualizationManager's basic use (confirmed with zero
+test coverage anywhere for this class). The class actually needed -
+matching create_layer(name, variable)/remove_layer(layer_id)/status()
+- is acf.visualization.layer_manager.LayerManager, same "consolidate
+into maps/, forgot to fix every caller" pattern as this module's
+CartopyRenderer import (see data_renderer.py's own NOTE).
 """
 
 from acf.maps.auto_renderer import AutoRenderer
-from acf.maps.layer_manager import LayerManager
+from acf.visualization.layer_manager import LayerManager
 
 
 class VisualizationManager:
