@@ -51,6 +51,23 @@ class FlightRoutingEngine:
         avoidance was active. Now genuinely reflects the avoid_hazards
         flag and honestly discloses that no real SIGMET feed backs it.
         Not fabricated.
+
+        NOTE (correction — fabricated alternates, found in the same
+        pass): recommended_alternates used to be two ICAO codes
+        hardcoded per-departure ("LFPO"/"LILH" if dep is LFPG, else
+        always "EGGW"/"EGKK" - regardless of where in the world the
+        route actually was). Those codes are not even present in
+        AirportDatabase, so they were never validated against
+        anything. A flight from Tokyo to Sydney was told to divert to
+        London. Now genuinely ranks every other airport actually in
+        AirportDatabase by real great-circle distance from the arrival
+        (same formula as the route itself) - honest about the
+        registry being small (see airport_database.py): this is a
+        real nearest-distance ranking over whatever airports this
+        database contains, not a substitute for a true alternate-
+        minima/suitability lookup (runway length, ILS category,
+        current weather), which would need real data this module
+        doesn't have.
         """
         dep = AirportDatabase.get_airport(dep_icao)
         arr = AirportDatabase.get_airport(arr_icao)
@@ -60,8 +77,15 @@ class FlightRoutingEngine:
 
         dist_nm = self.great_circle_distance_nm(dep.latitude, dep.longitude, arr.latitude, arr.longitude)
 
-        # Alternate airports
-        alternates = ["LFPO", "LILH"] if dep_icao.upper() == "LFPG" else ["EGGW", "EGKK"]
+        other_airports = [
+            ap
+            for ap in AirportDatabase.all_airport_infos()
+            if ap.icao_code.upper() not in (dep.icao_code.upper(), arr.icao_code.upper())
+        ]
+        other_airports.sort(
+            key=lambda ap: self.great_circle_distance_nm(arr.latitude, arr.longitude, ap.latitude, ap.longitude)
+        )
+        alternates = [ap.icao_code for ap in other_airports[:2]]
 
         return {
             "status": "success",
@@ -71,9 +95,10 @@ class FlightRoutingEngine:
             "great_circle_distance_nm": round(dist_nm, 1),
             "estimated_flight_time_h": round(dist_nm / 450.0, 2),  # Cruise TAS ~450 kt
             "recommended_alternates": alternates,
+            "alternates_source": "NEAREST_IN_LOCAL_AIRPORT_DATABASE_NOT_A_REAL_SUITABILITY_LOOKUP",
             "hazard_avoidance_requested": avoid_hazards,
             "hazard_avoidance_status": (
                 "REQUESTED_NO_REAL_SIGMET_DATA_CONNECTED" if avoid_hazards else "NOT_REQUESTED"
             ),
-            "optimum_flight_level": "FL360 (Minimum Fuel Burn & Tail Wind)",
+            "optimum_flight_level": f"FL{cruise_fl} (requested cruise level; no wind-aloft data connected to compute a real fuel-optimum level)",
         }

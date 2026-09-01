@@ -95,3 +95,8 @@ class AirportDatabase:
     @classmethod
     def list_airports(cls) -> list[str]:
         return list(AIRPORT_REGISTRY.keys())
+
+    @classmethod
+    def all_airport_infos(cls) -> list[AirportInfo]:
+        """Retourne les fiches complètes de tous les aérodromes de la base (pas seulement leurs clés)."""
+        return list(AIRPORT_REGISTRY.values())

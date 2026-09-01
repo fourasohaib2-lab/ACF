@@ -139,7 +139,13 @@ def test_flight_routing_engine():
 
     plan = router.plan_flight_route("LFPG", "KJFK", cruise_fl=350)
     assert plan["status"] == "success"
-    assert "LFPO" in plan["recommended_alternates"] or "LILH" in plan["recommended_alternates"]
+    # CORRECTED: used to assert on 2 alternates hardcoded per-departure
+    # ("LFPO"/"LILH") that weren't even in AirportDatabase and had no
+    # relation to the actual arrival airport (see flight_routing.py).
+    # AirportDatabase only has LFPG/KJFK/EGLL - excluding departure
+    # (LFPG) and arrival (KJFK) leaves EGLL as the one genuine
+    # nearest-by-distance candidate.
+    assert plan["recommended_alternates"] == ["EGLL"]
 
 
 def test_flight_cross_section_engine():
@@ -147,7 +153,18 @@ def test_flight_cross_section_engine():
     cs_engine = FlightCrossSectionEngine()
     profile = cs_engine.generate_flight_profile(49.0097, 2.5479, 40.6413, -73.7781, num_waypoints=10)
     assert len(profile["route_waypoints"]) == 10
-    assert len(profile["detected_hazard_zones"]) >= 1
+    # CORRECTED: detected_hazard_zones and the per-waypoint CAT/icing/
+    # jet-stream/tropopause fields used to be hardcoded fabricated
+    # constants (identical for every route on Earth) - see
+    # cross_section.py. This method has no real atmospheric data source
+    # connected, so it now honestly discloses that instead of always
+    # claiming CAT/icing at fixed waypoint indices.
+    assert profile["detected_hazard_zones"] == []
+    assert profile["is_real_data"] is False
+    assert profile["route_waypoints"][0]["cat_index_edr"] is None
+    # Waypoint geometry itself is genuinely interpolated from dep/arr coordinates.
+    assert profile["route_waypoints"][0]["latitude"] == round(49.0097, 4)
+    assert profile["route_waypoints"][-1]["latitude"] == round(40.6413, 4)
 
 
 def test_query_engine_phase15_aviation_questions():
