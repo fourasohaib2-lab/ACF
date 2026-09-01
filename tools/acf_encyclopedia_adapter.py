@@ -240,6 +240,15 @@ def _jittered_value(param_name: str, position: int, probe_set: dict[str, float])
 
 _BOOL_LIKE_NAMES = {"is_marine", "is_kelvin", "wet_growth"}
 
+# Parameter names that a later Physics Guard pass gave a validated [0, 1]
+# domain (e.g. albedo values, fractional relative humidity) - the generic
+# jitter below routinely lands outside [0, 1] (its second probe set alone
+# ranges roughly 3.3-11.8), so these correctly raised ValueError, which
+# run_verify() below currently has no way to distinguish from a real bug.
+# Same class of fix as the int-coercion above: give these a jitter that
+# stays inside their known-valid domain instead of guessing generically.
+_UNIT_FRACTION_NAMES = {"alpha_fresh", "alpha_wet", "alpha_min", "alpha_aged", "relative_humidity"}
+
 
 def _build_probe_kwargs(func: Any, probe_set: dict[str, float]) -> dict[str, Any] | None:
     """Builds a kwargs dict for one probe call, or None if the signature can't be probed safely."""
@@ -257,6 +266,9 @@ def _build_probe_kwargs(func: Any, probe_set: dict[str, float]) -> dict[str, Any
             return None  # array-typed input: needs a dedicated, per-entry probe - skip, don't fake it
         if name in _BOOL_LIKE_NAMES:
             kwargs[name] = probe_set["scale"] > 1.5  # deterministic but differs between the two probe sets
+        elif name in _UNIT_FRACTION_NAMES:
+            # Two distinct, deterministic, always-valid-domain fractions.
+            kwargs[name] = 0.2 if probe_set["scale"] < 1.5 else 0.7
         elif annotation == "<class 'int'>" or annotation == "int":
             # Coerce int-annotated parameters (e.g. an iteration count fed to
             # range()) instead of passing a raw jittered float, which would

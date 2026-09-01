@@ -2,8 +2,27 @@
 Cryosphere, Snow Metamorphism, Sea Ice Concentration & Glacier Mass Balance Encyclopedia Module
 """
 
+from acf.science.encyclopedia.cryosphere import calculate_snow_albedo_exponential_decay
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
+
+
+def calculate_sea_ice_growth_rate(
+    thermal_conductivity_ice: float, ice_density: float, latent_heat_fusion: float, freezing_temp_c: float, surface_temp_c: float, ice_thickness_m: float
+) -> float:
+    """
+    Croissance de la glace de mer par conduction thermique (loi de
+    Stefan) : dh/dt = (k_ice/(rho_ice*Lf)) * (Tf-Tsurface) / h, en m/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    if ice_thickness_m <= 0.0:
+        raise ValueError("ice_thickness_m must be positive.")
+    if ice_density <= 0.0:
+        raise ValueError("ice_density must be positive.")
+    return (thermal_conductivity_ice / (ice_density * latent_heat_fusion)) * (freezing_temp_c - surface_temp_c) / ice_thickness_m
+
 
 ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
@@ -23,8 +42,16 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=[
             "Modèles de manteau neigeux (Crocus, SURFEX/ISBA-ES, Noah-MP) et prévision des avalanches"
         ],
-        limitations=["Nécessite la prise en compte du dépôt de suie et poussières (effet de neige sale)"],
+        limitations=[
+            "Nécessite la prise en compte du dépôt de suie et poussières (effet de neige sale)",
+            "Même formule (à renommage de variables près) que cryosphere.py's "
+            "'snow_albedo_feedback' - voir la note de calculate_snow_albedo_"
+            "exponential_decay() dans ce module partagé.",
+        ],
         references=["Brun et al. (1989) J. Glaciol. (Crocus)", "Wiscombe & Warren (1980) J. Atmos. Sci."],
+        compute_func=lambda alpha_fresh, alpha_min, k_aging, t: calculate_snow_albedo_exponential_decay(
+            alpha_fresh, alpha_min, k_aging, t
+        ),
     ),
     EncyclopediaEntry(
         key="sea_ice_thermodynamics_cice",
@@ -43,6 +70,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Modèles de glace de mer couplés océan-atmosphère (CICE, NEMO-LIM, GELATO)"],
         limitations=["Nécessite le suivi de la salinité des saumures incluses dans la glace"],
         references=["Untersteiner (1965) J. Geophys. Res.", "Hunke & Lipscomb (2008) CICE Documentation"],
+        compute_func=calculate_sea_ice_growth_rate,
     ),
 ]
 

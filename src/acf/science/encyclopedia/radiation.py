@@ -29,6 +29,21 @@ def calculate_planck_radiance(wavelength_m: float, temp_k: float) -> float:
     return c1 / ((wavelength_m**5) * (math.exp(exponent) - 1.0))
 
 
+def calculate_rayleigh_cross_section(refractive_index: float, number_density: float, wavelength_m: float) -> float:
+    """
+    Section efficace de diffusion de Rayleigh :
+    sigma_R = (8*pi^3/3) * (n^2-1)^2 / (N^2 * lambda^4), en m^2.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    if number_density == 0.0:
+        raise ValueError("number_density must not be zero.")
+    if wavelength_m <= 0.0:
+        raise ValueError("wavelength_m must be positive.")
+    return (8.0 * math.pi**3 / 3.0) * ((refractive_index**2 - 1.0) ** 2) / ((number_density**2) * (wavelength_m**4))
+
+
 def calculate_stefan_boltzmann_flux(temp_k: float, emissivity: float = 1.0) -> float:
     """Calcul de la puissance surfacique émise E = emissivity * sigma * T^4 en W/m²."""
     sigma = 5.670374419e-8  # Stefan-Boltzmann constant
@@ -129,6 +144,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Particules de rayon r < 0.1 * lambda"],
         limitations=["Non valable pour les grosses gouttes de nuage ou aérosols (diffusion de Mie)"],
         references=["Rayleigh (1871)", "Liou (2002)"],
+        compute_func=calculate_rayleigh_cross_section,
     ),
     EncyclopediaEntry(
         key="radiative_transfer_equation",

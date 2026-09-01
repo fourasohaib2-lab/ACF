@@ -5,6 +5,20 @@ WMO Upper Air Observations Encyclopedia Module (Radiosondes, Dropsondes, GPS-RO,
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_atmospheric_refractivity(pressure_hpa: float, temperature_k: float, vapor_pressure_hpa: float) -> float:
+    """
+    Réfractivité atmosphérique (Smith & Weintraub 1953) :
+    N = 77.6*(p/T) + 3.73e5*(e/T^2), en N-units.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    if temperature_k <= 0.0:
+        raise ValueError("temperature_k must be positive.")
+    return 77.6 * (pressure_hpa / temperature_k) + 3.73e5 * (vapor_pressure_hpa / (temperature_k**2))
+
+
 ENTRIES: list[EncyclopediaEntry] = [
     EncyclopediaEntry(
         key="radiosonde_temp_observation",
@@ -40,6 +54,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         ],
         limitations=["Résolution horizontale le long de la ligne de visée de l'ordre de 100 à 300 km"],
         references=["Kursinski et al. (1997) J. Geophys. Res.", "Rocken et al. (1997) Geophys. Res. Lett."],
+        compute_func=calculate_atmospheric_refractivity,
     ),
 ]
 

@@ -27,6 +27,30 @@ def calculate_rain_rate_from_z(z_dbz: float, a: float = 200.0, b: float = 1.6) -
     return (z_linear / a) ** (1.0 / b)
 
 
+def calculate_vad_radial_velocity(mean_u: float, mean_v: float, mean_w: float, azimuth_rad: float, elevation_rad: float) -> float:
+    """
+    Vitesse radiale Doppler attendue en un azimut donné pour un vent
+    horizontal (mean_u, mean_v) et une vitesse verticale mean_w
+    uniformes sur le cercle de balayage (analyse VAD) :
+    Vr(theta) = U*cos(theta) + V*sin(theta) + W*sin(alpha).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+
+    Parameters
+    ----------
+    mean_u, mean_v : float
+        Composantes du vent horizontal moyen (m/s).
+    mean_w : float
+        Vitesse verticale moyenne (m/s).
+    azimuth_rad : float
+        Azimut theta du faisceau radar (radians).
+    elevation_rad : float
+        Angle d'élévation alpha du faisceau radar (radians).
+    """
+    return mean_u * math.cos(azimuth_rad) + mean_v * math.sin(azimuth_rad) + mean_w * math.sin(elevation_rad)
+
+
 def calculate_qpe_accumulation(z_dbz: float, duration_hours: float = 1.0, a: float = 200.0, b: float = 1.6) -> float:
     """
     Calcul de l'estimation quantitative de précipitation accumulée QPE (mm) :
@@ -151,6 +175,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Atmosphère homogène à l'échelle du cercle de balayage"],
         limitations=["Sensible aux mouvements d'écho non atmosphériques (oiseaux, insectes, chantiers)"],
         references=["Browning & Wexler (1968) J. Appl. Meteor.", "NOAA NEXRAD Technical Note"],
+        compute_func=calculate_vad_radial_velocity,
     ),
     EncyclopediaEntry(
         key="qpe_quantitative_precipitation_estimation",

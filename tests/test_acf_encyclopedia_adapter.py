@@ -103,10 +103,26 @@ def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     hail_growth_model, tornado_vortex_dynamics) - see
     tests/test_encyclopedia_compute_func_gaps_batch2.py. Again none of
     the 10 are flagged "insensitive".
+
+    105 -> 119: a further pass wired 14 more (ekman_spiral,
+    snow_albedo_feedback, snow_albedo_aging_metamorphism,
+    sea_ice_thermodynamics_cice, clear_air_turbulence_index,
+    mountain_waves_rotors, wake_turbulence_decay, subcloud_evaporation,
+    bernoulli_principle_flow, gps_radio_occultation_gnss_pwv,
+    downdraft_cold_pool, entrainment_detrainment_convection,
+    vad_velocity_azimuth_display, rayleigh_scattering_cross_section) -
+    see tests/test_encyclopedia_compute_func_gaps_batch3.py. This batch
+    also surfaced a genuine tool gap (not an encyclopedia bug): 3 of the
+    14 use a validated [0, 1] fraction domain (alpha_fresh,
+    relative_humidity) that the generic jitter - which routinely lands
+    well outside [0, 1] - correctly triggered ValueError on, which
+    run_verify() misclassified as a hard "exception" finding. Fixed by
+    adding _UNIT_FRACTION_NAMES, the same class of fix as the existing
+    int-coercion for range()-fed parameters.
     """
     result = adapter.run_verify()
-    assert result.total_computable == 105
-    assert result.checked == 105
+    assert result.total_computable == 119
+    assert result.checked == 119
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 

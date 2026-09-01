@@ -100,6 +100,50 @@ def compute_stp_index(cape: float, srh1km: float, lcl_m: float, shear6km: float)
     )
 
 
+def compute_downdraft_speed_and_gust_front(dcape: float, reduced_gravity: float, cold_pool_depth_m: float, gust_front_coefficient: float = 1.0) -> dict[str, float]:
+    """
+    w_down = -sqrt(2*DCAPE) (m/s, négatif = descendant),
+    V_gust = C*sqrt(g_prime*h) (m/s, front de rafales).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. w_down is returned NEGATIVE (downward
+    velocity), matching the entry's own latex_equation
+    (w_down = -sqrt(2*DCAPE)) even though its plain-text "equation"
+    field omits the minus sign - the physical quantity is a downdraft,
+    which is downward by definition.
+
+    Parameters
+    ----------
+    dcape : float
+        Downdraft CAPE (J/kg), >= 0.
+    reduced_gravity : float
+        g' = g*(delta_theta/theta0) (m/s^2), > 0.
+    cold_pool_depth_m : float
+        Épaisseur h du bassin d'air froid (m), >= 0.
+    gust_front_coefficient : float
+        Constante empirique C (dimensionless), défaut 1.0 (pas une
+        valeur citée universellement - l'appelant doit fournir la
+        valeur vérifiée pour son cas d'usage si différente).
+    """
+    if dcape < 0.0:
+        raise ValueError("dcape must be non-negative.")
+    if reduced_gravity < 0.0 or cold_pool_depth_m < 0.0:
+        raise ValueError("reduced_gravity and cold_pool_depth_m must be non-negative.")
+    w_down = -math.sqrt(2.0 * dcape)
+    v_gust = gust_front_coefficient * math.sqrt(reduced_gravity * cold_pool_depth_m)
+    return {"w_down_m_s": w_down, "v_gust_m_s": v_gust}
+
+
+def compute_entrainment_detrainment_mass_flux_gradient(entrainment_rate: float, detrainment_rate: float, mass_flux: float) -> float:
+    """
+    dM/dz = (epsilon - delta) * M, en kg/(s*m).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    return (entrainment_rate - detrainment_rate) * mass_flux
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -322,6 +366,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Sous le cœur des précipitations d'un orage"],
         limitations=["Dépend de la sécheresse de la couche sous-nuageuse"],
         references=["Knupp & Cotton (1985)", "Emanuel (1994)"],
+        compute_func=compute_downdraft_speed_and_gust_front,
     ),
     EncyclopediaEntry(
         key="entrainment_detrainment_convection",
@@ -342,6 +387,7 @@ ENTRIES: list[EncyclopediaEntry] = [
             "Incertitude fondamentale sur la formulation de epsilon en fonction de la flottabilité et du rayon du nuage"
         ],
         references=["Kain & Fritsch (1990) J. Atmos. Sci.", "ECMWF / Météo-France Documentation"],
+        compute_func=compute_entrainment_detrainment_mass_flux_gradient,
     ),
 ]
 

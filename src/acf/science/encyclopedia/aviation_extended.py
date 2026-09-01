@@ -12,6 +12,32 @@ from acf.science.encyclopedia.registry import EncyclopediaRegistry
 # ---------------------------------------------------------------------------
 
 
+def calculate_mountain_wave_froude_number(wind_speed_perpendicular: float, brunt_vaisala_n: float, mountain_height_m: float) -> float:
+    """
+    Nombre de Froude pour les ondes de relief : Fr = U / (N*H).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    denom = brunt_vaisala_n * mountain_height_m
+    if denom == 0.0:
+        raise ValueError("brunt_vaisala_n * mountain_height_m must not be zero.")
+    return wind_speed_perpendicular / denom
+
+
+def calculate_wake_vortex_initial_circulation(aircraft_mass_kg: float, g: float, air_density: float, wingspan_m: float, flight_velocity_m_s: float) -> float:
+    """
+    Circulation initiale des tourbillons de sillage : Gamma_0 = 4*M*g / (pi*rho*b*V), en m^2/s.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+    """
+    denom = math.pi * air_density * wingspan_m * flight_velocity_m_s
+    if denom == 0.0:
+        raise ValueError("pi * air_density * wingspan_m * flight_velocity_m_s must not be zero.")
+    return (4.0 * aircraft_mass_kg * g) / denom
+
+
 def calculate_density_altitude(pressure_alt_ft: float, oat_celsius: float, isa_temp_celsius: float = 15.0) -> float:
     """Calcul approximatif de l'altitude-densité (Density Altitude) en pieds."""
     return pressure_alt_ft + 120.0 * (oat_celsius - isa_temp_celsius)
@@ -65,6 +91,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Reliefs montagneux (Alpes, Pyrénées, Rockies) par vent fort perpendiculaire"],
         limitations=["Zone de rotors extrêmement dangereuse avec perte de contrôle de l'appareil possible"],
         references=["ICAO Doc 9817 Wind Shear", "AMS Aviation Meteorology"],
+        compute_func=calculate_mountain_wave_froude_number,
     ),
     EncyclopediaEntry(
         key="wake_turbulence_decay",
@@ -84,6 +111,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Procédures de séparation au décollage et à l'atterrissage aux aéroports"],
         limitations=["La dissipation est plus lente en atmosphère calme/stable à faible vent traversier"],
         references=["ICAO Doc 4444 PANS-ATM", "FAA Advisory Circular AC 90-23F"],
+        compute_func=calculate_wake_vortex_initial_circulation,
     ),
     EncyclopediaEntry(
         key="runway_contamination_hydroplaning",

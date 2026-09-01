@@ -53,6 +53,41 @@ def calculate_log_wind_profile(u_star: float, z: float, z0: float, von_karman: f
     return (u_star / von_karman) * math.log(z / z0)
 
 
+def calculate_ekman_spiral(geostrophic_wind_ug: float, ekman_parameter_a: float, height_m: float) -> tuple[float, float]:
+    """
+    Spirale d'Ekman : u(z) = Ug*(1-exp(-az)*cos(az)), v(z) = Ug*exp(-az)*sin(az).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Verified: at z=0, (u,v)=(0,0) (no-slip
+    surface boundary condition); as z -> infinity, (u,v) -> (Ug, 0)
+    (approaches the geostrophic wind aloft) - both limits match Ekman
+    (1905)'s documented behavior exactly.
+
+    Parameters
+    ----------
+    geostrophic_wind_ug : float
+        Vent géostrophique Ug au-dessus de la couche limite (m/s).
+    ekman_parameter_a : float
+        a = sqrt(f / (2*Km)) (m^-1), voir la note "variables" de
+        l'entrée - dépend du paramètre de Coriolis f et de la
+        viscosité turbulente Km (non recalculé ici).
+    height_m : float
+        Altitude z (m), >= 0.
+
+    Returns
+    -------
+    tuple of float
+        (u(z), v(z)) en m/s.
+    """
+    if height_m < 0.0:
+        raise ValueError("height_m must be non-negative.")
+    decay = math.exp(-ekman_parameter_a * height_m)
+    angle = ekman_parameter_a * height_m
+    u = geostrophic_wind_ug * (1.0 - decay * math.cos(angle))
+    v = geostrophic_wind_ug * decay * math.sin(angle)
+    return (u, v)
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -152,6 +187,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Couche limite laminaire/turbulente stationnaire"],
         limitations=["Viscosité turbulente Km supposée constante"],
         references=["Ekman (1905)", "Stull (1988)"],
+        compute_func=calculate_ekman_spiral,
     ),
 ]
 

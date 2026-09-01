@@ -5,6 +5,18 @@ Aeronautical Meteorology & Aerodynamics Encyclopedia Domain
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_dutton_cat_index(horizontal_shear: float, vertical_shear: float) -> float:
+    """
+    Indice CAT de Dutton (1980) : CAT = 1.25*S_horiz + 0.25*S_vert^2.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. A genuinely different, independently-cited
+    formula from science/wind_turbulence.py's CATIndex (Ellrod & Knapp
+    1992 TI1/TI2/EI) - not a duplicate, a distinct named index.
+    """
+    return 1.25 * horizontal_shear + 0.25 * (vertical_shear**2)
+
 ENTRIES = [
     EncyclopediaEntry(
         # NOTE (correction - registry key collision): renamed from
@@ -41,6 +53,7 @@ ENTRIES = [
         application_conditions=["Niveaux de vol élevés (FL240 - FL450)"],
         limitations=["Turbulence à petite échelle non résolue par les grilles météo grossières"],
         references=["Dutton (1980) Meteor. Mag.", "ICAO Aviation Meteorology Manual"],
+        compute_func=calculate_dutton_cat_index,
     ),
 ]
 

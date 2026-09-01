@@ -26,6 +26,29 @@ def calculate_raindrop_terminal_velocity(diameter_m: float) -> float:
     return max(9.65 - 10.3 * math.exp(-600.0 * diameter_m), 0.0)
 
 
+def calculate_subcloud_evaporation_rate(evaporation_coefficient: float, relative_humidity: float, rainwater_content: float) -> float:
+    """
+    Taux d'évaporation sous-nuageuse (virga) : E_virga = k_evap*(1-RH)*qr^0.52.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func.
+
+    Parameters
+    ----------
+    evaporation_coefficient : float
+        k_evap, coefficient empirique d'évaporation.
+    relative_humidity : float
+        RH sous le nuage, FRACTION en [0, 1] (pas un pourcentage).
+    rainwater_content : float
+        Contenu en eau de pluie qr (kg/kg), >= 0.
+    """
+    if not (0.0 <= relative_humidity <= 1.0):
+        raise ValueError("relative_humidity must be a fraction in [0, 1].")
+    if rainwater_content < 0.0:
+        raise ValueError("rainwater_content must be non-negative.")
+    return evaporation_coefficient * (1.0 - relative_humidity) * (rainwater_content**0.52)
+
+
 def calculate_hailstone_density(wet_growth: bool = True) -> float:
     """Masse volumique typique de la grêle selon le régime de croissance (kg/m³)."""
     return 900.0 if wet_growth else 700.0
@@ -79,6 +102,7 @@ ENTRIES: list[EncyclopediaEntry] = [
         application_conditions=["Couche sous-nuageuse sèche"],
         limitations=["Refroidissement évaporatif puissant déclenchant des rafales descendante (downbursts)"],
         references=["Kessler (1969)", "Rogers & Yau (1989)"],
+        compute_func=calculate_subcloud_evaporation_rate,
     ),
     EncyclopediaEntry(
         key="snow_crystal_growth_habits",

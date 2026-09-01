@@ -5,6 +5,20 @@ Aerodynamics & Flight Mechanics Atmospheric Encyclopedia Module
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.encyclopedia.registry import EncyclopediaRegistry
 
+
+def calculate_bernoulli_total_head(static_pressure_pa: float, density: float, velocity: float, height_m: float, g: float = 9.80665) -> float:
+    """
+    Évalue la constante de Bernoulli (énergie mécanique totale par unité
+    de volume) en un point de l'écoulement : p + 0.5*rho*V^2 + rho*g*z.
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Two points sur la MÊME ligne de courant d'un
+    écoulement stationnaire, incompressible et parfait doivent retourner
+    la même valeur - c'est la nature même du théorème.
+    """
+    return static_pressure_pa + 0.5 * density * (velocity**2) + density * g * height_m
+
+
 ENTRIES = [
     EncyclopediaEntry(
         key="aerodynamic_lift_force",
@@ -39,6 +53,7 @@ ENTRIES = [
         application_conditions=["Fluide parfait, incompressible et écoulement stationnaire"],
         limitations=["Invalide pour les écoulements supersoniques (effets de compressibilité)"],
         references=["Bernoulli (1738) Hydrodynamica", "Anderson (2017)"],
+        compute_func=calculate_bernoulli_total_head,
     ),
 ]
 
