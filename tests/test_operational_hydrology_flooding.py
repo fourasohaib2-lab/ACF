@@ -89,9 +89,16 @@ def test_hydrological_observation_engine():
     gauge = HydrologicalObservationEngine.get_river_gauge_reading("H5201010")
     assert gauge["river_name"] == "Seine"
     assert gauge["discharge_m3_s"] == 340.0
+    # CORRECTED: no real Vigicrues gauge feed is connected - these are
+    # fixed illustrative values for one documented example station,
+    # returned identically regardless of the requested station_id, with
+    # no live timestamp - now explicitly marked, not silently presented
+    # as if it were a genuine live reading.
+    assert gauge["is_real_data"] is False
 
     smap = HydrologicalObservationEngine.get_satellite_smap_moisture(48.8, 2.3)
     assert smap["volumetric_soil_moisture_cm3_cm3"] == 0.24
+    assert smap["is_real_data"] is False
 
 
 def test_query_engine_phase17_hydrology_questions():
