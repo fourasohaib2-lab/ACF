@@ -15,6 +15,18 @@ def test_expanded_encyclopedia_entries_count():
     assert count >= 60, f"Expected at least 60 entries, found {count}"
 
 
+def test_no_encyclopedia_module_silently_failed_to_import():
+    """
+    All ~60 encyclopedia submodules must import cleanly - a broken import
+    in any one of them would silently shrink the encyclopedia (its entries
+    just never register) without count() >= 60 above necessarily catching
+    it, since the encyclopedia holds ~300 entries total. failed_modules()
+    surfaces exactly which module(s) failed, rather than an invisible gap.
+    """
+    failed = EncyclopediaRegistry.failed_modules()
+    assert failed == [], f"Encyclopedia modules failed to import (entries missing): {failed}"
+
+
 def test_wmo_cloud_classifier():
     classifier = WMOCloudClassifier()
     cb = classifier.classify_genre(base_m=1000.0, temp_c=-10.0, vertical_extension_m=10000.0)

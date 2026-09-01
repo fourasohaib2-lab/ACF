@@ -5,11 +5,14 @@ Encyclopedia Scientific Registry
 """
 
 import importlib
+import logging
 from typing import Any
 
 from acf.science.encyclopedia.entry import EncyclopediaEntry
 from acf.science.laws.base_law import AtmosphericLaw
 from acf.science.registry import ScientificRegistry
+
+logger = logging.getLogger("acf.science.encyclopedia")
 
 
 class EncyclopediaRegistry:
@@ -19,6 +22,7 @@ class EncyclopediaRegistry:
 
     _entries: dict[str, EncyclopediaEntry] = {}
     _initialized: bool = False
+    _failed_modules: list[str] = []
 
     @classmethod
     def _ensure_initialized(cls):
@@ -86,11 +90,35 @@ class EncyclopediaRegistry:
             "acf.science.observations.upper_air_obs",
             "acf.science.observations.wmo_code_tables",
         ]
+        # NOTE (correction): this loop used to swallow every import error
+        # silently (`except Exception: pass`). Each module registers its
+        # entries as a side effect of import, so a future broken import in
+        # any single one of these ~60 modules (typo, syntax error, a
+        # dependency removed elsewhere) would silently shrink the
+        # encyclopedia with zero error and zero log line - exactly the kind
+        # of silent, invisible incompleteness this project's own history
+        # (see the register() key-collision fix above) has repeatedly found
+        # and fixed elsewhere. count() >= 60 in the test suite would not
+        # reliably catch this: the encyclopedia holds ~300 entries, so
+        # losing one module's handful of entries would not cross that
+        # floor. Failures are now logged loudly (module still skipped
+        # rather than aborting the whole registry, since one broken module
+        # should not prevent the other ~59 from registering) instead of
+        # vanishing silently.
+        failed_modules: list[str] = []
         for mod in modules:
             try:
                 importlib.import_module(mod)
             except Exception:
-                pass
+                failed_modules.append(mod)
+                logger.warning(
+                    "EncyclopediaRegistry: failed to import '%s' - its entries were NOT "
+                    "registered (encyclopedia is silently incomplete for this module).",
+                    mod,
+                    exc_info=True,
+                )
+        if failed_modules:
+            cls._failed_modules = list(failed_modules)
 
     @classmethod
     def register(cls, entry: EncyclopediaEntry):
@@ -213,3 +241,13 @@ class EncyclopediaRegistry:
         """
         cls._ensure_initialized()
         return len(cls._entries)
+
+    @classmethod
+    def failed_modules(cls) -> list[str]:
+        """
+        Retourne la liste des modules d'encyclopédie dont l'import a échoué
+        lors de l'initialisation (voir la note dans _ensure_initialized()).
+        Une liste non vide signifie que l'encyclopédie est incomplète.
+        """
+        cls._ensure_initialized()
+        return list(cls._failed_modules)
