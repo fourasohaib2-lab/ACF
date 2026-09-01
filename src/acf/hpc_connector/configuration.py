@@ -55,7 +55,29 @@ class HPCConfiguration:
         """Return active execution mode (local, cluster, hybrid, gpu, mpi, distributed)."""
         return self.config.get("execution_mode", "hybrid")
 
-    def get_cluster_profile(self, profile_name: str = "university_hpc") -> dict[str, Any]:
-        """Retrieve profile configuration dictionary for target cluster."""
+    def get_cluster_profile(self, profile_name: str = "fennec") -> dict[str, Any]:
+        """
+        Retrieve profile configuration dictionary for target cluster.
+
+        NOTE (correction — operationally dangerous): this used to
+        silently substitute an ARBITRARY different real cluster's full
+        profile (next(iter(profiles.values()))) whenever the requested
+        profile_name wasn't found in config/hpc.yaml's cluster_profiles
+        - and the default profile_name itself was "university_hpc",
+        which does not exist there (only "fennec" does; the actual
+        University HPC profile lives in a separate, unrelated file,
+        config/hpc_profiles/University_HPC.yaml, never read by this
+        class). In practice this meant the default no-argument call
+        (used by HPCConnectionManager.connect(), this same package)
+        always silently resolved to the real production FENNEC cluster
+        (hostname, SSH username, working directory all genuine) instead
+        of honestly failing to find "university_hpc" - a caller
+        requesting a specific cluster by name could silently connect to
+        an entirely different one. Fixed: the default now matches what
+        is actually configured ("fennec", consistent with this whole
+        class/package being built specifically for FENNEC), and an
+        unmatched profile_name now honestly returns {} instead of a
+        different cluster's real connection details.
+        """
         profiles = self.config.get("cluster_profiles", {})
-        return profiles.get(profile_name, next(iter(profiles.values())) if profiles else {})
+        return profiles.get(profile_name, {})

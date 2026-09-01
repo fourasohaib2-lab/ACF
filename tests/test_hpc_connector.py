@@ -70,9 +70,17 @@ def test_hpc_configuration():
     config = HPCConfiguration("config/hpc.yaml")
     mode = config.get_execution_mode()
     assert mode in ["local", "cluster", "hybrid", "gpu", "mpi", "distributed"]
-    profile = config.get_cluster_profile("university_hpc")
+
+    # CORRECTED: "university_hpc" doesn't exist in config/hpc.yaml's
+    # cluster_profiles (only "fennec" does) - get_cluster_profile()
+    # used to silently substitute an arbitrary different real cluster's
+    # profile instead of honestly reporting "not found".
+    profile = config.get_cluster_profile("fennec")
     assert "scheduler" in profile
     assert profile["scheduler"] == "slurm"
+
+    missing = config.get_cluster_profile("university_hpc")
+    assert missing == {}
 
 
 def test_cluster_and_arome_detector():
@@ -243,7 +251,12 @@ def test_remote_terminal_shell_open_shell_honest_when_no_real_channel():
 
 def test_hpc_connection_manager_fennec_workflow():
     hpc = HPCConnectionManager("config/hpc.yaml")
-    assert hpc.connect("university_hpc") is True
+    # CORRECTED: was "university_hpc", a profile name that doesn't
+    # exist in config/hpc.yaml - this test's own name ("fennec_workflow")
+    # already gave away that "fennec" was always the real target;
+    # get_cluster_profile() used to silently substitute it anyway via
+    # its now-removed arbitrary-fallback behavior.
+    assert hpc.connect("fennec") is True
     assert hpc.is_connected is True
     assert "python_path" in hpc.cluster_info
     assert "python_version" in hpc.cluster_info

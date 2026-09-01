@@ -55,8 +55,17 @@ class HPCConnectionManager:
             "INFO", f"Initialized FENNEC HPCConnectionManager (Mode={self.meteorological_stack['operational_mode']})"
         )
 
-    def connect(self, profile_name: str = "university_hpc") -> bool:
-        """Execute complete 11-step production connection workflow over Paramiko SSH."""
+    def connect(self, profile_name: str = "fennec") -> bool:
+        """
+        Execute complete 11-step production connection workflow over Paramiko SSH.
+
+        NOTE (correction): default profile_name used to be
+        "university_hpc", which does not exist in config/hpc.yaml's
+        cluster_profiles (only "fennec" does) - see
+        HPCConfiguration.get_cluster_profile()'s own NOTE for what this
+        actually caused. Matches this class's own stated purpose
+        ("Production HPC Master Connection Manager for FENNEC").
+        """
         log_hpc_event("INFO", f"Starting 11-step FENNEC HPC Connection Workflow for profile [{profile_name}]...")
         profile = self.config.get_cluster_profile(profile_name)
 
