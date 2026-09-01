@@ -2,6 +2,8 @@
 Cloud Microphysics Laws
 """
 
+import math
+
 from acf.science.laws.base_law import AtmosphericLaw
 
 MICROPHYSICS_LAWS = [
@@ -55,6 +57,24 @@ MICROPHYSICS_LAWS = [
         units={"N_ice": "m⁻³", "T": "K"},
         description="Formation de cristaux de glace primaires par congélation hétérogène ou immersion.",
         references=["Fletcher (1962) Physics of Rainclouds", "ECMWF Cloud Microphysics Documentation"],
-        limitations=["Fortement dépendant de la présence d'aérosols glaçogènes."],
+        limitations=[
+            "Fortement dépendant de la présence d'aérosols glaçogènes.",
+            "N0 et b sont des paramètres empiriques d'ajustement observationnel, pas des "
+            "constantes physiques universelles - contrairement aux entrées soeurs de ce "
+            "fichier (kessler_autoconversion, collection_coalescence), aucune valeur "
+            "'ex:' par défaut n'est documentée ici : une recherche n'a pas permis de "
+            "vérifier une paire (N0, b) canonique unique citée de façon cohérente dans la "
+            "littérature secondaire (les valeurs varient par source/unités). Ne pas "
+            "inventer une valeur par défaut non vérifiée - l'appelant doit fournir N0 et b "
+            "issus d'un ajustement observationnel vérifié pour son cas d'usage.",
+        ],
+        # NOTE (correction): this entry documented a fully explicit,
+        # directly-computable equation (N_ice = N0*exp(b*(273.15-T)), stated
+        # in its own "equation" field above) but had no compute_func at all -
+        # same class of registry gap already found and fixed for
+        # monin_obukhov_length/planck_law/ertel_potential_vorticity/
+        # thermal_wind. N0 and b are required (not defaulted) parameters per
+        # the limitations note above - never a guessed/fabricated default.
+        compute_func=lambda temperature_k, n0, b: n0 * math.exp(b * (273.15 - temperature_k)),
     ),
 ]
