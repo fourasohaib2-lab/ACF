@@ -16,25 +16,40 @@ class MarineForecastEngine:
 
     @staticmethod
     def douglas_sea_state(hs_m: float) -> dict[str, str]:
-        """Convertit la hauteur significative Hs en échelle de Douglas pour l'état de la mer."""
-        if hs_m < 0.1:
+        """
+        Convertit la hauteur significative Hs en échelle de Douglas (WMO Sea State
+        Code, 0 à 9) pour l'état de la mer.
+
+        NOTE (correction): every wave-height boundary already matched the
+        real WMO Douglas scale exactly, but each was paired with the
+        WRONG code number/label, shifted down by one throughout - e.g.
+        0.1-0.5 m (the real code 2 "Smooth (wavelets)" range) was labeled
+        "1 - Calm (rippled)" (the real code 1's range, 0-0.1 m), and so
+        on up the scale. Code 9 "Phenomenal" (>14 m) did not exist at
+        all - merged into a hybrid "8 - Very High / Phenomenal" label.
+        A caller checking for "Moderate" (real code 4, 1.25-2.5 m) would
+        instead match hs up to 2.5-4.0 m, actually "Rough" seas.
+        """
+        if hs_m <= 0.0:
             code = "0 - Calm (glassy)"
-        elif hs_m < 0.5:
+        elif hs_m < 0.1:
             code = "1 - Calm (rippled)"
+        elif hs_m < 0.5:
+            code = "2 - Smooth (wavelets)"
         elif hs_m < 1.25:
-            code = "2 - Smooth"
-        elif hs_m < 2.5:
             code = "3 - Slight"
-        elif hs_m < 4.0:
+        elif hs_m < 2.5:
             code = "4 - Moderate"
-        elif hs_m < 6.0:
+        elif hs_m < 4.0:
             code = "5 - Rough"
-        elif hs_m < 9.0:
+        elif hs_m < 6.0:
             code = "6 - Very Rough"
-        elif hs_m < 14.0:
+        elif hs_m < 9.0:
             code = "7 - High"
+        elif hs_m < 14.0:
+            code = "8 - Very High"
         else:
-            code = "8 - Very High / Phenomenal"
+            code = "9 - Phenomenal"
 
         return {"douglas_code": code, "hs_m": str(round(hs_m, 2))}
 

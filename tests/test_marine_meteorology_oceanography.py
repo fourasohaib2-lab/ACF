@@ -4,6 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Global Marine Meteorology, Oceanography & Coastal Hazard Test Suite (MISSION ACF-032)
 """
 
+import math
+
+import pytest
+
 from acf.ocean.cyclones.cyclones import HurricaneDatabase
 from acf.ocean.forecasting.marine_forecaster import MarineForecastEngine
 from acf.ocean.models.ocean_models import OCEAN_MODELS_REGISTRY, OceanModelEngine
@@ -36,17 +40,37 @@ def test_operational_wave_engine():
     assert abs(ww3 - 4.0) < 1e-4
 
     cg = OperationalWaveEngine.wave_group_velocity(peak_period_s=10.0)
-    assert 7.0 < cg < 8.0  # ~7.8 m/s
+    assert 7.0 < cg < 8.0  # ~7.8 m/s in deep water (default depth=1000m), unchanged by the depth fix
+
+    # CORRECTED: water_depth_m used to be accepted and silently ignored
+    # (ruff ARG004) - a shallow depth now genuinely slows the group
+    # velocity below the deep-water value via the real dispersion
+    # relation. See wave_models.py.
+    cg_shallow = OperationalWaveEngine.wave_group_velocity(peak_period_s=10.0, water_depth_m=5.0)
+    assert cg_shallow < cg
 
     spec = OperationalWaveEngine.jonswap_spectrum_peak_energy(wind_speed_10m=15.0, fetch_m=100000.0)
-    assert spec["significant_wave_height_m"] > 0.5
+    # CORRECTED: significant_wave_height_m used to be dimensionally
+    # wrong (missing a division by sqrt(g)), ~sqrt(g)=3.13x too large
+    # (~7.6 m instead of ~2.4 m for these inputs). See wave_models.py.
+    assert spec["significant_wave_height_m"] == pytest.approx(0.0016 * 15.0 * math.sqrt(100000.0 / 9.80665), rel=1e-6)
+    assert 2.0 < spec["significant_wave_height_m"] < 3.0
 
 
 def test_marine_forecast_engine():
     """Test du moteur de prévision d'état de mer et surcotes."""
     m_engine = MarineForecastEngine()
+    # CORRECTED: every Douglas scale boundary was already right but
+    # paired with a code number/label shifted down by one throughout
+    # (3.5 m used to match "4 - Moderate", the real code 4's range is
+    # 1.25-2.5 m; 3.5 m is actually "5 - Rough" per the WMO Douglas
+    # scale). See marine_forecaster.py.
     ds = m_engine.douglas_sea_state(hs_m=3.5)
-    assert "Moderate" in ds["douglas_code"]
+    assert "Rough" in ds["douglas_code"]
+    ds_moderate = m_engine.douglas_sea_state(hs_m=2.0)
+    assert "4 - Moderate" == ds_moderate["douglas_code"]
+    ds_phenomenal = m_engine.douglas_sea_state(hs_m=15.0)
+    assert "9 - Phenomenal" == ds_phenomenal["douglas_code"]
 
     fcst = m_engine.generate_marine_forecast(wind_speed_kts=30.0, fetch_km=150.0, swell_hs_m=2.5)
     assert fcst["combined_significant_wave_height_m"] > 2.5
