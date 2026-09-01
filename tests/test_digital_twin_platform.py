@@ -27,6 +27,21 @@ def test_digital_twin_engine_and_state_vector():
     assert d["atmosphere"]["temp_2m_c"] == 16.0
     assert d["space_weather"]["kp_index"] == 5.0
 
+    # CORRECTED: every field of GlobalEarthStateVector used to default
+    # to a specific fabricated value (temp_2m_c=15.2, sst_c=18.5,
+    # ai_model_active="GraphCast + NeuralGCM Ensemble", etc.), so a
+    # bare GlobalEarthStateVector() (as digital_twin.planet_state.
+    # GlobalEarthState's own default_factory constructs) silently
+    # produced a complete fake "current state of planet Earth" with no
+    # real observation behind it.
+    empty_vec = GlobalEarthStateVector()
+    empty_d = empty_vec.to_dict()
+    assert empty_d["atmosphere"]["temp_2m_c"] is None
+    assert empty_d["ai"]["ai_model_active"] is None
+    assert empty_d["geology"]["max_recent_earthquake_mw"] is None
+    # Fields genuinely supplied still come through unaffected.
+    assert d["ocean"]["sst_c"] == 19.0
+
     # CORRECTED: progress_pct/simulation_id used to unconditionally
     # claim a completed cycle (100.0, a fixed literal id) with no real
     # assimilation/forecast cycle ever run.

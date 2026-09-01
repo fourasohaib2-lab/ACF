@@ -17,7 +17,29 @@ class PlanetaryScenarioEngine:
 
     @classmethod
     def run_scenario_projection(cls, horizon: str = "+24h", ssp_scenario: str = "SSP2-4.5") -> dict[str, Any]:
-        """Exécute une projection scénarisée sur l'horizon temporel spécifié."""
+        """
+        Exécute une projection scénarisée sur l'horizon temporel spécifié.
+
+        NOTE (correction): ssp_scenario is genuinely accepted and
+        echoed back, but the actual projected_global_temp_change_c/
+        projected_sea_level_rise_m below are NOT a function of it - the
+        same horizon-only fixed values are returned regardless of
+        whether "SSP1-1.9" (low emissions) or "SSP5-8.5" (high
+        emissions) is requested for the same horizon, even though the
+        real climate response differs substantially between them (AR6
+        WG1 end-of-century best estimates span roughly 1.4-4.4°C across
+        the SSP range, not a single number). The +100yr default value
+        (2.7°C) is a genuine, defensible reference figure for
+        SSP2-4.5 specifically (close to AR6's own headline estimate for
+        that scenario) - kept as a static baseline (same convention as
+        digital_twin.earth_state.EarthState) - but it does not currently
+        generalize to other ssp_scenario values as its presence in the
+        output would suggest. No real per-scenario CMIP6/ESM ensemble
+        output is connected here to compute a genuine per-scenario
+        value. Not fabricated, but flagged since the parameter's
+        presence in the signature/output implies scenario-sensitivity
+        that isn't actually there yet.
+        """
         if horizon not in cls.SUPPORTED_HORIZONS:
             horizon = "+24h"
 

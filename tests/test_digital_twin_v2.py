@@ -39,9 +39,13 @@ def test_earth_twin_core_and_state():
 
 def test_couplings_and_scenario_engine():
     """Test du moteur de couplage inter-sphères et des scénarios CMIP6 / +2°C."""
+    # CORRECTED: used to unconditionally claim specific fabricated
+    # numbers ("Heat Flux 14.2 W/m^2", etc.) and "FULL_COUPLING_COMPUTED"
+    # with 0 parameters and no connection to any real Earth-system state.
     coup = CouplingEngine.compute_couplings()
-    assert coup["coupling_status"] == "FULL_COUPLING_COMPUTED"
-    assert "Heat Flux" in coup["atmosphere_ocean_coupling"]
+    assert coup["coupling_status"] == "NOT_COMPUTED_NO_EARTH_SYSTEM_STATE_CONNECTED"
+    assert coup["atmosphere_ocean_coupling"] is None
+    assert coup["is_real_data"] is False
 
     # CORRECTED: used to return byte-identical fixed projections for
     # ANY of the 4 distinct real IPCC AR6 SSP scenarios (only the
@@ -59,9 +63,13 @@ def test_couplings_and_scenario_engine():
 
 def test_planetary_boundaries_and_geoengineering():
     """Test du simulateur des 9 limites planétaires et du laboratoire de géo-ingénierie."""
+    # CORRECTED: overall_audit_summary used to hardcode
+    # "6_OF_9_BOUNDARIES_TRANSGRESSED" independently of the actual data
+    # (which only tracks 5 of the real 9 boundaries, 4 of which are
+    # actually TRANSGRESSED) - now computed from the real entries.
     limits = PlanetaryBoundariesSimulator.audit_planetary_boundaries()
     assert limits["climate_change"]["status"] == "TRANSGRESSED"
-    assert limits["overall_audit_summary"] == "6_OF_9_BOUNDARIES_TRANSGRESSED"
+    assert limits["overall_audit_summary"] == "4_OF_5_TRACKED_BOUNDARIES_TRANSGRESSED_(5_OF_9_REAL_BOUNDARIES_TRACKED)"
 
     # CORRECTED: used to claim a fixed "-0.45K cooling"/"4.2 benefit-
     # cost ratio" regardless of the injection amount (physically
@@ -101,8 +109,12 @@ def test_ai_digital_twin_assistant_and_experiments():
 
 def test_ancillary_digital_twin_modules():
     """Test des modules annexes (Feedback, Calibration, Dashboard, PlanetModel)."""
+    # CORRECTED: used to claim a fabricated "+1.8 W/m^2"/"+0.4 W/m^2"
+    # and a fixed total_feedback_factor=1.62 with no real climate model
+    # diagnostics connected.
     fb = FeedbackEngine.evaluate_feedbacks()
-    assert fb["status"] == "FEEDBACKS_EVALUATED"
+    assert fb["status"] == "NOT_EVALUATED_NO_CLIMATE_MODEL_DIAGNOSTICS_CONNECTED"
+    assert fb["total_feedback_factor"] is None
 
     # CORRECTED: used to claim a fabricated "0.04 RMSE"/"128
     # parameters tuned" with no real calibration against observations.
@@ -120,8 +132,12 @@ def test_ancillary_digital_twin_modules():
     pm = PlanetModel.get_planet_parameters()
     assert pm["radius_km"] == 6371.0
 
+    # CORRECTED: used to claim "RUNNING_COMPUTE" together with a
+    # contradictory "progress_pct": 100.0, with no real simulation
+    # engine ever invoked.
     sm = SimulationManager.execute_simulation()
-    assert sm["execution_status"] == "RUNNING_COMPUTE"
+    assert sm["execution_status"] == "NOT_EXECUTED_NO_SIMULATION_ENGINE_CONNECTED"
+    assert sm["progress_pct"] is None
     # BoundaryConditionsManager: solar_constant_w_m2 is a genuine
     # physical constant, kept unchanged.
     assert BoundaryConditionsManager.get_boundary_conditions()["solar_constant_w_m2"] == 1361.0
