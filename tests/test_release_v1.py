@@ -52,7 +52,13 @@ def test_release_manager_and_versioning():
     assert info["release_id"] == "ACF-V1.0-PRODUCTION-OFFICIAL"
     assert info["certification_status"] == "NOT_CERTIFIED_NO_AUDIT_PERFORMED"
 
-    assert VersionManager.get_version() == "1.0.0"
+    # CORRECTED: get_version() used to hardcode "1.0.0" - the actual
+    # declared package version (acf.core.version.__version__) is
+    # "0.1.0". Distinct from ReleaseManager.VERSION above, which is a
+    # genuine, separately-declared "ACF v1.0 production release"
+    # milestone label (see its own NOTE) - not the same concept as this
+    # SemVer package version, so intentionally not touched here.
+    assert VersionManager.get_version() == "0.1.0"
     parsed = VersionManager.parse_version("1.0.0")
     assert parsed["major"] == 1 and parsed["minor"] == 0 and parsed["patch"] == 0
 
