@@ -254,6 +254,16 @@ def test_weights_manager():
     assert wm.get_weight("dynamic") == 0.25
     assert wm.get_weight("confidence") == 0.10
 
+    # CORRECTED: set_weight() used to change only the requested weight
+    # and then validate that ALL weights summed to 1.0, which failed
+    # for virtually any real single-weight change (the other weights
+    # were untouched, so the sum drifted away from 1.0). It now
+    # proportionally rescales the other weights instead. See weights.py.
+    wm.reset()
+    wm.set_weight("dynamic", 0.30)
+    assert wm.get_weight("dynamic") == pytest.approx(0.30)
+    assert sum(wm.get_all_weights().values()) == pytest.approx(1.0)
+
     # Reset to default
     wm.reset()
     assert wm.get_weight("dynamic") == 0.20

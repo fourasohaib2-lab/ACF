@@ -49,13 +49,34 @@ class WeightsManager:
 
     def set_weight(self, module: str, value: float):
         """
-        Set weight for a specific module.
+        Set weight for a specific module, proportionally rescaling every
+        other weight so the total still sums to 1.0.
 
-        Note: This modifies the weight and immediately validates.
-        To change multiple weights at once, use update_weights().
+        NOTE (correction): this used to set only the requested weight
+        and then validate that ALL weights summed to 1.0 - which fails
+        for virtually any real single-weight change, since the other
+        modules' weights are left untouched (e.g. raising "dynamic"
+        from 0.20 to 0.30 leaves the other 6 weights as-is, so the
+        total becomes 1.10 and _validate_weights() raises immediately).
+        The method could never succeed for its own stated purpose. It
+        now redistributes the remaining budget (1 - value) across the
+        other weights proportionally to their current share, so the
+        total stays at 1.0.
+
+        Note: To set several weights to specific chosen values at once
+        (without this proportional rescaling of the rest), use
+        update_weights() instead.
         """
         if value < 0 or value > 1:
             raise ValueError(f"Weight must be between 0 and 1. Got: {value}")
+
+        others = {m: w for m, w in self.weights.items() if m != module}
+        others_total = sum(others.values())
+        remaining = 1.0 - value
+        if others_total > 0:
+            scale = remaining / others_total
+            for m in others:
+                self.weights[m] = others[m] * scale
         self.weights[module] = value
         self._validate_weights()
 
