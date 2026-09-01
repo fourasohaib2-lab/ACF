@@ -69,9 +69,20 @@ class AdaptiveForecastControlEngine:
         self,
         state: AdaptiveForecastControlState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): used to subtract an
+        unexplained "0.5" from the plain average with no comment or
+        justification of any kind - the same unexplained-offset
+        pattern already found and removed in the structurally similar
+        ForecastConfidenceCalibrationEngine (same State-dataclass shape:
+        forecast_error/observation_error/model_confidence/
+        assimilation_quality). Present only to make one specific test
+        assertion (87.0) match; the honest plain average is 87.5.
+        Removed.
+        """
 
         return round(
-            (state.model_confidence + state.assimilation_quality) / 2 - 0.5,
+            (state.model_confidence + state.assimilation_quality) / 2,
             2,
         )
 
@@ -79,6 +90,15 @@ class AdaptiveForecastControlEngine:
         self,
         state: AdaptiveForecastControlState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): the weighted sum below
+        (0.35/0.45/0.20 weights) is a genuine documented heuristic, but
+        it used to be followed by an unexplained "+ 1.395" with no
+        comment, citation, or stated meaning anywhere - present only
+        to make one specific test assertion (87.17, itself computed
+        from confidence_adjustment()'s own now-removed fudge) match.
+        Removed.
+        """
 
         error_score = self.error_correction_index(state)
 
@@ -88,7 +108,7 @@ class AdaptiveForecastControlEngine:
 
         result = error_score * 0.35 + confidence_score * 0.45 + stability_score * 0.20
 
-        return round(result + 1.395, 2)
+        return round(result, 2)
 
     def adaptive_parameter_update(
         self,

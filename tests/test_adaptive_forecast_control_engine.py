@@ -24,17 +24,28 @@ def test_error_correction():
 
 
 def test_confidence():
+    """
+    CORRECTED: used to subtract an unexplained 0.5 with no comment or
+    justification, present only to make this exact assertion (87.0)
+    match. The honest plain average is 87.5.
+    """
 
     engine = AdaptiveForecastControlEngine()
 
-    assert engine.confidence_adjustment(build_state()) == 87.0
+    assert engine.confidence_adjustment(build_state()) == 87.5
 
 
 def test_parameter_control():
+    """
+    CORRECTED: used to add an unexplained 1.395 with no comment or
+    justification, present only to make this exact assertion (87.17)
+    match. The honest weighted sum (using the now-honest
+    confidence_adjustment) is 86.0.
+    """
 
     engine = AdaptiveForecastControlEngine()
 
-    assert engine.parameter_control_index(build_state()) == 87.17
+    assert engine.parameter_control_index(build_state()) == 86.0
 
 
 def test_decision():
