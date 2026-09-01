@@ -149,10 +149,24 @@ class NavigationMixin:
             south,
             north,
         )
+
+        NOTE (correction): this passed `extent` straight through as a
+        single positional argument, but MapCamera.set_extent() takes
+        4 separate positional arguments (west, east, south, north),
+        not one tuple - every call raised "TypeError: set_extent()
+        missing 3 required positional arguments". Masked until now by
+        map_camera.py's own bug (MapCamera had no methods at all, so
+        this failed with a different, earlier AttributeError first) -
+        confirmed once that was fixed.
         """
 
+        west, east, south, north = extent
+
         self.camera.set_extent(
-            extent,
+            west,
+            east,
+            south,
+            north,
         )
 
         self.refresh()

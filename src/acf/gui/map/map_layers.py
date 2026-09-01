@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -9,6 +10,8 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from acf.data.dataset import Dataset
+
+logger = logging.getLogger("acf.gui.map.map_layers")
 
 
 class BaseMapLayer(ABC):
@@ -276,4 +279,13 @@ class LayerManager:
                 try:
                     layer.render(axes, transform=transform)
                 except Exception:
-                    pass
+                    # NOTE (correction): used to silently swallow ANY
+                    # exception from a layer's render() (bare except
+                    # Exception: pass, no logging) - a genuinely broken
+                    # layer (bad data shape, a real matplotlib/cartopy
+                    # error) would just silently vanish from the map
+                    # with zero indication anything went wrong, the same
+                    # "stop silently swallowing failures" bug class
+                    # already fixed elsewhere in this codebase (see
+                    # importers/factory.py, science/encyclopedia.py).
+                    logger.exception("Failed to render map layer %r", name)
