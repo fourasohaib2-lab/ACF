@@ -32,11 +32,19 @@ def test_observation_ingestion_engine():
     qpe = RadarIngestor.compute_qpe_rainfall_rate(45.0)
     assert qpe > 0.0
 
+    # CORRECTED: used to unconditionally claim a fixed "4500"
+    # reports_count and "REPORTS_INGESTED" with 0 real GTS/WIS
+    # connection - same pattern as satellite_ingestor.py above.
     syn = SurfaceStationIngestor.ingest_synop_reports()
-    assert syn["reports_count"] == 4500
+    assert syn["reports_count"] is None
+    assert syn["status"] == "NOT_INGESTED_NO_STATION_DATA_CONNECTION"
 
+    # CORRECTED: used to unconditionally claim a fixed "3900"
+    # argo_floats_active and "ARGO_PROFILES_INGESTED" with 0 real
+    # connection to the Argo GDAC/GTS distribution.
     argo = OceanObservationIngestor.ingest_argo_profiles()
-    assert argo["argo_floats_active"] == 3900
+    assert argo["argo_floats_active"] is None
+    assert argo["status"] == "NOT_INGESTED_NO_ARGO_DATA_CONNECTION"
 
 
 def test_quality_control_and_error_modeling():
@@ -83,10 +91,22 @@ def test_assimilation_algorithms_4dvar_enkf_hybrid():
 
 def test_analysis_state_vector_and_neural_da():
     """Test du vecteur d'état global ré-assimilé X et de l'assimilation neuronale PINN/GNN."""
+    # CORRECTED: used to default analysis_timestamp/quality_score to a
+    # fixed "2026-08-02 12:00 UTC" / "98.6" and unconditionally claim
+    # "ANALYSIS_STATE_PRODUCED" - no DA engine in this package can
+    # actually produce a real analysis yet (EnKF/4D-Var/Hybrid all
+    # raise NotImplementedError, tested above).
     state_vec = EarthAnalysisStateVector()
     summary = state_vec.get_analysis_summary()
-    assert summary["status"] == "ANALYSIS_STATE_PRODUCED"
+    assert summary["status"] == "NOT_PRODUCED_NO_REAL_ASSIMILATION_CONNECTED"
+    assert summary["is_real_data"] is False
+    assert summary["analysis_quality_score"] is None
     assert summary["variables_count"] == 10
+
+    produced_state = EarthAnalysisStateVector(analysis_timestamp="2026-09-01 00:00 UTC", quality_score=91.2)
+    produced_summary = produced_state.get_analysis_summary()
+    assert produced_summary["status"] == "ANALYSIS_STATE_PRODUCED"
+    assert produced_summary["is_real_data"] is True
 
     # CORRECTED: used to multiply innovation_vector by a fixed 0.85 and
     # present the result as a "Physics-Informed Graph Neural Network"
