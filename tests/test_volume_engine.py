@@ -25,7 +25,14 @@ def test_atmospheric_volume_and_grid():
     vol = AtmosphericVolume(variable_name="temperature_4d")
     meta = vol.get_volume_metadata()
     assert meta["variable_name"] == "temperature_4d"
-    assert meta["status"] == "VOLUME_4D_LOADED"
+    # CORRECTED: status used to unconditionally claim "VOLUME_4D_LOADED"
+    # despite this class holding no actual data array field at all.
+    assert meta["status"] == "METADATA_ONLY_NO_DATA_ARRAY_LOADED"
+
+    # CORRECTED: units used to default to "K" regardless of
+    # variable_name - wrong for any variable other than temperature.
+    other_vol = AtmosphericVolume(variable_name="specific_humidity")
+    assert other_vol.units == ""
 
     levels = VerticalCoordinateSystem.get_standard_pressure_levels()
     assert 500 in levels
