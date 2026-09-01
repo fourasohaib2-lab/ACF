@@ -135,12 +135,23 @@ def test_adiabatic_lapse_rate():
 
 
 def test_moist_adiabatic_lapse_rate():
+    """
+    CORRECTED: the formula used to omit its numerator's latent-heat-
+    release correction term entirely (effectively using a numerator of
+    1 instead of [1 + Lv*w/(Rd*T)]) - understating the true moist
+    lapse rate by ~24% for this state. The honest value (Rogers & Yau
+    formula) is ~0.00471 K/m (4.71 K/km, a physically realistic value
+    below the dry adiabatic rate of ~9.77 K/km).
+    """
 
     model = Thermodynamics()
 
     value = model.moist_adiabatic_lapse_rate(create_state())
 
-    assert value > 0
+    assert value == 0.00471
+    # Must be less than the dry adiabatic rate - the whole physical point
+    # of the moist correction (latent heat release slows the parcel's cooling).
+    assert value < model.adiabatic_lapse_rate()
 
 
 # ============================================================

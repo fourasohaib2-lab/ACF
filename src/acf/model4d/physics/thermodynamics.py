@@ -92,8 +92,24 @@ class AtmosphericThermodynamics:
         return round(gamma, 5)
 
     def moist_adiabatic_lapse_rate(self, state):
+        """
+        Saturated (moist) adiabatic lapse rate.
 
-        numerator = G / CP
+        NOTE (correction - Physics Guard): the standard formula
+        (Rogers & Yau, "A Short Course in Cloud Physics"; AMS Glossary
+        of Meteorology) is
+        Gamma_s = (g/Cp) * [1 + Lv*w/(Rd*T)] / [1 + Lv^2*w/(Cp*Rv*T^2)]
+        - the denominator here was already correct, but the numerator's
+        bracketed latent-heat-release correction term
+        "1 + Lv*w/(Rd*T)" was missing entirely (this used to just be
+        "G / CP", i.e. an implicit numerator of 1). At T=280K, q=0.01
+        kg/kg this understated the moist lapse rate by about 24%
+        (~3.6 K/km instead of the correct ~4.7 K/km) - not a fudge
+        factor, an incomplete formula. No test asserted a specific
+        value (only `> 0`), so nothing was locked in.
+        """
+
+        numerator = (G / CP) * (1 + (LV * state.specific_humidity) / (RD * state.temperature))
 
         denominator = 1 + (LV**2 * state.specific_humidity / (CP * RV * state.temperature**2))
 
