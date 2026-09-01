@@ -11,6 +11,7 @@ from acf.hpc_connector.remote_executor import RemoteExecutor
 from acf.hpc_connector.scheduler_interface import (
     SlurmScheduler,
 )
+from acf.hpc_connector.file_transfer import FileTransferManager
 from acf.hpc_connector.security import HPCSecurityManager
 from acf.hpc_connector.ssh_connector import SSHConnector
 
@@ -100,6 +101,43 @@ def test_paramiko_ssh_and_executor():
     assert res["exit_code"] == 0
     assert "execution_time" in res
     assert ssh.disconnect() is True
+
+
+def test_file_transfer_manager_honest_status_when_no_real_sftp(tmp_path):
+    """
+    CORRECTED: SSHConnector.upload()/download() and
+    FileTransferManager.sync_files()/download_results() used to
+    unconditionally return True / record "status": "COMPLETED" even when
+    no SFTP channel could be opened - the default outcome in this offline
+    development environment (no real FENNEC connectivity). Now honestly
+    reports failure instead of a fabricated success.
+    """
+    ssh = SSHConnector(hostname="login2.fennec.meteo.dz", username="sfoura")
+    assert ssh.connect() is True
+    assert ssh.is_alive() is True  # offline dev mode: honestly "alive" per this class's own convention
+
+    source = tmp_path / "checkpoint.nc"
+    source.write_bytes(b"fake netcdf payload for checksum testing")
+
+    manager = FileTransferManager(connector=ssh)
+
+    # No real SFTP transport is available in this environment, so the
+    # upload cannot actually happen - this must be reported honestly.
+    uploaded = manager.sync_files(str(source), "/scratch/users/sfoura/checkpoint.nc")
+    assert uploaded is False
+    assert manager.transfer_history[-1]["status"] == "FAILED_NO_REAL_TRANSFER"
+    # A real file did exist and was readable, so its checksum must be a
+    # genuine 64-hex-char SHA256 digest, not a fabricated placeholder.
+    assert len(manager.transfer_history[-1]["checksum"]) == 64
+
+    downloaded = manager.download_results("/scratch/users/sfoura/result.nc", str(tmp_path / "result.nc"))
+    assert downloaded is False
+
+    # A missing source file must report an explicit "no checksum" sentinel,
+    # never a value indistinguishable from - or colliding with - another
+    # missing file's placeholder.
+    missing_checksum = manager.compute_sha256(str(tmp_path / "does_not_exist.nc"))
+    assert missing_checksum == "NO_CHECKSUM_FILE_NOT_FOUND"
 
 
 def test_hpc_connection_manager_fennec_workflow():

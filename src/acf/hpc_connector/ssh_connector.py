@@ -238,7 +238,18 @@ class SSHConnector:
         }
 
     def upload(self, local_path: str, remote_path: str, callback: Callable[[int, int], None] | None = None) -> bool:
-        """Upload file via Paramiko SFTP."""
+        """
+        Upload file via Paramiko SFTP.
+
+        NOTE (correction): used to unconditionally `return True` even when
+        no SFTP channel could be opened (offline/dev mode - the same
+        scenario already handled honestly elsewhere in this class, see
+        connect()'s and execute()'s own NOTEs) or when sftp.put() itself
+        raised - so this return value could never actually be trusted to
+        mean "the file was transferred." A caller had no way to
+        distinguish a real upload from nothing happening at all. Now
+        returns False whenever no data was actually transferred.
+        """
         sftp = self.open_sftp()
         if sftp:
             try:
@@ -247,10 +258,19 @@ class SSHConnector:
                 return True
             except Exception as e:
                 log_hpc_event("WARNING", f"SFTP Upload error: {e}")
-        return True
+                return False
+        log_hpc_event("WARNING", f"SFTP Upload skipped (no SFTP channel available): {local_path} -> {remote_path}")
+        return False
 
     def download(self, remote_path: str, local_path: str, callback: Callable[[int, int], None] | None = None) -> bool:
-        """Download file via Paramiko SFTP."""
+        """
+        Download file via Paramiko SFTP.
+
+        NOTE (correction): same issue as upload() above - used to
+        unconditionally return True regardless of whether any data was
+        actually transferred. Now returns False whenever no SFTP channel
+        was available or the transfer itself raised.
+        """
         sftp = self.open_sftp()
         if sftp:
             try:
@@ -259,4 +279,6 @@ class SSHConnector:
                 return True
             except Exception as e:
                 log_hpc_event("WARNING", f"SFTP Download error: {e}")
-        return True
+                return False
+        log_hpc_event("WARNING", f"SFTP Download skipped (no SFTP channel available): {remote_path} -> {local_path}")
+        return False
