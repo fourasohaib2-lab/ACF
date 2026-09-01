@@ -185,6 +185,24 @@ def test_extreme_events():
     diag = cyc.detect_cyclone_center(slp, lats, lons)
     assert "P_min_hpa" in diag
 
+    # CORRECTED: rapid_intensification used to be a static pressure-deficit
+    # threshold (dp >= 30 hPa) with no time dimension - a storm sitting
+    # steady for days at a deep central pressure was flagged as
+    # "intensifying". A single SLP snapshot cannot determine a 24h rate of
+    # change, so without a previous V_max it must now honestly report None.
+    assert diag["rapid_intensification"] is None
+
+    # With a genuine previous V_max supplied, a real rate-based (NHC
+    # >=30kt/24h) determination becomes possible.
+    strong_slp = np.full((10, 20), 920.0)  # deep, intense central pressure
+    diag_strong = cyc.detect_cyclone_center(strong_slp, lats, lons, previous_v_max_ms=0.0)
+    assert diag_strong["rapid_intensification"] is True
+
+    diag_steady = cyc.detect_cyclone_center(
+        strong_slp, lats, lons, previous_v_max_ms=diag_strong["V_max_ms"]
+    )
+    assert diag_steady["rapid_intensification"] is False
+
     storm = SevereStormSimulator()
     s_out = storm.evaluate_severe_storm_risk(
         cape=np.full((10, 20), 2000.0),
