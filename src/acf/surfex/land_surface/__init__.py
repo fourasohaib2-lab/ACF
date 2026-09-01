@@ -1,4 +1,16 @@
-"""SURFEX Land Surface Models (ACF-HPC-105)."""
+"""SURFEX Land Surface Models (ACF-HPC-105).
+
+NOTE (correction — fabricated success, whole-package pattern): every
+scheme here (and throughout surfex/ - engine.py already honestly
+disclosed no real HPC scheduler is connected, but this scaffolding
+around it did not) used to unconditionally return True from run(),
+regardless of any real dynamic-core solver being connected. Calling
+ISBA.run() or TEB.run() looked exactly like a successful land-surface
+simulation completing, for a scheme that does not exist here. Fixed
+to honestly return False (no real solver connected), matching the
+"no fabricated success" convention already used in
+acf.models.base_model.BaseWeatherModel.stop()/resume().
+"""
 
 
 class ISBA:
@@ -6,7 +18,7 @@ class ISBA:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 class TEB:
@@ -14,7 +26,7 @@ class TEB:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 class SEA:
@@ -22,7 +34,7 @@ class SEA:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 class LAKE:
@@ -30,7 +42,7 @@ class LAKE:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 class RIVER:
@@ -38,7 +50,7 @@ class RIVER:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 class COAST:
@@ -46,7 +58,7 @@ class COAST:
 
     @staticmethod
     def run() -> bool:
-        return True
+        return False
 
 
 __all__ = ["COAST", "ISBA", "LAKE", "RIVER", "SEA", "TEB"]
