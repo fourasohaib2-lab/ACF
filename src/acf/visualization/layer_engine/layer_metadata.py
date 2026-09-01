@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Layer Metadata & LayerDefinition Struct Module
-(LayerDefinition struct containing 14 attributes for 500+ Earth System layers)
+(LayerDefinition struct containing 14 attributes for Earth System layers)
+
+NOTE (correction — operationally dangerous): time/quality_indicator/
+confidence_pct/uncertainty used to default to "LIVE"/"HIGH_PRECISION"/
+100.0/0.0 - the best possible claim on every axis (perfectly live,
+perfectly precise, perfectly confident, zero uncertainty) - for ANY
+LayerDefinition not explicitly overriding them. None of the 7 entries
+in layer_registry.py's LAYER_REGISTRY_DB override these fields, so
+every one of them (temperature, vorticity, CAPE, SST, river discharge,
+an AI forecast field) silently claimed to be live, fully precise,
+100%-confident data with zero real data pipeline ever connected to any
+of them (this class - see its own docstring - is a canonical
+*specification* of layer types, not a live measurement). Fixed to
+honest "not yet connected" defaults.
 """
 
 from dataclasses import dataclass, field
@@ -24,11 +37,11 @@ class LayerDefinition:
     resolution: str = ""
     dimension: str = ""
     projection: str = "EPSG:4326"
-    time: str = "LIVE"
+    time: str = "NOT_LIVE_STATIC_CATALOG_ENTRY"
     vertical_level: str = "Surface"
-    quality_indicator: str = "HIGH_PRECISION"
-    uncertainty: float = 0.0
-    confidence_pct: float = 100.0
+    quality_indicator: str = "NOT_ASSESSED"
+    uncertainty: float | None = None
+    confidence_pct: float | None = None
     color_palette: str = "Viridis"
     opacity: float = 1.0
     visible: bool = True

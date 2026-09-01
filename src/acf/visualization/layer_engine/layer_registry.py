@@ -1,7 +1,14 @@
 """
 Atmospheric Complexity Framework (ACF)
 
-Scientific Layer Registry Module (500+ Earth System Layer Catalogue Across 15 Domains)
+Scientific Layer Registry Module (Earth System Layer Catalogue Across 15 Domains)
+
+NOTE (correction): this docstring used to claim a "500+" layer
+catalogue - LAYER_REGISTRY_DB below genuinely registers 7 layers (one
+representative example per domain in most cases). The GRIB2/CF/unit
+metadata for each is real and verified (e.g. grib2_code="0,0,0" for
+air_temperature is the genuine WMO GRIB2 discipline/category/parameter
+code for Temperature, not a placeholder).
 """
 
 from acf.visualization.layer_engine.layer_metadata import LayerDefinition

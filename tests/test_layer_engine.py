@@ -27,6 +27,16 @@ def test_layer_definition_and_registry():
     assert layer.unit == "Kelvin"
     assert layer.grib2_code == "0,0,0"
 
+    # CORRECTED: time/quality_indicator/confidence_pct/uncertainty
+    # used to default to "LIVE"/"HIGH_PRECISION"/100.0/0.0 - the best
+    # possible claim on every axis - for any LayerDefinition not
+    # explicitly overriding them, with no real data pipeline connected
+    # to any of the 7 registered layers.
+    assert layer.time == "NOT_LIVE_STATIC_CATALOG_ENTRY"
+    assert layer.quality_indicator == "NOT_ASSESSED"
+    assert layer.confidence_pct is None
+    assert layer.uncertainty is None
+
     all_layers = LayerRegistry.list_all_layers()
     assert len(all_layers) >= 5
 
@@ -57,6 +67,13 @@ def test_layer_search_recommendation_and_pipeline():
 
     recs = LayerSearchEngine.recommend_for_situation("cyclone_detected")
     assert "ocean.sst" in recs["recommended_layers"]
+
+    # CORRECTED: situation was genuinely accepted/echoed, but used to
+    # always return the identical cyclone-specific pack regardless of
+    # what situation was actually requested.
+    unrelated = LayerSearchEngine.recommend_for_situation("drought_detected")
+    assert unrelated["recommended_layers"] == []
+    assert unrelated["justification"] == "NOT_AVAILABLE_NO_CURATED_LAYER_PACK_FOR_THIS_SITUATION"
 
     # CORRECTED: mean_absolute_difference used to be a fixed 0.35 with
     # "status": "DIFFERENCE_COMPUTED" regardless of which models/
