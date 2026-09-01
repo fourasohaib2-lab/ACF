@@ -31,6 +31,14 @@ def test_planetary_database_and_neo_registry():
     assert isinstance(hazard, PotentialHazard)
     assert hazard.torino_scale_level == 1
 
+    # CORRECTED: any key other than "bennu" used to silently return
+    # Bennu's hazard numbers mislabeled as the requested object's -
+    # e.g. Apophis (whose own registry entry documents
+    # impact_probability=0.0, "Éliminé pour 2029/2036/2068") would get
+    # Bennu's Torino level 1 / 2182 close-approach data. See
+    # planetary_database.py.
+    assert PlanetaryDatabase.get_sample_hazard("apophis") is None
+
 
 def test_orbital_mechanics_engine():
     """Test du moteur de mécanique céleste et orbitale (Vis-Viva, Kepler, Lagrange L1)."""
@@ -84,10 +92,25 @@ def test_exoplanets_and_astrobiology():
     assert exo.is_in_habitable_zone is True
     assert exo.esi_score > 0.8
 
+    # CORRECTED: get_exoplanet() used to only match the internal dict
+    # key exactly - none of the catalog's own entries were findable by
+    # their own display name. See exoplanets.py.
+    exo_by_display_name = ExoplanetDatabase.get_exoplanet("TRAPPIST-1 e")
+    assert exo_by_display_name is exo
+
+    # CORRECTED: evaluate_habitability() used to unconditionally claim
+    # a DETECTION of O2/O3/CH4/H2O biosignatures with is_habitable=True
+    # regardless of target_name - no real spectroscopic pipeline is
+    # connected. Now genuinely derived from ExoplanetDatabase's real
+    # per-object ESI score and habitable-zone flag, with an honestly
+    # empty biosignature list. See astrobiology.py.
     assessment = HabitabilityEngine.evaluate_habitability("TRAPPIST-1 e")
     assert isinstance(assessment, HabitabilityAssessment)
     assert assessment.is_habitable is True
-    assert "O2 (Molecular Oxygen)" in assessment.detected_biosignatures
+    assert assessment.habitability_index_pct == round(exo.esi_score * 100.0, 1)
+    assert assessment.detected_biosignatures == []
+
+    assert HabitabilityEngine.evaluate_habitability("Not A Real Planet XYZ") is None
 
 
 def test_space_observatories_and_cosmic_hazards():
@@ -103,9 +126,20 @@ def test_space_observatories_and_cosmic_hazards():
 
 def test_planetary_ai_and_dashboard():
     """Test du moteur de raisonnement IA planétaire et du tableau de bord AWCI."""
+    # CORRECTED: every field used to be a fixed narrative (including a
+    # specific fabricated "Planetary Defense Briefing PDCO-2026-039
+    # Validated") identical no matter what object_name was requested.
+    # Now genuinely looks up the object in PlanetaryDefenseRegistry and
+    # is honest about what an unknown object or an uncomputed
+    # long-horizon claim looks like. See planetary_ai.py.
     reasoning = PlanetaryReasoningEngine.run_planetary_reasoning_chain("Bennu")
-    assert "7_scientific_report" in reasoning
-    assert "Torino Level 1" in reasoning["4_impact"]
+    assert reasoning["target_object"] == "101955 Bennu"
+    assert reasoning["4_hazard_assessment"]["torino_scale_level"] == 1
+    assert reasoning["7_scientific_report"] is None  # not fabricated
+
+    unknown = PlanetaryReasoningEngine.run_planetary_reasoning_chain("2024 XY1 (not in registry)")
+    assert unknown["status"] == "UNKNOWN_OBJECT_NOT_IN_REGISTRY"
+    assert unknown["is_real_data"] is False
 
     meta = PlanetaryDefenseDashboard.get_dashboard_metadata()
     assert meta["workspace_name"] == "PLANETARY DEFENSE & INTERPLANETARY CENTER"

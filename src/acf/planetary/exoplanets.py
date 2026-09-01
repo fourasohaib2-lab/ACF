@@ -77,7 +77,28 @@ class ExoplanetDatabase:
 
     @classmethod
     def get_exoplanet(cls, name_key: str) -> Exoplanet | None:
-        return EXOPLANET_CATALOG.get(name_key.lower())
+        """
+        Look up by internal catalog key ("trappist1_e") or by the
+        planet's own display name ("TRAPPIST-1 e") - either is
+        accepted, matching AirportDatabase.get_airport()'s ICAO/IATA
+        dual lookup convention.
+
+        NOTE (correction): this used to only match the internal dict
+        key exactly. None of EXOPLANET_CATALOG's own entries are
+        findable by their own Exoplanet.name field (e.g.
+        get_exoplanet("TRAPPIST-1 e") returned None, even though that
+        exact string is this catalog's own display name for the
+        "trappist1_e" entry) - a caller using the name the catalog
+        itself displays would always silently fail to find data that
+        is actually there.
+        """
+        key = name_key.lower()
+        if key in EXOPLANET_CATALOG:
+            return EXOPLANET_CATALOG[key]
+        for planet in EXOPLANET_CATALOG.values():
+            if planet.name.lower() == key:
+                return planet
+        return None
 
     @classmethod
     def list_exoplanets(cls) -> list[str]:

@@ -129,15 +129,38 @@ class PlanetaryDefenseRegistry:
         return list(NEO_REGISTRY.keys())
 
 
+HAZARD_ASSESSMENT_REGISTRY: dict[str, PotentialHazard] = {
+    "bennu": PotentialHazard(
+        neo_id="bennu",
+        torino_scale_level=1,
+        palermo_scale_score=-1.4,
+        next_close_approach_date="2182-09-24",
+        min_distance_ld=1.8,
+    ),
+}
+
+
 class PlanetaryDatabase:
     """Base de données planétaire et des objets géocroiseurs."""
 
     @classmethod
-    def get_sample_hazard(cls, neo_key: str = "bennu") -> PotentialHazard:
-        return PotentialHazard(
-            neo_id=neo_key,
-            torino_scale_level=1,
-            palermo_scale_score=-1.4,
-            next_close_approach_date="2182-09-24",
-            min_distance_ld=1.8,
-        )
+    def get_sample_hazard(cls, neo_key: str = "bennu") -> PotentialHazard | None:
+        """
+        Retourne l'évaluation de risque pour le NEO demandé, ou None si
+        aucune évaluation réelle n'est enregistrée pour lui.
+
+        NOTE (correction — silent mislabeling): neo_key was genuinely
+        accepted and echoed into the returned PotentialHazard.neo_id,
+        but every OTHER field (torino_scale_level, palermo_scale_score,
+        next_close_approach_date, min_distance_ld) was hard-coded to
+        Bennu's real 2182 close-approach assessment regardless of what
+        was actually requested -
+        get_sample_hazard("apophis") returned Bennu's hazard numbers
+        mislabeled as Apophis's, even though NEO_REGISTRY's own Apophis
+        entry documents impact_probability=0.0 ("Éliminé pour
+        2029/2036/2068") - a completely different, already-resolved
+        risk picture. Only Bennu actually has a vetted hazard
+        assessment in this module; anything else now honestly returns
+        None instead of Bennu's numbers under a different label.
+        """
+        return HAZARD_ASSESSMENT_REGISTRY.get(neo_key.lower())
