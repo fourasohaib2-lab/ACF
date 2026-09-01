@@ -69,6 +69,94 @@ def calculate_relative_humidity(e_pa: float, es_pa: float) -> float:
     return min(max((e_pa / es_pa) * 100.0, 0.0), 100.0)
 
 
+# NOTE (correction): the 6 functions below fix a registry gap found by an
+# AST scan for EncyclopediaEntry()s with no compute_func at all - each of
+# these entries' own "equation" field already states a fully explicit,
+# directly computable formula (verified against its own cited reference
+# below), so .calculate() unnecessarily raised NotImplementedError for a
+# formula that was, in each case, a single closed-form expression. Same
+# class of gap already fixed this session for monin_obukhov_length/
+# planck_law/ertel_potential_vorticity/thermal_wind/ice_crystal_nucleation.
+# Not every missing compute_func in this codebase is such a gap - most of
+# the ~180 other EncyclopediaEntry/AtmosphericLaw entries without one
+# genuinely have no single-scalar formula (e.g. coupled PDE systems,
+# satellite instrument specs, NWP model descriptions) and are correctly
+# left undefined; only entries with a literally self-contained algebraic
+# "equation" field were changed here.
+
+
+def calculate_first_law_heat(cp: float, dT: float, alpha: float, dp: float) -> float:
+    """
+    Premier principe (forme cp/alpha) : dq = cp*dT - alpha*dp, en J/kg.
+
+    Algébriquement identique à science/laws/thermodynamics.py's
+    'first_law_thermodynamics' entry - non dupliqué comme second
+    calcul indépendant, seulement ré-exprimé ici en style local à ce
+    fichier (fonctions calculate_* autonomes, cohérent avec le reste
+    du module) plutôt qu'importé depuis un autre package.
+    """
+    return cp * dT - alpha * dp
+
+
+def calculate_atmospheric_entropy(theta_k: float, cp: float = 1004.0, reference_constant: float = 0.0) -> float:
+    """
+    Entropie spécifique de l'air sec : s = cp*ln(theta) + C, en J/(kg*K).
+
+    reference_constant (C) est une constante d'intégration arbitraire -
+    l'entropie n'est physiquement définie qu'à une constante additive
+    près (seules les DIFFÉRENCES d'entropie ont un sens physique), donc
+    C=0 par défaut n'est pas une valeur "inventée" mais le choix de
+    référence conventionnel standard (Emanuel 1994).
+    """
+    if theta_k <= 0.0:
+        raise ValueError("theta_k must be positive.")
+    return cp * math.log(theta_k) + reference_constant
+
+
+def calculate_atmospheric_enthalpy(temp_k: float, cp: float = 1004.0) -> float:
+    """Enthalpie spécifique de l'air : h = cp*T, en J/kg."""
+    return cp * temp_k
+
+
+def calculate_internal_energy(temp_k: float, cv: float = 718.0) -> float:
+    """Énergie interne spécifique de l'air : u = cv*T, en J/kg."""
+    return cv * temp_k
+
+
+def calculate_dry_adiabatic_lapse_rate(g: float = 9.80665, cp: float = 1004.0) -> float:
+    """
+    Gradient adiabatique sec : Gamma_d = g/cp, en K/m (~0.0098 K/m = 9.8 K/km).
+
+    Une vraie constante physique (pas de profil/altitude en entrée) -
+    g et cp sont exposés en paramètres pour permettre une réévaluation
+    avec des valeurs alternatives si besoin, jamais pour en changer le
+    sens physique.
+    """
+    return g / cp
+
+
+def calculate_dewpoint_from_vapor_pressure(vapor_pressure_pa: float) -> float:
+    """
+    Point de rosée Td (°C) à partir de la pression de vapeur d'eau
+    réelle e (Pa), par inversion analytique de la forme Bolton/Tetens
+    es(Tc) = 611.2*exp(17.67*Tc/(Tc+243.5)) - vérifiée par dérivation
+    algébrique directe (résoudre es(Tc)=e pour Tc redonne exactement
+    la formule ci-dessous) plutôt que citée sans vérification.
+
+    Différent de science/dewpoint.py's DewPoint.calculate() (qui part
+    de la température et de l'humidité relative) - celui-ci part
+    directement de la pression de vapeur d'eau réelle, utile quand e
+    est déjà connue (ex: sondage, calcul en aval de VaporPressure).
+    """
+    if vapor_pressure_pa <= 0.0:
+        raise ValueError("vapor_pressure_pa must be positive.")
+    log_ratio = math.log(vapor_pressure_pa / 611.2)
+    denominator = 17.67 - log_ratio
+    if denominator == 0.0:
+        raise ValueError("vapor_pressure_pa yields an undefined dewpoint (denominator is zero).")
+    return (243.5 * log_ratio) / denominator
+
+
 # ---------------------------------------------------------------------------
 # Encyclopedia Entries
 # ---------------------------------------------------------------------------
@@ -213,15 +301,18 @@ LAWS: list[EncyclopediaEntry] = [
         latex_equation=r"dq = c_v dT + p dv = c_p dT - \alpha dp",
         variables={
             "dq": "Chaleur apportée (J/kg)",
+            "dT": "Variation de température (K)",
+            "dp": "Variation de pression (Pa)",
             "cv": "718 J/(kg·K)",
             "cp": "1004 J/(kg·K)",
             "alpha": "Volume massique (m³/kg)",
         },
-        units={"dq": "J/kg"},
+        units={"dq": "J/kg", "dT": "K", "dp": "Pa", "alpha": "m³/kg"},
         description="Bilan énergétique stipulant la conservation de l'énergie thermique, interne et du travail de pression au sein d'une parcelle d'air.",
         application_conditions=["Systèmes thermodynamiques atmosphériques fermés ou ouverts"],
         limitations=["Nécessite le suivi des termes de chauffage diabatique (rayonnement, chaleur latente)"],
         references=["WMO Physics", "Bohren & Albrecht (1998)"],
+        compute_func=calculate_first_law_heat,
     ),
     EncyclopediaEntry(
         key="second_law_thermodynamics_atmos",
@@ -250,6 +341,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Écoulements isentropiques"],
         limitations=["Définition modifiée pour l'air humide condensé"],
         references=["Emanuel (1994)", "AMS Glossary"],
+        compute_func=calculate_atmospheric_entropy,
     ),
     EncyclopediaEntry(
         key="enthalpy_atmospheric_law",
@@ -264,6 +356,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Flux de chaleur de surface et bilans d'énergie"],
         limitations=["Sensible aux termes de chaleur latente lors des transitions de phase"],
         references=["Bohren & Albrecht (1998)"],
+        compute_func=calculate_atmospheric_enthalpy,
     ),
     EncyclopediaEntry(
         key="internal_energy_atmospheric",
@@ -278,6 +371,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Bilans thermiques à volume constant"],
         limitations=["Néglige les modes de vibration aux températures très basses"],
         references=["Bohren & Albrecht (1998)"],
+        compute_func=calculate_internal_energy,
     ),
     EncyclopediaEntry(
         key="dry_adiabatic_process_law",
@@ -292,6 +386,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Ascendance sous le LCL"],
         limitations=["Invalide dès qu'il y a condensation d'eau"],
         references=["WMO-No. 8", "Holton & Hakim (2012)"],
+        compute_func=calculate_dry_adiabatic_lapse_rate,
     ),
     EncyclopediaEntry(
         key="moist_pseudo_adiabatic_process",
@@ -360,6 +455,7 @@ LAWS: list[EncyclopediaEntry] = [
         application_conditions=["Calcul de la base des nuages LCL et confort thermique"],
         limitations=["Formule d'approximation de Magnus-Tetens valide entre -45°C et +60°C"],
         references=["Magnus (1844)", "WMO Guide to Instruments"],
+        compute_func=calculate_dewpoint_from_vapor_pressure,
     ),
     EncyclopediaEntry(
         key="mixing_ratio_humidity",

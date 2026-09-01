@@ -75,7 +75,7 @@ def test_run_verify_classifies_lfc_el_as_honestly_unimplemented_not_exception():
     assert by_key.get("el_height_equation") == "honestly_unimplemented"
 
 
-def test_run_verify_covers_all_89_entries_with_no_skipped_array_input():
+def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     """
     CORRECTED (tool coverage gap, not an encyclopedia bug): the 6
     array/matrix-typed compute_func entries (cape_convective_energy,
@@ -86,10 +86,19 @@ def test_run_verify_covers_all_89_entries_with_no_skipped_array_input():
     already manually verified correct earlier this session but had no
     automated regression coverage. Added hand-crafted probe pairs
     (_ARRAY_PROBES) for each; verify() must now probe all 89, not 83.
+
+    89 -> 95: a later Physics Guard pass wired 6 previously-missing
+    compute_funcs in physical_laws/thermodynamics_laws.py
+    (first_law_thermodynamics_atmos, atmospheric_entropy_law,
+    enthalpy_atmospheric_law, internal_energy_atmospheric,
+    dry_adiabatic_process_law, dewpoint_temperature_law) - each already
+    directly computable from its own documented "equation" field. This
+    tool's own jitter-sensitivity probe independently confirmed none of
+    the 6 are flagged "insensitive" (see the sibling test below).
     """
     result = adapter.run_verify()
-    assert result.total_computable == 89
-    assert result.checked == 89
+    assert result.total_computable == 95
+    assert result.checked == 95
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 

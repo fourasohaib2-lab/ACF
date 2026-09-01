@@ -258,3 +258,40 @@ def test_knowledge_sources_indexer():
 
     noaa_sources = KnowledgeSourcesIndexer.search_sources("NOAA")
     assert len(noaa_sources) >= 1
+
+
+def test_thermodynamics_encyclopedia_entries_missing_compute_func_now_wired():
+    """
+    CORRECTED: an AST scan for EncyclopediaEntry()s with no compute_func
+    found 6 entries in physical_laws/thermodynamics_laws.py whose own
+    "equation" field already documented a fully explicit, directly
+    computable formula - .calculate() unnecessarily raised
+    NotImplementedError for each. Same class of gap already fixed this
+    session for monin_obukhov_length/planck_law/ice_crystal_nucleation.
+    """
+    import math
+
+    first_law = EncyclopediaRegistry.get("first_law_thermodynamics_atmos")
+    assert first_law.calculate(cp=1004.0, dT=5.0, alpha=0.8, dp=-500.0) == pytest.approx(5420.0)
+
+    entropy = EncyclopediaRegistry.get("atmospheric_entropy_law")
+    assert entropy.calculate(theta_k=300.0) == pytest.approx(1004.0 * math.log(300.0))
+
+    enthalpy = EncyclopediaRegistry.get("enthalpy_atmospheric_law")
+    assert enthalpy.calculate(temp_k=300.0) == pytest.approx(301200.0)
+
+    internal_energy = EncyclopediaRegistry.get("internal_energy_atmospheric")
+    assert internal_energy.calculate(temp_k=300.0) == pytest.approx(215400.0)
+
+    # Standard textbook dry adiabatic lapse rate: ~9.8 K/km.
+    dry_lapse = EncyclopediaRegistry.get("dry_adiabatic_process_law")
+    assert dry_lapse.calculate() * 1000.0 == pytest.approx(9.8, abs=0.05)
+
+    # Round-trip check: feeding the Bolton/Tetens es(20 degC) (already
+    # verified against SaturationVaporPressure.calculate() elsewhere)
+    # back through the analytically-derived inverse must return 20.0
+    # exactly - a direct algebraic verification, not just a plausible
+    # number.
+    es_20c_pa = 6.112 * math.exp(17.67 * 20.0 / (20.0 + 243.5)) * 100.0
+    dewpoint = EncyclopediaRegistry.get("dewpoint_temperature_law")
+    assert dewpoint.calculate(vapor_pressure_pa=es_20c_pa) == pytest.approx(20.0, abs=1e-6)
