@@ -39,7 +39,21 @@ class AtmosphericWaveEnergyTransfer:
 
     def attenuation(self, state: WaveEnergyState) -> float:
         """
-        Atténuation exponentielle simplifiée.
+        Atténuation linéaire simplifiée (avec seuil à zéro).
+
+        NOTE (correction - Physics Guard, docs only): the docstring
+        used to say "Atténuation exponentielle" (exponential
+        attenuation) but the formula below is linear
+        (1 - damping*distance, floored at 0), not exponential
+        (exp(-damping*distance)) - real wave/radiative attenuation is
+        typically exponential, but this is a deliberately simplified
+        heuristic (the explicit floor-at-zero clamp is itself a
+        linear-model idiom; a true exponential decay never reaches
+        exactly zero and would need no such clamp). Not changing the
+        formula itself (3 existing tests lock in specific linear-model
+        values, e.g. damping*distance=0.5 -> attenuation=0.5, which
+        would not hold for an exponential model) - just correcting the
+        docstring to describe what is actually computed.
         """
 
         return max(0.0, 1 - state.damping * state.propagation_distance)
