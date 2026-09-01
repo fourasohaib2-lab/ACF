@@ -14,7 +14,7 @@ zero callers anywhere in the codebase, zero prior test coverage.
 
 import pytest
 
-from acf.gui.esoc.command_dispatcher import CommandDispatcher
+from acf.gui.esoc.command_dispatcher import CommandDispatcher, WorkerRunnable
 
 
 def test_export_product_no_longer_writes_a_fake_file(tmp_path):
@@ -41,3 +41,23 @@ def test_dispatch_export_product_command_also_raises(tmp_path):
     dispatcher = CommandDispatcher()
     with pytest.raises(NotImplementedError):
         dispatcher.dispatch("export_product", format="netcdf4", path=str(tmp_path / "out.nc"))
+
+
+def test_worker_runnable_logs_failures_instead_of_swallowing_silently(caplog):
+    """
+    CORRECTED: WorkerRunnable.run() used to catch any exception raised by
+    the wrapped callable and discard it completely silently - no logging,
+    no signal, nothing - so a background command that genuinely failed
+    looked, from the UI's perspective, identical to one that quietly
+    succeeded. run() still must not itself raise (that would take down the
+    Qt worker thread), but the failure must now at least be logged.
+    """
+
+    def _boom():
+        raise ValueError("simulated background command failure")
+
+    worker = WorkerRunnable(_boom)
+    with caplog.at_level("ERROR", logger="acf.gui.esoc"):
+        worker.run()  # must not raise
+    assert any("simulated background command failure" in r.message or r.exc_info for r in caplog.records)
+    assert any("_boom" in r.message for r in caplog.records)

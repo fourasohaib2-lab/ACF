@@ -1,9 +1,12 @@
 """Command dispatcher, thread-safe event bus, and Phase 12 product generator (ACF-UI-013)."""
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+
+logger = logging.getLogger("acf.gui.esoc")
 
 
 class WorkerRunnable(QRunnable):
@@ -16,10 +19,19 @@ class WorkerRunnable(QRunnable):
         self.kwargs = kwargs
 
     def run(self) -> None:
+        """
+        NOTE (correction): used to swallow any exception raised by `fn`
+        completely silently - no logging, no signal, nothing - so a
+        background command that genuinely failed (e.g. a real forecast
+        run erroring out) looked from the UI's perspective identical to
+        one that quietly succeeded. A QRunnable.run() must not itself
+        raise (that would take down the worker thread), but the failure
+        is now at least logged rather than vanishing without a trace.
+        """
         try:
             self.fn(*self.args, **self.kwargs)
         except Exception:
-            pass
+            logger.exception("Async command %r failed in background worker", getattr(self.fn, "__name__", self.fn))
 
 
 class CommandDispatcher(QObject):

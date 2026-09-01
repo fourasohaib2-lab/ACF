@@ -6,6 +6,8 @@ HPC Execution & Workflow Control Panel (ACF-HPC-004).
 
 from __future__ import annotations
 
+import logging
+
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QComboBox,
@@ -22,6 +24,8 @@ from PySide6.QtWidgets import (
 
 from acf.hpc_connector.model_runner import UniversalModelRunner
 from acf.hpc_connector.workflow_manager import HPCWorkflowManager
+
+logger = logging.getLogger("acf.gui.esoc")
 
 
 class HPCExecutionPanel(QWidget):
@@ -127,6 +131,15 @@ class HPCExecutionPanel(QWidget):
                 self.refresh_table()
 
     def _on_restart_run(self) -> None:
+        """
+        NOTE (correction): a failed restart (e.g. UniversalModelRunner.restart()
+        raising KeyError for a job_id no longer in active_runs) used to be
+        swallowed completely silently - the table would just refresh with no
+        indication the restart never happened, so an operator clicking
+        Restart on a job had no way to tell success from failure. Now logged
+        so the failure is at least observable (this panel has no dedicated
+        status/log widget of its own to surface it in the UI directly).
+        """
         row = self.table.currentRow()
         if row >= 0:
             item = self.table.item(row, 0)
@@ -135,7 +148,7 @@ class HPCExecutionPanel(QWidget):
                 try:
                     self.runner.restart(job_id)
                 except Exception:
-                    pass
+                    logger.exception("Failed to restart job %r", job_id)
                 self.refresh_table()
 
     def refresh_table(self) -> None:
