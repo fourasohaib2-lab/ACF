@@ -16,6 +16,25 @@ def test_hurricane_category():
     assert value == 5
 
 
+def test_hurricane_category_full_saffir_simpson_scale():
+    """
+    CORRECTED: sub-64kt winds used to be classified as a genuine
+    Category 1 hurricane, and the 113-136 kt Category 4 range was
+    merged into ">= 113 -> Category 5" entirely.
+    """
+    assert HurricaneDynamicsPhysics.hurricane_category(20) == 0  # tropical depression, not a hurricane
+    assert HurricaneDynamicsPhysics.hurricane_category(63) == 0  # just below Cat 1
+    assert HurricaneDynamicsPhysics.hurricane_category(64) == 1
+    assert HurricaneDynamicsPhysics.hurricane_category(82) == 1
+    assert HurricaneDynamicsPhysics.hurricane_category(83) == 2
+    assert HurricaneDynamicsPhysics.hurricane_category(95) == 2
+    assert HurricaneDynamicsPhysics.hurricane_category(96) == 3
+    assert HurricaneDynamicsPhysics.hurricane_category(112) == 3
+    assert HurricaneDynamicsPhysics.hurricane_category(113) == 4
+    assert HurricaneDynamicsPhysics.hurricane_category(136) == 4
+    assert HurricaneDynamicsPhysics.hurricane_category(137) == 5
+
+
 def test_eyewall_strength():
     value = HurricaneDynamicsPhysics.eyewall_strength(50, 2)
     assert value == 100

@@ -41,15 +41,31 @@ class HurricaneDynamicsPhysics:
     @staticmethod
     def hurricane_category(wind_speed):
         """
-        Saffir-Simpson simplified category.
+        Saffir-Simpson simplified category (wind_speed in knots).
+
+        NOTE (correction - Physics Guard): two bugs in the standard
+        Saffir-Simpson boundaries (64/83/96/113/137 kt): (1) any
+        wind_speed below 64 kt (the Category 1 minimum - anything
+        weaker is a tropical storm/depression, not a hurricane at all)
+        fell through to `return 1` regardless, classifying e.g. a 20 kt
+        tropical depression as a genuine Category 1 hurricane; (2) the
+        113-136 kt range (genuinely Category 4) and >=137 kt (Category
+        5) were both merged into a single ">= 113 -> 5" branch, so a
+        borderline 115 kt Category 4 storm was reported as Category 5.
+        Sub-64kt now returns 0; the Category 4/5 boundary (137 kt) is
+        now distinct. The one existing test only checked wind_speed=140
+        (unambiguously >=137 either way), so nothing was locked in by
+        either fix.
         """
         if wind_speed < 64:
-            return 1
+            return 0
         elif wind_speed < 83:
-            return 2
+            return 1
         elif wind_speed < 96:
-            return 3
+            return 2
         elif wind_speed < 113:
+            return 3
+        elif wind_speed < 137:
             return 4
         else:
             return 5
