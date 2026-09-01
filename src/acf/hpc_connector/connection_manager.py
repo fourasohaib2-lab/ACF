@@ -199,8 +199,19 @@ class HPCConnectionManager:
         }
 
     def gpu_information(self) -> dict[str, Any]:
-        """Return GPU information."""
-        return self.cluster_info.get("gpu", {"type": "CUDA (NVIDIA A100)", "has_gpu": True})
+        """Return GPU information.
+
+        NOTE (correction): the .get() default (only reachable if "gpu"
+        were somehow missing from cluster_info, which detect_all()
+        always populates) used to be a fabricated
+        {"type": "CUDA (NVIDIA A100)", "has_gpu": True} - the same
+        fabrication class fixed in ClusterDetector.detect_gpu() itself.
+        Replaced with an honest "nothing detected" default consistent
+        with detect_gpu()'s own now-honest shape.
+        """
+        return self.cluster_info.get(
+            "gpu", {"has_gpu": False, "type": None, "has_cuda": False, "is_real_data": False}
+        )
 
     def execute_one_click_arome(self) -> dict[str, Any]:
         """Phase 11: One-Click AROME Operational NWP Pipeline.

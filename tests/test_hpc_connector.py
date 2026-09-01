@@ -73,6 +73,29 @@ def test_cluster_and_arome_detector():
     assert "gpu" in info
     assert "interconnect" in info
 
+    # CORRECTED: every detect_*() method used to unconditionally claim
+    # fixed, plausible-looking hardware/software (always "slurm", always
+    # "has_mpi": True, always "InfiniBand HDR 200 Gbps", etc.) regardless
+    # of whether self.executor genuinely reached a real remote system -
+    # several methods (scheduler/containers/environment/interconnect)
+    # didn't even call execute_command() at all. In this offline/dev
+    # test environment (no real FENNEC SSH transport), every claim must
+    # now honestly disclose it as not real rather than fabricate a
+    # specific answer.
+    assert info["scheduler"]["is_real_data"] is False
+    assert info["scheduler"]["type"] == "unknown"
+    assert info["mpi"]["is_real_data"] is False
+    assert info["mpi"]["has_mpi"] is False
+    assert info["containers"]["is_real_data"] is False
+    assert info["environment"]["is_real_data"] is False
+    assert info["interconnect"]["is_real_data"] is False
+    assert info["interconnect"]["bandwidth_gbps"] is None
+
+    # get_scheduler_interface() must gracefully fall back to LocalScheduler
+    # for the honest "unknown" scheduler type rather than assuming Slurm.
+    hpc = HPCConnectionManager("config/hpc.yaml")
+    assert hpc.scheduler.scheduler_name != "slurm"
+
     arome_detector = AromeAladinDetector(executor)
     stack = arome_detector.detect_meteorological_stack()
     assert "operational_mode" in stack
