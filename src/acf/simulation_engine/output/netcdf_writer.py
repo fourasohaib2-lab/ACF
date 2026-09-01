@@ -54,6 +54,14 @@ class NetcdfWriter:
         ds.attrs["title"] = "ACF Planetary Simulation Engine Output (ACF-DT-003)"
         ds.attrs["institution"] = "Atmospheric Complexity Framework"
         ds.attrs["conventions"] = "CF-1.8"
+        # NOTE (correction): time_step was accepted and documented
+        # ("Simulation timestep index") but never actually recorded
+        # anywhere in the written file - a caller writing several
+        # sequential states to different files had no self-contained way
+        # to tell which timestep a given file represents from its
+        # contents alone (only from a filename convention it would have
+        # to invent itself). Recorded as a genuine global attribute.
+        ds.attrs["time_step"] = time_step
 
         os.makedirs(os.path.dirname(self.filename), exist_ok=True) if os.path.dirname(
             self.filename

@@ -259,8 +259,16 @@ def test_output_writers():
         lats = np.linspace(-90, 90, 10)
         lons = np.linspace(-180, 180, 20)
         levels = np.arange(5)
-        saved_nc = writer.write_state(state, lats, lons, levels)
+        saved_nc = writer.write_state(state, lats, lons, levels, time_step=7)
         assert os.path.exists(saved_nc)
+
+        # CORRECTED: time_step used to be accepted and documented but never
+        # actually written anywhere in the file - a caller had no
+        # self-contained way to tell which timestep a file represents.
+        import xarray as xr
+
+        with xr.open_dataset(saved_nc) as reopened:
+            assert reopened.attrs["time_step"] == 7
 
         zarr_path = os.path.join(tmpdir, "test.zarr")
         zwriter = ZarrWriter(zarr_path)
