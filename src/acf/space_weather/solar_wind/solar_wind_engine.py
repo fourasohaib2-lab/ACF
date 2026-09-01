@@ -42,15 +42,26 @@ class SolarWindEngine:
     @staticmethod
     def parker_spiral_longitude_deg(distance_au: float, solar_wind_speed_km_s: float) -> float:
         """
-        Calcul du décalage azimutal de la spirale de Parker phi = (omega * r) / Vsw.
-        omega = 2.865e-6 rad/s (rotation solaire).
+        Calcul de l'angle "garden-hose" (tuyau d'arrosage) de la spirale de Parker :
+        psi = arctan(omega * r / Vsw). omega = 2.865e-6 rad/s (rotation solaire).
+
+        NOTE (correction): omega*r/Vsw is tan(psi), a dimensionless
+        ratio - not an angle in radians. This used to feed that ratio
+        straight into math.degrees() without ever taking arctan() of
+        it, i.e. it implicitly used the small-angle approximation
+        tan(x) ~= x, which is nowhere close to valid at these values
+        (the ratio is ~1.07 at 1 AU / 400 km/s, not small). That gave
+        ~61° at 1 AU instead of the correct, textbook ~45° garden-hose
+        angle, and grew past the formula's own asymptotic 90° limit at
+        larger heliocentric distances (e.g. ~307° at 5 AU, an
+        impossible angle) instead of approaching it.
         """
         omega = 2.865e-6
         r_m = distance_au * 1.496e11
         v_m_s = solar_wind_speed_km_s * 1000.0
 
-        phi_rad = (omega * r_m) / v_m_s
-        return math.degrees(phi_rad)
+        tan_psi = (omega * r_m) / v_m_s
+        return math.degrees(math.atan(tan_psi))
 
     @classmethod
     def evaluate_reconnection_risk(cls, imf: InterplanetaryMagneticField) -> dict[str, Any]:

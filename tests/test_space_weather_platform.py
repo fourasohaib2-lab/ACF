@@ -4,6 +4,10 @@ Atmospheric Complexity Framework (ACF)
 Global Operational Space Weather, Space Environment & Heliophysics Test Suite (MISSION ACF-034)
 """
 
+import math
+
+import pytest
+
 from acf.science.query_engine import ScientificQueryEngine
 from acf.space_weather.alerts.space_alerts import SpaceWeatherAlertEngine
 from acf.space_weather.aviation.aviation_space_weather import AviationSpaceWeatherEngine
@@ -51,16 +55,61 @@ def test_solar_wind_and_imf():
     assert "CRITICAL" in risk["reconnection_risk"]
 
 
+def test_parker_spiral_garden_hose_angle():
+    """
+    CORRECTED: parker_spiral_longitude_deg() used to feed the tangent
+    ratio omega*r/Vsw straight into math.degrees() without ever taking
+    arctan() of it - giving ~61 deg at 1 AU/400 km/s instead of the
+    textbook ~45 deg garden-hose angle, and growing past the formula's
+    own 90 deg asymptote at larger distances. See solar_wind_engine.py.
+    """
+    psi_1au = SolarWindEngine.parker_spiral_longitude_deg(distance_au=1.0, solar_wind_speed_km_s=400.0)
+    assert 40.0 < psi_1au < 50.0  # textbook value is ~45 deg
+
+    # The angle must stay bounded below 90 deg (its physical asymptote)
+    # even far from the Sun, unlike the old un-arctan'd linear formula.
+    psi_far = SolarWindEngine.parker_spiral_longitude_deg(distance_au=5.0, solar_wind_speed_km_s=400.0)
+    assert psi_1au < psi_far < 90.0
+
+
 def test_geomagnetic_engine_and_noaa_scales():
     """Test de la distance de magnétopause Rmp, des indices Dst/Kp et de l'échelle G1-G5."""
     g5 = GeomagneticStormScale.classify_kp_index(kp_value=9.0)
     assert "G5" in g5["noaa_scale"]
+
+    # CORRECTED: the Bz term used to be a raw linear "10.22 + 0.129*Bz"
+    # (wrong coefficient, no tanh saturation) mislabeled as the Shue et
+    # al. (1997) formula. Verify against that formula computed
+    # independently here, for a nominal quiet solar wind (Bz=0,
+    # Pdyn=2 nPa) where the textbook standoff distance is ~10 Re.
+    expected_quiet_rmp = (10.22 + 1.29 * math.tanh(0.184 * 8.14)) * (2.0 ** (-1.0 / 6.6))
+    rmp_quiet = GeomagneticEngine.magnetopause_standoff_distance_re(pdyn_npa=2.0, bz_nt=0.0)
+    assert rmp_quiet == pytest.approx(expected_quiet_rmp, rel=1e-9)
+    assert 9.5 < rmp_quiet < 10.5
 
     rmp = GeomagneticEngine.magnetopause_standoff_distance_re(pdyn_npa=12.0, bz_nt=-10.0)
     assert 4.0 < rmp < 9.0
 
     dst = GeomagneticEngine.evaluate_dst_index_severity(dst_nt=-150.0)
     assert "Intense" in dst["severity"]
+
+
+def test_solar_cycle_registry_does_not_mislabel_unknown_cycles():
+    """
+    CORRECTED: get_solar_cycle_info() used to silently return Cycle
+    24's data (with "cycle": 24 hardcoded) for ANY cycle_number other
+    than 25 - e.g. requesting cycle 1 or cycle 100 claimed to describe
+    Cycle 24. See solar_database.py.
+    """
+    c25 = SolarDatabase.get_solar_cycle_info(25)
+    assert c25["cycle"] == 25
+
+    c24 = SolarDatabase.get_solar_cycle_info(24)
+    assert c24["cycle"] == 24
+
+    unknown = SolarDatabase.get_solar_cycle_info(7)
+    assert unknown["cycle"] == 7
+    assert unknown["status"] == "UNKNOWN_CYCLE_NOT_IN_REGISTRY"
 
 
 def test_ionosphere_and_radio_blackouts():

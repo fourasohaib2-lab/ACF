@@ -59,7 +59,18 @@ class SolarDatabase:
 
     @classmethod
     def get_solar_cycle_info(cls, cycle_number: int = 25) -> dict[str, Any]:
-        """Retourne l'état d'un cycle d'activité solaire (ex: Cycle Solaire 25)."""
+        """
+        Retourne l'état d'un cycle d'activité solaire connu (24 ou 25 seulement).
+
+        NOTE (correction — mislabeled fabrication): any cycle_number
+        other than 25 used to silently return Cycle 24's data with
+        "cycle": 24 hardcoded in the response, regardless of what was
+        actually requested - get_solar_cycle_info(cycle_number=1) (or
+        7, or 100) claimed to be describing Cycle 24. This tiny
+        registry only actually holds real data for cycles 24 and 25;
+        any other cycle_number now gets an explicit unknown-cycle
+        response instead of a silent substitution.
+        """
         if cycle_number == 25:
             return {
                 "cycle": 25,
@@ -69,10 +80,16 @@ class SolarDatabase:
                 "average_sunspot_number": 155.0,
                 "total_solar_irradiance_w_m2": cls.SOLAR_CONSTANT_W_M2,
             }
+        if cycle_number == 24:
+            return {
+                "cycle": 24,
+                "start_year": 2008,
+                "end_year": 2019,
+                "status": "Completed Cycle",
+                "average_sunspot_number": 116.0,
+            }
         return {
-            "cycle": 24,
-            "start_year": 2008,
-            "end_year": 2019,
-            "status": "Completed Cycle",
-            "average_sunspot_number": 116.0,
+            "cycle": cycle_number,
+            "status": "UNKNOWN_CYCLE_NOT_IN_REGISTRY",
+            "known_cycles": [24, 25],
         }
