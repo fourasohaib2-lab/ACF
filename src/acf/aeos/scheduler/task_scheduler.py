@@ -35,14 +35,27 @@ class TaskScheduler:
         self.task_queue.sort(key=lambda t: t.priority)
 
     def execute_pending_tasks(self) -> dict[str, Any]:
-        """Exécute de manière séquentielle ou parallèle les tâches en attente."""
-        executed = []
+        """
+        Exécute de manière séquentielle ou parallèle les tâches en attente.
+
+        NOTE (correction): this used to unconditionally mark every
+        queued task.status = "COMPLETED" and claim "WORKFLOW EXECUTION
+        SUCCESS" - but AEOSTask (this module) carries no executable
+        payload (no callable/function attached to a task), dependencies
+        are never checked, and no task runner of any kind exists in
+        this codebase, so nothing is actually executed here beyond
+        dequeuing. tasks_executed_count/executed_task_names genuinely
+        reflect the real submitted queue (unaffected); status/task.status
+        no longer claim a fabricated completion.
+        """
+        dequeued = []
         for task in self.task_queue:
-            task.status = "COMPLETED"
-            executed.append(task.name)
+            task.status = "NOT_EXECUTED_NO_TASK_RUNNER_CONNECTED"
+            dequeued.append(task.name)
 
         return {
-            "tasks_executed_count": len(executed),
-            "executed_task_names": executed,
-            "status": "WORKFLOW EXECUTION SUCCESS",
+            "tasks_executed_count": len(dequeued),
+            "executed_task_names": dequeued,
+            "status": "NOT_EXECUTED_NO_TASK_RUNNER_CONNECTED",
+            "is_real_data": False,
         }

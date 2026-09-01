@@ -54,20 +54,33 @@ def test_task_scheduler_and_workflows():
     scheduler.submit_task(AEOSTask("T1", "Data Ingestion Task", priority=1))
     scheduler.submit_task(AEOSTask("T2", "AI Inference Task", priority=2))
 
+    # CORRECTED: execute_pending_tasks() used to unconditionally mark
+    # every task "COMPLETED" and claim "WORKFLOW EXECUTION SUCCESS" -
+    # AEOSTask carries no executable payload and no task runner exists,
+    # so nothing was ever actually executed.
     res = scheduler.execute_pending_tasks()
     assert res["tasks_executed_count"] == 2
+    assert res["status"] == "NOT_EXECUTED_NO_TASK_RUNNER_CONNECTED"
 
+    # CORRECTED: workflow status used to claim a fabricated
+    # per-instance runtime state ("COMPLETED"/"ACTIVE"/"STANDBY") for
+    # a static catalog - no real orchestration run/tracking exists.
     workflows = WorkflowEngine.get_registered_workflows()
     assert len(workflows) >= 4
     assert workflows[0].name == "Global 10-Day Coupled Neural Forecast"
+    assert workflows[0].status == "NOT_TRACKED_NO_ORCHESTRATION_RUN"
 
 
 def test_cluster_manager_distributed_computing():
     """Test du gestionnaire de cluster distribué (Slurm, Kubernetes, MPI)."""
+    # CORRECTED: used to unconditionally claim a fixed "64" total_nodes
+    # / "256" active_workers regardless of backend, with 0 real cluster
+    # connection.
     cluster = ClusterManager.get_cluster_status(backend="Slurm")
     assert cluster["active_backend"] == "Slurm"
-    assert cluster["total_nodes"] == 64
-    assert cluster["active_workers"] == 256
+    assert cluster["total_nodes"] is None
+    assert cluster["active_workers"] is None
+    assert cluster["is_real_data"] is False
 
 
 def test_self_healing_and_knowledge_evolution():
@@ -86,13 +99,25 @@ def test_self_healing_and_knowledge_evolution():
 
 def test_model_orchestration_and_resource_optimization():
     """Test de l'orchestration des modèles (IFS, AROME, GraphCast) et de l'optimiseur de ressources."""
+    # CORRECTED: used to return the identical fixed
+    # (25.0km, 37 levels, 240h, 4 nodes) for ANY of the 9 supported
+    # models - IFS/AROME/ICON/GraphCast have genuinely different real
+    # resolutions, and no real per-model deployment-planning capability
+    # exists yet.
     plan = ModelOrchestrator.create_execution_plan("GraphCast")
     assert isinstance(plan, ModelExecutionPlan)
-    assert plan.grid_resolution_km == 25.0
+    assert plan.model_name == "GraphCast"
+    assert plan.grid_resolution_km is None
+    assert plan.is_real_data is False
 
+    # CORRECTED: used to unconditionally claim a fixed
+    # ensemble_mean=18.4/ensemble_spread=0.35/"HIGH CONSENSUS" with 0
+    # real outputs ever gathered from any of the 9 orchestrated models.
     consensus = ModelOrchestrator.evaluate_model_consensus("2m_temperature")
     assert isinstance(consensus, ModelConsensus)
-    assert consensus.ensemble_spread < 0.5
+    assert consensus.ensemble_spread is None
+    assert consensus.consensus_level == "NOT_COMPUTED_NO_MODEL_OUTPUTS_CONNECTED"
+    assert consensus.is_real_data is False
 
     # CORRECTED: optimize_resources() used to return fixed fake
     # numbers (48.0 GB GPU, 128 threads, 10.0 Gbps) regardless of the
