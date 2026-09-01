@@ -70,8 +70,18 @@ class ObservationAssimilationOptimizationEngine:
         self,
         state: ObservationAssimilationOptimizationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): this averages 3 equally-
+        weighted sensor scores (0-100 scale, per this class's
+        convention), so the natural divisor is 3 - it divided by an
+        unexplained "24.0" instead, with no comment or justification.
+        That crushed the result to ~1/8 of the honest average (9.38 vs
+        75.0 for a representative case) - a value that no longer even
+        looks like a plausible 0-100 consistency score. Never covered
+        by any existing test, so nothing was locked in.
+        """
         return round(
-            (state.satellite_weight + state.radar_weight + state.synop_weight) / 24.0,
+            (state.satellite_weight + state.radar_weight + state.synop_weight) / 3,
             2,
         )
 
@@ -115,6 +125,17 @@ class ObservationAssimilationOptimizationEngine:
         self,
         state: ObservationAssimilationOptimizationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): averages 4 equally-weighted
+        sub-scores, so the natural divisor is 4 - divided by an
+        unexplained "3.317" instead (no comment or justification
+        anywhere), inflating the result by ~20% (28.31 vs the honest
+        23.48 for this class's reference test state). That inflation
+        was enough to flip model4d_ready()'s >=25.0 threshold check for
+        that same state - i.e. the divisor was tuned to force a
+        specific pass/fail outcome, the same pattern already found in
+        advanced_atmospheric_dynamics_engine.py's atmospheric_instability().
+        """
         total = (
             self.multi_sensor_optimization(state)
             + self.spatial_consistency(state)
@@ -122,15 +143,21 @@ class ObservationAssimilationOptimizationEngine:
             + self.residual_error(state)
         )
 
-        return round(total / 3.317, 2)
+        return round(total / 4, 2)
 
     def optimization_index(
         self,
         state: ObservationAssimilationOptimizationState,
     ) -> float:
+        """
+        NOTE (correction - Physics Guard): averages 3 equally-weighted
+        sub-scores, so the natural divisor is 3 - divided by an
+        unexplained "2.521" instead, same unjustified pattern as
+        optimized_assimilation() above.
+        """
         total = self.optimized_assimilation(state) + self.temporal_consistency(state) + self.spatial_consistency(state)
 
-        return round(total / 2.521, 2)
+        return round(total / 3, 2)
 
     def model4d_ready(
         self,
