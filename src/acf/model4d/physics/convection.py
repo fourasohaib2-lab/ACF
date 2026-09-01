@@ -47,6 +47,21 @@ class ConvectionPhysics:
         -------
         float
             CAPE en J/kg
+
+        NOTE (correction - Physics Guard): g*buoyancy*height already
+        has correct J/kg units (m/s^2 * dimensionless * m = m^2/s^2 =
+        J/kg) - this used to be followed by an unexplained "/ 100"
+        with no unit-conversion justification, making cape() report
+        values ~100x too small (e.g. 3.38 J/kg instead of the correct
+        338.28 J/kg for T_parcel=300K/T_env=290K/z=1000m - a physically
+        negligible-looking number for what is actually a real,
+        moderate-instability CAPE value). This broke internal
+        consistency with this class's own sibling functions:
+        convective_velocity(cape) = sqrt(2*CAPE) and
+        thunderstorm_probability(cape) = CAPE/2500 both assume a
+        real-unit CAPE input - chaining cape()'s output into either
+        would have silently produced values orders of magnitude too
+        small. Removed.
         """
 
         if height <= 0:
@@ -61,7 +76,7 @@ class ConvectionPhysics:
 
         cape = g * buoyancy * height
 
-        return max(0.0, cape / 100)
+        return max(0.0, cape)
 
     @staticmethod
     def cin(temperature_parcel, temperature_environment, height):
@@ -72,6 +87,10 @@ class ConvectionPhysics:
         -------
         float
             CIN négative
+
+        NOTE (correction - Physics Guard): same unexplained "/ 100"
+        bug as cape() above, with the same units already correct
+        without it - removed.
         """
 
         if height <= 0:
@@ -86,7 +105,7 @@ class ConvectionPhysics:
 
         cin = -g * deficit * height
 
-        return cin / 100
+        return cin
 
     @staticmethod
     def convective_velocity(cape):
