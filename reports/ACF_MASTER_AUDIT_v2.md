@@ -1299,4 +1299,68 @@ existante du dépôt. **Deux vrais bugs trouvés et corrigés** :
 **Validation :** 8 nouveaux tests. Suite complète : **3235/3235**
 tests passent (3227 avant), ruff et mypy propres.
 
+## Mise à jour 2026-09-02 (suite) — "des modules qu'on a raté" : couverture de test réelle + réconciliation avec le catalogue existant
+
+Demande explicite de l'utilisateur ("je sens qu'on a raté des modules
+qu'on a pas généré"). Méthode réelle, pas une impression : un vrai
+rapport de couverture (`pytest --cov=acf`, 3235 tests, **84% de
+couverture globale réelle**) a isolé **55 fichiers à 0% de couverture
+réelle** (1511 instructions jamais exécutées par aucun test) — la
+liste concrète, pas une supposition.
+
+**Trouvaille principale : ce travail avait déjà été fait, en grande
+partie.** Un `grep -rl "RÈGLE D'OR"` a révélé **21 fichiers déjà
+honnêtement documentés** par une session précédente comme du vrai code
+mort/orphelin (jamais construit nulle part, vérifié empiriquement,
+volontairement **non supprimé** par convention du projet) — exactement
+la même classe de "module raté" que l'utilisateur soupçonnait. Ça
+recoupe presque parfaitement les 55 fichiers à 0% de couverture :
+`gui/main_window.py`, `data/engine.py`, `maps/canvas.py`,
+`model4d/interpolation.py`, `model4d/operators.py` (collisions de nom
+fichier.py vs package/), plus **toute l'arborescence**
+`gui/map/{layers,renderers,navigation,projections,rendering}/` (une
+architecture de rendu cartographique alternative, complète et
+correcte, mais jamais raccordée à un widget réel — documentée dans
+`gui/map/__init__.py`'s propre NOTE), plus `gui/main_window/
+{menu_bar,status_bar,tool_bar}.py` (jamais construits, actions sans
+handler réel). Un document maître existait déjà et cataloguait
+précisément cette classe de problème :
+[`docs/architecture/duplicate_components.md`](../docs/architecture/duplicate_components.md)
+(marqué "outdated snapshot" mais structurellement toujours exact —
+`MainWindow`×2, `MapCanvas`×2, `LayerManager`×3, `CartopyRenderer`×3,
+etc. — et qui avait même déjà prédit la trouvaille `loguru` non
+déclarée de la mise à jour précédente : "ConfigManager dépend de
+PyYAML et la journalisation de Loguru, sans déclaration").
+
+**Deux vrais fichiers orphelins trouvés qui n'étaient PAS encore
+documentés — vérifiés par grep de leurs vrais appelants, pas
+supposés** :
+- **`src/acf/model4d/constants.py`** — vraies constantes physiques
+  correctes (gravité, rotation terrestre, constantes des gaz...) mais
+  **zéro importeur réel nulle part** — chaque module qui a besoin
+  d'une de ces constantes définit sa propre copie locale au lieu
+  d'utiliser celle-ci (ex. `isa_atmosphere.py` a son propre
+  `r_d = 287.0528`, une valeur réelle légèrement différente pour la
+  même constante physique).
+- **`src/acf/dashboard/panels/map_panel.py`** — `MapPanel` jamais
+  construit nulle part, contrairement à ses vrais frères du même
+  paquet (`ChartPanel`/`StatusPanel`/`TimelinePanel`, tous les trois
+  réellement utilisés). La vraie carte de dashboard existe ailleurs
+  pour de vrai (`AWCIMapPanel`).
+
+Les deux documentés avec la même convention honnête (NOTE, pas
+supprimé) que les 21 déjà existants.
+
+**Ce qui n'a PAS été fait, délibérément** : consolider/supprimer les
+doublons catalogués — le plan du document maître lui-même exige "des
+tests de non-régression avant toute migration" et une décision
+explicite par responsabilité ; c'est une initiative plus large et plus
+risquée (retirer du code potentiellement encore référencé ailleurs)
+qui mérite une décision de l'utilisateur, pas une action unilatérale
+dans cette passe de scan.
+
+**Validation :** suite complète toujours **3235/3235** (changements
+purement documentaires, aucun comportement modifié), ruff et mypy
+propres.
+
 Dis-moi laquelle tu veux que j'attaque ensuite.

@@ -4,6 +4,22 @@ Atmospheric Complexity Framework (ACF)
 MODEL4D - Constants
 ===================
 Physical, thermodynamic, and geophysical constants for 4D atmospheric grids.
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): every
+value below is real and correct on inspection (e.g. GRAVITY=9.80665,
+OMEGA=7.2921159e-5, RD=287.05 all match the real, standard published
+constants), but this module has zero real importers anywhere in
+src/ or tests/ (confirmed by grep) - every module that needs one of
+these constants defines its own local copy instead of importing this
+one (e.g. `acf.science.encyclopedia.aerodynamics.isa_atmosphere` uses
+its own local `r_d = 287.0528`, a slightly different real value for
+the same physical constant - not a bug in either file, just two
+independently-sourced real numbers that were never consolidated).
+Not deleted per project convention - flagged so nobody mistakes this
+for the canonical source other real code actually reads from. See
+docs/architecture/duplicate_components.md for the broader, already-
+documented pattern of parallel/duplicate implementations across this
+project this is one small instance of.
 """
 
 from __future__ import annotations

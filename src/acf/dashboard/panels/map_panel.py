@@ -25,6 +25,17 @@ Scientific Context:
 -------------------
 Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): never
+constructed anywhere (confirmed by grep across src/) - unlike its
+siblings in this same package (`ChartPanel`/`StatusPanel`/
+`TimelinePanel`, each genuinely used elsewhere), nothing ever
+instantiates this `MapPanel`. It is itself honest about being a
+placeholder ("Interactive map will appear here" - no fabricated data),
+and real map panels are covered elsewhere for real
+(`acf.gui.dashboard.awci_map_panel.AWCIMapPanel`, genuinely used by
+`AWCIDashboardWindow`). Not deleted per project convention. See
+docs/architecture/duplicate_components.md for the broader pattern.
 """
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
