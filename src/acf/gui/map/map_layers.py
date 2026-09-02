@@ -10,6 +10,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from acf.data.dataset import Dataset
+from acf.gui.dashboard.awci_colors import AWCI_CMAP
 
 logger = logging.getLogger("acf.gui.map.map_layers")
 
@@ -220,6 +221,48 @@ class CloudLayer(BaseMapLayer):
         )
 
 
+class AWCILayer(BaseMapLayer):
+    """Real AWCI complexity heatmap overlay - explicit user request
+    "ajoute la 4eme dimension au niveau d'affichage des cartes",
+    closing a real gap found while planning this work: ESOC's central
+    map (this canvas) had never shown any real AWCI/CAPE/CIN data at
+    all, unlike the separate AWCI dashboard's own maps.
+
+    Unlike every other layer in this file, there is deliberately NO
+    synthetic fallback pattern here - render() draws nothing until
+    set_data() has been fed a real
+    acf.awci.spatial_field.compute_real_complexity_field() result (see
+    acf.gui.map.map_canvas.MapCanvas.set_awci_field()). A fabricated
+    AWCI heatmap from a made-up pattern would be exactly the kind of
+    invented number this project's audits exist to remove - the other
+    6 layers' synthetic defaults exist because they are illustrative
+    demo overlays by design (their own docstrings say so); this one is
+    not.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("AWCI Complexity", zorder=16)
+
+    def render(self, axes: Any, transform: ccrs.CRS) -> None:
+        if self.custom_data is None:
+            return
+        lon_grid = self.custom_data["lons"]
+        lat_grid = self.custom_data["lats"]
+        values = self.custom_data["values"]
+        axes.contourf(
+            lon_grid,
+            lat_grid,
+            values,
+            levels=20,
+            cmap=AWCI_CMAP,
+            vmin=0,
+            vmax=100,
+            alpha=0.7,
+            zorder=self.zorder,
+            transform=transform,
+        )
+
+
 class LayerManager:
     """Manages active scientific layers and orchestrates rendering with real NWP data binding."""
 
@@ -231,6 +274,7 @@ class LayerManager:
             "Wind Vectors": WindLayer(),
             "MSLP": PressureLayer(),
             "Cloud Cover & Precipitable Water": CloudLayer(),
+            "AWCI Complexity": AWCILayer(),
         }
         self.active_layer_names: list[str] = [
             "Satellite RGB",
@@ -238,6 +282,12 @@ class LayerManager:
             "2m Temp",
             "Wind Vectors",
             "MSLP",
+            # AWCI Complexity is intentionally NOT in this default list -
+            # unlike the layers above (all real, but a synthetic demo
+            # pattern until real data is bound), it draws nothing at all
+            # until MapCanvas.set_awci_field() feeds it a real field, so
+            # there is no synthetic "always-on-by-default" state for it
+            # to silently occupy.
         ]
         self.current_dataset: Dataset | None = None
 

@@ -230,6 +230,46 @@ class MapCanvas(EventMixin, QWidget):
     def pan_down(self, step: float = 5.0) -> None:
         self.pan(0.0, -step)
 
+    # ----------------------------------------------------- real AWCI field
+
+    def set_awci_field(self, lons: Any, lats: Any, values: Any, label: str = "AWCI") -> None:
+        """Feed a real AWCI complexity field (e.g. from
+        acf.awci.spatial_field.compute_real_complexity_field()) into
+        this canvas's AWCILayer and redraw - explicit user request
+        closing the gap where ESOC's central map showed no real
+        AWCI/CAPE/CIN data at all, unlike the separate AWCI dashboard.
+        Real computation is expected to happen off the GUI thread by
+        the caller (see esoc_window.py's _AWCIFieldWorker) - this
+        method itself only updates the already-computed data and
+        redraws, so it is safe to call from a Qt signal handler on the
+        GUI thread."""
+        layer = self.layer_manager.available_layers.get("AWCI Complexity")
+        if layer is None:
+            logger.warning("MapCanvas.set_awci_field(): AWCI Complexity layer not registered")
+            return
+        layer.set_data(lons, lats, values)
+        if "AWCI Complexity" not in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.append("AWCI Complexity")
+        # NOTE: title_text is set directly (not via set_title()) because
+        # draw_map() below calls self.axes.clear() and rebuilds the
+        # title itself from title_text - calling set_title() first would
+        # just be immediately wiped out by that clear().
+        base_title = self.title_text.split(" — ")[0]
+        self.title_text = f"{base_title} — {label}"
+        self.draw_map()
+        self._apply_camera_extent()
+
+    def clear_awci_field(self) -> None:
+        """Remove the real AWCI field overlay set by set_awci_field()."""
+        layer = self.layer_manager.available_layers.get("AWCI Complexity")
+        if layer is not None:
+            layer.custom_data = None
+        if "AWCI Complexity" in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.remove("AWCI Complexity")
+        self.title_text = self.title_text.split(" — ")[0]
+        self.draw_map()
+        self._apply_camera_extent()
+
     def _apply_camera_extent(self) -> None:
         """Apply the camera's real current extent to the live Cartopy
         axes and redraw - the missing link EventMixin/MapCamera never

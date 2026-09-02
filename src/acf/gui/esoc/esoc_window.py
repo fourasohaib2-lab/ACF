@@ -1,11 +1,14 @@
 """Unified Earth System Operations Center (ESOC) Main Window (ACF-UI-011)."""
 
+import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
+from acf.awci.spatial_field import compute_real_complexity_field
 from acf.gui_screen_utils import fit_window_to_screen
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_controller import ESOCController
@@ -23,6 +26,37 @@ from acf.gui.esoc.settings_dialog import SettingsDialog
 if TYPE_CHECKING:
     from acf.dashboard.window import ClassicDashboardWindow
     from acf.gui.dashboard.awci_window import AWCIDashboardWindow
+
+logger = logging.getLogger("acf.gui.esoc.esoc_window")
+
+
+class _AWCIFieldWorkerSignals(QObject):
+    """QRunnable itself cannot be a QObject (no signals) - same
+    companion-object pattern as acf.gui.dashboard.awci_dashboard's
+    _RealFieldWorkerSignals, reused here rather than duplicated."""
+
+    finished = Signal(dict)
+    failed = Signal(str)
+
+
+class _AWCIFieldWorker(QRunnable):
+    """Runs compute_real_complexity_field() off the GUI thread, for the
+    "🌪️ AWCI Field" toolbar action - explicit user request "ajoute la
+    4eme dimension au niveau d'affichage des cartes"."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _AWCIFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = compute_real_complexity_field(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real AWCI field computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
 
 
 class ESOCWindow(QMainWindow):
@@ -161,6 +195,8 @@ class ESOCWindow(QMainWindow):
             self._open_classic_dashboard()
         elif cmd == "open_awci_dashboard":
             self._open_awci_dashboard()
+        elif cmd == "show_awci_field_on_map":
+            self._show_awci_field_on_map()
         elif cmd == "open_help":
             QMessageBox.information(
                 self,
@@ -397,6 +433,55 @@ class ESOCWindow(QMainWindow):
             "(see acf.gui.dashboard.awci_synthetic_field); the AWCI scores themselves "
             "are real AWCICalculator output over those inputs.",
         )
+
+    def _show_awci_field_on_map(self) -> None:
+        """Compute a real acf.awci.spatial_field.compute_real_complexity_field()
+        result (off the GUI thread, same QRunnable+Signal pattern as
+        acf.gui.dashboard.awci_dashboard's Real Physics mode) and overlay
+        it on THIS window's own central map (acf.gui.map.map_canvas.
+        MapCanvas, via ViewManager) - explicit user request "ajoute la
+        4eme dimension au niveau d'affichage des cartes". Before this,
+        ESOC's central map never showed any real AWCI/CAPE/CIN data at
+        all - only the separate AWCI dashboard window did.
+
+        compute_convective_energy=True also surfaces real per-point
+        CAPE/CIN (acf.awci.convective_energy) - closing a real,
+        previously-found gap: that machinery existed and was tested,
+        but no GUI widget anywhere ever visualized it.
+        """
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            "Computing real AWCI complexity field (CoupledEarthSolver, ARPEGE grid, "
+            "including CAPE/CIN)… this takes a few seconds.",
+        )
+        self.status_bar.showMessage("🌪️ Computing real AWCI field…")
+        worker = _AWCIFieldWorker(
+            model="ARPEGE", n_lat=24, n_lon=36, n_levels=6, steps=6, compute_convective_energy=True
+        )
+        # NOTE (found while verifying this end-to-end, not hypothetical):
+        # connecting to a bare lambda here (instead of a genuine bound
+        # method, like awci_dashboard.py's own _RealFieldWorker
+        # consumers do) meant PySide6's Auto connection type had no
+        # receiver QObject to determine safe cross-thread queuing for -
+        # the signal, emitted from the worker thread, never actually
+        # invoked the lambda at all (confirmed: it silently never ran,
+        # not even on the wrong thread). Bound methods on self (a
+        # QObject) resolve this correctly, matching the proven pattern.
+        worker.signals.finished.connect(self._on_awci_field_ready)
+        worker.signals.failed.connect(self._on_awci_field_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_awci_field_ready(self, result: dict[str, Any]) -> None:
+        map_canvas = self.layout_manager.view_manager.map_canvas
+        map_canvas.set_awci_field(result["lons"], result["lats"], result["awci_field"], label="REAL AWCI")
+        self.status_bar.showMessage("🌪️ Real AWCI field displayed on map (ARPEGE, CAPE/CIN included).", 5000)
+        self.dispatcher.log_message_emitted.emit(
+            "INFO", "Real AWCI complexity field displayed on the central map."
+        )
+
+    def _on_awci_field_failed(self, message: str) -> None:
+        self.status_bar.showMessage(f"⚠ Real AWCI field computation failed: {message}", 5000)
+        self.dispatcher.log_message_emitted.emit("ERROR", f"Real AWCI field computation failed: {message}")
 
     def _open_settings(self) -> None:
         """Open the settings dialog; apply the chosen theme immediately if changed."""
