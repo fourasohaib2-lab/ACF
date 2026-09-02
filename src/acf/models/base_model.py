@@ -28,8 +28,18 @@ class BaseWeatherModel(ABC):
         """Returns physical variables provided by model."""
 
     @abstractmethod
-    def levels(self) -> list[Any]:
-        """Returns vertical levels definition."""
+    def levels(self) -> list[Any] | str:
+        """
+        Returns vertical levels definition - a concrete list for a
+        model with a fixed, documented level count (e.g. AROME's 90
+        operational hybrid levels), or a descriptive string when the
+        real level count is a per-run configuration choice rather than
+        a model constant (e.g. ERA5Model.levels() returning
+        "pressure"; WRFIngestionAdapter/ICONIngestionAdapter/
+        OpenIFSIngestionAdapter's own honest disclosures on why they
+        do the same) - never a fabricated fixed count for a model that
+        doesn't really have one.
+        """
 
     @abstractmethod
     def projection(self) -> str:
@@ -105,7 +115,7 @@ class BaseWeatherModel(ABC):
         """Model Adapter Protocol name for detect() - same real logic, not a second implementation."""
         return self.detect(dataset)
 
-    def vertical_levels(self) -> list[Any]:
+    def vertical_levels(self) -> list[Any] | str:
         """Model Adapter Protocol name for levels() - same real logic, not a second implementation."""
         return self.levels()
 

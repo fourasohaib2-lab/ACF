@@ -701,7 +701,72 @@ ruff et mypy propres sur les 1383 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
+- ~~**Model Adapters WRF/ICON/OpenIFS**~~ — **construits, voir mise à
+  jour ci-dessous.**
+- **Fusion multi-modèles en champ complet** (§29-30) — toujours
+  point-par-point.
+- **API organisée par domaine** (§21) — toujours partielle.
+- **Progress réel par job** — toujours non calculé (limite honnête).
+
+## Mise à jour 2026-09-02 (suite) — Adapters WRF/ICON/OpenIFS construits
+
+`src/acf/models/{wrf,icon,openifs}/` : trois nouveaux adapters réels
+derrière le même `BaseWeatherModel` Model Adapter Protocol
+qu'AROME/ALADIN/ARPEGE. Différence honnête et notable par rapport à
+ces trois-là : `epygram` (leur backend FA réel) **n'est pas installé
+dans cet environnement** (`EPYGRAM_AVAILABLE=False`, confirmé), donc
+leur `read()` ne peut aujourd'hui exercer qu'un repli honnête, jamais
+une vraie lecture bout-en-bout ici. WRF/ICON/OpenIFS utilisent au
+contraire des dépendances réellement installées (`xarray`/`netCDF4`
+pour WRF, `xarray`/`cfgrib`/`eccodes` pour ICON/OpenIFS — déjà
+utilisées ailleurs dans le dépôt, ex. `GRIBReader`/`NetCDFReader`) :
+`read()` ouvre et lit donc un **vrai** fichier de bout en bout,
+vérifié par des tests qui écrivent un vrai NetCDF façon WRF-ARW
+(`xarray`) et un vrai message GRIB2 (`eccodes`, mêmes bindings que le
+reste du dépôt) puis le relisent réellement.
+
+- **`src/acf/models/common/generic_xarray_reader.py`** —
+  `read_netcdf_generic()`/`read_grib_generic()`, partagés par les 3
+  adapters, extraction générique réelle (variables/dimensions/
+  coordonnées/attributs — ce que le fichier contient vraiment, jamais
+  une liste de champs par-modèle codée en dur).
+- **`WRFIngestionAdapter`** — noms de variables WRF-ARW réels et
+  documentés (T2/U10/V10/PSFC/HGT/RAINC/RAINNC/XLAT/XLONG), détection
+  sur `"wrfout"` (convention réelle de nommage WRF-ARW).
+- **`ICONIngestionAdapter`** — noms GRIB2 ICON réels documentés par
+  DWD (T_2M/U_10M/V_10M/PMSL/TOT_PREC/CLCT). **Trouvaille honnête**,
+  vérifiée en construisant cet adapter, pas supposée : les tables
+  ecCodes de cet environnement résolvent plusieurs de ces noms (ex.
+  `T_2M`) vers le même concept OMM universel que ecCodes connaît déjà
+  sous `2t`/`cfVarName t2m` (le même qu'ERA5/OpenIFS), pas un nom
+  distinct DWD — documenté explicitement dans la docstring de la
+  classe, `read()` rapporte donc ce que cfgrib résout vraiment, jamais
+  la liste déclarée par `variables()`.
+- **`OpenIFSIngestionAdapter`** — réutilise réellement la liste de
+  variables d'`ERA5Model` (OpenIFS est la vraie release ouverte du
+  code IFS d'ECMWF, même table de paramètres réelle — pas une
+  invention séparée). **Limite honnête documentée** : contrairement au
+  nommage FA d'AROME/ALADIN/ARPEGE, les fichiers OpenIFS bruts suivent
+  la convention MARS/IFS classique d'ECMWF (`ICMSH*`/`ICMGG*`), sans
+  marqueur de nom de fichier propre à OpenIFS — `detect()` ne
+  reconnaît donc qu'un fichier explicitement nommé "openifs"/"oifs",
+  pas le nommage natif IFS lui-même.
+- **`levels()` honnête pour les 3** : retourne une chaîne descriptive
+  (`"eta"`/`"hybrid"`) plutôt qu'un nombre fixe de niveaux — le nombre
+  réel de niveaux verticaux de WRF/ICON/OpenIFS est un choix de
+  configuration par run, pas une constante du modèle (contrairement
+  aux 90 niveaux opérationnels fixes d'AROME). A nécessité d'élargir
+  `BaseWeatherModel.levels()`/`vertical_levels()` à `list[Any] | str`
+  (mypy l'exigeait — `ERA5Model.levels()` faisait déjà pareil mais
+  sans annotation de type, donc jamais vérifié jusqu'ici).
+
+**Validation :** 24 nouveaux tests (dont des lectures réelles de bout
+en bout sur de vrais fichiers NetCDF/GRIB2 construits pour le test,
+pas des mocks). Suite complète : **3119/3119** tests passent (3095
+avant), ruff et mypy propres sur les 1391 fichiers.
+
+### Ce qui reste réellement, maintenant
+
 - **Fusion multi-modèles en champ complet** (§29-30) — toujours
   point-par-point.
 - **API organisée par domaine** (§21) — toujours partielle.
