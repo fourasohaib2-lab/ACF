@@ -272,6 +272,16 @@ def test_hpc_connection_manager_fennec_workflow():
     assert arome_res["status"] != "SUCCESS"
     assert "job_id" in arome_res
 
+    # One-Click ALADIN pipeline test (docs/ACF_HPC_005_NEXT_ROADMAP.md's
+    # CI/CD objective names "AROME 1.3 km et ALADIN 7.5 km" together, but
+    # only the AROME pipeline existed until now - added as a genuine
+    # mirror of execute_one_click_arome(), same honesty contract.
+    aladin_res = hpc.execute_one_click_aladin()
+    assert aladin_res["is_real_submission"] is False
+    assert aladin_res["status"] != "SUCCESS"
+    assert aladin_res["operational_model"] == "ALADIN-7.5km"
+    assert "job_id" in aladin_res
+
     # CORRECTED: benchmark_performance() used to claim "PASSED" with 8
     # fixed fabricated benchmark numbers, with no real stress test ever
     # run against the cluster.

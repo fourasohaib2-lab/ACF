@@ -1,0 +1,62 @@
+# ACF Daily Forecast Cycle — CI/CD automation
+#
+# Implements docs/ACF_HPC_005_NEXT_ROADMAP.md's first CI/CD objective:
+# "Automatiser le lancement quotidien des cycles de prévision AROME 1.3 km
+# et ALADIN 7.5 km" (daily AROME 1.3km / ALADIN 7.5km forecast cycles on
+# the Fennec ONM HPC cluster).
+#
+# HONESTY NOTE (read before enabling the schedule): GitHub-hosted runners
+# have no network route to the ONM's internal Fennec cluster - a job
+# running on `ubuntu-latest` can exercise scripts/daily_forecast_cycle.py
+# end to end (it will honestly connect in the class's own documented
+# offline-dev-mode, per HPCConnectionManager.connect()'s own NOTE, and
+# report real_ssh_transport=false / no job genuinely submitted - see that
+# script's own module docstring), but it CANNOT actually deploy a real
+# forecast cycle. Real daily deployment needs one of:
+#   - a self-hosted GitHub Actions runner registered from inside the ONM
+#     network (with real network/SSH access to Fennec), or
+#   - a runner with a working VPN route to Fennec.
+# `runs-on` below defaults to a self-hosted runner labeled `fennec-network`
+# for that reason - it will simply never pick up jobs until such a runner
+# is actually registered (this workflow does not silently fall back to a
+# GitHub-hosted runner and falsely claim a cycle ran).
+#
+# Required repository secrets (set these in GitHub repo Settings ->
+# Secrets and variables -> Actions before this can do anything real -
+# never hardcoded here):
+#   FENNEC_SSH_HOST, FENNEC_SSH_USER, FENNEC_SSH_KEY
+# (config/hpc.yaml's "fennec" profile already defines the non-secret
+# connection parameters this script uses via HPCConnectionManager;
+# wiring these specific secrets into that profile at runtime is left to
+# the runner's own environment setup, not fabricated here.)
+
+name: ACF Daily Forecast Cycle
+
+on:
+  schedule:
+    # 00:00 UTC daily - adjust to the ONM's actual operational cycle time.
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}  # manual trigger for testing
+
+jobs:
+  daily-forecast-cycle:
+    name: AROME 1.3km + ALADIN 7.5km cycle
+    runs-on: [self-hosted, fennec-network]
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ACF
+        run: pip install -e .
+
+      - name: Run daily forecast cycle (AROME + ALADIN)
+        run: python scripts/daily_forecast_cycle.py --profile fennec -v
+        # Non-zero exit (see the script's own honest exit-code contract)
+        # fails this step - and so this workflow run - if either cycle
+        # did not genuinely submit a real SLURM job.

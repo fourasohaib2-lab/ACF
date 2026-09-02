@@ -273,6 +273,51 @@ class HPCConnectionManager:
 
     execute_one_click_forecast = execute_one_click_arome
 
+    def execute_one_click_aladin(self) -> dict[str, Any]:
+        """One-Click ALADIN 7.5km Operational NWP Pipeline.
+
+        Mirrors execute_one_click_arome() exactly, for the ALADIN 7.5km
+        configuration named alongside AROME 1.3km in
+        docs/ACF_HPC_005_NEXT_ROADMAP.md's CI/CD objective - added
+        because only the AROME pipeline previously existed, and
+        `python -m acf.forecast.engine --model ALADIN` (see that
+        module) is a real, now-existing entry point for it.
+
+        Connect -> Sync input -> Load ecCodes/OpenMPI -> Generate SLURM batch -> Submit -> Monitor -> Download results.
+        """
+        log_hpc_event("INFO", "Executing One-Click ALADIN Operational NWP Pipeline on FENNEC...")
+
+        py_info = self.python_resolver.resolve_python()
+        py_path = py_info["python_path"]
+
+        self.file_transfer.sync_files("/tmp/aladin_input.grib2", "/scratch/users/sfoura/aladin_input.grib2")
+
+        script = self.scheduler.generate_batch_script(
+            f"{py_path} -m acf.forecast.engine --model ALADIN",
+            job_name="aladin_7p5km_op",
+            nodes=2,
+            ntasks=16,
+            gpus=0,
+            walltime="01:00:00",
+        )
+
+        job_id = self.scheduler.submit_job(script, job_name="aladin_7p5km_op")
+        was_really_submitted = not job_id.startswith("NOT_SUBMITTED_")
+
+        self.file_transfer.download_results("/scratch/users/sfoura/aladin_output.nc", "/tmp/aladin_output.nc")
+
+        log_hpc_event(
+            "INFO",
+            f"One-Click ALADIN Pipeline {'completed successfully' if was_really_submitted else 'did NOT submit a real job'}. Job ID: {job_id}",
+        )
+        return {
+            "status": "SUCCESS" if was_really_submitted else "NOT_SUBMITTED_NO_REAL_SCHEDULER_CONNECTION",
+            "job_id": job_id,
+            "operational_model": "ALADIN-7.5km",
+            "output": "/tmp/aladin_output.nc",
+            "is_real_submission": was_really_submitted,
+        }
+
     def submit_simulation_job(
         self,
         command: str = "python -m acf.simulation_engine.coupled_solver.coupled_earth_solver",
