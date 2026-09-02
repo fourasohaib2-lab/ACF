@@ -34,17 +34,39 @@ along a path (sample_volume_cross_section() - native model levels, see
 that function's own honest_limitation on path-averaged pressure per
 level). Stats bar, radar and risk-summary are derived from the same
 volume as before.
+
+4D animation (added 2026-09-02, explicit user request "brancher
+l'animation 4D dans le dashboard")
+-----------------------------------------------------------------------
+Once Real Physics mode has run, "▶ Play Evolution (4D)" becomes
+available. It runs acf.awci.temporal_field.
+compute_real_complexity_evolution() - ONE CoupledEarthSolver instance
+integrated continuously across several real frames (a genuine physical
+trajectory, not independently restarted snapshots - see that module's
+own docstring for why this distinction matters) - on another background
+worker, then animates the global map through the real frames via a
+QTimer (800ms/frame), showing each frame's real elapsed simulated time
+(valid_time_seconds) in the Valid Time readout - not a fake
+incrementing clock. Clicking again stops the animation; a second play
+click resumes from frame 0 without recomputing (the evolution already
+ran). "↩ Back to Demo" stops any running animation and hides the
+button - it only makes sense while a real trajectory exists to play.
+Only the global map animates today - the regional map/route/cross-
+section stay on their static Real Physics snapshot during playback
+(animating all four would need path_sampling calls repeated per frame,
+not built here).
 """
 
 import logging
 from typing import Any
 
 import numpy as np
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
@@ -135,12 +157,35 @@ class _RealFieldWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _EvolutionWorker(QRunnable):
+    """Runs compute_real_complexity_evolution() off the GUI thread - the 4D counterpart of _RealFieldWorker, reusing the same signals shape (finished(dict)/failed(str))."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = compute_real_complexity_evolution(**self.kwargs)
+        except Exception as exc:
+            logger.exception("4D evolution computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._real_physics_active = False
+        self._evolution: dict[str, Any] | None = None
+        self._evolution_frame_index = 0
+        self._evolution_timer = QTimer(self)
+        self._evolution_timer.setInterval(800)  # ms between real frames while playing
+        self._evolution_timer.timeout.connect(self._advance_evolution_frame)
         self._build_ui()
         self._apply_theme()
         self.refresh()
@@ -166,6 +211,17 @@ class AWCIDashboard(QWidget):
         )
         self.real_physics_button.clicked.connect(self._toggle_real_physics)
         header_row.addWidget(self.real_physics_button)
+
+        self.play_evolution_button = QPushButton("▶ Play Evolution (4D)")
+        self.play_evolution_button.setToolTip(
+            "Run a real 4D Complexity(x, y, z, t) evolution (acf.awci.temporal_field) - one\n"
+            "CoupledEarthSolver instance integrated continuously - and animate the global map\n"
+            "through its real frames. Only available once '🔬 Real Physics' has produced a real\n"
+            "trajectory to continue from."
+        )
+        self.play_evolution_button.clicked.connect(self._toggle_evolution_playback)
+        self.play_evolution_button.setVisible(False)
+        header_row.addWidget(self.play_evolution_button)
         outer.addLayout(header_row)
 
         subheader = QLabel("Concept Output – Research Prototype")
@@ -398,12 +454,21 @@ class AWCIDashboard(QWidget):
             forecast_score=point_result["forecast_score"],
         )
 
+        # The 4D animation needs a real Physics volume to have run
+        # first (same solver/config), so the button only becomes usable
+        # once we're genuinely in Real Physics mode.
+        self.play_evolution_button.setVisible(True)
+        self.play_evolution_button.setEnabled(True)
+
     def _on_real_physics_failed(self, message: str) -> None:
         self.real_physics_button.setEnabled(True)
         self.real_physics_status.setText(f"⚠ Real physics computation failed: {message}")
         logger.error("AWCIDashboard: real physics computation failed: %s", message)
 
     def _revert_to_demo(self) -> None:
+        self._stop_evolution_playback()
+        self.play_evolution_button.setVisible(False)
+        self._evolution = None
         self._real_physics_active = False
         self.real_physics_button.setText("🔬 Real Physics")
         self.real_physics_status.setText("Concept Output – Research Prototype")
@@ -412,7 +477,85 @@ class AWCIDashboard(QWidget):
         self.route_chart.clear_external_route()
         self.cross_section.clear_external_cross_section()
         self.stats_bar.model_box.set_value("ACF Demo Grid")
+        # The evolution playback may have left time_readout showing a
+        # real elapsed-time label ("t+2.4h") - restore the synthetic
+        # slider's own "HHZ" convention.
+        self.time_readout.setText(f"{self.time_slider.value():02d}Z")
         self.refresh()
+
+    # ------------------------------------------------------ 4D evolution
+
+    def _toggle_evolution_playback(self) -> None:
+        if self._evolution_timer.isActive():
+            self._stop_evolution_playback()
+        elif self._evolution is not None:
+            # Already computed once this Real Physics session - just resume/restart playback, no new solver run.
+            self._evolution_frame_index = 0
+            self._evolution_timer.start()
+            self.play_evolution_button.setText("⏸ Stop Animation")
+        else:
+            self._start_evolution()
+
+    def _start_evolution(self) -> None:
+        self.play_evolution_button.setEnabled(False)
+        self.play_evolution_button.setText("⏳ Computing 4D evolution…")
+        self.real_physics_status.setText(
+            "🔬 Computing a real 4D evolution (CoupledEarthSolver, ARPEGE grid, continuous trajectory)… "
+            "this takes longer than the static volume"
+        )
+        worker = _EvolutionWorker(
+            model="ARPEGE", n_frames=6, steps_per_frame=8, dt_seconds=90.0, perturbation_scale=3.0, seed=1
+        )
+        worker.signals.finished.connect(self._on_evolution_ready)
+        worker.signals.failed.connect(self._on_evolution_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_evolution_ready(self, evolution: dict[str, Any]) -> None:
+        self._evolution = evolution
+        self._evolution_frame_index = 0
+        self.play_evolution_button.setEnabled(True)
+        self.play_evolution_button.setText("⏸ Stop Animation")
+        self._evolution_timer.start()
+        self._render_evolution_frame(0)
+
+    def _on_evolution_failed(self, message: str) -> None:
+        self.play_evolution_button.setEnabled(True)
+        self.play_evolution_button.setText("▶ Play Evolution (4D)")
+        self.real_physics_status.setText(f"⚠ 4D evolution computation failed: {message}")
+        logger.error("AWCIDashboard: 4D evolution computation failed: %s", message)
+
+    def _advance_evolution_frame(self) -> None:
+        if self._evolution is None:
+            self._stop_evolution_playback()
+            return
+        n_frames = self._evolution["n_frames"]
+        self._evolution_frame_index = (self._evolution_frame_index + 1) % n_frames
+        self._render_evolution_frame(self._evolution_frame_index)
+
+    def _render_evolution_frame(self, frame_index: int) -> None:
+        """Redraw the global map with this real frame's surface-level field, and show the real elapsed simulated time - not a fake incrementing clock."""
+        evolution = self._evolution
+        if evolution is None:
+            return
+        awci_frame = evolution["awci_evolution"][frame_index, 0]  # level 0 = surface
+        valid_time_h = evolution["valid_time_seconds"][frame_index] / 3600.0
+        self.global_map.set_external_field(
+            evolution["lons"], evolution["lats"], awci_frame, f"REAL PHYSICS — t+{valid_time_h:.2f}h"
+        )
+        self.time_readout.setText(f"t+{valid_time_h:.2f}h")
+
+    def _stop_evolution_playback(self) -> None:
+        self._evolution_timer.stop()
+        # CORRECTED: used to only reset the label if
+        # play_evolution_button.isVisible() - but Qt's isVisible()
+        # reflects EFFECTIVE visibility (the whole parent chain must
+        # also be shown on screen), not just this widget's own
+        # setVisible(True) flag. A dashboard that hasn't been shown()
+        # yet (every non-interactive test, and any code path that
+        # stops playback before the window is first rendered) would
+        # silently skip the reset - found by a real test, not assumed.
+        # No harm in setting a hidden button's text either way.
+        self.play_evolution_button.setText("▶ Play Evolution (4D)")
 
     # ---------------------------------------------------- external API
 

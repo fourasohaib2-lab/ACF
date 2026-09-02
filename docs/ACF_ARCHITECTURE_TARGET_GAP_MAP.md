@@ -103,6 +103,43 @@ construits :
 **Validation :** 2929/2929 tests passent (2895 avant, +34 nouveaux),
 ruff et mypy propres sur les 1353 fichiers.
 
+## Mise à jour 2026-09-02 (suite 9) — animation 4D branchée dans le dashboard
+
+Sur demande explicite ("brancher l'animation 4D dans le dashboard") :
+nouveau bouton **"▶ Play Evolution (4D)"** sur `AWCIDashboard`,
+disponible une fois le mode Real Physics engagé. Lance
+`compute_real_complexity_evolution()` (trajectoire physique continue,
+pas des snapshots indépendants) sur un vrai worker `QThreadPool`
+(même schéma que le bouton Real Physics), puis anime la carte globale
+à travers les vraies frames via un `QTimer` réel (800 ms/frame) —
+affichant le vrai temps simulé écoulé (`valid_time_seconds`), pas une
+horloge fictive.
+
+**Vérifié de bout en bout avec un vrai timer Qt qui tourne tout seul**
+(pas d'avance manuelle en test) : après ~3,5s réelles, le timer a
+déclenché 4 vrais ticks, l'affichage est passé de `t+0.20h` à
+`t+1.00h` — capture d'écran envoyée pour les deux instants. Changement
+visuel subtil sur la carte (même limite honnête que les captures
+précédentes de cette session — intégration courte), mais le temps
+affiché est réellement celui de la trajectoire physique, pas fabriqué.
+
+**Bug réel trouvé et corrigé par un test, pas en relecture** : le
+bouton "Stop Animation" ne se réinitialisait pas dans certains cas
+(`if self.play_evolution_button.isVisible(): ...`) — `isVisible()` de
+Qt reflète la visibilité **effective** (toute la hiérarchie parente
+doit être affichée à l'écran), pas juste le drapeau `setVisible(True)`
+du widget lui-même. Un dashboard jamais montré à l'écran (chaque test
+non-interactif) faisait échouer silencieusement la réinitialisation.
+Corrigé en retirant la garde inutile.
+
+Portée honnête : seule la carte globale s'anime aujourd'hui — carte
+régionale/route/coupe restent sur leur instantané statique pendant la
+lecture (les animer aussi demanderait de rappeler `path_sampling` à
+chaque frame, pas construit ici).
+
+**Validation :** 2938/2938 tests passent (2929 avant, +9 nouveaux),
+ruff et mypy propres sur les 1353 fichiers.
+
 ## Bilan chiffré (mis à jour 2026-09-02, recompté depuis le tableau ci-dessus)
 
 | Statut | Nombre de couches / 38 |
