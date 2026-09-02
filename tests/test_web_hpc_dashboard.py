@@ -12,8 +12,9 @@ its own lazily.
 import pytest
 from fastapi.testclient import TestClient
 
+from acf.ai.simulation.neural_operator import NeuralOperatorEngine
 from acf.hpc_connector.connection_manager import HPCConnectionManager
-from acf.web.hpc_dashboard_server import create_app
+from acf.web.hpc_dashboard_server import DEFAULT_FNO_CHECKPOINT, create_app
 
 
 @pytest.fixture(scope="module")
@@ -99,3 +100,40 @@ def test_create_app_without_injected_hpc_lazily_builds_one():
     stays fast and side-effect-free until it's really used."""
     app = create_app()
     assert app.state.hpc is None
+
+
+def test_reference_fno_checkpoint_exists_and_is_used_by_default():
+    """The reference checkpoint trained by scripts/train_fno_surrogate.py
+    (this session's FNO axis) is committed at this exact path - the demo
+    endpoint below depends on it actually being found by default."""
+    assert DEFAULT_FNO_CHECKPOINT.exists()
+
+
+def test_fno_predict_demo_uses_the_real_trained_surrogate(client):
+    res = client.post("/api/fno/predict_demo", params={"n_lat": 16, "n_lon": 32})
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["status"] == "PREDICTED_BY_TRAINED_SURROGATE"
+    assert data["surrogate_final_train_loss"] is not None
+    assert "predicted_field_mean_k" in data
+    # Real physical temperature range, not a placeholder.
+    assert 150.0 < data["predicted_field_mean_k"] < 400.0
+
+
+def test_fno_predict_demo_honest_without_a_checkpoint():
+    """CORRECTED (caught before it shipped): if no trained checkpoint is
+    configured, this endpoint must say so plainly - not silently fall
+    back to some other value."""
+    app = create_app(hpc=HPCConnectionManager(), fno_checkpoint_path=None)
+    with TestClient(app) as c:
+        res = c.post("/api/fno/predict_demo")
+    data = res.json()
+    assert data["status"] == "NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED"
+    assert "predicted_field_mean_k" not in data
+
+
+def test_create_app_accepts_an_injected_neural_engine():
+    engine = NeuralOperatorEngine()  # no checkpoint loaded
+    app = create_app(hpc=HPCConnectionManager(), neural_engine=engine)
+    assert app.state.neural_engine is engine

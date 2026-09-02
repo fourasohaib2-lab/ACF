@@ -25,21 +25,34 @@ acf.monitoring.websocket_server.OperationalWebSocketServer (found and
 honestly fixed earlier this session) never bound a real socket at all,
 and acf.api.api.ACFAPI is a plain Python facade with no HTTP layer -
 there was no existing FastAPI app anywhere in this codebase before this.
+
+Also serves the real, trained FNO surface-temperature surrogate (see
+acf.ai.simulation.fno_model/fno_training, this session's third roadmap
+axis) via /api/fno/predict_demo - the reference checkpoint
+(models/fno_surface_temperature_reference.pt) was, until now, only
+reachable from raw Python, not from any user-facing surface.
 """
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any
 
+import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from acf.ai.simulation.neural_operator import NeuralOperatorEngine
 from acf.hpc_connector.connection_manager import HPCConnectionManager
 
 logger = logging.getLogger("acf.web")
 
 #: Seconds between WebSocket status pushes to each connected browser.
 PUSH_INTERVAL_SECONDS = 2.0
+
+#: Repository-relative path to the reference FNO checkpoint trained by
+#: scripts/train_fno_surrogate.py (see this module's own docstring).
+DEFAULT_FNO_CHECKPOINT = Path(__file__).resolve().parents[3] / "models" / "fno_surface_temperature_reference.pt"
 
 
 def _hpc_status(hpc: HPCConnectionManager) -> dict[str, Any]:
@@ -64,7 +77,11 @@ def _hpc_status(hpc: HPCConnectionManager) -> dict[str, Any]:
     }
 
 
-def create_app(hpc: HPCConnectionManager | None = None) -> FastAPI:
+def create_app(
+    hpc: HPCConnectionManager | None = None,
+    neural_engine: NeuralOperatorEngine | None = None,
+    fno_checkpoint_path: str | Path | None = DEFAULT_FNO_CHECKPOINT,
+) -> FastAPI:
     """Build the FastAPI app.
 
     Parameters
@@ -73,14 +90,29 @@ def create_app(hpc: HPCConnectionManager | None = None) -> FastAPI:
         Injected for tests (avoids repeated slow local probing across
         many test cases). Defaults to a real, lazily-constructed
         HPCConnectionManager for actual application use.
+    neural_engine : NeuralOperatorEngine, optional
+        Injected for tests. Defaults to a real, lazily-constructed one
+        that loads fno_checkpoint_path if it exists.
+    fno_checkpoint_path : path to the trained FNO checkpoint, or None to
+        disable the FNO endpoint's model loading (it will then always
+        report NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED, honestly).
     """
     app = FastAPI(title="ACF HPC Web Dashboard")
     app.state.hpc = hpc  # may be None - constructed lazily on first use, see _get_hpc()
+    app.state.neural_engine = neural_engine
+    app.state.fno_checkpoint_path = fno_checkpoint_path
 
     def _get_hpc() -> HPCConnectionManager:
         if app.state.hpc is None:
             app.state.hpc = HPCConnectionManager()
         return app.state.hpc
+
+    def _get_neural_engine() -> NeuralOperatorEngine:
+        if app.state.neural_engine is None:
+            path = app.state.fno_checkpoint_path
+            checkpoint = str(path) if path is not None and Path(path).exists() else None
+            app.state.neural_engine = NeuralOperatorEngine(fno_checkpoint_path=checkpoint)
+        return app.state.neural_engine
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:
@@ -109,6 +141,41 @@ def create_app(hpc: HPCConnectionManager | None = None) -> FastAPI:
         hpc = _get_hpc()
         hpc.disconnect()
         return JSONResponse(_hpc_status(hpc))
+
+    @app.post("/api/fno/predict_demo")
+    async def api_fno_predict_demo(n_lat: int = 32, n_lon: int = 64) -> JSONResponse:
+        """Run the real trained FNO surrogate on a demo near-surface
+        temperature field (a smooth synthetic pattern - there is no live
+        gridded observation feeding this web dashboard - see this
+        module's own docstring), and report real, honest before/after
+        statistics. Genuinely calls NeuralOperatorEngine.
+        predict_surface_temperature() - not a canned response."""
+        engine = _get_neural_engine()
+
+        lat = np.linspace(-90, 90, n_lat)
+        lon = np.linspace(-180, 180, n_lon, endpoint=False)
+        lat_mesh, lon_mesh = np.meshgrid(lat, lon, indexing="ij")
+        # Smooth, deterministic demo field (not a real observation) - see
+        # acf.gui.dashboard.awci_synthetic_field for the same convention.
+        demo_field = (
+            288.0 - 0.5 * np.abs(lat_mesh) + 3.0 * np.sin(np.radians(lon_mesh) * 2)
+        ).astype(np.float32)
+
+        result = engine.predict_surface_temperature(demo_field)
+        predicted = result.pop("predicted_field", None)
+
+        response: dict[str, Any] = {
+            **result,
+            "input_field_mean_k": float(demo_field.mean()),
+            "input_field_min_k": float(demo_field.min()),
+            "input_field_max_k": float(demo_field.max()),
+        }
+        if predicted is not None:
+            response["predicted_field_mean_k"] = float(predicted.mean())
+            response["predicted_field_min_k"] = float(predicted.min())
+            response["predicted_field_max_k"] = float(predicted.max())
+
+        return JSONResponse(response)
 
     @app.websocket("/ws/hpc/status")
     async def ws_status(websocket: WebSocket) -> None:
@@ -167,6 +234,18 @@ _INDEX_HTML = """<!doctype html>
     <div class="card"><h2>Heartbeat</h2><div class="value" id="v-heartbeat">—</div></div>
   </div>
 
+  <h1 style="margin-top:28px;">🧠 FNO Surface Temperature Surrogate</h1>
+  <div class="sub">Real, trained model (acf.ai.simulation.fno_model) run on a smooth demo field - not a live observation.</div>
+  <div id="fno-actions">
+    <button onclick="fnoPredict()">▶️ Run Surrogate on Demo Field</button>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Status</h2><div class="value" id="fno-status">—</div></div>
+    <div class="card"><h2>Input Mean (K)</h2><div class="value" id="fno-input-mean">—</div></div>
+    <div class="card"><h2>Predicted Mean (K)</h2><div class="value" id="fno-pred-mean">—</div></div>
+    <div class="card"><h2>Surrogate Train Loss</h2><div class="value" id="fno-loss">—</div></div>
+  </div>
+
   <div id="raw">Connecting to /ws/hpc/status ...</div>
 
 <script>
@@ -190,6 +269,18 @@ async function hpcAction(action) {
   const res = await fetch('/api/hpc/' + action, { method: 'POST' });
   const data = await res.json();
   render(data);
+}
+
+async function fnoPredict() {
+  setText('fno-status', 'Running...', 'warn');
+  const res = await fetch('/api/fno/predict_demo', { method: 'POST' });
+  const data = await res.json();
+  const trained = data.status === 'PREDICTED_BY_TRAINED_SURROGATE';
+  setText('fno-status', data.status, trained ? 'ok' : 'bad');
+  setText('fno-input-mean', data.input_field_mean_k ? data.input_field_mean_k.toFixed(2) : '—');
+  setText('fno-pred-mean', data.predicted_field_mean_k ? data.predicted_field_mean_k.toFixed(2) : '—');
+  setText('fno-loss', data.surrogate_final_train_loss != null ? data.surrogate_final_train_loss.toFixed(5) : '—');
+  document.getElementById('raw').textContent = JSON.stringify(data, null, 2);
 }
 
 const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
