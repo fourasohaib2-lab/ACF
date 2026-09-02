@@ -1,4 +1,18 @@
-"""Scientific QWidget-based MapCanvas using Cartopy and Matplotlib Qt Backend (ACF Map Canvas)."""
+"""Scientific QWidget-based MapCanvas using Cartopy and Matplotlib Qt Backend (ACF Map Canvas).
+
+NOTE (found while auditing docs/architecture/duplicate_components.md's
+"Canvas carte" row, NOT changed — RÈGLE D'OR / single source of truth):
+this is the real `MapCanvas` embedded in ESOC's live window
+(`acf.gui.esoc.view_manager.ViewManager` and
+`acf.gui.main_window.main_window.MainWindow` both import it directly).
+`acf.maps.canvas.map_canvas.MapCanvas` is a second, genuinely-both-live
+implementation - it IS a `FigureCanvasQTAgg` (a matplotlib canvas you
+call `.draw()`/`.figure` on directly), where this class instead
+composes one as a child widget - with its own real consumers
+(`acf.maps`'s own public API, `acf.visualization`'s lazy re-export
+table). See that module's own NOTE for the full comparison and why
+this pass does not unilaterally merge them.
+"""
 
 from typing import Any
 

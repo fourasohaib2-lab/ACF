@@ -1461,4 +1461,98 @@ module `acf.awci`. La coupure à 100 hPa et le choix d'une parcelle
 réels et défendables, mais pas les seuls possibles — documentés comme
 tels dans `convective_energy.py`.
 
+## Mise à jour 2026-09-02 (suite) — consolidation réelle des doublons catalogués : re-vérification complète, ligne par ligne
+
+Demande explicite de l'utilisateur ("Consolider les doublons
+catalogués"), après avoir choisi cette direction parmi plusieurs
+options proposées. Méthode : chaque ligne de
+[`docs/architecture/duplicate_components.md`](../docs/architecture/duplicate_components.md)
+(marqué "outdated snapshot") et chaque homonyme de classe a été
+re-vérifié un par un par grep des vrais importeurs réels — pas relu ni
+supposé exact.
+
+**Résultat principal : la quasi-totalité de la table est déjà
+résolue**, par des passes antérieures non documentées comme telles au
+niveau du tableau lui-même :
+- `tests/test_collisions_consolidation.py` (marqué en interne
+  "ACF-017") et `tests/test_importers_consolidation.py`
+  ("ACF-016") prouvent, avec des assertions d'identité `is`, que
+  Fenêtre principale / Moteur cartographique / Catalogues / Paramètres
+  / Lecteurs de données / BUFR / NetCDF-GRIB / Validation dataset sont
+  déjà réellement unifiés derrière une implémentation canonique, avec
+  un vrai shim de compatibilité sur le chemin d'import historique (ou,
+  pour Fenêtre principale, le fichier historique est honnêtement mort —
+  la résolution d'import package-avant-module de Python ne l'atteint
+  jamais, documenté sur place, pas supprimé).
+- **Couches et renderers** (la pile à trois `gui.map`/`maps`/
+  `visualization`) est réelle mais déjà entièrement investiguée et
+  honnêtement documentée par une passe antérieure : la propre NOTE de
+  `gui/map/__init__.py` confirme que toute l'arborescence
+  `gui.map.{layers,renderers,navigation,projections,rendering}/` (qui
+  couvre le côté `gui.map` des homonymes `LayerManager`/
+  `ProjectionManager`/`CartopyRenderer`/`RasterRenderer` de cette
+  ligne) n'est **jamais importée par rien dans `src/`** — pas une vraie
+  scission à trois en pratique, plutôt à deux (fichiers plats `gui.map`
+  vs `maps`/`visualization`), et même celle-là déjà en grande partie
+  unifiée par le point précédent.
+
+**Deux lignes se sont révélées être de faux positifs, vérifiés pas
+supposés** — même nom de classe, responsabilité réellement différente,
+les deux côtés réellement utilisés aujourd'hui :
+- **Plugins** — `acf.core.plugin_manager.PluginManager` (découverte
+  générique de plugins sur disque, utilisée par `acf.core.bootstrap`)
+  vs `acf.ai.plugins.plugin_manager.PluginManager` (un registre en
+  mémoire d'`AIPlugin` avec `register()`/`analyze()`, utilisé par le
+  sous-système IA).
+- **Data manager** — `acf.data.manager.DataManager` (un vrai
+  orchestrateur de workflow avec état — `open()`/`close()`/
+  `current_dataset`/`history()` — construit sur `ReaderFactory`/
+  `DatasetRegistry`/`CatalogManager` canoniques, utilisé par
+  `acf.dashboard.window`) vs `acf.io`/`acf.importers.manager.
+  DataManager` (le registre de lecteurs de plus bas niveau, déjà
+  unifié via ACF-016).
+
+Même trouvaille, déjà présente indépendamment dans ACF-017 :
+`Divergence`/`Dynamics` (`science.*` = version simple/didactique,
+`model4d.operators`/`physics` = la vraie version de qualité solveur) —
+confirmée, pas re-fusionnée.
+
+**Une ligne reste un vrai doublon ouvert, vérifié pour de vrai :
+Canvas carte.** `acf.gui.map.map_canvas.MapCanvas` (un `QWidget` qui
+compose un canvas matplotlib comme enfant — intégré dans la vraie
+fenêtre live d'ESOC via `acf.gui.esoc.view_manager.ViewManager`/
+`acf.gui.main_window.main_window.MainWindow`) et
+`acf.maps.canvas.map_canvas.MapCanvas` (qui EST lui-même un
+`FigureCanvasQTAgg` — utilisé par la propre API publique d'`acf.maps`,
+qui se qualifie elle-même de "Canonical Cartographic & Visualization
+Package" dans son propre docstring, et par la table de ré-export
+paresseux d'`acf.visualization`) sont tous les deux réellement vivants,
+tous les deux réellement utilisés, et pas des formes interchangeables.
+Documenté avec une NOTE complète dans les deux fichiers
+([`src/acf/gui/map/map_canvas.py`](../src/acf/gui/map/map_canvas.py),
+[`src/acf/maps/canvas/map_canvas.py`](../src/acf/maps/canvas/map_canvas.py))
+et verrouillé par un nouveau test
+(`test_map_canvas_is_a_real_verified_duplicate_not_yet_consolidated`).
+**Délibérément pas fusionné dans cette passe** : une vraie
+consolidation ici signifie choisir un gagnant et migrer soit la vraie
+GUI live d'ESOC, soit l'API publique d'`acf.maps`/`acf.visualization`,
+vers la forme de l'autre (`QWidget` composite vs `FigureCanvasQTAgg`
+direct ne sont pas des formes interchangeables) — une décision de
+conception scopée, pas quelque chose que cette passe tranche
+unilatéralement, exactement comme le plan de consolidation du document
+lui-même l'exige (étape 1 "désigner une API canonique... geler les
+alternatives", étape 2 "tests de non-régression avant toute migration"
+— qui n'existent pas encore pour l'un ou l'autre groupe de
+consommateurs).
+
+**`docs/architecture/duplicate_components.md`** mis à jour avec une
+nouvelle bannière de re-vérification résumant tout ce qui précède,
+au-dessus de son contenu original inchangé (même convention que la
+bannière "outdated snapshot" déjà en place).
+
+**Validation :** 3 nouveaux tests dans
+`tests/test_collisions_consolidation.py` (12/12 dans ce fichier, dont
+les 3 nouveaux), suite complète **3249/3249** (3246 + 3), `ruff` et
+`mypy` propres sur les fichiers touchés.
+
 Dis-moi laquelle tu veux que j'attaque ensuite.

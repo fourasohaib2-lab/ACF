@@ -21,6 +21,18 @@ from acf.parameters.registry import ParameterRegistry as CanonicalParameterRegis
 from acf.science.divergence import Divergence as ScienceDivergence
 from acf.science.dynamics import Dynamics as ScienceDynamics
 
+# The four below were re-verified (not assumed) while auditing
+# docs/architecture/duplicate_components.md's "Canvas carte" / "Plugins"
+# / "Data manager" rows - each same-name pair below is a real, distinct,
+# both-genuinely-used implementation, not a name collision resolved by
+# import order. See each module's own NOTE for the full comparison.
+from acf.ai.plugins.plugin_manager import PluginManager as AIPluginManager
+from acf.core.plugin_manager import PluginManager as CorePluginManager
+from acf.data.manager import DataManager as MapsDataManager
+from acf.gui.map.map_canvas import MapCanvas as GuiMapCanvas
+from acf.importers.manager import DataManager as ImportersDataManager
+from acf.maps.canvas.map_canvas import MapCanvas as MapsCanvasMapCanvas
+
 
 def test_parameter_collision_resolution():
     p1 = CanonicalParameter(code="t2m", name="2m Temperature", unit="K")
@@ -81,3 +93,62 @@ def test_science_vs_physics_dynamics():
     assert "divergence" in avail
     acc = PhysicsDynamics.acceleration(force=100, mass=10)
     assert acc == 10.0
+
+
+def test_plugin_manager_is_a_real_homonym_not_a_duplicate():
+    """
+    acf.core.plugin_manager.PluginManager (generic filesystem plugin
+    discovery, used by acf.core.bootstrap) and
+    acf.ai.plugins.plugin_manager.PluginManager (an in-memory AIPlugin
+    registry with register()/analyze(), used by the AI subsystem) share
+    a name and nothing else - same class of finding as
+    Divergence/Dynamics above. Forcing them into one class would mix two
+    genuinely unrelated responsibilities, so this locks in "different on
+    purpose" rather than letting a future pass "fix" it into a merge.
+    """
+    assert CorePluginManager is not AIPluginManager
+    core_pm = CorePluginManager(plugin_dir="/nonexistent")
+    assert hasattr(core_pm, "discover") and not hasattr(core_pm, "analyze")
+    ai_pm = AIPluginManager()
+    assert hasattr(ai_pm, "analyze") and not hasattr(ai_pm, "discover")
+
+
+def test_data_manager_is_a_real_homonym_not_a_duplicate():
+    """
+    acf.data.manager.DataManager (a real, stateful workflow orchestrator
+    - open()/close()/current_dataset/history() - built on top of the
+    canonical ReaderFactory/DatasetRegistry/CatalogManager, used by
+    acf.dashboard.window) and acf.importers.manager.DataManager (the
+    lower-level reader-registry ACF-016 already canonicalized io.manager
+    onto - see test_importers_consolidation.py) are both real and both
+    used, for different purposes.
+    """
+    assert MapsDataManager is not ImportersDataManager
+    dm = MapsDataManager()
+    assert hasattr(dm, "open") and hasattr(dm, "current_dataset")
+
+
+def test_map_canvas_is_a_real_verified_duplicate_not_yet_consolidated():
+    """
+    Unlike every other pair in this file, this one IS a genuine
+    duplicate needing a real consolidation decision (see both classes'
+    own NOTEs) - not a false positive. Locked in here as "still open"
+    so this doesn't silently get treated as resolved: acf.gui.map.
+    map_canvas.MapCanvas wraps a QVBoxLayout'd FigureCanvasQTAgg as a
+    child widget (a compose-by-delegation QWidget - it renders via its
+    own internal MapProjection/MapRenderer/LayerManager trio) while
+    acf.maps.canvas.map_canvas.MapCanvas IS a FigureCanvasQTAgg itself
+    (renders via its own internal CartopyRenderer/RasterRenderer/
+    ContourRenderer/WindRenderer trio) - both are technically QWidget
+    subclasses (FigureCanvasQTAgg itself derives from QWidget), but they
+    are not interchangeable: one is a matplotlib canvas you can call
+    .draw()/.figure on directly, the other is a composite widget that
+    merely contains one. Different real consumers today - picking a
+    winner and migrating one side is a scoped design decision this
+    repository has not made yet.
+    """
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+
+    assert GuiMapCanvas is not MapsCanvasMapCanvas
+    assert not issubclass(GuiMapCanvas, FigureCanvasQTAgg)
+    assert issubclass(MapsCanvasMapCanvas, FigureCanvasQTAgg)

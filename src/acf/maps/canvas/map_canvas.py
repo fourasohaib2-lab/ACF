@@ -1,5 +1,46 @@
 """
 Map Canvas
+
+NOTE (found while auditing docs/architecture/duplicate_components.md's
+"Canvas carte" row, NOT changed — RÈGLE D'OR / single source of truth):
+this `MapCanvas` and `acf.gui.map.map_canvas.MapCanvas` are a genuine,
+verified-both-live duplicate - unlike this session's other X.py-vs-X/
+findings (data/engine.py, model4d/operators.py, maps/canvas.py, this
+same package's gui.map/projections/layers/renderers subpackages), there
+is no import-resolution collision silently picking one: both are
+independently importable, and both have real, distinct consumers today
+(confirmed by grep, not assumed).
+
+This class (`acf.maps.canvas.map_canvas.MapCanvas`) is a direct
+`FigureCanvasQTAgg` subclass, wiring its own `CartopyRenderer`/
+`RasterRenderer`/`ContourRenderer`/`WindRenderer` internally. It is the
+one re-exported by `acf.maps` (this package's own docstring calls
+itself the "Canonical Cartographic & Visualization Package") and by
+`acf.visualization`'s lazy re-export table, and is what
+`tests/test_cartopy_renderer.py` exercises.
+
+`acf.gui.map.map_canvas.MapCanvas` is a `QWidget` wrapping a
+`MapProjection`/`MapRenderer`/`LayerManager` trio (the flat
+`gui/map/map_*.py` files - themselves already documented in
+`gui/map/__init__.py`'s own NOTE as the ones genuinely used by the real
+app). It is the one actually embedded in ESOC's live window
+(`acf.gui.esoc.view_manager.ViewManager` and
+`acf.gui.main_window.main_window.MainWindow` both import it directly),
+despite `acf.maps` branding itself "Canonical" in its module docstring
+above.
+
+Consolidating these for real - per this repository's own
+`docs/architecture/duplicate_components.md` plan ("tests de
+non-régression avant toute migration") - would mean picking a winner
+and migrating either ESOC's real running GUI or `acf.maps`/
+`acf.visualization`'s public API onto the other's shape
+(this class IS a matplotlib canvas you call `.draw()`/`.figure` on
+directly, while the other is a composite `QWidget` that merely embeds
+one via a layout - not drop-in compatible shapes), which is
+a real, scoped design decision this pass does not make unilaterally.
+Not deleted or merged per project convention - flagged so the "Canonical"
+docstring above isn't mistaken for meaning this is the one live GUI
+consumers actually use.
 """
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg

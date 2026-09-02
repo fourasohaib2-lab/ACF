@@ -14,6 +14,71 @@
 > _Banner added 2026-09-02 during a hygiene cleanup pass — original content
 > preserved unchanged below._
 
+<!-- ACF_CONSOLIDATION_REVERIFICATION_BANNER_2026-09-02 -->
+> **✅ Re-verified 2026-09-02 (real per-row audit, not a re-read of the
+> table below).** Every "Duplications critiques" row and every
+> "Homonymes de classes" entry was re-checked against the current tree
+> by grepping real importers of each class, not by re-reading this
+> file's own claims. Result: **most rows are already resolved** —
+> `tests/test_collisions_consolidation.py` (ACF-017) and
+> `tests/test_importers_consolidation.py` (ACF-016) prove, with `is`
+> identity assertions, that Fenêtre principale/Moteur cartographique/
+> Catalogues/Paramètres/Lecteurs de données/BUFR/NetCDF-GRIB/Validation
+> dataset are genuinely unified behind a canonical implementation with a
+> real compatibility shim on the legacy import path (or, for Fenêtre
+> principale, the legacy file is honestly dead - Python's own package-
+> over-module import resolution never reaches it, documented in place,
+> not deleted).
+>
+> **Two rows turned out to be false positives, not real duplicates** —
+> same class name, genuinely different responsibility, both sides
+> genuinely used today: **Plugins** (`core.plugin_manager.PluginManager`
+> is generic filesystem plugin discovery used by `core.bootstrap`;
+> `ai.plugins.plugin_manager.PluginManager` is an in-memory `AIPlugin`
+> registry used by the AI subsystem) and **Data manager**
+> (`data.manager.DataManager` is a stateful workflow orchestrator used
+> by `acf.dashboard.window`; `io.manager`/`importers.manager.DataManager`
+> - already unified via ACF-016 - is the lower-level reader registry).
+> Locked in by `test_plugin_manager_is_a_real_homonym_not_a_duplicate()`
+> and `test_data_manager_is_a_real_homonym_not_a_duplicate()` so a future
+> pass doesn't "fix" them into a broken merge. Same finding, independently,
+> for `Divergence`/`Dynamics` (already in ACF-017's own tests) -
+> `science.*` are simple/didactic, `model4d.operators`/`physics` are
+> the real solver-grade versions.
+>
+> **Couches et renderers** (the `gui.map`/`maps`/`visualization` triple
+> stack) is real but was already fully investigated and honestly
+> documented by an earlier pass: `gui/map/__init__.py`'s own NOTE
+> confirms the entire `gui.map.{layers,renderers,navigation,projections,
+> rendering}/` subpackage tree (covering this row's `LayerManager`/
+> `ProjectionManager`/`CartopyRenderer`/`RasterRenderer` homonym entries'
+> `gui.map` side) is a complete, correct, but **never-imported-by-
+> anything-in-src/** alternate architecture - superseded in practice by
+> the flat `gui/map/map_*.py` files ESOC actually uses. Not a live
+> three-way split in practice, just a two-way one (`gui.map` flat files
+> vs `maps`/`visualization`), and even that mostly already unified per
+> the paragraph above.
+>
+> **One row is a real, still-open, verified duplicate: Canvas carte.**
+> `acf.gui.map.map_canvas.MapCanvas` (a `QWidget` composing a matplotlib
+> canvas as a child - embedded in ESOC's real live window via
+> `acf.gui.esoc.view_manager.ViewManager`/`acf.gui.main_window.
+> main_window.MainWindow`) and `acf.maps.canvas.map_canvas.MapCanvas`
+> (which IS a `FigureCanvasQTAgg` itself - used by `acf.maps`'s own
+> public API, which brands itself "Canonical Cartographic &
+> Visualization Package" in its own docstring, and by
+> `acf.visualization`'s lazy re-export table) are both genuinely live,
+> both genuinely used, and not interchangeable shapes. Documented with a
+> full NOTE in both files and locked in by
+> `test_map_canvas_is_a_real_verified_duplicate_not_yet_consolidated()`.
+> Real consolidation here means picking a winner and migrating either
+> ESOC's live GUI or `acf.maps`/`acf.visualization`'s public API onto
+> the other's shape - a scoped design decision, not something this pass
+> makes unilaterally per this document's own step 1 ("désigner une API
+> canonique... geler les alternatives") and step 2 ("tests de
+> non-régression avant toute migration", which do not yet exist for
+> either consumer group).
+
 ---
 
 # Composants dupliqués et incohérences
