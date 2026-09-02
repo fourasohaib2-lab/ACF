@@ -1,3 +1,21 @@
+<!-- ACF_OUTDATED_SNAPSHOT_BANNER_2026-09-02 -->
+> **📅 Outdated snapshot.** This is a real, dated analysis of the repository
+> as it stood when written — not a false completion claim — but the specific
+> numbers below (module/file/dependency counts) are now superseded: this
+> session alone took the source tree from ~563 to 1353+ production modules,
+> removed several of the dependencies listed below as genuinely unused
+> (`pandas`, `shapely`, `rasterio`, `h5py`), and resolved some of the
+> duplications this file documents. See
+> [`../../ROADMAP.md`](../../ROADMAP.md) and
+> [`../ACF_PHYSICS_GUARD_AUDIT_CHANGELOG.md`](../ACF_PHYSICS_GUARD_AUDIT_CHANGELOG.md)
+> for the current, reproducible state. Re-running this analysis fresh would
+> be the correct way to refresh it, not editing the numbers below by hand.
+>
+> _Banner added 2026-09-02 during a hygiene cleanup pass — original content
+> preserved unchanged below._
+
+---
+
 # Graphe des dépendances ACF
 
 ## Méthode
