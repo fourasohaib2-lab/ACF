@@ -21,6 +21,12 @@ class BaseSchedulerInterface:
     def cancel_job(self, job_id: str) -> bool:
         raise NotImplementedError
 
+    def suspend_job(self, job_id: str) -> bool:
+        raise NotImplementedError
+
+    def resume_job(self, job_id: str) -> bool:
+        raise NotImplementedError
+
     def get_job_status(self, job_id: str) -> str:
         raise NotImplementedError
 
@@ -117,14 +123,72 @@ srun {formatted_cmd}
         return job_id
 
     def cancel_job(self, job_id: str) -> bool:
+        """
+        NOTE (correction): this used to `return True` unconditionally,
+        regardless of `res["exit_code"]` or even whether a real SSH
+        transport ran `scancel` at all - the exact same
+        unconditional-success pattern this project's audits exist to
+        catch, and directly undermined job_manager.py's own
+        `JobManager.cancel_job()` docstring, which claims to
+        "propagate the scheduler's real result" (there was no real
+        result to propagate). Now requires a genuine, non-simulated SSH
+        round trip (`RemoteExecutor.execute_command()`'s own honest
+        "is_simulated" marker - see its docstring) with exit_code 0.
+        """
         res = self.executor.execute_command(f"scancel {job_id}")
-        log_hpc_event("INFO", f"Cancelled SLURM job [{job_id}] via SSH (exit_code={res['exit_code']})")
-        return True
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Cancel request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
+
+    def suspend_job(self, job_id: str) -> bool:
+        """Real `scontrol suspend` over SSH - same honest confirmation convention as cancel_job()."""
+        res = self.executor.execute_command(f"scontrol suspend {job_id}")
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Suspend request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
+
+    def resume_job(self, job_id: str) -> bool:
+        """Real `scontrol resume` over SSH - same honest confirmation convention as cancel_job()."""
+        res = self.executor.execute_command(f"scontrol resume {job_id}")
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Resume request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
 
     def get_job_status(self, job_id: str) -> str:
+        """
+        NOTE (correction): the fallback used to return "RUNNING"
+        whenever `squeue`'s stdout was empty - but empty stdout is
+        squeue's normal, expected output once a real job has already
+        left the queue (completed, failed, cancelled...), *and* is
+        exactly what the offline/simulated fallback's placeholder text
+        would never match either way this method used to check it
+        (truthiness of a non-empty string). Concretely: any real job
+        that had already finished was misreported as still "RUNNING"
+        forever, and (separately) a fully offline/simulated call could
+        never be told apart from a real empty squeue result. Now checks
+        RemoteExecutor's own honest "is_simulated" marker first, and
+        distinguishes "genuinely empty real squeue output" (job left
+        the queue - resolving to COMPLETED vs FAILED needs `sacct`, not
+        wired here) from "genuinely still queued/running" (the real
+        %T state word squeue printed).
+        """
         res = self.executor.execute_command(f"squeue -j {job_id} -h -o %T")
+        if res.get("is_simulated", True):
+            return "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION"
         status = res.get("stdout", "").strip()
-        return status if status else "RUNNING"
+        return status if status else "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED"
 
 
 class PBSScheduler(BaseSchedulerInterface):
@@ -164,6 +228,14 @@ class PBSScheduler(BaseSchedulerInterface):
 
     def cancel_job(self, job_id: str) -> bool:
         """NOTE (correction): used to unconditionally claim success with no real qdel call. Not fabricated."""
+        return False
+
+    def suspend_job(self, job_id: str) -> bool:
+        """No real `qsig`/hold call wired - same honest disclosure as cancel_job()."""
+        return False
+
+    def resume_job(self, job_id: str) -> bool:
+        """No real `qrls` call wired - same honest disclosure as cancel_job()."""
         return False
 
     def get_job_status(self, job_id: str) -> str:
@@ -209,6 +281,14 @@ class LocalScheduler(BaseSchedulerInterface):
 
     def cancel_job(self, job_id: str) -> bool:
         """NOTE (correction): used to unconditionally claim success with no real process ever cancelled. Not fabricated."""
+        return False
+
+    def suspend_job(self, job_id: str) -> bool:
+        """No real process ever tracked to suspend - same honest disclosure as cancel_job()."""
+        return False
+
+    def resume_job(self, job_id: str) -> bool:
+        """No real process ever tracked to resume - same honest disclosure as cancel_job()."""
         return False
 
     def get_job_status(self, job_id: str) -> str:

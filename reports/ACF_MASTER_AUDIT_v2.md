@@ -580,7 +580,8 @@ passent (3039 avant), ruff et mypy propres sur les 1378 fichiers.
 
 ### Ce qui reste réellement
 
-- **Job Engine** (§22/§46) — toujours absent.
+- ~~**Job Engine** (§22/§46)~~ — **construit, voir mise à jour
+  ci-dessous.**
 - **Golden Datasets** (§31-32) — toujours absent.
 - **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
 - **Fusion multi-modèles en champ complet** (§29-30) — toujours
@@ -588,5 +589,70 @@ passent (3039 avant), ruff et mypy propres sur les 1378 fichiers.
   modèle (le Model Skill Database est la brique qui manquait pour ça,
   pas encore utilisée dans ce sens).
 - **API organisée par domaine** (§21) — toujours partielle.
+
+## Mise à jour 2026-09-02 (suite) — Job Engine construit
+
+`src/acf/jobs/` : `Job` (contrat exact §22/§46 —
+`job_id`/`status`/`progress_pct`/`retry_count`, plus les paramètres de
+soumission nécessaires pour un vrai retry) + `JobEngine`
+(`submit`/`cancel`/`pause`/`resume`/`refresh_status`/`retry`), **sans
+réimplémenter la vraie couche de soumission HPC** —
+`acf.hpc_connector.job_manager.JobManager` (déjà réel, sbatch/scancel
+via SSH réel, testé contre le vrai cluster Fennec) reste l'unique
+mécanisme de soumission ; `JobEngine` l'enveloppe.
+
+**Bugs réels trouvés et corrigés en cours de route** (même classe que
+tout ce que les audits précédents ont déjà trouvé, pas une nouvelle
+session séparée) :
+- `SlurmScheduler.cancel_job()` faisait `return True`
+  **inconditionnellement**, sans jamais vérifier le résultat SSH réel
+  — exactement le motif que `JobManager.cancel_job()`'s propre NOTE
+  affirmait déjà avoir corrigé, alors qu'il n'y avait rien de réel à
+  propager. Corrigé : exige maintenant un vrai aller-retour SSH non
+  simulé (`is_simulated=False`) avec `exit_code=0`.
+- `SlurmScheduler.get_job_status()` retournait `"RUNNING"` dès que la
+  sortie de `squeue` était vide — or une sortie vide est le
+  comportement normal de `squeue` une fois qu'un job a **déjà quitté
+  la file** (terminé, échoué...), pas une preuve qu'il tourne encore.
+  Corrigé : distingue maintenant appel simulé
+  (`"UNKNOWN_NO_REAL_SCHEDULER_CONNECTION"`) de sortie réelle vide
+  (`"UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED"`, résoudre COMPLETED/FAILED
+  nécessiterait `sacct`, non câblé).
+- `JobManager.pause_job()`/`resume_job()` changeaient le statut local
+  sans **aucun** appel réel au scheduler. Corrigé : deux nouvelles
+  méthodes réelles `SlurmScheduler.suspend_job()`/`resume_job()`
+  (`scontrol suspend`/`resume` réel via SSH, même convention honnête
+  que `cancel_job()`), `JobManager` propage désormais leur vrai
+  résultat au lieu de le supposer.
+
+**Classification honnête, pas une taxonomie inventée** :
+`is_terminal()`/`is_failure()`/`is_success()` ne reconnaissent que les
+statuts réellement produits par cette couche (états Slurm réels,
+statuts `"NOT_SUBMITTED_..."`/`"..._NOT_CONFIRMED"` déjà existants) —
+un statut non reconnu est traité comme "encore en vol", jamais deviné
+terminal.
+
+`JobEngine.retry()` est un vrai nouveau comportement : refuse de
+retenter un job qui n'est pas dans un vrai statut d'échec terminal
+(`ValueError`), sinon resoumet réellement avec les mêmes paramètres et
+incrémente `retry_count` — retourne un nouveau `Job` (Slurm n'a pas de
+"resoumettre sous le même id").
+
+**Validation :** 29 nouveaux tests (dont 5 contre le vrai
+`SlurmScheduler` en mode hors-ligne, prouvant les nouveaux
+comportements honnêtes plutôt que de les supposer). Suite complète :
+**3085/3085** tests passent (3055 avant), ruff et mypy propres sur les
+1381 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- **Golden Datasets** (§31-32) — toujours absent.
+- **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
+- **Fusion multi-modèles en champ complet** (§29-30) — toujours
+  point-par-point.
+- **API organisée par domaine** (§21) — toujours partielle.
+- **Progress réel par job** — `Job.progress_pct` existe dans le
+  contrat mais rien dans ACF ne le calcule encore (limite honnêtement
+  documentée dans `acf.jobs.job`, pas fabriquée).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

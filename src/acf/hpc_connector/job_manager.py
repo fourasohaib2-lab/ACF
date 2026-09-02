@@ -81,19 +81,44 @@ class JobManager:
         return False
 
     def pause_job(self, job_id: str) -> bool:
-        """Pause running job execution."""
+        """
+        Pause running job execution.
+
+        NOTE (correction): this used to unconditionally set
+        status="PAUSED" and return True for any known job_id, with no
+        real scheduler call - same unconditional-success pattern
+        cancel_job()'s own NOTE already flagged and fixed for this
+        class. Now calls self.scheduler.suspend_job() (a genuine
+        `scontrol suspend` over SSH for SlurmScheduler) and propagates
+        its real result, same as cancel_job().
+        """
         if job_id in self.active_jobs:
-            self.active_jobs[job_id]["status"] = "PAUSED"
-            log_hpc_event("INFO", f"Job [{job_id}] paused.")
-            return True
+            really_paused = self.scheduler.suspend_job(job_id)
+            self.active_jobs[job_id]["status"] = "PAUSED" if really_paused else "PAUSE_NOT_CONFIRMED"
+            log_hpc_event(
+                "INFO" if really_paused else "WARNING",
+                f"Job [{job_id}] {'paused' if really_paused else 'pause request could not be confirmed by the scheduler'}.",
+            )
+            return really_paused
         return False
 
     def resume_job(self, job_id: str) -> bool:
-        """Resume paused job."""
+        """
+        Resume paused job.
+
+        NOTE (correction): same unconditional-success pattern as
+        pause_job() above, fixed the same way - calls
+        self.scheduler.resume_job() (genuine `scontrol resume` over SSH
+        for SlurmScheduler) and propagates its real result.
+        """
         if job_id in self.active_jobs:
-            self.active_jobs[job_id]["status"] = "RUNNING"
-            log_hpc_event("INFO", f"Job [{job_id}] resumed.")
-            return True
+            really_resumed = self.scheduler.resume_job(job_id)
+            self.active_jobs[job_id]["status"] = "RUNNING" if really_resumed else "RESUME_NOT_CONFIRMED"
+            log_hpc_event(
+                "INFO" if really_resumed else "WARNING",
+                f"Job [{job_id}] {'resumed' if really_resumed else 'resume request could not be confirmed by the scheduler'}.",
+            )
+            return really_resumed
         return False
 
     def checkpoint_job(self, job_id: str, checkpoint_dir: str = "/tmp/acf_checkpoints") -> bool:
