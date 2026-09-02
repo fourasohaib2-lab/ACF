@@ -43,6 +43,7 @@ class CommandDispatcher(QObject):
     workspace_mode_changed = Signal(str)
     log_message_emitted = Signal(str, str)
     product_exported = Signal(str, str)  # (format, filepath)
+    hpc_connection_result = Signal(bool, str)  # (connected, profile_name) - real outcome of connect()/disconnect()
 
     def __init__(self) -> None:
         super().__init__()
