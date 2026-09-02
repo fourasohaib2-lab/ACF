@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `b27b695`.
-**Portée :** 215 commits, ~2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `5cfc78e`.
+**Portée :** 221 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -106,6 +106,35 @@ sessions parallèles :
   valeurs fabriquées, docstring vs implémentation) — a été évoqué mais volontairement
   **non lancé**, en attente d'une décision explicite.
 
-## 6. Référence complète des commits
+## 6. Phase 2 — finition de l'interface finale de l'application (post-audit)
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..b27b695`.
+Une fois le balayage de bugs terminé, l'attention s'est portée sur l'application
+réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction de bugs :
+
+- **`7541c15`** — la toolbar principale de l'ESOC a 21 boutons ; **14 d'entre eux ne
+  faisaient strictement rien au clic** (aucune erreur, aucun retour), y compris "AI"
+  qui pointait vers une fonctionnalité déjà réparée mais jamais branchée. Tous
+  câblés à de vraies actions (assistant de connexion HPC réel avec tentative SSH en
+  arrière-plan, navigation vers les vrais panneaux opérationnels, visualiseur de logs
+  en direct, changement de thème réel, capture d'écran réelle, etc.). A aussi révélé
+  un bug caché : `HPCConnectionManager.connect()` retourne toujours `True` (mode
+  développement hors-ligne délibéré, déjà couvert par un test) — corrigé pour que la
+  barre de statut se base sur l'indicateur honnête `is_real_connection` plutôt que sur
+  cette valeur de retour, pour ne jamais afficher "Connected" à tort.
+- **`f3f4b42`** — reconstruction complète du dashboard AWCI (Aviation Weather
+  Complexity Index) pour correspondre à une maquette de référence fournie par
+  l'utilisateur : cartes Cartopy réelles avec halo de complexité, coupe verticale,
+  radar des composants, graphique de route, résumé des risques, barre de stats,
+  pied de page. Chaque score affiché provient du vrai moteur `AWCICalculator` (formule
+  de production, testée), seules les données météo d'entrée sont un champ synthétique
+  de démonstration honnêtement documenté. Le dashboard était entièrement orphelin
+  (jamais atteignable depuis l'appli) ; intégré comme 28ᵉ onglet réel de l'ESOC.
+- **`5cfc78e`** — 4 widgets AWCI rendus orphelins par cette reconstruction (jauge,
+  décomposition en barres, timeline, profil vertical) documentés selon la convention
+  du projet plutôt que supprimés silencieusement.
+- Vérifications faites en direct sous `xvfb` (pas seulement via les tests unitaires) :
+  fenêtre principale + 28 panneaux + 21 actions de toolbar, 0 exception.
+
+## 7. Référence complète des commits
+
+Pour le détail commit-par-commit : `git log --oneline 9223251..5cfc78e`.
