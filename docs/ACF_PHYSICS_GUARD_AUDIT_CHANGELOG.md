@@ -96,11 +96,11 @@ sessions parallèles :
   toutes deux 0.608) — corrigé. Les 9 autres fichiers étaient déjà corrects,
   honnêtement étiquetés "simplifié"/"approximation" sans revendiquer de formule
   nommée qu'ils n'implémentent pas.
-- Le remote git `origin` pointe vers `https://github.com/TON_COMPTE/ACF.git`, qui
-  ressemble à un placeholder jamais configuré (`origin/develop` n'existe même pas
-  en local) — **tout ce travail n'existe donc que sur cette machine, sans
-  sauvegarde**. À corriger en priorité avant tout autre chose si ce travail doit
-  être conservé/partagé.
+- **Résolu** — le remote git pointait vers un placeholder
+  (`https://github.com/TON_COMPTE/ACF.git`) jamais configuré, laissant tout
+  ce travail sans sauvegarde sur une seule machine. Un dépôt GitHub réel
+  (`fourasohaib2-lab/ACF`, public) a été créé et les branches `develop`
+  (branche par défaut) et `master` y ont été poussées intégralement.
 - Un projet séparé et plus restreint — un outil réutilisable qui automatiserait une
   partie des contrôles faits manuellement ici (recherche de constantes suspectes,
   valeurs fabriquées, docstring vs implémentation) — a été évoqué mais volontairement
