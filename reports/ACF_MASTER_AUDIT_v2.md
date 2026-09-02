@@ -767,9 +767,56 @@ avant), ruff et mypy propres sur les 1391 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **Fusion multi-modèles en champ complet** (§29-30) — toujours
-  point-par-point.
+- ~~**Fusion multi-modèles en champ complet**~~ — **construite, voir
+  mise à jour ci-dessous.**
 - **API organisée par domaine** (§21) — toujours partielle.
 - **Progress réel par job** — toujours non calculé (limite honnête).
+
+## Mise à jour 2026-09-02 (suite) — Fusion multi-modèles en champ complet construite
+
+`src/acf/awci/multi_model_fusion.py` : `compute_real_multi_model_field_fusion()`
+ferme le §29-30 en réutilisant tout ce qui existait déjà, sans rien
+dupliquer :
+
+1. Fait tourner `acf.awci.spatial_field.compute_real_complexity_field()`
+   (déjà réel) une fois par modèle demandé, à sa vraie résolution de
+   grille (`MODEL_CONFIGS`), avec une perturbation par modèle
+   déterministe et distincte.
+2. **Regridding réel** vers une grille cible commune —
+   `regrid_nearest_neighbor()`, même convention plus-proche-voisin déjà
+   utilisée partout dans ce paquet (`path_sampling.py`,
+   `compute_real_multi_model_disagreement()`), vectorisée sur un champ
+   entier plutôt qu'un point. **Portée honnête** : toujours pas de
+   regridding bilinéaire/conservatif — ce manque du gap-map n'est pas
+   fermé par ce module, explicitement documenté comme tel.
+3. **Pondération réelle par skill** — réutilise
+   `ModelSkillDatabase.weights_from_skill()` (phase Verification), même
+   convention "tout ou rien" déjà établie dans
+   `compute_unified_consensus()` : poids de skill réels seulement si
+   l'historique couvre 100% des modèles demandés, sinon repli honnête
+   sur poids égaux (`weight_source` explicite dans les deux cas).
+4. **Correction de biais réelle par modèle** — le "biais" du §29-30 :
+   si la base de skill a un vrai `bias` enregistré
+   (`NWPVerificationMetrics.evaluate_all()` via `VerificationPipeline`)
+   pour un modèle/variable, il est réellement soustrait du champ de ce
+   modèle avant fusion — un modèle sans historique de biais réel est
+   combiné non corrigé, jamais un biais=0 fabriqué
+   (`bias_corrected_models` rapporte lesquels, honnêtement).
+5. **Spread en champ complet** — `EnsembleManager` (réutilisé) appliqué
+   à chaque point de grille à travers les modèles regriddés — équivalent
+   plein-champ du `disagreement_spread` ponctuel déjà existant.
+
+**Validation :** 15 nouveaux tests (regrid réel, pondération égale vs
+skill réel, historique incomplet → repli honnête, correction de biais
+réelle vérifiée par calcul direct). Suite complète : **3134/3134**
+tests passent (3119 avant), ruff et mypy propres sur les 1392
+fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- **API organisée par domaine** (§21) — toujours partielle.
+- **Progress réel par job** — toujours non calculé (limite honnête).
+- **Regridding bilinéaire/conservatif générique** — toujours absent
+  (plus-proche-voisin seulement, partout dans ce paquet).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.
