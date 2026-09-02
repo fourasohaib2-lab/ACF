@@ -646,7 +646,8 @@ comportements honnêtes plutôt que de les supposer). Suite complète :
 
 ### Ce qui reste réellement, maintenant
 
-- **Golden Datasets** (§31-32) — toujours absent.
+- ~~**Golden Datasets** (§31-32)~~ — **construit, voir mise à jour
+  ci-dessous.**
 - **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
 - **Fusion multi-modèles en champ complet** (§29-30) — toujours
   point-par-point.
@@ -654,5 +655,56 @@ comportements honnêtes plutôt que de les supposer). Suite complète :
 - **Progress réel par job** — `Job.progress_pct` existe dans le
   contrat mais rien dans ACF ne le calcule encore (limite honnêtement
   documentée dans `acf.jobs.job`, pas fabriquée).
+
+## Mise à jour 2026-09-02 (suite) — Golden Datasets construits
+
+`tests/data/golden/` + `src/acf/testing/golden.py` (utilitaire réel de
+comparaison, réutilisé par tous les tests plutôt que chacun
+réimplémentant son propre chargement JSON/tolérance flottante) +
+`tests/scientific/regression/` — ferme à la fois le §31-32 ("aucun
+`tests/data/golden/`") et une partie du §51/§53 ("pas de catégorie
+`tests/scientific/regression/` séparée").
+
+**Discipline appliquée, pas une snapshot aveugle de n'importe quoi** :
+seul un calcul **réellement, prouvablement déterministe** reçoit un
+fichier golden — documenté explicitement dans
+`tests/data/golden/README.md`, avec la raison précise pour laquelle un
+run complet de `CoupledEarthSolver` en est **délibérément exclu** (son
+propre test déjà existant,
+`test_compute_real_multi_model_disagreement_seed_is_deterministic_per_point`,
+documente que les composants atmosphère/océan du solveur appellent
+`np.random.*` directement sur l'état RNG global non-seedé — un golden
+dataset dessus serait soit instable, soit fabriquerait une
+reproductibilité qui n'existe pas).
+
+Trois fixtures réelles :
+- **`isa_standard_atmosphere.json`** — `calculate_isa_temperature()`/
+  `calculate_isa_pressure()` (déjà vérifiées contre la vraie table
+  ICAO Doc 7488 / ISO 2533:1975 à 0.05% près, par le module lui-même)
+  à 9 altitudes standard.
+- **`awci_calculator_reference_case.json`** — un cas météorologique
+  fixe et réaliste passé dans `AWCICalculator().calculate()` (fonction
+  pure de son dict d'entrée — pas de RNG, pas de solveur) — sortie
+  complète réelle verrouillée.
+- **`nwp_verification_metrics_reference_case.json`** — un cas
+  `NWPVerificationMetrics.evaluate_all()` choisi pour être
+  **calculable à la main** (bias=0, mae=0.5, rmse=√0.5, pod/far/csi/
+  ets tous exacts) — vérifie donc aussi que le code et un futur test
+  ne partagent pas la même erreur de formule, pas seulement que le
+  code est stable par rapport à lui-même.
+
+**Validation :** 10 nouveaux tests (dont des tests de l'utilitaire
+`acf.testing.golden` lui-même — rapporte le vrai chemin de la première
+divergence, tolère le bruit flottant négligeable, détecte une clé
+manquante). Suite complète : **3095/3095** tests passent (3085 avant),
+ruff et mypy propres sur les 1383 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
+- **Fusion multi-modèles en champ complet** (§29-30) — toujours
+  point-par-point.
+- **API organisée par domaine** (§21) — toujours partielle.
+- **Progress réel par job** — toujours non calculé (limite honnête).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

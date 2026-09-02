@@ -1,0 +1,51 @@
+{
+  "description": "ICAO/ISO 2533 Standard Atmosphere (ISA) reference values, computed via acf.science.encyclopedia.aerodynamics.isa_atmosphere.calculate_isa_temperature()/calculate_isa_pressure() - already verified against the published ICAO Doc 7488 / ISO 2533:1975 table to within 0.05% per that module's own NOTE. This golden dataset locks those real values so a future accidental change to the formula or its constants (t0, p0, lapse_rate, g, R) is caught, not silently reintroduced.",
+  "points": [
+    {
+      "altitude_m": 0,
+      "pressure_pa": 101325.0,
+      "temperature_k": 288.15
+    },
+    {
+      "altitude_m": 1000,
+      "pressure_pa": 89874.56028802077,
+      "temperature_k": 281.65
+    },
+    {
+      "altitude_m": 2000,
+      "pressure_pa": 79495.19723041938,
+      "temperature_k": 275.15
+    },
+    {
+      "altitude_m": 5000,
+      "pressure_pa": 54019.8799024811,
+      "temperature_k": 255.64999999999998
+    },
+    {
+      "altitude_m": 8000,
+      "pressure_pa": 35599.776132082865,
+      "temperature_k": 236.14999999999998
+    },
+    {
+      "altitude_m": 10000,
+      "pressure_pa": 26436.233930953953,
+      "temperature_k": 223.14999999999998
+    },
+    {
+      "altitude_m": 11000,
+      "pressure_pa": 22632.03182222116,
+      "temperature_k": 216.64999999999998
+    },
+    {
+      "altitude_m": 15000,
+      "pressure_pa": 12044.582835382576,
+      "temperature_k": 216.65
+    },
+    {
+      "altitude_m": 20000,
+      "pressure_pa": 5474.89002103292,
+      "temperature_k": 216.65
+    }
+  ],
+  "source": "acf.science.encyclopedia.aerodynamics.isa_atmosphere"
+}

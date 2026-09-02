@@ -1,0 +1,27 @@
+{
+  "description": "A small, exactly hand-computable NWPVerificationMetrics.evaluate_all() case - errors are [0, 0, -1, 1] (bias=0 exactly, mae=0.5 exactly, rmse=sqrt(0.5) exactly) and the threshold=3.0 contingency table is a perfect forecast (hits=2, false_alarms=0, misses=0, correct_negatives=2, so pod=1, far=0, csi=1, ets=1 exactly) - verifiable by hand, not just by rerunning the code that produced it, so this golden dataset also catches a bug shared between the code and a test that only re-derives its own expectation from the same (possibly wrong) formula.",
+  "expected_metrics": {
+    "acc": 0.8,
+    "bias": 0.0,
+    "csi": 1.0,
+    "ets": 1.0,
+    "far": 0.0,
+    "mae": 0.5,
+    "pod": 1.0,
+    "rmse": 0.7071067811865476
+  },
+  "forecast": [
+    1.0,
+    2.0,
+    3.0,
+    4.0
+  ],
+  "observation": [
+    1.0,
+    2.0,
+    4.0,
+    3.0
+  ],
+  "source": "acf.verification.nwp_metrics.NWPVerificationMetrics.evaluate_all",
+  "threshold": 3.0
+}
