@@ -27,14 +27,22 @@ physics-derived field); this one is not a replacement for the other.
 
 Honest limitation
 ------------------
-CAPE/CIN/precipitation/terrain-altitude are NOT derived here - they
-are left at AWCICalculator's own defaults (0.0 contribution), because
-computing a real CAPE/CIN at every grid point would need a full
-per-column parcel-ascent calculation this module does not perform.
-Only the state variables CoupledEarthSolver's state dict directly
-provides at the requested level - temperature (T), wind speed (from
-U, V), specific humidity (q), pressure (P) - feed the real field.
-Declaring a fabricated CAPE from these alone (e.g. a rule-of-thumb
+Precipitation/terrain-altitude are still NOT derived here - CoupledEarthSolver's
+state has no real precipitation field at all (see acf.events package
+docstring's own confirmation), and no terrain/orography field. CAPE/CIN
+WERE in this category until `compute_convective_energy=True` was added
+(explicit user request, closing this exact limitation) - see that
+parameter's own docstring and `acf.awci.convective_energy` for the real
+per-column parcel-ascent calculation now available (opt-in, not the
+default, because it is real, per-point extra work - a genuine
+MetPy-based parcel ascent per grid cell, not free). With it left at the
+default False, CAPE/CIN stay at AWCICalculator's own defaults (0.0
+contribution) exactly as before - this module never silently changes
+its own default output. Only the state variables CoupledEarthSolver's
+state dict directly provides at the requested level - temperature (T),
+wind speed (from U, V), specific humidity (q), pressure (P), plus the
+real per-column CAPE/CIN when opted in - feed the real field. Declaring
+a fabricated CAPE from a single level alone (e.g. a rule-of-thumb
 formula) would be exactly the kind of invented number this project's
 audits exist to remove; the field is real but partial, and is labelled
 as such in its return value.
@@ -45,6 +53,7 @@ from typing import Any
 import numpy as np
 
 from acf.awci.calculator import AWCICalculator
+from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
@@ -53,6 +62,9 @@ from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 #: see this module's own "Honest limitation" docstring section for
 #: what is deliberately left out and why.
 _FIELDS_USED = ("temperature", "wind_speed", "specific_humidity", "pressure")
+#: Added when `compute_convective_energy=True` - see that parameter's
+#: own docstring and `acf.awci.convective_energy`.
+_CONVECTIVE_FIELDS_USED = ("cape", "cin")
 
 
 def compute_real_complexity_field(
@@ -66,6 +78,7 @@ def compute_real_complexity_field(
     n_lon: int | None = None,
     n_levels: int | None = None,
     weights: dict[str, float] | None = None,
+    compute_convective_energy: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -101,6 +114,16 @@ def compute_real_complexity_field(
     weights : dict, optional
         Passed through to AWCICalculator - same custom-weights
         mechanism as everywhere else in this package.
+    compute_convective_energy : bool
+        When True, genuinely computes real per-point CAPE/CIN (see
+        `acf.awci.convective_energy.compute_real_cape_cin_at_point()`)
+        from each grid point's real full vertical column and feeds
+        them into AWCICalculator's convective module - closing this
+        module's own former "CAPE/CIN NOT derived here" limitation
+        (see module docstring). Off by default: a real MetPy parcel
+        ascent per grid cell is genuine extra per-point cost this
+        function's existing callers did not opt into, so the default
+        output is unchanged unless explicitly requested.
 
     Returns
     -------
@@ -125,7 +148,13 @@ def compute_real_complexity_field(
             (which would not reproduce bit-identically - see this
             module's tests and ModelConsensusEngine.
             compute_real_multi_model_disagreement()'s own note on why).
-        model, level, fields_used : provenance.
+        cape_field, cin_field : 2D numpy arrays (J/kg), present only
+            when `compute_convective_energy=True` - real per-point
+            values from `acf.awci.convective_energy`, `numpy.nan`
+            (never a fabricated 0.0) wherever fewer than 2 real levels
+            remained above that module's own real pressure cutoff.
+        model, level, fields_used : provenance. fields_used includes
+            "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
     """
     if model not in MODEL_CONFIGS:
@@ -158,6 +187,14 @@ def compute_real_complexity_field(
     awci_field = np.zeros((n_lat_actual, n_lon_actual))
     physical_field = np.zeros((n_lat_actual, n_lon_actual))
     forecast_field = np.full((n_lat_actual, n_lon_actual), np.nan)
+    # np.nan (not 0.0) wherever compute_real_cape_cin_at_point() itself
+    # honestly reports "not computed" - see its own None-not-0.0
+    # discipline, mirrored here rather than silently defaulted.
+    cape_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_convective_energy else None
+    cin_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_convective_energy else None
+    # Pa -> hPa for the full column, computed once outside the loop
+    # (not per point) - only actually used when compute_convective_energy=True.
+    pressure_hpa_column = state["P"] / 100.0
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -184,25 +221,46 @@ def compute_real_complexity_field(
     # docstring/honest_limitation.
     for i in range(n_lat_actual):
         for j in range(n_lon_actual):
-            result = calc.calculate(
-                {
-                    "temperature": float(temperature[i, j]),
-                    "wind_speed": float(wind_speed[i, j]),
-                    "specific_humidity": float(specific_humidity[i, j]),
-                    "pressure": float(pressure_hpa[i, j]),
-                }
-            )
+            data: dict[str, Any] = {
+                "temperature": float(temperature[i, j]),
+                "wind_speed": float(wind_speed[i, j]),
+                "specific_humidity": float(specific_humidity[i, j]),
+                "pressure": float(pressure_hpa[i, j]),
+            }
+
+            if compute_convective_energy:
+                # Real full vertical column at this one (i, j) point -
+                # not a re-run of the solver, the same real state
+                # already computed above just sliced differently.
+                cape_cin = compute_real_cape_cin_at_point(
+                    temperature_profile_k=state["T"][:, i, j],
+                    specific_humidity_profile=state["q"][:, i, j],
+                    pressure_profile_hpa=pressure_hpa_column[:, i, j],
+                )
+                if cape_cin["is_real_data"]:
+                    data["cape"] = cape_cin["cape_j_kg"]
+                    data["cin"] = cape_cin["cin_j_kg"]
+                    assert cape_field is not None and cin_field is not None  # for mypy - both real when compute_convective_energy
+                    cape_field[i, j] = cape_cin["cape_j_kg"]
+                    cin_field[i, j] = cape_cin["cin_j_kg"]
+                # else: honestly leave data["cape"]/["cin"] unset (AWCICalculator's
+                # own real defaults apply) and cape_field/cin_field stay np.nan -
+                # never a fabricated 0.0 for a column with too few real levels.
+
+            result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
             if result["forecast_score"] is not None:
                 forecast_field[i, j] = result["forecast_score"]
 
-    return {
+    fields_used = _FIELDS_USED + _CONVECTIVE_FIELDS_USED if compute_convective_energy else _FIELDS_USED
+
+    output: dict[str, Any] = {
         "lats": grid.lats,
         "lons": grid.lons,
         "model": model,
         "level": level,
-        "fields_used": _FIELDS_USED,
+        "fields_used": fields_used,
         "awci_field": awci_field,
         "physical_field": physical_field,
         "forecast_field": forecast_field,
@@ -215,11 +273,19 @@ def compute_real_complexity_field(
         "honest_limitation": (
             "Real field derived from CoupledEarthSolver's actual state "
             "(temperature, wind, humidity, pressure) at the requested grid "
-            "configuration - not a synthetic demo pattern. CAPE/CIN/"
-            "precipitation/terrain-altitude are NOT derived here (no "
-            "per-column parcel ascent performed) and stay at "
-            "AWCICalculator's own defaults - the field is real but "
-            "partial, not a full operational complexity analysis. "
+            "configuration - not a synthetic demo pattern. "
+            + (
+                "Real per-point CAPE/CIN were also computed (compute_convective_energy=True) - "
+                "see acf.awci.convective_energy for the real parcel-ascent method and its own "
+                "honest scope (a documented 100 hPa cutoff, surface-based parcel only). "
+                if compute_convective_energy
+                else "CAPE/CIN stay at AWCICalculator's own defaults here "
+                "(compute_convective_energy=False - see acf.awci.convective_energy for the real "
+                "per-column parcel-ascent calculation available when it's requested). "
+            )
+            + "Precipitation/terrain-altitude are NOT derived here (no such field exists in "
+            "CoupledEarthSolver's real state at all) - the field is real but partial, not a "
+            "full operational complexity analysis. "
             "forecast_field in particular is flat/uniform under default "
             "weights: no per-point ensemble/multi-model data is computed "
             "(would require re-running the multi-model fusion solver "
@@ -229,3 +295,9 @@ def compute_real_complexity_field(
             "spatial forecast-uncertainty measurement yet."
         ),
     }
+
+    if compute_convective_energy:
+        output["cape_field"] = cape_field
+        output["cin_field"] = cin_field
+
+    return output

@@ -1363,4 +1363,102 @@ dans cette passe de scan.
 purement documentaires, aucun comportement modifié), ruff et mypy
 propres.
 
+## Mise à jour 2026-09-02 (suite) — encyclopédie scientifique : vérification puis branchement réel du CAPE/CIN dans AWCI
+
+Demande explicite de l'utilisateur, en deux temps : d'abord
+**vérifier** si `acf.science.encyclopedia` (299 entrées réelles, 35
+domaines) est complète et réellement utilisée dans le calcul de sortie
+d'ACF/AWCI, puis (après avoir choisi explicitement l'option
+"Brancher réellement l'encyclopédie dans AWCI" parmi les choix
+proposés) **le faire pour de vrai**.
+
+**Vérification (mesures concrètes, pas une impression) :** 299
+entrées réelles, `compute_func` renseigné sur 45% d'entre elles (le
+reste sont des définitions/explications textuelles, honnêtement sans
+formule), zéro import cassé, 113 tests existants. Un grep exhaustif
+sur tous les modules de calcul réel (`awci/`, `simulation_engine/`,
+`forecast/`, `model4d/physics/`, `earth_physics/`,
+`data_assimilation/`, `hydrology/`, `ocean/`) a confirmé **zéro
+appelant réel** dans le pipeline de calcul : l'encyclopédie n'était
+utilisée que par les fonctionnalités de recherche/explication, jamais
+pour produire un vrai chiffre de sortie ACF/AWCI.
+
+**Point d'intégration choisi**, justifié par deux faits déjà
+documentés avant même cette passe : (a) l'audit lui-même notait déjà
+"aucun CAPE réel par point n'est calculé dans `acf.awci` aujourd'hui",
+et (b) le docstring de `spatial_field.py` décrivait lui-même
+précisément cette limite et pourquoi elle n'était pas comblée ("pas de
+physique d'ascension de parcelle disponible ; inventer une formule
+serait exactement le genre de chiffre fabriqué que les audits de ce
+projet existent pour éliminer").
+
+**Ce qui a été construit, réel de bout en bout :**
+- [`src/acf/awci/convective_energy.py`](../src/acf/awci/convective_energy.py)
+  (nouveau) : `compute_real_cape_cin_at_point()` — vraie ascension de
+  parcelle via MetPy (`dewpoint_from_specific_humidity`,
+  `parcel_profile`, épaisseurs hydrostatiques réelles et non-uniformes
+  via `thickness_hydrostatic`, pas un `dz` supposé constant), puis
+  intégration réelle de la flottabilité via les classes existantes
+  `acf.science.cape.CAPE.calculate()` / `acf.science.cin.CIN.calculate()`
+  — **les mêmes classes réelles** que les entrées d'encyclopédie
+  `cape_convective_energy`/`cin_convective_inhibition` délèguent déjà,
+  appelées directement ici (pas via le wrapper `dz` uniforme de
+  `EncyclopediaRegistry.calculate()`) pour ne pas perdre la précision
+  des hauteurs par niveau réellement disponibles. Coupure réelle et
+  documentée à `MIN_PRESSURE_HPA_FOR_CONVECTIVE_ENERGY = 100.0` hPa
+  (borne opérationnelle assumée, pas une loi physique universelle —
+  même convention que `physics_guard.range_check.OPERATIONAL_RANGES`).
+  `None` (jamais un `0.0` fabriqué) quand moins de 2 niveaux réels
+  restent après la coupure. 8 nouveaux tests
+  ([`tests/test_convective_energy.py`](../tests/test_convective_energy.py)),
+  tous verts, y compris une preuve de traçabilité directe avec les
+  entrées d'encyclopédie et un test de bout en bout sur une vraie
+  colonne du solveur ACF.
+- [`src/acf/awci/spatial_field.py`](../src/acf/awci/spatial_field.py) :
+  nouveau paramètre **opt-in** `compute_convective_energy: bool =
+  False` sur `compute_real_complexity_field()`. Quand `True`, calcule
+  le vrai CAPE/CIN par point à partir de la vraie colonne verticale
+  complète du solveur (`state["T"/"q"]` + pression convertie en hPa) et
+  les alimente dans `AWCICalculator` (`data["cape"]`/`data["cin"]`,
+  déjà lus par le module convectif : `0.7*cape_norm + 0.3*cin_norm`).
+  `cape_field`/`cin_field` (2D, `np.nan` — jamais `0.0` — là où le
+  calcul honnêtement échoue) ajoutés au dict de retour **uniquement**
+  quand demandé, pour ne rien changer à la forme du résultat pour les
+  appelants existants. Choix délibéré de rester opt-in : un vrai calcul
+  MetPy par point de grille est un coût réel non négligeable qu'aucun
+  appelant existant n'avait demandé — le comportement par défaut reste
+  strictement identique à avant.
+
+**Validation réelle, pas supposée :**
+- `AWCICalculator.calculate()` lit bien exactement les clés
+  `data["cape"]`/`data["cin"]` produites ici (vérifié par grep direct
+  du code du calculateur, pas en le supposant).
+- 4 nouveaux tests dans
+  [`tests/test_awci_spatial_field.py`](../tests/test_awci_spatial_field.py) :
+  (1) le comportement par défaut (`compute_convective_energy=False`)
+  ne fait *plus* apparaître `cape_field`/`cin_field` du tout dans le
+  dict — pas même à `None` — donc aucune régression de forme pour les
+  appelants existants ; (2) en opt-in, `cape_field`/`cin_field` sont
+  bien présents, bien dimensionnés, et réellement peuplés de valeurs
+  non-NaN ; (3) preuve concrète que le branchement change vraiment le
+  résultat : un point de grille avec un vrai CAPE positif (obtenu avec
+  une graine/perturbation choisie empiriquement pour produire une
+  colonne réellement instable — un état par défaut stable donne
+  légitimement CAPE=0 partout, ce qui aurait rendu ce test vide de
+  sens) donne un `awci` différent selon que `cape`/`cin` sont fournis
+  ou non, avec `AWCICalculator` appelé directement en point de
+  contrôle indépendant.
+- Suite complète : **3246/3246** tests passent (3235 + 8 nouveaux
+  `test_convective_energy.py` + 3 nets nouveaux dans
+  `test_awci_spatial_field.py`, un test préexistant conservé). `ruff
+  check` et `mypy` propres sur les deux fichiers modifiés/créés.
+
+**Limite honnête restant assumée** : le CAPE/CIN reste dérivé de
+l'état du solveur `CoupledEarthSolver` d'ACF, pas d'un vrai radiosondage
+ou d'une analyse de modèle opérationnel — même limite que le reste du
+module `acf.awci`. La coupure à 100 hPa et le choix d'une parcelle
+"surface-based" (pas "most-unstable" ni "mixed-layer") sont des choix
+réels et défendables, mais pas les seuls possibles — documentés comme
+tels dans `convective_energy.py`.
+
 Dis-moi laquelle tu veux que j'attaque ensuite.

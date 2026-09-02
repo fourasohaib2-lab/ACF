@@ -129,3 +129,91 @@ def test_fields_used_documents_the_honest_scope():
     assert set(result["fields_used"]) == {"temperature", "wind_speed", "specific_humidity", "pressure"}
     assert "cape" not in result["fields_used"]
     assert result["is_real_data"] is True
+
+
+def test_default_output_is_unchanged_when_convective_energy_not_requested():
+    """
+    Locks in backward compatibility: compute_convective_energy defaults
+    to False, and with it False the returned dict must not carry
+    cape_field/cin_field at all (not even as None) - existing callers
+    that never asked for this must see byte-for-byte the same shape of
+    result as before this feature existed.
+    """
+    result = compute_real_complexity_field(model="ALADIN", n_lat=4, n_lon=6, n_levels=4, steps=1)
+    assert "cape_field" not in result
+    assert "cin_field" not in result
+
+
+def test_convective_energy_opt_in_produces_real_cape_cin_fields():
+    """
+    Explicit user request "Brancher réellement l'encyclopédie dans
+    AWCI": with compute_convective_energy=True, cape_field/cin_field
+    must be genuinely present, correctly shaped, and (for this
+    n_levels=8 column, comfortably above the real 2-level-after-cutoff
+    minimum) actually populated with real non-NaN numbers - not silently
+    skipped.
+    """
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=3, n_lon=4, n_levels=8, steps=2, compute_convective_energy=True
+    )
+
+    assert "cape_field" in result
+    assert "cin_field" in result
+    assert result["cape_field"].shape == (3, 4)
+    assert result["cin_field"].shape == (3, 4)
+    # At least some points must have real, non-fabricated values - not
+    # every column can legitimately fall below the 2-level cutoff here.
+    assert np.isfinite(result["cape_field"]).any()
+    assert np.isfinite(result["cin_field"]).any()
+    assert np.nanmin(result["cape_field"]) >= 0.0
+    assert np.nanmin(result["cin_field"]) >= 0.0
+    assert "cape" in result["fields_used"]
+    assert "cin" in result["fields_used"]
+    assert "compute_convective_energy=True" in result["honest_limitation"]
+
+
+def test_convective_energy_genuinely_changes_the_convective_module_score():
+    """
+    Real proof the wiring is not a no-op: AWCICalculator's convective
+    score is 0.7*cape_norm + 0.3*cin_norm, and with cape=cin=0.0 (the
+    default when nothing is supplied) that score is always 0.0. Feeding
+    a real, non-zero CAPE/CIN for at least one grid point must make
+    AWCICalculator's own point-level calculation - not just this
+    module's field - disagree with the "everything is 0.0" default.
+    """
+    from acf.awci.calculator import AWCICalculator
+
+    # This seed/perturbation_scale combination is empirically confirmed
+    # (not assumed) to produce a genuinely unstable column somewhere in
+    # the grid - a flat/stable default state legitimately gives CAPE=0
+    # everywhere (a real result, not a bug), which would make this test
+    # vacuous, so a perturbation strong enough to create real instability
+    # is used deliberately.
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=3, n_lon=4, n_levels=8, steps=2, perturbation_scale=5.0, seed=2, compute_convective_energy=True
+    )
+
+    finite_mask = np.isfinite(result["cape_field"]) & (result["cape_field"] > 0.0)
+    assert finite_mask.any(), "expected at least one grid point with real, positive CAPE for this to be a meaningful test"
+    i, j = np.argwhere(finite_mask)[0]
+
+    without_cape = AWCICalculator().calculate(
+        {
+            "temperature": float(result["temperature_field"][i, j]),
+            "wind_speed": float(result["wind_speed_field"][i, j]),
+            "specific_humidity": float(result["specific_humidity_field"][i, j]),
+            "pressure": float(result["pressure_field_hpa"][i, j]),
+        }
+    )
+    with_cape = AWCICalculator().calculate(
+        {
+            "temperature": float(result["temperature_field"][i, j]),
+            "wind_speed": float(result["wind_speed_field"][i, j]),
+            "specific_humidity": float(result["specific_humidity_field"][i, j]),
+            "pressure": float(result["pressure_field_hpa"][i, j]),
+            "cape": float(result["cape_field"][i, j]),
+            "cin": float(result["cin_field"][i, j]) if np.isfinite(result["cin_field"][i, j]) else 0.0,
+        }
+    )
+    assert with_cape["awci"] != without_cape["awci"]
+    assert result["awci_field"][i, j] == pytest.approx(with_cape["awci"])
