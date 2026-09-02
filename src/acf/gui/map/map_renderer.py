@@ -1,9 +1,12 @@
 """MapRenderer responsible for scientific base map & layer visualization on Matplotlib Cartopy GeoAxes."""
 
+import logging
 from typing import Any
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+
+logger = logging.getLogger("acf.gui.map.map_renderer")
 
 
 class MapRenderer:
@@ -28,6 +31,18 @@ class MapRenderer:
             layer_manager: LayerManager instance for rendering scientific layer overlays.
             title: Optional map header title text.
             active_layers: List of active layer names if layer_manager not supplied.
+
+        NOTE (correction): every base-map feature below used to be
+        wrapped in `except Exception: pass` with no logging at all -
+        each of Cartopy's `add_feature()`/`coastlines()`/`gridlines()`
+        calls can genuinely raise (e.g. no network route to download
+        the real Natural Earth shapefile the first time a resolution
+        is used, a corrupted local cache) and the map would silently
+        render with that feature simply missing - no coastlines, no
+        borders - with zero diagnostic trail for a user or developer to
+        find out why. Each feature is still best-effort (one real
+        failure must not blank the whole map), but the real exception
+        is now logged, not discarded.
         """
         if axes is None:
             return
@@ -43,7 +58,7 @@ class MapRenderer:
                 zorder=0,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render ocean feature", exc_info=True)
 
         # 3. Land / Continents
         try:
@@ -54,7 +69,7 @@ class MapRenderer:
                 zorder=1,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render land feature", exc_info=True)
 
         # 4. Lakes
         try:
@@ -65,7 +80,7 @@ class MapRenderer:
                 zorder=2,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render lakes feature", exc_info=True)
 
         # 5. Rivers
         try:
@@ -76,7 +91,7 @@ class MapRenderer:
                 zorder=3,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render rivers feature", exc_info=True)
 
         # 6. Country Borders
         try:
@@ -88,7 +103,7 @@ class MapRenderer:
                 zorder=4,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render country borders feature", exc_info=True)
 
         # 7. Coastlines
         try:
@@ -99,7 +114,7 @@ class MapRenderer:
                 zorder=5,
             )
         except Exception:
-            pass
+            logger.warning("Failed to render coastlines", exc_info=True)
 
         # 8. Latitude / Longitude Gridlines
         try:
@@ -116,7 +131,7 @@ class MapRenderer:
             grid.xlabel_style = {"size": 8, "color": "#B0BEC5"}
             grid.ylabel_style = {"size": 8, "color": "#B0BEC5"}
         except Exception:
-            pass
+            logger.warning("Failed to render lat/lon gridlines", exc_info=True)
 
         # 9. Render Scientific Layer Overlays
         if layer_manager is not None:

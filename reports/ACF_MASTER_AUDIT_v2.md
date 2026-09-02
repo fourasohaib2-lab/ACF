@@ -1259,4 +1259,44 @@ aucun bug, déjà honnête, rien à corriger.**
 changement de comportement, seulement une déclaration), ruff et mypy
 propres.
 
+## Mise à jour 2026-09-02 (suite) — scan répertoire-entier des `except Exception: pass` silencieux
+
+Demande explicite de l'utilisateur ("scan tout le projet... améliore
+les"). Balayage AST réel (pas un grep fragile) de tout `src/acf` :
+**44** blocs `except Exception:` trouvés, dont **24** suivis
+directement de `pass` (ou `...`) sans aucun log — la même classe de
+"échec silencieux" que ce dépôt corrige déjà ailleurs (ex. l'ancien
+comportement d'`EPyGrAMReader`), mais jamais auditée de façon
+exhaustive jusqu'ici.
+
+**Les 24 relus individuellement, pas juste comptés** — la majorité
+(nettoyage `close()`/`disconnect()`, tentative de format de clé SSH
+alternatif, repli local réel après échec d'un exécuteur distant) sont
+des patterns légitimes déjà défendables, cohérents avec la discipline
+existante du dépôt. **Deux vrais bugs trouvés et corrigés** :
+
+1. **`src/acf/gui/map/map_renderer.py`** — les 7 fonctionnalités de
+   carte de base (océans, terres, lacs, rivières, frontières, côtes,
+   grille lat/lon) avalaient silencieusement TOUTE exception Cartopy
+   réelle (ex. échec de téléchargement du vrai shapefile Natural Earth
+   sans accès réseau) sans aucun log — une carte pouvait rendre avec
+   des éléments manquants sans aucune trace de diagnostic. **Cette
+   classe avait aussi zéro test** avant cette passe. Corrigé : chaque
+   échec réel est maintenant loggé (`logger.warning(..., exc_info=True)`)
+   sans changer le comportement best-effort. 4 nouveaux tests, dont un
+   qui force les 7 échecs réels via un stub et vérifie les 7 vrais logs.
+2. **`src/acf/hpc_workflow/workflow_configuration.py`** — un vrai
+   fichier de config existant mais malformé (YAML invalide, ou
+   contenu réel qui n'est pas un mapping) était remplacé
+   silencieusement par le même défaut fabriqué qu'un fichier
+   simplement absent — **aucun moyen de distinguer "pas de config
+   fournie" (légitime) de "config réelle cassée" (un vrai problème)**.
+   Corrigé : seul un fichier réellement absent reste silencieux ;
+   un fichier présent mais inutilisable logge maintenant un vrai
+   avertissement avec la cause réelle. 4 nouveaux tests couvrant les
+   4 cas réels (absent / valide / YAML malformé / mapping non-dict).
+
+**Validation :** 8 nouveaux tests. Suite complète : **3235/3235**
+tests passent (3227 avant), ruff et mypy propres.
+
 Dis-moi laquelle tu veux que j'attaque ensuite.
