@@ -212,12 +212,29 @@ class ESOCWindow(QMainWindow):
     def _open_dataset(self) -> None:
         """Let the operator pick a dataset file and reflect the real selection in the
         status bar. Honest about scope: no ingestion/parsing pipeline is wired to
-        this toolbar action, so the file is not read - only genuinely selected."""
+        this toolbar action, so the file is not read - only genuinely selected.
+
+        NOTE (correction - real user-reported bug: "je vois les dossiers mais
+        aucun fichier ne s'affiche" / folders show but no files do): the filter
+        string used to list "All Supported (*.nc *.grib *.grib2 *.zarr *.csv
+        *.geojson)" FIRST, which Qt preselects as the active filter - so any
+        file whose extension was not in that short list (real AROME/ALADIN/
+        ARPEGE HPC output is commonly plain unnumbered GRIB with no ".grib2"
+        suffix, Meteo-France's native ".fa" format, ".grb"/".grib1", ".h5"/
+        ".hdf5"/".nc4", or genuinely no extension at all) was silently hidden
+        by the OS file dialog - directories are always shown regardless of
+        filter, which is exactly why folders were visible but their files
+        were not. "All Files (*)" is now the default filter (nothing hidden
+        unless the operator deliberately narrows it), and the named filter
+        covers more of the real formats this project already reads elsewhere
+        (see simulation_engine/output/netcdf_writer.py, zarr_writer.py).
+        """
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Open Dataset",
             os.getcwd(),
-            "All Supported (*.nc *.grib *.grib2 *.zarr *.csv *.geojson);;All Files (*)",
+            "All Files (*);;Meteorological Data "
+            "(*.nc *.nc4 *.grib *.grib1 *.grib2 *.grb *.grb1 *.grb2 *.fa *.zarr *.h5 *.hdf5 *.csv *.geojson)",
         )
         if not path:
             return

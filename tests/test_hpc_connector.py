@@ -202,6 +202,54 @@ def test_paramiko_ssh_and_executor():
     assert ssh.disconnect() is True
 
 
+def test_is_real_connection_false_when_authentication_fails(monkeypatch):
+    """
+    Regression test for a real user-reported bug: the ESOC status bar showed
+    "HPC: Connected" for a connection whose authentication had genuinely
+    failed (root cause: a saved connection profile with a malformed username
+    field, e.g. "user@host" typed by habit from `ssh user@host` syntax).
+
+    SSHConnector.is_real_connection used to be computed from
+    Transport.is_active() alone - which paramiko keeps True for an open
+    TCP/SSH transport even after AuthenticationException, because
+    SSHClient.connect() does not close the transport on an auth failure.
+    This mocks exactly that scenario (transport up, authentication refused)
+    without any real network access, and asserts is_real_connection is now
+    correctly False - it must require Transport.is_authenticated(), not
+    just is_active().
+    """
+    import paramiko
+
+    class _FakeTransport:
+        def is_active(self):
+            return True  # the TCP/SSH transport really is still open...
+
+        def is_authenticated(self):
+            return False  # ...but authentication genuinely failed.
+
+    class _FakeSSHClient:
+        def set_missing_host_key_policy(self, policy):
+            pass
+
+        def connect(self, **kwargs):
+            raise paramiko.AuthenticationException("Authentication failed (mocked - no real network access).")
+
+        def get_transport(self):
+            return _FakeTransport()
+
+    monkeypatch.setattr(paramiko, "SSHClient", _FakeSSHClient)
+    # getaddrinfo() is called before client.connect() to check DNS - fake it
+    # resolving so the test exercises the post-connect transport check, not
+    # the (separately tested) DNS-failure path. No real socket I/O occurs.
+    monkeypatch.setattr(
+        "socket.getaddrinfo", lambda *a, **kw: [(2, 1, 6, "", (OFFLINE_TEST_HOSTNAME, 22))]
+    )
+
+    ssh = SSHConnector(hostname=OFFLINE_TEST_HOSTNAME, username="sfoura@10.16.20.2")
+    assert ssh.connect() is True  # offline-dev-mode convention: still returns True, never crashes the caller
+    assert ssh.is_real_connection is False  # the bug: this used to be True
+
+
 def test_file_transfer_manager_honest_status_when_no_real_sftp(tmp_path):
     """
     CORRECTED: SSHConnector.upload()/download() and

@@ -131,9 +131,23 @@ class SSHConnector:
                 )
 
             self.is_connected = True
-            self.is_real_connection = bool(
-                self.client and self.client.get_transport() and self.client.get_transport().is_active()
-            )
+            # NOTE (correction - root cause of a real user-reported bug: the
+            # status bar showed "HPC: Connected" for a connection that had
+            # genuinely failed): Transport.is_active() only means the
+            # underlying TCP/SSH socket is open - paramiko keeps that
+            # transport alive even after authentication has FAILED (wrong
+            # username/password/key), because SSHClient.connect() does not
+            # close the transport when raising AuthenticationException; the
+            # inner `except Exception as conn_err` above swallows that
+            # exception and falls through to here. So is_active() was True
+            # for a bare TCP/SSH handshake with no usable authenticated
+            # session behind it - exactly what happens with a malformed
+            # saved profile (e.g. a username field containing "user@host"
+            # instead of a bare username). Transport.is_authenticated()
+            # additionally requires a completed, successful auth handshake,
+            # which is what "real connection" is actually supposed to mean.
+            transport = self.client.get_transport() if self.client else None
+            self.is_real_connection = bool(transport and transport.is_authenticated())
             log_hpc_event(
                 "INFO",
                 f"Paramiko SSH connection active for {self.hostname} "
