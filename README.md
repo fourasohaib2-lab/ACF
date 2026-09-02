@@ -20,9 +20,9 @@ The **Atmospheric Complexity Framework (ACF)** is an Earth System and Meteorolog
 
 ---
 
-## ✅ Verified Status (independent audit, August 2026)
+## ✅ Verified Status (updated 2 September 2026 — see `ROADMAP.md` for the full history)
 
-The core `src/acf` tree (1,300 Python files) compiles cleanly (`python -m compileall src`, 0 errors). Running the test suite in a clean environment gives **1,922 passed / 12 failed / 45 files uncollectable** out of the tests that can execute without optional dependencies. The 45 uncollectable files require optional third-party libraries not installed in that environment (`cartopy`, `PySide6`, `xarray`, `paramiko`); the 12 failures trace to missing non-Python resource files and one import-order code smell in `acf.importers`, not to broken scientific logic. This is a solid, verifiable pass rate on real infrastructure — but it is **not** the "100% of 2,100+ tests, fully certified v1.0" state that some documents under `docs/` (release certificates, LTS reports) previously claimed without stating the environment or dependency set those numbers assumed. Treat any completion claim in `docs/` as aspirational until it links to a reproducible run.
+The `src/acf` tree (1,345 Python files) compiles cleanly (`python -m compileall src`, 0 errors). Running the full test suite in this repo's own dev environment gives **2895 passed / 0 failed**, stable across repeated runs; `ruff check` and `mypy src` are both clean. The August-2026 audit's original numbers (1,922 passed / 12 failed / 45 uncollectable) are superseded — the 12 failures and the import-order issue behind the 45 uncollectable files were fixed, and the "Physics Guard" sweep documented in `docs/ACF_PHYSICS_GUARD_AUDIT_CHANGELOG.md` since then removed fabricated data across dozens of modules, built a real FastAPI/WebSocket dashboard, real CI/CD forecast automation, a real trained FNO surrogate, and a fully real Complexity Engine (2D/3D/4D fields + dashboard — `docs/ACF_ARCHITECTURE_TARGET_GAP_MAP.md`). `pyproject.toml`'s dependencies are now split into a lean core (`numpy`, `scipy`, `PyYAML`) plus optional extras (`gui`, `geospatial`, `formats`, `science`, `hpc`, `web`, `ai`) — verified with a real fresh-venv install, not assumed (see `ROADMAP.md`). This is a solid, verifiable, reproducible pass rate — but it is still **not** the "100% of 2,100+ tests, fully certified v1.0" state that some documents under `docs/` (release certificates, LTS reports) claim without stating the environment or dependency set those numbers assumed. Treat any completion claim in `docs/`'s older certificate/report files as aspirational until it links to a reproducible run — `ROADMAP.md`'s "Near-Term Priorities" tracks reconciling those documents.
 
 ---
 
@@ -32,15 +32,24 @@ The core `src/acf` tree (1,300 Python files) compiles cleanly (`python -m compil
 
 ```bash
 # Clone the repository
-git clone https://github.com/meteo-dz/ACF.git
+git clone https://github.com/fourasohaib2-lab/ACF.git
 cd ACF
 
 # Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies and package in editable mode
-pip install -e .
+# Install the package in editable mode.
+# `pip install -e .` alone installs only the lean core (numpy, scipy,
+# PyYAML) - enough for the science/model4d/earth_physics/
+# data_assimilation layers, but not the GUI, maps, HPC connectivity,
+# web dashboard or FNO surrogate this README describes above. For the
+# full feature set, install the extras (see pyproject.toml's
+# [project.optional-dependencies] for what each one covers):
+pip install -e ".[all]"
+
+# Or pick only what you need, e.g. GUI + geospatial:
+#   pip install -e ".[gui,geospatial]"
 ```
 
 ### Running Tests

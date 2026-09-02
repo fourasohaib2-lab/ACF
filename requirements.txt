@@ -1,15 +1,31 @@
+# Full feature set (equivalent to `pip install -e ".[all]"` - see
+# pyproject.toml's [project.optional-dependencies] for the breakdown by
+# feature area and why each package is needed).
+#
+# `pip install -e .` alone installs only the lean core (numpy, scipy) -
+# use this file, or the pyproject extras directly, for everything else.
+#
+# CORRECTED 2026-09-02 (docs/ROADMAP.md's "split into core/extras" item):
+# pandas, shapely, rasterio and h5py were listed here but matched by ZERO
+# import statement anywhere in src/ or tests/ - removed as genuinely
+# unused, not moved to an extra (see pyproject.toml's dependencies comment
+# for how this was verified). fastapi/uvicorn/websockets/torch were
+# missing from this file despite being real pyproject.toml dependencies -
+# added.
 numpy
 scipy
-pandas
+PyYAML
+PySide6
+matplotlib
+cartopy
+pyproj
 xarray
 netCDF4
 cfgrib
 eccodes
-matplotlib
-cartopy
-pyproj
-shapely
-rasterio
-h5py
-PySide6
+metpy
 paramiko
+fastapi
+uvicorn
+websockets
+torch

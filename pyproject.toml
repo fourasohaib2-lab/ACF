@@ -13,27 +13,71 @@ authors = [
     {name="Sohaib Foura"}
 ]
 
+# Lean core: what science/model4d/earth_physics/data_assimilation
+# actually import (verified 2026-09-02 by grepping every import/from
+# statement across all of src/ and tests/ - not guessed). numpy is
+# used everywhere; scipy has no real call site today (only a
+# scipy.optimize.minimize suggestion in a docstring - see
+# data_assimilation/assimilation/variational/var_4d.py) but is kept
+# here because release/dependency_validator.py's own
+# validate_all_dependencies() already treats it as a required core
+# package, and it's the obvious next real numerical dependency for
+# that module's future minimizer.
+#
+# pandas, shapely, rasterio and h5py were previously declared here but
+# are matched by ZERO import statement anywhere in src/ or tests/ (no
+# lazy/dynamic imports either) - genuinely unused, not just optional;
+# removed rather than moved to an extra. Add one back the day
+# something actually imports it.
+#
+# PyYAML was previously undeclared ANYWHERE (not in this file, not in
+# requirements.txt) despite core/config.py importing it directly - only
+# worked in this dev environment because some other installed package
+# happened to pull it in transitively. Found by actually installing
+# this lean dependency list into a fresh venv and import-smoke-testing
+# every acf submodule (not assumed) - see docs/ROADMAP.md.
 dependencies = [
     "numpy",
     "scipy",
-    "pandas",
-    "xarray",
-    "netCDF4",
-    "cfgrib",
-    "eccodes",
-    "matplotlib",
-    "cartopy",
-    "pyproj",
-    "shapely",
-    "rasterio",
-    "h5py",
-    "PySide6",
+    "PyYAML",
+]
+
+[project.optional-dependencies]
+# Desktop GUI (ESOC window, AWCI/classic dashboards - matplotlib
+# figures embedded via FigureCanvasQTAgg throughout gui/dashboard/).
+gui = ["PySide6", "matplotlib"]
+# Map rendering and coordinate/geometry transforms (gui/maps/
+# visualization panels, geospatial/ package).
+geospatial = ["cartopy", "pyproj", "matplotlib"]
+# NWP/observation file I/O: xarray is the direct import (importers/,
+# simulation_engine/); netCDF4/cfgrib/eccodes are xarray's own NetCDF/
+# GRIB backends - required for real file I/O to work even though ACF
+# code never imports them directly.
+formats = ["xarray", "netCDF4", "cfgrib", "eccodes"]
+# Meteorological unit/calculation helpers used by science/.
+science = ["metpy"]
+# Real cluster access (hpc_connector/ssh_connector.py). Also required
+# to import acf.surfex and acf.hpc_workflow - both import
+# HPCConnectionManager at module level (surfex/engine.py couples its
+# SLURM job submission to the same land-surface engine module that
+# holds its physics; found via a real fresh-venv import smoke test,
+# not fixed here - untangling that coupling is a separate refactor).
+hpc = ["paramiko"]
+# FastAPI/WebSocket HPC dashboard (acf-web entry point).
+web = ["fastapi", "uvicorn", "websockets"]
+# Fourier Neural Operator surrogate (ai/simulation/, master/, release/).
+ai = ["torch"]
+# Everything above - convenience for a full desktop+HPC+web install.
+all = [
+    "PySide6", "matplotlib",
+    "cartopy", "pyproj",
+    "xarray", "netCDF4", "cfgrib", "eccodes",
     "metpy",
-    "fastapi",
-    "uvicorn",
-    "websockets",
+    "paramiko",
+    "fastapi", "uvicorn", "websockets",
     "torch",
 ]
+dev = ["pytest", "pytest-cov", "pytest-timeout", "black", "ruff", "mypy"]
 
 [project.scripts]
 acf-gui = "acf.gui.app:main"
