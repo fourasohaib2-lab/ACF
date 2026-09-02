@@ -2,21 +2,31 @@
 Generic real NetCDF/GRIB reading shared by the WRF/ICON/OpenIFS
 ingestion adapters.
 
-Unlike acf.data.readers.epygram_reader.EPyGrAMReader (AROME/ALADIN/
-ARPEGE's real FA-format backend, honestly unable to do a real read in
-this environment - `epygram` is not installed here, see that module's
-own EPYGRAM_AVAILABLE flag), xarray/netCDF4/cfgrib/eccodes ARE really
-installed (see pyproject.toml's `formats` extra, and
-acf.importers.readers.netcdf_reader.NetCDFReader/
-acf.importers.readers.grib_reader.GRIBReader, which already import
-xarray unconditionally). These two functions genuinely open a real
-file and report exactly what it actually contains - they do not
-reimplement NetCDFReader/GRIBReader's own conventions (those return
-ACF's internal acf.data.dataset.Dataset object; the model adapters
-need the plain-dict shape acf.models.base_model.BaseWeatherModel.read()
-already established for AROME/ALADIN/ARPEGE) - and they never assume a
-model-specific variable name is present just because that model
-usually has one.
+`epygram` (AROME/ALADIN/ARPEGE's real FA-format backend) IS installed
+in this environment (`acf.data.readers.epygram_reader.
+EPYGRAM_AVAILABLE` - verified 2026-09-02, was False earlier this
+session) - but a real FA *write* still needs `headername` (an
+existing header from Météo-France's own internal FA archive, per
+`epygram.formats.FA.FA`'s own footprint - confirmed by trying, not
+assumed: there is no self-contained way to synthesize a fresh, valid
+FA header from a plain geometry alone), so a genuinely valid, fully
+synthetic FA test fixture still can't be built in this repo, unlike
+the real NetCDF/GRIB2 fixtures these three adapters' own tests build
+with `xarray`/`eccodes`. `epygram_reader.py`'s honest open-failure path
+(a *real* `epygramError` now, not "not installed") is covered by
+`tests/test_epygram_reader.py`'s own real-epygram tests instead.
+
+xarray/netCDF4/cfgrib/eccodes are ALSO really installed (see
+pyproject.toml's `formats` extra, and acf.importers.readers.
+netcdf_reader.NetCDFReader/acf.importers.readers.grib_reader.GRIBReader,
+which already import xarray unconditionally). These two functions
+genuinely open a real file and report exactly what it actually
+contains - they do not reimplement NetCDFReader/GRIBReader's own
+conventions (those return ACF's internal acf.data.dataset.Dataset
+object; the model adapters need the plain-dict shape
+acf.models.base_model.BaseWeatherModel.read() already established for
+AROME/ALADIN/ARPEGE) - and they never assume a model-specific variable
+name is present just because that model usually has one.
 """
 
 from __future__ import annotations

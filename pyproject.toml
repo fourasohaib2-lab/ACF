@@ -52,8 +52,16 @@ geospatial = ["cartopy", "pyproj", "matplotlib"]
 # NWP/observation file I/O: xarray is the direct import (importers/,
 # simulation_engine/); netCDF4/cfgrib/eccodes are xarray's own NetCDF/
 # GRIB backends - required for real file I/O to work even though ACF
-# code never imports them directly.
-formats = ["xarray", "netCDF4", "cfgrib", "eccodes"]
+# code never imports them directly. epygram (Météo-France FA/LFA/LFI
+# reader, acf.data.readers.epygram_reader) was previously undeclared
+# ANYWHERE in this file despite tests/test_epygram_reader.py importing
+# it unconditionally at module level - the exact same class of gap
+# PyYAML's own NOTE above already documents (only worked in this dev
+# environment because it happened to already be installed; a fresh
+# venv from this file alone would not have it). Found by checking, not
+# assumed: `pip index versions epygram` confirms it's a real, normal
+# PyPI package (2.1.0), not something needing a special index.
+formats = ["xarray", "netCDF4", "cfgrib", "eccodes", "epygram"]
 # Meteorological unit/calculation helpers used by science/.
 science = ["metpy"]
 # Real cluster access (hpc_connector/ssh_connector.py). Also required
@@ -71,7 +79,7 @@ ai = ["torch"]
 all = [
     "PySide6", "matplotlib",
     "cartopy", "pyproj",
-    "xarray", "netCDF4", "cfgrib", "eccodes",
+    "xarray", "netCDF4", "cfgrib", "eccodes", "epygram",
     "metpy",
     "paramiko",
     "fastapi", "uvicorn", "websockets",

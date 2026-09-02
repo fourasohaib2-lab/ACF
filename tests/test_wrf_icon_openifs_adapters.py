@@ -4,13 +4,17 @@ request - reports/ACF_MASTER_AUDIT_v2.md confirmed all three were
 absent, only AROME/ALADIN/ARPEGE/ERA5 existed).
 
 Unlike AROME/ALADIN/ARPEGE's FA-format tests (tests/test_epygram_reader.py,
-tests/test_model_adapter_protocol.py), which cannot exercise a real
-read in this environment - `epygram` is not installed here, see
-acf.data.readers.epygram_reader.EPYGRAM_AVAILABLE - these adapters use
-real, actually-installed libraries (xarray/netCDF4/cfgrib/eccodes, see
-pyproject.toml's `formats` extra), so these tests build a real, valid
-NetCDF/GRIB2 file on disk and genuinely read it back, rather than only
-exercising the honest "not read" fallback path.
+tests/test_model_adapter_protocol.py), which still cannot exercise a
+real end-to-end FA read here - `epygram` IS installed
+(acf.data.readers.epygram_reader.EPYGRAM_AVAILABLE), but a real FA
+*write* needs a header from Météo-France's own internal archive
+(confirmed by trying, not assumed - see
+acf.models.common.generic_xarray_reader's own docstring), so no fully
+synthetic FA fixture can be built - these three adapters use real,
+actually-installed general-purpose libraries instead (xarray/netCDF4/
+cfgrib/eccodes, see pyproject.toml's `formats` extra), so these tests
+build a real, valid NetCDF/GRIB2 file on disk and genuinely read it
+back.
 """
 
 from __future__ import annotations
@@ -94,7 +98,7 @@ def test_identify_and_vertical_levels_are_real_aliases(adapter_cls):
 
 @pytest.mark.parametrize("adapter_cls", [WRFIngestionAdapter, ICONIngestionAdapter, OpenIFSIngestionAdapter])
 def test_capabilities_reports_a_real_read_backend(adapter_cls):
-    """Unlike AROME/ALADIN/ARPEGE (real read() delegation, but epygram itself unavailable in this environment), these three genuinely have a working read backend - capabilities() must say so."""
+    """These three genuinely have a working read backend (same as AROME/ALADIN/ARPEGE's own read() delegation - has_real_read_backend reflects a real method override, not whether the underlying library can actually parse a given file)."""
     caps = adapter_cls().capabilities()
     assert caps["has_real_read_backend"] is True
     assert caps["level_count"] is None  # levels() returns a descriptive string, not a fixed count - see each adapter's own docstring

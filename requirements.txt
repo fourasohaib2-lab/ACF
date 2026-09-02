@@ -11,7 +11,9 @@
 # unused, not moved to an extra (see pyproject.toml's dependencies comment
 # for how this was verified). fastapi/uvicorn/websockets/torch were
 # missing from this file despite being real pyproject.toml dependencies -
-# added.
+# added. epygram (Météo-France FA/LFA/LFI reader) was undeclared here too
+# despite tests/test_epygram_reader.py importing it unconditionally -
+# added, same finding as pyproject.toml's `formats` extra.
 numpy
 scipy
 PyYAML
@@ -23,6 +25,7 @@ xarray
 netCDF4
 cfgrib
 eccodes
+epygram
 metpy
 paramiko
 fastapi

@@ -23,10 +23,13 @@ class WRFIngestionAdapter(BaseWeatherModel):
     Ingestion adapter for WRF-ARW NetCDF output.
 
     Unlike AROME/ALADIN/ARPEGE (FA-format, real backend
-    `acf.data.readers.epygram_reader.EPyGrAMReader`, honestly unable to
-    do a real read in this environment since `epygram` is not
-    installed here), WRF's real output format is NetCDF - a real
-    dependency this project already has (`xarray`/`netCDF4`, see
+    `acf.data.readers.epygram_reader.EPyGrAMReader` - `epygram` IS
+    installed in this environment, but a real FA *write* needs a
+    header from Météo-France's own internal archive, so a fully
+    synthetic FA test fixture still can't be built here - see
+    `acf.models.common.generic_xarray_reader`'s own docstring), WRF's
+    real output format is NetCDF - a real dependency this project
+    already has (`xarray`/`netCDF4`, see
     `acf.importers.readers.netcdf_reader.NetCDFReader`) - so `read()`
     here genuinely opens and reads a real file, verified against a
     real WRF-ARW-shaped NetCDF fixture in
