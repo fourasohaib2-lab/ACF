@@ -520,10 +520,8 @@ Skill DB) sont maintenant toutes construites. Manques encore réels et
 non triviaux (voir la synthèse plus haut, pas remise à jour ligne par
 ligne pour rester honnête sur ce qui a été relu à cette date précise) :
 
-- **Certification Engine** (§32) — aucun pipeline QC→PHYSICS→SCIENCE→
-  PROVENANCE→CERTIFICATION comme objet vivant ; dépend maintenant
-  directement de `PhysicsGuard` + `VerificationPipeline`, tous deux
-  réels — le prérequis technique n'est plus bloquant.
+- ~~**Certification Engine** (§32)~~ — **construit, voir mise à jour
+  ci-dessous.**
 - **Job Engine** (§22/§46) — aucune classe `Job` générique au-dessus du
   HPC réel existant (`HPCConnectionManager`/`hpc_workflow/`).
 - **Golden Datasets** (§31-32) — toujours aucun `tests/data/golden/`.
@@ -533,5 +531,62 @@ ligne pour rester honnête sur ce qui a été relu à cette date précise) :
   réel reste point-par-point, pas un champ fusionné avec biais/skill
   (le Model Skill Database construit ici est justement la brique qui
   manquait pour un futur biais-correction par modèle).
+
+## Mise à jour 2026-09-02 (suite) — Certification Engine construit
+
+Dernière pièce du plan initial de 5 phases, choisie ensuite comme
+priorité suivante car elle ne dépendait plus que de briques déjà
+réelles. `src/acf/certification/engine.py` : `CertificationEngine`
+exécute le pipeline exact du §32 (`INPUT VALID → QC PASS → PHYSICS
+PASS → SCIENCE PASS → PROVENANCE PASS → VERIFICATION STATUS →
+CERTIFICATION`), **sans réimplémenter aucune étape** :
+
+- **INPUT VALID** — `Dataset.is_fully_documented()` (Data Contract,
+  déjà réel, réutilisé).
+- **QC PASS** — `Dataset.quality.status` (`QualityInfo`, déjà réel) ;
+  exige un vrai `"PASS"`, `NOT_ASSESSED` échoue honnêtement au lieu
+  d'être traité comme un succès implicite.
+- **PHYSICS PASS** — `Dataset.validate()`, qui réutilise déjà
+  `PhysicsGuard` en interne — pas un second appel dupliqué.
+- **SCIENCE PASS** — réel seulement si un `VariableContract` est
+  fourni (vérifie les valeurs contre son vrai `valid_range`) — **aucun
+  moteur de diagnostics unifié n'existe ailleurs dans ACF**
+  (confirmé plus haut : "Diagnostics unifiés : PARTIAL, dispersé"),
+  donc cette étape est honnêtement `applicable=False` sans contrat,
+  jamais inventée.
+- **PROVENANCE PASS** — `Provenance.is_complete()` (déjà réel).
+- **VERIFICATION STATUS** — `ModelSkillDatabase.mean_skill()` (phase
+  précédente) contre un seuil déclaré par l'appelant ; honnêtement
+  `applicable=False` sans base de skill configurée ou sans historique
+  réel enregistré pour ce modèle/variable — jamais un succès fabriqué.
+
+**Branché réellement, pas juste construit à côté** :
+`CertificationEngine.certify_event()` fait avancer un vrai
+`acf.events.event.Event` de `VERIFIED` à `CERTIFIED` — la seule
+transition que ce moteur a le droit de déclencher, sans ajouter
+d'arête au diagramme de `Event._LEGAL_TRANSITIONS` (un rapport
+`REJECTED` laisse simplement l'événement à `VERIFIED`, puisque
+`VERIFIED` n'a de toute façon aucune arête `REJECTED` dans le cycle de
+vie déjà construit).
+
+**Validation, de bout en bout, pas seulement unitaire** : un test
+construit un vrai `Event` via `detect_strong_wind_events()`, un vrai
+`Dataset` via `Dataset.from_real_field()` sur une vraie sortie
+`compute_real_complexity_field()`, un vrai `VariableContract`, et
+prouve que `certify_event()` fait réellement passer l'événement à
+`CERTIFIED` (ou le laisse honnêtement à `VERIFIED` si une étape réelle
+échoue). 16 nouveaux tests. Suite complète : **3055/3055** tests
+passent (3039 avant), ruff et mypy propres sur les 1378 fichiers.
+
+### Ce qui reste réellement
+
+- **Job Engine** (§22/§46) — toujours absent.
+- **Golden Datasets** (§31-32) — toujours absent.
+- **Model Adapters WRF/ICON/OpenIFS** — toujours absents.
+- **Fusion multi-modèles en champ complet** (§29-30) — toujours
+  point-par-point, pas de champ fusionné avec correction de biais par
+  modèle (le Model Skill Database est la brique qui manquait pour ça,
+  pas encore utilisée dans ce sens).
+- **API organisée par domaine** (§21) — toujours partielle.
 
 Dis-moi laquelle tu veux que j'attaque ensuite.
