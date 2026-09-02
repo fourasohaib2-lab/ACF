@@ -6,6 +6,7 @@ from typing import Any
 
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
+from acf.dashboard.window import ClassicDashboardWindow
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_controller import ESOCController
 from acf.gui.esoc.esoc_layout import ESOCLayout
@@ -57,6 +58,7 @@ class ESOCWindow(QMainWindow):
         # actually triggered from this window - a chosen theme, an opened log viewer).
         self._current_theme = "dark"
         self._log_viewer: LogViewerDialog | None = None
+        self._classic_dashboard_window: ClassicDashboardWindow | None = None
 
         # 4. Connect Signals & Select Default Profile
         self._setup_connections()
@@ -145,6 +147,8 @@ class ESOCWindow(QMainWindow):
             self._take_screenshot()
         elif cmd == "open_settings":
             self._open_settings()
+        elif cmd == "open_classic_dashboard":
+            self._open_classic_dashboard()
         elif cmd == "open_help":
             QMessageBox.information(
                 self,
@@ -287,6 +291,24 @@ class ESOCWindow(QMainWindow):
         self._log_viewer.show()
         self._log_viewer.raise_()
         self._log_viewer.activateWindow()
+
+    def _open_classic_dashboard(self) -> None:
+        """Open (or raise) the classic ACF dashboard (acf.dashboard - MapView plus
+        Explorer/Charts/Properties/Timeline/Console/Status docks) as its own
+        top-level window.
+
+        NOTE: this predates ESOC and was completely unreachable from the running
+        application before this action existed - see ClassicDashboardWindow's own
+        docstring for why it is a separate window rather than one more ESOC tab
+        (its DashboardLayout calls setCentralWidget()/addDockWidget() directly,
+        so it wants to own a whole window, unlike the AWCI dashboard which fit
+        naturally as a tab).
+        """
+        if self._classic_dashboard_window is None:
+            self._classic_dashboard_window = ClassicDashboardWindow(self)
+        self._classic_dashboard_window.show()
+        self._classic_dashboard_window.raise_()
+        self._classic_dashboard_window.activateWindow()
 
     def _open_settings(self) -> None:
         """Open the settings dialog; apply the chosen theme immediately if changed."""

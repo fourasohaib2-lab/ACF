@@ -43,6 +43,7 @@ class ESOCToolbar(QToolBar):
             ("💾 Export", "export_data"),
             ("📷 Screenshot", "take_screenshot"),
             ("⚙️ Settings", "open_settings"),
+            ("🗂️ Classic View", "open_classic_dashboard"),
             ("❓ Help", "open_help"),
         ]
 
