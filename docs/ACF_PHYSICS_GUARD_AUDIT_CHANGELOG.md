@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `7501614`.
-**Portée :** 237 commits, 2814 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `862f747`.
+**Portée :** 238 commits, 2818 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean. Dépôt sauvegardé sur
 [github.com/fourasohaib2-lab/ACF](https://github.com/fourasohaib2-lab/ACF).
 
@@ -276,7 +276,7 @@ premier des 3 axes de la feuille de route HPC-005 choisi et implémenté :
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..7501614`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..862f747`.
 
 ## 8. Les 3 axes de la roadmap HPC-005 sont maintenant complets
 
@@ -285,3 +285,11 @@ Pour le détail commit-par-commit : `git log --oneline 9223251..7501614`.
 | Dashboard Web FastAPI/WebSocket | ✅ Réel, testé bout-en-bout | Aucune |
 | CI/CD sur cluster Fennec | ✅ Scripts/pipeline réels et testés | Nécessite un runner auto-hébergé + secrets réels pour un déploiement effectif — pas testable depuis cet environnement |
 | Couplage physique-IA (FNO) | ✅ Vraie architecture entraînée | Entraîné sur des trajectoires générées par ACF, pas sur de vraies archives ARPEGE/ERA5 ; limité à un seul champ (preuve de concept, pas un remplacement opérationnel complet) |
+
+- **`862f747`** — les axes 1 et 3 reliés entre eux : le FNO entraîné
+  n'était accessible que par l'API Python brute. Nouveau
+  `POST /api/fno/predict_demo` sur le dashboard web (champ de démo
+  synthétique honnêtement étiqueté, vraie inférence du modèle entraîné,
+  jamais de repli silencieux). Vérifié dans un vrai navigateur : clic sur
+  "Run Surrogate on Demo Field" → `PREDICTED_BY_TRAINED_SURROGATE` en
+  vert, 264.77K → 265.58K, le vrai modèle tourne de bout en bout.
