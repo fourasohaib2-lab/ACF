@@ -183,6 +183,14 @@ class AWCIDashboard(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._real_physics_active = False
+        self._real_volume: dict[str, Any] | None = None
+        # The real vertical level (0 = surface) currently shown -
+        # explicit user request "ajoute la 4eme dimension au niveau
+        # d'affichage des cartes": compute_real_complexity_volume()'s
+        # real (n_levels, n_lat, n_lon) volume was already computed and
+        # wired in, but every consumer hardcoded level 0 - this is the
+        # real, user-controlled level index that closes that gap.
+        self._current_level_index = 0
         self._evolution: dict[str, Any] | None = None
         self._evolution_frame_index = 0
         self._evolution_timer = QTimer(self)
@@ -284,6 +292,30 @@ class AWCIDashboard(QWidget):
         time_row.addWidget(self.time_readout)
         left_col2.addLayout(time_row)
 
+        # Real vertical-level control (explicit user request "ajoute la
+        # 4eme dimension") - only meaningful once "🔬 Real Physics" has
+        # produced a real volume with a real n_levels; disabled until
+        # then rather than shown enabled with nothing real behind it.
+        level_row = QHBoxLayout()
+        level_label = QLabel("Level:")
+        level_label.setStyleSheet(label_style("text_muted", "xs"))
+        self.level_slider = QSlider(Qt.Orientation.Horizontal)
+        self.level_slider.setMinimum(0)
+        self.level_slider.setMaximum(0)
+        self.level_slider.setValue(0)
+        self.level_slider.setEnabled(False)
+        self.level_slider.setToolTip(
+            "Real vertical solver level (0 = surface) - available once '🔬 Real Physics' has run.\n"
+            "Re-slices the already-computed volume (acf.awci.vertical_field) - no extra solver run."
+        )
+        self.level_slider.valueChanged.connect(self._on_level_slider_changed)
+        self.level_readout = QLabel("L0")
+        self.level_readout.setStyleSheet(label_style("text_primary", "xs", "bold"))
+        level_row.addWidget(level_label)
+        level_row.addWidget(self.level_slider, stretch=1)
+        level_row.addWidget(self.level_readout)
+        left_col2.addLayout(level_row)
+
         row2.addLayout(left_col2, stretch=3)
 
         right_col2 = QVBoxLayout()
@@ -371,6 +403,7 @@ class AWCIDashboard(QWidget):
 
     def _on_real_physics_ready(self, volume: dict[str, Any]) -> None:
         self._real_physics_active = True
+        self._real_volume = volume
         self.real_physics_button.setText("↩ Back to Demo")
         self.real_physics_button.setEnabled(True)
         self.real_physics_status.setText(
@@ -385,17 +418,68 @@ class AWCIDashboard(QWidget):
         # PhysicsGuard coordinate check here catches that bug class at
         # runtime too, on any grid shape, not just a non-square test one.
         PhysicsGuard().check_coordinate_arrays(lats, lons)
-        # Surface level (index 0) stands in for the 2D field the map/
-        # stats/route panels need - same real per-point values a
-        # compute_real_complexity_field() call would have produced at
-        # level 0, just reused from the volume already computed above
-        # instead of a second solver run.
-        awci_surface = volume["awci_volume"][0]
-        self.global_map.set_external_field(lons, lats, awci_surface, "REAL PHYSICS")
 
-        cropped = crop_field_to_extent(lats, lons, awci_surface, _REGIONAL_EXTENT)
+        # Cross-section already spans every real level in one image
+        # (distance x altitude) - unlike the panels below, it is not
+        # level-specific, so it is computed once here, not inside
+        # _apply_volume_at_level() on every slider move.
+        cross = sample_volume_cross_section(
+            lats, lons, volume["pressure_volume_hpa"], volume["awci_volume"],
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
+        )
+        self.cross_section.set_external_cross_section(
+            cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS"
+        )
+
+        # Real vertical-level control (explicit user request "ajoute la
+        # 4eme dimension"): the slider's own range now reflects this
+        # volume's real n_levels, enabled for the first time, reset to
+        # the surface (0) for a fresh Real Physics run.
+        n_levels = volume["awci_volume"].shape[0]
+        self.level_slider.setMaximum(max(0, n_levels - 1))
+        self.level_slider.setEnabled(True)
+        self.level_slider.blockSignals(True)
+        self.level_slider.setValue(0)
+        self.level_slider.blockSignals(False)
+        self._apply_volume_at_level(0)
+
+        # The 4D animation needs a real Physics volume to have run
+        # first (same solver/config), so the button only becomes usable
+        # once we're genuinely in Real Physics mode.
+        self.play_evolution_button.setVisible(True)
+        self.play_evolution_button.setEnabled(True)
+
+    def _apply_volume_at_level(self, level_idx: int) -> None:
+        """(Re)render every level-dependent Real Physics panel (global/
+        regional map, route chart, stats bar, radar, risk summary) from
+        self._real_volume at the given real solver level index - a
+        real, cheap re-slice of the already-computed volume, no extra
+        CoupledEarthSolver run. Shared by _on_real_physics_ready() (the
+        initial surface render) and _on_level_slider_changed() (the
+        user moving the level slider)."""
+        volume = self._real_volume
+        if volume is None:
+            return
+        lons, lats = volume["lons"], volume["lats"]
+        n_levels = volume["awci_volume"].shape[0]
+        level_idx = max(0, min(level_idx, n_levels - 1))
+        self._current_level_index = level_idx
+        # A real level index has no single real pressure (it varies per
+        # column) - the domain-mean pressure at this level is shown as
+        # real, honest context, not claimed as this level's exact
+        # pressure everywhere.
+        mean_pressure_hpa = float(np.mean(volume["pressure_volume_hpa"][level_idx]))
+        level_label = f"L{level_idx} (~{mean_pressure_hpa:.0f} hPa)"
+        self.level_readout.setText(level_label)
+
+        awci_level = volume["awci_volume"][level_idx]
+        self.global_map.set_external_field(lons, lats, awci_level, f"REAL PHYSICS — {level_label}")
+
+        cropped = crop_field_to_extent(lats, lons, awci_level, _REGIONAL_EXTENT)
         if cropped["n_points_in_extent"][0] >= 2 and cropped["n_points_in_extent"][1] >= 2:
-            self.regional_map.set_external_field(cropped["lons"], cropped["lats"], cropped["field"], "REAL PHYSICS")
+            self.regional_map.set_external_field(
+                cropped["lons"], cropped["lats"], cropped["field"], f"REAL PHYSICS — {level_label}"
+            )
         else:
             # ARPEGE's real native grid is coarser than this regional
             # extent (< 2x2 real points fall inside it) - matplotlib
@@ -411,19 +495,11 @@ class AWCIDashboard(QWidget):
             )
 
         route_distances, route_scores = sample_field_along_path(
-            lats, lons, awci_surface, _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+            lats, lons, awci_level, _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
         )
-        self.route_chart.set_external_route(route_distances, route_scores, "REAL PHYSICS")
+        self.route_chart.set_external_route(route_distances, route_scores, f"REAL PHYSICS — {level_label}")
 
-        cross = sample_volume_cross_section(
-            lats, lons, volume["pressure_volume_hpa"], volume["awci_volume"],
-            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
-        )
-        self.cross_section.set_external_cross_section(
-            cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS"
-        )
-
-        flat_scores = [float(v) for v in awci_surface.flatten()]
+        flat_scores = [float(v) for v in awci_level.flatten()]
         # No per-point forecast-side data is fed into
         # compute_real_complexity_volume() (see its own docstring) - the
         # solver's real fields don't carry a "confidence" input, so this
@@ -438,16 +514,16 @@ class AWCIDashboard(QWidget):
         # Radar/risk-summary need a single point's full module_scores
         # breakdown, which the volume does not store per grid cell (only
         # the aggregate scores) - recomputed here from this SAME call's
-        # own raw surface-level fields at the point nearest
+        # own raw fields at this level, at the point nearest
         # _POINT_OF_INTEREST, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - _POINT_OF_INTEREST[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - _POINT_OF_INTEREST[1])))
         point_result = AWCICalculator().calculate(
             {
-                "temperature": float(volume["temperature_volume"][0, lat_idx, lon_idx]),
-                "wind_speed": float(volume["wind_speed_volume"][0, lat_idx, lon_idx]),
-                "specific_humidity": float(volume["specific_humidity_volume"][0, lat_idx, lon_idx]),
-                "pressure": float(volume["pressure_volume_hpa"][0, lat_idx, lon_idx]),
+                "temperature": float(volume["temperature_volume"][level_idx, lat_idx, lon_idx]),
+                "wind_speed": float(volume["wind_speed_volume"][level_idx, lat_idx, lon_idx]),
+                "specific_humidity": float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx]),
+                "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
             }
         )
         self.radar.update_data(point_result["module_scores"])
@@ -459,11 +535,12 @@ class AWCIDashboard(QWidget):
             forecast_score=point_result["forecast_score"],
         )
 
-        # The 4D animation needs a real Physics volume to have run
-        # first (same solver/config), so the button only becomes usable
-        # once we're genuinely in Real Physics mode.
-        self.play_evolution_button.setVisible(True)
-        self.play_evolution_button.setEnabled(True)
+    def _on_level_slider_changed(self, value: int) -> None:
+        """Re-slice the already-computed real volume at the newly
+        selected level - a cheap real operation, no new solver run."""
+        if self._real_volume is None:
+            return
+        self._apply_volume_at_level(value)
 
     def _on_real_physics_failed(self, message: str) -> None:
         self.real_physics_button.setEnabled(True)
@@ -475,6 +552,14 @@ class AWCIDashboard(QWidget):
         self.play_evolution_button.setVisible(False)
         self._evolution = None
         self._real_physics_active = False
+        self._real_volume = None
+        self._current_level_index = 0
+        self.level_slider.blockSignals(True)
+        self.level_slider.setValue(0)
+        self.level_slider.setMaximum(0)
+        self.level_slider.blockSignals(False)
+        self.level_slider.setEnabled(False)
+        self.level_readout.setText("L0")
         self.real_physics_button.setText("🔬 Real Physics")
         self.real_physics_status.setText("Concept Output – Research Prototype")
         self.global_map.clear_external_field()
@@ -538,14 +623,22 @@ class AWCIDashboard(QWidget):
         self._render_evolution_frame(self._evolution_frame_index)
 
     def _render_evolution_frame(self, frame_index: int) -> None:
-        """Redraw the global map with this real frame's surface-level field, and show the real elapsed simulated time - not a fake incrementing clock."""
+        """Redraw the global map with this real frame's field at the
+        currently selected level (self._current_level_index - see the
+        level slider), and show the real elapsed simulated time - not
+        a fake incrementing clock. Used to hardcode level 0 (surface)
+        regardless of the level slider - explicit user request "ajoute
+        la 4eme dimension" closes that gap too, not just the static
+        Real Physics volume."""
         evolution = self._evolution
         if evolution is None:
             return
-        awci_frame = evolution["awci_evolution"][frame_index, 0]  # level 0 = surface
+        n_levels = evolution["awci_evolution"].shape[1]
+        level_idx = max(0, min(self._current_level_index, n_levels - 1))
+        awci_frame = evolution["awci_evolution"][frame_index, level_idx]
         valid_time_h = evolution["valid_time_seconds"][frame_index] / 3600.0
         self.global_map.set_external_field(
-            evolution["lons"], evolution["lats"], awci_frame, f"REAL PHYSICS — t+{valid_time_h:.2f}h"
+            evolution["lons"], evolution["lats"], awci_frame, f"REAL PHYSICS — L{level_idx} — t+{valid_time_h:.2f}h"
         )
         self.time_readout.setText(f"t+{valid_time_h:.2f}h")
 
