@@ -260,9 +260,51 @@ raccourci en "CoupledEarthSolver" (l'info complète reste dans la
 bannière de statut).
 
 Reste : niveaux de pression standards par interpolation, signal
-forecast par point (coût prohibitif avec l'infrastructure actuelle),
-et brancher la carte régionale/coupe/route sur les vrais champs 3D/4D
-déjà construits.
+forecast par point (coût prohibitif avec l'infrastructure actuelle).
+
+**Mise à jour 2026-09-02 (suite 7) — carte régionale/coupe/route
+branchées** (sur demande explicite : "vas-y, branche la carte
+régionale/coupe/route sur les vrais champs") : nouveau module
+`awci/path_sampling.py` (`sample_field_along_path()`,
+`sample_volume_cross_section()`, `crop_field_to_extent()`) — échantillonne
+un champ/volume **déjà calculé** le long d'un chemin ou d'une étendue
+(plus-proche-voisin réel, aucun nouveau run solveur). Le dashboard calcule
+maintenant **un seul** `compute_real_complexity_volume()` par clic, qui
+alimente les 6 panneaux (carte globale, carte régionale croppée, route,
+coupe verticale, stats, radar/risk-summary) au lieu d'un calcul séparé
+par panneau.
+
+**2 bugs réels trouvés, tous les deux par les tests/la vérification
+visuelle, pas en relecture** :
+1. Grille de test volontairement non carrée → `matplotlib` a immédiatement
+   révélé `lons`/`lats` inversés dans le branchement précédent (déjà
+   documenté plus haut).
+2. **Capture d'écran réelle** → la coupe verticale s'affichait comme un
+   bloc bleu uniforme sans structure. Cause : `_hpa_to_ft()` (conversion
+   pression→altitude du panneau) écrêtait tout ce qui dépasse 1013 hPa à
+   0 ft — or l'état idéalisé du solveur réel dépasse cette valeur (jusqu'à
+   ~2013 hPa en surface, documenté comme non calibré sur la pression
+   réelle au niveau de la mer). 10 des 20 niveaux natifs s'écrasaient donc
+   sur la même altitude. Corrigé par extrapolation linéaire au lieu de
+   l'écrêtage — 20 altitudes réellement distinctes et monotones
+   maintenant, verrouillé par un test de non-régression exact sur ce
+   profil de pression.
+
+**Trouvaille annexe corrigée** : un test 4D
+(`test_evolution_genuinely_changes_over_time`) passait seul mais échouait
+parfois dans la suite complète — dépendance à l'état RNG global de
+`CoupledEarthSolver` consommé différemment selon les tests exécutés
+avant lui dans le même process. Corrigé en fixant `np.random.seed()`
+explicitement en début de test, pas en élargissant artificiellement la
+marge.
+
+Cas honnête géré, pas ignoré : si la grille réelle (résolution ARPEGE)
+est trop grossière pour contenir au moins 2×2 points dans l'étendue
+régionale, la carte régionale reste sur le motif synthétique plutôt que
+de planter ou d'afficher un graphe cassé (testé explicitement dans les
+deux sens — grille assez fine / trop grossière). Avec la résolution
+ARPEGE par défaut, l'Afrique du Nord contient réellement 6×13 points —
+la carte régionale est donc bien branchée en pratique.
 
 **Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
 honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut

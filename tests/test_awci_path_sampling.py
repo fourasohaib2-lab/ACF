@@ -1,0 +1,107 @@
+"""
+Tests for acf.awci.path_sampling - sampling real fields/volumes along a
+path or extent (explicit user request "vas-y, branche la carte
+régionale/coupe/route sur les vrais champs").
+
+Uses small n_lat/n_lon/n_levels overrides on real
+compute_real_complexity_field()/compute_real_complexity_volume() calls
+throughout - real solver output, not synthetic/mocked arrays.
+"""
+
+import numpy as np
+import pytest
+
+from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.spatial_field import compute_real_complexity_field
+from acf.awci.vertical_field import compute_real_complexity_volume
+
+
+def test_sample_field_along_path_returns_real_values_from_the_field():
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=10, n_lon=20, n_levels=4, steps=4, perturbation_scale=3.0, seed=2
+    )
+    distances, values = sample_field_along_path(
+        result["lats"], result["lons"], result["awci_field"], point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_points=15
+    )
+
+    assert len(distances) == 15
+    assert len(values) == 15
+    assert distances[0] == 0.0
+    assert distances[-1] > 0.0
+    assert distances == sorted(distances)  # monotonically increasing along the path
+    for v in values:
+        assert 0.0 <= v <= 100.0
+
+
+def test_sample_field_along_path_matches_real_field_at_the_endpoints():
+    """The path's first/last samples must be the field's real nearest-neighbour value at those exact endpoints."""
+    result = compute_real_complexity_field(model="ALADIN", n_lat=10, n_lon=20, n_levels=4, steps=2)
+    point_a, point_b = (5.0, 5.0), (25.0, 25.0)
+    distances, values = sample_field_along_path(
+        result["lats"], result["lons"], result["awci_field"], point_a, point_b, n_points=10
+    )
+
+    lats_arr = np.asarray(result["lats"])
+    lons_arr = np.asarray(result["lons"])
+    lat_idx = int(np.argmin(np.abs(lats_arr - point_a[0])))
+    lon_idx = int(np.argmin(np.abs(lons_arr - point_a[1])))
+    assert values[0] == pytest.approx(float(result["awci_field"][lat_idx, lon_idx]))
+
+
+def test_sample_volume_cross_section_shape_and_real_values():
+    volume = compute_real_complexity_volume(
+        model="ALADIN", n_lat=10, n_lon=20, n_levels=6, steps=4, perturbation_scale=3.0, seed=3
+    )
+    cross = sample_volume_cross_section(
+        volume["lats"],
+        volume["lons"],
+        volume["pressure_volume_hpa"],
+        volume["awci_volume"],
+        point_a=(10.0, -10.0),
+        point_b=(30.0, 20.0),
+        n_along=12,
+    )
+
+    assert len(cross["distances_km"]) == 12
+    assert cross["grid"].shape == (6, 12)
+    assert cross["mean_pressure_hpa_by_level"].shape == (6,)
+    # Real physics: pressure must decrease with altitude (native level
+    # index increasing), same invariant verified in test_awci_vertical_field.py.
+    pressures = cross["mean_pressure_hpa_by_level"]
+    assert all(pressures[level] > pressures[level + 1] for level in range(len(pressures) - 1))
+
+
+def test_sample_volume_cross_section_not_a_flat_placeholder():
+    volume = compute_real_complexity_volume(
+        model="ALADIN", n_lat=10, n_lon=20, n_levels=6, steps=6, perturbation_scale=4.0, seed=4
+    )
+    cross = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["awci_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=12,
+    )
+    assert np.std(cross["grid"]) > 0.0
+
+
+def test_crop_field_to_extent_keeps_only_points_inside_it():
+    result = compute_real_complexity_field(model="ARPEGE", n_lat=20, n_lon=40, n_levels=4, steps=2)
+    extent = (-12.0, 35.0, 15.0, 40.0)  # lon_min, lon_max, lat_min, lat_max (North Africa)
+
+    cropped = crop_field_to_extent(result["lats"], result["lons"], result["awci_field"], extent)
+
+    assert all(extent[2] <= lat <= extent[3] for lat in cropped["lats"])
+    assert all(extent[0] <= lon <= extent[1] for lon in cropped["lons"])
+    assert cropped["field"].shape == (len(cropped["lats"]), len(cropped["lons"]))
+    assert cropped["n_points_in_extent"] == (len(cropped["lats"]), len(cropped["lons"]))
+
+
+def test_crop_field_to_extent_values_are_real_not_recomputed():
+    result = compute_real_complexity_field(model="ARPEGE", n_lat=20, n_lon=40, n_levels=4, steps=2)
+    extent = (-12.0, 35.0, 15.0, 40.0)
+    cropped = crop_field_to_extent(result["lats"], result["lons"], result["awci_field"], extent)
+
+    lats_arr = np.asarray(result["lats"])
+    lons_arr = np.asarray(result["lons"])
+    lat_mask = (lats_arr >= extent[2]) & (lats_arr <= extent[3])
+    lon_mask = (lons_arr >= extent[0]) & (lons_arr <= extent[1])
+    expected = result["awci_field"][np.ix_(lat_mask, lon_mask)]
+    np.testing.assert_array_equal(cropped["field"], expected)

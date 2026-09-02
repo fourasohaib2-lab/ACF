@@ -13,22 +13,27 @@ reference mockup itself uses, UNLESS "Real Physics" mode is engaged (see
 below).
 
 Real Physics mode (added 2026-09-02, explicit user request "vas-y,
-branche le dashboard")
+branche le dashboard", extended the same day to "branche la carte
+régionale/coupe/route sur les vrais champs")
 -----------------------------------------------------------------------
 The "🔬 Real Physics" button runs
-acf.awci.spatial_field.compute_real_complexity_field() - a real
-CoupledEarthSolver run, not the synthetic demo pattern - on a background
-QThreadPool worker (same WorkerRunnable-with-a-signal pattern as
+acf.awci.vertical_field.compute_real_complexity_volume() - a real
+CoupledEarthSolver run producing a full 3D Complexity(x, y, z) volume,
+not the synthetic demo pattern - on a background QThreadPool worker
+(same WorkerRunnable-with-a-signal pattern as
 gui/esoc/command_dispatcher.py's async commands, extended here to carry
-a result back to the GUI thread) so the ~1-2s real computation never
-freezes the UI. Only the global map, stats bar, radar and risk-summary
-panels are wired to the real field so far - the regional map, cross-
-section and route chart stay on the synthetic pattern even in Real
-Physics mode (documented in the status label, not silently left
-inconsistent): building a real regional/cross-section/route view would
-need real field extraction along an arbitrary path/region, a separate
-piece of work from wiring the already-built 2D field into the panels
-that consume a plain lat/lon grid.
+a result back to the GUI thread) so the real computation never freezes
+the UI. Every panel is now wired to this SAME real volume, sampled
+different ways via acf.awci.path_sampling (post-processing, no extra
+solver runs): global map and regional map show the volume's surface
+level (cropped to the regional extent for the latter - see
+crop_field_to_extent()'s honest handling of a native grid coarser than
+the extent), route chart samples the surface level along a path
+(sample_field_along_path()), cross-section samples the FULL volume
+along a path (sample_volume_cross_section() - native model levels, see
+that function's own honest_limitation on path-averaged pressure per
+level). Stats bar, radar and risk-summary are derived from the same
+volume as before.
 """
 
 import logging
@@ -39,7 +44,8 @@ from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from acf.awci.calculator import AWCICalculator
-from acf.awci.spatial_field import compute_real_complexity_field
+from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
@@ -112,7 +118,7 @@ class _RealFieldWorkerSignals(QObject):
 
 
 class _RealFieldWorker(QRunnable):
-    """Runs compute_real_complexity_field() off the GUI thread."""
+    """Runs compute_real_complexity_volume() off the GUI thread."""
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -121,7 +127,7 @@ class _RealFieldWorker(QRunnable):
 
     def run(self) -> None:
         try:
-            result = compute_real_complexity_field(**self.kwargs)
+            result = compute_real_complexity_volume(**self.kwargs)
         except Exception as exc:
             logger.exception("Real Physics field computation failed")
             self.signals.failed.emit(str(exc))
@@ -154,9 +160,9 @@ class AWCIDashboard(QWidget):
 
         self.real_physics_button = QPushButton("🔬 Real Physics")
         self.real_physics_button.setToolTip(
-            "Run a real CoupledEarthSolver field (acf.awci.spatial_field) instead of the synthetic demo pattern.\n"
-            "Only the global map, stats bar, radar and risk summary are wired to it - regional map, cross-section\n"
-            "and route chart stay on the synthetic pattern (see this button's status label)."
+            "Run a real CoupledEarthSolver volume (acf.awci.vertical_field) instead of the synthetic demo\n"
+            "pattern. Every panel below - global/regional map, stats, radar, risk summary, route, cross-\n"
+            "section - is sampled from this one real trajectory (acf.awci.path_sampling)."
         )
         self.real_physics_button.clicked.connect(self._toggle_real_physics)
         header_row.addWidget(self.real_physics_button)
@@ -295,29 +301,70 @@ class AWCIDashboard(QWidget):
     def _start_real_physics(self) -> None:
         self.real_physics_button.setEnabled(False)
         self.real_physics_status.setText(
-            "🔬 Computing real physics field (CoupledEarthSolver, ARPEGE grid)… this takes a few seconds"
+            "🔬 Computing real physics volume (CoupledEarthSolver, ARPEGE grid)… this takes a few seconds"
         )
+        # A single real VOLUME (not just one 2D field) drives every
+        # panel below - global map, regional map, route chart and
+        # cross-section all sample the exact same real trajectory
+        # instead of one solver run each (added 2026-09-02, explicit
+        # user request "branche la carte régionale/coupe/route sur les
+        # vrais champs").
         worker = _RealFieldWorker(model="ARPEGE", steps=8, dt_seconds=90.0, perturbation_scale=3.0, seed=1)
         worker.signals.finished.connect(self._on_real_physics_ready)
         worker.signals.failed.connect(self._on_real_physics_failed)
         QThreadPool.globalInstance().start(worker)
 
-    def _on_real_physics_ready(self, result: dict[str, Any]) -> None:
+    def _on_real_physics_ready(self, volume: dict[str, Any]) -> None:
         self._real_physics_active = True
         self.real_physics_button.setText("↩ Back to Demo")
         self.real_physics_button.setEnabled(True)
         self.real_physics_status.setText(
-            "🔬 REAL PHYSICS — CoupledEarthSolver (ARPEGE grid). Global map, stats, radar and risk summary "
-            "below are real; regional map, cross-section and route chart stay on the synthetic demo pattern."
+            "🔬 REAL PHYSICS — CoupledEarthSolver (ARPEGE grid, one continuous run). Every panel below "
+            "(global/regional map, stats, radar, risk summary, route, cross-section) is sampled from it."
         )
 
-        lons, lats = result["lons"], result["lats"]
-        awci_field = result["awci_field"]
-        self.global_map.set_external_field(lons, lats, awci_field, "REAL PHYSICS")
+        lons, lats = volume["lons"], volume["lats"]
+        # Surface level (index 0) stands in for the 2D field the map/
+        # stats/route panels need - same real per-point values a
+        # compute_real_complexity_field() call would have produced at
+        # level 0, just reused from the volume already computed above
+        # instead of a second solver run.
+        awci_surface = volume["awci_volume"][0]
+        self.global_map.set_external_field(lons, lats, awci_surface, "REAL PHYSICS")
 
-        flat_scores = [float(v) for v in awci_field.flatten()]
+        cropped = crop_field_to_extent(lats, lons, awci_surface, _REGIONAL_EXTENT)
+        if cropped["n_points_in_extent"][0] >= 2 and cropped["n_points_in_extent"][1] >= 2:
+            self.regional_map.set_external_field(cropped["lons"], cropped["lats"], cropped["field"], "REAL PHYSICS")
+        else:
+            # ARPEGE's real native grid is coarser than this regional
+            # extent (< 2x2 real points fall inside it) - matplotlib
+            # itself requires at least a (2, 2) grid to contour. Leave
+            # the regional map on the synthetic pattern rather than
+            # crash or silently show an empty/misleading plot; a finer
+            # model (AROME) would resolve this but is much slower to
+            # run interactively (see spatial_field.py's own timings).
+            logger.warning(
+                "AWCIDashboard: real ARPEGE grid too coarse for the regional extent (%s real points) - "
+                "regional map stays on the synthetic pattern.",
+                cropped["n_points_in_extent"],
+            )
+
+        route_distances, route_scores = sample_field_along_path(
+            lats, lons, awci_surface, _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+        )
+        self.route_chart.set_external_route(route_distances, route_scores, "REAL PHYSICS")
+
+        cross = sample_volume_cross_section(
+            lats, lons, volume["pressure_volume_hpa"], volume["awci_volume"],
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
+        )
+        self.cross_section.set_external_cross_section(
+            cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS"
+        )
+
+        flat_scores = [float(v) for v in awci_surface.flatten()]
         # No per-point forecast-side data is fed into
-        # compute_real_complexity_field() (see its own docstring) - the
+        # compute_real_complexity_volume() (see its own docstring) - the
         # solver's real fields don't carry a "confidence" input, so this
         # honestly reflects AWCICalculator's own default (100.0) rather
         # than an invented aggregate forecast confidence.
@@ -328,18 +375,18 @@ class AWCIDashboard(QWidget):
         self.stats_bar.model_box.set_value("CoupledEarthSolver")
 
         # Radar/risk-summary need a single point's full module_scores
-        # breakdown, which compute_real_complexity_field() does not
-        # store per grid cell (only the aggregate scores) - recomputed
-        # here from this SAME call's own raw fields at the point nearest
+        # breakdown, which the volume does not store per grid cell (only
+        # the aggregate scores) - recomputed here from this SAME call's
+        # own raw surface-level fields at the point nearest
         # _POINT_OF_INTEREST, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - _POINT_OF_INTEREST[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - _POINT_OF_INTEREST[1])))
         point_result = AWCICalculator().calculate(
             {
-                "temperature": float(result["temperature_field"][lat_idx, lon_idx]),
-                "wind_speed": float(result["wind_speed_field"][lat_idx, lon_idx]),
-                "specific_humidity": float(result["specific_humidity_field"][lat_idx, lon_idx]),
-                "pressure": float(result["pressure_field_hpa"][lat_idx, lon_idx]),
+                "temperature": float(volume["temperature_volume"][0, lat_idx, lon_idx]),
+                "wind_speed": float(volume["wind_speed_volume"][0, lat_idx, lon_idx]),
+                "specific_humidity": float(volume["specific_humidity_volume"][0, lat_idx, lon_idx]),
+                "pressure": float(volume["pressure_volume_hpa"][0, lat_idx, lon_idx]),
             }
         )
         self.radar.update_data(point_result["module_scores"])
@@ -361,6 +408,9 @@ class AWCIDashboard(QWidget):
         self.real_physics_button.setText("🔬 Real Physics")
         self.real_physics_status.setText("Concept Output – Research Prototype")
         self.global_map.clear_external_field()
+        self.regional_map.clear_external_field()
+        self.route_chart.clear_external_route()
+        self.cross_section.clear_external_cross_section()
         self.stats_bar.model_box.set_value("ACF Demo Grid")
         self.refresh()
 

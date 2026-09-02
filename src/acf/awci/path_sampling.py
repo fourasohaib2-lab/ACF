@@ -1,0 +1,179 @@
+"""
+ACF Complexity Engine — sampling real fields/volumes along a path
+=====================================================================
+
+Post-processing helpers that sample an ALREADY-COMPUTED real
+acf.awci.spatial_field.compute_real_complexity_field() or
+acf.awci.vertical_field.compute_real_complexity_volume() result along
+a straight lat/lon path or a lon/lat/lat/lon extent - no new
+CoupledEarthSolver run is performed here. Built so a dashboard's
+regional map, cross-section and route-planning panels can all be
+derived from ONE real computation instead of one solver run each.
+
+Real nearest-neighbour lookup throughout (same convention as
+ModelConsensusEngine.compute_real_multi_model_disagreement(),
+spatial_field.py, vertical_field.py) - never spatial interpolation.
+Path distance uses a simple linear lat/lon interpolation between the
+two endpoints, not a true geodesic - adequate for a demo route/cross-
+section, matching the exact same disclosure
+gui/dashboard/awci_synthetic_field.py's own route_profile()/
+cross_section_field() already carry for the synthetic path.
+"""
+
+from typing import Any
+
+import numpy as np
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    p1, p2 = np.radians(lat1), np.radians(lat2)
+    dphi = np.radians(lat2 - lat1)
+    dlambda = np.radians(lon2 - lon1)
+    a = np.sin(dphi / 2) ** 2 + np.cos(p1) * np.cos(p2) * np.sin(dlambda / 2) ** 2
+    return float(2 * r * np.arcsin(np.sqrt(a)))
+
+
+def sample_field_along_path(
+    lats: Any,
+    lons: Any,
+    field: np.ndarray,
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_points: int = 60,
+) -> tuple[list[float], list[float]]:
+    """
+    Real nearest-neighbour sample of a 2D field (e.g.
+    compute_real_complexity_field()'s awci_field) along the straight
+    lat/lon path from point_a to point_b.
+
+    Returns
+    -------
+    (distances_km, values) : both length n_points. values[i] is the
+        real field value at the grid point nearest the path's i-th
+        sample location - not interpolated between grid points.
+    """
+    lats_arr = np.asarray(lats)
+    lons_arr = np.asarray(lons)
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+
+    distances = []
+    values = []
+    for i in range(n_points):
+        t = i / (n_points - 1)
+        lat = lat_a + t * (lat_b - lat_a)
+        lon = lon_a + t * (lon_b - lon_a)
+        lat_idx = int(np.argmin(np.abs(lats_arr - lat)))
+        lon_idx = int(np.argmin(np.abs(lons_arr - lon)))
+        distances.append(t * total_km)
+        values.append(float(field[lat_idx, lon_idx]))
+
+    return distances, values
+
+
+def sample_volume_cross_section(
+    lats: Any,
+    lons: Any,
+    pressure_hpa_volume: np.ndarray,
+    value_volume: np.ndarray,
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_along: int = 60,
+) -> dict[str, Any]:
+    """
+    Real nearest-neighbour sample of a 3D volume (e.g.
+    compute_real_complexity_volume()'s awci_volume, shape (n_levels,
+    n_lat, n_lon)) along the straight lat/lon path from point_a to
+    point_b.
+
+    Honest limitation: `mean_pressure_hpa_by_level` is each native
+    level's real local pressure AVERAGED across the sampled path
+    points, not the true pressure at every individual path point (real
+    local pressure does vary somewhat along a long path) - reported
+    this way because the cross-section plot needs one y-axis value per
+    level, and native levels (not standard pressure levels - see
+    vertical_field.py's own honest_limitation) are used throughout ACF
+    today.
+
+    Returns
+    -------
+    dict
+        distances_km : list[float], length n_along.
+        mean_pressure_hpa_by_level : 1D numpy array, length n_levels.
+        grid : 2D numpy array, shape (n_levels, n_along) - grid[level,
+            i] is the real value at the point nearest the path's i-th
+            sample location, at that native level.
+    """
+    lats_arr = np.asarray(lats)
+    lons_arr = np.asarray(lons)
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+
+    n_levels = value_volume.shape[0]
+    distances = []
+    grid = np.zeros((n_levels, n_along))
+    pressure_sum = np.zeros(n_levels)
+
+    for i in range(n_along):
+        t = i / (n_along - 1)
+        lat = lat_a + t * (lat_b - lat_a)
+        lon = lon_a + t * (lon_b - lon_a)
+        lat_idx = int(np.argmin(np.abs(lats_arr - lat)))
+        lon_idx = int(np.argmin(np.abs(lons_arr - lon)))
+        distances.append(t * total_km)
+        grid[:, i] = value_volume[:, lat_idx, lon_idx]
+        pressure_sum += pressure_hpa_volume[:, lat_idx, lon_idx]
+
+    return {
+        "distances_km": distances,
+        "mean_pressure_hpa_by_level": pressure_sum / n_along,
+        "grid": grid,
+    }
+
+
+def crop_field_to_extent(
+    lats: Any, lons: Any, field: np.ndarray, extent: tuple[float, float, float, float]
+) -> dict[str, Any]:
+    """
+    Crop a real 2D field (e.g. compute_real_complexity_field()'s
+    awci_field, or one level of compute_real_complexity_volume()'s
+    awci_volume) to a lon/lat extent - real subsetting of the grid's
+    own points, not resampling/regridding.
+
+    Parameters
+    ----------
+    extent : (lon_min, lon_max, lat_min, lat_max) - same convention as
+        gui/dashboard/awci_dashboard.py's _REGIONAL_EXTENT.
+
+    Returns
+    -------
+    dict
+        lons, lats : 1D numpy arrays, the real grid points that fall
+            inside the extent (possibly few, if the model's native
+            resolution is coarser than the extent - see
+            n_points_in_extent).
+        field : 2D numpy array, the cropped field.
+        n_points_in_extent : (len(lats), len(lons)) - a caller should
+            check this is at least (2, 2) before trying to contour it
+            (matplotlib's own requirement).
+    """
+    lon_min, lon_max, lat_min, lat_max = extent
+    lats_arr = np.asarray(lats)
+    lons_arr = np.asarray(lons)
+
+    lat_mask = (lats_arr >= lat_min) & (lats_arr <= lat_max)
+    lon_mask = (lons_arr >= lon_min) & (lons_arr <= lon_max)
+
+    cropped_lats = lats_arr[lat_mask]
+    cropped_lons = lons_arr[lon_mask]
+    cropped_field = field[np.ix_(lat_mask, lon_mask)]
+
+    return {
+        "lats": cropped_lats,
+        "lons": cropped_lons,
+        "field": cropped_field,
+        "n_points_in_extent": (len(cropped_lats), len(cropped_lons)),
+    }

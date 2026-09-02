@@ -41,7 +41,22 @@ def test_evolution_genuinely_changes_over_time():
     The whole point of the 4D dimension: frame N must differ from
     frame 0 - a real physical trajectory evolving, not the same
     snapshot repeated n_frames times.
+
+    CORRECTED (found flaky when run as part of the full suite, not in
+    isolation): CoupledEarthSolver's atmosphere/ocean components read
+    the global, unseeded np.random state internally (documented at
+    length in model_consensus_engine.py/temporal_field.py) - this
+    test's own `seed` argument only seeds compute_real_complexity_
+    evolution()'s LOCAL perturbation draw, not that global state. Over
+    a short-enough integration, whatever residual dynamics that global
+    state happens to produce can round to identical awci_evolution
+    values (1 decimal place) across every one of this grid's 240
+    cells, purely depending on how much global RNG state earlier tests
+    in the same process already consumed - an order-dependent failure,
+    not a real absence of evolution. Pinning the global seed here makes
+    the test deterministic regardless of what ran before it.
     """
+    np.random.seed(0)
     result = compute_real_complexity_evolution(
         model="ALADIN", n_lat=6, n_lon=10, n_levels=4, n_frames=5, steps_per_frame=3, perturbation_scale=3.0, seed=2
     )
