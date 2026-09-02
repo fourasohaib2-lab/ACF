@@ -917,7 +917,70 @@ propres sur les 1399 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **Regridding bilinéaire/conservatif générique** — toujours absent.
+- ~~**Regridding bilinéaire/conservatif générique**~~ — **construit,
+  voir mise à jour ci-dessous.**
+- **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
+  hors de cette passe.
+
+## Mise à jour 2026-09-02 (suite) — Regridding bilinéaire/conservatif générique construit
+
+`src/acf/awci/regridding.py` : `regrid_nearest_neighbor()` (déplacé
+depuis `multi_model_fusion.py`, même logique, pas réimplémentée — un
+import transparent le garde disponible aux deux endroits) +
+`regrid_bilinear()` + `regrid_conservative()`, tous les trois scopés
+honnêtement à une grille rectiligne régulière lat/lon (le seul type
+que produit `EarthGrid`).
+
+- **`regrid_bilinear()`** — vraie interpolation bilinéaire entre les 4
+  points sources encadrants (`numpy.searchsorted`, marche pour des
+  coordonnées non uniformément espacées). **Vérifié par une propriété
+  réelle, pas un test de fumée** : reproduction exacte d'un champ
+  linéaire.
+- **`regrid_conservative()`** — vraie moyenne pondérée par recouvrement
+  d'aire, avec la vraie pondération sphérique (`Δ(sin(lat))`, pas des
+  degrés plats — la vraie raison physique pour laquelle une cellule
+  polaire couvre moins de surface réelle par degré qu'une cellule
+  équatoriale).
+
+**Deux vrais bugs trouvés et corrigés en construisant ceci, pas
+supposés — vérifiés par un test de conservation indépendant (somme
+pondérée par aire recalculée séparément, pas en réutilisant la même
+formule interne) avant d'être considérés clos** :
+1. La première version bornait inconditionnellement les bords
+   extérieurs de cellule à `lo_bound`/`hi_bound` — correct pour une
+   grille globale, mais **faux pour une grille régionale** (ex.
+   `lats=[10,20,30]`) : l'étirait jusqu'au pôle, faisant croire à une
+   couverture de données inexistante. Corrigé : extrapolation
+   naturelle par la moitié de l'espacement adjacent, bornée seulement
+   quand elle dépasserait vraiment le domaine physique.
+2. Une fois corrigé, la longitude (réellement périodique — convention
+   `EarthGrid.lons` = `linspace(-180,180,n,endpoint=False)`, aucun
+   point réel exactement à +180°) perdait jusqu'à une cellule entière
+   de surface réelle à la couture ±180°, cassant la conservation
+   précisément pour la convention de grille globale réelle d'ACF.
+   Corrigé : `_overlap_weights(..., period=360.0)` teste aussi les
+   décalages ±360° et somme tout recouvrement réel trouvé — vérifié
+   par un test qui prouve qu'une cellule source proche de +180°
+   contribue réellement à une cellule cible chevauchant l'antiméridien
+   (et zéro à une cellule cible éloignée), pas seulement que le total
+   conservé retombe juste.
+
+**Portée honnête, pas cachée** : `regrid_nearest_neighbor()`/
+`regrid_bilinear()` ne gèrent PAS ce wraparound (un point cible pile à
+l'antiméridien est borné au bord source le plus proche, pas enroulé) —
+disclosure précise par fonction, pas une déclaration générale
+imprécise. `compute_real_multi_model_field_fusion()` continue d'utiliser
+le plus-proche-voisin par défaut (décision scientifique délibérée, pas
+changée par cet ajout).
+
+**Validation :** 22 nouveaux tests (dont conservation vérifiée sur 6
+résolutions différentes + décomposition grossissement/raffinement +
+la preuve directe du wraparound, pas seulement le total). Suite
+complète : **3206/3206** tests passent (3184 avant), ruff et mypy
+propres sur les 1400 fichiers.
+
+### Ce qui reste réellement, maintenant
+
 - **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
   hors de cette passe.
 

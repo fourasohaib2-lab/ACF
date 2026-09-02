@@ -21,14 +21,18 @@ What's built here
    (`acf.forecast.engine.MODEL_CONFIGS`) with a distinct, deterministic
    per-model perturbation seed.
 2. Regrids every model's real field onto one common target grid via
-   real nearest-neighbour lookup (`regrid_nearest_neighbor()` below) -
-   same NN convention already used throughout this package
-   (`path_sampling.py`, `compute_real_multi_model_disagreement()`'s
-   own per-point lookup), not a new interpolation scheme. Honest scope:
-   NOT bilinear/conservative regridding - reports/ACF_MASTER_AUDIT_v2.md's
-   own "pas de regridding bilinéaire/conservatif générique" finding
-   is NOT closed by this module, deliberately - see that function's
-   own docstring.
+   real nearest-neighbour lookup (`acf.awci.regridding.
+   regrid_nearest_neighbor()`) - same NN convention already used
+   throughout this package (`path_sampling.py`,
+   `compute_real_multi_model_disagreement()`'s own per-point lookup).
+   `acf.awci.regridding` also now has real `regrid_bilinear()`/
+   `regrid_conservative()` (closing reports/ACF_MASTER_AUDIT_v2.md's
+   "pas de regridding bilinéaire/conservatif générique" finding) - this
+   function still defaults to nearest-neighbour deliberately, not
+   because the alternatives don't exist: which of the three a real
+   multi-model fusion should use for skill-weighted consensus is a
+   genuine scientific decision this module does not make unilaterally
+   (see `acf.awci.regridding`'s own docstring for the real trade-offs).
 3. Weights each regridded field - real inverse-error weights from a
    `acf.verification.skill_database.ModelSkillDatabase` when it has
    real recorded history for every requested model
@@ -64,42 +68,12 @@ from typing import Any
 import numpy as np
 
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
+from acf.awci.regridding import regrid_nearest_neighbor
 from acf.awci.spatial_field import compute_real_complexity_field
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.verification.skill_database import ModelSkillDatabase
 
 _DEFAULT_MODELS: tuple[str, ...] = ("AROME", "ALADIN", "ARPEGE")
-
-
-def regrid_nearest_neighbor(
-    lats_src: Any,
-    lons_src: Any,
-    field_src: np.ndarray,
-    lats_target: Any,
-    lons_target: Any,
-) -> np.ndarray:
-    """
-    Real nearest-neighbour regrid of `field_src` (shape
-    (len(lats_src), len(lons_src))) onto `(lats_target, lons_target)`.
-
-    Same technique `acf.awci.path_sampling.sample_field_along_path()`
-    already uses per sample point, vectorised across an entire target
-    grid instead of a path - not a second implementation, and not
-    bilinear/conservative interpolation (honest scope, see this
-    module's own docstring).
-
-    Returns
-    -------
-    numpy.ndarray, shape (len(lats_target), len(lons_target))
-    """
-    lats_src_arr = np.asarray(lats_src)
-    lons_src_arr = np.asarray(lons_src)
-    lats_target_arr = np.asarray(lats_target)
-    lons_target_arr = np.asarray(lons_target)
-
-    lat_idx = np.argmin(np.abs(lats_target_arr[:, None] - lats_src_arr[None, :]), axis=1)
-    lon_idx = np.argmin(np.abs(lons_target_arr[:, None] - lons_src_arr[None, :]), axis=1)
-    return field_src[np.ix_(lat_idx, lon_idx)]
 
 
 def compute_real_multi_model_field_fusion(
