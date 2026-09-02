@@ -814,9 +814,68 @@ fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **API organisée par domaine** (§21) — toujours partielle.
+- ~~**API organisée par domaine** (§21)~~ — **construite, voir mise à
+  jour ci-dessous.**
 - **Progress réel par job** — toujours non calculé (limite honnête).
 - **Regridding bilinéaire/conservatif générique** — toujours absent
   (plus-proche-voisin seulement, partout dans ce paquet).
+
+## Mise à jour 2026-09-02 (suite) — API organisée par domaine (§21) construite
+
+`src/acf/web/routers/` : 4 routers FastAPI réels montés sous
+`/api/v1/*` sur l'app existante (`acf.web.hpc_dashboard_server.
+create_app()`), chacun une fine couche HTTP sur un moteur déjà réel
+d'une phase précédente — **rien de nouveau n'est calculé ici** :
+
+- **`/api/v1/models`** — Model Adapter Protocol (7 adaptateurs réels :
+  AROME/ALADIN/ARPEGE/ERA5/WRF/ICON/OpenIFS). `GET` liste/détail
+  `capabilities()` réel, `POST /{name}/detect` exécute le vrai
+  `detect()`.
+- **`/api/v1/complexity`** — `POST /score` appelle réellement
+  `AWCICalculator().calculate()` ; `GET /field` fait réellement tourner
+  `CoupledEarthSolver` via `compute_real_complexity_field()` (garde de
+  taille de requête partagée, `_solver_guard.py`, contre une grille
+  non bornée demandée par HTTP).
+- **`/api/v1/events`** — `POST /detect` fait tourner le vrai solveur
+  puis le vrai détecteur (`strong_wind`/`fog_favorable_conditions`),
+  stocke chaque `Event` réel en mémoire ;
+  `POST /{id}/transition` appelle réellement `Event.transition_to()`
+  — **vérifié en conditions réelles par HTTP** : une transition
+  illégale (ex. `ANALYZED → CERTIFIED`) renvoie un vrai 409 avec le
+  message de `IllegalEventTransitionError`, pas un succès silencieux.
+- **`/api/v1/datasets`** — `POST /from_complexity_field` construit un
+  vrai `Dataset` via `Dataset.from_real_field()` ;
+  `GET /{id}/validate` relance réellement `PhysicsGuard` via
+  `Dataset.validate()`.
+
+**Bug réel trouvé et corrigé en construisant ce routeur, pas supposé** :
+`Dataset.coordinates` contient de vrais tableaux numpy (`lats`/`lons`)
+dans un simple champ `dict`, que `dataclasses.asdict()` ne convertit
+pas (ce n'est pas un champ dataclass imbriqué) — `jsonable_encoder`
+plantait dessus (`TypeError` réel, reproduit puis corrigé, pas
+seulement imaginé). `_numpy_to_native()` le corrige récursivement.
+Deuxième trouvaille réelle : `forecast_field` contient de vrais
+`np.nan` (score de prévision non défini) — `.tolist()` seul produit un
+token `NaN` Python valide mais **invalide en JSON strict** (un piège
+réel pour un client JS) ; `field_to_json_safe_list()` convertit en
+`null`, vérifié par un test qui force ce cas.
+
+**Décision de portée délibérée, pas un oubli** : `/api/hpc/*` et
+`/api/fno/predict_demo` (déjà réels, déjà testés) restent à leurs
+chemins historiques — les migrer sous `/api/v1` est un refactor séparé
+(mettrait à jour leurs propres tests et le JS du dashboard), gardé hors
+de cette passe.
+
+**Validation :** 22 nouveaux tests (incluant le cycle de vie complet
+d'un événement par HTTP — 200 → 200 → 409 → re-vérification que le
+statut n'a pas bougé après le rejet). Suite complète : **3156/3156**
+tests passent (3134 avant), ruff et mypy propres sur les 1398 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- **Progress réel par job** — toujours non calculé (limite honnête).
+- **Regridding bilinéaire/conservatif générique** — toujours absent.
+- **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
+  hors de cette passe (voir ci-dessus).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

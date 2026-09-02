@@ -31,6 +31,13 @@ acf.ai.simulation.fno_model/fno_training, this session's third roadmap
 axis) via /api/fno/predict_demo - the reference checkpoint
 (models/fno_surface_temperature_reference.pt) was, until now, only
 reachable from raw Python, not from any user-facing surface.
+
+Also mounts the domain-organized /api/v1/* surface (models/complexity/
+events/datasets - see acf.web.routers's own docstring) added to close
+reports/ACF_MASTER_AUDIT_v2.md's §21 "API: PARTIAL" finding. /api/hpc/*
+and /api/fno/* above stay at their original, already-tested paths -
+migrating them under /api/v1 too is real, separate work, deliberately
+not done in the same pass (see acf.web.routers's own docstring).
 """
 
 import asyncio
@@ -44,6 +51,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from acf.ai.simulation.neural_operator import NeuralOperatorEngine
 from acf.hpc_connector.connection_manager import HPCConnectionManager
+from acf.web.routers import complexity_router, datasets_router, events_router, models_router
 
 logger = logging.getLogger("acf.web")
 
@@ -101,6 +109,15 @@ def create_app(
     app.state.hpc = hpc  # may be None - constructed lazily on first use, see _get_hpc()
     app.state.neural_engine = neural_engine
     app.state.fno_checkpoint_path = fno_checkpoint_path
+
+    # Domain-organized /api/v1/* surface (Prompt Maître ACF v2.0 §21 -
+    # see acf.web.routers's own docstring for what each router wraps
+    # and why /api/hpc/*, /api/fno/* below are deliberately NOT also
+    # moved under this prefix in this same pass).
+    app.include_router(models_router, prefix="/api/v1")
+    app.include_router(complexity_router, prefix="/api/v1")
+    app.include_router(events_router, prefix="/api/v1")
+    app.include_router(datasets_router, prefix="/api/v1")
 
     def _get_hpc() -> HPCConnectionManager:
         if app.state.hpc is None:
