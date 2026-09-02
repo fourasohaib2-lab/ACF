@@ -22,6 +22,15 @@ class WeightsManager:
         "topographic": 0.10,
         "temporal": 0.05,
         "confidence": 0.05,
+        # Real ensemble-spread-derived forecast complexity (see
+        # AWCICalculator.calculate_module_scores()). Default weight is
+        # 0.0 (opt-in, not 0.0 as "zero disagreement") so every existing
+        # caller that never supplies ensemble_members - and every
+        # existing test - gets a bit-identical awci/level/decomposition
+        # to before this module existed. A caller with real ensemble
+        # data should raise this weight explicitly, e.g. via
+        # update_weights({"ensemble_spread": 0.10, "confidence": 0.0}).
+        "ensemble_spread": 0.0,
     }
 
     def __init__(self, weights: dict[str, float] | None = None):

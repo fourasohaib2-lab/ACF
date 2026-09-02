@@ -7,6 +7,8 @@ Aviation Weather Complexity Index calculator.
 
 from typing import Any
 
+from acf.ai.ensemble.ensemble_manager import EnsembleManager
+
 from .normalizer import Normalizer
 from .weights import WeightsManager
 
@@ -47,14 +49,38 @@ class AWCICalculator:
     `decomposition` keep their exact prior meaning and formula — no
     behavior change for existing callers.
 
-    Honest limitation: `FORECAST_MODULES` currently contains only
-    `confidence`, a single externally-supplied scalar — not yet real
-    ensemble spread or multi-model disagreement (those live in
-    `ai/ensemble/`, `simulation_engine/ensemble_prediction/` and
-    `visualization/ai_forecast_center/model_consensus_engine.py`,
-    unwired here). `forecast_score` is therefore only as good as
-    whatever `confidence` the caller supplies — documented, not
-    fabricated as a richer forecast-uncertainty measure than it is.
+    Real ensemble spread (NOTE, added 2026-09-02)
+    -----------------------------------------------------------------
+    `FORECAST_MODULES` now also includes `ensemble_spread`, computed
+    from genuine ensemble statistics via
+    `acf.ai.ensemble.ensemble_manager.EnsembleManager` (real mean/
+    standard-deviation formulas, not a placeholder) when the caller
+    supplies `data["ensemble_members"]` — a `dict[str, list[float]]`
+    mapping a variable name (one of `Normalizer.
+    ENSEMBLE_SPREAD_REFERENCE`'s keys: `cape`, `wind_speed`,
+    `temperature`, `precipitation`) to that variable's real per-member
+    forecast values at this point. Its default weight is 0.0 (see
+    `weights.py`'s `DEFAULT_WEIGHTS`), so every caller that doesn't
+    supply ensemble data gets a bit-identical `awci`/`level`/
+    `decomposition` to before this module existed — opt in explicitly
+    with `update_weights({"ensemble_spread": ..., "confidence": ...})`.
+
+    Multi-model consensus/disagreement — deliberately NOT wired.
+    `ModelConsensusEngine` (`visualization/ai_forecast_center/
+    model_consensus_engine.py`) and `ForecastComparisonMatrix`
+    (`.../forecast_comparison.py`) were checked and are themselves
+    honest stubs: the former only sums declared weights and says so
+    (`status: "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"`), the latter
+    explicitly reports `"status":
+    "NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`, `"is_real_data": False`.
+    Neither ever fuses or compares a real model output field anywhere
+    in ACF today. Wiring a "model disagreement" module from either
+    would mean computing a number from data that does not exist —
+    exactly the kind of fabrication this project's audits exist to
+    remove, not add. `ensemble_spread` above is real precisely because
+    the caller supplies real member values; consensus stays honestly
+    absent from `FORECAST_MODULES` until ACF has real multi-model
+    field fusion to derive it from.
 
     Interaction terms
     ------------------
@@ -97,7 +123,7 @@ class AWCICalculator:
     PHYSICAL_MODULES = frozenset(
         {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal"}
     )
-    FORECAST_MODULES = frozenset({"confidence"})
+    FORECAST_MODULES = frozenset({"confidence", "ensemble_spread"})
 
     def __init__(self, weights: dict[str, float] | None = None):
         """
@@ -131,6 +157,13 @@ class AWCICalculator:
             - altitude: Altitude in meters
             - confidence: Forecast confidence in %
             - temporal_change: Rate of change
+            - ensemble_members: optional dict[str, list[float]], real
+              per-member forecast values at this point for one or more
+              of Normalizer.ENSEMBLE_SPREAD_REFERENCE's variables
+              (e.g. {"cape": [1200, 1800, 900, ...]}). Drives the real
+              ensemble_spread module (see class docstring); omitted or
+              empty means "no ensemble data supplied", not "models
+              agree perfectly" — see _compute_ensemble_spread_score().
 
         Returns
         -------
@@ -176,7 +209,52 @@ class AWCICalculator:
         # Lower confidence = higher complexity
         scores["confidence"] = 1.0 - self.normalizer.normalize_confidence(confidence)
 
+        # Ensemble spread module - real EnsembleManager statistics when
+        # member data is supplied (see class docstring); 0.0 ("no
+        # additional signal from this module") otherwise, mirroring how
+        # `confidence` above defaults to 100.0 (no evidence of
+        # disagreement) rather than assuming the worst.
+        ensemble_members = data.get("ensemble_members")
+        scores["ensemble_spread"] = (
+            self._compute_ensemble_spread_score(ensemble_members) if ensemble_members else 0.0
+        )
+
         return scores
+
+    def _compute_ensemble_spread_score(self, ensemble_members: dict[str, list[float]]) -> float:
+        """
+        Real ensemble-spread-derived complexity contribution, in
+        [0, 1]. For each supplied variable with a declared reference
+        spread (Normalizer.ENSEMBLE_SPREAD_REFERENCE) and at least 2
+        member values, computes the genuine ensemble standard
+        deviation via EnsembleManager(values).spread — the same
+        formula EnsembleManager already provides — then normalizes it.
+        Averages across whichever variables were actually supplied.
+
+        Parameters
+        ----------
+        ensemble_members : dict[str, list[float]]
+            Real per-member forecast values, keyed by variable name.
+
+        Returns
+        -------
+        float
+            Mean normalized spread in [0, 1] across the recognized,
+            usable variables. 0.0 if none of the supplied variables
+            are recognized or none has >= 2 members — an honestly
+            "no usable ensemble signal" result, not a claim that the
+            ensemble genuinely agrees.
+        """
+        normalized_spreads = []
+        for variable, values in ensemble_members.items():
+            if variable not in Normalizer.ENSEMBLE_SPREAD_REFERENCE or len(values) < 2:
+                continue
+            spread = EnsembleManager(values).spread
+            normalized_spreads.append(self.normalizer.normalize_ensemble_spread(spread, variable))
+
+        if not normalized_spreads:
+            return 0.0
+        return sum(normalized_spreads) / len(normalized_spreads)
 
     def calculate_interaction_scores(self, module_scores: dict[str, float]) -> dict[str, float]:
         """
@@ -333,6 +411,7 @@ class AWCICalculator:
             "topographic": "Topographique (altitude)",
             "temporal": "Évolution temporelle",
             "confidence": "Incertitude de prévision",
+            "ensemble_spread": "Désaccord d'ensemble (spread réel)",
             "wind_topo_interaction": "Interaction Vent x Relief",
             "conv_thermo_interaction": "Interaction Convection x Thermodynamique",
         }

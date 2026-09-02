@@ -358,6 +358,112 @@ def test_renormalized_score_is_none_when_weight_budget_is_zero():
     assert result["physical_score"] is not None
 
 
+def test_ensemble_spread_module_present_but_zero_weight_by_default():
+    """
+    ensemble_spread must appear in module_scores (it's part of the
+    PHYSICAL/FORECAST partition), but with DEFAULT_WEIGHTS its weight
+    is 0.0, so it must never move awci/level/decomposition for a
+    caller that doesn't opt in - existing behavior is preserved
+    exactly.
+    """
+    calc = AWCICalculator()
+    data = {
+        "temperature": 300.0,
+        "wind_speed": 10.0,
+        "cape": 1000.0,
+        "confidence": 80.0,
+        "ensemble_members": {"cape": [200.0, 3000.0, 1500.0]},  # huge real disagreement
+    }
+    result = calc.calculate(data)
+    assert "ensemble_spread" in result["module_scores"]
+    assert result["decomposition"]["ensemble_spread"] == 0.0
+
+    without_ensemble = calc.calculate({k: v for k, v in data.items() if k != "ensemble_members"})
+    assert result["awci"] == without_ensemble["awci"]
+
+
+def test_ensemble_spread_uses_real_ensemble_manager_statistics():
+    """
+    CORRECTED principle applied here: ensemble_spread must be computed
+    from EnsembleManager's genuine standard-deviation formula on the
+    real member values supplied, not a placeholder - a wide spread
+    must score higher than a narrow one for the exact same mean.
+    """
+    calc = AWCICalculator()
+
+    tight_ensemble = {"cape": [990.0, 1000.0, 1010.0]}  # mean 1000, tiny spread
+    wide_ensemble = {"cape": [200.0, 1000.0, 1800.0]}  # mean 1000, huge spread
+
+    tight_score = calc.calculate_module_scores({"cape": 1000.0, "ensemble_members": tight_ensemble})[
+        "ensemble_spread"
+    ]
+    wide_score = calc.calculate_module_scores({"cape": 1000.0, "ensemble_members": wide_ensemble})[
+        "ensemble_spread"
+    ]
+
+    assert wide_score > tight_score
+    assert 0.0 <= tight_score <= 1.0
+    assert 0.0 <= wide_score <= 1.0
+
+
+def test_ensemble_spread_opted_in_moves_forecast_score_not_physical_score():
+    """
+    A caller that explicitly gives ensemble_spread real weight sees it
+    move forecast_score (real forecast-uncertainty signal), while
+    physical_score - computed from an unrelated set of modules - must
+    stay exactly put.
+    """
+    weights = {
+        "dynamic": 0.20,
+        "thermodynamic": 0.25,
+        "convective": 0.20,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.00,
+        "confidence": 0.00,
+        "ensemble_spread": 0.10,
+    }
+    calc = AWCICalculator(weights)
+    base_data = {"temperature": 300.0, "wind_speed": 10.0, "cape": 1000.0, "confidence": 100.0}
+
+    calm = calc.calculate({**base_data, "ensemble_members": {"cape": [995.0, 1000.0, 1005.0]}})
+    disagreeing = calc.calculate({**base_data, "ensemble_members": {"cape": [100.0, 1000.0, 2200.0]}})
+
+    assert disagreeing["forecast_score"] > calm["forecast_score"]
+    assert disagreeing["physical_score"] == pytest.approx(calm["physical_score"])
+
+
+def test_ensemble_spread_ignores_unrecognized_variables_and_short_series():
+    calc = AWCICalculator()
+    scores = calc.calculate_module_scores(
+        {
+            "ensemble_members": {
+                "totally_unknown_variable": [1.0, 2.0, 3.0],
+                "cape": [1000.0],  # only 1 member - can't compute a spread
+            }
+        }
+    )
+    # Neither entry is usable -> honest 0.0, not an error and not a
+    # fabricated disagreement value.
+    assert scores["ensemble_spread"] == 0.0
+
+
+def test_normalize_ensemble_spread_raises_for_unknown_variable():
+    """
+    A silent fallback to some default reference scale for an
+    unrecognized variable would fabricate a normalization nobody
+    chose - must fail loudly instead.
+    """
+    with pytest.raises(KeyError):
+        Normalizer.normalize_ensemble_spread(10.0, "totally_unknown_variable")
+
+
+def test_normalize_ensemble_spread_saturates_at_one():
+    assert Normalizer.normalize_ensemble_spread(1500.0, "cape") == pytest.approx(1.0)
+    assert Normalizer.normalize_ensemble_spread(999999.0, "cape") == pytest.approx(1.0)
+    assert Normalizer.normalize_ensemble_spread(0.0, "cape") == 0.0
+
+
 def test_weights_manager():
     """Test weights manager functionality."""
     # Créer un gestionnaire avec des poids personnalisés

@@ -133,6 +133,55 @@ class Normalizer:
         """
         return Normalizer.normalize_humidity(value)
 
+    # Reference "large disagreement" spread per variable, used to
+    # normalize a real ensemble standard deviation (from
+    # acf.ai.ensemble.ensemble_manager.EnsembleManager.spread) to
+    # [0, 1]. Like AWCICalculator.INTERACTION_WEIGHTS, these are an ACF
+    # design choice (no published external standard defines "large" CAPE
+    # ensemble spread for this composite index) - documented as such,
+    # not presented as a literature result. A spread at or above the
+    # reference saturates to 1.0 (maximum forecast complexity from that
+    # variable), not an error.
+    ENSEMBLE_SPREAD_REFERENCE = {
+        "cape": 1500.0,  # J/kg - members disagreeing by this much on CAPE is a very unsettled convective forecast
+        "wind_speed": 15.0,  # m/s
+        "temperature": 5.0,  # K
+        "precipitation": 20.0,  # mm/h
+    }
+
+    @staticmethod
+    def normalize_ensemble_spread(spread: float, variable: str) -> float:
+        """
+        Normalize a real ensemble spread (standard deviation across
+        forecast members, e.g. from EnsembleManager.spread) to [0, 1].
+
+        Parameters
+        ----------
+        spread : float
+            Standard deviation across ensemble members, in the
+            variable's native units. Always >= 0 by construction
+            (it's a standard deviation) - a negative value is a
+            caller bug, not a valid "low disagreement" signal, and is
+            clamped to 0 rather than silently accepted.
+        variable : str
+            One of ENSEMBLE_SPREAD_REFERENCE's keys.
+
+        Returns
+        -------
+        float
+            spread / reference, clamped to [0, 1].
+
+        Raises
+        ------
+        KeyError
+            If `variable` has no declared reference spread - silently
+            falling back to some default would fabricate a
+            normalization scale nobody chose.
+        """
+        reference = Normalizer.ENSEMBLE_SPREAD_REFERENCE[variable]
+        spread = max(0.0, spread)
+        return min(1.0, spread / reference)
+
     @staticmethod
     def normalize_percentile(value: float, climatology: list[float]) -> float:
         """

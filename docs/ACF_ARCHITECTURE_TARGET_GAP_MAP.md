@@ -119,11 +119,26 @@ conforme à la règle "ne rien déplacer" de sa propre spécification
 d'ingénierie pour cette étape.
 
 Reste non fait, documenté honnêtement dans le docstring de la classe :
-`FORECAST_MODULES` ne contient encore que `confidence`, un scalaire fourni
-de l'extérieur — pas encore le vrai spread d'ensemble ou le désaccord
-inter-modèles (`ai/ensemble/`, `visualization/ai_forecast_center/
-model_consensus_engine.py`, non branchés). Pas de dimension spatiale
-(2D/3D/4D) — le moteur reste scalaire/ponctuel.
+pas de dimension spatiale (2D/3D/4D) — le moteur reste scalaire/ponctuel.
+
+**Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
+honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut
+maintenant `ensemble_spread`, calculé à partir de vraies statistiques
+d'ensemble (`ai/ensemble/ensemble_manager.py::EnsembleManager`, formule
+d'écart-type réelle) quand l'appelant fournit de vraies valeurs par membre
+(`data["ensemble_members"]`). Poids par défaut `0.0` (opt-in) — aucun
+appelant existant n'est affecté. Vérifié avec de vraies valeurs
+d'ensemble : `EnsembleManager([850, 1200, 400, 2100, 950]).spread` = 629.5
+J/kg réel, propagé jusqu'à `forecast_score`.
+
+En revanche, `ModelConsensusEngine` et `ForecastComparisonMatrix`
+(`visualization/ai_forecast_center/`) ont été vérifiés et sont eux-mêmes
+des stubs honnêtes — aucune vraie fusion de champs multi-modèles n'existe
+nulle part dans ACF (`status: "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"` /
+`"NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`). Les brancher aurait fabriqué un
+score de désaccord inter-modèles à partir de données qui n'existent pas —
+délibérément laissé absent tant qu'ACF n'a pas de vraie fusion
+multi-modèles à exploiter.
 
 ## Recommandation (à valider avec l'utilisateur)
 
