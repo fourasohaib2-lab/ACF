@@ -1,9 +1,18 @@
+"""
+CORRECTED: both tests here used to construct WorkspaceManager() with no
+way to isolate its RecentProjectsManager, so create_project()/
+save_project() wrote real entries into the actual user's
+~/.acf/recent_projects.json on whatever machine ran this test suite -
+confirmed present on disk from past runs. Now pass an isolated
+recent_projects_file under pytest's own tmp_path.
+"""
+
 from acf.workspace.manager import WorkspaceManager
 
 
 def test_create_project(tmp_path):
 
-    manager = WorkspaceManager()
+    manager = WorkspaceManager(recent_projects_file=tmp_path / "recent_projects.json")
 
     project = manager.create_project(
         name="Demo",
@@ -28,7 +37,7 @@ def test_save_and_reopen_project_preserves_state(tmp_path):
     WorkspaceManager uses) discarded a project's resources, metadata,
     settings, and original creation date.
     """
-    manager = WorkspaceManager()
+    manager = WorkspaceManager(recent_projects_file=tmp_path / "recent_projects.json")
 
     project = manager.create_project(name="Demo", directory=tmp_path)
     original_created = project.created

@@ -14,11 +14,26 @@ class WorkspaceManager:
     Gestionnaire des projets ACF.
     """
 
-    def __init__(self):
+    def __init__(self, recent_projects_file=None):
+        """
+        NOTE (correction — real state leak, confirmed on disk): with no way
+        to override RecentProjectsManager's file, every WorkspaceManager()
+        - including every test that calls create_project()/save_project()/
+        open_project() - wrote to the real ~/.acf/recent_projects.json on
+        whatever machine ran it, regardless of test isolation elsewhere
+        (create_project's own project files were correctly written under
+        pytest's tmp_path, but the "recent project" entry itself leaked
+        into the real user's persistent config either way). Confirmed:
+        this machine's actual ~/.acf/recent_projects.json contained
+        multiple /tmp/pytest-of-.../test_.../Demo/Demo.acfproj entries
+        from past test runs. recent_projects_file lets a caller (tests,
+        primarily) inject an isolated path instead; defaults to the same
+        real location as before for actual application use.
+        """
 
         self.current_project = None
 
-        self.recent = RecentProjectsManager()
+        self.recent = RecentProjectsManager(recent_projects_file)
 
     # ======================================================
     # Création

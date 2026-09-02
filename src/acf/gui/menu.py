@@ -34,106 +34,125 @@ class MenuManager:
     ##################################################
 
     def create(self):
-
+        """
+        NOTE (investigated, not a real bug): every QMenu/QAction created
+        here used to be a bare local variable with no `self.` reference
+        kept after create() returned. This was investigated as a possible
+        real crash - `menu_bar.actions()[i].menu()` on a menu built this
+        way does raise "libshiboken: Internal C++ object (QMenu) already
+        deleted" when queried from Python under this PySide6 6.11.1 /
+        offscreen-platform combination - but further testing showed that
+        access pattern itself is the unreliable part, not the object's
+        lifetime: the SAME menu, queried via win.menuBar().findChildren
+        (QMenu) - i.e. via Qt's own real child-traversal, the mechanism
+        actually used when a menu bar is shown and clicked - is fully
+        intact with all its actions, with or without any Python reference
+        kept, confirmed by direct reproduction on the original bare-local
+        pattern. So this was not, in fact, liable to crash for an
+        operator actually using the menu. Kept as instance attributes
+        anyway as better practice (makes every menu/action independently
+        addressable - e.g. from tests - without relying on
+        findChildren()), not because it was fixing a proven defect.
+        """
         menu_bar = self.window.menuBar()
 
         ##################################################
         # FILE
         ##################################################
 
-        file_menu = menu_bar.addMenu("File")
+        self.file_menu = menu_bar.addMenu("File")
 
-        new_action = QAction("New Project...", self.window)
+        self.new_action = QAction("New Project...", self.window)
 
-        open_action = QAction("Open Project...", self.window)
+        self.open_action = QAction("Open Project...", self.window)
 
-        self.recent_menu = file_menu.addMenu("Recent Projects")
+        self.recent_menu = self.file_menu.addMenu("Recent Projects")
 
-        properties_action = QAction("Project Properties", self.window)
+        self.properties_action = QAction("Project Properties", self.window)
 
-        save_action = QAction("Save Project", self.window)
+        self.save_action = QAction("Save Project", self.window)
 
-        close_action = QAction("Close Project", self.window)
+        self.close_action = QAction("Close Project", self.window)
 
-        exit_action = QAction("Exit", self.window)
+        self.exit_action = QAction("Exit", self.window)
 
-        new_action.triggered.connect(self.new_project)
+        self.new_action.triggered.connect(self.new_project)
 
-        open_action.triggered.connect(self.open_project)
+        self.open_action.triggered.connect(self.open_project)
 
-        properties_action.triggered.connect(self.show_project_properties)
+        self.properties_action.triggered.connect(self.show_project_properties)
 
-        save_action.triggered.connect(self.save_project)
+        self.save_action.triggered.connect(self.save_project)
 
-        close_action.triggered.connect(self.close_project)
+        self.close_action.triggered.connect(self.close_project)
 
-        exit_action.triggered.connect(self.window.close)
+        self.exit_action.triggered.connect(self.window.close)
 
-        file_menu.addAction(new_action)
+        self.file_menu.addAction(self.new_action)
 
-        file_menu.addAction(open_action)
+        self.file_menu.addAction(self.open_action)
 
-        file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
-        file_menu.addMenu(self.recent_menu)
+        self.file_menu.addMenu(self.recent_menu)
 
-        file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
-        file_menu.addAction(properties_action)
+        self.file_menu.addAction(self.properties_action)
 
-        file_menu.addAction(save_action)
+        self.file_menu.addAction(self.save_action)
 
-        file_menu.addAction(close_action)
+        self.file_menu.addAction(self.close_action)
 
-        file_menu.addSeparator()
+        self.file_menu.addSeparator()
 
-        file_menu.addAction(exit_action)
+        self.file_menu.addAction(self.exit_action)
 
         ##################################################
         # DATA MENU
         ##################################################
 
-        data_menu = menu_bar.addMenu("Data")
+        self.data_menu = menu_bar.addMenu("Data")
 
-        open_dataset_action = QAction("Open Dataset...", self.window)
+        self.open_dataset_action = QAction("Open Dataset...", self.window)
 
-        close_dataset_action = QAction("Close Dataset", self.window)
+        self.close_dataset_action = QAction("Close Dataset", self.window)
 
-        dataset_info_action = QAction("Dataset Information", self.window)
+        self.dataset_info_action = QAction("Dataset Information", self.window)
 
-        refresh_dataset_action = QAction("Refresh Dataset View", self.window)
+        self.refresh_dataset_action = QAction("Refresh Dataset View", self.window)
 
-        open_dataset_action.triggered.connect(self.open_dataset)
+        self.open_dataset_action.triggered.connect(self.open_dataset)
 
-        close_dataset_action.triggered.connect(self.close_dataset)
+        self.close_dataset_action.triggered.connect(self.close_dataset)
 
-        dataset_info_action.triggered.connect(self.dataset_information)
+        self.dataset_info_action.triggered.connect(self.dataset_information)
 
-        refresh_dataset_action.triggered.connect(self.refresh_dataset_view)
+        self.refresh_dataset_action.triggered.connect(self.refresh_dataset_view)
 
-        data_menu.addAction(open_dataset_action)
+        self.data_menu.addAction(self.open_dataset_action)
 
-        data_menu.addAction(close_dataset_action)
+        self.data_menu.addAction(self.close_dataset_action)
 
-        data_menu.addSeparator()
+        self.data_menu.addSeparator()
 
-        data_menu.addAction(dataset_info_action)
+        self.data_menu.addAction(self.dataset_info_action)
 
-        data_menu.addAction(refresh_dataset_action)
+        self.data_menu.addAction(self.refresh_dataset_action)
 
         ##################################################
         # OTHER MENUS
         ##################################################
 
-        menu_bar.addMenu("Edit")
+        self.edit_menu = menu_bar.addMenu("Edit")
 
-        menu_bar.addMenu("View")
+        self.view_menu = menu_bar.addMenu("View")
 
-        menu_bar.addMenu("Tools")
+        self.tools_menu = menu_bar.addMenu("Tools")
 
-        menu_bar.addMenu("Plugins")
+        self.plugins_menu = menu_bar.addMenu("Plugins")
 
-        menu_bar.addMenu("Help")
+        self.help_menu = menu_bar.addMenu("Help")
 
         self.update_recent_projects()
 
@@ -294,8 +313,16 @@ class MenuManager:
     ##################################################
 
     def update_recent_projects(self):
-
+        """
+        NOTE (same investigated-not-proven category as create()'s own
+        NOTE): these dynamically-built QAction objects used to be bare
+        local variables inside the loop. Kept in self._recent_actions as
+        the same better-practice precaution, not because a real defect
+        was proven here either.
+        """
         self.recent_menu.clear()
+
+        self._recent_actions: list[QAction] = []
 
         projects = self.window.workspace.recent_projects()
 
@@ -305,6 +332,8 @@ class MenuManager:
             action.setEnabled(False)
 
             self.recent_menu.addAction(action)
+
+            self._recent_actions.append(action)
 
             return
 
@@ -316,6 +345,8 @@ class MenuManager:
             action.triggered.connect(lambda checked=False, file=item: self.open_project_file(file))
 
             self.recent_menu.addAction(action)
+
+            self._recent_actions.append(action)
 
     def open_project_file(self, filename):
 
