@@ -275,6 +275,18 @@ class MenuManager:
         if explorer:
             explorer.refresh_datasets(self.window.data.datasets())
 
+        # NOTE: dataset_panel is optional - only ClassicDashboardWindow
+        # currently attaches one (acf.gui.docks.dataset_panel.DatasetPanel,
+        # this session's finding: a real, correct QDockWidget that was
+        # never constructed anywhere before). Guarded with getattr so
+        # MenuManager keeps working against any window that doesn't have
+        # one, matching the pattern already used for other optional
+        # window attributes throughout this class.
+        dataset_panel = getattr(self.window, "dataset_panel", None)
+
+        if dataset_panel:
+            dataset_panel.refresh()
+
     ##################################################
     # PROJECT PROPERTIES
     ##################################################

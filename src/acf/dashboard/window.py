@@ -36,10 +36,17 @@ match), and `window.dashboard` (Dashboard.get_panel("explorer") - which
 this window already has via DashboardManager). All three pieces existed,
 tested in isolation, and were clearly designed for each other, but
 nothing ever assembled them behind one real window until now.
+
+It also docks a real DatasetPanel (acf.gui.docks.dataset_panel -
+likewise never constructed anywhere before this) alongside the file
+Explorer, bound to the same DataManager - MenuManager's
+refresh_dataset_view() now keeps both in sync whenever a dataset is
+opened.
 """
 
 from typing import TYPE_CHECKING, Any
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QToolBar
 
@@ -77,7 +84,12 @@ class ClassicDashboardWindow(QMainWindow):
         # construction that imports acf.gui.menu itself first), this is
         # safe - but keeping it local avoids re-introducing the same class
         # of circular-import risk fixed for open_awci_dashboard() below.
+        from acf.gui.docks.dataset_panel import DatasetPanel
         from acf.gui.menu import MenuManager
+
+        self.dataset_panel: DatasetPanel = DatasetPanel(self)
+        self.dataset_panel.set_data_manager(self.data)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dataset_panel)
 
         self.menu_manager: MenuManager = MenuManager(self)
 
