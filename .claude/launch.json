@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "acf-web",
+      "runtimeExecutable": "/home/souhaib/ACF/.venv/bin/python",
+      "runtimeArgs": ["-m", "acf.web.hpc_dashboard_server"],
+      "port": 8090
+    }
+  ]
+}

@@ -29,10 +29,14 @@ dependencies = [
     "h5py",
     "PySide6",
     "metpy",
+    "fastapi",
+    "uvicorn",
+    "websockets",
 ]
 
 [project.scripts]
 acf-gui = "acf.gui.app:main"
+acf-web = "acf.web.hpc_dashboard_server:run"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
