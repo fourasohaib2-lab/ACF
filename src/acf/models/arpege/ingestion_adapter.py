@@ -62,6 +62,10 @@ class ARPEGEIngestionAdapter(BaseWeatherModel):
         """Return ARPEGE grid projection description."""
         return "Stretched Rotated Spherical Harmonics / Gaussian Grid"
 
+    def read(self, filepath: str | Path) -> dict[str, Any]:
+        """Model Adapter Protocol entry point (see base_model.py) - delegates to read_arpege_file(), same real logic, added so a caller doesn't need model-specific branching to read any adapter's file."""
+        return self.read_arpege_file(filepath)
+
     def read_arpege_file(self, filepath: str | Path) -> dict[str, Any]:
         """Ingest ARPEGE operational output using EPyGrAM backend."""
         path = Path(filepath)

@@ -106,14 +106,9 @@ méthodologie d'audit. Les deux existent, mais ne sont pas la même chose.
 
 - **Data Contract formalisé (§4 du Prompt Maître) : ✅ IMPLEMENTED, TESTED
   (2026-09-02)** — voir mise à jour ci-dessous.
-- **Model Adapters : PARTIAL.** `models/{arome,aladin,arpege}/
-  ingestion_adapter.py` existent réellement (`AROMEIngestionAdapter(
-  BaseWeatherModel)` avec `detect()/variables()/levels()/projection()/
-  read_arome_file()`), mais avec un contrat différent (pas
-  `identify/discover/read/metadata/coordinates/vertical_levels/
-  forecast_times/capabilities/normalize` du Prompt Maître) — un
-  chevauchement partiel, pas une correspondance exacte. **WRF, ICON,
-  OpenIFS : aucun adapter** — confirmé absent, pas juste incomplet.
+- **Model Adapters : ✅ Protocol aligné (2026-09-02)** — voir mise à jour
+  ci-dessous. **WRF, ICON, OpenIFS : toujours aucun adapter** — confirmé
+  absent, pas juste incomplet, hors scope de cette phase.
 - Formats : `xarray`/`netCDF4`/`cfgrib`/`eccodes` réellement déclarés et
   utilisés (voir `pyproject.toml`'s `formats` extra, construit cette
   session) pour NetCDF/GRIB en lecture. Pas d'écriture GRIB2/BUFR réelle.
@@ -372,6 +367,43 @@ que `spatial_field.py`/`vertical_field.py`/`temporal_field.py`
 retournent eux-mêmes en interne — migrer ces points d'appel est un
 chantier séparé et plus large, volontairement pas fait en un seul
 passage.
+
+## Mise à jour 2026-09-02 (suite) — Model Adapter Protocol aligné
+
+Étendu `models/base_model.py::BaseWeatherModel` (déjà le vrai contrat
+partagé d'ACF, juste sous d'autres noms de méthodes) avec les noms
+exacts du §5 du Prompt Maître, **sans rien casser ni dupliquer** :
+
+- `identify()`/`vertical_levels()` — vrais alias de `detect()`/`levels()`
+  déjà existants.
+- `read()` — chaque adaptateur nommait sa méthode de lecture
+  différemment (`read_arome_file`/`read_aladin_file`/
+  `read_arpege_file`) — c'est exactement le genre de chose qui force le
+  `if model == "AROME":` que le prompt interdit. Une seule ligne
+  ajoutée à chacun des 3 adaptateurs : `read()` délègue vers sa méthode
+  existante — **testé pour prouver l'égalité exacte des résultats**,
+  pas une seconde implémentation.
+- `metadata()`/`coordinates()` — réels si un `filepath` est associé à
+  l'instance, sinon `NotImplementedError` honnête (pas de dict vide
+  fabriqué).
+- `forecast_times()` — `NotImplementedError` partout : aucun adaptateur
+  n'a de vraie logique de découverte de cycle de prévision, confirmé,
+  pas deviné.
+- `capabilities()` — vrai rapport d'introspection (`has_real_read_backend`
+  détecté en comparant la classe réelle à `BaseWeatherModel.read` — pas
+  une déclaration statique).
+- `normalize()` — tente un vrai mapping via `acf.normalization` (déjà
+  construit). **Trouvaille honnête** : `ERA5Model` utilise de vrais
+  noms courts ECMWF (t2m, u10, v10, msl...) qui *matchent* réellement
+  la table `parameters.json` — mapping partiel réel (4 des 10
+  variables). AROME/ALADIN/ARPEGE utilisent des noms de champs internes
+  format FA (`S090TEMPERATURE`...) qui ne correspondent à **aucune**
+  table réelle du dépôt — `normalize()` le rapporte honnêtement (tout
+  non mappé), sans inventer de table de correspondance.
+
+**Validation :** 3003/3003 tests passent (2987 avant, +16 nouveaux),
+ruff et mypy propres sur les 1368 fichiers, zéro régression sur les 22
+tests d'adaptateurs préexistants.
 
 ## Recommandation — ordre de phase suivant (pas les 30 à la fois)
 

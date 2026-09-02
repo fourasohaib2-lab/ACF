@@ -64,6 +64,10 @@ class ALADINIngestionAdapter(BaseWeatherModel):
         """Return ALADIN grid projection description."""
         return "Lambert Conformal / ALADIN Domain (7.5km resolution)"
 
+    def read(self, filepath: str | Path) -> dict[str, Any]:
+        """Model Adapter Protocol entry point (see base_model.py) - delegates to read_aladin_file(), same real logic, added so a caller doesn't need model-specific branching to read any adapter's file."""
+        return self.read_aladin_file(filepath)
+
     def read_aladin_file(self, filepath: str | Path) -> dict[str, Any]:
         """Ingest ALADIN operational output using EPyGrAM backend."""
         path = Path(filepath)

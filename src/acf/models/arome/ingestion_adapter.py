@@ -64,6 +64,10 @@ class AROMEIngestionAdapter(BaseWeatherModel):
         """Return AROME grid projection description."""
         return "Lambert-93 / Conformal Projection (1.3km resolution)"
 
+    def read(self, filepath: str | Path) -> dict[str, Any]:
+        """Model Adapter Protocol entry point (see base_model.py) - delegates to read_arome_file(), same real logic, added so a caller doesn't need model-specific branching to read any adapter's file."""
+        return self.read_arome_file(filepath)
+
     def read_arome_file(self, filepath: str | Path) -> dict[str, Any]:
         """Ingest AROME operational output using EPyGrAM backend."""
         path = Path(filepath)
