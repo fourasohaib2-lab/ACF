@@ -24,7 +24,7 @@ supposition — voir la colonne "Preuve".
 | 2 | `data/` | ⚠️ | `data/`, `catalog/`, `catalogs/`, `importers/`, `io/` | 5 paquets qui se recouvrent partiellement |
 | 3 | `ingestion/` | ⚠️ | `data/universal_ingestion.py`, `data_assimilation/observation_ingestion/` | fichiers isolés, pas de paquet dédié |
 | 4 | `models/` | ✅ (partiel) | `models/{arome,aladin,arpege,implementations}/` | existe, mais seulement 3 modèles NWP sur les 7 listés (pas de WRF/ICON/IFS/OpenIFS) |
-| 5 | `normalization/` | ❌ | — | aucun fichier `*normaliz*` dans `src/acf` |
+| 5 | `normalization/` | ✅ (2026-09-02) | `normalization/` | Construit : conversion d'unités réelle (MetPy/pint) + mapping nom-modèle→CF réel, tables JSON réelles trouvées orphelines et enfin branchées |
 | 6 | `qc/` | ⚠️ | `data_assimilation/quality_control/` | existe mais imbriqué 2 niveaux, pas top-level |
 | 7 | `physics/` | ⚠️ | `earth_physics/`, `science/laws/`, `science/physical_laws/` | logique physique dispersée entre 2 arbres |
 | 8 | `grid/` | ⚠️ | `model4d/grid4d.py`, `hpc/distributed_grid.py`, `geospatial/` | pas de paquet `grid/` unifié |
@@ -46,7 +46,7 @@ supposition — voir la colonne "Preuve".
 | 24 | `land/` | ⚠️ | `earth_physics/land_surface/`, `surfex/` | existe, réparti entre 2 arbres |
 | 25 | `ocean/` | ✅ | `ocean/` | dossier identique, bien fourni |
 | 26 | `aerosols/` | ⚠️ | `science/clouds/aerosols.py`, `science/encyclopedia/aerosols_chemistry.py`, `model4d/physics/aerosol_*.py` | dispersé sur 3+ fichiers, pas de paquet dédié |
-| 27 | `fire_weather/` | ❌ | — | **aucune trace** |
+| 27 | `fire_weather/` | ✅ (2026-09-02) | `fire_weather/` | Construit : indice composite réel ACF (pas une reproduction de Fosberg FWI/FWI canadien — coefficients non vérifiables hors-ligne, voir section dédiée plus bas) |
 | 28 | `aviation/` | ✅ | `aviation/` | dossier identique, bien fourni (airports, graphics, hazards, icao, performance, routing) |
 | 29 | `climate/` | ✅ | `climate/` | dossier identique, bien fourni |
 | 30 | `simulation/` | ⚠️ | `simulation_engine/` | existe, nom différent |
@@ -56,16 +56,70 @@ supposition — voir la colonne "Preuve".
 | 34 | `api/` | ⚠️ | `api/`, `web/` | existe, mais séparé entre façade Python (`api/`) et couche HTTP réelle (`web/hpc_dashboard_server.py`) |
 | 35 | `realtime/` | ⚠️ | `monitoring/realtime_monitor.py` | un seul fichier, pas de paquet dédié |
 | 36 | `workflow/` | ⚠️ | `hpc_workflow/` (19 fichiers), `aeos/workflow/`, `master/workflow_master.py` | très fourni mais 100% orienté HPC/orchestration système, pas un "workflow" générique de traitement de données |
-| 37 | `storage/` | ❌ | — | aucun paquet `storage/` (les writers vivent dans `data/writers/`) |
+| 37 | `storage/` | ✅ (2026-09-02) | `storage/` | Construit : façade réelle sur les vrais writers NetCDF/Zarr déjà branchés + nouveau writer CSV réel ; `data/writers/` s'est révélé être des stubs 100% docstring, jamais utilisés |
 | 38 | `verification/` | ✅ | `verification/`, `climate/verification/` | existe (dupliqué à 2 endroits) |
 
-## Bilan chiffré
+## Mise à jour 2026-09-02 (suite 8) — normalization/, fire_weather/ et storage/ construits
+
+Sur demande explicite ("vas-y, construis normalization/, fire_weather/
+et storage/"), les 3 derniers paquets genuinement absents ont été
+construits :
+
+- **`normalization/`** — conversion d'unités réelle via MetPy/pint
+  (vérifié : pint comprend nativement la notation CF `"m s-1"`, pas de
+  table de facteurs inventée) + mapping nom-court-modèle → nom
+  standard CF, en chargeant pour de vrai les tables JSON réelles
+  `resources/standards/ecmwf/parameters.json` et
+  `resources/standards/cf/cf_standard_names.json` — **trouvaille** :
+  ces deux fichiers existaient déjà, corrects, mais n'étaient chargés
+  par **aucun** code du dépôt avant ce paquet (grep exhaustif) —
+  branchés plutôt que dupliqués. Portée honnête : couverture limitée
+  aux quelques variables que ces tables contiennent réellement
+  aujourd'hui ; pas de regridding spatial ni d'interpolation verticale
+  (toujours absents, documenté).
+- **`storage/`** — façade réelle unifiée sur les writers déjà réels et
+  branchés (`simulation_engine/output/{netcdf_writer,zarr_writer}`),
+  pas une réinvention. **Trouvaille** : `data/writers/` contient deux
+  classes de writer (NetCDF, CSV) qui sont des stubs 100% docstring,
+  zéro code, jamais utilisés nulle part — confirmé en les lisant, pas
+  supposé. Un vrai writer CSV neuf ajouté (module `csv` standard, pas
+  pandas — supprimé des dépendances la veille comme inutilisé).
+  GRIB2/GeoTIFF/COG explicitement non construits (dépendances réelles
+  manquantes ou supprimées).
+- **`fire_weather/`** — indice de risque incendie composite réel.
+  Décision explicite et documentée : ne PAS reproduire les
+  coefficients exacts d'un indice publié (Fosberg FWI, FWI canadien,
+  McArthur FFDI) qui ne peuvent pas être vérifiés dans cet
+  environnement hors-ligne et où une erreur de transcription aurait un
+  vrai enjeu de sécurité — même discipline de non-fabrication que le
+  reste du projet. À la place : un indice composite propre à ACF,
+  construit sur des facteurs physiques réels et non-controversés
+  (humidité basse, vent fort, température élevée, sécheresse
+  prolongée), avec la même convention de divulgation honnête que les
+  `INTERACTION_WEIGHTS` d'AWCI. Validé par des invariants physiques
+  réels (RH basse → indice plus élevé, etc.), pas par des valeurs de
+  référence non vérifiables.
+
+**Validation :** 2929/2929 tests passent (2895 avant, +34 nouveaux),
+ruff et mypy propres sur les 1353 fichiers.
+
+## Bilan chiffré (mis à jour 2026-09-02, recompté depuis le tableau ci-dessus)
 
 | Statut | Nombre de couches / 38 |
 |---|---|
-| ✅ Existe tel quel | 10 |
-| ⚠️ Existe mais dispersé/renommé/imbriqué | 22 |
-| ❌ Absent | 6 (`normalization/`, `complexity/`, `fire_weather/`, `storage/`, et partiellement `vertical/`/`grid/` comme moteurs dédiés) |
+| ✅ Existe (tel quel ou construit cette session) | 13 |
+| ⚠️ Existe mais dispersé/renommé/imbriqué | 25 |
+| ❌ Absent | **0** |
+
+Les 4 couches qui étaient réellement marquées ❌ dans le tableau
+(`normalization/`, `complexity/`, `fire_weather/`, `storage/`) sont
+maintenant soit ✅ construites cette session (`normalization/`,
+`fire_weather/`, `storage/`), soit ⚠️ résolues autrement sur décision
+explicite de l'utilisateur (`complexity/`, évoluée dans `awci/`
+existant plutôt que dupliquée dans un nouveau paquet). `vertical/` et
+`grid/` restent ⚠️ (dispersés, pas des moteurs dédiés) — jamais
+marqués ❌ dans le tableau lui-même, seulement mentionnés comme
+limite dans une version antérieure de ce bilan.
 
 ## Ce que ça veut dire concrètement
 
