@@ -1556,3 +1556,115 @@ les 3 nouveaux), suite complète **3249/3249** (3246 + 3), `ruff` et
 `mypy` propres sur les fichiers touchés.
 
 Dis-moi laquelle tu veux que j'attaque ensuite.
+
+## Mise à jour 2026-09-03 — dashboard modernisé, cartes réellement manipulables, vraie 4ème dimension (5 phases)
+
+Demande explicite de l'utilisateur : "je veux améliorer le dashboard
+du acf et le perfectionner pour qu'il soit moderne idéal pour 2026 et
+améliorer aussi les cartes afficher et ajoute la 4em dimension au
+niveau d'affichage des cartes et ajoute l'option zoom des cartes et
+manipulation totale des cartes". Vu l'ampleur, planifié explicitement
+(mode plan) avec deux passes d'exploration réelles avant d'écrire une
+ligne de code, puis 3 questions de clarification posées à
+l'utilisateur (sens de "4ème dimension" — les deux : slider temps/
+niveau réel ET vraie vue 3D ; portée du zoom/pan — les deux cartes,
+ESOC ET dashboard AWCI ; portée du thème — unifier vraiment, "sors le
+meilleur de toi-même"). Livré en 5 phases indépendamment vérifiées,
+committées et poussées.
+
+**Phase A — système de design unifié.** Avant : ESOC (chrome réel,
+QSS minimal) et le dashboard AWCI (fenêtre séparée, palette codée en
+dur) utilisaient deux palettes sombres incompatibles, plus 8+ teintes
+Material non liées par label dans `esoc_statusbar.py` seul. Nouveau
+[`src/acf/gui/theme_tokens.py`](../src/acf/gui/theme_tokens.py) :
+source unique de vérité (surfaces, texte, accents, espacements, rayons,
+typographie), `resources/themes/{dark,light}.qss` réécrits avec une
+vraie couverture moderne (coins arrondis, états hover/pressed,
+`QComboBox`/`QScrollBar` stylés). `awci_dashboard.py._apply_theme()`
+route maintenant réellement par les tokens ; les 7 autres fichiers
+AWCI + `map_canvas.py`/`map_renderer.py` alignés valeur-pour-valeur
+sur les mêmes constantes (vérifié par grep après coup — plus aucun
+littéral de l'ancienne palette). 8 nouveaux tests
+(`tests/test_theme_tokens.py`).
+
+**Phase B — vrai zoom/pan/manipulation sur les deux cartes vivantes.**
+Un trio complet mais jamais câblé existait (`EventMixin`/`MapCamera`)
+— et s'est révélé avoir un vrai bug une fois vérifié : `zoom_level`/
+`center` changeaient sans jamais toucher `self.extent`. Corrigé
+(`current_extent()` réel et documenté dans
+[`map_camera.py`](../src/acf/gui/map/map_camera.py), `set_extent()`
+dérive maintenant l'inverse). Câblé dans `MapCanvas` (carte centrale
+ESOC) et `AWCIMapPanel` (cartes du dashboard AWCI). **Trois vrais bugs
+trouvés en vérifiant de bout en bout, pas hypothétiques** : (1) la
+projection Mercator par défaut a une vraie singularité aux pôles —
+`reset_view()` plantait avec "Axis limits cannot be NaN or Inf",
+corrigé par un clamp réel documenté (±85.05112878°, la même borne que
+Web Mercator/OSM/Google Maps) ; (2) même crash exact à la frontière
+±180° de longitude (cas limite PROJ/Cartopy à l'antiméridien), corrigé
+par un epsilon similaire ; (3) le plus fondamental — Qt délivre les
+vrais événements souris/molette/clavier au widget enfant
+(`FigureCanvasQTAgg`), pas au wrapper qui porte `EventMixin` : un vrai
+`QWheelEvent` envoyé à la carte ne changeait RIEN, silencieusement.
+Corrigé par un `installEventFilter()` standard Qt. Trouvé uniquement
+parce que les tests dispatchent de vrais événements Qt vers le widget
+enfant réel (`QApplication.sendEvent`), pas en appelant les méthodes
+directement. 22 nouveaux tests.
+
+**Phase C — vrai champ AWCI (+ CAPE/CIN) sur la carte centrale ESOC.**
+La carte centrale d'ESOC (le vrai centre de l'appli, visible au
+lancement) n'affichait aucune donnée AWCI réelle. Nouveau
+`AWCILayer(BaseMapLayer)` dans
+[`map_layers.py`](../src/acf/gui/map/map_layers.py) (sans motif
+synthétique de repli, contrairement à ses 6 voisins — un
+`render()` vide tant qu'aucune vraie donnée n'est fournie), nouveau
+bouton toolbar "🌪️ AWCI Field" calculant
+`compute_real_complexity_field(compute_convective_energy=True)` hors
+thread GUI — fermant au passage l'écart trouvé plus tôt dans cette
+session ("cape_field/cin_field réels et testés, zéro consommateur
+GUI"). **Vrai bug trouvé et corrigé** : le signal du worker était
+connecté à une lambda plutôt qu'une méthode liée — PySide6 ne peut pas
+déterminer la mise en file d'attente inter-thread sûre pour une lambda
+nue, donc le signal, émis depuis le thread worker, n'appelait
+silencieusement jamais rien. Corrigé en suivant le pattern déjà
+éprouvé d'`awci_dashboard.py` (méthode liée réelle). 10 nouveaux tests.
+
+**Phase D — vrai slider de niveau vertical, ferme le pipeline 4D.**
+`compute_real_complexity_volume()`/`compute_real_complexity_evolution()`
+étaient déjà réels et branchés (mode "🔬 Real Physics", animation "▶
+Play Evolution (4D)") mais chaque consommateur figeait le niveau à 0
+(surface) — l'axe vertical de cette donnée 4D déjà réelle était
+invisible. Nouveau slider de niveau réel dans
+[`awci_dashboard.py`](../src/acf/gui/dashboard/awci_dashboard.py),
+re-découpant le volume déjà calculé (aucun nouveau run solveur) via
+`_apply_volume_at_level()`, appliqué à la carte globale/régionale, au
+graphique de route, à la barre de stats, au radar/résumé de risque, et
+à l'animation d'évolution (qui ignorait le slider avant ce correctif).
+9 nouveaux tests, dont deux gardes de non-régression réelles (l'
+animation suit maintenant le niveau choisi ; un niveau au-delà du
+nombre réel de niveaux de l'évolution est clampé, pas une
+`IndexError`).
+
+**Phase E — vraie vue 3D (l'autre moitié du "les deux" de
+l'utilisateur pour la 4ème dimension).** Aucune infrastructure de
+rendu volumétrique/GPU réelle n'existe dans ce projet
+(`acf.visualization.volume_engine` : des façades d'état, pas des
+moteurs de rendu — confirmé en planifiant). Nouveau
+[`src/acf/gui/dashboard/awci_volume_3d.py`](../src/acf/gui/dashboard/awci_volume_3d.py) :
+`AWCIVolume3DView`, un vrai `Axes3D` matplotlib (déjà une dépendance
+dure, aucune nouvelle dépendance), rotation souris native. Choix de
+rendu réel et documenté : surfaces de contour empilées et translucides
+(une par niveau réel) plutôt que `ax.voxels()` (rejeté — falaise de
+performance réelle, cubes opaques qui masqueraient les niveaux
+intérieurs). Axe Z = index de niveau réel (pas une altitude dérivée —
+convertir la pression en altitude nécessiterait une vraie formule non
+encore implémentée ici ; chaque niveau affiche sa vraie pression
+moyenne de domaine en étiquette). Nouveau bouton "🧊 3D View" dans le
+dashboard AWCI. 10 nouveaux tests.
+
+**Validation globale :** suite complète **3308/3308** (3249 + 59
+nouveaux tests sur les 5 phases), `ruff` et `mypy` propres sur chaque
+fichier touché à chaque phase, chaque phase vérifiée manuellement de
+bout en bout (event loop Qt réel pompé, worker `QThreadPool` réel)
+avant l'écriture des tests automatisés — c'est cette vérification
+manuelle qui a trouvé les 4 vrais bugs listés ci-dessus, pas les tests
+eux-mêmes a priori.

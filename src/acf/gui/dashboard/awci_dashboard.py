@@ -77,6 +77,7 @@ from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
 from acf.gui.dashboard.awci_synthetic_field import awci_at, awci_grid
+from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
@@ -232,7 +233,19 @@ class AWCIDashboard(QWidget):
         self.play_evolution_button.clicked.connect(self._toggle_evolution_playback)
         self.play_evolution_button.setVisible(False)
         header_row.addWidget(self.play_evolution_button)
+
+        self.view_3d_button = QPushButton("🧊 3D View")
+        self.view_3d_button.setToolTip(
+            "Open a real, mouse-rotatable 3D view of the current Real Physics volume\n"
+            "(acf.gui.dashboard.awci_volume_3d) - stacked translucent AWCI contour\n"
+            "surfaces, one per real vertical level. Only available once '🔬 Real Physics'\n"
+            "has produced a real volume."
+        )
+        self.view_3d_button.clicked.connect(self._open_3d_view)
+        self.view_3d_button.setEnabled(False)
+        header_row.addWidget(self.view_3d_button)
         outer.addLayout(header_row)
+        self._volume_3d_window: AWCIVolume3DView | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -449,6 +462,13 @@ class AWCIDashboard(QWidget):
         self.play_evolution_button.setVisible(True)
         self.play_evolution_button.setEnabled(True)
 
+        # Same for the real 3D view - and if it's already open (from an
+        # earlier Real Physics run), refresh it with this new volume
+        # rather than leaving it showing stale data.
+        self.view_3d_button.setEnabled(True)
+        if self._volume_3d_window is not None:
+            self._refresh_3d_view()
+
     def _apply_volume_at_level(self, level_idx: int) -> None:
         """(Re)render every level-dependent Real Physics panel (global/
         regional map, route chart, stats bar, radar, risk summary) from
@@ -547,6 +567,30 @@ class AWCIDashboard(QWidget):
         self.real_physics_status.setText(f"⚠ Real physics computation failed: {message}")
         logger.error("AWCIDashboard: real physics computation failed: %s", message)
 
+    # ---------------------------------------------------------- 3D view
+
+    def _open_3d_view(self) -> None:
+        """Open (or raise, or refresh) the real 3D volume view -
+        explicit user request "ajoute la 4eme dimension" (the real-3D
+        half, alongside the level slider above)."""
+        if self._volume_3d_window is None:
+            self._volume_3d_window = AWCIVolume3DView("AWCI 3D VOLUME", parent=self)
+            self._volume_3d_window.setWindowFlag(Qt.WindowType.Window, True)
+            self._volume_3d_window.resize(700, 600)
+        self._refresh_3d_view()
+        self._volume_3d_window.show()
+        self._volume_3d_window.raise_()
+        self._volume_3d_window.activateWindow()
+
+    def _refresh_3d_view(self) -> None:
+        """(Re)populate the 3D view with the current real volume, if any."""
+        if self._volume_3d_window is None or self._real_volume is None:
+            return
+        volume = self._real_volume
+        self._volume_3d_window.set_volume(
+            volume["lons"], volume["lats"], volume["awci_volume"], volume["pressure_volume_hpa"], label="REAL PHYSICS"
+        )
+
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()
         self.play_evolution_button.setVisible(False)
@@ -560,6 +604,9 @@ class AWCIDashboard(QWidget):
         self.level_slider.blockSignals(False)
         self.level_slider.setEnabled(False)
         self.level_readout.setText("L0")
+        self.view_3d_button.setEnabled(False)
+        if self._volume_3d_window is not None:
+            self._volume_3d_window.clear_volume()
         self.real_physics_button.setText("🔬 Real Physics")
         self.real_physics_status.setText("Concept Output – Research Prototype")
         self.global_map.clear_external_field()
