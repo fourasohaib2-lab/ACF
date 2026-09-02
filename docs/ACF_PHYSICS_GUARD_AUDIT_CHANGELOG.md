@@ -1,9 +1,10 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `c1d236d`.
-**Portée :** 229 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
-`python -m compileall` clean.
+(branche `develop`), du commit `9223251` au commit `f4f8a01`.
+**Portée :** 233 commits, 2801 tests (100% verts à la fin), ruff clean, mypy clean,
+`python -m compileall` clean. Dépôt sauvegardé sur
+[github.com/fourasohaib2-lab/ACF](https://github.com/fourasohaib2-lab/ACF).
 
 ## 1. Objectif et méthode
 
@@ -210,6 +211,27 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
   utilisée — le seul point d'entrée déclaré (`acf-gui`) lance directement
   `ESOCWindow`. Documenté.
 
+## 6bis. Suite de la roadmap technique (`docs/ACF_HPC_005_NEXT_ROADMAP.md`)
+
+Sur demande explicite de l'utilisateur ("on suit l'architecture du travail"),
+premier des 3 axes de la feuille de route HPC-005 choisi et implémenté :
+
+- **`f4f8a01`** — **Dashboard Web FastAPI/WebSocket** : aucune application
+  FastAPI n'existait dans le code (`OperationalWebSocketServer` — déjà
+  corrigé plus tôt cette session — ne liait aucun vrai socket ; `ACFAPI`
+  est une façade Python sans couche HTTP). `fastapi`/`uvicorn` étaient
+  installés mais jamais déclarés comme dépendances ; `websockets` manquait
+  entièrement (sans lui, `uvicorn` ne peut servir aucun vrai WebSocket) —
+  installé et déclaré. Nouveau module `acf/web/hpc_dashboard_server.py` :
+  vraie appli FastAPI qui réutilise `HPCConnectionManager` tel quel (rien
+  n'est réinventé), avec la même distinction honnête que le correctif de
+  la toolbar ESOC (`connected` = workflow terminé vs `real_ssh_transport`
+  = vraie liaison SSH confirmée) pour ne jamais afficher une fausse
+  connexion. Point d'entrée console `acf-web`. Vérifié deux fois : 7
+  tests via `TestClient`, **et** un vrai serveur lancé sur un vrai port,
+  interrogé avec `curl` et un vrai client `websockets`, puis confirmé
+  visuellement dans un navigateur réel.
+
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..c1d236d`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..f4f8a01`.
