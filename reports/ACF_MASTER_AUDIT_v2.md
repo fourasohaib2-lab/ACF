@@ -279,7 +279,7 @@ de code).
 |---|---|
 | Repository / dépendances | VALIDATED (2938/2938, ruff/mypy propres) |
 | Complexity Engine | IMPLEMENTED, TESTED |
-| Physics Guard (infra transversale) | MISSING |
+| Physics Guard (infra transversale) | ✅ IMPLEMENTED, TESTED (2026-09-02) — voir mise à jour ci-dessous |
 | Data Contract formel | MISSING |
 | Model Adapters (AROME/ALADIN/ARPEGE) | PARTIAL (contrat différent du spec) |
 | Model Adapters (WRF/ICON/OpenIFS) | MISSING |
@@ -301,6 +301,44 @@ de code).
 | HPC | IMPLEMENTED, VALIDATED (testé en conditions réelles) |
 | Golden Datasets | MISSING |
 | Tests scientifiques | IMPLEMENTED en pratique, pas formellement catégorisés |
+
+## Mise à jour 2026-09-02 — Physics Guard construit (première phase du plan ci-dessous)
+
+`src/acf/physics_guard/` : infrastructure réelle et transversale, pas une
+duplication de la méthodologie d'audit du même nom. 6 vérifications
+réelles, réutilisant l'existant plutôt que le dupliquant :
+
+- **unit_check** — via `acf.normalization.units` (MetPy/pint réel).
+- **range_check** — bornes opérationnelles ACF documentées comme telles
+  (pas des limites physiques absolues), unit-aware.
+- **coordinate_check** — motivé directement par le vrai bug
+  `lons, lats = result["lats"], result["lons"]` trouvé et corrigé cette
+  session (`gui/dashboard/awci_dashboard.py`).
+- **dimension_check** — cohérence champ/coordonnées pour la convention
+  réelle 2D/3D d'ACF.
+- **vertical_check** — généralise l'invariant réel déjà vérifié contre
+  le vrai solveur (`test_pressure_decreases_with_altitude_real_physics`).
+- **consistency_check** — point de rosée ≤ température, bornes RH.
+
+`PhysicsGuard.validate(data)` agrège toutes les violations trouvées (pas
+juste la première) dans un `PhysicsGuardReport`.
+
+**Branché réellement, pas juste construit à côté :** `PhysicsGuard().
+check_coordinate_arrays(lats, lons)` ajouté exactement à la ligne de
+`awci_dashboard.py` qui avait le bug historique — nouveau test
+(`test_on_real_physics_ready_would_catch_a_reintroduced_lat_lon_swap`)
+qui réintroduit artificiellement l'échange et prouve que le garde-fou
+l'attrape désormais réellement, pas juste en théorie.
+
+**Validation :** 2965/2965 tests passent (2938 avant, +26 nouveaux +1
+test de non-régression), ruff et mypy propres sur les 1362 fichiers.
+
+Portée honnête, documentée dans le package lui-même : DIMENSION CHECK ne
+couvre que la convention 2D/3D réelle déjà utilisée par ACF, pas un
+moteur d'analyse dimensionnelle générique pour tout tenseur arbitraire.
+Pas encore branché ailleurs que ce point précis — l'intégration
+systématique dans tout le pipeline scientifique reste à faire au fur et
+à mesure, pas en un seul passage qui toucherait tout le dépôt d'un coup.
 
 ## Recommandation — ordre de phase suivant (pas les 30 à la fois)
 

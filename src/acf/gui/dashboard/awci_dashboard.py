@@ -65,6 +65,7 @@ from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from acf.awci.calculator import AWCICalculator
+from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
 from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
@@ -380,6 +381,12 @@ class AWCIDashboard(QWidget):
         )
 
         lons, lats = volume["lons"], volume["lats"]
+        # Real regression guard (added 2026-09-02): this exact line once
+        # had lons/lats swapped, caught only by a test using a
+        # deliberately non-square grid - see git history. A
+        # PhysicsGuard coordinate check here catches that bug class at
+        # runtime too, on any grid shape, not just a non-square test one.
+        PhysicsGuard().check_coordinate_arrays(lats, lons)
         # Surface level (index 0) stands in for the 2D field the map/
         # stats/route panels need - same real per-point values a
         # compute_real_complexity_field() call would have produced at

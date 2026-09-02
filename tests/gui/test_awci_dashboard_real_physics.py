@@ -114,6 +114,24 @@ def test_real_physics_failure_reports_the_error_and_stays_in_demo_mode(qapp):
     assert "failed" in dashboard.real_physics_status.text().lower()
 
 
+def test_on_real_physics_ready_would_catch_a_reintroduced_lat_lon_swap(qapp, monkeypatch):
+    """
+    Real regression guard (added 2026-09-02): this exact code path once
+    had lons/lats swapped (see git history) - a PhysicsGuard coordinate
+    check was added at the exact line it happened. This test proves
+    the guard is genuinely wired in and would raise if that bug ever
+    came back, by forcing the swap via a monkeypatched volume dict.
+    """
+    from acf.core.exceptions import CoordinateError
+
+    dashboard = AWCIDashboard()
+    volume = _real_volume()
+    swapped_volume = {**volume, "lats": volume["lons"], "lons": volume["lats"]}
+
+    with pytest.raises(CoordinateError):
+        dashboard._on_real_physics_ready(swapped_volume)
+
+
 def test_map_panel_external_field_round_trip(qapp):
     panel = AWCIMapPanel("TEST MAP")
     volume = _real_volume()

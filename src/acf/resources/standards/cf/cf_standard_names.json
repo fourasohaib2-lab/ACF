@@ -14,5 +14,17 @@
   "northward_wind": {
     "name": "Northward Wind",
     "units": "m s-1"
+  },
+  "relative_humidity": {
+    "name": "Relative Humidity",
+    "units": "%"
+  },
+  "specific_humidity": {
+    "name": "Specific Humidity",
+    "units": "kg kg-1"
+  },
+  "precipitation_amount": {
+    "name": "Precipitation Amount",
+    "units": "kg m-2"
   }
 }
