@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `86d3616`.
-**Portée :** 222 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `62edad6`.
+**Portée :** 224 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -137,16 +137,28 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
   carte centrale + docks Explorer/Charts/Properties/Timeline/Console/Status) :
   entièrement construit et testé, mais jamais atteignable depuis l'appli
   réelle. Contrairement à AWCI, ce dashboard veut posséder toute une fenêtre
-  (`setCentralWidget`/`addDockWidget` directs) — plutôt que de le forcer dans
-  un onglet ESOC, il est maintenant lancé comme fenêtre secondaire via un
-  nouveau bouton toolbar "🗂️ Classic View". Corrigé au passage 2 versions
-  codées en dur obsolètes ("0.1.0-alpha" vs la vraie `0.1.0`) trouvées dans
-  `status_panel.py` et `splash.py`, même catégorie que les bugs
-  `ProductionUpdater`/`VersionManager` déjà corrigés plus tôt.
+  (`setCentralWidget`/`addDockWidget` directs) — lancé comme fenêtre
+  secondaire via un nouveau bouton toolbar "🗂️ Classic View" dans l'ESOC.
+  Corrigé au passage 2 versions codées en dur obsolètes ("0.1.0-alpha" vs
+  la vraie `0.1.0`) trouvées dans `status_panel.py` et `splash.py`, même
+  catégorie que les bugs `ProductionUpdater`/`VersionManager` déjà corrigés
+  plus tôt.
+- **`62edad6`** — correction d'architecture demandée par l'utilisateur : la
+  relation voulue entre les deux dashboards n'est pas "deux fenêtres
+  indépendantes accessibles depuis l'ESOC", mais bien **ACF principal →
+  bouton → AWCI**. Ajout de `AWCIDashboardWindow` (fenêtre autonome pour
+  `AWCIDashboard`, miroir de `ClassicDashboardWindow`) et d'un bouton
+  "✈️ AWCI Dashboard" dans la toolbar du dashboard ACF principal. A révélé
+  et corrigé 2 imports circulaires réels (confirmés par l'erreur Python
+  effective, pas seulement suspectés) entre `acf.dashboard.window` et
+  `acf.gui` (déclenchés par l'import eager de `ESOCWindow` dans
+  `acf/gui/__init__.py`) — résolus en différant les imports concernés à
+  l'intérieur des méthodes qui les utilisent, motif déjà établi ailleurs
+  dans ce code.
 - Vérifications faites en direct sous `xvfb` (pas seulement via les tests
-  unitaires) : fenêtre principale + 28 panneaux + 22 actions de toolbar + la
-  fenêtre "Classic View", 0 exception.
+  unitaires) : fenêtre principale + 28 panneaux + 22 actions de toolbar +
+  la chaîne complète ESOC → Classic View → AWCI Dashboard, 0 exception.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..86d3616`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..62edad6`.
