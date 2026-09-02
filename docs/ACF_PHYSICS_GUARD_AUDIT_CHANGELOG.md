@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `62edad6`.
-**Portée :** 224 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `57b368a`.
+**Portée :** 225 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -158,7 +158,28 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
 - Vérifications faites en direct sous `xvfb` (pas seulement via les tests
   unitaires) : fenêtre principale + 28 panneaux + 22 actions de toolbar +
   la chaîne complète ESOC → Classic View → AWCI Dashboard, 0 exception.
+- **`57b368a`** — même traitement pour `gui/menu.py` (134 lignes, le plus
+  gros fichier à 0% de couverture repéré dans le rapport plus tôt) :
+  un menu File/Data complet (Nouveau/Ouvrir/Récents/Propriétés/
+  Enregistrer/Fermer projet, Ouvrir/Fermer/Info dataset) jamais construit
+  nulle part, prévu pour fonctionner avec `WorkspaceManager` + `DataManager`
+  + `Dashboard.get_panel` — les trois existaient déjà, testés isolément,
+  mais jamais assemblés. Branché sur `ClassicDashboardWindow`. En
+  creusant un plantage suspecté (`libshiboken: Internal C++ object
+  already deleted`), vérifié qu'il s'agissait d'un artefact de la méthode
+  d'introspection Python utilisée pour tester, pas d'un vrai bug de durée
+  de vie du code original (confirmé via `findChildren()`, le mécanisme
+  que Qt utilise réellement) — corrigé le commentaire pour ne pas
+  revendiquer un bug qui n'existait pas, conformément à la discipline du
+  reste de cette session. A aussi trouvé et corrigé un vrai bug confirmé
+  sur disque : `WorkspaceManager()` n'avait aucun moyen d'isoler son
+  fichier "projets récents", donc `tests/test_workspace_manager.py`
+  écrivait réellement dans `~/.acf/recent_projects.json` (le vrai fichier
+  de config de l'utilisateur) à chaque exécution des tests — confirmé :
+  6 entrées de tests pytest obsolètes trouvées sur disque. Corrigé avec
+  un paramètre `recent_projects_file` optionnel + `tmp_path` dans le test ;
+  vérifié que le fichier réel est désormais intact après une suite complète.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..62edad6`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..57b368a`.
