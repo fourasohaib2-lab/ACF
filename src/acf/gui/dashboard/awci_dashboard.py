@@ -204,7 +204,16 @@ class AWCIDashboard(QWidget):
 
         route_scores = self.route_chart.update_data(_REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], cruise_hpa=850.0)
         overall_awci = max(route_scores) if route_scores is not None else point_result["awci"]
-        self.risk_summary.update_data(point_result["module_scores"], overall_awci)
+        # physical_score/forecast_score are for the point of interest, not
+        # the route's worst point (unlike overall_awci above) - route-level
+        # aggregation of the split scores is future work, not simulated
+        # here.
+        self.risk_summary.update_data(
+            point_result["module_scores"],
+            overall_awci,
+            physical_score=point_result["physical_score"],
+            forecast_score=point_result["forecast_score"],
+        )
 
     # ---------------------------------------------------- external API
 

@@ -18,6 +18,44 @@ class AWCICalculator:
     Combines multiple atmospheric modules into a single
     complexity score (0-100) with decomposition.
 
+    ACF Complexity Engine (docs/ACF_MASTER_UNIFIED_ARCHITECTURE.md,
+    layer 17) status
+    -----------------------------------------------------------------
+    This class is ACF's real, working Complexity Engine core — found
+    during the 2026-09-02 architecture audit (docs/
+    ACF_ARCHITECTURE_TARGET_GAP_MAP.md flagged `complexity/` as
+    entirely absent from the codebase; it was not: it already existed
+    here, scoped and named for aviation). Per explicit user decision,
+    it is evolved in place rather than duplicated into a new
+    top-level package — six GUI panels (`gui/dashboard/awci_*.py`)
+    and `gui/esoc/panel_manager.py` already depend on this exact
+    class/module path.
+
+    Physical vs. Forecast complexity (NOTE, added 2026-09-02)
+    -----------------------------------------------------------------
+    The target architecture's own science section is explicit: model
+    disagreement/forecast uncertainty is a property of the *forecast*,
+    not of the atmosphere itself, and must not be silently averaged
+    into a single physical score. Before this change, `confidence`
+    was just one more module in the same flat weighted sum as the six
+    physical modules — mixing the two dimensions the target
+    architecture requires kept separate. `calculate()` now also
+    returns `physical_score` and `forecast_score`, each independently
+    renormalized to [0, 100] from only the modules in
+    `PHYSICAL_MODULES` / `FORECAST_MODULES` respectively (plus the
+    interaction terms, which are physical). `awci` / `level` /
+    `decomposition` keep their exact prior meaning and formula — no
+    behavior change for existing callers.
+
+    Honest limitation: `FORECAST_MODULES` currently contains only
+    `confidence`, a single externally-supplied scalar — not yet real
+    ensemble spread or multi-model disagreement (those live in
+    `ai/ensemble/`, `simulation_engine/ensemble_prediction/` and
+    `visualization/ai_forecast_center/model_consensus_engine.py`,
+    unwired here). `forecast_score` is therefore only as good as
+    whatever `confidence` the caller supplies — documented, not
+    fabricated as a richer forecast-uncertainty measure than it is.
+
     Interaction terms
     ------------------
     Beyond the linear weighted sum of the 7 independent modules, two
@@ -36,7 +74,9 @@ class AWCICalculator:
     choice for this composite index (AWCI is ACF's own aggregate, not
     a published external standard like EHI/STP) — not derived from an
     external published formula. They are documented here as such, not
-    presented as an established literature result.
+    presented as an established literature result. Both interaction
+    terms are physical (they combine two physical modules), so they
+    count toward `physical_score`, never `forecast_score`.
     """
 
     # Interaction term weights, additional to the 7 module weights
@@ -48,6 +88,16 @@ class AWCICalculator:
         "wind_topo_interaction": 0.05,
         "conv_thermo_interaction": 0.05,
     }
+
+    # Physical/Forecast classification (see class docstring). Every
+    # module produced by calculate_module_scores() must appear in
+    # exactly one of these two sets — enforced by a unit test
+    # (tests/test_awci_calculator.py) so a future new module can't
+    # silently fall into neither/both.
+    PHYSICAL_MODULES = frozenset(
+        {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal"}
+    )
+    FORECAST_MODULES = frozenset({"confidence"})
 
     def __init__(self, weights: dict[str, float] | None = None):
         """
@@ -206,6 +256,9 @@ class AWCICalculator:
         # Store decomposition for later use
         self._last_decomposition = decomposition
 
+        physical_score = self._renormalized_score(decomposition, self.PHYSICAL_MODULES, include_interactions=True)
+        forecast_score = self._renormalized_score(decomposition, self.FORECAST_MODULES, include_interactions=False)
+
         return {
             "awci": awci_score,
             "decomposition": decomposition,
@@ -214,7 +267,46 @@ class AWCICalculator:
             "module_scores": {k: round(v * 100, 1) for k, v in module_scores.items()},
             "interaction_scores": {k: round(v * 100, 1) for k, v in interaction_scores.items()},
             "explanation": self._explain(decomposition),
+            # Physical vs. Forecast complexity (see class docstring). None
+            # when the corresponding modules' weights sum to ~0 — an
+            # honestly-undefined renormalization, not a fabricated 0.
+            "physical_score": physical_score,
+            "forecast_score": forecast_score,
+            "physical_level": self._get_level(physical_score) if physical_score is not None else None,
+            "forecast_level": self._get_level(forecast_score) if forecast_score is not None else None,
         }
+
+    def _renormalized_score(
+        self, decomposition: dict[str, float], module_names: frozenset[str], include_interactions: bool
+    ) -> float | None:
+        """
+        Renormalize the subset of `decomposition` belonging to
+        `module_names` (plus the interaction terms if
+        `include_interactions`) back into an independent [0, 100]
+        score — i.e. "what would the composite score be if only these
+        modules existed", not just their raw slice of `awci`.
+
+        Returns None if the selected modules' weight budget is ~0
+        (e.g. a caller zeroed every forecast-side weight) — an
+        undefined renormalization must not silently read as 0.0
+        ("no complexity"), which would be a fabricated result.
+        """
+        weight_total = sum(self.weights_manager.get_weight(m) for m in module_names)
+        points_total = sum(points for name, points in decomposition.items() if name in module_names)
+
+        if include_interactions:
+            weight_total += sum(self.INTERACTION_WEIGHTS.values())
+            points_total += sum(
+                points for name, points in decomposition.items() if name in self.INTERACTION_WEIGHTS
+            )
+
+        weight_budget = 1.0 + sum(self.INTERACTION_WEIGHTS.values())
+        weight_fraction_of_budget = weight_total / weight_budget
+
+        if weight_fraction_of_budget <= 1e-9:
+            return None
+
+        return round(points_total / weight_fraction_of_budget, 1)
 
     def _explain(self, decomposition: dict[str, float]) -> list[str]:
         """

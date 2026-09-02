@@ -225,6 +225,139 @@ def test_normalizer_percentile_known_ranking():
     assert norm.normalize_percentile(30.0, climatology) == pytest.approx(0.6)
 
 
+def test_physical_and_forecast_modules_partition_all_modules():
+    """
+    Every module calculate_module_scores() can produce must be
+    classified as exactly physical or forecast (never neither, never
+    both) - otherwise physical_score/forecast_score would silently
+    ignore it or double-count it. Guards the classification in
+    calculator.py against a future new module added to one dict
+    without also updating PHYSICAL_MODULES/FORECAST_MODULES.
+    """
+    calc = AWCICalculator()
+    all_modules = set(calc.calculate_module_scores({}).keys())
+
+    assert AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES == all_modules
+    assert AWCICalculator.PHYSICAL_MODULES.isdisjoint(AWCICalculator.FORECAST_MODULES)
+
+
+def test_calculate_returns_separated_physical_and_forecast_scores():
+    """
+    CORRECTED (found during the 2026-09-02 Complexity Engine audit):
+    'confidence' (forecast uncertainty) used to be silently averaged
+    into the same single score as the six physical modules - the
+    target architecture (docs/ACF_MASTER_UNIFIED_ARCHITECTURE.md,
+    layer 17) is explicit that model disagreement is a property of
+    forecast uncertainty, not of the atmosphere itself, and the two
+    must stay distinguishable.
+    """
+    calc = AWCICalculator()
+    data = {
+        "temperature": 300.0,
+        "specific_humidity": 0.01,
+        "wind_speed": 10.0,
+        "cape": 1000.0,
+        "cin": -100.0,
+        "precipitation": 5.0,
+        "pressure": 1000.0,
+        "altitude": 500.0,
+        "confidence": 80.0,
+        "temporal_change": 5.0,
+    }
+    result = calc.calculate(data)
+
+    assert result["physical_score"] is not None
+    assert result["forecast_score"] is not None
+    assert 0.0 <= result["physical_score"] <= 100.0
+    assert 0.0 <= result["forecast_score"] <= 100.0
+    assert result["physical_level"] in ["Very Low", "Low", "Moderate", "High", "Very High", "Extreme"]
+    assert result["forecast_level"] in ["Very Low", "Low", "Moderate", "High", "Very High", "Extreme"]
+
+
+def test_forecast_score_moves_independently_of_physical_score():
+    """
+    Physical invariant: changing ONLY the forecast-side input
+    (confidence) must move forecast_score without moving
+    physical_score at all - proving the two are genuinely computed
+    from disjoint module sets, not just relabeled slices of one mixed
+    score.
+    """
+    calc = AWCICalculator()
+    base_data = {
+        "temperature": 300.0,
+        "specific_humidity": 0.01,
+        "wind_speed": 10.0,
+        "cape": 1000.0,
+        "cin": -100.0,
+        "precipitation": 5.0,
+        "pressure": 1000.0,
+        "altitude": 500.0,
+        "temporal_change": 5.0,
+    }
+
+    high_confidence = calc.calculate({**base_data, "confidence": 95.0})
+    low_confidence = calc.calculate({**base_data, "confidence": 10.0})
+
+    assert high_confidence["physical_score"] == pytest.approx(low_confidence["physical_score"])
+    assert high_confidence["forecast_score"] != pytest.approx(low_confidence["forecast_score"])
+    # Lower confidence -> higher forecast complexity (see Normalizer.normalize_confidence).
+    assert low_confidence["forecast_score"] > high_confidence["forecast_score"]
+
+
+def test_physical_score_increases_with_instability_and_shear():
+    """
+    Physical invariant (Phase 15 of the Complexity Engine spec): if
+    CAPE and wind shear both increase, physical_score must not
+    decrease - a monotonicity guarantee independent of the exact
+    weights/formula used.
+    """
+    calc = AWCICalculator()
+    calm_data = {
+        "temperature": 290.0,
+        "specific_humidity": 0.005,
+        "wind_speed": 2.0,
+        "cape": 0.0,
+        "cin": 0.0,
+        "precipitation": 0.0,
+        "pressure": 1013.0,
+        "altitude": 200.0,
+        "confidence": 90.0,
+        "temporal_change": 0.0,
+    }
+    unstable_data = {**calm_data, "cape": 3000.0, "wind_speed": 30.0}
+
+    calm_result = calc.calculate(calm_data)
+    unstable_result = calc.calculate(unstable_data)
+
+    assert unstable_result["physical_score"] > calm_result["physical_score"]
+    # Confidence unchanged between the two -> forecast_score must not move.
+    assert unstable_result["forecast_score"] == pytest.approx(calm_result["forecast_score"])
+
+
+def test_renormalized_score_is_none_when_weight_budget_is_zero():
+    """
+    Honest-disclosure guard: if a caller zeroes out every module in a
+    dimension's weight, that dimension's score is undefined, not 0.0
+    ("no complexity") - 0.0 would be indistinguishable from a
+    genuinely calm atmosphere and silently mislead a forecaster.
+    """
+    zero_forecast_weights = {
+        "dynamic": 0.22,
+        "thermodynamic": 0.26,
+        "convective": 0.22,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.05,
+        "confidence": 0.0,
+    }
+    calc = AWCICalculator(zero_forecast_weights)
+    result = calc.calculate({"confidence": 80.0})
+
+    assert result["forecast_score"] is None
+    assert result["forecast_level"] is None
+    assert result["physical_score"] is not None
+
+
 def test_weights_manager():
     """Test weights manager functionality."""
     # Créer un gestionnaire avec des poids personnalisés
