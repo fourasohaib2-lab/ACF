@@ -39,7 +39,7 @@ supposition — voir la colonne "Preuve".
 | 17 | `consensus/` | ⚠️ | `visualization/ai_forecast_center/model_consensus_engine.py` | idem — un seul fichier, pas un moteur top-level |
 | 18 | `uncertainty/` | ⚠️ | `ai/uncertainty/` | existe, imbriqué sous `ai/` |
 | 19 | `events/` | ⚠️ | `aeos/events/`, `digital_twin/events/` | existe mais orienté "événements système", pas détection d'événements météo (convection, grêle, etc. — voir couche 16 de la cible) |
-| 20 | `complexity/` | ❌ | — | **aucune trace**. C'est le nom du projet lui-même ("**Atmospheric Complexity** Framework") et il n'existe nulle part comme moteur dédié |
+| 20 | `complexity/` | ⚠️ (mis à jour 2026-09-02) | `awci/` (`AWCICalculator`) | Correction : ce moteur existait déjà, juste scopé/nommé aviation. Après audit approfondi (voir section "Mise à jour" ci-dessous), évolué sur place pour séparer Physical/Forecast Complexity — pas déplacé en `complexity/` (décision explicite utilisateur) |
 | 21 | `intelligence/` | ✅ | `intelligence/` | dossier identique, bien fourni (agents, anomalies, decision_support, hypothesis, planner...) |
 | 22 | `radar/` | ⚠️ | `visualization/radar_satellite_center.py`, `data_assimilation/observation_ingestion/radar_ingestor.py`, `gui/dashboard/awci_radar.py`, `science/encyclopedia/radar_*.py` | 4+ emplacements différents, aucun paquet `radar/` |
 | 23 | `satellite/` | ⚠️ | `visualization/radar_satellite_center.py`, `catalog/satellite_parameters.py`, `data_assimilation/observation_ingestion/satellite_ingestor.py` | idem, dispersé. `space_weather/satellites/` existe mais couvre un domaine différent (météo spatiale, pas télédétection météo) |
@@ -89,6 +89,41 @@ Les vrais manques fonctionnels (pas juste organisationnels) sont :
    réutilisables par le dashboard, l'API, etc.
 5. **`storage/`** — pas de couche de stockage générique (juste des writers
    NetCDF/Zarr ad hoc dans `data/writers/`).
+
+## Mise à jour — 2 septembre 2026 : `complexity/` n'était pas absent
+
+L'utilisateur a pointé `awci/` comme piste probable avant que l'audit ne
+soit complet. Vérification faite : **il avait raison**. `src/acf/awci/`
+(`AWCICalculator`, `Normalizer`, `WeightsManager`) est un vrai moteur de
+complexité composite déjà fonctionnel — 7 modules pondérés, 2 termes
+d'interaction non-linéaires, décomposition explicable, niveaux
+`Very Low → Extreme` — juste nommé et scopé pour l'aviation
+("Aviation Weather Complexity Index"), et déjà branché sur 6 panneaux GUI
+(`gui/dashboard/awci_*.py`) et testé (`tests/test_awci_calculator.py`).
+
+Écart réel identifié et corrigé (commit `d5451dc`) : le module `confidence`
+(incertitude de prévision) était mélangé dans la même somme pondérée que
+les 6 modules physiques — exactement l'erreur scientifique que
+l'architecture cible interdit ("le désaccord entre modèles n'est pas une
+propriété physique de l'atmosphère"). `AWCICalculator.calculate()` retourne
+maintenant `physical_score`/`forecast_score` séparément, chacun
+renormalisé indépendamment sur `[0, 100]`, tout en gardant `awci`/`level`/
+`decomposition` strictement identiques (aucune régression). Le panneau
+`AWCIRiskSummary` ("RISK SUMMARY" — l'affichage détaillé qu'évoquait
+l'utilisateur) affiche maintenant ces deux scores, avec `—` (jamais 0.0
+fabriqué) quand le score est indéfini.
+
+Décision explicite de l'utilisateur : faire évoluer `awci/` sur place
+plutôt que dupliquer sa logique dans un nouveau paquet `complexity/` —
+conforme à la règle "ne rien déplacer" de sa propre spécification
+d'ingénierie pour cette étape.
+
+Reste non fait, documenté honnêtement dans le docstring de la classe :
+`FORECAST_MODULES` ne contient encore que `confidence`, un scalaire fourni
+de l'extérieur — pas encore le vrai spread d'ensemble ou le désaccord
+inter-modèles (`ai/ensemble/`, `visualization/ai_forecast_center/
+model_consensus_engine.py`, non branchés). Pas de dimension spatiale
+(2D/3D/4D) — le moteur reste scalaire/ponctuel.
 
 ## Recommandation (à valider avec l'utilisateur)
 
