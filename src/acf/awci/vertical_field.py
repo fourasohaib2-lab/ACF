@@ -54,6 +54,58 @@ from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEar
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
+def score_volume(
+    calc: AWCICalculator,
+    temperature: np.ndarray,
+    wind_speed: np.ndarray,
+    specific_humidity: np.ndarray,
+    pressure_hpa: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Evaluate `calc` at every (level, lat, lon) point of the given real
+    3D state arrays (all the same shape). Shared by
+    compute_real_complexity_volume() below and
+    acf.awci.temporal_field.compute_real_complexity_evolution() (one
+    call per animation frame) so both stay byte-for-byte consistent
+    with each other and with AWCICalculator itself, instead of two
+    separately-maintained copies of this loop.
+
+    Returns
+    -------
+    (awci_volume, physical_volume, forecast_volume) : 3 numpy arrays,
+        same shape as the inputs. forecast_volume entries are np.nan
+        (not a fabricated 0.0) wherever forecast_score was undefined
+        for that point's weights - same discipline as AWCICalculator.
+        _renormalized_score() itself.
+    """
+    n_levels, n_lat, n_lon = temperature.shape
+    awci_volume = np.zeros((n_levels, n_lat, n_lon))
+    physical_volume = np.zeros((n_levels, n_lat, n_lon))
+    forecast_volume = np.full((n_levels, n_lat, n_lon), np.nan)
+
+    # Same "no per-point forecast-side data" scope as this module's own
+    # docstring (and spatial_field.py's compute_real_complexity_field()).
+    for level in range(n_levels):
+        for i in range(n_lat):
+            for j in range(n_lon):
+                result = calc.calculate(
+                    {
+                        "temperature": float(temperature[level, i, j]),
+                        "wind_speed": float(wind_speed[level, i, j]),
+                        "specific_humidity": float(specific_humidity[level, i, j]),
+                        "pressure": float(pressure_hpa[level, i, j]),
+                    }
+                )
+                awci_volume[level, i, j] = result["awci"]
+                physical_volume[level, i, j] = (
+                    result["physical_score"] if result["physical_score"] is not None else np.nan
+                )
+                if result["forecast_score"] is not None:
+                    forecast_volume[level, i, j] = result["forecast_score"]
+
+    return awci_volume, physical_volume, forecast_volume
+
+
 def compute_real_complexity_volume(
     model: str = "ARPEGE",
     steps: int = 8,
@@ -119,32 +171,11 @@ def compute_real_complexity_volume(
     specific_humidity = state["q"]
     pressure_hpa = state["P"] / 100.0  # solver's native Pa -> hPa, standard meteorological unit
 
-    n_levels_actual, n_lat_actual, n_lon_actual = temperature.shape
     calc = AWCICalculator(weights)
-
-    awci_volume = np.zeros((n_levels_actual, n_lat_actual, n_lon_actual))
-    physical_volume = np.zeros((n_levels_actual, n_lat_actual, n_lon_actual))
-    forecast_volume = np.full((n_levels_actual, n_lat_actual, n_lon_actual), np.nan)
-
-    # Same "no per-point forecast-side data" scope as spatial_field.py's
-    # compute_real_complexity_field() - see this module's own docstring.
-    for level in range(n_levels_actual):
-        for i in range(n_lat_actual):
-            for j in range(n_lon_actual):
-                result = calc.calculate(
-                    {
-                        "temperature": float(temperature[level, i, j]),
-                        "wind_speed": float(wind_speed[level, i, j]),
-                        "specific_humidity": float(specific_humidity[level, i, j]),
-                        "pressure": float(pressure_hpa[level, i, j]),
-                    }
-                )
-                awci_volume[level, i, j] = result["awci"]
-                physical_volume[level, i, j] = (
-                    result["physical_score"] if result["physical_score"] is not None else np.nan
-                )
-                if result["forecast_score"] is not None:
-                    forecast_volume[level, i, j] = result["forecast_score"]
+    awci_volume, physical_volume, forecast_volume = score_volume(
+        calc, temperature, wind_speed, specific_humidity, pressure_hpa
+    )
+    n_levels_actual = temperature.shape[0]
 
     return {
         "lats": grid.lats,

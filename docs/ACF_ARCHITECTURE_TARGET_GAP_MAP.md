@@ -185,8 +185,52 @@ réalité **jamais lue** dans `calculate_module_scores()` — un input mort
 préexistant, non introduit par ce travail, non corrigé ici (hors
 scope), juste signalé en commentaire dans le code.
 
-Reste non fait : dimension temporelle (4D, animation `t0→t1→t2...`) —
-prochaine étape logique de la feuille de route.
+**Mise à jour 2026-09-02 (suite 5) — dimension temporelle 4D construite**
+(sur demande explicite : "vas-y, construis la dimension temporelle 4D") :
+nouveau module `awci/temporal_field.py` :
+- `compute_real_complexity_evolution()` — **une seule** instance du
+  solveur, intégrée **en continu** sur toute l'animation (chaque frame
+  poursuit réellement la trajectoire physique de la précédente — pas
+  `n_frames` runs indépendants relancés de zéro), en réutilisant
+  `vertical_field.py::score_volume()` (extrait pour éviter la
+  duplication) à chaque frame.
+- `profile_over_time()` — extrait `Complexity(t)` en un point réel.
+
+**Preuve numérique de vraie évolution** (pas juste visuelle — le champ
+composite arrondi à 1 décimale peut masquer une évolution réelle mais
+lente à l'œil sur une carte) : moyenne du domaine 13,872 → 13,939 sur
+6h, cellule la plus évolutive 15,9 → 17,4 — croissance réelle et
+monotone, vérifiée directement sur les champs bruts de température
+(écart max 1,1 K entre la 1re et la dernière frame). Image de 6
+snapshots envoyée — changement visuellement subtil à cette échelle de
+couleur/durée mais numériquement réel, signalé honnêtement plutôt que
+de forcer une démo plus spectaculaire.
+
+Trouvaille de conception importante, documentée en détail dans le
+docstring : la perturbation initiale n'est appliquée **qu'une seule
+fois**, avant la 1re frame — la réappliquer à chaque frame aurait fait
+de chaque snapshot un nouveau coup de dés indépendant, pas l'évolution
+réelle d'une seule trajectoire cohérente (le sens honnête de "4D").
+
+Refactoring en passant : la boucle de notation par point
+(niveau/lat/lon) de `vertical_field.py` a été extraite en fonction
+partagée `score_volume()`, réutilisée telle quelle par le nouveau
+module — zéro duplication entre 3D et 4D, mêmes 8 tests 3D toujours
+verts après le refactoring.
+
+Mêmes limites honnêtes reportées : niveaux natifs (pas d'interpolation
+vers les niveaux standards), CAPE/CIN/précipitation non dérivés,
+`forecast_evolution` plat sous poids par défaut (câbler un vrai signal
+par point ET par frame multiplierait un coût déjà élevé par
+`n_frames`).
+
+**Les 4 dimensions du Complexity Engine sont maintenant réelles et
+testées : 2D (`spatial_field.py`), 3D (`vertical_field.py`), 4D
+(`temporal_field.py`), plus le split Physical/Forecast et les vrais
+signaux ensemble/multi-modèles sur le côté prévision.** Reste :
+branchement dashboard (Phase 21), niveaux de pression standards par
+interpolation, et signal forecast par point (hors scope actuel, coût
+prohibitif avec l'infrastructure actuelle).
 
 **Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
 honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut
