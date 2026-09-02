@@ -9,6 +9,8 @@ from typing import Any, ClassVar
 
 import numpy as np
 
+from acf.verification.skill_database import ModelSkillDatabase
+
 
 class ModelConsensusEngine:
     """
@@ -31,7 +33,13 @@ class ModelConsensusEngine:
     ]
 
     @classmethod
-    def compute_unified_consensus(cls, weights_dict: dict[str, float] | None = None) -> dict[str, Any]:
+    def compute_unified_consensus(
+        cls,
+        weights_dict: dict[str, float] | None = None,
+        skill_database: ModelSkillDatabase | None = None,
+        variable: str | None = None,
+        metric: str = "rmse",
+    ) -> dict[str, Any]:
         """
         Calcule le champ de prévision unifié ACF issu du consensus pondéré NWP + IA.
 
@@ -42,6 +50,24 @@ class ModelConsensusEngine:
         computed and validated as optimal - this method only sums
         weights, it never combines any real model output fields
         (temperature, wind, etc.). Not fabricated.
+
+        Skill-weighted consensus (added 2026-09-02, closes
+        reports/ACF_MASTER_AUDIT_v2.md's "Consensus pondéré par le
+        skill: MISSING" §15 finding): pass a `skill_database` that has
+        real recorded `acf.verification.pipeline.VerificationPipeline`
+        history for every model named in `weights_dict` (or the
+        declared default set, if `weights_dict` is None), and those
+        weights are replaced by real inverse-error weights
+        (`ModelSkillDatabase.weights_from_skill()`) instead of the
+        hardcoded defaults.
+
+        Deliberately NOT done: partially mixing skill-based and
+        declared-default weights when only *some* models have
+        recorded history - inventing a mixing formula for that case
+        would be exactly the kind of unverified number this project's
+        audits exist to catch. If skill history is incomplete for the
+        requested models, this falls back to the full declared set
+        unchanged, and says so honestly via `weight_source`.
         """
         if weights_dict is None:
             weights_dict = {
@@ -51,11 +77,22 @@ class ModelConsensusEngine:
                 "DWD ICON": 0.15,
                 "Météo-France AROME": 0.15,
             }
+
+        weight_source = "declared_default"
+        if skill_database is not None:
+            skill_weights = skill_database.weights_from_skill(list(weights_dict.keys()), variable=variable, metric=metric)
+            if len(skill_weights) == len(weights_dict):
+                weights_dict = skill_weights
+                weight_source = "model_skill_database"
+            elif skill_weights:
+                weight_source = "declared_default_incomplete_skill_history"
+
         return {
             "consensus_model_name": "ACF Unified Consensus Forecast",
             "models_combined_count": len(weights_dict),
             "model_weights": weights_dict,
             "weight_sum": sum(weights_dict.values()),
+            "weight_source": weight_source,
             "status": "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED",
             "is_real_data": True,
         }

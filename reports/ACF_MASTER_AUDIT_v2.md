@@ -465,3 +465,73 @@ coûteux à combler en premier, par ordre de dépendance :
 
 Dis-moi laquelle tu veux que j'attaque en premier — ou une autre priorité
 si tu vois plus urgent.
+
+## Mise à jour 2026-09-02 (suite) — Verification pipeline + Model Skill Database construits
+
+Cinquième et dernière phase de l'ordre recommandé ci-dessus. §31 avait
+déjà trouvé les calculateurs de métriques réels et complets
+(`NWPVerificationMetrics`, `EnsembleManager`) — ce qui manquait
+réellement : un pipeline qui les exécute sur une vraie paire prévision/
+observation et enregistre le résultat quelque part de réutilisable, et
+la base de données de skill versionnée du §15/§31.
+
+- **`src/acf/verification/pipeline.py`** : `VerificationPipeline.
+  evaluate()` — réutilise `NWPVerificationMetrics.evaluate_all()` (RMSE/
+  Bias/MAE/ACC/POD/FAR/CSI/ETS) et, si des membres d'ensemble réels sont
+  fournis, calcule aussi CRPS/Brier via `EnsembleManager` (moyenné sur
+  chaque pas de temps) — aucune métrique réimplémentée, testé par
+  comparaison directe (`test_evaluate_reuses_nwp_verification_metrics_exactly`).
+- **`src/acf/verification/skill_database.py`** : `ModelSkillDatabase` —
+  stockage réel append-only (JSON optionnel sur disque, en mémoire par
+  défaut), `mean_skill()` retourne `None` sans historique réel (jamais
+  un nombre inventé), `weights_from_skill()` calcule une vraie
+  pondération inverse-erreur mais **omet silencieusement** tout modèle
+  sans historique réel plutôt que de lui assigner un poids fabriqué.
+- **Consensus pondéré par le skill (§15) : construit.**
+  `ModelConsensusEngine.compute_unified_consensus()` accepte désormais
+  `skill_database=` — si l'historique réel couvre 100% des modèles
+  demandés, les poids déclarés par défaut sont remplacés par les vrais
+  poids de skill (`weight_source="model_skill_database"`) ; sinon repli
+  honnête sur les poids déclarés inchangés
+  (`weight_source="declared_default_incomplete_skill_history"`) —
+  **décision de portée délibérée** : pas de formule de mélange
+  partiel skill/défaut inventée pour le cas d'historique incomplet.
+- **Preuve de bout en bout, pas seulement unitaire** :
+  `test_verification_pipeline_feeds_consensus_end_to_end_with_two_real_solver_runs`
+  fait tourner `ModelConsensusEngine.compute_real_multi_model_disagreement()`
+  (vrai `CoupledEarthSolver`, déjà réel) sur 3 points réels pour AROME
+  et ALADIN, passe ces vraies séries dans `VerificationPipeline`,
+  enregistre dans un vrai `ModelSkillDatabase`, et prouve que
+  `compute_unified_consensus()` change réellement de poids en
+  conséquence — **portée honnête** : ALADIN sert ici de série "vérité"
+  uniquement pour exercer le pipeline de bout en bout, ce n'est pas une
+  vraie observation (aucun flux d'observation réel n'existe encore
+  dans ACF, voir `acf.data_assimilation.observation_ingestion`'s
+  propres disclosures `NOT_INGESTED_NO_STATION_DATA_CONNECTION`).
+
+**Validation :** 3039/3039 tests passent (3021 avant, +18 nouveaux),
+ruff et mypy propres sur les 1377 fichiers analysés.
+
+### Ce qui reste — le plan de 5 phases initial est terminé
+
+Les 5 phases de l'ordre de priorité recommandé (Physics Guard, Data
+Contract, Model Adapter Protocol, Event Engine, Verification pipeline +
+Skill DB) sont maintenant toutes construites. Manques encore réels et
+non triviaux (voir la synthèse plus haut, pas remise à jour ligne par
+ligne pour rester honnête sur ce qui a été relu à cette date précise) :
+
+- **Certification Engine** (§32) — aucun pipeline QC→PHYSICS→SCIENCE→
+  PROVENANCE→CERTIFICATION comme objet vivant ; dépend maintenant
+  directement de `PhysicsGuard` + `VerificationPipeline`, tous deux
+  réels — le prérequis technique n'est plus bloquant.
+- **Job Engine** (§22/§46) — aucune classe `Job` générique au-dessus du
+  HPC réel existant (`HPCConnectionManager`/`hpc_workflow/`).
+- **Golden Datasets** (§31-32) — toujours aucun `tests/data/golden/`.
+- **Model Adapters WRF/ICON/OpenIFS** — toujours absents (portée
+  explicitement exclue de la phase Model Adapter Protocol).
+- **Fusion multi-modèles en champ complet** (§29-30) — le disagreement
+  réel reste point-par-point, pas un champ fusionné avec biais/skill
+  (le Model Skill Database construit ici est justement la brique qui
+  manquait pour un futur biais-correction par modèle).
+
+Dis-moi laquelle tu veux que j'attaque ensuite.
