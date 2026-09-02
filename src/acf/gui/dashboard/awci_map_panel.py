@@ -57,6 +57,13 @@ class AWCIMapPanel(QWidget):
         self._contour = None
         self._flight_level_hpa = 300.0
         self._time_offset_hours = 0.0
+        # When set (via set_external_field()), update_data() draws THIS
+        # field instead of recomputing awci_grid()'s synthetic pattern -
+        # lets a caller (AWCIDashboard's "Real Physics" mode) show a real
+        # acf.awci.spatial_field.compute_real_complexity_field() result
+        # on the exact same map widget, without a second implementation.
+        self._external_field: tuple[list[float], list[float], Any] | None = None
+        self._base_title = title
 
         self.update_data(flight_level_hpa=300.0)
 
@@ -69,9 +76,29 @@ class AWCIMapPanel(QWidget):
         self._point_marker = (lat, lon)
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
+    def set_external_field(self, lons: list[float], lats: list[float], grid: Any, label: str) -> None:
+        """
+        Show a field this panel did not compute itself - e.g. a real
+        acf.awci.spatial_field.compute_real_complexity_field() result -
+        instead of the synthetic demo pattern. `label` is shown in the
+        panel title (e.g. "REAL PHYSICS") so it's never ambiguous which
+        kind of field is on screen. Redraws immediately.
+        """
+        self._external_field = (lons, lats, grid)
+        self._title = f"{self._base_title} — {label}"
+        self.update_data(self._flight_level_hpa, self._time_offset_hours)
+
+    def clear_external_field(self) -> None:
+        """Revert to the synthetic demo pattern (awci_grid())."""
+        self._external_field = None
+        self._title = self._base_title
+        self.update_data(self._flight_level_hpa, self._time_offset_hours)
+
     def update_data(self, flight_level_hpa: float = 300.0, time_offset_hours: float = 0.0) -> None:
-        """(Re)compute the AWCI grid (real AWCICalculator, synthetic demo inputs -
-        see awci_synthetic_field.py) and redraw the map."""
+        """(Re)compute the AWCI grid and redraw the map. Uses the real
+        AWCICalculator with synthetic demo inputs (see
+        awci_synthetic_field.py) unless set_external_field() supplied a
+        field to show instead."""
         self._flight_level_hpa = flight_level_hpa
         self._time_offset_hours = time_offset_hours
         self.axis.clear()
@@ -92,14 +119,17 @@ class AWCIMapPanel(QWidget):
         self.axis.add_feature(cfeature.COASTLINE, edgecolor="#4a5a7a", linewidth=0.5)
         self.axis.add_feature(cfeature.BORDERS, edgecolor="#3a4a6a", linewidth=0.3)
 
-        lons, lats, grid = awci_grid(
-            lat_step=step,
-            lon_step=step,
-            flight_level_hpa=flight_level_hpa,
-            lat_range=lat_range,
-            lon_range=lon_range,
-            time_offset_hours=time_offset_hours,
-        )
+        if self._external_field is not None:
+            lons, lats, grid = self._external_field
+        else:
+            lons, lats, grid = awci_grid(
+                lat_step=step,
+                lon_step=step,
+                flight_level_hpa=flight_level_hpa,
+                lat_range=lat_range,
+                lon_range=lon_range,
+                time_offset_hours=time_offset_hours,
+            )
         self._contour = self.axis.contourf(
             lons, lats, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100, alpha=0.75, transform=ccrs.PlateCarree()
         )

@@ -227,10 +227,42 @@ par point ET par frame multiplierait un coût déjà élevé par
 **Les 4 dimensions du Complexity Engine sont maintenant réelles et
 testées : 2D (`spatial_field.py`), 3D (`vertical_field.py`), 4D
 (`temporal_field.py`), plus le split Physical/Forecast et les vrais
-signaux ensemble/multi-modèles sur le côté prévision.** Reste :
-branchement dashboard (Phase 21), niveaux de pression standards par
-interpolation, et signal forecast par point (hors scope actuel, coût
-prohibitif avec l'infrastructure actuelle).
+signaux ensemble/multi-modèles sur le côté prévision.**
+
+**Mise à jour 2026-09-02 (suite 6) — dashboard branché** (sur demande
+explicite : "vas-y, branche le dashboard") : bouton **"🔬 Real Physics"**
+ajouté à `gui/dashboard/awci_dashboard.py::AWCIDashboard`. Lance
+`compute_real_complexity_field()` sur un vrai worker `QThreadPool`
+(même schéma `WorkerRunnable` que `gui/esoc/command_dispatcher.py`,
+étendu avec un signal `finished(dict)` pour ramener le résultat sur le
+thread GUI sans jamais geler l'interface) et remplace le champ
+synthétique par le vrai champ physique sur : carte globale, barre de
+stats, radar et risk-summary. Carte régionale, coupe verticale et
+graphe de route restent volontairement sur le motif synthétique
+(annoncé dans le label de statut, pas laissé incohérent en silence) —
+les brancher demanderait d'extraire le vrai champ le long d'un chemin/
+d'une région arbitraire, un travail distinct.
+
+**Bug réel trouvé et corrigé par le test, pas en relecture manuelle** :
+`lons, lats = result["lats"], result["lons"]` — inversés. Le test
+`test_map_panel_external_field_round_trip`/`test_real_physics_ready_...`
+a fait planter matplotlib immédiatement (`Length of x (8) must match
+number of columns in z (14)`) sur une grille de test volontairement
+non carrée (8×14) — une grille carrée aurait laissé ce bug passer
+silencieusement. Corrigé, testé, vérifié par un **vrai clic** sur le
+vrai bouton dans un `QApplication` xvfb réel (pas un appel direct de
+méthode), worker réellement asynchrone attendu via la boucle
+d'événements Qt, capture d'écran réelle envoyée.
+
+Petit correctif cosmétique trouvé par la même capture d'écran : le
+libellé "CoupledEarthSolver (ARPEGE)" débordait de sa case étroite —
+raccourci en "CoupledEarthSolver" (l'info complète reste dans la
+bannière de statut).
+
+Reste : niveaux de pression standards par interpolation, signal
+forecast par point (coût prohibitif avec l'infrastructure actuelle),
+et brancher la carte régionale/coupe/route sur les vrais champs 3D/4D
+déjà construits.
 
 **Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
 honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut

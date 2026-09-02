@@ -9,14 +9,37 @@ footer. Every AWCI number shown is the real output of
 acf.awci.calculator.AWCICalculator; only the underlying meteorological
 input fields are a synthetic demo pattern (see awci_synthetic_field.py's
 docstring) - exactly the "Concept Output - Research Prototype" framing the
-reference mockup itself uses.
+reference mockup itself uses, UNLESS "Real Physics" mode is engaged (see
+below).
+
+Real Physics mode (added 2026-09-02, explicit user request "vas-y,
+branche le dashboard")
+-----------------------------------------------------------------------
+The "🔬 Real Physics" button runs
+acf.awci.spatial_field.compute_real_complexity_field() - a real
+CoupledEarthSolver run, not the synthetic demo pattern - on a background
+QThreadPool worker (same WorkerRunnable-with-a-signal pattern as
+gui/esoc/command_dispatcher.py's async commands, extended here to carry
+a result back to the GUI thread) so the ~1-2s real computation never
+freezes the UI. Only the global map, stats bar, radar and risk-summary
+panels are wired to the real field so far - the regional map, cross-
+section and route chart stay on the synthetic pattern even in Real
+Physics mode (documented in the status label, not silently left
+inconsistent): building a real regional/cross-section/route view would
+need real field extraction along an arbitrary path/region, a separate
+piece of work from wiring the already-built 2D field into the panels
+that consume a plain lat/lon grid.
 """
 
+import logging
 from typing import Any
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSlider, QVBoxLayout, QWidget
+import numpy as np
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
+from acf.awci.calculator import AWCICalculator
+from acf.awci.spatial_field import compute_real_complexity_field
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
@@ -25,6 +48,8 @@ from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
 from acf.gui.dashboard.awci_synthetic_field import awci_at, awci_grid
+
+logger = logging.getLogger("acf.gui.dashboard.awci")
 
 # Reference-style demo route/point of interest: JFK -> CDG (global map / cross-section)
 _GLOBAL_ROUTE = [(40.64, -73.78, "JFK"), (49.01, 2.55, "CDG")]
@@ -74,11 +99,42 @@ class _ComponentValueList(QFrame):
             self._values[key].setText(f"{value:.2f}")
 
 
+class _RealFieldWorkerSignals(QObject):
+    """QRunnable itself cannot be a QObject (no signals) - this small
+    companion object is what actually carries the result back to the
+    GUI thread. Qt's default (Auto) connection type marshals a signal
+    emitted from this worker thread onto the receiver's thread as long
+    as the receiver lives on the GUI thread, which AWCIDashboard does -
+    the standard safe pattern for QRunnable + a result."""
+
+    finished = Signal(dict)
+    failed = Signal(str)
+
+
+class _RealFieldWorker(QRunnable):
+    """Runs compute_real_complexity_field() off the GUI thread."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = compute_real_complexity_field(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real Physics field computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._real_physics_active = False
         self._build_ui()
         self._apply_theme()
         self.refresh()
@@ -90,13 +146,26 @@ class AWCIDashboard(QWidget):
         outer.setSpacing(8)
         outer.setContentsMargins(10, 10, 10, 0)
 
+        header_row = QHBoxLayout()
         header = QLabel("AWCI – AVIATION WEATHER COMPLEXITY INDEX")
         header.setStyleSheet("color: #e0e0e0; font-size: 18px; font-weight: bold;")
-        outer.addWidget(header)
+        header_row.addWidget(header)
+        header_row.addStretch()
+
+        self.real_physics_button = QPushButton("🔬 Real Physics")
+        self.real_physics_button.setToolTip(
+            "Run a real CoupledEarthSolver field (acf.awci.spatial_field) instead of the synthetic demo pattern.\n"
+            "Only the global map, stats bar, radar and risk summary are wired to it - regional map, cross-section\n"
+            "and route chart stay on the synthetic pattern (see this button's status label)."
+        )
+        self.real_physics_button.clicked.connect(self._toggle_real_physics)
+        header_row.addWidget(self.real_physics_button)
+        outer.addLayout(header_row)
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet("color: #8090a8; font-size: 11px;")
         outer.addWidget(subheader)
+        self.real_physics_status = subheader  # reused as the mode/status line
 
         # --- Row 1: global map (left) + cross-section & radar (right) -----
         row1 = QHBoxLayout()
@@ -214,6 +283,86 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+
+    # ------------------------------------------------- Real Physics mode
+
+    def _toggle_real_physics(self) -> None:
+        if self._real_physics_active:
+            self._revert_to_demo()
+        else:
+            self._start_real_physics()
+
+    def _start_real_physics(self) -> None:
+        self.real_physics_button.setEnabled(False)
+        self.real_physics_status.setText(
+            "🔬 Computing real physics field (CoupledEarthSolver, ARPEGE grid)… this takes a few seconds"
+        )
+        worker = _RealFieldWorker(model="ARPEGE", steps=8, dt_seconds=90.0, perturbation_scale=3.0, seed=1)
+        worker.signals.finished.connect(self._on_real_physics_ready)
+        worker.signals.failed.connect(self._on_real_physics_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_real_physics_ready(self, result: dict[str, Any]) -> None:
+        self._real_physics_active = True
+        self.real_physics_button.setText("↩ Back to Demo")
+        self.real_physics_button.setEnabled(True)
+        self.real_physics_status.setText(
+            "🔬 REAL PHYSICS — CoupledEarthSolver (ARPEGE grid). Global map, stats, radar and risk summary "
+            "below are real; regional map, cross-section and route chart stay on the synthetic demo pattern."
+        )
+
+        lons, lats = result["lons"], result["lats"]
+        awci_field = result["awci_field"]
+        self.global_map.set_external_field(lons, lats, awci_field, "REAL PHYSICS")
+
+        flat_scores = [float(v) for v in awci_field.flatten()]
+        # No per-point forecast-side data is fed into
+        # compute_real_complexity_field() (see its own docstring) - the
+        # solver's real fields don't carry a "confidence" input, so this
+        # honestly reflects AWCICalculator's own default (100.0) rather
+        # than an invented aggregate forecast confidence.
+        self.stats_bar.update_data(flat_scores, confidence_pct=100.0)
+        # Short label - "(ARPEGE grid)" is already in real_physics_status
+        # above; the full model_box string overflowed its narrow box
+        # (found via a real screenshot during verification).
+        self.stats_bar.model_box.set_value("CoupledEarthSolver")
+
+        # Radar/risk-summary need a single point's full module_scores
+        # breakdown, which compute_real_complexity_field() does not
+        # store per grid cell (only the aggregate scores) - recomputed
+        # here from this SAME call's own raw fields at the point nearest
+        # _POINT_OF_INTEREST, a real (not fabricated) per-point result.
+        lat_idx = int(np.argmin(np.abs(np.asarray(lats) - _POINT_OF_INTEREST[0])))
+        lon_idx = int(np.argmin(np.abs(np.asarray(lons) - _POINT_OF_INTEREST[1])))
+        point_result = AWCICalculator().calculate(
+            {
+                "temperature": float(result["temperature_field"][lat_idx, lon_idx]),
+                "wind_speed": float(result["wind_speed_field"][lat_idx, lon_idx]),
+                "specific_humidity": float(result["specific_humidity_field"][lat_idx, lon_idx]),
+                "pressure": float(result["pressure_field_hpa"][lat_idx, lon_idx]),
+            }
+        )
+        self.radar.update_data(point_result["module_scores"])
+        self.component_list.update_data(point_result["module_scores"])
+        self.risk_summary.update_data(
+            point_result["module_scores"],
+            point_result["awci"],
+            physical_score=point_result["physical_score"],
+            forecast_score=point_result["forecast_score"],
+        )
+
+    def _on_real_physics_failed(self, message: str) -> None:
+        self.real_physics_button.setEnabled(True)
+        self.real_physics_status.setText(f"⚠ Real physics computation failed: {message}")
+        logger.error("AWCIDashboard: real physics computation failed: %s", message)
+
+    def _revert_to_demo(self) -> None:
+        self._real_physics_active = False
+        self.real_physics_button.setText("🔬 Real Physics")
+        self.real_physics_status.setText("Concept Output – Research Prototype")
+        self.global_map.clear_external_field()
+        self.stats_bar.model_box.set_value("ACF Demo Grid")
+        self.refresh()
 
     # ---------------------------------------------------- external API
 
