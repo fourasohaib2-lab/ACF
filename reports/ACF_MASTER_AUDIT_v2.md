@@ -1214,9 +1214,18 @@ passent (3217 avant), ruff et mypy propres sur les 1403 fichiers.
 Toutes les demandes explicites de cette session sont closes. Le projet
 n'a plus de manque identifié au niveau "moteur absent" — ce qui reste
 est du raffinement continu (voir les sections précédentes pour le
-détail de chaque limite honnêtement documentée : wraparound restant
-pour 2 des 5 méthodes de regridding déjà couvertes, lecture FA de bout
-en bout bloquée par une limite structurelle du format lui-même, etc.).
+détail de chaque limite honnêtement documentée : lecture FA de bout en
+bout bloquée par une limite structurelle du format lui-même, etc.).
+
+**Correction (trouvée en se relisant, pas signalée par ailleurs)** :
+la phrase juste au-dessus affirmait auparavant "wraparound restant
+pour 2 des 5 méthodes de regridding" — obsolète et faux à ce point du
+document. `src/acf/awci/regridding.py` n'a que 3 méthodes (pas 5), et
+sa propre docstring de module dit explicitement "All three genuinely
+handle the real 360° longitude periodicity" depuis la mise à jour
+"wraparound ±180° complété" plus haut dans ce même fichier — les trois
+méthodes gèrent réellement le wraparound. Corrigé ici plutôt que
+laissé comme une fausse limite documentée.
 
 ## Mise à jour 2026-09-02 (suite) — recommandation auto-choisie : audit complet des dépendances non déclarées
 
