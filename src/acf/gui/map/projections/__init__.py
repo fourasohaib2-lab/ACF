@@ -26,3 +26,12 @@ Scientific Context:
 Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
 """
+
+
+# NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): every
+# class in this subpackage is unused by anything in src/ - see
+# acf/gui/map/__init__.py's own NOTE for the full explanation (this is
+# part of a complete, correct, but never-integrated alternate map
+# architecture superseded in practice by the flat map_canvas.py/
+# map_layers.py/map_projection.py/map_renderer.py files that ESOC
+# actually uses).
