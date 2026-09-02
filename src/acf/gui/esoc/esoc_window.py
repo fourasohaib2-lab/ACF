@@ -2,11 +2,10 @@
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
-from acf.dashboard.window import ClassicDashboardWindow
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_controller import ESOCController
 from acf.gui.esoc.esoc_layout import ESOCLayout
@@ -19,6 +18,9 @@ from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.session_manager import SessionManager
 from acf.gui.esoc.settings_dialog import SettingsDialog
+
+if TYPE_CHECKING:
+    from acf.dashboard.window import ClassicDashboardWindow
 
 
 class ESOCWindow(QMainWindow):
@@ -303,7 +305,17 @@ class ESOCWindow(QMainWindow):
         (its DashboardLayout calls setCentralWidget()/addDockWidget() directly,
         so it wants to own a whole window, unlike the AWCI dashboard which fit
         naturally as a tab).
+
+        The import below is deliberately local: acf.dashboard.window imports
+        acf.dashboard.layout, which imports acf.gui.widgets.map_view - importing
+        anything under acf.gui at all triggers acf/gui/__init__.py, which eagerly
+        imports THIS module (ESOCWindow) for its own __all__ - a module-level
+        import here would be a circular import (confirmed: raises ImportError on
+        a partially-initialized module). Deferring it until the button is
+        actually clicked breaks the cycle.
         """
+        from acf.dashboard.window import ClassicDashboardWindow
+
         if self._classic_dashboard_window is None:
             self._classic_dashboard_window = ClassicDashboardWindow(self)
         self._classic_dashboard_window.show()
