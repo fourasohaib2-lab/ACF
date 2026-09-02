@@ -5,6 +5,7 @@ AWCI Calculator
 Aviation Weather Complexity Index calculator.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
@@ -65,22 +66,43 @@ class AWCICalculator:
     `decomposition` to before this module existed — opt in explicitly
     with `update_weights({"ensemble_spread": ..., "confidence": ...})`.
 
-    Multi-model consensus/disagreement — deliberately NOT wired.
-    `ModelConsensusEngine` (`visualization/ai_forecast_center/
-    model_consensus_engine.py`) and `ForecastComparisonMatrix`
-    (`.../forecast_comparison.py`) were checked and are themselves
-    honest stubs: the former only sums declared weights and says so
+    Real multi-model disagreement (NOTE, added 2026-09-02, explicit
+    user request "branche le vrai ensemble/consensus")
+    -----------------------------------------------------------------
+    `FORECAST_MODULES` also includes `model_disagreement` now.
+    `ModelConsensusEngine.compute_unified_consensus()`
+    (`visualization/ai_forecast_center/model_consensus_engine.py`)
+    and `ForecastComparisonMatrix.get_comparison_matrix()`
+    (`.../forecast_comparison.py`) were checked first and confirmed to
+    still be honest stubs — the former only sums declared weights
     (`status: "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"`), the latter
     explicitly reports `"status":
-    "NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`, `"is_real_data": False`.
-    Neither ever fuses or compares a real model output field anywhere
-    in ACF today. Wiring a "model disagreement" module from either
-    would mean computing a number from data that does not exist —
-    exactly the kind of fabrication this project's audits exist to
-    remove, not add. `ensemble_spread` above is real precisely because
-    the caller supplies real member values; consensus stays honestly
-    absent from `FORECAST_MODULES` until ACF has real multi-model
-    field fusion to derive it from.
+    "NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`. Neither fuses or compares
+    a real model output field, so neither feeds this module.
+
+    Instead, `ModelConsensusEngine` gained a new, genuinely real
+    method: `compute_real_multi_model_disagreement()`. It actually
+    runs ACF's own `CoupledEarthSolver` once per requested model at
+    that model's real grid configuration
+    (`acf.forecast.engine.MODEL_CONFIGS` — the same real
+    infrastructure the one-click AROME/ALADIN HPC pipelines already
+    submit, now also covering ARPEGE), with an independently
+    perturbed initial condition per model, and reads each model's real
+    value at the point nearest the query location — real
+    nearest-neighbour regridding, genuine per-model output, genuine
+    spread via `EnsembleManager` (reused). Its `model_realizations`
+    field is ready to hand straight to `data["model_realizations"]`
+    here. Honest limitation carried over from that method's own
+    docstring: this compares ACF's own solver at multiple real grid
+    resolutions/perturbations, standing in for AROME/ALADIN/ARPEGE —
+    not real operational NWP archives (none are available in this
+    environment). What's real: the solver genuinely runs per model,
+    the values genuinely differ, and the spread is genuinely computed
+    from them — not a fabricated placeholder.
+
+    Default weight is 0.0 (opt-in, see `weights.py`), same convention
+    as `ensemble_spread` — zero behavior change for callers who don't
+    supply `data["model_realizations"]`.
 
     Interaction terms
     ------------------
@@ -123,7 +145,7 @@ class AWCICalculator:
     PHYSICAL_MODULES = frozenset(
         {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal"}
     )
-    FORECAST_MODULES = frozenset({"confidence", "ensemble_spread"})
+    FORECAST_MODULES = frozenset({"confidence", "ensemble_spread", "model_disagreement"})
 
     def __init__(self, weights: dict[str, float] | None = None):
         """
@@ -163,7 +185,15 @@ class AWCICalculator:
               (e.g. {"cape": [1200, 1800, 900, ...]}). Drives the real
               ensemble_spread module (see class docstring); omitted or
               empty means "no ensemble data supplied", not "models
-              agree perfectly" — see _compute_ensemble_spread_score().
+              agree perfectly" — see _compute_spread_score().
+            - model_realizations: optional dict[str, list[float]], real
+              per-model values at this point for one or more of
+              Normalizer.MODEL_DISAGREEMENT_REFERENCE's variables
+              (e.g. {"temperature": [288.8, 287.6, 286.2]}) — typically
+              ModelConsensusEngine.compute_real_multi_model_
+              disagreement()'s own `model_realizations` return value,
+              handed straight through. Drives the real
+              model_disagreement module (see class docstring).
 
         Returns
         -------
@@ -216,41 +246,75 @@ class AWCICalculator:
         # disagreement) rather than assuming the worst.
         ensemble_members = data.get("ensemble_members")
         scores["ensemble_spread"] = (
-            self._compute_ensemble_spread_score(ensemble_members) if ensemble_members else 0.0
+            self._compute_spread_score(ensemble_members, self.normalizer.normalize_ensemble_spread)
+            if ensemble_members
+            else 0.0
+        )
+
+        # Model disagreement module - real cross-model spread when
+        # data["model_realizations"] is supplied (typically the
+        # 'model_realizations' field of ModelConsensusEngine.
+        # compute_real_multi_model_disagreement()'s return value; see
+        # class docstring). Same "0.0 = no signal supplied" convention
+        # as ensemble_spread above, not "models agree perfectly".
+        model_realizations = data.get("model_realizations")
+        scores["model_disagreement"] = (
+            self._compute_spread_score(model_realizations, self.normalizer.normalize_model_disagreement)
+            if model_realizations
+            else 0.0
         )
 
         return scores
 
-    def _compute_ensemble_spread_score(self, ensemble_members: dict[str, list[float]]) -> float:
+    def _compute_spread_score(
+        self, realizations: dict[str, list[float]], normalize: Callable[[float, str], float]
+    ) -> float:
         """
-        Real ensemble-spread-derived complexity contribution, in
-        [0, 1]. For each supplied variable with a declared reference
-        spread (Normalizer.ENSEMBLE_SPREAD_REFERENCE) and at least 2
-        member values, computes the genuine ensemble standard
-        deviation via EnsembleManager(values).spread — the same
-        formula EnsembleManager already provides — then normalizes it.
-        Averages across whichever variables were actually supplied.
+        Real spread-derived complexity contribution, in [0, 1]. Shared
+        by ensemble_spread (per-member realizations of one model) and
+        model_disagreement (per-model realizations at one point) —
+        both are "genuine standard deviation across N real values,
+        normalized against a documented reference", differing only in
+        which reference dict `normalize` reads from (Normalizer.
+        normalize_ensemble_spread vs. normalize_model_disagreement).
+
+        For each supplied variable with >= 2 values, computes the
+        genuine standard deviation via EnsembleManager(values).spread
+        — the same real formula EnsembleManager already provides for
+        ensemble statistics, reused here rather than reimplemented —
+        then normalizes it via `normalize`. Averages across whichever
+        variables were actually usable.
 
         Parameters
         ----------
-        ensemble_members : dict[str, list[float]]
-            Real per-member forecast values, keyed by variable name.
+        realizations : dict[str, list[float]]
+            Real per-member or real per-model values, keyed by
+            variable name.
+        normalize : Callable[[float, str], float]
+            Normalizer.normalize_ensemble_spread or
+            Normalizer.normalize_model_disagreement — raises KeyError
+            for a variable with no declared reference, which this
+            method treats as "not usable", not as an error to
+            propagate (an unrecognized variable simply doesn't
+            contribute, rather than crashing the whole calculation).
 
         Returns
         -------
         float
             Mean normalized spread in [0, 1] across the recognized,
-            usable variables. 0.0 if none of the supplied variables
-            are recognized or none has >= 2 members — an honestly
-            "no usable ensemble signal" result, not a claim that the
-            ensemble genuinely agrees.
+            usable variables. 0.0 if none are usable — an honestly
+            "no usable signal" result, not a claim of perfect
+            agreement.
         """
         normalized_spreads = []
-        for variable, values in ensemble_members.items():
-            if variable not in Normalizer.ENSEMBLE_SPREAD_REFERENCE or len(values) < 2:
+        for variable, values in realizations.items():
+            if len(values) < 2:
                 continue
-            spread = EnsembleManager(values).spread
-            normalized_spreads.append(self.normalizer.normalize_ensemble_spread(spread, variable))
+            try:
+                spread = EnsembleManager(values).spread
+                normalized_spreads.append(normalize(spread, variable))
+            except KeyError:
+                continue
 
         if not normalized_spreads:
             return 0.0
@@ -412,6 +476,7 @@ class AWCICalculator:
             "temporal": "Évolution temporelle",
             "confidence": "Incertitude de prévision",
             "ensemble_spread": "Désaccord d'ensemble (spread réel)",
+            "model_disagreement": "Désaccord inter-modèles (fusion réelle)",
             "wind_topo_interaction": "Interaction Vent x Relief",
             "conv_thermo_interaction": "Interaction Convection x Thermodynamique",
         }

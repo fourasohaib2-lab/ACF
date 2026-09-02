@@ -16,9 +16,24 @@ from acf.forecast.engine import MODEL_CONFIGS, run_forecast_cycle
 
 
 def test_model_configs_cover_both_operational_models():
-    assert set(MODEL_CONFIGS) == {"AROME", "ALADIN"}
+    # ARPEGE added 2026-09-02 for real multi-model disagreement
+    # (ModelConsensusEngine.compute_real_multi_model_disagreement()).
+    assert set(MODEL_CONFIGS) == {"AROME", "ALADIN", "ARPEGE"}
     assert MODEL_CONFIGS["AROME"]["resolution_km"] == 1.3
     assert MODEL_CONFIGS["ALADIN"]["resolution_km"] == 7.5
+    assert MODEL_CONFIGS["ARPEGE"]["resolution_km"] == 10.0
+
+
+def test_run_forecast_cycle_arpege_uses_its_own_global_scale_grid(tmp_path):
+    output_path = str(tmp_path / "arpege_output.nc")
+    result = run_forecast_cycle("ARPEGE", steps=1, output_path=output_path)
+
+    assert result["status"] == "SUCCESS"
+    assert result["operational_resolution_km"] == 10.0
+
+    ds = xr.open_dataset(output_path)
+    assert ds.sizes["latitude"] == MODEL_CONFIGS["ARPEGE"]["n_lat"]
+    assert ds.sizes["longitude"] == MODEL_CONFIGS["ARPEGE"]["n_lon"]
 
 
 def test_run_forecast_cycle_arome_writes_real_netcdf(tmp_path):

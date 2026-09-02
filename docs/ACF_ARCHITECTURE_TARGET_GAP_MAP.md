@@ -131,14 +131,41 @@ appelant existant n'est affecté. Vérifié avec de vraies valeurs
 d'ensemble : `EnsembleManager([850, 1200, 400, 2100, 950]).spread` = 629.5
 J/kg réel, propagé jusqu'à `forecast_score`.
 
-En revanche, `ModelConsensusEngine` et `ForecastComparisonMatrix`
-(`visualization/ai_forecast_center/`) ont été vérifiés et sont eux-mêmes
-des stubs honnêtes — aucune vraie fusion de champs multi-modèles n'existe
-nulle part dans ACF (`status: "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"` /
-`"NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`). Les brancher aurait fabriqué un
-score de désaccord inter-modèles à partir de données qui n'existent pas —
-délibérément laissé absent tant qu'ACF n'a pas de vraie fusion
-multi-modèles à exploiter.
+`ModelConsensusEngine.compute_unified_consensus()` et
+`ForecastComparisonMatrix` restent, eux, des stubs honnêtes inchangés
+(`status: "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"` /
+`"NOT_COMPUTED_NO_MODEL_COMPARISON_RUN"`) — aucune fusion de champs n'y
+existait, donc rien à en tirer honnêtement.
+
+**Mise à jour 2026-09-02 (suite 2) — vraie fusion multi-modèles construite**
+(sur demande explicite : "vas-y, construis la fusion multi-modèles") :
+`ModelConsensusEngine` gagne une nouvelle méthode réelle,
+`compute_real_multi_model_disagreement(lat, lon, ...)`. Elle fait tourner
+pour de vrai `CoupledEarthSolver` une fois par modèle demandé, à sa vraie
+configuration de grille (`acf.forecast.engine.MODEL_CONFIGS` — la même
+infrastructure que les pipelines HPC one-click AROME/ALADIN, complétée
+d'un troisième modèle **ARPEGE** — 48×96×20, 10 km stand-in), avec une
+perturbation initiale indépendante par modèle (même convention que les
+données d'entraînement du FNO), puis lit la vraie valeur de chaque modèle
+au point de grille le plus proche du point demandé — vrai
+plus-proche-voisin, un des types de regridding listés dans
+l'architecture cible. Vérifié avec de vraies valeurs (Alger) :
+`{'ALADIN': 290.42, 'AROME': 287.09, 'ARPEGE': 289.52}` → spread réel
+`1.73 K`, propagé jusqu'au nouveau module `model_disagreement` d'AWCI
+(poids par défaut `0.0`, même convention opt-in que `ensemble_spread`).
+
+Limite honnête documentée en détail dans le docstring de la méthode :
+ceci compare le **propre solveur physique d'ACF** à plusieurs
+résolutions/perturbations réelles, en remplacement d'AROME/ALADIN/ARPEGE
+— pas de vraies archives opérationnelles (aucune disponible dans cet
+environnement). Ce qui est réel : le solveur tourne vraiment par modèle,
+les valeurs diffèrent vraiment (physique + discrétisation réelles), et le
+spread est vraiment calculé à partir de ces valeurs — rien n'est un
+placeholder inventé. Trouvaille annexe honnêtement documentée : les
+appels répétés ne sont pas parfaitement reproductibles bit-à-bit (les
+composants atmosphère/océan du solveur utilisent l'état RNG global
+`np.random` sans le fixer — caractéristique préexistante du solveur, hors
+scope de cette tâche, pas introduite par ce nouveau code).
 
 ## Recommandation (à valider avec l'utilisateur)
 

@@ -149,6 +149,29 @@ class Normalizer:
         "precipitation": 20.0,  # mm/h
     }
 
+    # Reference "large disagreement" spread for real multi-model
+    # comparisons (acf.visualization.ai_forecast_center.
+    # model_consensus_engine.ModelConsensusEngine.
+    # compute_real_multi_model_disagreement()), analogous to
+    # ENSEMBLE_SPREAD_REFERENCE above but a conceptually distinct
+    # signal: spread ACROSS different model grid configurations, not
+    # across perturbed members of one model. Kept as its own dict (not
+    # merged with ENSEMBLE_SPREAD_REFERENCE) so the two stay separately
+    # tunable - real inter-model disagreement and real ensemble spread
+    # are not guaranteed to have the same typical magnitude. Currently
+    # only "temperature" is populated - the only field
+    # compute_real_multi_model_disagreement() has been exercised with
+    # so far (see that method's `field` parameter to extend).
+    MODEL_DISAGREEMENT_REFERENCE = {
+        "temperature": 5.0,  # K - see model_consensus_engine.py's own measured magnitudes
+    }
+
+    @staticmethod
+    def _normalize_spread(spread: float, reference: float) -> float:
+        """Shared clamp-and-scale logic for normalize_ensemble_spread() and normalize_model_disagreement()."""
+        spread = max(0.0, spread)
+        return min(1.0, spread / reference)
+
     @staticmethod
     def normalize_ensemble_spread(spread: float, variable: str) -> float:
         """
@@ -178,9 +201,24 @@ class Normalizer:
             falling back to some default would fabricate a
             normalization scale nobody chose.
         """
-        reference = Normalizer.ENSEMBLE_SPREAD_REFERENCE[variable]
-        spread = max(0.0, spread)
-        return min(1.0, spread / reference)
+        return Normalizer._normalize_spread(spread, Normalizer.ENSEMBLE_SPREAD_REFERENCE[variable])
+
+    @staticmethod
+    def normalize_model_disagreement(spread: float, variable: str) -> float:
+        """
+        Normalize a real multi-model disagreement spread (standard
+        deviation across models' real point values, e.g. from
+        ModelConsensusEngine.compute_real_multi_model_disagreement()'s
+        disagreement_spread) to [0, 1]. Same mechanics as
+        normalize_ensemble_spread() (see _normalize_spread()), against
+        the separate MODEL_DISAGREEMENT_REFERENCE scale.
+
+        Raises
+        ------
+        KeyError
+            If `variable` has no declared reference spread.
+        """
+        return Normalizer._normalize_spread(spread, Normalizer.MODEL_DISAGREEMENT_REFERENCE[variable])
 
     @staticmethod
     def normalize_percentile(value: float, climatology: list[float]) -> float:

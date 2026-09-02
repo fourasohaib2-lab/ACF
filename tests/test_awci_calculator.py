@@ -464,6 +464,97 @@ def test_normalize_ensemble_spread_saturates_at_one():
     assert Normalizer.normalize_ensemble_spread(0.0, "cape") == 0.0
 
 
+def test_model_disagreement_module_present_but_zero_weight_by_default():
+    """Same opt-in convention as ensemble_spread: present in module_scores, zero decomposition/awci impact by default."""
+    calc = AWCICalculator()
+    data = {
+        "temperature": 300.0,
+        "wind_speed": 10.0,
+        "cape": 1000.0,
+        "confidence": 80.0,
+        "model_realizations": {"temperature": [280.0, 300.0, 320.0]},  # huge real disagreement
+    }
+    result = calc.calculate(data)
+    assert "model_disagreement" in result["module_scores"]
+    assert result["decomposition"]["model_disagreement"] == 0.0
+
+    without_models = calc.calculate({k: v for k, v in data.items() if k != "model_realizations"})
+    assert result["awci"] == without_models["awci"]
+
+
+def test_model_disagreement_uses_real_ensemble_manager_statistics_on_model_values():
+    calc = AWCICalculator()
+
+    agreeing_models = {"temperature": [299.5, 300.0, 300.5]}
+    disagreeing_models = {"temperature": [285.0, 300.0, 315.0]}
+
+    agreeing_score = calc.calculate_module_scores({"model_realizations": agreeing_models})["model_disagreement"]
+    disagreeing_score = calc.calculate_module_scores({"model_realizations": disagreeing_models})[
+        "model_disagreement"
+    ]
+
+    assert disagreeing_score > agreeing_score
+    assert 0.0 <= agreeing_score <= 1.0
+    assert 0.0 <= disagreeing_score <= 1.0
+
+
+def test_model_disagreement_opted_in_moves_forecast_score_not_physical_score():
+    weights = {
+        "dynamic": 0.20,
+        "thermodynamic": 0.25,
+        "convective": 0.20,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.00,
+        "confidence": 0.00,
+        "ensemble_spread": 0.00,
+        "model_disagreement": 0.10,
+    }
+    calc = AWCICalculator(weights)
+    base_data = {"temperature": 300.0, "wind_speed": 10.0, "cape": 1000.0, "confidence": 100.0}
+
+    consensus = calc.calculate({**base_data, "model_realizations": {"temperature": [299.5, 300.0, 300.5]}})
+    disagreement = calc.calculate({**base_data, "model_realizations": {"temperature": [280.0, 300.0, 320.0]}})
+
+    assert disagreement["forecast_score"] > consensus["forecast_score"]
+    assert disagreement["physical_score"] == pytest.approx(consensus["physical_score"])
+
+
+def test_model_disagreement_end_to_end_from_real_model_consensus_engine():
+    """
+    Full real pipeline: ModelConsensusEngine actually runs the solver
+    per model -> its model_realizations output is handed straight to
+    AWCICalculator.calculate() -> a real, non-zero forecast signal
+    comes out the other end when the module is given weight.
+    """
+    from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
+
+    fusion = ModelConsensusEngine.compute_real_multi_model_disagreement(
+        lat=36.7, lon=3.0, models=["AROME", "ALADIN", "ARPEGE"], steps=8
+    )
+    assert fusion["disagreement_spread"] > 0.0  # real solver + real perturbations -> genuine spread
+
+    weights = {
+        "dynamic": 0.20,
+        "thermodynamic": 0.25,
+        "convective": 0.20,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.00,
+        "confidence": 0.00,
+        "ensemble_spread": 0.00,
+        "model_disagreement": 0.10,
+    }
+    calc = AWCICalculator(weights)
+    result = calc.calculate(
+        {"temperature": 300.0, "wind_speed": 10.0, "cape": 1000.0, "model_realizations": fusion["model_realizations"]}
+    )
+
+    assert result["forecast_score"] is not None
+    assert result["module_scores"]["model_disagreement"] > 0.0
+    assert result["decomposition"]["model_disagreement"] > 0.0
+
+
 def test_weights_manager():
     """Test weights manager functionality."""
     # Créer un gestionnaire avec des poids personnalisés

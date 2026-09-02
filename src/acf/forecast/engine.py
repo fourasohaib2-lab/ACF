@@ -36,9 +36,16 @@ logger = logging.getLogger("acf.forecast.engine")
 #: resolution_km below is descriptive of which operational model this
 #: run stands in for, not a claim that this grid matches its real
 #: horizontal spacing.
+#: ARPEGE added 2026-09-02 to enable real multi-model disagreement
+#: (acf.visualization.ai_forecast_center.model_consensus_engine.
+#: ModelConsensusEngine.compute_real_multi_model_disagreement()) -
+#: ARPEGE is ONM's real global model, hence the coarser/global-scale
+#: stand-in grid here (vs. AROME/ALADIN's regional stand-ins above).
+#: Same resolution_km caveat as the rest of this dict applies.
 MODEL_CONFIGS: dict[str, dict[str, Any]] = {
     "AROME": {"resolution_km": 1.3, "n_lat": 90, "n_lon": 180, "n_levels": 32, "default_steps": 24},
     "ALADIN": {"resolution_km": 7.5, "n_lat": 60, "n_lon": 120, "n_levels": 24, "default_steps": 24},
+    "ARPEGE": {"resolution_km": 10.0, "n_lat": 48, "n_lon": 96, "n_levels": 20, "default_steps": 24},
 }
 
 

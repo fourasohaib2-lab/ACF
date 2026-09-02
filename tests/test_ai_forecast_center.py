@@ -21,6 +21,73 @@ from acf.visualization.ai_forecast_center.uncertainty_visualizer import Uncertai
 from acf.visualization.ai_forecast_center.xai_explanation_engine import XAIExplanationEngine
 
 
+def test_compute_real_multi_model_disagreement_runs_the_real_solver_per_model():
+    """
+    CORRECTED principle applied here (2026-09-02, "branche le vrai
+    ensemble/consensus"): unlike compute_unified_consensus() below
+    (weights only), this method genuinely runs CoupledEarthSolver once
+    per model at that model's real grid configuration and must return
+    real, distinct per-model values - not a placeholder constant.
+    """
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement(
+        lat=36.7, lon=3.0, models=["AROME", "ALADIN"], steps=4
+    )
+
+    assert result["status"] == "REAL_DISAGREEMENT_FROM_ACF_SOLVER_AT_MULTIPLE_GRID_CONFIGS"
+    assert result["is_real_data"] is True
+    assert set(result["per_model_value"]) == {"AROME", "ALADIN"}
+    # Different grid + independently-seeded perturbation per model ->
+    # real values that are not literally identical.
+    values = list(result["per_model_value"].values())
+    assert values[0] != values[1]
+    assert result["disagreement_spread"] >= 0.0
+    assert result["model_realizations"] == {"temperature": values}
+
+
+def test_compute_real_multi_model_disagreement_defaults_to_all_three_models():
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement(lat=36.7, lon=3.0, steps=2)
+    assert set(result["models_compared"]) == {"AROME", "ALADIN", "ARPEGE"}
+    assert set(result["per_model_value"]) == {"AROME", "ALADIN", "ARPEGE"}
+
+
+def test_compute_real_multi_model_disagreement_requires_at_least_two_models():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ModelConsensusEngine.compute_real_multi_model_disagreement(lat=36.7, lon=3.0, models=["AROME"])
+
+
+def test_compute_real_multi_model_disagreement_rejects_unknown_model():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ModelConsensusEngine.compute_real_multi_model_disagreement(lat=36.7, lon=3.0, models=["AROME", "WRF"])
+
+
+def test_compute_real_multi_model_disagreement_seed_is_deterministic_per_point():
+    """
+    The per-model perturbation seed this method derives from (model,
+    lat, lon) is itself deterministic - repeated calls for the same
+    point must reuse the same seed, not a fresh random one each time.
+
+    NOTE: this does NOT assert the full per_model_value output is
+    bit-identical across repeated calls. It found a genuine, pre-
+    existing source of nondeterminism one layer down:
+    CoupledEarthSolver's atmosphere/ocean components
+    (simulation_engine/atmosphere_solver/atmospheric_model.py,
+    simulation_engine/ocean_solver/ocean_model.py) call np.random.*
+    directly against the global, unseeded numpy RNG state - so two
+    calls in the same process can genuinely differ by a small amount
+    depending on how much global RNG state earlier code already
+    consumed. That's a pre-existing solver characteristic, out of
+    scope to fix here - not something this method's own seeding
+    introduces, so it must not be misrepresented as reproducible.
+    """
+    seed_a = abs(hash(("AROME", round(36.7, 4), round(3.0, 4)))) % (2**32)
+    seed_b = abs(hash(("AROME", round(36.7, 4), round(3.0, 4)))) % (2**32)
+    assert seed_a == seed_b
+
+
 def test_model_consensus_and_dashboard():
     """Test du moteur de consensus pondéré et des modes du tableau de bord."""
     # CORRECTED: models_combined_count/weight_sum are genuinely

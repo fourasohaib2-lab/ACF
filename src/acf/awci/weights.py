@@ -31,6 +31,11 @@ class WeightsManager:
         # data should raise this weight explicitly, e.g. via
         # update_weights({"ensemble_spread": 0.10, "confidence": 0.0}).
         "ensemble_spread": 0.0,
+        # Real multi-model disagreement (see AWCICalculator's
+        # calculate_module_scores() and ModelConsensusEngine.
+        # compute_real_multi_model_disagreement()). Same opt-in
+        # convention as ensemble_spread above: 0.0 by default.
+        "model_disagreement": 0.0,
     }
 
     def __init__(self, weights: dict[str, float] | None = None):
