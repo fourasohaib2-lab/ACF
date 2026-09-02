@@ -56,9 +56,9 @@ class MapCanvas(QWidget):
         self.label = _LabelProxy(self)
 
         # 2. Matplotlib Figure & High DPI Setup
-        self.figure = plt.figure(figsize=(12, 8), dpi=100, facecolor="#0a0f1d")
+        self.figure = plt.figure(figsize=(12, 8), dpi=100, facecolor="#0b1220")
         self.canvas = FigureCanvas(self.figure)
-        self.canvas.setStyleSheet("background-color: #0a0f1d;")
+        self.canvas.setStyleSheet("background-color: #0b1220;")
 
         self.axes: Any | None = None
 
@@ -78,7 +78,7 @@ class MapCanvas(QWidget):
         # Add subplot with active Cartopy projection
         current_crs = self.projection_manager.current_crs
         self.axes = self.figure.add_subplot(111, projection=current_crs)
-        self.axes.set_facecolor("#0a0f1d")
+        self.axes.set_facecolor("#0b1220")
 
     def draw_map(self) -> None:
         """Render base map and active scientific layers on GeoAxes."""
@@ -115,7 +115,7 @@ class MapCanvas(QWidget):
         """Update map title and trigger redraw."""
         self.title_text = title
         if self.axes is not None:
-            self.axes.set_title(title, fontsize=10, color="#81D4FA", weight="bold", pad=6)
+            self.axes.set_title(title, fontsize=10, color="#7ad4ff", weight="bold", pad=6)
             if self.canvas is not None:
                 try:
                     self.canvas.draw_idle()

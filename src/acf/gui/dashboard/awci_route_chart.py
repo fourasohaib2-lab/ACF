@@ -37,7 +37,7 @@ class AWCIRouteChart(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0d1b2a")
+        self.figure = plt.figure(facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -75,7 +75,7 @@ class AWCIRouteChart(QWidget):
         colors = AWCI_CMAP(np.array(scores) / 100.0)
         for i in range(len(distances) - 1):
             self.axis.fill_between(distances[i : i + 2], [0, 0], scores[i : i + 2], color=colors[i], linewidth=0)
-        self.axis.plot(distances, scores, color="#e0e0e0", linewidth=1.0)
+        self.axis.plot(distances, scores, color="#e8edf5", linewidth=1.0)
 
         max_i = int(np.argmax(scores))
         if scores[max_i] >= 60:
@@ -89,13 +89,13 @@ class AWCIRouteChart(QWidget):
                 arrowprops={"arrowstyle": "->", "color": "#ffb74d"},
             )
 
-        self.axis.set_facecolor("#0a1929")
+        self.axis.set_facecolor("#0f1830")
         self.axis.set_ylim(0, 100)
-        self.axis.set_xlabel("Distance (km)", color="#b0b8c8", fontsize=8)
-        self.axis.set_ylabel("AWCI", color="#b0b8c8", fontsize=8)
-        self.axis.tick_params(colors="#b0b8c8", labelsize=7)
+        self.axis.set_xlabel("Distance (km)", color="#9fb0c9", fontsize=8)
+        self.axis.set_ylabel("AWCI", color="#9fb0c9", fontsize=8)
+        self.axis.tick_params(colors="#9fb0c9", labelsize=7)
         for spine in self.axis.spines.values():
-            spine.set_color("#3a4a6a")
-        self.axis.set_title(self._title, color="#e0e0e0", fontsize=10, fontweight="bold", loc="left")
+            spine.set_color("#34445f")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.18)
         self.canvas.draw_idle()

@@ -34,7 +34,7 @@ class AWCIRadar(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0d1b2a")
+        self.figure = plt.figure(facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1, projection="polar")
@@ -51,17 +51,17 @@ class AWCIRadar(QWidget):
         angles_closed = angles + angles[:1]
         values_closed = values + values[:1]
 
-        self.axis.set_facecolor("#0d1b2a")
+        self.axis.set_facecolor("#0b1220")
         self.axis.plot(angles_closed, values_closed, color="#ff8c00", linewidth=2)
         self.axis.fill(angles_closed, values_closed, color="#ff8c00", alpha=0.35)
 
         self.axis.set_xticks(angles)
-        self.axis.set_xticklabels([label for _, label in _AXES], color="#c0c8d8", fontsize=7)
+        self.axis.set_xticklabels([label for _, label in _AXES], color="#9fb0c9", fontsize=7)
         self.axis.set_ylim(0, 100)
         self.axis.set_yticks([25, 50, 75, 100])
-        self.axis.set_yticklabels(["25", "50", "75", "100"], color="#8090a8", fontsize=6)
-        self.axis.spines["polar"].set_color("#3a4a6a")
-        self.axis.grid(color="#2a3a5a", linewidth=0.6)
-        self.axis.set_title(self._title, color="#e0e0e0", fontsize=10, fontweight="bold", pad=14)
+        self.axis.set_yticklabels(["25", "50", "75", "100"], color="#6b7a94", fontsize=6)
+        self.axis.spines["polar"].set_color("#34445f")
+        self.axis.grid(color="#263450", linewidth=0.6)
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", pad=14)
         self.figure.subplots_adjust(left=0.12, right=0.88, top=0.85, bottom=0.08)
         self.canvas.draw_idle()

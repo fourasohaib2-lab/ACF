@@ -49,7 +49,7 @@ class AWCIMapPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0d1b2a")
+        self.figure = plt.figure(facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
 
@@ -114,10 +114,10 @@ class AWCIMapPanel(QWidget):
             lat_range = (-85.0, 85.0)
             step = 4.0
 
-        self.axis.add_feature(cfeature.OCEAN, facecolor="#0a1929")
+        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
         self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
-        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#4a5a7a", linewidth=0.5)
-        self.axis.add_feature(cfeature.BORDERS, edgecolor="#3a4a6a", linewidth=0.3)
+        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
+        self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
 
         if self._external_field is not None:
             lons, lats, grid = self._external_field
@@ -154,7 +154,7 @@ class AWCIMapPanel(QWidget):
                 markeredgecolor="black", transform=ccrs.PlateCarree(),
             )
 
-        self.axis.set_title(self._title, color="#e0e0e0", fontsize=11, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.02)
         self.canvas.draw_idle()
 

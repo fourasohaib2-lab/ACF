@@ -23,7 +23,7 @@ class AWCIFooter(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setStyleSheet("background-color: #10182c; border-top: 1px solid #2a3a5a;")
+        self.setStyleSheet("background-color: #121a2b; border-top: 1px solid #263450;")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 8, 14, 8)
@@ -42,9 +42,9 @@ class AWCIFooter(QWidget):
             text_col = QVBoxLayout()
             text_col.setSpacing(0)
             title_lbl = QLabel(title)
-            title_lbl.setStyleSheet("color: #d0d8e8; font-size: 9px; font-weight: bold;")
+            title_lbl.setStyleSheet("color: #e8edf5; font-size: 9px; font-weight: bold;")
             desc_lbl = QLabel(desc)
-            desc_lbl.setStyleSheet("color: #7080a0; font-size: 8px;")
+            desc_lbl.setStyleSheet("color: #6b7a94; font-size: 8px;")
             text_col.addWidget(title_lbl)
             text_col.addWidget(desc_lbl)
             cell_layout.addLayout(text_col)

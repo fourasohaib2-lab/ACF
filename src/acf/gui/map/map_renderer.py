@@ -48,13 +48,13 @@ class MapRenderer:
             return
 
         # 1. Base Canvas Face & Background
-        axes.set_facecolor("#0a0f1d")
+        axes.set_facecolor("#0b1220")
 
         # 2. Oceans
         try:
             axes.add_feature(
                 cfeature.OCEAN,
-                facecolor="#122c44",
+                facecolor="#121a2b",
                 zorder=0,
             )
         except Exception:
@@ -98,7 +98,7 @@ class MapRenderer:
             axes.add_feature(
                 cfeature.BORDERS,
                 linewidth=0.5,
-                edgecolor="#708090",
+                edgecolor="#34445f",
                 linestyle=":",
                 zorder=4,
             )
@@ -110,7 +110,7 @@ class MapRenderer:
             axes.coastlines(
                 resolution="110m",
                 linewidth=0.9,
-                color="#E0E0E0",
+                color="#e8edf5",
                 zorder=5,
             )
         except Exception:
@@ -121,15 +121,15 @@ class MapRenderer:
             grid = axes.gridlines(
                 draw_labels=True,
                 linewidth=0.4,
-                color="#607D8B",
+                color="#6b7a94",
                 alpha=0.6,
                 linestyle="--",
                 zorder=6,
             )
             grid.top_labels = False
             grid.right_labels = False
-            grid.xlabel_style = {"size": 8, "color": "#B0BEC5"}
-            grid.ylabel_style = {"size": 8, "color": "#B0BEC5"}
+            grid.xlabel_style = {"size": 8, "color": "#9fb0c9"}
+            grid.ylabel_style = {"size": 8, "color": "#9fb0c9"}
         except Exception:
             logger.warning("Failed to render lat/lon gridlines", exc_info=True)
 
@@ -144,7 +144,7 @@ class MapRenderer:
             axes.set_title(
                 title,
                 fontsize=10,
-                color="#81D4FA",
+                color="#7ad4ff",
                 weight="bold",
                 pad=6,
             )

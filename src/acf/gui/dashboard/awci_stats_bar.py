@@ -21,14 +21,14 @@ class _StatBox(QFrame):
         layout.setSpacing(2)
 
         self.value_lbl = QLabel("—")
-        self.value_lbl.setStyleSheet("color: #e0e0e0; font-size: 20px; font-weight: bold; border: none;")
+        self.value_lbl.setStyleSheet("color: #e8edf5; font-size: 20px; font-weight: bold; border: none;")
         layout.addWidget(self.value_lbl)
 
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: #8090a8; font-size: 9px; border: none;")
+        title_lbl.setStyleSheet("color: #6b7a94; font-size: 9px; border: none;")
         layout.addWidget(title_lbl)
 
-    def set_value(self, text: str, color: str = "#e0e0e0") -> None:
+    def set_value(self, text: str, color: str = "#e8edf5") -> None:
         self.value_lbl.setText(text)
         self.value_lbl.setStyleSheet(f"color: {color}; font-size: 20px; font-weight: bold; border: none;")
 
@@ -38,7 +38,7 @@ class AWCIStatsBar(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setStyleSheet("background-color: #16213e; border: 1px solid #2a3a5a; border-radius: 6px;")
+        self.setStyleSheet("background-color: #16213e; border: 1px solid #263450; border-radius: 6px;")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 6, 10, 6)

@@ -82,7 +82,7 @@ class AWCICrossSection(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0d1b2a")
+        self.figure = plt.figure(facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -121,12 +121,12 @@ class AWCICrossSection(QWidget):
         mid_x = distances[len(distances) // 2]
         self.axis.plot(mid_x, cruise_ft, marker=">", color="white", markersize=10, markeredgecolor="black")
 
-        self.axis.set_facecolor("#0a1929")
-        self.axis.set_xlabel("Distance (km)", color="#b0b8c8", fontsize=8)
-        self.axis.set_ylabel("Altitude (ft)", color="#b0b8c8", fontsize=8)
-        self.axis.tick_params(colors="#b0b8c8", labelsize=7)
+        self.axis.set_facecolor("#0f1830")
+        self.axis.set_xlabel("Distance (km)", color="#9fb0c9", fontsize=8)
+        self.axis.set_ylabel("Altitude (ft)", color="#9fb0c9", fontsize=8)
+        self.axis.tick_params(colors="#9fb0c9", labelsize=7)
         for spine in self.axis.spines.values():
-            spine.set_color("#3a4a6a")
-        self.axis.set_title(self._title, color="#e0e0e0", fontsize=10, fontweight="bold", loc="left")
+            spine.set_color("#34445f")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.15)
         self.canvas.draw_idle()

@@ -77,6 +77,7 @@ from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
 from acf.gui.dashboard.awci_synthetic_field import awci_at, awci_grid
+from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
 
@@ -113,11 +114,11 @@ class _ComponentValueList(QFrame):
         for key, icon, label in self._LABELS:
             row = QHBoxLayout()
             lbl = QLabel(f"{icon}  {label}")
-            lbl.setStyleSheet("color: #c0c8d8; font-size: 10px;")
+            lbl.setStyleSheet(label_style("text_secondary", "sm"))
             row.addWidget(lbl)
             row.addStretch()
             value = QLabel("—")
-            value.setStyleSheet("color: #e0e0e0; font-size: 10px; font-weight: bold;")
+            value.setStyleSheet(label_style("text_primary", "sm", "bold"))
             row.addWidget(value)
             layout.addLayout(row)
             self._values[key] = value
@@ -200,7 +201,7 @@ class AWCIDashboard(QWidget):
 
         header_row = QHBoxLayout()
         header = QLabel("AWCI – AVIATION WEATHER COMPLEXITY INDEX")
-        header.setStyleSheet("color: #e0e0e0; font-size: 18px; font-weight: bold;")
+        header.setStyleSheet(label_style("text_primary", "xl", "bold"))
         header_row.addWidget(header)
         header_row.addStretch()
 
@@ -226,7 +227,7 @@ class AWCIDashboard(QWidget):
         outer.addLayout(header_row)
 
         subheader = QLabel("Concept Output – Research Prototype")
-        subheader.setStyleSheet("color: #8090a8; font-size: 11px;")
+        subheader.setStyleSheet(label_style("text_muted", "sm"))
         outer.addWidget(subheader)
         self.real_physics_status = subheader  # reused as the mode/status line
 
@@ -269,14 +270,14 @@ class AWCIDashboard(QWidget):
 
         time_row = QHBoxLayout()
         time_label = QLabel("Valid Time:")
-        time_label.setStyleSheet("color: #8090a8; font-size: 9px;")
+        time_label.setStyleSheet(label_style("text_muted", "xs"))
         self.time_slider = QSlider(Qt.Orientation.Horizontal)
         self.time_slider.setMinimum(0)
         self.time_slider.setMaximum(23)
         self.time_slider.setValue(12)
         self.time_slider.sliderReleased.connect(self._on_time_changed)
         self.time_readout = QLabel("12Z")
-        self.time_readout.setStyleSheet("color: #e0e0e0; font-size: 9px; font-weight: bold;")
+        self.time_readout.setStyleSheet(label_style("text_primary", "xs", "bold"))
         self.time_slider.valueChanged.connect(lambda v: self.time_readout.setText(f"{v:02d}Z"))
         time_row.addWidget(time_label)
         time_row.addWidget(self.time_slider, stretch=1)
@@ -288,7 +289,7 @@ class AWCIDashboard(QWidget):
         right_col2 = QVBoxLayout()
         right_col2.setSpacing(8)
         op_header = QLabel("AWCI – OPERATIONAL USE EXAMPLE")
-        op_header.setStyleSheet("color: #d0d8e8; font-size: 10px; font-weight: bold;")
+        op_header.setStyleSheet(label_style("text_primary", "sm", "bold"))
         right_col2.addWidget(op_header)
 
         op_row = QHBoxLayout()
@@ -306,13 +307,10 @@ class AWCIDashboard(QWidget):
         outer.addWidget(self.footer)
 
     def _apply_theme(self) -> None:
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #0d1b2a;
-                color: #e0e0e0;
-                font-family: 'Segoe UI', 'Ubuntu', sans-serif;
-            }
-        """)
+        """Real, token-driven stylesheet (acf.gui.theme_tokens) - replaces
+        the previous hardcoded 6-line block that lived only here and
+        nowhere else in the codebase's palette."""
+        self.setStyleSheet(dashboard_stylesheet())
 
     # ------------------------------------------------------------- refresh
 

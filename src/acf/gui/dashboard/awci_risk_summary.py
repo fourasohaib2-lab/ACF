@@ -48,14 +48,14 @@ class AWCIRiskSummary(QWidget):
     def __init__(self, title: str = "RISK SUMMARY", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._title = title
-        self.setStyleSheet("background-color: #16213e; border: 1px solid #2a3a5a; border-radius: 6px;")
+        self.setStyleSheet("background-color: #16213e; border: 1px solid #263450; border-radius: 6px;")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(10, 8, 10, 8)
         outer.setSpacing(6)
 
         header = QLabel(title)
-        header.setStyleSheet("color: #e0e0e0; font-size: 11px; font-weight: bold; border: none;")
+        header.setStyleSheet("color: #e8edf5; font-size: 11px; font-weight: bold; border: none;")
         outer.addWidget(header)
 
         self._rows: dict[str, tuple[QLabel, QLabel]] = {}
@@ -66,12 +66,12 @@ class AWCIRiskSummary(QWidget):
             row_layout.setContentsMargins(0, 0, 0, 0)
 
             lbl = QLabel(f"{icon}  {label}")
-            lbl.setStyleSheet("color: #c0c8d8; font-size: 10px; border: none;")
+            lbl.setStyleSheet("color: #9fb0c9; font-size: 10px; border: none;")
             row_layout.addWidget(lbl)
             row_layout.addStretch()
 
             badge = QLabel("—")
-            badge.setStyleSheet("color: #808898; font-size: 10px; font-weight: bold; border: none;")
+            badge.setStyleSheet("color: #6b7a94; font-size: 10px; font-weight: bold; border: none;")
             row_layout.addWidget(badge)
 
             outer.addWidget(row)
@@ -97,7 +97,7 @@ class AWCIRiskSummary(QWidget):
 
             if score is None:
                 badge.setText("—")
-                badge.setStyleSheet("color: #808898; font-size: 10px; font-weight: bold; border: none;")
+                badge.setStyleSheet("color: #6b7a94; font-size: 10px; font-weight: bold; border: none;")
                 continue
 
             level = _band(score)
