@@ -18,6 +18,21 @@ from acf.hpc_connector.remote_terminal import RemoteTerminalShell
 from acf.hpc_connector.security import HPCSecurityManager
 from acf.hpc_connector.ssh_connector import SSHConnector
 
+# CORRECTED: this whole file used to construct SSHConnector/HPCConnectionManager
+# against the real "login2.fennec.meteo.dz" default hostname, on the (previously
+# true) assumption that no real network path could ever reach it, so every
+# "offline dev mode" assertion here was safe regardless of what machine ran the
+# suite. A separate fix (ssh_connector.py's DNS-gating bug) made real connection
+# attempts genuinely happen for any resolvable hostname - and on a machine that IS
+# on the ONM network (this one), login2.fennec.meteo.dz resolves to a real
+# 10.16.20.2 and these tests began actually reaching the real Fennec cluster over
+# SSH. Unit tests must never depend on - or accidentally exercise - real
+# production network access. ".invalid" is an IANA/RFC 2606-reserved TLD
+# guaranteed to never resolve in any real DNS, so tests using it stay
+# deterministic and network-safe on every machine, not just ones without a route
+# to Fennec.
+OFFLINE_TEST_HOSTNAME = "test-offline-host.invalid"
+
 
 def test_python_resolver_discovery():
     executor = RemoteExecutor()
@@ -177,7 +192,7 @@ def test_environment_manager():
 
 
 def test_paramiko_ssh_and_executor():
-    ssh = SSHConnector(hostname="login2.fennec.meteo.dz", username="sfoura")
+    ssh = SSHConnector(hostname=OFFLINE_TEST_HOSTNAME, username="sfoura")
     assert ssh.connect() is True
     assert ssh.is_alive() is True
     executor = RemoteExecutor(ssh)
@@ -196,7 +211,7 @@ def test_file_transfer_manager_honest_status_when_no_real_sftp(tmp_path):
     development environment (no real FENNEC connectivity). Now honestly
     reports failure instead of a fabricated success.
     """
-    ssh = SSHConnector(hostname="login2.fennec.meteo.dz", username="sfoura")
+    ssh = SSHConnector(hostname=OFFLINE_TEST_HOSTNAME, username="sfoura")
     assert ssh.connect() is True
     assert ssh.is_alive() is True  # offline dev mode: honestly "alive" per this class's own convention
 
@@ -234,7 +249,7 @@ def test_remote_terminal_shell_open_shell_honest_when_no_real_channel():
     connector/client was available at all. self.channel stays None in
     both cases - the return value must reflect that, not claim success.
     """
-    ssh = SSHConnector(hostname="login2.fennec.meteo.dz", username="sfoura")
+    ssh = SSHConnector(hostname=OFFLINE_TEST_HOSTNAME, username="sfoura")
     assert ssh.connect() is True
     assert ssh.is_alive() is True
 
@@ -256,7 +271,17 @@ def test_hpc_connection_manager_fennec_workflow():
     # already gave away that "fennec" was always the real target;
     # get_cluster_profile() used to silently substitute it anyway via
     # its now-removed arbitrary-fallback behavior.
-    assert hpc.connect("fennec") is True
+    #
+    # CORRECTED (later): connect() resolves "fennec"'s real hostname
+    # (login2.fennec.meteo.dz) from config/hpc.yaml - on this
+    # ONM-networked machine that is a real, reachable address (see
+    # OFFLINE_TEST_HOSTNAME's own comment above). The `overrides`
+    # hostname (connect()'s own parameter, added alongside the Connection
+    # Wizard fix) lets this test still exercise real "fennec" PROFILE
+    # NAME resolution (scheduler/module/Python discovery from
+    # config/hpc.yaml) without the actual TCP/SSH attempt ever leaving
+    # this machine.
+    assert hpc.connect("fennec", overrides={"hostname": OFFLINE_TEST_HOSTNAME}) is True
     assert hpc.is_connected is True
     assert "python_path" in hpc.cluster_info
     assert "python_version" in hpc.cluster_info

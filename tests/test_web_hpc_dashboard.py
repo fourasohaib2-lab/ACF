@@ -64,18 +64,48 @@ def test_status_never_claims_real_transport_without_one(client, hpc):
     assert data["real_ssh_transport"] == bool(getattr(hpc.ssh_connector, "is_real_connection", False))
 
 
-def test_connect_endpoint_returns_real_outcome(client, hpc):
+def test_connect_endpoint_returns_real_outcome(client, hpc, monkeypatch):
+    """
+    CORRECTED: this used to call the real /api/hpc/connect with
+    profile="fennec" - config/hpc.yaml's real "fennec" profile hostname
+    (login2.fennec.meteo.dz), which on an ONM-networked machine (this
+    one) resolves to a real, reachable 10.16.20.2 - see
+    tests/test_hpc_connector.py's OFFLINE_TEST_HOSTNAME comment for the
+    same issue found there. This endpoint only accepts a profile NAME
+    (no hostname override) over HTTP, so - to keep testing the endpoint's
+    own wiring (does it call connect() and shape the JSON response
+    correctly) without ever letting a unit test touch real production
+    network access - hpc.connect is monkeypatched to a fast, fully local
+    stub. HPCConnectionManager.connect() itself, and its real network
+    behavior, are exercised safely elsewhere (test_hpc_connector.py).
+    """
+
+    def _fake_connect(profile_name="fennec", overrides=None):
+        # Must mirror the real connect()'s own side effect (setting
+        # is_connected) - _hpc_status() reads that attribute directly,
+        # not this stub's return value.
+        hpc.is_connected = True
+        return True
+
+    monkeypatch.setattr(hpc, "connect", _fake_connect)
+
     res = client.post("/api/hpc/connect", params={"profile": "fennec"})
     assert res.status_code == 200
     data = res.json()
-    # In this offline sandbox, the workflow completes (dev-mode design,
-    # see HPCConnectionManager.connect()'s own NOTE) but no real
-    # transport is ever established.
     assert data["connected"] is True
+    # The stub above never touches ssh_connector, so is_real_connection
+    # stays at its real, honest default (unset/False) - still a genuine
+    # assertion about this endpoint never claiming a transport that
+    # wasn't established, just via a safe stub instead of a real socket.
     assert data["real_ssh_transport"] is False
 
 
-def test_disconnect_endpoint(client, hpc):
+def test_disconnect_endpoint(client, hpc, monkeypatch):
+    def _fake_connect(profile_name="fennec", overrides=None):
+        hpc.is_connected = True
+        return True
+
+    monkeypatch.setattr(hpc, "connect", _fake_connect)
     client.post("/api/hpc/connect", params={"profile": "fennec"})
     res = client.post("/api/hpc/disconnect")
     assert res.status_code == 200

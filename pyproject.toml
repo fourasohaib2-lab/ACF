@@ -48,6 +48,14 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# A per-test safety net, not a performance target: this session found a real
+# test (test_hpc_dialog.py) that could hang forever on a genuinely blocking
+# Qt modal dialog once the code path it exercised started doing real network
+# I/O - no local failure ever surfaced, only a silently-stuck CI/dev run.
+# 60s is generous headroom above any single test's real runtime; it exists
+# so a future regression like that one fails loudly and fast instead of
+# hanging indefinitely.
+timeout = 60
 
 [tool.ruff]
 line-length = 120
