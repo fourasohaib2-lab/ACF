@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `57b368a`.
-**Portée :** 225 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `9c68d9b`.
+**Portée :** 226 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -179,7 +179,21 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
   6 entrées de tests pytest obsolètes trouvées sur disque. Corrigé avec
   un paramètre `recent_projects_file` optionnel + `tmp_path` dans le test ;
   vérifié que le fichier réel est désormais intact après une suite complète.
+- **`9c68d9b`** — dernière trouvaille du même balayage : `gui/map/` compte
+  36 fichiers, dont 19 (5 sous-paquets entiers : `layers/`, `navigation/`,
+  `projections/`, `renderers/`, `rendering/`) ne sont importés nulle part
+  dans `src/`. Contrairement aux collisions `X.py` vs `X/` déjà trouvées
+  cette session, il n'y a ici aucune collision de nom forçant la situation
+  — c'est une architecture de carte alternative complète et cohérente
+  (gestionnaires de calques/rendus/navigation/projections, vérifiés
+  corrects) qui a simplement perdu face au système plus simple
+  (`map_canvas.py`) réellement utilisé par l'ESOC. La brancher demanderait
+  de construire un nouveau widget hôte reliant calques → rendus →
+  navigation → vrais événements souris/molette Qt — un travail de nature
+  différente de la simple "connexion" appliquée aux dashboards/menu cette
+  session. Documenté (pas supprimé, pas branché à moitié), conformément à
+  la convention du projet.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..57b368a`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..9c68d9b`.
