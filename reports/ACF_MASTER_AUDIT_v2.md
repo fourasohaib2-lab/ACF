@@ -1081,6 +1081,89 @@ propres sur les 1402 fichiers.
   `/api/v1/datasets` (en mémoire, réel mais non durable, disclosure
   explicite).
 
-Dis-moi laquelle tu veux que j'attaque ensuite.
+## Mise à jour 2026-09-02 (suite) — epygram réellement installé, dépendance déclarée
+
+Demande explicite de l'utilisateur ("installe epygram"). Trouvaille
+réelle en vérifiant plutôt qu'en supposant : `epygram` **était déjà
+installé** dans cet environnement (`pip index versions epygram` →
+2.1.0 installé), contredisant ce que la phase WRF/ICON/OpenIFS avait
+affirmé sans jamais faire `import epygram` directement — corrigé dans
+les docstrings concernées (`generic_xarray_reader.py`,
+`wrf/ingestion_adapter.py`, `tests/test_wrf_icon_openifs_adapters.py`).
+
+**Vrai bug de dépendance non déclarée trouvé et corrigé** — même classe
+que la trouvaille PyYAML déjà documentée dans `ROADMAP.md` : `epygram`
+n'était déclaré **nulle part** (`pyproject.toml`, `requirements.txt`)
+malgré `tests/test_epygram_reader.py` qui l'importe sans condition en
+tête de fichier — ne fonctionnait dans cet environnement que parce
+qu'il s'y trouvait déjà installé par ailleurs. Ajouté à l'extra
+`formats` de `pyproject.toml` et à `requirements.txt`.
+
+**Trouvaille réelle, confirmée en essayant, pas supposée** : une
+écriture FA entièrement synthétique reste impossible dans ce dépôt —
+`epygram.formats.FA.FA` exige `headername` en mode écriture, "name of
+an existing header" tiré des archives internes de Météo-France ;
+aucune géométrie construite par l'API publique d'epygram
+(`RegLLGeometry`, testé réellement) ne suffit à elle seule. Confirmé
+en essayant `epygram.open()` sur un vrai fichier texte nommé `.fa` :
+lève une vraie `epygramError` réelle ("unable to guess format"), déjà
+correctement capturée par `EPyGrAMReader`'s chemin honnête existant
+(`tests/test_epygram_reader.py` le testait déjà correctement, avant
+même cette vérification). Donc : lecture FA de bout en bout toujours
+non testable ici, mais pour une raison structurelle du format
+lui-même, pas un défaut de ce dépôt.
+
+**Validation :** suite complète toujours **3211/3211** (aucun test
+cassé par la présence réelle d'epygram — `test_epygram_reader.py`
+était déjà écrit pour cet état), ruff et mypy propres.
+
+## Mise à jour 2026-09-02 (suite) — Certification Engine branché à un déclencheur de production réel
+
+Demande explicite de l'utilisateur. `acf.forecast.engine.
+run_forecast_cycle()` est le vrai point d'entrée que
+`HPCConnectionManager`'s pipelines one-click AROME/ALADIN soumettent
+comme commande de job SLURM réel, et que `daily_forecast_cycle.py`
+(CI/CD réel) déclenche indirectement en soumettant ce même job — donc
+brancher la certification **ici** la fait tourner sur chaque cycle de
+prévision réel exécuté par ce dépôt, quel que soit le déclencheur
+(manuel, HPC one-click, CI quotidien), sans construire un second
+service séparé que personne n'appelle.
+
+- **Nouveau vrai contrôle QC PASS** (n'existait nulle part avant) :
+  `_certify_forecast_output()` vérifie que le champ de température de
+  surface final est entièrement fini (`numpy.isfinite`) — un vrai mode
+  d'échec d'un solveur couplé numérique (divergence), pas un contrôle
+  fabriqué. `quality.status` est toujours réellement "PASS" ou "FAIL",
+  jamais laissé "NOT_ASSESSED" par défaut.
+- Construit un vrai `Dataset` (id, `forecast_reference_time`/
+  `valid_time`/`lead_time` réels dérivés du vrai déroulement du cycle,
+  `Provenance` complet) et l'envoie à travers le vrai
+  `CertificationEngine` déjà construit et testé — rien de dupliqué.
+- `run_forecast_cycle(certify=True)` par défaut ; `--no-certify` côté
+  CLI pour un run brut plus rapide.
+- **Vrai signal d'échec pour un scheduler CI/CD** : `main()` sort avec
+  le code 2 (pas 0/1) si `REJECTED` — même convention déjà établie par
+  `scripts/daily_forecast_cycle.py` pour `is_real_submission` — le
+  fichier NetCDF reste écrit (rien perdu), mais un appelant ne peut
+  plus traiter silencieusement une prévision rejetée comme un succès.
+
+**Vérifié en conditions réelles, pas supposé** : un vrai cycle AROME
+de bout en bout (`run_forecast_cycle("AROME", steps=2, ...)`) revient
+`CERTIFIED` — reproduit ci-dessous, pas une affirmation en l'air :
+
+```
+{"status": "SUCCESS", ..., "certification": {"decision": "CERTIFIED", "dataset_id": "AROME-forecast-...", "failed_steps": []}}
+```
+
+**Validation :** 6 nouveaux tests (dont un contrôle QC PASS forcé avec
+un vrai NaN injecté, et un test CLI qui prouve le code de sortie 2 sur
+un rejet). Suite complète : **3217/3217** tests passent (3211 avant),
+ruff et mypy propres sur les 1402 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- Pas de base de données de persistance pour `/api/v1/events` /
+  `/api/v1/datasets` (en mémoire, réel mais non durable — prochaine
+  pièce demandée par l'utilisateur).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

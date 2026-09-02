@@ -9,10 +9,13 @@ ModuleNotFoundError.
 
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 
+import numpy as np
 import xarray as xr
 
-from acf.forecast.engine import MODEL_CONFIGS, run_forecast_cycle
+from acf.forecast.engine import MODEL_CONFIGS, _certify_forecast_output, run_forecast_cycle
+from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
 
 def test_model_configs_cover_both_operational_models():
@@ -86,5 +89,69 @@ def test_real_cli_invocation_matches_what_the_slurm_batch_script_runs(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "SUCCESS" in result.stdout
+    assert "CERTIFICATION: CERTIFIED" in result.stdout
     ds = xr.open_dataset(output_path)
     assert "T" in ds.data_vars
+
+
+# ------------------------------------------------------------------ Certification Engine wiring (continuous production trigger)
+
+
+def test_run_forecast_cycle_certifies_by_default(tmp_path):
+    """The real production trigger: a real, healthy forecast cycle must come back CERTIFIED, not just have a NetCDF file written."""
+    result = run_forecast_cycle("ARPEGE", steps=1, output_path=str(tmp_path / "out.nc"))
+
+    assert "certification" in result
+    cert = result["certification"]
+    assert cert["decision"] == "CERTIFIED"
+    assert cert["failed_steps"] == []
+    assert cert["dataset_id"].startswith("ARPEGE-forecast-")
+
+
+def test_run_forecast_cycle_certify_false_skips_it(tmp_path):
+    result = run_forecast_cycle("ARPEGE", steps=1, output_path=str(tmp_path / "out.nc"), certify=False)
+    assert "certification" not in result
+
+
+def test_certify_forecast_output_rejects_non_finite_values():
+    """Real QC PASS check, exercised directly: a genuinely non-finite (NaN) surface temperature - the real failure mode a diverged coupled solver would produce - must be REJECTED, not silently certified."""
+    grid = EarthGrid(n_lat=4, n_lon=4, n_levels=2)
+    state = {"T": np.full((2, 4, 4), np.nan)}
+    ref_time = datetime(2026, 9, 2, tzinfo=UTC)
+
+    report = _certify_forecast_output("ARPEGE", grid, state, ref_time, ref_time + timedelta(hours=1), timedelta(hours=1))
+
+    assert report["decision"] == "REJECTED"
+    failed_names = {s["name"] for s in report["failed_steps"]}
+    assert "qc_pass" in failed_names
+
+
+def test_certify_forecast_output_certifies_a_real_healthy_field():
+    grid = EarthGrid(n_lat=4, n_lon=4, n_levels=2)
+    state = {"T": np.full((2, 4, 4), 288.0)}  # a real, physically plausible surface temperature
+    ref_time = datetime(2026, 9, 2, tzinfo=UTC)
+
+    report = _certify_forecast_output("ARPEGE", grid, state, ref_time, ref_time + timedelta(hours=1), timedelta(hours=1))
+
+    assert report["decision"] == "CERTIFIED"
+
+
+def test_cli_reports_certification_and_exits_nonzero_when_rejected(tmp_path, monkeypatch):
+    """A real REJECTED certification must be a real, non-zero exit signal for a CI/CD scheduler - same convention scripts/daily_forecast_cycle.py already established for is_real_submission - not silently ignored."""
+    import acf.forecast.engine as engine_module
+
+    def _fake_certify(model, grid, state, forecast_reference_time, valid_time, lead_time):
+        return {"decision": "REJECTED", "dataset_id": "fake-id", "failed_steps": [{"name": "qc_pass", "detail": "fake"}]}
+
+    monkeypatch.setattr(engine_module, "_certify_forecast_output", _fake_certify)
+
+    exit_code = engine_module.main(["--model", "ARPEGE", "--steps", "1", "--output", str(tmp_path / "out.nc")])
+    assert exit_code == 2
+
+
+def test_cli_no_certify_flag_skips_certification(tmp_path, capsys):
+    from acf.forecast.engine import main
+
+    exit_code = main(["--model", "ARPEGE", "--steps", "1", "--output", str(tmp_path / "out.nc"), "--no-certify"])
+    assert exit_code == 0
+    assert "CERTIFICATION" not in capsys.readouterr().out
