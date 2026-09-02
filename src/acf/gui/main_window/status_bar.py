@@ -2,6 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Professional Status Bar
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): never
+constructed anywhere (confirmed by grep across src/). This class itself
+is genuinely correct and functional (real message/coordinates/zoom/
+projection QLabels on a real status bar) - unlike this package's own
+menu_bar.py/tool_bar.py, this isn't a dead-on-arrival skeleton. It is
+superseded in practice: ESOCWindow already has its own, more complete
+ESOCStatusBar (HPC connection, sim time, forecast hour, hardware,
+streams, dataset, layer, projection, workspace mode - see
+esoc_statusbar.py, this session's own earlier fixes to it), and
+ClassicDashboardWindow's MenuManager already uses Qt's own default
+QMainWindow status bar via window.statusBar().showMessage(...) - no
+window in this application currently needs this specific, simpler
+status bar. Not deleted per project convention.
 """
 
 from PySide6.QtWidgets import QLabel

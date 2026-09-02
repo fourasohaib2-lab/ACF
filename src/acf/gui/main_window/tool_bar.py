@@ -2,6 +2,16 @@
 Atmospheric Complexity Framework (ACF)
 
 Professional Tool Bar
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): never
+constructed anywhere (confirmed by grep across src/) - not even by this
+package's own MainWindow. Same situation as this package's own
+menu_bar.py: every QAction here (New/Open/Save, Pan/Zoom +/Zoom -/World,
+Add Layer/Remove, AI) has zero .triggered.connect() anywhere in this
+class, unlike ESOCToolbar (this session's earlier fix - see
+esoc_window.py's _handle_toolbar_action), whose equivalent buttons are
+now all genuinely wired. An earlier, superseded draft, not something
+worth connecting up as-is. Not deleted per project convention.
 """
 
 from PySide6.QtCore import Qt

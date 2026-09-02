@@ -2,6 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Professional Menu Bar
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): never
+constructed anywhere (confirmed by grep across src/) - not even by this
+package's own MainWindow, which never builds a menu bar at all. Every
+QAction added here (File/New/Open/Save/Exit, Edit/Undo/Redo, View/
+Layers/Properties, Tools/Map Tools/Measurements, AI/Forecast Assistant/
+AWCI Analysis, Help/Documentation/About) has zero .triggered.connect()
+anywhere in this class - clicking any of them would do nothing even if
+this WAS wired to a real window, unlike acf.gui.menu.MenuManager (this
+session's earlier finding, now wired into ClassicDashboardWindow), whose
+equivalent File/Data menus do have real handlers. This looks like an
+earlier, superseded draft of that later, more complete menu bar rather
+than something worth connecting up as-is. Not deleted per project
+convention - flagged so nobody mistakes it for a live alternative.
 """
 
 from PySide6.QtGui import QAction

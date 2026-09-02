@@ -2,6 +2,18 @@
 ACF Data Menu
 
 Gestion des opérations scientifiques sur les datasets.
+
+NOTE (found, NOT changed — RÈGLE D'OR / single source of truth): never
+constructed anywhere (confirmed by grep across src/). This class is
+genuinely correct and functional (real Open/Info/Refresh/Close Dataset
+handlers), but it is a near-duplicate of the Data menu
+acf.gui.menu.MenuManager already builds (this session's earlier finding,
+now wired into ClassicDashboardWindow) - same actions, same
+window.data.open()/close()/current_dataset dependency, just calling
+window.refresh_explorer() directly instead of going through
+window.dashboard.get_panel("explorer"). Constructing both on the same
+window would add a second, redundant "Data" menu to the menu bar. Not
+deleted per project convention - flagged as the superseded one.
 """
 
 from PySide6.QtGui import QAction
