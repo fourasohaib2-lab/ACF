@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `9c68d9b`.
-**Portée :** 226 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `c1d236d`.
+**Portée :** 229 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -193,7 +193,23 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
   différente de la simple "connexion" appliquée aux dashboards/menu cette
   session. Documenté (pas supprimé, pas branché à moitié), conformément à
   la convention du projet.
+- **`d904a29`** — 4 autres ébauches remplacées : `gui/main_window/menu_bar.py`
+  et `tool_bar.py` n'ont **aucune connexion de signal du tout** (boutons
+  purement décoratifs) — remplacées par `MenuManager`/`ESOCToolbar`.
+  `gui/data_menu.py` fait doublon exact avec le menu Data de `MenuManager`.
+  `gui/main_window/status_bar.py` est correct mais superflu — `ESOCStatusBar`
+  et la barre de statut par défaut de Qt couvrent déjà le besoin. Documentés,
+  pas branchés (ça créerait des doublons visibles).
+- **`76122b1`** — à l'inverse, `gui/docks/dataset_panel.py` (`DatasetPanel`)
+  s'est révélé être un vrai `QDockWidget` autonome, correct et complet —
+  contrairement aux 4 ébauches ci-dessus, il ne demandait qu'un point
+  d'ancrage, pas de nouvelle logique. Branché dans le dashboard ACF
+  principal, à côté de l'Explorer, relié au même `DataManager`.
+- **`c1d236d`** — `core/application.py`/`Bootstrap` : petite séquence de
+  démarrage générique (config, plugins, services), correcte mais jamais
+  utilisée — le seul point d'entrée déclaré (`acf-gui`) lance directement
+  `ESOCWindow`. Documenté.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..9c68d9b`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..c1d236d`.
