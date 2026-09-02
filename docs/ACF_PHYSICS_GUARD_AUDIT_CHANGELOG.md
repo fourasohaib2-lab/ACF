@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `f4f8a01`.
-**Portée :** 233 commits, 2801 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `f650df1`.
+**Portée :** 235 commits, 2806 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean. Dépôt sauvegardé sur
 [github.com/fourasohaib2-lab/ACF](https://github.com/fourasohaib2-lab/ACF).
 
@@ -231,7 +231,26 @@ premier des 3 axes de la feuille de route HPC-005 choisi et implémenté :
   tests via `TestClient`, **et** un vrai serveur lancé sur un vrai port,
   interrogé avec `curl` et un vrai client `websockets`, puis confirmé
   visuellement dans un navigateur réel.
+- **`f650df1`** — deuxième axe : **CI/CD sur le cluster Fennec**. En
+  branchant ça, découverte d'un vrai trou bloquant : le pipeline
+  "One-Click AROME" (déjà existant, déjà honnête) génère un script SLURM
+  qui lance `python -m acf.forecast.engine --model AROME` — **ce module
+  n'existait pas du tout**. Même un job réellement soumis sur un vrai
+  cluster aurait planté immédiatement (`ModuleNotFoundError`). Créé
+  `acf/forecast/engine.py`, un vrai CLI qui fait réellement tourner
+  `CoupledEarthSolver` (déjà utilisé ailleurs cette session) et écrit un
+  vrai fichier NetCDF CF-1.8 — vérifié en l'exécutant vraiment, y compris
+  en sous-processus réel (`python -m acf.forecast.engine ...`). Ajouté
+  `execute_one_click_aladin()` (la roadmap nomme AROME **et** ALADIN,
+  seul AROME avait son pipeline). Nouveau script
+  `scripts/daily_forecast_cycle.py` qui échoue avec un code de sortie
+  non nul si un cycle n'est pas réellement soumis (vérifié : sort avec
+  code 1 dans ce sandbox hors-ligne). Nouveau workflow GitHub Actions
+  (`daily-forecast-cycle.yml`) ciblant un runner auto-hébergé sur le
+  réseau ONM (les runners GitHub-hosted n'ont aucune route vers le vrai
+  cluster Fennec) — documente honnêtement les secrets/le runner que
+  l'utilisateur doit encore configurer pour un déploiement réel.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..f4f8a01`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..f650df1`.
