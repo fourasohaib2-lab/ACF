@@ -88,12 +88,16 @@ class Job:
         caller must check this before trusting `job_id` refers to
         anything real.
     progress_pct : float, optional
-        Real progress in [0, 100] if ACF ever computed one for this
-        job - `None` by default. Honest scope: no code in ACF today
-        updates this after submission (JobManager's own real job
-        records leave it at 0 for the life of the job) - this field is
-        not fabricated with an invented value, it stays `None`/0
-        rather than simulate progress.
+        Real progress in [0, 100] - `None`/0 by default (`JobManager`'s
+        own job records leave it at 0 for the life of the job), genuinely
+        updated by `JobEngine.refresh_progress()` for a real
+        `SlurmScheduler` job (a real elapsed-time/time-limit estimate
+        from `squeue` - see that method's own docstring for its honest
+        scope: wall-clock progress, NOT a per-task completion
+        percentage, which SLURM has no notion of). Stays `None`/0
+        rather than simulate progress whenever no real data is
+        available (PBS/Local backends, a job that already left the
+        queue, no `--time` limit set, ...).
     retry_count : int
         How many times `JobEngine.retry()` has resubmitted this job
         (or an ancestor of it) - 0 for an original submission.

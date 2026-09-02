@@ -35,6 +35,13 @@ class _FakeScheduler(BaseSchedulerInterface):
         self.suspend_result = True
         self.resume_result = True
         self.status = "RUNNING"
+        self.progress: dict = {
+            "elapsed_seconds": None,
+            "limit_seconds": None,
+            "progress_fraction": None,
+            "is_real_data": False,
+            "status": "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION",
+        }
         self.next_job_id_prefix = "FAKE_JOB"
         self._counter = 0
 
@@ -56,6 +63,9 @@ class _FakeScheduler(BaseSchedulerInterface):
 
     def get_job_status(self, job_id: str) -> str:
         return self.status
+
+    def get_job_progress(self, job_id: str) -> dict:
+        return self.progress
 
 
 def _engine() -> tuple[JobEngine, _FakeScheduler]:
@@ -200,6 +210,58 @@ def test_refresh_status_does_nothing_for_a_job_that_was_never_really_submitted()
     assert job.status.startswith("NOT_SUBMITTED_")  # unchanged
 
 
+# ------------------------------------------------------------------ refresh_progress
+
+
+def test_refresh_progress_updates_progress_pct_from_real_scheduler_data():
+    engine, fake = _engine()
+    job = engine.submit("run.sh")
+    assert job.progress_pct == 0  # JobManager's own record default
+
+    fake.progress = {
+        "elapsed_seconds": 1800,
+        "limit_seconds": 3600,
+        "progress_fraction": 0.5,
+        "is_real_data": True,
+        "status": "REAL_TIME_BASED_PROGRESS_FROM_SQUEUE",
+    }
+    job = engine.refresh_progress(job)
+    assert job.progress_pct == 50.0
+
+
+def test_refresh_progress_leaves_progress_pct_unchanged_without_real_data():
+    engine, fake = _engine()
+    job = engine.submit("run.sh")
+    job.progress_pct = 12.3  # some prior real value
+
+    fake.progress = {
+        "elapsed_seconds": None,
+        "limit_seconds": None,
+        "progress_fraction": None,
+        "is_real_data": False,
+        "status": "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED",
+    }
+    job = engine.refresh_progress(job)
+    assert job.progress_pct == 12.3  # untouched, not reset to 0/None
+
+
+def test_refresh_progress_does_nothing_for_a_job_that_was_never_really_submitted():
+    fake = _FakeScheduler()
+    fake.next_job_id_prefix = "NOT_SUBMITTED_TEST"
+    engine = JobEngine(JobManager(scheduler=fake))
+    job = engine.submit("run.sh")
+
+    fake.progress = {
+        "elapsed_seconds": 100,
+        "limit_seconds": 200,
+        "progress_fraction": 0.5,
+        "is_real_data": True,
+        "status": "REAL_TIME_BASED_PROGRESS_FROM_SQUEUE",
+    }
+    job = engine.refresh_progress(job)
+    assert job.progress_pct == 0  # unchanged - never a real submission to query
+
+
 def test_retry_refuses_a_job_still_in_flight():
     engine, _fake = _engine()
     job = engine.submit("run.sh")  # status RUNNING - not a terminal failure
@@ -294,6 +356,76 @@ def test_slurm_suspend_and_resume_job_are_honestly_false_with_no_real_ssh_transp
 
 def test_slurm_get_job_status_is_honestly_unknown_with_no_real_ssh_transport():
     assert _offline_slurm_scheduler().get_job_status("12345") == "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION"
+
+
+def test_slurm_get_job_progress_is_honestly_no_data_with_no_real_ssh_transport():
+    progress = _offline_slurm_scheduler().get_job_progress("12345")
+    assert progress["is_real_data"] is False
+    assert progress["progress_fraction"] is None
+    assert progress["elapsed_seconds"] is None
+    assert progress["limit_seconds"] is None
+    assert progress["status"] == "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION"
+
+
+# -------------------------------------------------- real squeue parsing (fake executor)
+
+
+class _FakeExecutor:
+    """Duck-typed replacement for RemoteExecutor - returns a controlled, genuinely non-simulated squeue response, to exercise SlurmScheduler.get_job_progress()'s real parsing path without any network access."""
+
+    def __init__(self, stdout: str, is_simulated: bool = False, exit_code: int = 0) -> None:
+        self.stdout = stdout
+        self.is_simulated = is_simulated
+        self.exit_code = exit_code
+        self.last_command: str | None = None
+
+    def execute_command(self, cmd: str, timeout: float = 120.0) -> dict:
+        self.last_command = cmd
+        return {"exit_code": self.exit_code, "stdout": self.stdout, "stderr": "", "is_simulated": self.is_simulated}
+
+
+def test_slurm_get_job_progress_parses_a_real_squeue_response():
+    executor = _FakeExecutor(stdout="30:00 01:00:00")  # 30 min elapsed of a real 1h limit
+    progress = SlurmScheduler(executor).get_job_progress("12345")
+
+    assert progress["is_real_data"] is True
+    assert progress["elapsed_seconds"] == 1800
+    assert progress["limit_seconds"] == 3600
+    assert progress["progress_fraction"] == pytest.approx(0.5)
+    assert progress["status"] == "REAL_TIME_BASED_PROGRESS_FROM_SQUEUE"
+
+
+def test_slurm_get_job_progress_clamps_to_one_when_elapsed_exceeds_limit():
+    executor = _FakeExecutor(stdout="02:00:00 01:00:00")  # real squeue can report this near a job's end
+    progress = SlurmScheduler(executor).get_job_progress("12345")
+    assert progress["progress_fraction"] == 1.0
+
+
+def test_slurm_get_job_progress_is_honest_when_the_real_limit_is_unlimited():
+    executor = _FakeExecutor(stdout="30:00 UNLIMITED")
+    progress = SlurmScheduler(executor).get_job_progress("12345")
+
+    assert progress["is_real_data"] is True
+    assert progress["elapsed_seconds"] == 1800
+    assert progress["limit_seconds"] is None
+    assert progress["progress_fraction"] is None
+    assert progress["status"] == "REAL_SQUEUE_DATA_INCOMPLETE_FOR_PROGRESS"
+
+
+def test_slurm_get_job_progress_is_honest_when_the_job_already_left_the_queue():
+    executor = _FakeExecutor(stdout="")  # real, genuinely empty squeue output - not simulated
+    progress = SlurmScheduler(executor).get_job_progress("12345")
+
+    assert progress["is_real_data"] is False
+    assert progress["progress_fraction"] is None
+    assert progress["status"] == "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED"
+
+
+def test_slurm_get_job_progress_queries_the_real_squeue_command():
+    executor = _FakeExecutor(stdout="10:00 20:00")
+    SlurmScheduler(executor).get_job_progress("98765")
+    assert "squeue -j 98765" in executor.last_command
+    assert "%M" in executor.last_command and "%l" in executor.last_command
 
 
 def test_job_manager_pause_and_resume_propagate_the_real_offline_scheduler_result():

@@ -16,9 +16,10 @@ from acf.jobs.job import Job
 class JobEngine:
     """
     The section 22/46 "Job Engine" - real `Job` objects with real
-    `submit`/`cancel`/`pause`/`resume`/`refresh_status`/`retry`
-    behavior, each delegating to `JobManager`'s already-real scheduler
-    wiring rather than a second implementation of it.
+    `submit`/`cancel`/`pause`/`resume`/`refresh_status`/
+    `refresh_progress`/`retry` behavior, each delegating to
+    `JobManager`'s already-real scheduler wiring rather than a second
+    implementation of it.
 
     Honest scope: `JobManager`'s own job records do not carry
     `walltime` (see `job_manager.py`'s `submit_job()`), so `Job`
@@ -86,6 +87,29 @@ class JobEngine:
         if not job.is_real_submission:
             return job
         job.status = self.job_manager.scheduler.get_job_status(job.job_id)
+        return job
+
+    def refresh_progress(self, job: Job) -> Job:
+        """
+        Re-query `job`'s real progress straight from the scheduler
+        backend (`SlurmScheduler.get_job_progress()`'s real
+        elapsed/limit-time-based estimate from `squeue` - see its own
+        docstring for exactly what "progress" honestly means here) and
+        update `job.progress_pct` in place.
+
+        Only overwrites `job.progress_pct` when the scheduler returned
+        real, complete data (`is_real_data` True and a real
+        `progress_fraction`) - otherwise leaves it exactly as it was
+        (matching `Job`'s own "stays None/0 rather than simulate
+        progress" discipline). A job that was never really submitted
+        has nothing real to query - left unchanged, same as
+        `refresh_status()`.
+        """
+        if not job.is_real_submission:
+            return job
+        progress = self.job_manager.scheduler.get_job_progress(job.job_id)
+        if progress.get("is_real_data") and progress.get("progress_fraction") is not None:
+            job.progress_pct = round(progress["progress_fraction"] * 100, 1)
         return job
 
     def retry(self, job: Job) -> Job:

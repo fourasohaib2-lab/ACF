@@ -873,9 +873,52 @@ tests passent (3134 avant), ruff et mypy propres sur les 1398 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **Progress réel par job** — toujours non calculé (limite honnête).
+- ~~**Progress réel par job**~~ — **construit, voir mise à jour
+  ci-dessous.**
 - **Regridding bilinéaire/conservatif générique** — toujours absent.
 - **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
   hors de cette passe (voir ci-dessus).
+
+## Mise à jour 2026-09-02 (suite) — Progress réel par job construit
+
+`Job.progress_pct` existait dans le contrat §22/§46 depuis la phase
+Job Engine mais rien dans ACF ne le calculait (limite honnêtement
+documentée à l'époque). Fermé maintenant :
+
+- **`src/acf/hpc_connector/slurm_duration.py`** —
+  `parse_slurm_duration()`, un vrai parseur du format de durée SLURM
+  (`[jours-]heures:minutes:secondes`, pas un format unique — squeue
+  choisit la forme la plus courte selon la durée réelle), gère
+  honnêtement `"UNLIMITED"` (vraie valeur SLURM sans équivalent
+  numérique) en retournant `None`, jamais un nombre deviné.
+- **`SlurmScheduler.get_job_progress()`** — interroge réellement
+  `squeue -j <id> -h -o "%M %l"` (temps écoulé réel / limite réelle)
+  via SSH, calcule `progress_fraction = elapsed/limit` borné à [0,1].
+  **Portée honnête, explicite dans la docstring** : c'est un vrai
+  proxy temps-écoulé-vs-limite, **pas** un pourcentage d'avancement
+  des calculs — SLURM (et `sacct`) n'a aucune notion de ça, c'est le
+  même proxy que tout système de "barre de progression" au-dessus
+  d'un scheduler batch utilise réellement. Repli honnête (jamais un
+  nombre fabriqué) : appel simulé, job déjà sorti de la file, ou
+  `--time` jamais fixé (squeue rapporte `"UNLIMITED"`).
+- `PBSScheduler`/`LocalScheduler` : repli honnête symétrique (pas
+  d'appel réel `qstat` câblé), même convention que leurs méthodes
+  sœurs.
+- **`JobEngine.refresh_progress(job)`** — met réellement à jour
+  `job.progress_pct` seulement quand la donnée réelle est disponible ;
+  sinon laisse la valeur précédente inchangée (jamais remise à 0/None
+  par erreur), même convention que `refresh_status()`.
+
+**Validation :** 28 nouveaux tests (parseur SLURM isolé + chemin de
+parsing réel de `get_job_progress()` via un exécuteur factice
+contrôlé, y compris `"UNLIMITED"` et file déjà quittée). Suite
+complète : **3184/3184** tests passent (3156 avant), ruff et mypy
+propres sur les 1399 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- **Regridding bilinéaire/conservatif générique** — toujours absent.
+- **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
+  hors de cette passe.
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

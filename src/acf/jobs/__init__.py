@@ -20,10 +20,17 @@ What's built here
   taxonomy) - see that module's own docstring for exactly which
   statuses count as what.
 - `acf.jobs.job_engine.JobEngine`: real `submit`/`cancel`/`pause`/
-  `resume`/`refresh_status`/`retry` operations, each delegating to
-  `JobManager` (does not reimplement any scheduler call). `retry()` is
-  new real behavior - genuinely resubmits a job that reached a real
-  terminal failure status, carrying `retry_count` forward.
+  `resume`/`refresh_status`/`refresh_progress`/`retry` operations, each
+  delegating to `JobManager` (does not reimplement any scheduler
+  call). `retry()` is new real behavior - genuinely resubmits a job
+  that reached a real terminal failure status, carrying `retry_count`
+  forward. `refresh_progress()` (added closing this repo's own
+  "Progress réel par job" follow-up) genuinely computes `Job.
+  progress_pct` from `SlurmScheduler.get_job_progress()`'s real
+  elapsed-time/time-limit estimate (see that method's own docstring
+  for its honest wall-clock-not-task-completion scope) - previously
+  `progress_pct` existed in the contract but nothing in ACF computed
+  it.
 
 Fixed in passing (found while building this, not a separate session):
 `acf.hpc_connector.scheduler_interface.SlurmScheduler.cancel_job()`

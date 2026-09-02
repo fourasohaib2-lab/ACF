@@ -1,10 +1,12 @@
 """Production SLURM Engine using Universal PythonResolver (ACF-HPC-101)."""
 
 import uuid
+from typing import Any
 
 from acf.hpc_connector.logging import log_hpc_event
 from acf.hpc_connector.python_resolver import PythonResolver
 from acf.hpc_connector.remote_executor import RemoteExecutor
+from acf.hpc_connector.slurm_duration import parse_slurm_duration
 
 
 class BaseSchedulerInterface:
@@ -28,6 +30,9 @@ class BaseSchedulerInterface:
         raise NotImplementedError
 
     def get_job_status(self, job_id: str) -> str:
+        raise NotImplementedError
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
         raise NotImplementedError
 
     def generate_batch_script(
@@ -190,6 +195,79 @@ srun {formatted_cmd}
         status = res.get("stdout", "").strip()
         return status if status else "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED"
 
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """
+        Real, time-based progress estimate from squeue's own real
+        elapsed-time (`%M`) and time-limit (`%l`) columns.
+
+        Honest scope: this is `elapsed / limit`, clamped to [0, 1] -
+        NOT a per-task completion percentage. SLURM has no notion of
+        that (neither does `sacct`) - wall-clock-vs-limit is the real,
+        standard proxy every batch-scheduler progress bar is actually
+        built on, not an invented metric, but it genuinely can't tell
+        "job is stuck" from "job is 90% done" - both look the same.
+
+        Returns
+        -------
+        dict
+            elapsed_seconds, limit_seconds : real parsed values (see
+                acf.hpc_connector.slurm_duration.parse_slurm_duration()),
+                or None if not genuinely determinable (no real SSH
+                transport, job already left the queue, `--time` was
+                never set so squeue reports "UNLIMITED", ...).
+            progress_fraction : elapsed_seconds / limit_seconds if both
+                are real numbers and limit_seconds > 0, else None -
+                never a fabricated number when the real inputs aren't
+                both available.
+            is_real_data, status : same honest disclosure convention
+                as get_job_status().
+        """
+        res = self.executor.execute_command(f'squeue -j {job_id} -h -o "%M %l"')
+        if res.get("is_simulated", True):
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION",
+            }
+
+        stdout = res.get("stdout", "").strip()
+        if not stdout:
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED",
+            }
+
+        parts = stdout.split()
+        if len(parts) != 2:
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": f"UNPARSEABLE_SQUEUE_OUTPUT:{stdout!r}",
+            }
+
+        elapsed_seconds = parse_slurm_duration(parts[0])
+        limit_seconds = parse_slurm_duration(parts[1])
+        progress_fraction = None
+        if elapsed_seconds is not None and limit_seconds is not None and limit_seconds > 0:
+            progress_fraction = min(1.0, elapsed_seconds / limit_seconds)
+
+        return {
+            "elapsed_seconds": elapsed_seconds,
+            "limit_seconds": limit_seconds,
+            "progress_fraction": progress_fraction,
+            "is_real_data": True,
+            "status": "REAL_TIME_BASED_PROGRESS_FROM_SQUEUE"
+            if progress_fraction is not None
+            else "REAL_SQUEUE_DATA_INCOMPLETE_FOR_PROGRESS",
+        }
+
 
 class PBSScheduler(BaseSchedulerInterface):
     """PBS Scheduler."""
@@ -241,6 +319,16 @@ class PBSScheduler(BaseSchedulerInterface):
     def get_job_status(self, job_id: str) -> str:
         """NOTE (correction): used to unconditionally claim "RUNNING" with no real qstat call. Not fabricated."""
         return "UNKNOWN_NO_QSTAT_CALL_WIRED"
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """No real qstat time-remaining call wired - same honest disclosure as get_job_status()."""
+        return {
+            "elapsed_seconds": None,
+            "limit_seconds": None,
+            "progress_fraction": None,
+            "is_real_data": False,
+            "status": "UNKNOWN_NO_QSTAT_CALL_WIRED",
+        }
 
 
 class LocalScheduler(BaseSchedulerInterface):
@@ -294,6 +382,16 @@ class LocalScheduler(BaseSchedulerInterface):
     def get_job_status(self, job_id: str) -> str:
         """NOTE (correction): used to unconditionally claim "COMPLETED" with no real process ever tracked. Not fabricated."""
         return "UNKNOWN_NO_LOCAL_EXECUTION_WIRED"
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """No real process ever tracked - same honest disclosure as get_job_status()."""
+        return {
+            "elapsed_seconds": None,
+            "limit_seconds": None,
+            "progress_fraction": None,
+            "is_real_data": False,
+            "status": "UNKNOWN_NO_LOCAL_EXECUTION_WIRED",
+        }
 
 
 def get_scheduler_interface(
