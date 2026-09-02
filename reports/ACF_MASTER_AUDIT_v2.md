@@ -205,12 +205,9 @@ vivant.
 
 ## 33. Event Engine
 
-**MISSING comme objets de cycle de vie formels.** `aeos/events/event_bus.py`
-et `digital_twin/events/cascade_engine.py` existent mais sont des bus
-d'événements SYSTÈME (signaux internes de l'application), pas des objets
-météorologiques (`ThunderstormEvent`, `CycloneEvent`...) avec le cycle
-`DETECTED → ANALYZED → CONFIRMED → VERIFIED → CERTIFIED → PUBLISHED` du
-§13-14 du Prompt Maître. Rien de tel n'existe — confirmé, pas supposé.
+**✅ IMPLEMENTED, TESTED (2026-09-02)** — voir mise à jour ci-dessous.
+`aeos/events/event_bus.py`/`digital_twin/events/cascade_engine.py`
+restent des bus d'événements SYSTÈME distincts, non touchés.
 
 ## 34-40. Products 2D/3D/4D, Vertical Engine, Dashboard, API
 
@@ -404,6 +401,48 @@ exacts du §5 du Prompt Maître, **sans rien casser ni dupliquer** :
 **Validation :** 3003/3003 tests passent (2987 avant, +16 nouveaux),
 ruff et mypy propres sur les 1368 fichiers, zéro régression sur les 22
 tests d'adaptateurs préexistants.
+
+## Mise à jour 2026-09-02 (suite) — Event Engine construit
+
+`src/acf/events/` : `Event` (§12 exact — event_id réel UUID4, type,
+geometry, start_time, end_time, intensity, probability, confidence,
+supporting_parameters, supporting_models, observations, réutilise
+`Provenance`/`UncertaintyInfo` du Data Contract au lieu de les
+dupliquer) + un **vrai automate d'état** pour le cycle de vie du §13
+(`DETECTED → ANALYZED → CONFIRMED → VERIFIED → CERTIFIED → PUBLISHED`
+ou `DETECTED → REJECTED`) — `transition_to()` refuse toute transition
+hors du diagramme (testé : sauter une étape, rejeter après ANALYZED,
+sortir d'un état terminal — tout lève `IllegalEventTransitionError`).
+
+**Décision de portée honnête, documentée en tête de paquet** : sur les
+8 types d'événements nommés par le prompt (Thunderstorm, Cyclone,
+HeavyRain, Hail, StrongWind, Snow, Fog, Dust), seuls **2 ont un
+détecteur réel et défendable** avec les données dont ACF dispose
+vraiment aujourd'hui :
+- **`detect_strong_wind_events()`** — seuil réel sur `wind_speed_field`
+  (vraie sortie CoupledEarthSolver).
+- **`detect_fog_favorable_events()`** — humidité relative **réellement
+  calculée via MetPy** (`relative_humidity_from_specific_humidity`,
+  vérifiée par un test de non-régression qui verrouille la vraie
+  valeur numérique de référence 68,449% pour des entrées connues) +
+  vent calme — le vrai préalable thermodynamique du brouillard de
+  rayonnement. **Nommage honnête** : `type="fog_favorable_conditions"`,
+  jamais `"fog"` — aucun champ de visibilité n'existe dans la sortie
+  réelle du solveur pour confirmer un brouillard formé, seulement sa
+  précondition.
+
+Les 6 autres types ne sont **pas construits**, avec la raison précise
+documentée dans `events/__init__.py` : orage/convection a besoin d'un
+vrai CAPE par point de grille (pas calculé dans le Complexity Engine),
+cyclone a besoin d'un suivi vorticité/minimum de pression dans le
+temps, pluie forte/neige/grêle ont besoin d'un champ de précipitation
+qui **n'existe pas du tout** dans l'état du solveur (vérifié : `T, P,
+U, V, q, O3, CO2, SST, Salinity, U_ocean, V_ocean, Ice, Soil,
+Soil_Temp, Biomass` — aucune précipitation), poussière a besoin de
+données d'aérosols qui n'existent pas non plus.
+
+**Validation :** 3021/3021 tests passent (3003 avant, +18 nouveaux),
+ruff et mypy propres sur les 1374 fichiers.
 
 ## Recommandation — ordre de phase suivant (pas les 30 à la fois)
 
