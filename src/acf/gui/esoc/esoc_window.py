@@ -239,16 +239,37 @@ class ESOCWindow(QMainWindow):
         if dialog.exec() != HPCConnectionDialog.DialogCode.Accepted:
             return
         config = dialog.get_connection_config()
-        profile = config.get("profile_name", "fennec")
+        # NOTE (correction): only config["profile_name"] used to be forwarded, and it
+        # carried the combo box's human-readable LABEL - which never matched any key
+        # under cluster_profiles: in config/hpc.yaml, so the profile always resolved
+        # to {} and the connector fell back to its hardcoded defaults. Every other
+        # field the operator filled in (hostname, username, port, SSH key, password,
+        # directories) was discarded outright. The wizard now returns a separate
+        # profile_key for the YAML lookup, and the whole dict is passed as overrides.
+        profile = config.get("profile_key") or "fennec"
+        label = config.get("profile_name", profile)
         hpc = self.registry.get_module("hpc_connector")
         if hpc is None:
             self.dispatcher.log_message_emitted.emit("ERROR", "HPC connector subsystem not available")
             return
-        self.dispatcher.log_message_emitted.emit("INFO", f"Attempting HPC connection (profile: {profile!r})...")
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            f"Attempting HPC connection (profile: {label!r} -> key {profile!r}, "
+            f"target {config.get('username')}@{config.get('hostname')}:{config.get('port')})...",
+        )
 
         def _do_connect() -> None:
             try:
-                workflow_ok = hpc.connect(profile)
+                try:
+                    workflow_ok = hpc.connect(profile, overrides=config)
+                except TypeError:
+                    # Connector implementation predating the overrides parameter.
+                    self.dispatcher.log_message_emitted.emit(
+                        "WARNING",
+                        "HPC connector does not accept per-connection overrides - "
+                        "the wizard's hostname/username/port fields will be ignored.",
+                    )
+                    workflow_ok = hpc.connect(profile)
             except Exception as exc:  # noqa: BLE001 - must not crash the worker thread
                 self.dispatcher.log_message_emitted.emit("ERROR", f"HPC connect({profile!r}) raised: {exc}")
                 self.dispatcher.hpc_connection_result.emit(False, profile)

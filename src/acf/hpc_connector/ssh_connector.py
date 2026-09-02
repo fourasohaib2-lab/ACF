@@ -77,8 +77,11 @@ class SSHConnector:
             self.port = port
         if timeout:
             self.timeout = timeout
-        else:
-            self.timeout = 0.0015
+        # NOTE (correction): the previous `else` branch reset self.timeout to
+        # 0.0015 s on every call that did not pass one explicitly - overriding the
+        # constructor's 2.0 s default with a value no real TCP handshake to a
+        # remote cluster can ever meet. Omitting a timeout now simply keeps the
+        # configured one.
 
         log_hpc_event("INFO", f"Connecting via Paramiko SSH to {self.username}@{self.hostname}:{self.port}...")
 
@@ -96,32 +99,36 @@ class SSHConnector:
                     except Exception:
                         pass
 
-            # Fast non-blocking host resolution check
-            if self.hostname not in ["localhost", "127.0.0.1"]:
-                try:
-                    import socket
+            # NOTE (correction — this was THE blocker for real connections): the
+            # real client.connect() below used to sit behind
+            # `if self.hostname.replace(".", "").isdigit()`, i.e. it was only ever
+            # attempted for a bare numeric IPv4 literal. A DNS name - including this
+            # class's own default production target "login2.fennec.meteo.dz" - never
+            # reached it, so no network attempt was made at all while the method
+            # still returned True. Any hostname is now genuinely attempted: DNS is
+            # resolved first (so a name that does not exist is reported as such
+            # rather than silently swallowed), then Paramiko authenticates.
+            try:
+                import socket
 
-                    # Try non-blocking socket connect to IP if already numeric
-                    if self.hostname.replace(".", "").isdigit():
-                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        sock.settimeout(0.01)
-                        sock.connect((self.hostname, self.port))
-                        sock.close()
-                        self.client.connect(
-                            hostname=self.hostname,
-                            port=self.port,
-                            username=self.username,
-                            password=self.password,
-                            pkey=pkey,
-                            key_filename=self.key_filename if not pkey else None,
-                            timeout=self.timeout,
-                            allow_agent=True,
-                            look_for_keys=True,
-                        )
-                except Exception as conn_err:
-                    log_hpc_event("INFO", f"Paramiko SSH offline fallback for {self.hostname}: {conn_err}")
-            else:
-                self.is_connected = True
+                socket.getaddrinfo(self.hostname, self.port, proto=socket.IPPROTO_TCP)
+                self.client.connect(
+                    hostname=self.hostname,
+                    port=self.port,
+                    username=self.username,
+                    password=self.password,
+                    pkey=pkey,
+                    key_filename=self.key_filename if not pkey else None,
+                    timeout=self.timeout,
+                    allow_agent=True,
+                    look_for_keys=True,
+                )
+            except Exception as conn_err:
+                log_hpc_event(
+                    "WARNING",
+                    f"Paramiko SSH offline fallback for {self.username}@{self.hostname}:{self.port} "
+                    f"({type(conn_err).__name__}: {conn_err})",
+                )
 
             self.is_connected = True
             self.is_real_connection = bool(

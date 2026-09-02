@@ -55,9 +55,19 @@ class HPCConnectionManager:
             "INFO", f"Initialized FENNEC HPCConnectionManager (Mode={self.meteorological_stack['operational_mode']})"
         )
 
-    def connect(self, profile_name: str = "fennec") -> bool:
+    def connect(self, profile_name: str = "fennec", overrides: dict[str, Any] | None = None) -> bool:
         """
         Execute complete 11-step production connection workflow over Paramiko SSH.
+
+        Args:
+            profile_name: key looked up under ``cluster_profiles`` in config/hpc.yaml.
+            overrides: connection settings that take precedence over the YAML profile.
+                This is what the ESOC HPC Connection Wizard passes in, so the hostname,
+                username, port, SSH key and password an operator actually typed are
+                honoured instead of being silently discarded (previously only
+                profile_name reached this method, and every other field of the wizard
+                was dropped - an operator could enter a completely different cluster
+                and still be connected to the hardcoded FENNEC login node).
 
         NOTE (correction): default profile_name used to be
         "university_hpc", which does not exist in config/hpc.yaml's
@@ -67,14 +77,48 @@ class HPCConnectionManager:
         ("Production HPC Master Connection Manager for FENNEC").
         """
         log_hpc_event("INFO", f"Starting 11-step FENNEC HPC Connection Workflow for profile [{profile_name}]...")
-        profile = self.config.get_cluster_profile(profile_name)
+        profile = dict(self.config.get_cluster_profile(profile_name))
+        overrides = {k: v for k, v in (overrides or {}).items() if v not in (None, "")}
 
-        login_node = profile.get("login_node", "login2.fennec.meteo.dz")
-        username = profile.get("user", "sfoura")
-        key_filename = profile.get("key_path", "~/.ssh/id_rsa")
+        # config/hpc.yaml spells the account "username:", while this method only ever
+        # read "user:" - so the configured account was never actually picked up and the
+        # hardcoded default silently stood in for it. Both spellings are accepted now.
+        login_node = overrides.get("hostname") or profile.get("login_node") or profile.get("hostname") or "login2.fennec.meteo.dz"
+        username = overrides.get("username") or profile.get("username") or profile.get("user") or "sfoura"
+        key_filename = (
+            overrides.get("key_path")
+            or profile.get("key_path")
+            or self.config.config.get("security", {}).get("ssh_key_path")
+            or "~/.ssh/id_rsa"
+        )
+        port = int(overrides.get("port") or profile.get("port") or 22)
+        password = overrides.get("password")
+
+        if not profile and not overrides:
+            log_hpc_event(
+                "WARNING",
+                f"Profile [{profile_name}] not found in cluster_profiles and no overrides given - "
+                f"falling back to built-in defaults ({username}@{login_node}).",
+            )
 
         # Step 2 & 3: Create SSHConnector and Authenticate via Paramiko
-        self.ssh_connector = SSHConnector(hostname=login_node, username=username, key_filename=key_filename)
+        self.ssh_connector = SSHConnector(
+            hostname=login_node,
+            username=username,
+            port=port,
+            key_filename=key_filename,
+            password=password,
+            # 2.0 s is not enough for a real SSH handshake to a login node over a
+            # VPN; the connector keeps this value now that connect() no longer
+            # overwrites it with 0.0015 s.
+            timeout=float(overrides.get("timeout") or profile.get("timeout") or 10.0),
+        )
+        # self.executor / self.resource_monitor / self.detector were all built in
+        # __init__ around the ORIGINAL connector object. Replacing self.ssh_connector
+        # above used to leave them bound to that stale, never-authenticated instance,
+        # so Steps 5-8 below ran their hostname/whoami/pwd checks over the wrong
+        # object. Re-point the executor at the connector we just created.
+        self.executor.connector = self.ssh_connector
         connected = self.ssh_connector.connect()
         if not connected:
             log_hpc_event("ERROR", f"Paramiko SSH authentication failed for {username}@{login_node}")

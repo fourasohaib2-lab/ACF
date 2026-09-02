@@ -20,6 +20,17 @@ local_profile:
   scratch_dir: "/tmp/acf_scratch"
 
 cluster_profiles:
+  # Keys here are what HPCConfiguration.get_cluster_profile() looks up, and what the
+  # ESOC HPC Connection Wizard sends as profile_key. A wizard entry whose key is
+  # missing here resolves to {} and falls back to the connector's built-in defaults.
+  local:
+    hostname: "localhost"
+    login_node: "localhost"
+    scheduler: "local"
+    working_directory: "/tmp/acf_run"
+    scratch_dir: "/tmp/acf_scratch"
+    module_loads: []
+
   fennec:
     hostname: "fennec"
     login_node: "login2.fennec.meteo.dz"
