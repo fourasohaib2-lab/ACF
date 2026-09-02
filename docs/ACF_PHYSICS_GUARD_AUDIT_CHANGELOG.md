@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `f650df1`.
-**Portée :** 235 commits, 2806 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `7501614`.
+**Portée :** 237 commits, 2814 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean. Dépôt sauvegardé sur
 [github.com/fourasohaib2-lab/ACF](https://github.com/fourasohaib2-lab/ACF).
 
@@ -250,7 +250,38 @@ premier des 3 axes de la feuille de route HPC-005 choisi et implémenté :
   réseau ONM (les runners GitHub-hosted n'ont aucune route vers le vrai
   cluster Fennec) — documente honnêtement les secrets/le runner que
   l'utilisateur doit encore configurer pour un déploiement réel.
+- **`7501614`** — troisième et dernier axe : **couplage physique-IA
+  (FNO)**. Trouvé en le construisant : le "FNO" existant
+  (`NeuralOperatorEngine`) n'avait **aucun poids appris** — un filtre
+  spectral fixe (`exp(-1e-4·dt)`), identique à chaque appel, pas un
+  opérateur de Fourier neuronal au sens machine learning malgré le nom
+  (Li et al. 2020 définit un FNO par ses poids appris sur les modes de
+  Fourier). `acceleration_factor = 1000.0` n'était jamais mesuré non
+  plus. Pas d'accès aux vraies archives ARPEGE/ERA5 dans cet
+  environnement — les données d'entraînement viennent du vrai solveur
+  physique `CoupledEarthSolver` d'ACF (trajectoires physiquement
+  cohérentes, honnêtement non des observations réelles), volontairement
+  limité à un seul champ (température de surface) comme preuve de
+  concept fonctionnelle plutôt qu'un remplacement multi-variables
+  complet. Torch (CPU) installé pour l'occasion. Nouveau
+  `acf/ai/simulation/fno_model.py` (vraie architecture FNO, convolution
+  spectrale à poids complexes appris) + `fno_training.py`
+  (entraînement réel par rétropropagation). Entraînement de référence
+  réellement exécuté : perte 1.01 → 0.022 (réduction de 97,8%),
+  checkpoint de 394 Ko committé et vérifié en le rechargeant. En route,
+  installer torch a redéclenché le même plantage disque que plus tôt
+  (voir section précédente) — causé cette fois par `/home/souhaib/Videos`
+  à 311 Go, sans rapport avec ACF ; l'utilisateur a libéré de l'espace
+  et l'installation a repris normalement.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..f650df1`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..7501614`.
+
+## 8. Les 3 axes de la roadmap HPC-005 sont maintenant complets
+
+| Axe | Statut | Limite honnête |
+|---|---|---|
+| Dashboard Web FastAPI/WebSocket | ✅ Réel, testé bout-en-bout | Aucune |
+| CI/CD sur cluster Fennec | ✅ Scripts/pipeline réels et testés | Nécessite un runner auto-hébergé + secrets réels pour un déploiement effectif — pas testable depuis cet environnement |
+| Couplage physique-IA (FNO) | ✅ Vraie architecture entraînée | Entraîné sur des trajectoires générées par ACF, pas sur de vraies archives ARPEGE/ERA5 ; limité à un seul champ (preuve de concept, pas un remplacement opérationnel complet) |
