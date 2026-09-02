@@ -3,6 +3,16 @@ AWCI Decomposition Widget
 =========================
 
 Bar chart showing AWCI decomposition by module.
+
+NOTE (found, NOT changed - RÈGLE D'OR / single source of truth): as of the
+AWCI dashboard rebuild (awci_dashboard.py), this widget is no longer
+instantiated by anything - the rebuilt AWCIDashboard uses AWCIRadar (a
+matplotlib polar chart) plus a plain numeric list instead of this
+horizontal-bar view, to match the reference mockup's radar chart. Still
+re-exported by this package's __init__.py and fully correct/self-contained,
+just currently unreachable from any real UI. Not deleted per project
+convention - flagged so nobody mistakes it for live code. Same situation
+as data/engine.py's NOTE.
 """
 
 from PySide6.QtCore import QSize, Qt

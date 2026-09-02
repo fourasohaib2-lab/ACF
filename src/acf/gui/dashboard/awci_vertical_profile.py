@@ -3,6 +3,17 @@ AWCI Vertical Profile Widget
 ============================
 
 Shows AWCI complexity by flight level.
+
+NOTE (found, NOT changed - RÈGLE D'OR / single source of truth): this
+widget predates the AWCI dashboard rebuild (awci_dashboard.py) and was
+already unused before it - neither the old skeleton AWCIDashboard nor the
+rebuilt one instantiates it (the rebuilt one uses AWCICrossSection, a
+continuous matplotlib heatmap along distance/altitude, for its vertical
+cross-section panel instead of this discrete per-flight-level bar chart).
+Still re-exported by this package's __init__.py and fully correct/self-
+contained, just currently unreachable from any real UI. Not deleted per
+project convention - flagged so nobody mistakes it for live code. Same
+situation as data/engine.py's NOTE.
 """
 
 from PySide6.QtCore import QSize, Qt
