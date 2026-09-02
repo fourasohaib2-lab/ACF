@@ -1,6 +1,63 @@
 """ESOC Status Bar displaying real-time operational & HPC cluster metrics (ACF-HPC-001)."""
 
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QLabel, QStatusBar
+
+
+class ElidingLabel(QLabel):
+    """QLabel that elides ("…") under width pressure instead of forcing its
+    parent layout to grow to fit the full string.
+
+    NOTE (correction): a plain QLabel.minimumSizeHint() equals the size
+    needed for its *full* text with no wrapping - ESOCStatusBar packs ten
+    of these side by side (HPC status, UTC, sim time, forecast hour,
+    hardware, streams, dataset, layer, projection, workspace), which
+    summed to ~1928px of *forced* minimum width. QMainWindow refuses to
+    size the window below its content's minimum, so ESOCWindow ended up
+    at least 1928px wide no matter what size it (or acf.gui_screen_utils.
+    fit_window_to_screen) requested - wider than the window's own 1600px
+    request, and wider than plenty of real single-monitor screens
+    (confirmed: it overflowed onto the neighboring 1366px-wide monitor in
+    this environment's dual-screen setup). The full text still displays
+    whenever there is room (unchanged from before on a wide-enough
+    screen); only under real width pressure does it truncate, with the
+    untruncated text available as a tooltip - the window itself is never
+    forced wider to accommodate it.
+    """
+
+    def __init__(self, text: str = "", parent: QLabel | None = None) -> None:
+        super().__init__(parent)
+        self._full_text = ""
+        self.setText(text)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - Qt override
+        self._full_text = text
+        self.setToolTip(text)
+        self._refresh_elided_text()
+
+    def text(self) -> str:  # noqa: N802 - Qt override
+        # NOTE: intentionally the *full*, un-elided string - callers
+        # (ESOCStatusBar.update_metrics()'s own callers, tests) query this
+        # for the label's real content, not its truncated on-screen glyphs.
+        # Only the painted text (super().setText() below, via
+        # _refresh_elided_text) is ever shortened.
+        return self._full_text
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._refresh_elided_text()
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 - Qt override
+        fm = self.fontMetrics()
+        margins = self.contentsMargins()
+        floor = fm.horizontalAdvance("…") + margins.left() + margins.right() + 8
+        return QSize(floor, super().minimumSizeHint().height())
+
+    def _refresh_elided_text(self) -> None:
+        fm = self.fontMetrics()
+        elided = fm.elidedText(self._full_text, Qt.TextElideMode.ElideRight, max(self.width(), 1))
+        if super().text() != elided:
+            super().setText(elided)
 
 
 class ESOCStatusBar(QStatusBar):
@@ -25,16 +82,16 @@ class ESOCStatusBar(QStatusBar):
         self._disk_tb: float | None = None
         self._mpi_ranks: int | None = None
 
-        self.lbl_hpc_status = QLabel("HPC: Not Connected")
-        self.lbl_utc = QLabel("UTC: 2026-08-03 08:00:00Z")
-        self.lbl_sim_time = QLabel("Sim Time: t+006h")
-        self.lbl_fcst_hour = QLabel("FCST: +024h")
-        self.lbl_hardware = QLabel(self._format_hardware_label())
-        self.lbl_streams = QLabel("Streams: 0 Connected")
-        self.lbl_dataset = QLabel("Dataset: None loaded")
-        self.lbl_layer = QLabel("Layer: Satellite RGB")
-        self.lbl_proj = QLabel("Projection: 2D Mercator")
-        self.lbl_workspace = QLabel("Workspace: Meteorologist")
+        self.lbl_hpc_status = ElidingLabel("HPC: Not Connected")
+        self.lbl_utc = ElidingLabel("UTC: 2026-08-03 08:00:00Z")
+        self.lbl_sim_time = ElidingLabel("Sim Time: t+006h")
+        self.lbl_fcst_hour = ElidingLabel("FCST: +024h")
+        self.lbl_hardware = ElidingLabel(self._format_hardware_label())
+        self.lbl_streams = ElidingLabel("Streams: 0 Connected")
+        self.lbl_dataset = ElidingLabel("Dataset: None loaded")
+        self.lbl_layer = ElidingLabel("Layer: Satellite RGB")
+        self.lbl_proj = ElidingLabel("Projection: 2D Mercator")
+        self.lbl_workspace = ElidingLabel("Workspace: Meteorologist")
 
         self.lbl_hpc_status.setStyleSheet("padding: 2px 6px; font-weight: bold; color: #76FF03;")
         self.lbl_utc.setStyleSheet("padding: 2px 6px; color: #E0E0E0;")
