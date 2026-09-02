@@ -61,3 +61,19 @@ def test_ai_forecast_temperature_field_is_physically_plausible():
     temp_field = result["output"]["T"]
     assert np.all(temp_field > 150.0)  # well above absolute zero / unphysically cold
     assert np.all(temp_field < 350.0)  # well below unphysically hot
+
+
+def test_ai_forecast_uses_the_real_trained_fno_surrogate():
+    """Added this session alongside the real, trained FNO surrogate
+    (acf.ai.simulation.fno_model/fno_training): ModuleRegistry loads the
+    reference checkpoint if present, and handle_run_ai_forecast() now
+    also reports a genuine prediction from it (on state["T"][0], the
+    surface level - see fno_training.py's own docstring), separate from
+    predict_next_state()'s general untrained proxy in "output"."""
+    controller = _make_controller()
+    result = controller.handle_run_ai_forecast()
+
+    surrogate = result["surface_temperature_surrogate"]
+    assert surrogate["status"] == "PREDICTED_BY_TRAINED_SURROGATE"
+    assert surrogate["surrogate_final_train_loss"] is not None
+    assert "predicted_field" not in surrogate  # kept out of the dispatched dict (large array)

@@ -94,6 +94,20 @@ class ESOCController:
         rather than a tracked live "current" state (no live-state
         tracking exists anywhere in this codebase to reference), which is
         disclosed in the response rather than presented as more than it is.
+
+        NOTE (this session, later): also now calls
+        predict_surface_temperature() - the real, trained FNO surrogate
+        (acf.ai.simulation.fno_model/fno_training) - on state["T"][0]
+        (the surface level; see fno_training.py's own docstring for how
+        that index was confirmed against CoupledEarthSolver). Reported
+        under "surface_temperature_surrogate" alongside (not replacing)
+        predict_next_state()'s general, untrained multi-field proxy
+        output - both are shown so a caller cannot mistake one for the
+        other. registry.get_module("neural_operator") only has this
+        trained surrogate loaded if the reference checkpoint file exists
+        (see module_registry.py) - honestly reports
+        NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED via that sub-dict
+        otherwise, same as the web dashboard's own /api/fno/predict_demo.
         """
         neural = self.registry.get_module("neural_operator")
         atmos_model = self.registry.get_module("atmospheric_model")
@@ -102,7 +116,14 @@ class ESOCController:
 
         state = atmos_model.initialize_state()
         out = neural.predict_next_state(state)
-        return {"status": "SUCCESS", "output": out, "input_state_source": "AtmosphericModel.initialize_state() baseline"}
+        surrogate_result = neural.predict_surface_temperature(state["T"][0, :, :])
+        surrogate_result.pop("predicted_field", None)  # large array - keep out of the dispatched dict
+        return {
+            "status": "SUCCESS",
+            "output": out,
+            "input_state_source": "AtmosphericModel.initialize_state() baseline",
+            "surface_temperature_surrogate": surrogate_result,
+        }
 
     def handle_assess_hazards(self) -> dict[str, Any]:
         """

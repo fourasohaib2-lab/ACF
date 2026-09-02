@@ -2,6 +2,7 @@
 
 import importlib
 import logging
+from pathlib import Path
 from typing import Any
 
 from acf.ai.simulation.neural_operator import NeuralOperatorEngine
@@ -96,7 +97,18 @@ class ModuleRegistry:
         self.modules["cmip6_engine"] = CMIP6Engine(SSPScenario.SSP2_45)
         self.modules["ssp_engine"] = SSPEngine(SSPScenario.SSP2_45)
 
-        self.modules["neural_operator"] = NeuralOperatorEngine()
+        # NOTE: loads the real trained FNO surrogate for near-surface
+        # temperature if the reference checkpoint (trained this session
+        # by scripts/train_fno_surrogate.py) is present - see
+        # ESOCController.handle_run_ai_forecast()'s own NOTE for how this
+        # is actually used. Honest fallback: if the file is missing,
+        # NeuralOperatorEngine still constructs fine and
+        # predict_surface_temperature() reports
+        # NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED rather than crashing.
+        _fno_checkpoint = Path(__file__).resolve().parents[4] / "models" / "fno_surface_temperature_reference.pt"
+        self.modules["neural_operator"] = NeuralOperatorEngine(
+            fno_checkpoint_path=str(_fno_checkpoint) if _fno_checkpoint.exists() else None
+        )
 
         self.modules["gpu_solver"] = GPUSolver(use_gpu=False)
         self.modules["mpi_domain"] = MPIDomainDecomposition(global_nlat=36, global_nlon=72)

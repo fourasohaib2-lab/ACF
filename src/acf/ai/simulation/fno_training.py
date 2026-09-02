@@ -7,7 +7,12 @@ perturbed initial conditions, then trains FourierNeuralOperator2D by real
 backpropagation to predict T(t + dt) from T(t).
 
 Scope note: this trains a surrogate for ONE field (near-surface
-temperature, state["T"][-1]) as a genuine, working proof of the physics-
+temperature, state["T"][0] - level index 0 is the surface/bottom level,
+confirmed against CoupledEarthSolver.compute_interfacial_fluxes()'s own
+`surface_temp=state["T"][0, :, :]` and AtmosphericModel.initialize_state()'s
+construction (k=0 is unmodified 288.15K, decreasing with k via the
+standard lapse rate as k increases - i.e. increasing k means increasing
+altitude, not the reverse) as a genuine, working proof of the physics-
 AI coupling pattern requested in docs/ACF_HPC_005_NEXT_ROADMAP.md - not a
 full multi-variable operational replacement for CoupledEarthSolver (that
 larger scope is what the master roadmap's own "v0.9 GPU Tensor Core FNO
@@ -65,9 +70,9 @@ def generate_training_pairs(
         state["T"] = state["T"] + perturbation
 
         for _step in range(n_steps_per_trajectory):
-            t_before = state["T"][-1, :, :].copy()  # near-surface level
+            t_before = state["T"][0, :, :].copy()  # surface level (index 0 - see module docstring)
             state = solver.step(state, dt=dt_seconds)
-            t_after = state["T"][-1, :, :].copy()
+            t_after = state["T"][0, :, :].copy()
 
             inputs.append(t_before[np.newaxis, :, :])
             targets.append(t_after[np.newaxis, :, :])

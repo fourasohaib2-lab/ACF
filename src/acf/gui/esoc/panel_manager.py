@@ -476,12 +476,26 @@ class AIForecastPanel(BasePanelWidget):
         # Active" and a fixed "94.6% Confidence Interval" with no
         # calibration or uncertainty computation ever run for any
         # actual forecast. Not fabricated.
+        #
+        # NOTE (correction, later this session): "1000x Speedup (design
+        # target)" on the FNO line, and the button below's "(1000x)"
+        # suffix, both traced back to NeuralOperatorEngine.
+        # acceleration_factor - a fabricated "1000.0" constant, never
+        # benchmarked against anything (see that class's own NOTE),
+        # since fixed to None. A real, trained (if narrowly-scoped -
+        # surface temperature only) FNO surrogate now exists
+        # (acf.ai.simulation.fno_model/fno_training) and is what the
+        # button below actually runs, via ESOCController.
+        # handle_run_ai_forecast()'s "surface_temperature_surrogate"
+        # result - removed the unbenchmarked speedup claim rather than
+        # attach it to the real model too.
         self.main_layout.addWidget(_example_layout_disclaimer())
         self.txt_ai_info = QTextEdit()
         self.txt_ai_info.setReadOnly(True)
         self.txt_ai_info.setText(
             "AI Neural Operators & Models (capabilities, not live status):\n"
-            "• Fourier Neural Operator (FNO): 1000x Speedup (design target)\n"
+            "• Fourier Neural Operator (FNO): real trained surrogate for surface\n"
+            "  temperature (see AI Forecast result below); no benchmarked speedup\n"
             "• Graph Neural Network (GNN): Multi-mesh global forecast\n"
             "• PINN Surrogate: Physics-informed mass/momentum correction\n"
             "• Automatic Calibration: Not run\n"
@@ -489,7 +503,7 @@ class AIForecastPanel(BasePanelWidget):
         )
         self.main_layout.addWidget(self.txt_ai_info)
 
-        btn_fno = QPushButton("⚡ Execute FNO Neural Forecast (1000x)")
+        btn_fno = QPushButton("⚡ Execute AI Forecast (trained FNO surrogate)")
         btn_fno.clicked.connect(lambda: self.dispatcher.dispatch("run_ai_forecast"))
         self.main_layout.addWidget(btn_fno)
 
