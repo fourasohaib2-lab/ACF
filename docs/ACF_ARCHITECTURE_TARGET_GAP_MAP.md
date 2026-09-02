@@ -145,8 +145,48 @@ ajouté pour exposer aussi le split Physical/Forecast sur le champ 2D
 *synthétique* de démonstration existant (`awci_grid()` original
 inchangé, zéro régression pour ses appelants GUI).
 
-Reste non fait : dimension verticale (3D, `Complexity(x, y, z)`) et
-temporelle (4D) — prochaines étapes logiques de la feuille de route.
+**Mise à jour 2026-09-02 (suite 4) — dimension verticale 3D construite**
+(sur demande explicite : "vas-y, construis la dimension verticale 3D") :
+nouveau module `awci/vertical_field.py` :
+- `compute_real_complexity_volume()` — réutilise **un seul** run du
+  solveur (tous les niveaux sont déjà intégrés ensemble par
+  `solver.step()`) et évalue `AWCICalculator` à **chaque point réel**
+  (niveau, lat, lon) — pas un run par niveau. Vérifié à la vraie
+  résolution ARPEGE (20×48×96 = 92 160 points) : 1,4 s.
+- `vertical_profile_at_point()` — extrait `Complexity(z)` au point de
+  grille le plus proche (plus-proche-voisin réel), avec la vraie
+  pression locale par niveau (`pressure_volume_hpa`) pour situer
+  physiquement chaque niveau natif.
+
+**Invariant physique réel vérifié** (pas supposé, testé contre la
+vraie sortie du solveur) : la pression décroît bien avec l'altitude à
+chaque niveau (`test_pressure_decreases_with_altitude_real_physics`).
+Profil vertical réel à Alger (image envoyée) : la complexité décroît
+proprement de ~15 en surface (2013 hPa) à ~4 en haute altitude
+(~1 hPa) — signal physiquement cohérent, pas du bruit, contrairement
+aux coupes horizontales qui restent granulaires (intégration courte,
+même limite honnête que le champ 2D).
+
+Limite honnête : niveaux **natifs** du solveur, pas de vraie
+interpolation vers les niveaux de pression standards
+(1000/925/850/700/500/300 hPa...) — cette capacité (couche "vertical
+operations: interpolation" de l'architecture cible) n'existe nulle
+part dans ACF, donc pas construite ici pour ne pas inventer de valeurs
+interpolées. `pressure_volume_hpa` permet de trouver le niveau natif
+le plus proche d'une pression donnée, honnêtement, sans fabriquer
+d'interpolation.
+
+Trouvaille annexe corrigée au passage : la clé `pressure_field` du
+module 2D (`spatial_field.py`) était en Pa brut, non convertie et non
+étiquetée — renommée `pressure_field_hpa` (converti en hPa) pour
+cohérence avec le nouveau module 3D. Découverte documentée sans la
+cacher : la clé `"pressure"` acceptée par `AWCICalculator` n'est en
+réalité **jamais lue** dans `calculate_module_scores()` — un input mort
+préexistant, non introduit par ce travail, non corrigé ici (hors
+scope), juste signalé en commentaire dans le code.
+
+Reste non fait : dimension temporelle (4D, animation `t0→t1→t2...`) —
+prochaine étape logique de la feuille de route.
 
 **Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
 honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut

@@ -63,7 +63,7 @@ def test_field_values_are_consistent_with_the_point_api():
             "temperature": float(result["temperature_field"][i, j]),
             "wind_speed": float(result["wind_speed_field"][i, j]),
             "specific_humidity": float(result["specific_humidity_field"][i, j]),
-            "pressure": float(result["pressure_field"][i, j]),
+            "pressure": float(result["pressure_field_hpa"][i, j]),
         }
     )
     assert result["awci_field"][i, j] == pytest.approx(expected["awci"])
@@ -118,7 +118,7 @@ def test_disabling_perturbation_gives_a_flat_field_from_the_uniform_initial_stat
 
 def test_raw_state_fields_are_returned_with_matching_shape():
     result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=9, n_levels=4, steps=1)
-    for key in ("temperature_field", "wind_speed_field", "specific_humidity_field", "pressure_field"):
+    for key in ("temperature_field", "wind_speed_field", "specific_humidity_field", "pressure_field_hpa"):
         assert result[key].shape == (5, 9)
     # Wind speed is a magnitude - never negative.
     assert (result["wind_speed_field"] >= 0.0).all()

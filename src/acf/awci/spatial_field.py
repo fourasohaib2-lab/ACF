@@ -116,8 +116,9 @@ def compute_real_complexity_field(
             discipline) wherever forecast_score was undefined for that
             point's weights.
         temperature_field, wind_speed_field, specific_humidity_field,
-        pressure_field : the real per-point CoupledEarthSolver values
-            actually fed to AWCICalculator to produce the above -
+        pressure_field_hpa : the real per-point CoupledEarthSolver
+            values actually fed to AWCICalculator to produce the above
+            (pressure converted from the solver's native Pa to hPa) -
             returned for transparency/debugging and so a caller (or a
             test) can independently verify awci_field/physical_field/
             forecast_field without re-running the solver a second time
@@ -149,7 +150,7 @@ def compute_real_complexity_field(
     temperature = state["T"][level, :, :]
     wind_speed = np.sqrt(state["U"][level, :, :] ** 2 + state["V"][level, :, :] ** 2)
     specific_humidity = state["q"][level, :, :]
-    pressure = state["P"][level, :, :]
+    pressure_hpa = state["P"][level, :, :] / 100.0  # solver's native Pa -> hPa
 
     n_lat_actual, n_lon_actual = temperature.shape
     calc = AWCICalculator(weights)
@@ -158,6 +159,16 @@ def compute_real_complexity_field(
     physical_field = np.zeros((n_lat_actual, n_lon_actual))
     forecast_field = np.full((n_lat_actual, n_lon_actual), np.nan)
 
+    # NOTE (found while building this, not fixed here - out of scope):
+    # AWCICalculator.calculate_module_scores() accepts a "pressure" key
+    # in its input dict (documented in its own docstring, and
+    # Normalizer.normalize_pressure() exists) but never actually reads
+    # it anywhere in that method - it is currently a dead input.
+    # Passing it below therefore has no effect on the scores computed;
+    # it's still passed (and returned as pressure_field_hpa) because a
+    # future AWCICalculator change might start using it, and because
+    # the real local pressure is useful context on its own.
+    #
     # NOTE on forecast_field: no ensemble_members / model_realizations /
     # confidence is supplied per point below - computing those per grid
     # cell would mean re-running the ensemble/multi-model-fusion solver
@@ -178,7 +189,7 @@ def compute_real_complexity_field(
                     "temperature": float(temperature[i, j]),
                     "wind_speed": float(wind_speed[i, j]),
                     "specific_humidity": float(specific_humidity[i, j]),
-                    "pressure": float(pressure[i, j]),
+                    "pressure": float(pressure_hpa[i, j]),
                 }
             )
             awci_field[i, j] = result["awci"]
@@ -198,7 +209,7 @@ def compute_real_complexity_field(
         "temperature_field": temperature,
         "wind_speed_field": wind_speed,
         "specific_humidity_field": specific_humidity,
-        "pressure_field": pressure,
+        "pressure_field_hpa": pressure_hpa,
         "status": "REAL_COMPLEXITY_FIELD_FROM_ACF_SOLVER",
         "is_real_data": True,
         "honest_limitation": (
