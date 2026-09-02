@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `5cfc78e`.
-**Portée :** 221 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `86d3616`.
+**Portée :** 222 commits, 2794 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean.
 
 ## 1. Objectif et méthode
@@ -132,9 +132,21 @@ réelle (`ESOCWindow`, lancée via `acf-gui`), au-delà de la seule correction d
 - **`5cfc78e`** — 4 widgets AWCI rendus orphelins par cette reconstruction (jauge,
   décomposition en barres, timeline, profil vertical) documentés selon la convention
   du projet plutôt que supprimés silencieusement.
-- Vérifications faites en direct sous `xvfb` (pas seulement via les tests unitaires) :
-  fenêtre principale + 28 panneaux + 21 actions de toolbar, 0 exception.
+- **`86d3616`** — même traitement pour le second dashboard orphelin trouvé ce
+  session, `src/acf/dashboard/` (Dashboard/DashboardManager/DashboardLayout :
+  carte centrale + docks Explorer/Charts/Properties/Timeline/Console/Status) :
+  entièrement construit et testé, mais jamais atteignable depuis l'appli
+  réelle. Contrairement à AWCI, ce dashboard veut posséder toute une fenêtre
+  (`setCentralWidget`/`addDockWidget` directs) — plutôt que de le forcer dans
+  un onglet ESOC, il est maintenant lancé comme fenêtre secondaire via un
+  nouveau bouton toolbar "🗂️ Classic View". Corrigé au passage 2 versions
+  codées en dur obsolètes ("0.1.0-alpha" vs la vraie `0.1.0`) trouvées dans
+  `status_panel.py` et `splash.py`, même catégorie que les bugs
+  `ProductionUpdater`/`VersionManager` déjà corrigés plus tôt.
+- Vérifications faites en direct sous `xvfb` (pas seulement via les tests
+  unitaires) : fenêtre principale + 28 panneaux + 22 actions de toolbar + la
+  fenêtre "Classic View", 0 exception.
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..5cfc78e`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..86d3616`.
