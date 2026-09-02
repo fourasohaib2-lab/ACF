@@ -77,9 +77,10 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 27
+    assert len(pm.list_panel_names()) == 28
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
+    assert pm.get_panel("awci_dashboard") is not None
 
 
 def test_view_manager(qapp):

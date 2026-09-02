@@ -1,0 +1,191 @@
+"""
+AWCI Synthetic Demonstration Field
+===================================
+
+Generates example atmospheric input fields and runs them through the real
+`acf.awci.calculator.AWCICalculator` to produce a genuine AWCI grid for the
+dashboard's map/cross-section/route panels.
+
+Honesty note (Physics Guard convention): the underlying meteorological
+INPUT fields here (temperature, wind, CAPE, humidity...) are synthetic -
+smooth analytic patterns, not observations or a live NWP run, because no
+gridded live atmospheric field is wired into this GUI dashboard. This
+matches the reference mockup's own framing ("Concept Output - Research
+Prototype"). What is NOT fabricated is the AWCI SCORE itself: every score
+this module returns is the real output of AWCICalculator.calculate() fed
+these synthetic inputs, not an invented number - the composite-index math,
+weights, decomposition, and interaction terms are the actual production
+formula (acf/awci/calculator.py), unit-tested and used elsewhere in ACF.
+"""
+
+import math
+
+from acf.awci.calculator import AWCICalculator
+
+_calc = AWCICalculator()
+
+
+def _synthetic_inputs(
+    lat: float, lon: float, flight_level_hpa: float = 300.0, time_offset_hours: float = 0.0
+) -> dict[str, float]:
+    """Smooth, deterministic example meteorological fields at (lat, lon).
+
+    Not an observation or model output - a hand-built analytic pattern
+    (a few storm-like wave components) chosen only to make the demo map
+    look like a plausible complexity field, per this module's own
+    docstring. Deterministic in (lat, lon, time_offset_hours) so the map
+    is reproducible across redraws. `time_offset_hours` genuinely shifts
+    the pattern's phase (a slow eastward drift, like a synoptic system
+    moving) - it is not a no-op decoration behind a "Valid Time" control.
+    """
+    lat_r = math.radians(lat)
+    lon_r = math.radians(lon)
+    drift = math.radians(time_offset_hours * 2.0)  # ~2 deg of phase drift per hour
+
+    # A handful of superposed waves standing in for "storm systems" - purely a
+    # visual device, not a physical simulation. Coefficients sum to 1.0 so the
+    # raw sum spans close to [-1, 1] before normalizing, so both genuinely calm
+    # (near 0) and genuinely intense (near 1) patches actually occur - the
+    # dashboard should show real blue "calm" zones and red/magenta "extreme"
+    # zones, not just a mid-range wash.
+    storminess_raw = (
+        0.5 * math.sin(3 * lon_r + drift + 1.3) * math.cos(2 * lat_r)
+        + 0.3 * math.sin(5 * lon_r - drift * 1.5 - lat_r * 2 + 0.7)
+        + 0.2 * math.cos(7 * lon_r + drift * 0.5 + 3 * lat_r)
+    )
+    storminess = max(0.0, min(1.0, (storminess_raw + 1.0) / 2.0)) ** 0.75
+
+    # Intertropical band and mid-latitude storm tracks get more convective energy.
+    itcz = math.exp(-((lat / 12.0) ** 2))
+    storm_track = math.exp(-(((abs(lat) - 45.0) / 15.0) ** 2))
+    convective_boost = 0.6 * itcz + 0.4 * storm_track
+
+    # Jet-stream-like altitude dependence: wind (and so dynamic/turbulence
+    # complexity) peaks near 250 hPa and tapers at low and very high levels,
+    # so a vertical cross-section actually shows banded structure instead of
+    # being flat with altitude.
+    jet_factor = math.exp(-(((flight_level_hpa - 250.0) / 130.0) ** 2))
+
+    temperature_k = 288.0 - 0.55 * abs(lat) + 3.0 * math.sin(2 * lon_r)
+    wind_speed = 5.0 + 45.0 * storminess * (0.35 + 0.65 * jet_factor) + 15.0 * storm_track * jet_factor
+    cape = 3200.0 * max(0.0, storminess - 0.15) ** 1.3 * (0.4 + 0.6 * convective_boost)
+    cin = 80.0 * (1.0 - storminess)
+    specific_humidity = 0.003 + 0.015 * itcz + 0.006 * storminess
+    precipitation = 18.0 * max(0.0, storminess - 0.2) ** 1.2 * (0.3 + 0.7 * convective_boost)
+    temporal_change = 0.5 * storminess
+    confidence = 92.0 - 35.0 * storminess
+
+    # NOTE: Normalizer.normalize_topographic() expects "altitude" to mean
+    # ground/terrain elevation in metres (clipped at 3000 m - see its own
+    # docstring), NOT flight cruise altitude. An earlier version of this
+    # generator passed the flight level's altitude here, which is a
+    # different physical quantity than what the module consumes and
+    # saturated the topographic score at 1.0 everywhere regardless of
+    # location. Terrain elevation is instead its own small synthetic
+    # pattern (rougher near a couple of "mountain range" longitude bands),
+    # independent of flight_level_hpa.
+    terrain_elevation_m = 2600.0 * max(0.0, math.sin(2.3 * lon_r + 0.4) * math.cos(1.7 * lat_r)) ** 2
+
+    return {
+        "temperature": temperature_k,
+        "specific_humidity": specific_humidity,
+        "wind_speed": wind_speed,
+        "cape": cape,
+        "cin": cin,
+        "precipitation": precipitation,
+        "pressure": flight_level_hpa,
+        "altitude": terrain_elevation_m,
+        "confidence": confidence,
+        "temporal_change": temporal_change,
+    }
+
+
+def awci_at(lat: float, lon: float, flight_level_hpa: float = 300.0, time_offset_hours: float = 0.0) -> dict:
+    """Real AWCICalculator.calculate() output at one point, from synthetic inputs."""
+    return _calc.calculate(_synthetic_inputs(lat, lon, flight_level_hpa, time_offset_hours))
+
+
+def awci_grid(
+    lat_step: float = 4.0,
+    lon_step: float = 4.0,
+    flight_level_hpa: float = 300.0,
+    lat_range: tuple[float, float] = (-85.0, 85.0),
+    lon_range: tuple[float, float] = (-180.0, 180.0),
+    time_offset_hours: float = 0.0,
+) -> tuple[list[float], list[float], list[list[float]]]:
+    """Return (lons, lats, awci_score_grid) - awci_score_grid[i][j] is the real
+    AWCICalculator score (0-100) at (lats[i], lons[j]), from synthetic inputs."""
+    lats = _frange(lat_range[0], lat_range[1], lat_step)
+    lons = _frange(lon_range[0], lon_range[1], lon_step)
+    grid = [[awci_at(lat, lon, flight_level_hpa, time_offset_hours)["awci"] for lon in lons] for lat in lats]
+    return lons, lats, grid
+
+
+def _frange(start: float, stop: float, step: float) -> list[float]:
+    n = int(round((stop - start) / step)) + 1
+    return [start + i * step for i in range(n)]
+
+
+def route_profile(
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_points: int = 60,
+    flight_level_hpa: float = 300.0,
+) -> tuple[list[float], list[float]]:
+    """Real AWCI score sampled along the great-circle-ish straight path from A to B.
+
+    Returns (distance_km, awci_scores). Uses a simple linear lat/lon
+    interpolation (not a true geodesic) - adequate for a demo route chart,
+    not for navigation.
+    """
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    distances = []
+    scores = []
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+    for i in range(n_points):
+        t = i / (n_points - 1)
+        lat = lat_a + t * (lat_b - lat_a)
+        lon = lon_a + t * (lon_b - lon_a)
+        distances.append(t * total_km)
+        scores.append(awci_at(lat, lon, flight_level_hpa)["awci"])
+    return distances, scores
+
+
+def cross_section_field(
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_along: int = 60,
+    n_levels: int = 20,
+    hpa_range: tuple[float, float] = (150.0, 850.0),
+) -> tuple[list[float], list[float], list[list[float]]]:
+    """Real AWCI score field along a flight path (x) and pressure level (y).
+
+    Returns (distance_km, flight_levels_hpa, grid) where grid[i][j] is the
+    score at flight_levels_hpa[i], distance_km[j].
+    """
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+    distances = [i / (n_along - 1) * total_km for i in range(n_along)]
+    levels = _frange(hpa_range[0], hpa_range[1], (hpa_range[1] - hpa_range[0]) / (n_levels - 1))
+
+    grid: list[list[float]] = []
+    for hpa in levels:
+        row = []
+        for i in range(n_along):
+            t = i / (n_along - 1)
+            lat = lat_a + t * (lat_b - lat_a)
+            lon = lon_a + t * (lon_b - lon_a)
+            row.append(awci_at(lat, lon, hpa)["awci"])
+        grid.append(row)
+    return distances, levels, grid
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))

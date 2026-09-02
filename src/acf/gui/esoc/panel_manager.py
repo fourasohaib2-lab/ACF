@@ -1,4 +1,4 @@
-"""Panel Manager instantiating 26 operational PySide6 dock panels for ESOC (ACF-HPC-001)."""
+"""Panel Manager instantiating 28 operational PySide6 dock panels for ESOC (ACF-HPC-001)."""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSlider,
     QTableWidget,
     QTableWidgetItem,
@@ -704,8 +705,46 @@ class HPCPanel(BasePanelWidget):
         self.main_layout.addWidget(self.txt)
 
 
+class AWCIDashboardPanel(QWidget):
+    """28. Aviation Weather Complexity Index (AWCI) operational dashboard.
+
+    Embeds the full acf.gui.dashboard.AWCIDashboard widget directly (it
+    already has its own header/title, unlike the other panels here, so this
+    intentionally skips BasePanelWidget's extra title bar to avoid a
+    redundant double header). registry/dispatcher are accepted for
+    signature consistency with every other panel constructor but are not
+    used - the AWCI dashboard's own numbers come from the real
+    AWCICalculator over a synthetic demo field (see
+    acf.gui.dashboard.awci_synthetic_field's docstring), not from any
+    registry-managed subsystem.
+
+    Wrapped in a QScrollArea: the dashboard's maps/radar/charts need real
+    vertical space to stay legible, but this panel shares the bottom dock
+    with 27 other tabs at whatever height the operator has left it - a
+    plain embed got compressed and overlapping there instead of scrolling.
+    """
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__()
+        self.registry = registry
+        self.dispatcher = dispatcher
+
+        from acf.gui.dashboard.awci_dashboard import AWCIDashboard
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.awci_dashboard = AWCIDashboard()
+        self.awci_dashboard.setMinimumSize(1200, 900)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(self.awci_dashboard)
+        layout.addWidget(scroll)
+
+
 class PanelManager:
-    """Instantiates and manages all 26 operational PySide6 ESOC panels."""
+    """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         self.registry = registry
@@ -739,6 +778,7 @@ class PanelManager:
             "verification": VerificationPanel(registry, dispatcher),
             "system_console": SystemConsolePanel(registry, dispatcher),
             "hpc": HPCPanel(registry, dispatcher),
+            "awci_dashboard": AWCIDashboardPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:
