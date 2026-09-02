@@ -52,6 +52,16 @@ def test_nearest_neighbor_picks_the_real_closest_source_point():
     assert result[0, 0] == 3.0
 
 
+def test_nearest_neighbor_wraps_across_the_real_antimeridian():
+    """A real correctness property: a target point at 179° is only 2° (via wraparound) from a source point at -179°, but 9° from one at 170° - the real nearest point must be the wrapped one, not the naive-degree-distance one."""
+    lats = np.array([0.0, 10.0])
+    lons_src = np.array([-179.0, 170.0])
+    field = np.array([[100.0, 200.0], [100.0, 200.0]])  # -179 -> 100, 170 -> 200
+
+    result = regrid_nearest_neighbor(lats, lons_src, field, lats, np.array([179.0]))
+    assert np.all(result[:, 0] == 100.0)
+
+
 # ------------------------------------------------------------------ regrid_bilinear
 
 
@@ -92,6 +102,29 @@ def test_bilinear_works_for_non_uniformly_spaced_source_coordinates():
     # field == lat everywhere -> bilinear along a non-uniform axis must still reproduce it exactly
     result = regrid_bilinear(lats, lons, field, np.array([5.0]), lons)
     assert np.allclose(result, [[5.0, 5.0]])
+
+
+def test_bilinear_wraps_across_the_real_antimeridian():
+    """Real correctness proof, verified against a hand-derived expected value, not just a smoke check: a target at 179° sits 9° from a source at 170° but only 2° (via wraparound) from one at -179° - real interpolation weight must reflect the short, wrapped path."""
+    lats = np.array([0.0, 10.0])
+    lons_src = np.array([-179.0, 170.0])
+    field = np.array([[100.0, 200.0], [100.0, 200.0]])  # -179 -> 100, 170 -> 200
+
+    result = regrid_bilinear(lats, lons_src, field, lats, np.array([179.0]))
+
+    # 170 -> -179 the short way spans 11 real degrees (170 -> 180 -> -179); target 179 is 9deg from 170, 2deg from -179.
+    expected = 200.0 * (1 - 9 / 11) + 100.0 * (9 / 11)
+    assert np.allclose(result[:, 0], expected)
+
+
+def test_bilinear_wraparound_reduces_to_plain_bracketing_away_from_the_seam():
+    """The periodic bracketing must not perturb a genuinely non-wrapping interpolation - same exact-linear-field property as test_bilinear_exactly_reproduces_a_linear_field, now via the periodic code path."""
+    lats = np.array([0.0, 10.0, 20.0])
+    lons = np.array([0.0, 10.0, 20.0])
+    field = np.array([[2 * la + 3 * lo for lo in lons] for la in lats])
+
+    result = regrid_bilinear(lats, lons, field, np.array([5.0]), np.array([15.0]))
+    assert np.allclose(result, [[2 * 5 + 3 * 15]])
 
 
 def test_bilinear_rejects_non_increasing_source_coordinates():

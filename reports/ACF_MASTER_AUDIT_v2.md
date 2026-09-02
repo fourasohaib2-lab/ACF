@@ -1026,13 +1026,61 @@ pour chacun) :
 - Model Adapters WRF/ICON/OpenIFS : `read()` réel, mais `epygram`
   (backend FA d'AROME/ALADIN/ARPEGE) reste non installé dans cet
   environnement — aucune lecture FA de bout en bout n'est testable ici.
-- `regrid_nearest_neighbor()`/`regrid_bilinear()` ne gèrent pas le
-  wraparound ±180° (seul `regrid_conservative()` le fait).
 - Pas de Certification Engine branché à un pipeline de production
   automatisé (le moteur existe, réel, testé — pas encore appelé en
   continu sur un flux réel).
 - Pas de base de données de persistance pour `/api/v1/events` /
   `/api/v1/datasets` (stockage en mémoire, réel mais non durable,
   disclosure explicite dans chaque routeur).
+
+## Mise à jour 2026-09-02 (suite) — wraparound ±180° complété pour regrid_nearest_neighbor()/regrid_bilinear()
+
+Choisi ensuite comme le manque restant le mieux borné et le moins
+risqué à fermer proprement dans cette même session (pas de nouvelle
+dépendance externe, pas de décision d'architecture à trancher, technique
+déjà éprouvée sur `regrid_conservative()`).
+
+- **`regrid_nearest_neighbor()`** — `_circular_distance()` (distance
+  angulaire réelle sur un cercle de 360°) remplace la simple différence
+  absolue pour la longitude : un point cible à 179° trouve maintenant
+  réellement son plus proche voisin à -179° (2° via l'antiméridien), pas
+  celui à 170° (9°, mais "plus proche" avec une distance non-circulaire
+  naïve).
+- **`regrid_bilinear()`** — `_bracket_indices_periodic()`, même
+  technique de points fantômes déjà utilisée par
+  `_overlap_weights(..., period=...)` pour `regrid_conservative()` (pas
+  une troisième implémentation différente de la périodicité) : un point
+  cible à la couture interpole désormais entre les vrais points source
+  de part et d'autre de l'antiméridien.
+
+**Vérifié par un calcul à la main, pas seulement un test de fumée** :
+avec des sources à -179° (valeur 100) et 170° (valeur 200), un point
+cible à 179° est à 9° de 170° et seulement 2° de -179° via le chemin
+court (170°→180°→-179° = 11° au total) — la valeur bilinéaire attendue
+est `200*(1-9/11) + 100*(9/11) ≈ 118.18`, exactement ce que le code
+retourne.
+
+**Portée finale, honnête** : les trois fonctions du module gèrent
+maintenant la périodicité réelle à 360° de la longitude ; aucune ne
+gère un axe de latitude périodique (n'existe pas physiquement — les
+pôles sont de vraies bornes non-périodiques).
+
+**Validation :** 3 nouveaux tests (dont la vérification par calcul à la
+main ci-dessus, et une preuve que le chemin périodique se réduit
+exactement au comportement non-wrappé loin de la couture). Suite
+complète : **3211/3211** tests passent (3208 avant), ruff et mypy
+propres sur les 1402 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+- Model Adapters WRF/ICON/OpenIFS : `epygram` (backend FA d'AROME/
+  ALADIN/ARPEGE) reste non installé dans cet environnement.
+- Pas de Certification Engine branché à un pipeline de production
+  automatisé.
+- Pas de base de données de persistance pour `/api/v1/events` /
+  `/api/v1/datasets` (en mémoire, réel mais non durable, disclosure
+  explicite).
+
+Dis-moi laquelle tu veux que j'attaque ensuite.
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

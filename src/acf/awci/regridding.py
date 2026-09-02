@@ -36,19 +36,22 @@ these) since which of these three a real multi-model fusion should use
 is a genuine scientific decision out of scope for this module to make
 unilaterally.
 
-Honest limitation - NOT shared by all three, disclosed precisely per
-function rather than as one blanket statement: `regrid_conservative()`
-genuinely handles the real 360° longitude periodicity (a source cell
-near +180° really does contribute to a target cell straddling into
--180° territory - see its own docstring; getting this wrong silently
-broke conservation at that seam, a real bug caught while building this,
-not assumed). `regrid_nearest_neighbor()`/`regrid_bilinear()` do NOT -
-a target point right at the antimeridian is clamped to the nearest
-real source edge rather than wrapping, same "no extrapolation past the
-real domain" choice `acf.awci.path_sampling`'s own route/cross-section
-sampling already documents for the analogous case (a real, understood
-gap for those two, left as such rather than fixed here since it's a
-larger, separate change to their own bracketing logic).
+All three genuinely handle the real 360° longitude periodicity
+(`EarthGrid.lons` is periodic - `linspace(-180, 180, n_lon,
+endpoint=False)` never places a real centre at +180 itself, so a
+source point near +180° is really only a few degrees away from a
+target point near -180°, not ~360° away). `regrid_conservative()` got
+this first (a real conservation bug, caught and fixed while building
+it - see its own docstring); `regrid_nearest_neighbor()`/
+`regrid_bilinear()` initially did NOT (a target point right at the
+antimeridian was clamped to the nearest real source edge instead of
+wrapping - a real, disclosed gap at the time) - closed in the same
+session via `_circular_distance()`/`_bracket_indices_periodic()`
+below, reusing the exact ghost-point extension technique
+`_overlap_weights(..., period=...)` already established for
+`regrid_conservative()`, not a third, different implementation of
+periodicity. Latitude never gets this treatment anywhere in this
+module - the poles are real, physical, non-wrapping bounds.
 """
 
 from __future__ import annotations
@@ -56,6 +59,12 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+
+
+def _circular_distance(a: np.ndarray, b: np.ndarray, period: float) -> np.ndarray:
+    """Real shortest angular distance between `a` and `b` on a circle of circumference `period` - e.g. longitude 179° and -179° are genuinely 2° apart, not 358°."""
+    diff = np.abs(a - b)
+    return np.minimum(diff, period - diff)
 
 
 def regrid_nearest_neighbor(
@@ -71,7 +80,12 @@ def regrid_nearest_neighbor(
 
     Same technique `acf.awci.path_sampling.sample_field_along_path()`
     already uses per sample point, vectorised across an entire target
-    grid instead of a path - not a second implementation.
+    grid instead of a path - not a second implementation. Longitude
+    distance is real circular distance (`_circular_distance()`,
+    period 360°) - a target point near the antimeridian genuinely finds
+    its real nearest source point across the ±180° seam, not the
+    nearest one on whichever side it happens to be clamped to.
+    Latitude never wraps (the poles are real, physical bounds).
 
     Returns
     -------
@@ -83,7 +97,7 @@ def regrid_nearest_neighbor(
     lons_target_arr = np.asarray(lons_target)
 
     lat_idx = np.argmin(np.abs(lats_target_arr[:, None] - lats_src_arr[None, :]), axis=1)
-    lon_idx = np.argmin(np.abs(lons_target_arr[:, None] - lons_src_arr[None, :]), axis=1)
+    lon_idx = np.argmin(_circular_distance(lons_target_arr[:, None], lons_src_arr[None, :], 360.0), axis=1)
     return field_src[np.ix_(lat_idx, lon_idx)]
 
 
@@ -105,6 +119,41 @@ def _bracket_indices(coord_src: np.ndarray, coord_target: np.ndarray) -> tuple[n
     denom = coord_src[idx_hi] - coord_src[idx_lo]
     frac = np.where(denom != 0, (clamped - coord_src[idx_lo]) / np.where(denom != 0, denom, 1.0), 0.0)
     return idx_lo, idx_hi, frac
+
+
+def _bracket_indices_periodic(
+    coord_src: np.ndarray, coord_target: np.ndarray, period: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    `_bracket_indices()`, but for a periodic axis (longitude, period
+    360°) - a target point near the antimeridian brackets between the
+    real source points on EITHER side of the seam (e.g. a source point
+    at 179° and one at -179° really do bracket a target point at
+    180°), rather than being clamped to one real edge as
+    `_bracket_indices()` would.
+
+    Technique: re-centre each target coordinate to within one period
+    of `coord_src`'s own midpoint (the real, shortest-path wrapped
+    representative), then bracket against `coord_src` extended with
+    one real wraparound "ghost" point at each end (`coord_src[-1] -
+    period` before the start, `coord_src[0] + period` after the end) -
+    the same ghost-point extension technique `_overlap_weights(...,
+    period=...)` already established for `regrid_conservative()`, not
+    a third, different implementation of periodicity. Extended indices
+    are mapped back to real `coord_src` indices via `% n`.
+    """
+    n = len(coord_src)
+    center = (coord_src[0] + coord_src[-1]) / 2.0
+    recentered = center + ((coord_target - center + period / 2.0) % period - period / 2.0)
+
+    ext_src = np.concatenate(([coord_src[-1] - period], coord_src, [coord_src[0] + period]))
+    clamped = np.clip(recentered, ext_src[0], ext_src[-1])
+    idx_hi = np.clip(np.searchsorted(ext_src, clamped, side="left"), 1, len(ext_src) - 1)
+    idx_lo = idx_hi - 1
+    denom = ext_src[idx_hi] - ext_src[idx_lo]
+    frac = np.where(denom != 0, (clamped - ext_src[idx_lo]) / np.where(denom != 0, denom, 1.0), 0.0)
+
+    return (idx_lo - 1) % n, (idx_hi - 1) % n, frac
 
 
 def _require_strictly_increasing(name: str, coord: np.ndarray) -> None:
@@ -133,9 +182,13 @@ def regrid_bilinear(
     conserve the field's area-weighted integral (see
     `regrid_conservative()` for that).
 
-    A target point outside the source domain is clamped to the
+    A target latitude outside the source domain is clamped to the
     nearest real source edge, not extrapolated - see
-    `_bracket_indices()`'s own docstring.
+    `_bracket_indices()`'s own docstring. Longitude genuinely wraps
+    across the real ±180° antimeridian instead
+    (`_bracket_indices_periodic()`, period 360°) - a target point right
+    at the seam interpolates between the real source points on either
+    side of it, not clamped to one.
 
     Returns
     -------
@@ -151,7 +204,7 @@ def regrid_bilinear(
     _require_strictly_increasing("lons_src", lons_src_arr)
 
     lat_lo, lat_hi, lat_frac = _bracket_indices(lats_src_arr, lats_target_arr)
-    lon_lo, lon_hi, lon_frac = _bracket_indices(lons_src_arr, lons_target_arr)
+    lon_lo, lon_hi, lon_frac = _bracket_indices_periodic(lons_src_arr, lons_target_arr, 360.0)
 
     f00 = field[np.ix_(lat_lo, lon_lo)]
     f01 = field[np.ix_(lat_lo, lon_hi)]
