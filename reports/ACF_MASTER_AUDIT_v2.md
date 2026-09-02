@@ -104,13 +104,8 @@ méthodologie d'audit. Les deux existent, mais ne sont pas la même chose.
 
 ## 11-13. Data Model 4D / Model Adapters / Formats
 
-- **Data Contract formalisé (§4 du Prompt Maître) : MISSING** comme classe
-  unique. Il existe des dataclasses partielles proches par endroits (ex.
-  `EncyclopediaEntry`), mais pas de `Dataset` avec exactement les champs
-  proposés (`id, source, model, run, forecast_reference_time, valid_time,
-  lead_time, variable, unit, dimensions, coordinates, horizontal_grid,
-  vertical_coordinate, ensemble_member, quality, uncertainty, provenance,
-  version`).
+- **Data Contract formalisé (§4 du Prompt Maître) : ✅ IMPLEMENTED, TESTED
+  (2026-09-02)** — voir mise à jour ci-dessous.
 - **Model Adapters : PARTIAL.** `models/{arome,aladin,arpege}/
   ingestion_adapter.py` existent réellement (`AROMEIngestionAdapter(
   BaseWeatherModel)` avec `detect()/variables()/levels()/projection()/
@@ -339,6 +334,44 @@ moteur d'analyse dimensionnelle générique pour tout tenseur arbitraire.
 Pas encore branché ailleurs que ce point précis — l'intégration
 systématique dans tout le pipeline scientifique reste à faire au fur et
 à mesure, pas en un seul passage qui toucherait tout le dépôt d'un coup.
+
+## Mise à jour 2026-09-02 (suite) — Data Contract construit
+
+`src/acf/core/contracts/` : `Dataset` (§13 exact — id, source, model,
+run, forecast_reference_time, valid_time, lead_time, variable, unit,
+dimensions, coordinates, horizontal_grid, vertical_coordinate,
+ensemble_member, quality, uncertainty, provenance, version, +
+`values` réel puisqu'un contrat sans données à valider ne sert à
+rien), `VariableContract` (§14 exact), `Provenance`, `QualityInfo`,
+`UncertaintyInfo`.
+
+**Vraie intégration, pas un type isolé :**
+- `VariableContract.from_registry()` réutilise les vraies tables
+  (`normalization.variable_names.cf_canonical_unit()` +
+  `physics_guard.range_check.OPERATIONAL_RANGES`) au lieu de deviner
+  unité/plage.
+- `Dataset.validate()` réutilise `PhysicsGuard` directement (le lien
+  "ACF 4D DATA MODEL → PHYSICS GUARD" du diagramme d'architecture
+  maître) — **testé sur le même bug historique de lat/lon inversé**
+  qu'`awci_dashboard.py` avait réellement eu.
+- `Dataset.from_real_field()`/`from_real_volume()` construisent un
+  vrai `Dataset` à partir des vraies sorties de
+  `compute_real_complexity_field()`/`compute_real_complexity_volume()`
+  — preuve que le contrat marche sur de vraies données ACF, pas un
+  type que rien n'utilise.
+
+**Trouvaille annexe corrigée en passant** : `datetime.utcnow()` est
+déprécié depuis Python 3.12+ — utilisé dans le premier jet, corrigé
+vers `datetime.now(UTC)` avant de committer.
+
+**Validation :** 2987/2987 tests passent (2965 avant, +22 nouveaux),
+ruff et mypy propres sur les 1368 fichiers.
+
+Portée honnête : ce `Dataset` ne remplace pas encore les dicts ad hoc
+que `spatial_field.py`/`vertical_field.py`/`temporal_field.py`
+retournent eux-mêmes en interne — migrer ces points d'appel est un
+chantier séparé et plus large, volontairement pas fait en un seul
+passage.
 
 ## Recommandation — ordre de phase suivant (pas les 30 à la fois)
 
