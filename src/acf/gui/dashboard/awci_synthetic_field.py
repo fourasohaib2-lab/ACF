@@ -114,11 +114,63 @@ def awci_grid(
     time_offset_hours: float = 0.0,
 ) -> tuple[list[float], list[float], list[list[float]]]:
     """Return (lons, lats, awci_score_grid) - awci_score_grid[i][j] is the real
-    AWCICalculator score (0-100) at (lats[i], lons[j]), from synthetic inputs."""
+    AWCICalculator score (0-100) at (lats[i], lons[j]), from synthetic inputs.
+
+    For the Physical/Forecast split alongside the composite score, use
+    awci_grid_full() instead - kept as a separate function so this
+    one's return shape (used by existing callers) never changes.
+    """
     lats = _frange(lat_range[0], lat_range[1], lat_step)
     lons = _frange(lon_range[0], lon_range[1], lon_step)
     grid = [[awci_at(lat, lon, flight_level_hpa, time_offset_hours)["awci"] for lon in lons] for lat in lats]
     return lons, lats, grid
+
+
+def awci_grid_full(
+    lat_step: float = 4.0,
+    lon_step: float = 4.0,
+    flight_level_hpa: float = 300.0,
+    lat_range: tuple[float, float] = (-85.0, 85.0),
+    lon_range: tuple[float, float] = (-180.0, 180.0),
+    time_offset_hours: float = 0.0,
+) -> dict:
+    """
+    Like awci_grid(), but also returns the Physical/Forecast Complexity
+    split (added 2026-09-02 alongside AWCICalculator.calculate()'s
+    physical_score/forecast_score - see calculator.py's own docstring)
+    for every point, not just the composite awci score.
+
+    Returns
+    -------
+    dict with lons, lats (1D), awci_field, physical_field, forecast_field
+    (2D lists, field[i][j] at (lats[i], lons[j])). forecast_field
+    entries are None (not 0.0) wherever forecast_score was undefined -
+    same non-fabrication discipline as AWCICalculator itself.
+    """
+    lats = _frange(lat_range[0], lat_range[1], lat_step)
+    lons = _frange(lon_range[0], lon_range[1], lon_step)
+
+    awci_field: list[list[float]] = []
+    physical_field: list[list[float]] = []
+    forecast_field: list[list[float | None]] = []
+    for lat in lats:
+        awci_row, physical_row, forecast_row = [], [], []
+        for lon in lons:
+            result = awci_at(lat, lon, flight_level_hpa, time_offset_hours)
+            awci_row.append(result["awci"])
+            physical_row.append(result["physical_score"])
+            forecast_row.append(result["forecast_score"])
+        awci_field.append(awci_row)
+        physical_field.append(physical_row)
+        forecast_field.append(forecast_row)
+
+    return {
+        "lons": lons,
+        "lats": lats,
+        "awci_field": awci_field,
+        "physical_field": physical_field,
+        "forecast_field": forecast_field,
+    }
 
 
 def _frange(start: float, stop: float, step: float) -> list[float]:

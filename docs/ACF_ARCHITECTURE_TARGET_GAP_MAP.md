@@ -118,8 +118,35 @@ plutôt que dupliquer sa logique dans un nouveau paquet `complexity/` —
 conforme à la règle "ne rien déplacer" de sa propre spécification
 d'ingénierie pour cette étape.
 
-Reste non fait, documenté honnêtement dans le docstring de la classe :
-pas de dimension spatiale (2D/3D/4D) — le moteur reste scalaire/ponctuel.
+**Mise à jour 2026-09-02 (suite 3) — dimension spatiale 2D construite**
+(sur demande explicite : "vas-y, construis la dimension spatiale 2D") :
+nouveau module `awci/spatial_field.py::compute_real_complexity_field()`
+— fait tourner `CoupledEarthSolver` une fois à la vraie résolution d'un
+modèle (`forecast.engine.MODEL_CONFIGS`), puis évalue `AWCICalculator`
+à **chaque** point réel de la grille (température, vent, humidité,
+pression réels du solveur — pas un pattern synthétique). Vérifié
+visuellement (image générée, non committée) : le champ de température
+et le champ de complexité physique varient réellement point par point
+(écart-type non nul), pas un score unique dupliqué partout.
+
+Limite honnête trouvée et documentée sans la cacher : le champ
+`forecast_field` ressort **plat à 0.0 partout** sous les poids par
+défaut — câbler un vrai signal d'ensemble/désaccord inter-modèles par
+point de grille demanderait de refaire tourner la fusion multi-modèles
+(2-3 passages solveur complets) à *chaque cellule*, ce qui ne passe pas
+à l'échelle avec l'infrastructure actuelle. Un résultat réel (pas
+fabriqué), mais pas encore un signal spatial de complexité de
+prévision utile — testé et verrouillé explicitement
+(`test_forecast_field_is_honestly_flat_documented_limitation`) pour que
+ça ne redevienne pas une régression silencieuse plus tard.
+
+Au passage : `gui/dashboard/awci_synthetic_field.py::awci_grid_full()`
+ajouté pour exposer aussi le split Physical/Forecast sur le champ 2D
+*synthétique* de démonstration existant (`awci_grid()` original
+inchangé, zéro régression pour ses appelants GUI).
+
+Reste non fait : dimension verticale (3D, `Complexity(x, y, z)`) et
+temporelle (4D) — prochaines étapes logiques de la feuille de route.
 
 **Mise à jour 2026-09-02 (suite) — vrai ensemble branché, consensus resté
 honnêtement non branché** (commit à suivre) : `FORECAST_MODULES` inclut
