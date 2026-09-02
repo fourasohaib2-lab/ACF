@@ -13,10 +13,14 @@
 # missing from this file despite being real pyproject.toml dependencies -
 # added. epygram (Météo-France FA/LFA/LFI reader) was undeclared here too
 # despite tests/test_epygram_reader.py importing it unconditionally -
-# added, same finding as pyproject.toml's `formats` extra.
+# added, same finding as pyproject.toml's `formats` extra. loguru was
+# undeclared here too despite acf/core/logger.py importing it
+# unconditionally - added, same finding as pyproject.toml's core
+# dependencies comment.
 numpy
 scipy
 PyYAML
+loguru
 PySide6
 matplotlib
 cartopy

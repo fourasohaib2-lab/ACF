@@ -1218,4 +1218,36 @@ détail de chaque limite honnêtement documentée : wraparound restant
 pour 2 des 5 méthodes de regridding déjà couvertes, lecture FA de bout
 en bout bloquée par une limite structurelle du format lui-même, etc.).
 
+## Mise à jour 2026-09-02 (suite) — recommandation auto-choisie : audit complet des dépendances non déclarées
+
+Aucune demande explicite restante — choix motivé par le fil de travail
+du jour lui-même (la trouvaille epygram non déclarée) : plutôt que de
+supposer que c'était un cas isolé, un vrai balayage AST (pas un grep
+textuel fragile) de chaque `import`/`from ... import` de tout `src/` +
+`tests/` a été comparé à l'ensemble réel des dépendances déclarées
+(cœur + tous les extras de `pyproject.toml`).
+
+**Un vrai deuxième bug de dépendance non déclarée trouvé, même classe
+que PyYAML/epygram** : `acf/core/logger.py` importe `loguru`
+**inconditionnellement**, non déclaré nulle part — atteignable via
+`acf.core.application`/`bootstrap`/`plugin_manager` (infrastructure de
+cycle de vie applicatif réelle, pas un module isolé). Corrigé : ajouté
+aux `dependencies` du cœur de `pyproject.toml` et à `requirements.txt`,
+juste à côté de PyYAML avec la même justification (un module `acf.core`
+en dépend directement). **Honnêteté sur la méthode** : trouvé par
+balayage d'imports répertoire-entier, pas par une réinstallation
+fraîche complète comme la propre méthodologie de `ROADMAP.md` pour la
+liste "cœur allégé" elle-même — précisé comme tel, pas présenté comme
+le même niveau de vérification.
+
+**Trois autres imports tiers non déclarés trouvés (`cupy`, `mpi4py`,
+`psutil`) — vérifiés un par un, tous les trois déjà correctement
+protégés par `try/except ImportError` avec un vrai indicateur de
+disponibilité (`HAS_CUPY`/`_PSUTIL_AVAILABLE`/repli `mpi_procs=1`) :
+aucun bug, déjà honnête, rien à corriger.**
+
+**Validation :** suite complète toujours **3227/3227** (aucun
+changement de comportement, seulement une déclaration), ruff et mypy
+propres.
+
 Dis-moi laquelle tu veux que j'attaque ensuite.

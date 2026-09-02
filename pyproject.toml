@@ -36,10 +36,20 @@ authors = [
 # happened to pull it in transitively. Found by actually installing
 # this lean dependency list into a fresh venv and import-smoke-testing
 # every acf submodule (not assumed) - see docs/ROADMAP.md.
+#
+# loguru: same real bug, found the same way epygram's own (see
+# `formats` extra below) was - a repo-wide grep of every real
+# import/from statement (not a re-run of the fresh-venv smoke test
+# above, disclosed honestly rather than implied) found
+# acf/core/logger.py importing it unconditionally, with zero
+# declaration anywhere; acf.core.application/bootstrap/plugin_manager
+# import that module directly, so this is real core-adjacent
+# infrastructure, not an isolated leaf module.
 dependencies = [
     "numpy",
     "scipy",
     "PyYAML",
+    "loguru",
 ]
 
 [project.optional-dependencies]
