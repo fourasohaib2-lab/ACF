@@ -18,19 +18,27 @@ here, only real endpoints exposing it:
   see that router's own docstring on why in-memory, not a database).
 - `datasets_router` -> the Data Contract (`Dataset.from_real_field()`,
   `Dataset.validate()` via `PhysicsGuard`).
+- `hpc_router` -> `acf.hpc_connector.connection_manager.
+  HPCConnectionManager` (status/connect/disconnect/WebSocket stream) -
+  migrated here from its original unprefixed `/api/hpc/*` +
+  `/ws/hpc/status` paths (see its own docstring).
+- `fno_router` -> the trained FNO surface-temperature surrogate -
+  migrated here from its original unprefixed `/api/fno/predict_demo`
+  path (see its own docstring).
 
-Deliberately NOT done here (see reports/ACF_MASTER_AUDIT_v2.md's own
-update for this phase): migrating the pre-existing `/api/hpc/*` and
-`/api/fno/predict_demo` endpoints (acf.web.hpc_dashboard_server) under
-this same `/api/v1` prefix - a real, separate, larger refactor
-(updating their own tests and the dashboard's own JS fetch() calls)
-kept out of this pass per the project's own "travailler par lots
-contrôlés" convention, not an oversight.
+`hpc_router`/`fno_router` complete the migration reports/
+ACF_MASTER_AUDIT_v2.md's earlier update for this section had
+deliberately deferred ("a real, separate, larger refactor... kept out
+of this pass") - now done: every real endpoint
+`acf.web.hpc_dashboard_server.create_app()` serves lives under
+`/api/v1/*`, except the dashboard's own HTML page at `/`.
 """
 
 from acf.web.routers.complexity_router import router as complexity_router
 from acf.web.routers.datasets_router import router as datasets_router
 from acf.web.routers.events_router import router as events_router
+from acf.web.routers.fno_router import router as fno_router
+from acf.web.routers.hpc_router import router as hpc_router
 from acf.web.routers.models_router import router as models_router
 
-__all__ = ["complexity_router", "datasets_router", "events_router", "models_router"]
+__all__ = ["complexity_router", "datasets_router", "events_router", "fno_router", "hpc_router", "models_router"]

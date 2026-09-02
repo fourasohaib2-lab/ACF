@@ -107,7 +107,7 @@ class ESOCController:
         trained surrogate loaded if the reference checkpoint file exists
         (see module_registry.py) - honestly reports
         NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED via that sub-dict
-        otherwise, same as the web dashboard's own /api/fno/predict_demo.
+        otherwise, same as the web dashboard's own /api/v1/fno/predict_demo.
         """
         neural = self.registry.get_module("neural_operator")
         atmos_model = self.registry.get_module("atmospheric_model")

@@ -981,7 +981,58 @@ propres sur les 1400 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- **Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`** — délibérément
-  hors de cette passe.
+- ~~**Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1`**~~ —
+  **construite, voir mise à jour ci-dessous.**
+
+## Mise à jour 2026-09-02 (suite) — Migration `/api/hpc/*` + `/api/fno/*` sous `/api/v1` terminée
+
+Dernière pièce du §21 — celle explicitement différée à la phase
+précédente ("réel, séparé, plus gros — mettrait à jour leurs propres
+tests et le JS du dashboard"). Faite maintenant, proprement, sans alias
+de compatibilité legacy (déplacement réel, pas une duplication) :
+
+- `GET/POST /api/hpc/status|connect|disconnect` → `/api/v1/hpc/...`
+- `WS /ws/hpc/status` → `/api/v1/hpc/ws`
+- `POST /api/fno/predict_demo` → `/api/v1/fno/predict_demo`
+
+`acf.web.routers.hpc_router`/`fno_router` : même logique réelle
+exactement, déplacée depuis `hpc_dashboard_server.py` (pas
+réimplémentée) — `_hpc_status()`, la vraie distinction
+`connected`/`real_ssh_transport`, le vrai appel
+`NeuralOperatorEngine.predict_surface_temperature()`, tout identique.
+`hpc_dashboard_server.create_app()` n'est plus qu'un assemblage : état
+d'app + montage des 6 routers + page HTML/JS du dashboard (URLs mises
+à jour vers `/api/v1/...`).
+
+**Vérifié, pas supposé** : deux nouveaux tests
+(`test_old_unprefixed_paths_are_genuinely_gone`,
+`test_old_websocket_path_is_genuinely_gone`) prouvent que les anciens
+chemins renvoient vraiment 404 / échouent la poignée de main WebSocket
+— pas seulement que les nouveaux fonctionnent. `DEFAULT_FNO_CHECKPOINT`
+reste importable depuis `acf.web.hpc_dashboard_server` (ré-exporté) —
+aucun autre appelant du dépôt ne dépendait des anciens chemins HTTP
+eux-mêmes (vérifié par recherche exhaustive).
+
+**Validation :** suite complète : **3208/3208** tests passent (3206
+avant), ruff et mypy propres sur les 1402 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+Toutes les priorités identifiées par l'audit initial et par les
+demandes de suivi sont closes. Manques réels restants, plus petits ou
+plus larges qu'un seul module (voir les sections détaillées plus haut
+pour chacun) :
+
+- Model Adapters WRF/ICON/OpenIFS : `read()` réel, mais `epygram`
+  (backend FA d'AROME/ALADIN/ARPEGE) reste non installé dans cet
+  environnement — aucune lecture FA de bout en bout n'est testable ici.
+- `regrid_nearest_neighbor()`/`regrid_bilinear()` ne gèrent pas le
+  wraparound ±180° (seul `regrid_conservative()` le fait).
+- Pas de Certification Engine branché à un pipeline de production
+  automatisé (le moteur existe, réel, testé — pas encore appelé en
+  continu sur un flux réel).
+- Pas de base de données de persistance pour `/api/v1/events` /
+  `/api/v1/datasets` (stockage en mémoire, réel mais non durable,
+  disclosure explicite dans chaque routeur).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

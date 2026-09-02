@@ -7,6 +7,10 @@ A single HPCConnectionManager is constructed once for the whole module
 (it does real local probing at construction time - slow to repeat per
 test) and injected into create_app(), rather than letting the app build
 its own lazily.
+
+Paths updated to /api/v1/hpc/*, /api/v1/fno/* (migrated from their
+original unprefixed /api/hpc/*, /api/fno/*, /ws/hpc/status - see
+acf.web.routers.hpc_router/fno_router's own docstrings for why).
 """
 
 import pytest
@@ -33,11 +37,11 @@ def test_index_page_serves_html(client):
     res = client.get("/")
     assert res.status_code == 200
     assert "ACF HPC Web Dashboard" in res.text
-    assert "/ws/hpc/status" in res.text
+    assert "/api/v1/hpc/ws" in res.text
 
 
 def test_status_endpoint_reflects_real_manager_state(client, hpc):
-    res = client.get("/api/hpc/status")
+    res = client.get("/api/v1/hpc/status")
     assert res.status_code == 200
     data = res.json()
 
@@ -59,14 +63,14 @@ def test_status_never_claims_real_transport_without_one(client, hpc):
     have the web page claim a live cluster connection that was never
     really established. real_ssh_transport must reflect the honest
     ssh_connector.is_real_connection flag instead."""
-    res = client.get("/api/hpc/status")
+    res = client.get("/api/v1/hpc/status")
     data = res.json()
     assert data["real_ssh_transport"] == bool(getattr(hpc.ssh_connector, "is_real_connection", False))
 
 
 def test_connect_endpoint_returns_real_outcome(client, hpc, monkeypatch):
     """
-    CORRECTED: this used to call the real /api/hpc/connect with
+    CORRECTED: this used to call the real /api/v1/hpc/connect with
     profile="fennec" - config/hpc.yaml's real "fennec" profile hostname
     (login2.fennec.meteo.dz), which on an ONM-networked machine (this
     one) resolves to a real, reachable 10.16.20.2 - see
@@ -89,7 +93,7 @@ def test_connect_endpoint_returns_real_outcome(client, hpc, monkeypatch):
 
     monkeypatch.setattr(hpc, "connect", _fake_connect)
 
-    res = client.post("/api/hpc/connect", params={"profile": "fennec"})
+    res = client.post("/api/v1/hpc/connect", params={"profile": "fennec"})
     assert res.status_code == 200
     data = res.json()
     assert data["connected"] is True
@@ -106,15 +110,15 @@ def test_disconnect_endpoint(client, hpc, monkeypatch):
         return True
 
     monkeypatch.setattr(hpc, "connect", _fake_connect)
-    client.post("/api/hpc/connect", params={"profile": "fennec"})
-    res = client.post("/api/hpc/disconnect")
+    client.post("/api/v1/hpc/connect", params={"profile": "fennec"})
+    res = client.post("/api/v1/hpc/disconnect")
     assert res.status_code == 200
     data = res.json()
     assert data["connected"] is False
 
 
 def test_websocket_streams_real_status(client):
-    with client.websocket_connect("/ws/hpc/status") as ws:
+    with client.websocket_connect("/api/v1/hpc/ws") as ws:
         payload = ws.receive_json()
         assert "connected" in payload
         assert "telemetry" in payload
@@ -140,7 +144,7 @@ def test_reference_fno_checkpoint_exists_and_is_used_by_default():
 
 
 def test_fno_predict_demo_uses_the_real_trained_surrogate(client):
-    res = client.post("/api/fno/predict_demo", params={"n_lat": 16, "n_lon": 32})
+    res = client.post("/api/v1/fno/predict_demo", params={"n_lat": 16, "n_lon": 32})
     assert res.status_code == 200
     data = res.json()
 
@@ -157,7 +161,7 @@ def test_fno_predict_demo_honest_without_a_checkpoint():
     back to some other value."""
     app = create_app(hpc=HPCConnectionManager(), fno_checkpoint_path=None)
     with TestClient(app) as c:
-        res = c.post("/api/fno/predict_demo")
+        res = c.post("/api/v1/fno/predict_demo")
     data = res.json()
     assert data["status"] == "NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED"
     assert "predicted_field_mean_k" not in data
@@ -167,3 +171,20 @@ def test_create_app_accepts_an_injected_neural_engine():
     engine = NeuralOperatorEngine()  # no checkpoint loaded
     app = create_app(hpc=HPCConnectionManager(), neural_engine=engine)
     assert app.state.neural_engine is engine
+
+
+# ------------------------------------------------------------------ migration proof
+
+
+def test_old_unprefixed_paths_are_genuinely_gone(client):
+    """Real proof of the /api/v1 migration, not just that the new paths work - the old ones must be really retired, not left as an untested duplicate."""
+    assert client.get("/api/hpc/status").status_code == 404
+    assert client.post("/api/hpc/connect").status_code == 404
+    assert client.post("/api/hpc/disconnect").status_code == 404
+    assert client.post("/api/fno/predict_demo").status_code == 404
+
+
+def test_old_websocket_path_is_genuinely_gone(client):
+    with pytest.raises(Exception):  # noqa: B017, PT011 - starlette raises on a websocket handshake to a route that doesn't exist
+        with client.websocket_connect("/ws/hpc/status"):
+            pass
