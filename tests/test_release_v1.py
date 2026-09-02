@@ -94,9 +94,17 @@ def test_configuration_dependencies_and_runtime():
     # unconditionally passed - false in this environment (no
     # GPU-enabled torch, no mpi4py, verified). Now genuinely checks
     # via importlib.
+    #
+    # UPDATED: this environment now has CPU-only torch installed (added
+    # this session for the real, trained FNO surrogate - see
+    # acf.ai.simulation.fno_model/fno_training) - "cuda" was
+    # "NOT_INSTALLED" (no torch at all) and is now genuinely
+    # "TORCH_INSTALLED_NO_CUDA" (torch present, no GPU/CUDA on this
+    # workstation) - a real environmental fact this real check correctly
+    # tracks, not a regression.
     deps = DependencyValidator.validate_all_dependencies()
     assert deps["overall_status"] == "CORE_DEPENDENCIES_PRESENT"
-    assert deps["cuda"] == "NOT_INSTALLED"
+    assert deps["cuda"] == "TORCH_INSTALLED_NO_CUDA"
     assert "PRESENT" in deps["numpy"]
 
     # CORRECTED: detect_environment() used to unconditionally claim

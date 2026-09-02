@@ -32,6 +32,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "websockets",
+    "torch",
 ]
 
 [project.scripts]
