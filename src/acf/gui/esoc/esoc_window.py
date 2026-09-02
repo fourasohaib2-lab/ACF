@@ -21,6 +21,7 @@ from acf.gui.esoc.settings_dialog import SettingsDialog
 
 if TYPE_CHECKING:
     from acf.dashboard.window import ClassicDashboardWindow
+    from acf.gui.dashboard.awci_window import AWCIDashboardWindow
 
 
 class ESOCWindow(QMainWindow):
@@ -61,6 +62,7 @@ class ESOCWindow(QMainWindow):
         self._current_theme = "dark"
         self._log_viewer: LogViewerDialog | None = None
         self._classic_dashboard_window: ClassicDashboardWindow | None = None
+        self._awci_dashboard_window: AWCIDashboardWindow | None = None
 
         # 4. Connect Signals & Select Default Profile
         self._setup_connections()
@@ -151,6 +153,8 @@ class ESOCWindow(QMainWindow):
             self._open_settings()
         elif cmd == "open_classic_dashboard":
             self._open_classic_dashboard()
+        elif cmd == "open_awci_dashboard":
+            self._open_awci_dashboard()
         elif cmd == "open_help":
             QMessageBox.information(
                 self,
@@ -342,6 +346,34 @@ class ESOCWindow(QMainWindow):
         self._classic_dashboard_window.show()
         self._classic_dashboard_window.raise_()
         self._classic_dashboard_window.activateWindow()
+
+    def _open_awci_dashboard(self) -> None:
+        """Open (or raise) the AWCI dashboard as its own top-level window.
+
+        The AWCIDashboard widget was already reachable twice, but badly: as the
+        28th and last tab of the bottom dock (where it is clipped - it declares a
+        1200x900 minimum and lives in a QScrollArea, see AWCIDashboardPanel), and
+        as a button inside the Classic View window, two clicks away. This action
+        opens acf.gui.dashboard.awci_window.AWCIDashboardWindow (1500x950)
+        directly, reusing the exact pattern of _open_classic_dashboard() above.
+
+        The import is deliberately local for the same reason as there:
+        acf.gui.dashboard pulls in acf.gui, whose __init__ eagerly imports THIS
+        module, so a module-level import would be circular.
+        """
+        from acf.gui.dashboard.awci_window import AWCIDashboardWindow
+
+        if self._awci_dashboard_window is None:
+            self._awci_dashboard_window = AWCIDashboardWindow(self)
+        self._awci_dashboard_window.show()
+        self._awci_dashboard_window.raise_()
+        self._awci_dashboard_window.activateWindow()
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            "AWCI dashboard opened. Meteorological INPUT fields are synthetic "
+            "(see acf.gui.dashboard.awci_synthetic_field); the AWCI scores themselves "
+            "are real AWCICalculator output over those inputs.",
+        )
 
     def _open_settings(self) -> None:
         """Open the settings dialog; apply the chosen theme immediately if changed."""

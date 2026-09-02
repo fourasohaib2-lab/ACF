@@ -44,6 +44,10 @@ class ESOCToolbar(QToolBar):
             ("📷 Screenshot", "take_screenshot"),
             ("⚙️ Settings", "open_settings"),
             ("🗂️ Classic View", "open_classic_dashboard"),
+            # The AWCI dashboard already existed in two places, both awkward to
+            # reach: the 28th (last) tab of the bottom dock, and a button inside
+            # the Classic View window. This opens AWCIDashboardWindow directly.
+            ("✈️ AWCI", "open_awci_dashboard"),
             ("❓ Help", "open_help"),
         ]
 
