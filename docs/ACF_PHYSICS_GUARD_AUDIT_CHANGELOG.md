@@ -1,8 +1,8 @@
 # ACF Physics Guard Audit — Changelog consolidé
 
 **Période :** session(s) de correction menées en parallèle sur deux terminaux Claude Code
-(branche `develop`), du commit `9223251` au commit `862f747`.
-**Portée :** 238 commits, 2818 tests (100% verts à la fin), ruff clean, mypy clean,
+(branche `develop`), du commit `9223251` au commit `7bb8f8a`.
+**Portée :** 241 commits, 2819 tests (100% verts à la fin), ruff clean, mypy clean,
 `python -m compileall` clean. Dépôt sauvegardé sur
 [github.com/fourasohaib2-lab/ACF](https://github.com/fourasohaib2-lab/ACF).
 
@@ -276,7 +276,7 @@ premier des 3 axes de la feuille de route HPC-005 choisi et implémenté :
 
 ## 7. Référence complète des commits
 
-Pour le détail commit-par-commit : `git log --oneline 9223251..862f747`.
+Pour le détail commit-par-commit : `git log --oneline 9223251..7bb8f8a`.
 
 ## 8. Les 3 axes de la roadmap HPC-005 sont maintenant complets
 
@@ -293,3 +293,48 @@ Pour le détail commit-par-commit : `git log --oneline 9223251..862f747`.
   jamais de repli silencieux). Vérifié dans un vrai navigateur : clic sur
   "Run Surrogate on Demo Field" → `PREDICTED_BY_TRAINED_SURROGATE` en
   vert, 264.77K → 265.58K, le vrai modèle tourne de bout en bout.
+
+## 9. Session parallèle et incident réseau (post roadmap)
+
+En reprenant le travail, une session parallèle (`meteo-platform-5e`, même
+utilisateur, terminal séparé) avait laissé des correctifs réels non commités
+dans l'arbre de travail partagé — repérés, vérifiés, et commités séparément
+et honnêtement attribués :
+
+- **`dd6621c`** — l'assistant de connexion HPC de l'ESOC ne faisait
+  jamais réellement atteindre les identifiants saisis : le profil
+  transmis était le libellé affiché (jamais une clé YAML valide),
+  `config/hpc.yaml` orthographiait le compte `username:` alors que le
+  code ne lisait que `user:`, le timeout était réinitialisé à 0.0015s à
+  chaque appel, et surtout — cause racine — `ssh_connector.py` ne
+  tentait jamais de vraie connexion pour un nom DNS, seulement pour une
+  IP numérique littérale. Ce dernier point corrige une caractérisation
+  de *cette session elle-même* (commit `40a9202` et suivants) qui avait
+  pris le comportement "toujours hors-ligne" pour un choix de conception
+  délibéré, sans creuser plus loin.
+- **Conséquence découverte en poursuivant le travail** : `10.16.20.2` —
+  `login2.fennec.meteo.dz` résout vers une vraie adresse interne. Cette
+  machine a un accès réseau réel au cluster Fennec de l'ONM. Une fois le
+  bug SSH corrigé, **la suite de tests s'est mise à tenter de vraies
+  connexions SSH vers l'infrastructure de production à chaque
+  exécution**, et un test a fini par bloquer toute la suite indéfiniment
+  sur une boîte de dialogue Qt modale bloquante. Signalé explicitement à
+  l'utilisateur avant toute correction (question posée, pas de décision
+  unilatérale).
+- **`430ca72`** — isolation des tests conformément à la décision de
+  l'utilisateur : hostname toujours non résolvable (`test-offline-host.invalid`,
+  TLD réservé par la RFC 2606) partout où les tests construisent un
+  connecteur SSH directement ; le test du dialogue HPC réécrit pour
+  refléter que `_test_connection()`/`_save_profile()` sont maintenant de
+  vraies fonctionnalités (sonde DNS+TCP réelle, écriture YAML réelle) et
+  non plus des stubs factices, testées en isolation (chemin de sauvegarde
+  redirigé vers `tmp_path`) ; timeout global pytest de 60s ajouté comme
+  filet de sécurité.
+- **`7bb8f8a`** — en poursuivant, un vrai bug trouvé dans mon **propre**
+  travail de cette session : l'entraînement FNO utilisait `T[-1]`
+  (niveau le plus haut/froid) en l'appelant "near-surface" partout,
+  alors que l'indice 0 est la surface réelle (confirmé contre
+  `CoupledEarthSolver`). Corrigé, checkpoint de référence réentraîné
+  (perte 1.01 → 0.022), et le vrai modèle entraîné branché dans le
+  panneau AI Forecast de l'ESOC (bouton "1000x" fabriqué retiré,
+  remplacé par le vrai statut du modèle entraîné).
