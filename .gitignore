@@ -74,6 +74,11 @@ logs/
 # named "tmp" or "temp" from being silently excluded the same way.
 /tmp/
 /temp/
+# Real runtime SQLite stores for the /api/v1/events, /api/v1/datasets
+# durable persistence (acf.web.storage.SqliteDocumentStore's default
+# paths) - genuine per-deployment data, not source. Anchored at the
+# repo root for the same /output/-bug reason as above.
+/data/
 
 # Jupyter
 .ipynb_checkpoints/

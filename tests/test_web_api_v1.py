@@ -7,6 +7,15 @@ par domaine complète du §21").
 Same fixture convention as tests/test_web_hpc_dashboard.py - a single
 HPCConnectionManager built once per module (these routers don't touch
 it at all, but create_app() always wires it in).
+
+event_db_path/dataset_db_path are explicitly ":memory:" here - the
+real default (a file under <repo_root>/data/web/, see
+acf.web.routers.events_router/datasets_router's own
+DEFAULT_*_DB_PATH) would otherwise durably persist real rows across
+separate test runs of this module, which is exactly the durability
+acf.web.storage.SqliteDocumentStore is real for - just not what these
+functional tests want (durability itself has its own dedicated tests,
+tests/test_web_storage.py).
 """
 
 from __future__ import annotations
@@ -20,7 +29,7 @@ from acf.web.hpc_dashboard_server import create_app
 
 @pytest.fixture(scope="module")
 def client():
-    app = create_app(hpc=HPCConnectionManager())
+    app = create_app(hpc=HPCConnectionManager(), event_db_path=":memory:", dataset_db_path=":memory:")
     with TestClient(app) as c:
         yield c
 
@@ -251,3 +260,48 @@ def test_datasets_and_complexity_field_share_the_real_oversized_grid_guard(clien
         "/api/v1/datasets/from_complexity_field", params={"model": "ARPEGE", "n_lat": 1000, "n_lon": 1000}
     )
     assert res.status_code == 400
+
+
+# ------------------------------------------------------------------ real durability across a server restart
+
+
+def test_events_and_datasets_survive_a_real_app_restart(tmp_path):
+    """
+    End-to-end proof, at the real HTTP level, of what the SQLite move
+    actually buys over the old in-memory dict: an event and a dataset
+    created via one `create_app()` instance are still there - with
+    the event's real advanced lifecycle status intact - when a SECOND,
+    independently-constructed app instance opens the same real
+    on-disk store, simulating a genuine process restart.
+    """
+    event_db = tmp_path / "events.db"
+    dataset_db = tmp_path / "datasets.db"
+
+    app1 = create_app(hpc=HPCConnectionManager(), event_db_path=event_db, dataset_db_path=dataset_db)
+    with TestClient(app1) as c1:
+        detect_res = c1.post(
+            "/api/v1/events/detect",
+            params={"model": "ARPEGE", "event_type": "strong_wind", "steps": 2, "n_lat": 2, "n_lon": 2, "threshold": 0.0},
+        )
+        event_id = detect_res.json()[0]["event_id"]
+        c1.post(f"/api/v1/events/{event_id}/transition", json={"new_status": "ANALYZED"})
+
+        ds_res = c1.post(
+            "/api/v1/datasets/from_complexity_field",
+            params={"model": "ARPEGE", "field_key": "temperature_field", "steps": 2, "n_lat": 2, "n_lon": 2},
+        )
+        dataset_id = ds_res.json()["id"]
+
+    # A genuinely separate app instance - same real files, nothing shared in memory.
+    app2 = create_app(hpc=HPCConnectionManager(), event_db_path=event_db, dataset_db_path=dataset_db)
+    with TestClient(app2) as c2:
+        event_after = c2.get(f"/api/v1/events/{event_id}")
+        assert event_after.status_code == 200
+        assert event_after.json()["status"] == "ANALYZED"  # the real advanced lifecycle survived, not reset to DETECTED
+
+        dataset_after = c2.get(f"/api/v1/datasets/{dataset_id}")
+        assert dataset_after.status_code == 200
+        assert dataset_after.json()["model"] == "ARPEGE"
+
+        assert len(c2.get("/api/v1/events").json()) >= 1
+        assert len(c2.get("/api/v1/datasets").json()) >= 1

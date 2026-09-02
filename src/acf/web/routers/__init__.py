@@ -14,10 +14,10 @@ here, only real endpoints exposing it:
 - `complexity_router` -> the Complexity Engine (`AWCICalculator`,
   `acf.awci.spatial_field.compute_real_complexity_field()`).
 - `events_router` -> the Event Engine (real detectors + `Event`'s own
-  enforced lifecycle, held in a real, request-scoped in-memory store -
-  see that router's own docstring on why in-memory, not a database).
+  enforced lifecycle), durably stored via `acf.web.storage.
+  SqliteDocumentStore` - survives a server restart.
 - `datasets_router` -> the Data Contract (`Dataset.from_real_field()`,
-  `Dataset.validate()` via `PhysicsGuard`).
+  `Dataset.validate()` via `PhysicsGuard`), same real durable storage.
 - `hpc_router` -> `acf.hpc_connector.connection_manager.
   HPCConnectionManager` (status/connect/disconnect/WebSocket stream) -
   migrated here from its original unprefixed `/api/hpc/*` +

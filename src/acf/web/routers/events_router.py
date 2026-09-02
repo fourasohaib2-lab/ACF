@@ -2,19 +2,18 @@
 `/api/v1/events` - real HTTP surface over the Event Engine
 (`acf.events` - real detectors + `Event`'s own enforced lifecycle).
 
-Storage note: detected events are kept in a real, plain in-memory
-dict on `request.app.state.event_store` - not a database. A restart
-loses them. This is a deliberate, disclosed choice for this phase, not
-an oversight: no Event persistence layer exists anywhere in ACF yet
-(building one is separate, larger work), and an in-memory store is
-still enough to genuinely exercise the real lifecycle
-(`Event.transition_to()`) over HTTP across multiple requests, which is
-the real thing this router needs to prove works, not where events are
-stored long-term.
+Storage: a real, durable `acf.web.storage.SqliteDocumentStore` on
+`request.app.state.event_store` - closes reports/ACF_MASTER_AUDIT_v2.md's
+own "/api/v1/events remain in-memory (real, disclosed, not durable)"
+follow-up. `Event.to_dict()`/`from_dict()` (on the contract itself,
+reused here rather than duplicated) give an exact round trip - an
+event's real lifecycle `status` (and everything else about it) is
+still there, correctly, after a server restart.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Request
@@ -25,8 +24,14 @@ from acf.events.detectors.wind_detector import DEFAULT_THRESHOLD_M_S as DEFAULT_
 from acf.events.detectors.wind_detector import detect_strong_wind_events
 from acf.events.event import Event, IllegalEventTransitionError
 from acf.web.routers._solver_guard import run_complexity_field
+from acf.web.storage import SqliteDocumentStore
 
 router = APIRouter(prefix="/events", tags=["events"])
+
+#: Real default location for the durable store - see
+#: acf.web.routers.datasets_router.DEFAULT_DATASET_DB_PATH's own note
+#: on why this is anchored under <repo_root>/data/.
+DEFAULT_EVENT_DB_PATH = Path(__file__).resolve().parents[4] / "data" / "web" / "events.db"
 
 #: The only two event types with a real, defensible detector today -
 #: see acf.events package docstring for exactly why the other 6 named
@@ -37,10 +42,11 @@ router = APIRouter(prefix="/events", tags=["events"])
 _DETECTORS = ("strong_wind", "fog_favorable_conditions")
 
 
-def _get_store(request: Request) -> dict[str, Event]:
+def _get_store(request: Request) -> SqliteDocumentStore:
     store = getattr(request.app.state, "event_store", None)
     if store is None:
-        store = {}
+        path = getattr(request.app.state, "event_db_path", None) or DEFAULT_EVENT_DB_PATH
+        store = SqliteDocumentStore(path)
         request.app.state.event_store = store
     return store
 
@@ -60,8 +66,9 @@ async def detect(
     Genuinely run `CoupledEarthSolver` (via `compute_real_complexity_field()`,
     same request-size guard as `/api/v1/complexity/field`), then the
     real detector for `event_type` on that real field. Every returned
-    `Event` is also stored (`event_id` keyed) so its real lifecycle can
-    be advanced via `POST /{event_id}/transition` afterwards.
+    `Event` is also durably stored (`event_id` keyed) so its real
+    lifecycle can be advanced via `POST /{event_id}/transition`
+    afterwards, including after a server restart.
     """
     if event_type not in _DETECTORS:
         raise HTTPException(
@@ -94,22 +101,22 @@ async def detect(
 
     store = _get_store(request)
     for e in events:
-        store[e.event_id] = e
+        store.set(e.event_id, e.to_dict())
     return [jsonable_encoder(e) for e in events]
 
 
 @router.get("")
 async def list_events(request: Request) -> list[dict[str, Any]]:
-    """Every event detected via this server process since it started (see this module's own storage note)."""
-    return [jsonable_encoder(e) for e in _get_store(request).values()]
+    """Every event ever detected via this server's durable store (see this module's own storage note) - survives a restart."""
+    return [jsonable_encoder(Event.from_dict(d)) for d in _get_store(request).list()]
 
 
 @router.get("/{event_id}")
 async def get_event(event_id: str, request: Request) -> dict[str, Any]:
-    store = _get_store(request)
-    if event_id not in store:
+    stored = _get_store(request).get(event_id)
+    if stored is None:
         raise HTTPException(404, f"No event {event_id!r} in this server's event store")
-    return jsonable_encoder(store[event_id])
+    return jsonable_encoder(Event.from_dict(stored))
 
 
 @router.post("/{event_id}/transition")
@@ -118,14 +125,17 @@ async def transition_event(event_id: str, request: Request, new_status: str = Bo
     Genuinely call `Event.transition_to(new_status)` - a real, enforced
     state machine (`acf.events.event._LEGAL_TRANSITIONS`), not a status
     field a caller can set to anything. An illegal transition is
-    reported as HTTP 409, not silently accepted or a generic 500.
+    reported as HTTP 409, not silently accepted or a generic 500. The
+    real resulting status is durably persisted back to the store.
     """
     store = _get_store(request)
-    if event_id not in store:
+    stored = store.get(event_id)
+    if stored is None:
         raise HTTPException(404, f"No event {event_id!r} in this server's event store")
-    event = store[event_id]
+    event = Event.from_dict(stored)
     try:
         event.transition_to(new_status)
     except IllegalEventTransitionError as exc:
         raise HTTPException(409, str(exc)) from exc
+    store.set(event.event_id, event.to_dict())
     return jsonable_encoder(event)

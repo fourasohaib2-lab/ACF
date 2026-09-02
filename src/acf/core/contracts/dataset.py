@@ -16,6 +16,29 @@ from acf.physics_guard.guard import PhysicsGuard, PhysicsGuardReport
 from acf.physics_guard.range_check import OPERATIONAL_RANGES
 
 
+def numpy_to_native(obj: Any) -> Any:
+    """
+    Recursively replace any real numpy array/scalar with a plain
+    Python list/float - a real, shared need (not assumed, found while
+    building the /api/v1/datasets router): `dataclasses.asdict()` does
+    NOT convert values nested inside a plain `dict` field (e.g.
+    `Dataset.coordinates`, which `Dataset.from_real_field()` genuinely
+    populates with real numpy `lats`/`lons` arrays) since those aren't
+    dataclass fields themselves - both `fastapi.encoders.
+    jsonable_encoder` and `json.dumps` raise on a raw `numpy.ndarray`
+    left in place (verified, not assumed).
+    """
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.generic):
+        return obj.item()
+    if isinstance(obj, dict):
+        return {k: numpy_to_native(v) for k, v in obj.items()}
+    if isinstance(obj, list | tuple):
+        return [numpy_to_native(v) for v in obj]
+    return obj
+
+
 @dataclass
 class Dataset:
     """
@@ -256,4 +279,103 @@ class Dataset:
                 algorithm_version=result.get("status", "unknown"),
                 notes=result.get("honest_limitation", ""),
             ),
+        )
+
+    # ------------------------------------------------------------ (de)serialization
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Real, complete JSON-able representation - round-trips through
+        `from_dict()` with no field lost, including the full real
+        `values` array (see `acf.web.storage.SqliteDocumentStore`, the
+        real durable store this was built for). Unlike
+        `acf.web.routers.datasets_router`'s own HTTP-facing
+        `_serialize()` (which summarizes `values` for a lighter API
+        response), this keeps everything - a store that can't
+        reconstruct a dataset exactly on the next read isn't real
+        persistence.
+        """
+        return {
+            "id": self.id,
+            "source": self.source,
+            "model": self.model,
+            "run": self.run,
+            "forecast_reference_time": self.forecast_reference_time.isoformat(),
+            "valid_time": self.valid_time.isoformat(),
+            "lead_time_seconds": self.lead_time.total_seconds(),
+            "variable": self.variable,
+            "unit": self.unit,
+            "dimensions": list(self.dimensions),
+            "coordinates": numpy_to_native(self.coordinates),
+            "values": numpy_to_native(self.values) if self.values is not None else None,
+            "horizontal_grid": self.horizontal_grid,
+            "vertical_coordinate": self.vertical_coordinate,
+            "ensemble_member": self.ensemble_member,
+            "quality": {
+                "status": self.quality.status,
+                "flags": list(self.quality.flags),
+                "completeness_fraction": self.quality.completeness_fraction,
+            },
+            "uncertainty": {
+                "kind": self.uncertainty.kind,
+                "value": self.uncertainty.value,
+                "unit": self.uncertainty.unit,
+            },
+            "provenance": None
+            if self.provenance is None
+            else {
+                "generator": self.provenance.generator,
+                "algorithm_version": self.provenance.algorithm_version,
+                "science_version": self.provenance.science_version,
+                "config_version": self.provenance.config_version,
+                "created_at": self.provenance.created_at.isoformat(),
+                "notes": self.provenance.notes,
+            },
+            "version": self.version,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Dataset":
+        """Real inverse of `to_dict()`. `values` (if present) comes back as a real `numpy.ndarray`, not a plain nested list."""
+        provenance = None
+        if d.get("provenance") is not None:
+            p = d["provenance"]
+            provenance = Provenance(
+                generator=p["generator"],
+                algorithm_version=p["algorithm_version"],
+                science_version=p["science_version"],
+                config_version=p["config_version"],
+                created_at=datetime.fromisoformat(p["created_at"]),
+                notes=p["notes"],
+            )
+        q = d.get("quality") or {}
+        quality = QualityInfo(
+            status=q.get("status", "NOT_ASSESSED"),
+            flags=list(q.get("flags", [])),
+            completeness_fraction=q.get("completeness_fraction"),
+        )
+        u = d.get("uncertainty") or {}
+        uncertainty = UncertaintyInfo(kind=u.get("kind", "not_assessed"), value=u.get("value"), unit=u.get("unit"))
+        values = d.get("values")
+
+        return cls(
+            id=d["id"],
+            source=d["source"],
+            model=d["model"],
+            run=d["run"],
+            forecast_reference_time=datetime.fromisoformat(d["forecast_reference_time"]),
+            valid_time=datetime.fromisoformat(d["valid_time"]),
+            lead_time=timedelta(seconds=d["lead_time_seconds"]),
+            variable=d["variable"],
+            unit=d["unit"],
+            dimensions=tuple(d["dimensions"]),
+            coordinates=dict(d.get("coordinates", {})),
+            values=np.asarray(values) if values is not None else None,
+            horizontal_grid=d.get("horizontal_grid"),
+            vertical_coordinate=d.get("vertical_coordinate"),
+            ensemble_member=d.get("ensemble_member"),
+            quality=quality,
+            uncertainty=uncertainty,
+            provenance=provenance,
+            version=d.get("version", "1.0"),
         )

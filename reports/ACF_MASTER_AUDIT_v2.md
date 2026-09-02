@@ -1162,8 +1162,60 @@ ruff et mypy propres sur les 1402 fichiers.
 
 ### Ce qui reste réellement, maintenant
 
-- Pas de base de données de persistance pour `/api/v1/events` /
-  `/api/v1/datasets` (en mémoire, réel mais non durable — prochaine
-  pièce demandée par l'utilisateur).
+- ~~Pas de base de données de persistance pour `/api/v1/events` /
+  `/api/v1/datasets`~~ — **construite, voir mise à jour ci-dessous.**
+
+## Mise à jour 2026-09-02 (suite) — persistance durable réelle pour /api/v1/events et /api/v1/datasets
+
+Demande explicite de l'utilisateur. Choix technique : `sqlite3` de la
+bibliothèque standard Python — **aucune nouvelle dépendance**, aucun
+service de base de données séparé que ce dépôt devrait déployer
+(aucun Postgres/Redis/etc. nulle part dans ce projet), même logique de
+dépendance minimale que `ModelSkillDatabase`'s propre persistance JSON,
+mais avec un vrai fichier SQLite (mode WAL) pour supporter des accès
+concurrents réels d'un serveur ASGI sans se corrompre.
+
+- **`src/acf/web/storage.py`** — `SqliteDocumentStore`, un magasin
+  clé/document JSON générique réutilisé par les deux routeurs (pas
+  dupliqué). `check_same_thread=False` (un vrai serveur uvicorn peut
+  réellement appeler depuis un autre thread), `PRAGMA journal_mode=WAL`
+  pour un fichier réel.
+- **`Event.to_dict()`/`from_dict()`** et **`Dataset.to_dict()`/
+  `from_dict()`** — ajoutés directement sur les contrats eux-mêmes
+  (pas dans la couche web), aller-retour exact vérifié (`e == e2`
+  après sérialisation/désérialisation, `values` numpy reconstruit
+  identique). `numpy_to_native()` (déjà écrit pour la sérialisation
+  HTTP de `/api/v1/datasets`) promu dans `dataset.py` et réutilisé, pas
+  dupliqué une seconde fois.
+- `events_router`/`datasets_router` : le dict en mémoire est remplacé
+  par un vrai `SqliteDocumentStore`, chemin par défaut réel sous
+  `<repo>/data/web/` (nouvellement ignoré par git, même convention
+  ancrée que `/output/`/`/tmp/` déjà documentée dans `.gitignore`) ;
+  `create_app(event_db_path=..., dataset_db_path=...)` permet
+  l'injection pour les tests (`":memory:"` ou `tmp_path`).
+
+**Preuve de bout en bout au niveau HTTP réel, pas seulement la classe
+de stockage isolée** : un test construit une vraie app, détecte un
+événement, avance réellement son cycle de vie jusqu'à `ANALYZED`, crée
+un dataset, **ferme cette app**, en construit une **seconde,
+totalement indépendante** pointant sur les mêmes vrais fichiers
+(simulant un redémarrage de processus réel), et vérifie que
+l'événement revient avec le statut `ANALYZED` intact (pas réinitialisé
+à `DETECTED`) et que le dataset est toujours là.
+
+**Validation :** 10 nouveaux tests (dont le test de redémarrage
+ci-dessus, et une vérification qu'un magasin `":memory:"` NE survit
+PAS à une réouverture — la distinction elle-même est testée, pas
+seulement le cas positif). Suite complète : **3227/3227** tests
+passent (3217 avant), ruff et mypy propres sur les 1403 fichiers.
+
+### Ce qui reste réellement, maintenant
+
+Toutes les demandes explicites de cette session sont closes. Le projet
+n'a plus de manque identifié au niveau "moteur absent" — ce qui reste
+est du raffinement continu (voir les sections précédentes pour le
+détail de chaque limite honnêtement documentée : wraparound restant
+pour 2 des 5 méthodes de regridding déjà couvertes, lecture FA de bout
+en bout bloquée par une limite structurelle du format lui-même, etc.).
 
 Dis-moi laquelle tu veux que j'attaque ensuite.

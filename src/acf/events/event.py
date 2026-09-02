@@ -5,6 +5,7 @@ Event: the Prompt Maître ACF v2.0's section 12-13 weather event contract + real
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from acf.core.contracts.provenance import Provenance
 from acf.core.contracts.uncertainty import UncertaintyInfo
@@ -127,3 +128,77 @@ class Event:
     def is_terminal(self) -> bool:
         """True if this event's status has no further legal transitions (PUBLISHED or REJECTED)."""
         return self.status in TERMINAL_STATUSES
+
+    # ------------------------------------------------------------ (de)serialization
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Real, complete JSON-able representation - round-trips through
+        `from_dict()` with no field lost (see
+        `acf.web.storage.SqliteDocumentStore`, the real durable store
+        this was built for - a status/lifecycle object that can't be
+        reconstructed exactly on the next read isn't real persistence).
+        """
+        return {
+            "event_id": self.event_id,
+            "type": self.type,
+            "geometry": dict(self.geometry),
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time is not None else None,
+            "intensity": self.intensity,
+            "probability": self.probability,
+            "confidence": self.confidence,
+            "supporting_parameters": dict(self.supporting_parameters),
+            "supporting_models": list(self.supporting_models),
+            "observations": list(self.observations),
+            "uncertainty": {
+                "kind": self.uncertainty.kind,
+                "value": self.uncertainty.value,
+                "unit": self.uncertainty.unit,
+            },
+            "provenance": None
+            if self.provenance is None
+            else {
+                "generator": self.provenance.generator,
+                "algorithm_version": self.provenance.algorithm_version,
+                "science_version": self.provenance.science_version,
+                "config_version": self.provenance.config_version,
+                "created_at": self.provenance.created_at.isoformat(),
+                "notes": self.provenance.notes,
+            },
+            "status": self.status,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Event":
+        """Real inverse of `to_dict()` - reconstructs an `Event` with its actual lifecycle `status` intact (not reset to `DETECTED`)."""
+        provenance = None
+        if d.get("provenance") is not None:
+            p = d["provenance"]
+            provenance = Provenance(
+                generator=p["generator"],
+                algorithm_version=p["algorithm_version"],
+                science_version=p["science_version"],
+                config_version=p["config_version"],
+                created_at=datetime.fromisoformat(p["created_at"]),
+                notes=p["notes"],
+            )
+        u = d.get("uncertainty") or {}
+        uncertainty = UncertaintyInfo(kind=u.get("kind", "not_assessed"), value=u.get("value"), unit=u.get("unit"))
+
+        return cls(
+            event_id=d["event_id"],
+            type=d["type"],
+            geometry=dict(d["geometry"]),
+            start_time=datetime.fromisoformat(d["start_time"]),
+            end_time=datetime.fromisoformat(d["end_time"]) if d.get("end_time") is not None else None,
+            intensity=d["intensity"],
+            probability=d["probability"],
+            confidence=d["confidence"],
+            supporting_parameters=dict(d["supporting_parameters"]),
+            supporting_models=tuple(d["supporting_models"]),
+            observations=tuple(d["observations"]),
+            uncertainty=uncertainty,
+            provenance=provenance,
+            status=d["status"],
+        )

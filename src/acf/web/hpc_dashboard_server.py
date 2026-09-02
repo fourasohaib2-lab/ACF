@@ -45,6 +45,8 @@ def create_app(
     hpc: HPCConnectionManager | None = None,
     neural_engine: NeuralOperatorEngine | None = None,
     fno_checkpoint_path: str | Path | None = DEFAULT_FNO_CHECKPOINT,
+    event_db_path: str | Path | None = None,
+    dataset_db_path: str | Path | None = None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -62,11 +64,20 @@ def create_app(
     fno_checkpoint_path : path to the trained FNO checkpoint, or None to
         disable the FNO endpoint's model loading (it will then always
         report NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED, honestly).
+    event_db_path, dataset_db_path : real SQLite file path for
+        `/api/v1/events`/`/api/v1/datasets`'s durable storage (see
+        `acf.web.storage.SqliteDocumentStore`) - defaults to a real
+        file under `<repo_root>/data/web/` for actual application use;
+        tests should pass `":memory:"` (or a `tmp_path`) explicitly so
+        repeated test runs don't accumulate real data or race each
+        other over the same default file.
     """
     app = FastAPI(title="ACF HPC Web Dashboard")
     app.state.hpc = hpc  # may be None - constructed lazily on first use, see hpc_router._get_hpc()
     app.state.neural_engine = neural_engine
     app.state.fno_checkpoint_path = fno_checkpoint_path
+    app.state.event_db_path = event_db_path  # None -> each router's own real default path
+    app.state.dataset_db_path = dataset_db_path
 
     # Every real endpoint this app serves, domain-organized under
     # /api/v1/* (Prompt Maître ACF v2.0 §21) - see acf.web.routers's
