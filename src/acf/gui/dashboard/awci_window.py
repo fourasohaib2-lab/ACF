@@ -13,6 +13,7 @@ from typing import Any
 
 from PySide6.QtWidgets import QMainWindow
 
+from acf.gui_screen_utils import fit_window_to_screen
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
 
@@ -22,7 +23,10 @@ class AWCIDashboardWindow(QMainWindow):
     def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("AWCI – Aviation Weather Complexity Index")
-        self.resize(1500, 950)
+        # NOTE (correction): was a hardcoded self.resize(1500, 950), which
+        # could exceed a smaller screen's available geometry. Clamp to what
+        # the screen actually offers instead (see acf.gui_screen_utils).
+        fit_window_to_screen(self, 1500, 950)
 
         self.awci_dashboard = AWCIDashboard()
         self.setCentralWidget(self.awci_dashboard)

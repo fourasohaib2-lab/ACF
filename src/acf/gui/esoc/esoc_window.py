@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
+from acf.gui_screen_utils import fit_window_to_screen
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_controller import ESOCController
 from acf.gui.esoc.esoc_layout import ESOCLayout
@@ -34,7 +35,12 @@ class ESOCWindow(QMainWindow):
         super().__init__(parent)
 
         self.setWindowTitle("Unified Earth System Operations Center (ESOC) v1.0 — Atmospheric Complexity Framework")
-        self.resize(1600, 1000)
+        # NOTE (correction): was a hardcoded self.resize(1600, 1000) - on any
+        # screen smaller than that (laptop panel, remote desktop session) the
+        # window opened larger than the display, so its edges/toolbar/status
+        # bar ended up off-screen. Clamp to the actual screen's available
+        # geometry instead, still using the full 1600x1000 on a big-enough one.
+        fit_window_to_screen(self, 1600, 1000)
 
         # 1. Subsystem Registry & Dispatchers
         self.registry = ModuleRegistry()

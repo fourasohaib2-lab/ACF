@@ -50,6 +50,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QToolBar
 
+from acf.gui_screen_utils import fit_window_to_screen
 from acf.dashboard.manager import DashboardManager
 from acf.data.manager import DataManager
 from acf.workspace.manager import WorkspaceManager
@@ -64,7 +65,10 @@ class ClassicDashboardWindow(QMainWindow):
     def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Atmospheric Complexity Framework")
-        self.resize(1400, 900)
+        # NOTE (correction): was a hardcoded self.resize(1400, 900), which
+        # could exceed a smaller screen's available geometry. Clamp to what
+        # the screen actually offers instead (see acf.gui_screen_utils).
+        fit_window_to_screen(self, 1400, 900)
 
         self.manager = DashboardManager(self)
         self.manager.initialize()
