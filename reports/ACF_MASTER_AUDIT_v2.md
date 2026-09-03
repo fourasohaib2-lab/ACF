@@ -4406,3 +4406,60 @@ chantier ; le sélecteur de picker calendrier, le rendu WebGL/GPU, le
 balayage accessibilité complet du dépôt, l'indice CAT complet
 Ellrod-Knapp et le calque CAPE par point de grille restent non
 construits, documentés dans `future-improvements.md`.
+
+## Mise à jour 2026-09-03 (suite) — les 6 cases LAYERS enfin réelles (démo + Real Physics)
+
+Demande explicite de l'utilisateur : "je veux rendre tout les boutons
+de awci en marche". Le seul vrai "bouton mort" restant de ce dashboard
+était le panneau LAYERS de la carte : les 6 cases Wind/Turbulence/
+Icing/Convection/CAPE/Clouds étaient en dur `setEnabled(False)` depuis
+la toute première construction du dashboard — aucune source de donnée
+réelle n'y avait jamais été branchée (§28-29 de l'audit exhaustif des
+90 sections, déjà partiellement fermé pour la carte elle-même, mais
+pas pour ce panneau).
+
+**Construit, en deux temps** :
+1. **Mode démo** — nouvelle `awci_layer_grids()`
+   (`awci_synthetic_field.py`) : réutilise le même `_synthetic_inputs()`
+   déjà source unique de vérité du pattern démo, plus deux vraies
+   formules ACF déjà existantes (`acf.awci.updraft`,
+   `acf.awci.hydrometeor_phase`) — aucune nouvelle physique inventée
+   pour Icing/Convection/CAPE. Deux proxys honnêtement disclosed
+   (même discipline que le proxy de cisaillement déjà utilisé sur la
+   coupe verticale) : Turbulence = gradient horizontal réel de la
+   grille de vitesse du vent (`numpy.gradient()`) ; Clouds = taux de
+   précipitation réel (aucune vraie grandeur de couverture nuageuse
+   n'existe nulle part dans ce pipeline). Wind = vitesse réelle
+   uniquement, pas de direction (le pattern démo n'a pas de composantes
+   u/v).
+2. **Mode Real Physics** — nouvelle `real_layer_grids_at_level()`
+   (`acf.awci.path_sampling`) : Wind/Turbulence/Icing réels à partir
+   des vrais champs 3D de `compute_real_complexity_volume()`. Vérité
+   honnête confirmée en lisant directement le dict réellement retourné
+   par cette fonction : elle porte température/vitesse du
+   vent/u/v/humidité spécifique/pression mais **aucun champ CAPE ni
+   précipitation** — Convection/CAPE/Clouds n'ont donc aucune vraie
+   contrepartie possible dans ce mode et restent des cases activées
+   mais réellement sans effet (jamais un contour fabriqué), même
+   limite déjà disclosed pour les scores de module AWCI eux-mêmes en
+   Real Physics.
+
+**Validation réelle** : 21 nouveaux tests (12 pour `awci_layer_grids()`
+— formes, valeurs recoupées avec des appels directs aux formules
+réelles, relation monotone CAPE↔updraft, déterminisme ; 6 pour
+`real_layer_grids_at_level()` — mêmes recoupements sur le vrai volume,
+garde explicite qu'aucune clé cape/convection/clouds n'est jamais
+fabriquée ; 3 d'intégration dashboard — bascule réelle en Real Physics,
+no-op honnête pour les 3 cases sans contrepartie, restauration complète
+au retour en mode démo) + 2 tests existants réécrits (ils affirmaient
+auparavant que ces cases étaient désactivées). Suite complète
+**3883 → 3895 → 3904** (deux commits), `ruff`/`mypy` propres sur tous
+les fichiers touchés. Capture d'écran envoyée deux fois (CAPE en mode
+démo, Turbulence en mode Real Physics).
+
+**Ce qui reste réellement** : l'indice CAT complet Ellrod-Knapp reste
+un vrai chantier distinct (le proxy de gradient horizontal n'est
+toujours qu'un proxy, disclosed) ; Convection/CAPE/Clouds resteront
+honnêtement sans effet en Real Physics tant que le solveur lui-même ne
+produira pas de champ CAPE/précipitation réel — un chantier de physique
+séparé, pas un manque de câblage UI.
