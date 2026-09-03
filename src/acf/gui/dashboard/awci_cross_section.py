@@ -128,11 +128,33 @@ class AWCICrossSection(QWidget):
         self.axis = self.figure.add_subplot(1, 1, 1)
         self._colorbar: Any = None
 
-    def set_external_cross_section(self, distances_km: Any, levels_hpa: Any, grid: Any, label: str) -> None:
-        """Show a real cross-section (e.g. path_sampling.sample_volume_cross_section()'s output) instead of the synthetic pattern."""
+    def set_external_cross_section(
+        self,
+        distances_km: Any,
+        levels_hpa: Any,
+        grid: Any,
+        label: str,
+        hazard_overlay: tuple[Any, Any, Any, Any] | None = None,
+    ) -> None:
+        """Show a real cross-section (e.g. path_sampling.sample_volume_cross_section()'s output) instead of the synthetic pattern.
+
+        `hazard_overlay`, optional (added 2026-09-03, real performance
+        pass - profiled AWCIDashboard.refresh() found every real caller
+        of this method immediately followed it with a real
+        set_hazard_overlay() call using the SAME real grid context,
+        each one a full real _draw() - clear()/contourf()/colorbar
+        recreation - on its own, i.e. 2 real full redraws for what is
+        really one real update. Pass the same real
+        (distances_km, levels_hpa, phase_severity_grid, wind_shear_grid)
+        tuple set_hazard_overlay() itself takes, to draw both in a
+        SINGLE real _draw() call. Omitted (None, the default): bit-
+        identical to before - the existing overlay (if any) is kept,
+        same as this method already did."""
         self._external_cross_section = (distances_km, levels_hpa, grid)
         self._title = f"{self._base_title} — {label}"
         self._last_grid_context = (distances_km, levels_hpa)
+        if hazard_overlay is not None:
+            self._hazard_overlay = hazard_overlay
         self._draw(distances_km, levels_hpa, grid)
 
     def clear_external_cross_section(self) -> None:
@@ -142,10 +164,23 @@ class AWCICrossSection(QWidget):
         if self._last_point_a is not None and self._last_point_b is not None:
             self.update_data(self._last_point_a, self._last_point_b, self._cruise_hpa)
 
-    def update_data(self, point_a: tuple[float, float], point_b: tuple[float, float], cruise_hpa: float = 300.0) -> None:
+    def update_data(
+        self,
+        point_a: tuple[float, float],
+        point_b: tuple[float, float],
+        cruise_hpa: float = 300.0,
+        hazard_overlay: tuple[Any, Any, Any, Any] | None = None,
+    ) -> None:
+        """`hazard_overlay`, optional - see set_external_cross_section()'s
+        own docstring for the real "why" (avoids a real second, fully
+        redundant _draw() call for the common case of a caller setting
+        both the base grid and the hazard overlay together). Omitted
+        (None, the default): bit-identical to before."""
         self._last_point_a = point_a
         self._last_point_b = point_b
         self._cruise_hpa = cruise_hpa
+        if hazard_overlay is not None:
+            self._hazard_overlay = hazard_overlay
         if self._external_cross_section is not None:
             distances, levels_hpa, grid = self._external_cross_section
         else:

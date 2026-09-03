@@ -128,3 +128,64 @@ def test_hazard_overlay_survives_a_redraw_via_update_data(qtbot):
     panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)  # must not raise, must not clear the overlay
 
     assert panel._hazard_overlay is not None
+
+
+# --------------------------------------------- real single-draw performance (2026-09-03)
+
+
+def test_update_data_with_hazard_overlay_param_draws_exactly_once(qtbot, monkeypatch):
+    """Real performance regression guard - profiled AWCIDashboard.refresh()
+    found the old update_data() + set_hazard_overlay() two-call
+    convention doing 2 real full _draw() calls (clear/contourf/colorbar
+    recreation) for what is really one real update. Passing the
+    overlay directly into update_data() must draw exactly once."""
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    calls = []
+    real_draw = panel._draw
+
+    def counted(*args, **kwargs):
+        calls.append(1)
+        return real_draw(*args, **kwargs)
+
+    monkeypatch.setattr(panel, "_draw", counted)
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0, hazard_overlay=(distances, levels, phase_grid, None))
+
+    assert len(calls) == 1
+    assert panel._hazard_overlay == (distances, levels, phase_grid, None)
+
+
+def test_update_data_without_hazard_overlay_param_is_bit_identical_to_before(qtbot):
+    """Omitting hazard_overlay= must behave exactly as before this
+    parameter existed - no overlay set/changed."""
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    assert panel._hazard_overlay is None
+
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+
+    assert panel._hazard_overlay is None
+
+
+def test_set_external_cross_section_with_hazard_overlay_param_draws_exactly_once(qtbot, monkeypatch):
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    calls = []
+    real_draw = panel._draw
+
+    def counted(*args, **kwargs):
+        calls.append(1)
+        return real_draw(*args, **kwargs)
+
+    monkeypatch.setattr(panel, "_draw", counted)
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+
+    panel.set_external_cross_section(
+        [0.0, 100.0], [850.0, 700.0], [[10.0, 20.0], [30.0, 40.0]], "REAL PHYSICS",
+        hazard_overlay=(distances, levels, phase_grid, None),
+    )
+
+    assert len(calls) == 1
+    assert panel._hazard_overlay == (distances, levels, phase_grid, None)

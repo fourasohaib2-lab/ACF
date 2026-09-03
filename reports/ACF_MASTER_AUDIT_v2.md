@@ -4717,3 +4717,42 @@ generation) — un chantier d'optimisation plus profond (ex. blitting,
 mise en cache d'artistes matplotlib entre redraws) resterait possible
 mais plus risqué et hors du périmètre de cette passe ciblée sur les
 vrais goulots mesurés.
+
+## Mise à jour 2026-09-03 (suite) — troisième passe de performance : la coupe verticale ne se redessine plus deux fois
+
+Suite explicite ("on continue"), même méthode. Un nouveau `cProfile`
+(cache + PolyCollection déjà chauds) a montré `AWCICrossSection._draw()`
+comme nouveau goulot dominant — et une vraie cause structurelle, pas
+juste un coût de rendu : `refresh()` appelait `cross_section.update_data()`
+PUIS immédiatement `cross_section.set_hazard_overlay()` sur la même
+vraie grille — chacun déclenchant son propre vrai `_draw()` complet
+(`clear()` + `contourf()` + **recréation complète de la colorbar**,
+elle-même une vraie opération matplotlib coûteuse — nouvel `Axes`,
+nouveau `gridspec`). Deux vrais redraws complets pour une seule vraie
+mise à jour logique. Même schéma trouvé en mode Real Physics
+(`set_external_cross_section()` + `set_hazard_overlay()`).
+
+**Corrigé** : nouveau paramètre optionnel `hazard_overlay=` sur
+`update_data()` et `set_external_cross_section()` — l'appelant passe
+maintenant le tuple `(distances, levels, phase_severity_grid,
+wind_shear_grid)` directement, un seul vrai `_draw()` fait les deux à
+la fois. Omis (`None`, par défaut) : comportement bit-identique à
+avant pour tout appelant qui ne l'utilise pas.
+
+**Mesuré** : `refresh()` complet **55.6 ms → 40.9 ms** (-26 %
+supplémentaires, **-82 % cumulés** depuis le tout premier profilage à
+227 ms).
+
+**Validation réelle** : 3 nouveaux tests — un vrai compteur d'appels
+(via monkeypatch de `_draw()`) prouve exactement UN redraw avec le
+nouveau paramètre, le comportement par défaut (paramètre omis) reste
+inchangé, testé en mode démo ET en mode Real Physics. Suite complète
+**3948 → 3951**, `ruff`/`mypy` propres sur les 1435 fichiers. Capture
+d'écran finale envoyée — aucune régression visuelle (icônes de
+givrage toujours présentes, colorbar identique).
+
+**Ce qui reste réellement** : `clear()`/`contourf()`/génération des
+graduations restent les vrais coûts matplotlib incompressibles pour un
+contour redessiné à chaque interaction — un chantier de blitting ou de
+mise en cache d'artistes resterait possible mais plus risqué, hors
+périmètre de cette passe.

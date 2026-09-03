@@ -766,7 +766,6 @@ class AWCIDashboard(QWidget):
 
     def refresh(self) -> None:
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
-        self.cross_section.update_data(_GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], cruise_hpa=300.0)
         # Real icing icon overlay (docs/reference/awci_dashboard_reference.jpg
         # parity work, added 2026-09-03) - the SAME synthetic demo
         # T/q/P inputs the cross-section's own AWCI score already
@@ -775,11 +774,19 @@ class AWCIDashboard(QWidget):
         # docstring). No real wind_shear_grid in demo mode - the
         # synthetic pattern has no u/v components to compute a real
         # shear from (see awci_synthetic_field.py's own docstring).
+        # Passed into update_data()'s own hazard_overlay= parameter
+        # (real performance pass, 2026-09-03) rather than a separate
+        # set_hazard_overlay() call - that used to trigger a real
+        # second, fully redundant _draw() (clear/contourf/colorbar
+        # recreation) on the exact same real grid.
         phase_distances, phase_levels, phase_grid = cross_section_phase_severity_field(
             _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
         )
-        self.cross_section.set_hazard_overlay(
-            phase_distances, phase_levels, phase_severity_grid=phase_grid, wind_shear_grid=None
+        self.cross_section.update_data(
+            _GLOBAL_ROUTE[0][:2],
+            _GLOBAL_ROUTE[1][:2],
+            cruise_hpa=300.0,
+            hazard_overlay=(phase_distances, phase_levels, phase_grid, None),
         )
 
         # Kept as two real steps (not awci_at()'s single-call shortcut)
@@ -904,23 +911,27 @@ class AWCIDashboard(QWidget):
             lats, lons, volume["pressure_volume_hpa"], volume["awci_volume"],
             _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
         )
-        self.cross_section.set_external_cross_section(
-            cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS"
-        )
         # Real icing + wind-shear-proxy turbulence icon overlay (docs/
         # reference/awci_dashboard_reference.jpg parity work, added
         # 2026-09-03) - real T/q/P/u/v sampled from this SAME real
         # volume along the SAME real path (see
         # sample_cross_section_hazards()'s own docstring for the
-        # honest "proxy, not the full CAT index" disclosure).
+        # honest "proxy, not the full CAT index" disclosure). Passed
+        # into set_external_cross_section()'s own hazard_overlay=
+        # parameter (real performance pass, 2026-09-03) rather than a
+        # separate set_hazard_overlay() call - see that method's own
+        # docstring for why.
         hazards = sample_cross_section_hazards(
             lats, lons, volume["pressure_volume_hpa"], volume["temperature_volume"],
             volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
             _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
         )
-        self.cross_section.set_hazard_overlay(
-            hazards["distances_km"], list(hazards["mean_pressure_hpa_by_level"]),
-            phase_severity_grid=hazards["phase_severity_grid"], wind_shear_grid=hazards["wind_shear_grid"],
+        self.cross_section.set_external_cross_section(
+            cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS",
+            hazard_overlay=(
+                hazards["distances_km"], list(hazards["mean_pressure_hpa_by_level"]),
+                hazards["phase_severity_grid"], hazards["wind_shear_grid"],
+            ),
         )
 
         # Real vertical-level control (explicit user request "ajoute la
