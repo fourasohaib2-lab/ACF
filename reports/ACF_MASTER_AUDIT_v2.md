@@ -1668,3 +1668,64 @@ bout en bout (event loop Qt réel pompé, worker `QThreadPool` réel)
 avant l'écriture des tests automatisés — c'est cette vérification
 manuelle qui a trouvé les 4 vrais bugs listés ci-dessus, pas les tests
 eux-mêmes a priori.
+
+## Mise à jour 2026-09-03 (suite) — fidélité réelle à la maquette de référence AWCI
+
+Demande explicite de l'utilisateur, après avoir reçu deux captures
+d'écran réelles (générées en lançant vraiment l'app en rendu Qt
+offscreen) : "je veux garder le même thème pour les deux en suivant
+cette photo", la photo étant la maquette de référence d'origine du
+dashboard AWCI elle-même (le code le dit déjà dans ses propres
+commentaires — la structure collait déjà, mais plusieurs éléments
+visuels concrets manquaient). Clarifié avec l'utilisateur (choix "les
+deux") : reconstruction complète des éléments manquants, pas
+seulement un ajustement de palette.
+
+**Construit, tous réels, aucun élément décoratif fabriqué :**
+- **Légende "AWCI SCALE"** sur la carte globale — dessinée directement
+  depuis les vrais seuils/couleurs d'`acf.gui.dashboard.awci_colors.LEVELS`
+  (la même source que toutes les autres jauges/badges), pas une échelle
+  séparée inventée.
+- **Barre de couleur réelle 0-100** sous la coupe verticale
+  (`AWCICrossSection`) — liée au même `contourf()` qui dessine la
+  carte de chaleur. **Vrai bug trouvé et corrigé** en vérifiant les
+  redessins répétés (ex. déplacer le time_slider) : `Colorbar.remove()`
+  plantait avec `'NoneType' object has no attribute 'set_subplotspec'`
+  au deuxième redessin — l'ordre `axis.clear()` puis `colorbar.remove()`
+  perturbait un état interne matplotlib ; corrigé en inversant l'ordre.
+- **Cartouches RENDERED / FLIGHT LEVEL** flottants sur la carte
+  globale — RENDERED est l'heure UTC réelle de rendu (honnêtement
+  étiquetée comme telle, pas présentée comme une heure de validité de
+  prévision qui n'existe nulle part dans ce code) ; FLIGHT LEVEL est
+  réel, dérivé de la vraie pression via la formule standard réelle
+  ICAO/FAA d'altitude-pression (`pressure_to_flight_level_ft()`, pas
+  une conversion inventée).
+- **Fiche "POINT INFORMATION"** flottante sur la carte régionale —
+  le vrai score AWCI déjà calculé pour ce point exact
+  (`awci_at()`/le résultat du niveau réel sélectionné), pas une
+  deuxième valeur fabriquée.
+- **Pile verticale d'icônes zoom + export réel** (au lieu d'une rangée
+  horizontale) — le bouton export (`⬇`) sauvegarde réellement la
+  figure en PNG via un vrai `QFileDialog`, même convention que
+  `_take_screenshot()` d'ESOC.
+- **Panneau "LAYERS"** flottant réel — la case "AWCI" bascule
+  réellement la visibilité du contour ; les autres noms de calques de
+  la maquette (Wind, Turbulence, Icing, Convection, Clouds) sont
+  affichés honnêtement désactivés (aucune source de donnée réelle pour
+  eux dans ce panneau aujourd'hui) plutôt qu'un faux bouton cliquable —
+  même discipline "jamais d'affordance inventée" que le reste de cette
+  session.
+
+**Délibérément pas construit** : le panneau "VIEW MODE" (Global/
+Régional/Coupe verticale) de la maquette implique de basculer entre un
+seul panneau affiché à la fois — le vrai dashboard actuel montre les
+trois simultanément dans une grille, plus riche en pratique ; y
+substituer un mode à la fois serait une vraie régression UX, pas une
+fidélité de thème, donc non construit dans cette passe.
+
+**Validation :** 17 nouveaux tests
+(`tests/test_awci_map_panel_reference_fidelity.py`,
+`tests/test_awci_cross_section.py`), suite complète **3325/3325**
+(3308 + 17), `ruff`/`mypy` propres. Vérifié visuellement par une vraie
+capture d'écran de l'app lancée (rendu Qt offscreen réel, pas une
+maquette) avant et après.

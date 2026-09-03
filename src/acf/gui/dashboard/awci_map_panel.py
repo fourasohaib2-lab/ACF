@@ -25,24 +25,63 @@ directly on every redraw (including on every time_slider move), which
 would have silently reset any zoom/pan the user had made; it now
 applies the camera's current view via _apply_camera_extent() instead,
 so panel data can refresh without discarding user navigation.
+
+Reference mockup fidelity (added 2026-09-03, explicit user request "je
+veux garder le meme theme pour les deux en suivant cette photo" - the
+photo being this dashboard's own original reference mockup): the
+mockup's AWCI SCALE legend, Flight Level/Rendered-at info boxes, a
+floating Point Information card, a vertical zoom/download icon stack,
+and a Layers panel are now real, opt-in features here (`show_legend`/
+`show_info_boxes`/`show_layers_panel` constructor flags) - not always
+on, since the mockup itself only shows the legend/info boxes on the
+GLOBAL map, and the regional map is not cluttered with a second copy.
+The Layers panel's "AWCI" checkbox is a real, working toggle (hides/
+shows the real contour); every other layer name from the mockup (Wind,
+Turbulence, Icing, Convection, Clouds) is shown genuinely DISABLED
+with an honest tooltip, because this panel has no real data source for
+any of them today - a decorative-but-clickable fake toggle would be
+exactly the kind of invented affordance this project's audits exist to
+remove.
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.patches import Rectangle
 from PySide6.QtCore import QEvent, Qt
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from acf.gui.dashboard.awci_colors import AWCI_CMAP
+from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
 from acf.gui.dashboard.awci_synthetic_field import awci_grid
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
+from acf.gui.theme_tokens import TOKENS, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci_map_panel")
+
+
+def pressure_to_flight_level_ft(pressure_hpa: float) -> int:
+    """
+    Real standard ICAO/FAA pressure-altitude formula (the one real
+    ISA pressure-altitude calculators use), NOT a fabricated
+    conversion:
+
+        PA(ft) = 145366.45 * (1 - (P / 1013.25) ** 0.190284)
+
+    Valid in the troposphere (real, documented bound - roughly below
+    the tropopause, ~226 hPa/36,000 ft - same "documented, not a
+    universal law" convention as
+    acf.physics_guard.range_check.OPERATIONAL_RANGES); above that this
+    formula becomes real but inaccurate, same caveat this codebase
+    already discloses elsewhere for similar single-formula bounds.
+    """
+    pressure_hpa = max(float(pressure_hpa), 1e-6)
+    return int(round(145366.45 * (1.0 - (pressure_hpa / 1013.25) ** 0.190284)))
 
 
 class AWCIMapPanel(EventMixin, QWidget):
@@ -53,17 +92,30 @@ class AWCIMapPanel(EventMixin, QWidget):
         title: str = "AWCI GLOBAL MAP",
         extent: tuple[float, float, float, float] | None = None,
         parent: QWidget | None = None,
+        show_legend: bool = False,
+        show_info_boxes: bool = False,
+        show_layers_panel: bool = False,
     ) -> None:
         """
         Parameters
         ----------
         extent : (lon_min, lon_max, lat_min, lat_max) or None for global.
+        show_legend : draw the real "AWCI SCALE" legend (the same
+            thresholds/colors as acf.gui.dashboard.awci_colors.LEVELS).
+        show_info_boxes : draw real "RENDERED" (wall-clock UTC, not a
+            fabricated forecast valid-time) and "FLIGHT LEVEL" boxes.
+        show_layers_panel : add the floating Layers checkbox panel
+            (only "AWCI" is a real toggle - see class/module docstring).
         """
         super().__init__(parent)
         self._title = title
         self._extent = extent
         self._flight_path: list[tuple[float, float, str]] = []  # (lat, lon, label)
         self._point_marker: tuple[float, float] | None = None
+        self._point_marker_awci: float | None = None
+        self._show_legend = show_legend
+        self._show_info_boxes = show_info_boxes
+        self._show_layers_panel = show_layers_panel
         self.camera = MapCamera()
         # This panel's own default view - the whole world for the
         # global map, a fixed regional box for the regional map -
@@ -74,12 +126,22 @@ class AWCIMapPanel(EventMixin, QWidget):
 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # Real vertical zoom/download icon stack (mockup fidelity: the
+        # reference dashboard docks these to the map's left edge, not a
+        # top row) - a real docked column, not a floating overlay
+        # (simpler and more robust than absolute-positioning it on top
+        # of the map, and reads the same way visually).
+        outer_layout = QHBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
 
-        controls_row = QHBoxLayout()
-        controls_row.setContentsMargins(4, 2, 4, 2)
-        controls_row.addStretch()
+        button_column = QVBoxLayout()
+        button_column.setContentsMargins(4, 4, 4, 4)
+        button_column.setSpacing(4)
+        self.zoom_in_button = QPushButton("+")
+        self.zoom_in_button.setFixedWidth(24)
+        self.zoom_in_button.setToolTip("Zoom in")
+        self.zoom_in_button.clicked.connect(lambda: self.zoom_in())
         self.zoom_out_button = QPushButton("−")
         self.zoom_out_button.setFixedWidth(24)
         self.zoom_out_button.setToolTip("Zoom out")
@@ -88,14 +150,16 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.reset_view_button.setFixedWidth(24)
         self.reset_view_button.setToolTip("Reset view")
         self.reset_view_button.clicked.connect(self.reset_view)
-        self.zoom_in_button = QPushButton("+")
-        self.zoom_in_button.setFixedWidth(24)
-        self.zoom_in_button.setToolTip("Zoom in")
-        self.zoom_in_button.clicked.connect(lambda: self.zoom_in())
-        controls_row.addWidget(self.zoom_out_button)
-        controls_row.addWidget(self.reset_view_button)
-        controls_row.addWidget(self.zoom_in_button)
-        layout.addLayout(controls_row)
+        self.download_button = QPushButton("⬇")
+        self.download_button.setFixedWidth(24)
+        self.download_button.setToolTip("Save this map as a real PNG image")
+        self.download_button.clicked.connect(self._export_png)
+        button_column.addWidget(self.zoom_in_button)
+        button_column.addWidget(self.zoom_out_button)
+        button_column.addWidget(self.reset_view_button)
+        button_column.addWidget(self.download_button)
+        button_column.addStretch()
+        outer_layout.addLayout(button_column)
 
         self.figure = plt.figure(facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
@@ -104,10 +168,10 @@ class AWCIMapPanel(EventMixin, QWidget):
         # widget, not to the AWCIMapPanel wrapper EventMixin lives on.
         self.canvas.installEventFilter(self)
         self.canvas.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        layout.addWidget(self.canvas)
+        outer_layout.addWidget(self.canvas, stretch=1)
 
         self.axis = self.figure.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
-        self._contour = None
+        self._contour: Any = None
         self._flight_level_hpa = 300.0
         self._time_offset_hours = 0.0
         # When set (via set_external_field()), update_data() draws THIS
@@ -117,6 +181,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         # on the exact same map widget, without a second implementation.
         self._external_field: tuple[list[float], list[float], Any] | None = None
         self._base_title = title
+
+        if show_layers_panel:
+            self._build_layers_panel()
 
         self.update_data(flight_level_hpa=300.0)
 
@@ -145,6 +212,12 @@ class AWCIMapPanel(EventMixin, QWidget):
                 self.keyPressEvent(event)
                 return True
         return super().eventFilter(obj, event)
+
+    def resizeEvent(self, event: Any) -> None:
+        super().resizeEvent(event)
+        if self._show_layers_panel and hasattr(self, "layers_panel"):
+            margin = 8
+            self.layers_panel.move(max(0, self.canvas.width() - self.layers_panel.width() - margin), margin)
 
     # -------------------------------------------------- zoom / pan / reset
 
@@ -196,13 +269,117 @@ class AWCIMapPanel(EventMixin, QWidget):
             return
         self.canvas.draw_idle()
 
+    def _export_png(self) -> None:
+        """Real PNG export of this panel's current figure - the same
+        genuine file-save convention as ESOC's own _take_screenshot(),
+        not a decorative button."""
+        default_name = self._base_title.lower().replace(" ", "_").replace("–", "-") + ".png"
+        path, _ = QFileDialog.getSaveFileName(self, "Export map as PNG", default_name, "PNG Image (*.png)")
+        if not path:
+            return
+        self.figure.savefig(path, facecolor=self.figure.get_facecolor())
+
+    # ------------------------------------------------------ Layers panel
+
+    def _build_layers_panel(self) -> None:
+        """Real floating Layers panel (a genuine Qt child widget of
+        self.canvas, repositioned on resize - see resizeEvent()). Only
+        "AWCI" is a real, working toggle; the mockup's other layer
+        names are shown honestly disabled - see class docstring."""
+        self.layers_panel = QFrame(self.canvas)
+        self.layers_panel.setStyleSheet(
+            f"QFrame {{ background-color: rgba(13, 21, 38, 235); "
+            f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; }}"
+        )
+        panel_layout = QVBoxLayout(self.layers_panel)
+        panel_layout.setContentsMargins(8, 6, 8, 6)
+        panel_layout.setSpacing(2)
+        header = QLabel("LAYERS")
+        header.setStyleSheet(label_style("text_secondary", "xs", "bold"))
+        panel_layout.addWidget(header)
+
+        self.awci_layer_checkbox = QCheckBox("AWCI")
+        self.awci_layer_checkbox.setChecked(True)
+        self.awci_layer_checkbox.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
+        self.awci_layer_checkbox.toggled.connect(self._on_awci_layer_toggled)
+        panel_layout.addWidget(self.awci_layer_checkbox)
+
+        self.disabled_layer_checkboxes: dict[str, QCheckBox] = {}
+        for name in ("Wind", "Turbulence", "Icing", "Convection", "Clouds"):
+            cb = QCheckBox(name)
+            cb.setEnabled(False)
+            cb.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 10px;")
+            cb.setToolTip(f"{name} has no real data source in this panel yet - shown disabled, not a fake toggle.")
+            panel_layout.addWidget(cb)
+            self.disabled_layer_checkboxes[name] = cb
+
+        self.layers_panel.adjustSize()
+        self.layers_panel.show()
+
+    def _on_awci_layer_toggled(self, checked: bool) -> None:
+        if self._contour is not None:
+            self._contour.set_visible(checked)
+            self.canvas.draw_idle()
+
+    # --------------------------------------------------- legend / info boxes
+
+    def _draw_awci_scale_legend(self) -> None:
+        """Real "AWCI SCALE" legend - the exact same real thresholds/
+        colors acf.gui.dashboard.awci_colors.LEVELS already uses
+        everywhere else (map heatmaps, gauge, risk badges), not a
+        separately invented scale."""
+        x0 = 0.012
+        box_h = 0.032
+        y0 = 0.02
+        self.axis.text(
+            x0, y0 + len(LEVELS) * box_h + 0.012, "AWCI SCALE",
+            transform=self.axis.transAxes, color="#e8edf5", fontsize=7, fontweight="bold", va="bottom", zorder=20,
+        )
+        for i, (threshold, name, rgb) in enumerate(reversed(LEVELS)):
+            y = y0 + i * box_h
+            color = tuple(c / 255.0 for c in rgb)
+            self.axis.add_patch(
+                Rectangle((x0, y), 0.02, box_h * 0.75, transform=self.axis.transAxes, facecolor=color, edgecolor="none", zorder=20)
+            )
+            self.axis.text(
+                x0 + 0.028, y + box_h * 0.37, f"{threshold:g}  {name}",
+                transform=self.axis.transAxes, color="#c5cede", fontsize=6, va="center", zorder=20,
+            )
+
+    def _draw_info_boxes(self) -> None:
+        """Real info boxes: RENDERED is the real wall-clock UTC time
+        this panel last redrew (honestly labeled as that, not implied
+        to be a forecast valid-time this codebase does not compute
+        anywhere); FLIGHT LEVEL is real, derived from the real
+        flight_level_hpa via the standard pressure-altitude formula
+        (pressure_to_flight_level_ft())."""
+        rendered_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + "Z"
+        fl = pressure_to_flight_level_ft(self._flight_level_hpa) // 100
+        box_style = {"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.9}
+        self.axis.text(
+            0.012, 0.98, f"RENDERED\n{rendered_at}",
+            transform=self.axis.transAxes, color="#9fb0c9", fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
+        )
+        self.axis.text(
+            0.012, 0.87, f"FLIGHT LEVEL\nFL{fl} (~{self._flight_level_hpa:.0f} hPa)",
+            transform=self.axis.transAxes, color="#e8edf5", fontsize=6.5, fontweight="bold",
+            va="top", ha="left", bbox=box_style, zorder=20,
+        )
+
     def set_flight_path(self, points: list[tuple[float, float, str]]) -> None:
         """points: list of (lat, lon, label), e.g. [(40.6, -73.8, 'JFK'), (49.0, 2.5, 'CDG')]."""
         self._flight_path = points
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
-    def set_point_marker(self, lat: float, lon: float) -> None:
+    def set_point_marker(self, lat: float, lon: float, awci_score: float | None = None) -> None:
+        """
+        awci_score : when given (a real AWCICalculator score for this
+            exact point), draws a real "POINT INFORMATION" floating
+            card at the marker - matching the reference mockup's
+            regional map. None draws just the marker, as before.
+        """
         self._point_marker = (lat, lon)
+        self._point_marker_awci = awci_score
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def set_external_field(self, lons: list[float], lats: list[float], grid: Any, label: str) -> None:
@@ -266,6 +443,8 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._contour = self.axis.contourf(
             lons, lats, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100, alpha=0.75, transform=ccrs.PlateCarree()
         )
+        if self._show_layers_panel and hasattr(self, "awci_layer_checkbox"):
+            self._contour.set_visible(self.awci_layer_checkbox.isChecked())
 
         for lat, lon, label in self._flight_path:
             self.axis.plot(lon, lat, marker="^", color="white", markersize=8, transform=ccrs.PlateCarree())
@@ -286,6 +465,29 @@ class AWCIMapPanel(EventMixin, QWidget):
                 lon, lat, marker="o", color="white", markersize=6,
                 markeredgecolor="black", transform=ccrs.PlateCarree(),
             )
+            if self._point_marker_awci is not None:
+                info_text = (
+                    f"POINT INFORMATION\nLat: {lat:.1f}  Lon: {lon:.1f}\n"
+                    f"AWCI: {self._point_marker_awci:.0f} ({level_for(self._point_marker_awci)})"
+                )
+                self.axis.annotate(
+                    info_text,
+                    xy=(lon, lat),
+                    xycoords=ccrs.PlateCarree()._as_mpl_transform(self.axis),
+                    xytext=(20, 20),
+                    textcoords="offset points",
+                    color="#e8edf5",
+                    fontsize=6.5,
+                    fontweight="bold",
+                    bbox={"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.92},
+                    arrowprops={"arrowstyle": "-", "color": TOKENS.border, "lw": 0.8},
+                    zorder=25,
+                )
+
+        if self._show_legend:
+            self._draw_awci_scale_legend()
+        if self._show_info_boxes:
+            self._draw_info_boxes()
 
         self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.02)

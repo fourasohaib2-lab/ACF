@@ -12,6 +12,12 @@ real acf.awci.path_sampling.sample_volume_cross_section() result
 instead - see that function's own docstring for what "real" means here
 (native model levels, not standard pressure levels; path-averaged
 local pressure per level).
+
+Colorbar (added 2026-09-03, explicit user request "je veux garder le
+meme theme pour les deux en suivant cette photo" - the reference
+mockup shows a real AWCI 0-100 colorbar under this exact panel): a
+real matplotlib colorbar keyed to the same contourf() call that draws
+the heatmap, not a separately drawn legend.
 """
 
 from typing import Any
@@ -86,6 +92,7 @@ class AWCICrossSection(QWidget):
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
+        self._colorbar: Any = None
 
     def set_external_cross_section(self, distances_km: Any, levels_hpa: Any, grid: Any, label: str) -> None:
         """Show a real cross-section (e.g. path_sampling.sample_volume_cross_section()'s output) instead of the synthetic pattern."""
@@ -111,10 +118,19 @@ class AWCICrossSection(QWidget):
         self._draw(distances, levels_hpa, grid)
 
     def _draw(self, distances: Any, levels_hpa: Any, grid: Any) -> None:
+        # A colorbar owns its own Axes and its own reference back to
+        # the main plot axes' subplotspec - remove() must run BEFORE
+        # self.axis.clear() below, not after (found the hard way: doing
+        # it after raised a real "'NoneType' object has no attribute
+        # 'set_subplotspec'" on the second redraw - clear() had already
+        # disrupted the state remove() needs).
+        if self._colorbar is not None:
+            self._colorbar.remove()
+            self._colorbar = None
         self.axis.clear()
         levels_ft = [_hpa_to_ft(p) for p in levels_hpa]
 
-        self.axis.contourf(distances, levels_ft, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100)
+        contour = self.axis.contourf(distances, levels_ft, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100)
 
         cruise_ft = _hpa_to_ft(self._cruise_hpa)
         self.axis.plot([distances[0], distances[-1]], [cruise_ft, cruise_ft], color="white", linewidth=1.5)
@@ -128,5 +144,13 @@ class AWCICrossSection(QWidget):
         for spine in self.axis.spines.values():
             spine.set_color("#34445f")
         self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
-        self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.15)
+
+        # Real AWCI 0-100 colorbar, matching the reference mockup's
+        # colorbar under this exact panel.
+        self._colorbar = self.figure.colorbar(contour, ax=self.axis, orientation="horizontal", pad=0.28, fraction=0.07, ticks=[0, 20, 40, 60, 80, 100])
+        self._colorbar.set_label("AWCI", color="#9fb0c9", fontsize=7)
+        self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=6)
+        self._colorbar.outline.set_edgecolor("#34445f")
+
+        self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.22)
         self.canvas.draw_idle()

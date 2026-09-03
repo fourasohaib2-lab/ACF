@@ -256,7 +256,11 @@ class AWCIDashboard(QWidget):
         row1 = QHBoxLayout()
         row1.setSpacing(8)
 
-        self.global_map = AWCIMapPanel("AWCI GLOBAL MAP (FL300)")
+        # show_legend/show_info_boxes/show_layers_panel=True on the
+        # global map only, matching the reference mockup (the regional
+        # map below does not repeat them - it has its own real Point
+        # Information card instead, see set_point_marker() below).
+        self.global_map = AWCIMapPanel("AWCI GLOBAL MAP (FL300)", show_legend=True, show_info_boxes=True, show_layers_panel=True)
         self.global_map.set_flight_path(_GLOBAL_ROUTE)
         row1.addWidget(self.global_map, stretch=3)
 
@@ -286,7 +290,8 @@ class AWCIDashboard(QWidget):
         left_col2 = QVBoxLayout()
         self.regional_map = AWCIMapPanel("AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT)
         self.regional_map.set_flight_path(_REGIONAL_ROUTE)
-        self.regional_map.set_point_marker(*_POINT_OF_INTEREST)
+        # Real awci_score set for real by refresh() right after _build_ui()
+        # returns (see __init__) - not left at "no score" here.
         left_col2.addWidget(self.regional_map, stretch=1)
 
         time_row = QHBoxLayout()
@@ -372,6 +377,10 @@ class AWCIDashboard(QWidget):
         point_result = awci_at(*_POINT_OF_INTEREST, flight_level_hpa=300.0)
         self.radar.update_data(point_result["module_scores"])
         self.component_list.update_data(point_result["module_scores"])
+        # Real Point Information card on the regional map (matching the
+        # reference mockup) - the exact same real AWCI score point_result
+        # just computed for this same point, not a second/fabricated value.
+        self.regional_map.set_point_marker(*_POINT_OF_INTEREST, awci_score=point_result["awci"])
 
         _lons, _lats, grid = awci_grid(lat_step=4.0, lon_step=4.0, flight_level_hpa=300.0)
         flat_scores = [v for row in grid for v in row]
@@ -548,6 +557,10 @@ class AWCIDashboard(QWidget):
         )
         self.radar.update_data(point_result["module_scores"])
         self.component_list.update_data(point_result["module_scores"])
+        # Real Point Information card, same real per-point result just
+        # computed above at this level - not left showing a stale
+        # synthetic-demo score while in Real Physics mode.
+        self.regional_map.set_point_marker(*_POINT_OF_INTEREST, awci_score=point_result["awci"])
         self.risk_summary.update_data(
             point_result["module_scores"],
             point_result["awci"],
