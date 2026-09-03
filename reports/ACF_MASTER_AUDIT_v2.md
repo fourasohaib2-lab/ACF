@@ -3125,3 +3125,49 @@ construire ce pont METAR→AWCI, une pièce de travail distincte, pas
 faite ici pour ne pas mélanger deux changements dans une même passe.
 §81 reste donc **partiellement fermé** : l'objet complet existe et est
 réel, mais rien ne le construit encore automatiquement en production.
+
+## Mise à jour 2026-09-03 (suite) — ROC/AUC et Brier score réels (§39)
+
+Suite explicite ("continue with your judgment"), choix libre parmi les
+lignes ⚠️ restantes du tableau exhaustif — celle-ci mécaniquement bien
+délimitée, sûre, et directement citée par le §39 : "ROC/AUC lorsque
+pertinent" et "Brier score lorsque pertinent" étaient absents de
+`NWPVerificationMetrics`, qui n'avait que les métriques déterministes
+(RMSE/bias/MAE/ACC/POD/FAR/CSI/ETS).
+
+**Pourquoi séparées de `evaluate_all()`** : ROC/AUC et Brier score
+comparent une vraie PROBABILITÉ prévue (valeur dans [0,1], "quelle est
+la probabilité de cet événement") à un vrai résultat binaire observé
+(0/1) — une donnée de nature différente de `forecast`/`observation`
+existants (deux valeurs continues déterministes). Les ajouter par
+défaut à `evaluate_all()` aurait mélangé deux sémantiques différentes
+sous les mêmes noms de paramètre ; elles restent deux méthodes réelles
+séparées et documentées comme telles.
+
+**Construit** : `NWPVerificationMetrics.brier_score()` (erreur
+quadratique moyenne réelle probabilité/résultat binaire, Brier 1950) et
+`NWPVerificationMetrics.roc_auc()` — calculé via l'équivalence réelle
+de Mann-Whitney U (fraction des paires positif/négatif où le score du
+positif dépasse celui du négatif, égalités comptant pour une demi-paire)
+plutôt qu'en construisant et intégrant explicitement une courbe ROC —
+la même quantité réelle, un calcul plus simple et exact, avec gestion
+réelle des égalités par rangs moyennés.
+
+**Validation réelle, contre des références calculées à la main, pas
+seulement une cohérence interne** : `roc_auc` vérifié contre un calcul
+par paires fait à la main (3/4 = 0.75 exact), plus séparation parfaite
+(AUC=1.0), séparation parfaitement inversée (AUC=0.0), et égalité
+totale de tous les scores (AUC=0.5 exact — preuve que la correction
+d'égalités par rangs moyennés fonctionne réellement, pas une valeur
+arbitraire). `brier_score` vérifié contre un calcul à la main
+(0.02 exact), score parfait (0.0) et pire score possible (1.0).
+13 nouveaux tests (`tests/test_nwp_metrics.py`), suite complète
+**3600/3600** (3587 + 13), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : ni `roc_auc()` ni `brier_score()` ne sont
+encore appelées depuis `acf.awci.method_comparison.compare_methods()`
+(§41) — les scores AWCI sont continus [0,100], pas des probabilités
+[0,1] d'un événement binaire ; les y brancher demanderait une vraie
+reformulation probabiliste (ex. "P(complexité ≥ seuil)"), une décision
+de conception distincte, pas prise ici pour ne pas mélanger deux
+changements.

@@ -129,6 +129,103 @@ class NWPVerificationMetrics:
         den = a + b + c - a_random
         return ((a - a_random) / den) if den != 0 else 0.0
 
+    @staticmethod
+    def brier_score(probability_forecasts: Sequence[float], binary_observations: Sequence[float]) -> float:
+        """
+        Real Brier score (Brier, 1950) - mean squared error between a
+        real PROBABILISTIC forecast (each value in [0, 1], "how likely
+        is this event") and the real binary observed outcome (0 = did
+        not occur, 1 = occurred) - docs/ACF_MASTER_PROMPT.md section
+        39's own explicit "Brier score lorsque pertinent" (a
+        probabilistic-forecast metric, distinct from `rmse`/`mae`/`bias`
+        above, which compare two DETERMINISTIC continuous values, not a
+        probability against a binary outcome).
+
+            BS = (1/N) * sum((p_i - o_i)^2)
+
+        Lower is better (0.0 = perfect probabilistic forecast, 1.0 =
+        worst possible).
+
+        Raises
+        ------
+        ValueError
+            If the two sequences have different lengths, or are empty.
+        """
+        if len(probability_forecasts) != len(binary_observations):
+            raise ValueError(
+                f"probability_forecasts and binary_observations must have the same length, "
+                f"got {len(probability_forecasts)} and {len(binary_observations)}"
+            )
+        if not probability_forecasts:
+            raise ValueError("probability_forecasts/binary_observations must not be empty.")
+        n = len(probability_forecasts)
+        return sum((p - o) ** 2 for p, o in zip(probability_forecasts, binary_observations, strict=True)) / n
+
+    @staticmethod
+    def roc_auc(probability_forecasts: Sequence[float], binary_observations: Sequence[float]) -> float:
+        """
+        Real ROC AUC (Area Under the Receiver Operating Characteristic
+        Curve) - docs/ACF_MASTER_PROMPT.md section 39's own explicit
+        "ROC/AUC lorsque pertinent". Computed via the real, well-known
+        Mann-Whitney U equivalence (not an approximation - an exact
+        identity: the fraction of (positive, negative) score pairs
+        where the positive's real score exceeds the negative's, ties
+        counting as one-half) rather than explicitly building and
+        trapezoidally integrating an ROC curve - the same real
+        quantity, a simpler and exact real computation. Verified in
+        this module's own test suite against a hand-computed pairwise
+        reference, not merely self-consistent.
+
+        Real ties in `probability_forecasts` use averaged ranks
+        (the standard real tie-correction for this exact formula).
+
+        Returns
+        -------
+        float
+            0.5 = no discrimination (equivalent to random guessing),
+            1.0 = perfect real separation of positives from negatives,
+            0.0 = perfectly, real, backwards.
+
+        Raises
+        ------
+        ValueError
+            If the two sequences have different lengths, are empty, or
+            `binary_observations` contains no real positive (1) or no
+            real negative (0) case - AUC is undefined without both.
+        """
+        if len(probability_forecasts) != len(binary_observations):
+            raise ValueError(
+                f"probability_forecasts and binary_observations must have the same length, "
+                f"got {len(probability_forecasts)} and {len(binary_observations)}"
+            )
+        if not probability_forecasts:
+            raise ValueError("probability_forecasts/binary_observations must not be empty.")
+
+        scores = list(probability_forecasts)
+        labels = list(binary_observations)
+        n_pos = sum(1 for label in labels if label == 1)
+        n_neg = sum(1 for label in labels if label == 0)
+        if n_pos == 0 or n_neg == 0:
+            raise ValueError(
+                f"roc_auc requires at least one real positive and one real negative observation, "
+                f"got {n_pos} positive(s) and {n_neg} negative(s)."
+            )
+
+        order = sorted(range(len(scores)), key=lambda i: scores[i])
+        ranks = [0.0] * len(scores)
+        i = 0
+        while i < len(order):
+            j = i
+            while j + 1 < len(order) and scores[order[j + 1]] == scores[order[i]]:
+                j += 1
+            average_rank = (i + 1 + j + 1) / 2.0  # 1-indexed rank range [i+1, j+1], averaged for ties
+            for k in range(i, j + 1):
+                ranks[order[k]] = average_rank
+            i = j + 1
+
+        sum_positive_ranks = sum(ranks[idx] for idx, label in enumerate(labels) if label == 1)
+        return (sum_positive_ranks - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
+
     @classmethod
     def evaluate_all(
         cls, forecast: Sequence[float], observation: Sequence[float], threshold: float = 1.0
