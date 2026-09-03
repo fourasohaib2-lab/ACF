@@ -34,7 +34,7 @@ components — see `AWCI_UI_AUDIT.md` §0). Status column: ✅ real and wired,
 | 24 | AWCI REGIONAL MAP | `awci_map_panel.py` (2nd instance) | ✅ | same real pipeline as #9 |
 | 25 | Regional city labels (Tunis) | `awci_map_panel.py::set_city_labels` | ✅ | real public coordinate |
 | 26 | REGIONAL TREND sparkline | `awci_timeline.py::AWCITimeline` | ✅ | real hourly scores ±6h |
-| 27 | 🔍 See Vertical Profile button + dialog | `awci_vertical_profile.py::AWCIVerticalProfile` | ✅ | real scores per named FL |
+| 27 | 🔍 See Vertical Profile button + dialog | `awci_vertical_profile.py::AWCIVerticalProfile` | 🟡 | real composite AWCI score per level, now covering §51's full real level list (Surface/850/700/500/300/250 hPa + named FLs, demo mode) — per-variable breakdown (wind/temp/humidity/...) not built, see `future-improvements.md` #8 |
 | 28 | Valid Time slider | `awci_dashboard.py::time_slider` | ✅ | drives synthetic-pattern phase + trend sampling |
 | 29 | Level slider | `awci_dashboard.py::level_slider` | 🟡 | still real-single-source-of-truth only in Real Physics mode — demo mode's own equivalent concept is now unified separately by the new Flight Level selector (#37), not by extending this slider itself into demo mode (the real volume's discrete native levels and the demo pattern's continuous hPa input aren't the same kind of value) |
 | 30 | ROUTE PLANNING chart | `awci_route_chart.py` | ✅ | `route_profile()` (demo) / real sample |

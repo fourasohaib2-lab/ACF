@@ -137,6 +137,38 @@ _REGIONAL_CITY_LABELS = [(36.8065, 10.1815, "Tunis")]
 _VERTICAL_PROFILE_LEVELS_HPA = {
     f"FL{fl}": flight_level_ft_to_pressure_hpa(fl * 100.0) for fl in (100, 180, 240, 280, 320, 390)
 }
+# Real standard meteorological pressure levels (docs/ACF_MASTER_PROMPT.md
+# §51: "Le dashboard doit permettre Surface / 850 hPa / 700 hPa / 500 hPa
+# / 300 hPa / 250 hPa / Flight levels") - added 2026-09-03, priority
+# freely chosen from the 90-section exhaustive audit's own remaining ⚠️
+# gaps. "Surface" is the real ICAO/ISA standard sea-level pressure
+# (1013.25 hPa) - a real, disclosed meteorological convention, not a
+# guessed round number. Real Physics mode cannot honestly offer these
+# (see acf.awci.vertical_field's own docstring: no vertical
+# interpolation exists anywhere in ACF today, only native solver
+# levels) - this list is demo mode only, see _open_vertical_profile()'s
+# own comment.
+_STANDARD_PRESSURE_LEVELS_HPA: dict[str, float] = {
+    "Surface": 1013.25,
+    "850 hPa": 850.0,
+    "700 hPa": 700.0,
+    "500 hPa": 500.0,
+    "300 hPa": 300.0,
+    "250 hPa": 250.0,
+}
+# Real, altitude-ordered union of both level tables above (highest
+# pressure / lowest altitude first) - the exact real order the vertical
+# profile chart itself must display in (AWCIVerticalProfile trusts this
+# caller-provided order rather than re-deriving one - see that
+# widget's own docstring for why an "FL"-label-parsing sort could not
+# correctly interleave standard pressure levels with flight levels).
+_ALL_VERTICAL_PROFILE_LEVELS_HPA: dict[str, float] = dict(
+    sorted(
+        {**_STANDARD_PRESSURE_LEVELS_HPA, **_VERTICAL_PROFILE_LEVELS_HPA}.items(),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+)
 # Real single-source-of-truth options for the "Flight Level:" selector
 # (added 2026-09-03, docs/awci/AWCI_UI_AUDIT.md - the pre-implementation
 # audit found ~7 independently hardcoded flight_level_hpa/cruise_hpa
@@ -1172,10 +1204,21 @@ class AWCIDashboard(QWidget):
         AWCIVerticalProfile (previously dead code, unreachable since
         the dashboard rebuild - see that module's own docstring) with
         real AWCICalculator scores at the regional point of interest,
-        computed at several real, named flight levels
-        (_VERTICAL_PROFILE_LEVELS_HPA, real ISA hPa values) - the same
-        real per-point pipeline used everywhere else in this dashboard,
-        just called at more than one level."""
+        computed at every real, named level in
+        _ALL_VERTICAL_PROFILE_LEVELS_HPA (docs/ACF_MASTER_PROMPT.md §51
+        - real standard pressure levels PLUS real named flight levels,
+        added 2026-09-03) - the same real per-point pipeline used
+        everywhere else in this dashboard, just called at more than one
+        level.
+
+        Demo mode only, always - even while Real Physics mode is
+        active. acf.awci.vertical_field's own real volume has no
+        vertical interpolation (native solver levels only, see that
+        module's own docstring) - it cannot honestly answer "what is
+        the real value at exactly 500 hPa", so §51's own standard-
+        pressure-level list is not offered for that mode here; the
+        real Level slider (native solver levels) already covers Real
+        Physics mode's own vertical axis."""
         if self._vertical_profile_window is None:
             self._vertical_profile_window = QDialog(self)
             self._vertical_profile_window.setWindowTitle("AWCI – Vertical Profile")
@@ -1186,10 +1229,10 @@ class AWCIDashboard(QWidget):
             self._vertical_profile_window.resize(320, 340)
 
         profile: dict[str, float] = {}
-        for fl_label, hpa in _VERTICAL_PROFILE_LEVELS_HPA.items():
+        for level_label, hpa in _ALL_VERTICAL_PROFILE_LEVELS_HPA.items():
             raw = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=hpa)
             result = AWCICalculator().calculate(raw)
-            profile[fl_label] = result["awci"]
+            profile[level_label] = result["awci"]
         assert self._vertical_profile_widget is not None  # for mypy - always built above
         self._vertical_profile_widget.set_profile(profile)
 

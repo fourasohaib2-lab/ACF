@@ -2636,7 +2636,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 48 | Architecture des produits (niveaux brut→opérationnel) | ⚠️ | Les 7 niveaux existent en pratique dispersés (variables brutes dans `data`, diagnostics dans `acf.science`, modules/interactions/AWCI dans `AWCICalculator`, textes dans `_explain()`, alertes dans `AWCIAlertsPanel`) mais pas comme une chaîne de transformation explicite et nommée. |
 | 49 | Exemple de chaîne explicable | ✅ | `_explain()` génère bien du texte à partir de données calculées (jamais inventé) — vérifié par les tests existants (`test_explanation_present_and_ordered_by_contribution`). |
 | 50 | Dashboard 2D/3D/4D | ✅ | Les 3 dimensions réelles existent et sont branchées au dashboard (§23-27). |
-| 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). |
+| 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). *(Voir mise à jour du 2026-09-03 ci-dessous : fermé en mode démo pour la liste de niveaux ; la ventilation par variable — vent/température/humidité/stabilité/convection/turbulence/givrage — reste non construite.)* |
 | 52 | Conception orientée prévisionniste | 🔵 | Principe de design déjà respecté (accès aux données originales préservé partout : METAR/TAF brut affiché à côté du résumé décodé, `raw_text` jamais caché). |
 | 53 | Descendre dans le système | ⚠️ | Existe partiellement : composants cliquables (`AWCIComponentDetailDialog`, construit plus tôt cette session) permettent Module→statut de poids. La chaîne complète jusqu'au fichier source n'est pas câblée (même limite que §26). |
 | 54 | Architecture de test | ✅ | Les 6 catégories existent réellement : unitaires (`tests/test_awci_calculator.py`), physiques (ex. `test_pressure_decreases_with_altitude_real_physics`), numériques, intégration (tests GUI `qtbot`), multi-modèles (`test_model_disagreement_end_to_end_from_real_model_consensus_engine`), non-régression (`acf.testing.golden`, Golden Datasets). |
@@ -4515,3 +4515,60 @@ propres. Capture d'écran du bouton et du dialogue envoyée.
 séparés, non fusionnés avec ce rapport ponctuel par exécution — resterait
 un vrai chantier d'intégration distinct si un usage opérationnel
 continu (pas seulement à la demande) était requis.
+
+## Mise à jour 2026-09-03 (suite) — §51 : niveaux de pression standards dans le profil vertical (mode démo)
+
+Suite explicite ("continue"), priorité choisie librement dans les gaps
+⚠️ restants de l'audit exhaustif. §51 : "Le dashboard doit permettre
+Surface / 850 hPa / 700 hPa / 500 hPa / 300 hPa / 250 hPa / Flight
+levels". Le vrai profil vertical (`AWCIVerticalProfile`, câblé au
+bouton "🔍 See Vertical Profile" lors d'une clôture précédente de cette
+session) ne couvrait que les niveaux de vol nommés (FL100...FL390), pas
+les 6 niveaux de pression standards du §51.
+
+**Construit** : nouvelle `_STANDARD_PRESSURE_LEVELS_HPA` (Surface =
+1013.25 hPa, la vraie pression standard ISA au niveau de la mer — une
+convention météorologique réelle, pas un chiffre rond deviné) fusionnée
+avec la table des niveaux de vol existante en une seule
+`_ALL_VERTICAL_PROFILE_LEVELS_HPA`, réellement triée par pression
+décroissante (donc altitude croissante) — un vrai entrelacement
+nécessaire puisque FL100 (~697 hPa) tombe RÉELLEMENT entre 700 hPa et
+850 hPa, pas avant ou après en bloc.
+
+**Bug réel trouvé et corrigé au passage** : `AWCIVerticalProfile`
+re-triait en interne en parsant les libellés `"FL<n>"` — toute étiquette
+qui ne matchait pas ce format (comme "850 hPa"/"Surface") recevait
+silencieusement la clé de tri `0`, les regroupant toutes en tête du
+graphique au lieu de les entrelacer par vraie altitude. Corrigé en
+supprimant ce re-tri interne : le widget fait maintenant confiance à
+l'ordre déjà réel fourni par l'appelant (source unique de vérité,
+même discipline que le reste de cette session). Bonus visuel réel :
+avec 12 niveaux au lieu de 6, les étiquettes ("850 hPa", "Surface")
+étaient tronquées sur des barres trop étroites — corrigé en les
+faisant pivoter (-55°), avec une marge basse élargie en conséquence.
+
+**Décision de périmètre honnête** : §51 demande aussi d'afficher vent/
+température/humidité/stabilité/convection/turbulence/givrage à chaque
+niveau, pas seulement le score AWCI composite. `AWCIVerticalProfile`
+reste un graphique à barres à une seule série — l'étendre à 7+ variables
+par niveau serait une refonte de widget substantielle, pas incluse dans
+cette fermeture ; documenté comme réellement restant. Également :
+le mode Real Physics ne peut PAS honnêtement offrir ces niveaux de
+pression standards — `acf.awci.vertical_field` n'a aucune interpolation
+verticale (uniquement les niveaux natifs du solveur, disclosed depuis
+longtemps) — cette liste reste donc mode démo uniquement, disclosed
+explicitement dans `_open_vertical_profile()`.
+
+**Validation réelle** : 3 nouveaux tests (les 6 niveaux standards
+présents avec un vrai score 0-100 ; l'ordre réel par pression vérifié
+programmatiquement ; le widget fait bien confiance à l'ordre fourni,
+sans re-tri). Les 3 tests existants sur le profil vertical restent
+verts inchangés. Suite complète **3922 → 3925**, `ruff`/`mypy` propres.
+Capture d'écran envoyée (12 niveaux, étiquettes pivotées lisibles).
+
+**Ce qui reste réellement** : la ventilation multi-variable par niveau
+(vent/température/humidité/stabilité/convection/turbulence/givrage,
+pas seulement le score composite) ; les niveaux de pression standards
+en mode Real Physics (bloqué par l'absence réelle d'interpolation
+verticale dans `acf.awci.vertical_field` — un chantier de physique
+séparé, pas un manque de câblage UI).

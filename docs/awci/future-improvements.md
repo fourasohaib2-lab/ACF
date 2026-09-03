@@ -102,3 +102,32 @@ Also disclosed previously: `acf.gui.map.layers.layer_manager.LayerManager`
 unrelated interface) both exist and are not interoperable. Unifying them
 is a real, separate architectural task, not something this dashboard's
 own LAYERS checkbox panel should attempt unilaterally.
+
+## 8. Multi-variable vertical profile (§51)
+
+**Update 2026-09-03:** `AWCIVerticalProfile` now covers §51's full real
+level list (Surface/850/700/500/300/250 hPa + real named flight levels,
+demo mode) — see `reports/ACF_MASTER_AUDIT_v2.md`'s own "§51" closure.
+Still open: §51 also asks each level to show wind/temperature/humidity/
+stability/convection/turbulence/icing individually, not just the
+composite AWCI score. `AWCIVerticalProfile` is a single-series bar
+chart; showing 7+ real variables per level would need a genuine widget
+redesign (a real per-level breakdown table, or a multi-series chart) —
+a separate, larger UI task, not attempted in this closure. The real
+data itself (`AWCICalculator.calculate()`'s own `module_scores`) is
+already computed at every level this widget already loops over
+(`_open_vertical_profile()`) — the gap is purely in how it is
+displayed, not in what is computed.
+
+## 9. Real Physics mode's own standard-pressure-level profile
+
+Also from the §51 closure above: `_ALL_VERTICAL_PROFILE_LEVELS_HPA`
+(Surface/850/700/500/300/250 hPa) is demo mode only, deliberately.
+`acf.awci.vertical_field.compute_real_complexity_volume()`'s own real
+volume has no vertical interpolation (native solver levels only, see
+that module's own `honest_limitation` string) - it cannot honestly
+answer "what is the real value at exactly 500 hPa" the way the demo
+pattern's continuous analytic function can. Building real vertical
+interpolation into `acf.awci.vertical_field` would be a genuine,
+separate physics task (not a UI gap) before this could be closed for
+Real Physics mode too.

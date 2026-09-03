@@ -2,18 +2,27 @@
 AWCI Vertical Profile Widget
 ============================
 
-Shows AWCI complexity by flight level.
+Shows real AWCI complexity by vertical level (real named flight levels
+PLUS real standard pressure levels - docs/ACF_MASTER_PROMPT.md §51).
 
-NOTE (found, NOT changed - RÈGLE D'OR / single source of truth): this
-widget predates the AWCI dashboard rebuild (awci_dashboard.py) and was
-already unused before it - neither the old skeleton AWCIDashboard nor the
-rebuilt one instantiates it (the rebuilt one uses AWCICrossSection, a
-continuous matplotlib heatmap along distance/altitude, for its vertical
-cross-section panel instead of this discrete per-flight-level bar chart).
-Still re-exported by this package's __init__.py and fully correct/self-
-contained, just currently unreachable from any real UI. Not deleted per
-project convention - flagged so nobody mistakes it for live code. Same
-situation as data/engine.py's NOTE.
+Reachable, real UI (updated 2026-09-03): this widget predates the AWCI
+dashboard rebuild and was genuinely unused for a while (the rebuilt
+dashboard used AWCICrossSection instead for its own vertical cross-
+section panel), but was wired into a real "🔍 See Vertical Profile"
+button/dialog during this session's own dashboard-parity closure (see
+awci_dashboard.py's `_open_vertical_profile()`) - no longer dead code.
+
+Real level ordering (added 2026-09-03, §51's standard-pressure-level
+closure): `set_profile()` trusts the CALLER's own dict insertion order
+rather than re-deriving one internally. An earlier version sorted by
+parsing "FL<n>" labels - that only ever worked because every real
+caller supplied flight-level-only labels; it silently could not
+interleave real standard pressure levels ("850 hPa", "Surface", ...)
+by true altitude among flight levels (their `parse_fl()` key was
+always 0). The real caller (`awci_dashboard.py`'s
+`_ALL_VERTICAL_PROFILE_LEVELS_HPA`) already computes the correct real
+altitude order from actual hPa values before calling `set_profile()` -
+a single source of truth for that order, not duplicated here.
 """
 
 from PySide6.QtCore import QSize, Qt
@@ -83,20 +92,22 @@ class AWCIVerticalProfile(QWidget):
             painter.end()
             return
 
-        # Sort levels by altitude (FL100 < FL200 < FL300...)
-        def parse_fl(level: str) -> int:
-            try:
-                return int(level.replace("FL", ""))
-            except (ValueError, TypeError, AttributeError):
-                return 0
-
-        sorted_items = sorted(self._profile.items(), key=lambda x: parse_fl(x[0]))
+        # Real altitude order (see module docstring) - the caller
+        # already sorted this dict by real hPa before calling
+        # set_profile(), so this widget draws it left-to-right exactly
+        # as given rather than re-deriving a (label-format-specific,
+        # previously incorrect for mixed level types) order itself.
+        sorted_items = list(self._profile.items())
 
         # Draw profile
         margin_left = 50
         margin_right = 20
         margin_top = 35
-        margin_bottom = 20
+        # Widened from 20 (2026-09-03, §51's standard-pressure-level
+        # closure) - the rotated level labels below now need real
+        # vertical room to read (up to 12 real levels can share this
+        # chart now, vs. up to 6 before).
+        margin_bottom = 45
 
         plot_width = width - margin_left - margin_right
         plot_height = height - margin_top - margin_bottom
@@ -155,11 +166,20 @@ class AWCIVerticalProfile(QWidget):
             score_text = f"{int(score)}"
             painter.drawText(int(x), int(y - 12), int(bar_width), 12, Qt.AlignmentFlag.AlignCenter, score_text)
 
-            # Draw level label
+            # Draw level label - rotated (added 2026-09-03, §51's
+            # standard-pressure-level closure: up to 12 real levels can
+            # now share this chart, vs. up to 6 before, and labels like
+            # "850 hPa"/"Surface" are real longer than "FL100" - a
+            # horizontal label no longer reliably fits one narrow bar's
+            # own width without being clipped). Anchored at the bar's
+            # own horizontal center, angled so it reads outward without
+            # overlapping its neighbours.
+            painter.save()
             painter.setPen(QPen(QColor(150, 150, 180), 1))
-            painter.drawText(
-                int(x), int(margin_top + plot_height + 5), int(bar_width), 12, Qt.AlignmentFlag.AlignCenter, level
-            )
+            painter.translate(x + bar_width / 2, margin_top + plot_height + 8)
+            painter.rotate(-55)
+            painter.drawText(0, 0, level)
+            painter.restore()
 
         # Draw grid lines
         painter.setPen(QPen(QColor(50, 50, 80), 1, Qt.PenStyle.DashLine))

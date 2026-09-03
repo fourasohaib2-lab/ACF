@@ -132,6 +132,40 @@ def test_vertical_profile_has_a_real_score_per_named_flight_level(qapp):
         assert 0.0 <= score <= 100.0
 
 
+def test_vertical_profile_now_also_covers_the_real_standard_pressure_levels(qapp):
+    """§51 of docs/ACF_MASTER_PROMPT.md: "Surface / 850 hPa / 700 hPa /
+    500 hPa / 300 hPa / 250 hPa / Flight levels" - closed 2026-09-03."""
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+
+    profile = dashboard._vertical_profile_widget._profile
+    for label in ("Surface", "850 hPa", "700 hPa", "500 hPa", "300 hPa", "250 hPa"):
+        assert label in profile
+        assert 0.0 <= profile[label] <= 100.0
+
+
+def test_vertical_profile_levels_are_in_real_altitude_order(qapp):
+    """Real regression guard for the widget's own ordering fix: labels
+    must appear in real descending-pressure (ascending-altitude) order,
+    not dict-insertion order of the two source tables."""
+    from acf.gui.dashboard.awci_dashboard import _ALL_VERTICAL_PROFILE_LEVELS_HPA
+
+    hpas = list(_ALL_VERTICAL_PROFILE_LEVELS_HPA.values())
+    assert hpas == sorted(hpas, reverse=True)
+    assert list(_ALL_VERTICAL_PROFILE_LEVELS_HPA.keys())[0] == "Surface"  # highest real pressure first
+
+
+def test_vertical_profile_widget_trusts_the_callers_own_order():
+    """Real regression guard: AWCIVerticalProfile must no longer
+    silently re-sort by parsing "FL<n>" labels (that could not
+    correctly interleave standard-pressure-level labels)."""
+    from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile
+
+    widget = AWCIVerticalProfile()
+    widget.set_profile({"Surface": 10.0, "FL180": 40.0, "700 hPa": 25.0})
+    assert list(widget._profile.items()) == [("Surface", 10.0), ("FL180", 40.0), ("700 hPa", 25.0)]
+
+
 # ------------------------------------------------------ regional trend
 
 
