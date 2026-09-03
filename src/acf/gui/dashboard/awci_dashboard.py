@@ -67,6 +67,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider,
 from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.result import AWCIResult, build_awci_result
 from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
@@ -259,6 +260,13 @@ class AWCIDashboard(QWidget):
         # the exact same real values last shown by risk_summary, read
         # by the "🔔 Alerts" dialog/badge rather than recomputed.
         self._last_risk_inputs: tuple[dict[str, float], float, float | None, float | None] = ({}, 0.0, None, None)
+        # Real AWCIResult (§26/§53/§81) for the point of interest's
+        # last calculate() call - built alongside _last_risk_inputs
+        # above, read by _on_component_clicked() to show the real
+        # drill-down trace (build_awci_result()/trace_chain() existed
+        # but were never wired into any GUI before this). None until
+        # the first real refresh() completes.
+        self._last_awci_result: AWCIResult | None = None
         self._evolution: dict[str, Any] | None = None
         self._evolution_frame_index = 0
         self._evolution_timer = QTimer(self)
@@ -475,6 +483,9 @@ class AWCIDashboard(QWidget):
         point_result = AWCICalculator().calculate(point_raw_data)
         self.radar.update_data(point_result["module_scores"])
         self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="demo")
+        # Real drill-down chain (§26/§53) for whichever component the
+        # user clicks next - see _last_awci_result's own docstring.
+        self._last_awci_result = build_awci_result(point_result, raw_variables=point_raw_data)
         # Real Point Information card on the regional map (matching the
         # reference mockup) - the exact same real AWCI score point_result
         # just computed for this same point, not a second/fabricated value.
@@ -663,6 +674,12 @@ class AWCIDashboard(QWidget):
         point_result = AWCICalculator().calculate(point_raw_data)
         self.radar.update_data(point_result["module_scores"])
         self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="real_physics")
+        # Real drill-down chain (§26/§53) - vertical_level is the real
+        # native solver level index actually sampled above (level_idx),
+        # not a fabricated physical level (see acf.awci.wind_shear's
+        # own disclosure on why native levels aren't yet pinned to real
+        # pressures/heights).
+        self._last_awci_result = build_awci_result(point_result, raw_variables=point_raw_data, vertical_level=level_idx)
         # Real Point Information card, same real per-point result just
         # computed above at this level - not left showing a stale
         # synthetic-demo score while in Real Physics mode.
@@ -767,7 +784,7 @@ class AWCIDashboard(QWidget):
         # here rather than blindly cast, so a genuinely unexpected value
         # fails loudly instead of being silently treated as "demo".
         real_mode: Literal["demo", "real_physics"] = "real_physics" if mode == "real_physics" else "demo"
-        self._component_detail_window.show_component(key, score, raw_data, real_mode)
+        self._component_detail_window.show_component(key, score, raw_data, real_mode, self._last_awci_result)
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()

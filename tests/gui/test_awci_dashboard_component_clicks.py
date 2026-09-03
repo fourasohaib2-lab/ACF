@@ -82,3 +82,44 @@ def test_every_row_is_independently_clickable(qapp):
     for key in ("dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence"):
         _press(dashboard.component_list._rows[key])
         assert dashboard._component_detail_window.windowTitle() != ""  # a real title was set for this module
+
+
+# ------------------------------- real drill-down chain (§26/§53, added 2026-09-03)
+
+
+def test_clicking_a_row_shows_a_real_drill_down_trace_in_demo_mode(qapp):
+    """build_awci_result()/AWCIResult.trace_chain() (§26/§53/§81) existed
+    since an earlier closure this session but were never wired into any
+    GUI - real regression guard that this dialog now shows the real
+    trace text, not the "not available" placeholder."""
+    dashboard = AWCIDashboard()
+    assert dashboard._last_awci_result is not None  # refresh() in __init__ already built one
+
+    _press(dashboard.component_list._rows["dynamic"])
+
+    trace_text = dashboard._component_detail_window.trace_label.text()
+    assert "not available - no real AWCIResult" not in trace_text
+    assert "Score: AWCI =" in trace_text
+    assert "Diagnostics (module scores):" in trace_text
+
+
+def test_drill_down_trace_reflects_the_same_real_raw_variables_as_the_inputs_section(qapp):
+    dashboard = AWCIDashboard()
+
+    _press(dashboard.component_list._rows["dynamic"])
+
+    dialog = dashboard._component_detail_window
+    assert "wind_speed" in dialog.inputs_label.text()
+    assert "Variables:" in dialog.trace_label.text()
+    assert "wind_speed" in dialog.trace_label.text()
+
+
+def test_drill_down_trace_includes_the_real_vertical_level_in_real_physics_mode(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._on_real_physics_ready(_real_volume())
+
+    _press(dashboard.component_list._rows["dynamic"])
+
+    trace_text = dashboard._component_detail_window.trace_label.text()
+    assert "Niveau vertical:" in trace_text
+    assert "not available" not in trace_text.split("Niveau vertical:")[1]

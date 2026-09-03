@@ -28,12 +28,15 @@ never claims a pinned default is a real physics-driven result.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
 from acf.awci.weights import WeightsManager
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+
+if TYPE_CHECKING:
+    from acf.awci.result import AWCIResult
 
 Mode = Literal["demo", "real_physics"]
 
@@ -175,10 +178,43 @@ class AWCIComponentDetailDialog(QDialog):
         self.weight_status_label.setWordWrap(True)
         outer.addWidget(self.weight_status_label)
 
+        # Real drill-down chain (§26/§53, added 2026-09-03) - built by
+        # acf.awci.result.build_awci_result()/AWCIResult.trace_chain(),
+        # a real capability that existed since this session's earlier
+        # §26/§53/§81 closure but was never actually shown anywhere in
+        # the GUI until now.
+        self.trace_header = QLabel("Drill-down chain (docs/ACF_MASTER_PROMPT.md §26/§53)")
+        self.trace_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        outer.addWidget(self.trace_header)
+        self.trace_label = QLabel("")
+        self.trace_label.setStyleSheet(f"font-family: monospace; color: {TOKENS.text_primary}; font-size: 10px;")
+        self.trace_label.setWordWrap(True)
+        outer.addWidget(self.trace_label)
+
         outer.addStretch()
 
-    def show_component(self, key: str, score: float, raw_data: dict[str, Any] | None, mode: Mode) -> None:
-        """(Re)populate every field for real module `key` and show the dialog."""
+    def show_component(
+        self,
+        key: str,
+        score: float,
+        raw_data: dict[str, Any] | None,
+        mode: Mode,
+        awci_result: AWCIResult | None = None,
+    ) -> None:
+        """(Re)populate every field for real module `key` and show the
+        dialog.
+
+        Parameters
+        ----------
+        awci_result : AWCIResult, optional
+            The real, already-built AWCIResult (§26/§53/§81) for the
+            SAME point/calculate() call `score`/`raw_data` came from -
+            its own real `trace_chain()` is shown below the scientific-
+            status section. None (the caller didn't build one yet, or
+            this dialog is being reused before any real refresh
+            happened) shows an honest "not available" placeholder,
+            never a fabricated trace.
+        """
         info = COMPONENT_INFO[key]
         self.setWindowTitle(f"AWCI – {info.label}")
         self.header_label.setText(f"{info.icon}  {info.label}")
@@ -209,6 +245,11 @@ class AWCIComponentDetailDialog(QDialog):
         self.weight_status_label.setText(
             f"Weight status: {weight_status.status.value.upper()} — {weight_status.rationale}"
         )
+
+        if awci_result is not None:
+            self.trace_label.setText("\n".join(awci_result.trace_chain()))
+        else:
+            self.trace_label.setText("not available - no real AWCIResult was supplied for this point yet")
 
         self.show()
         self.raise_()

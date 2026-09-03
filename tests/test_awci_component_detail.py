@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.normalizer import Normalizer
+from acf.awci.result import build_awci_result
 from acf.gui.dashboard.awci_component_detail import COMPONENT_INFO, AWCIComponentDetailDialog
 
 
@@ -99,3 +100,48 @@ def test_dialog_shows_the_real_weight_status(qtbot):
     dialog.show_component("dynamic", 50.0, {"wind_speed": 25.0}, "demo")
     assert "EXPERT-BASED" in dialog.weight_status_label.text()
     assert "not recalibrated" in dialog.weight_status_label.text()
+
+
+# ------------------------------- real drill-down chain (§26/§53, added 2026-09-03)
+
+
+def test_dialog_shows_not_available_when_no_awci_result_is_supplied(qtbot):
+    """Backward-compatible default: omitting awci_result entirely must
+    show an honest placeholder, never a fabricated trace."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("dynamic", 50.0, {"wind_speed": 25.0}, "demo")
+    assert "not available" in dialog.trace_label.text()
+
+
+def test_dialog_shows_the_real_trace_chain_when_an_awci_result_is_supplied(qtbot):
+    """build_awci_result()/AWCIResult.trace_chain() (§26/§53/§81) - a
+    real capability built earlier this session, now genuinely
+    displayed rather than left unused."""
+    data = {"wind_speed": 25.0, "temperature": 290.0, "specific_humidity": 0.01}
+    calc_output = AWCICalculator().calculate(data)
+    result = build_awci_result(calc_output, raw_variables=data, vertical_level=2)
+
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("dynamic", calc_output["awci"], data, "demo", result)
+
+    trace_text = dialog.trace_label.text()
+    assert f"Score: AWCI = {calc_output['awci']}" in trace_text
+    assert "wind_speed" in trace_text
+    assert "Niveau vertical: 2" in trace_text
+
+
+def test_dialog_trace_chain_matches_the_real_result_objects_own_output(qtbot):
+    """Real proof the dialog doesn't reformat/re-derive the trace text
+    itself - it must be exactly AWCIResult.trace_chain()'s own real
+    output, one line per list entry."""
+    data = {"wind_speed": 10.0, "cape": 1000.0, "cin": -50.0}
+    calc_output = AWCICalculator().calculate(data)
+    result = build_awci_result(calc_output, raw_variables=data)
+
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("convective", calc_output["module_scores"]["convective"] * 100, data, "demo", result)
+
+    assert dialog.trace_label.text() == "\n".join(result.trace_chain())

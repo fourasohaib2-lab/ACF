@@ -4047,3 +4047,65 @@ pipeline scientifique plus large (ingestion/adaptateurs modèles) —
 hors du périmètre de cette fermeture — restent un vrai chantier
 distinct pour le futur §31/§8 (pipeline en 21 étapes assemblé de bout
 en bout).
+
+## Mise à jour 2026-09-03 (suite) — chaîne de traçabilité réelle enfin affichée dans le dashboard (§26/§53)
+
+Suite de l'utilisateur ("continue selon ton jugement") — après §11,
+recherche d'un nouveau gap concret et bien borné dans le tableau
+d'audit exhaustif. Trouvaille faite en vérifiant si les capacités
+construites plus tôt cette session étaient réellement utilisées :
+`acf.awci.result.build_awci_result()`/`AWCIResult.trace_chain()`
+(fermeture §26/§53/§81 du 2026-09-03, plus tôt cette session) n'étaient
+référencées nulle part dans `acf.gui` — exactement le même schéma
+"capacité réelle jamais branchée" que cette session a déjà trouvé et
+corrigé plusieurs fois (le système de couches orphelin, `AWCIGauge`
+avant sa reconstruction) — mais cette fois au niveau de l'intégration
+GUI, pas de la science elle-même.
+
+**Pourquoi** : §26 exige "Chaque résultat doit être traçable" et §53
+"Il doit être possible de passer du résumé à la donnée détaillée" — la
+vraie chaîne existait (`trace_chain()`), mais aucun bouton, dialogue ou
+panneau du dashboard ne l'affichait jamais à l'utilisateur.
+
+**Construit, un vrai branchement, aucune nouvelle donnée fabriquée** :
+- `AWCIDashboard` : nouveau `self._last_awci_result: AWCIResult | None`,
+  construit via `build_awci_result(point_result, raw_variables=point_raw_data,
+  vertical_level=...)` juste après chacun des 2 vrais appels
+  `AWCICalculator().calculate()` existants (mode démo et mode Real
+  Physics) — jamais une deuxième computation, exactement le même
+  `point_result`/`point_raw_data` déjà réels utilisés par
+  `radar`/`component_list`/`risk_summary`. `vertical_level` réel
+  (l'index de niveau natif effectivement échantillonné) uniquement en
+  mode Real Physics ; `lead_time_hours`/`provenance`/`quality`/
+  `model_spread` restent honnêtement `None` (pas de concept
+  d'échéance/provenance réelle dans cette vue synthétique
+  mono-point) — `trace_chain()` les affiche alors comme "not
+  available", jamais fabriqués.
+- `AWCIComponentDetailDialog.show_component()` : nouveau paramètre
+  optionnel `awci_result: AWCIResult | None = None` (rétrocompatible —
+  `None` par défaut affiche honnêtement "not available"), nouvelle
+  section "Drill-down chain (§26/§53)" affichant `trace_chain()` telle
+  quelle, ligne par ligne — aucune reformulation, aucun recalcul.
+- `_on_component_clicked()` passe `self._last_awci_result` au dialogue
+  à chaque clic.
+
+**Validation réelle** : la trace affichée prouvée être exactement
+`AWCIResult.trace_chain()`'s own real output (comparaison directe
+ligne par ligne, pas une re-dérivation) ; `raw_variables` de la trace
+prouvés correspondre aux mêmes vraies valeurs déjà montrées dans la
+section "Real inputs" existante ; le niveau vertical réel prouvé
+apparaître en mode Real Physics ; comportement par défaut (dialogue
+appelé sans `awci_result`) prouvé rétrocompatible (placeholder honnête,
+pas d'erreur). 6 nouveaux tests répartis sur 2 fichiers —
+`tests/gui/test_awci_dashboard_component_clicks.py` (+3),
+`tests/test_awci_component_detail.py` (+3). Suite complète
+**3784/3784** (3778 + 6), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `lead_time_hours`/`provenance`/`quality`/
+`model_spread` restent honnêtement absents de cette vue dashboard (pas
+de concept réel d'échéance de prévision ni de provenance de fichier
+source dans le mode synthétique/Real-Physics-mono-point actuel) — la
+chaîne affichée est réelle mais partielle, disclosed comme telle par
+`trace_chain()` lui-même via ses "not available". D'autres dialogues/
+panneaux du dashboard (AWCI Dashboard général, ESOC) pourraient
+recevoir le même branchement à la demande.
