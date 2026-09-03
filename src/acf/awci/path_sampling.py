@@ -229,6 +229,71 @@ def sample_cross_section_hazards(
     }
 
 
+def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[str, Any]:
+    """
+    Real per-component map-layer grids at one real native level, from
+    `acf.awci.vertical_field.compute_real_complexity_volume()`'s own
+    real 3D fields (docs/awci/future-improvements.md §6 - explicit
+    user request "je veux rendre tout les boutons de awci en marche"
+    closed this for demo mode via
+    `acf.gui.dashboard.awci_synthetic_field.awci_layer_grids()`; this
+    is the Real Physics mode counterpart).
+
+    Honest scope: the real volume carries temperature/wind_speed/u/v/
+    specific_humidity/pressure but NOT cape/precipitation (see that
+    function's own docstring - convective/microphysical inputs are not
+    part of the real solver state today, same limitation already
+    disclosed for the AWCI module scores themselves in Real Physics
+    mode). Only the 3 layers derivable from what IS real are returned
+    here - a caller (`AWCIMapPanel`) must leave the "CAPE"/
+    "Convection"/"Clouds" checkboxes as a real no-op in Real Physics
+    mode rather than fabricate a value for them.
+
+    Parameters
+    ----------
+    volume : a real compute_real_complexity_volume() result.
+    level_idx : the real native level index to slice.
+
+    Returns
+    -------
+    dict with "lats"/"lons" (the volume's own 1D coordinate arrays)
+    and "wind" (m/s, real speed magnitude), "turbulence" (m/s per grid
+    step, real horizontal gradient magnitude of that same real wind
+    field - the same disclosed proxy `awci_layer_grids()` uses, not
+    the full Ellrod-Knapp CAT index), "icing" ([0, 1], real
+    `acf.awci.hydrometeor_phase` severity from this level's own real
+    T/q/P) - each a 2D numpy array (n_lat, n_lon).
+    """
+    from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+
+    wind_speed = np.asarray(volume["wind_speed_volume"][level_idx])
+    temperature = np.asarray(volume["temperature_volume"][level_idx])
+    specific_humidity = np.asarray(volume["specific_humidity_volume"][level_idx])
+    pressure_hpa = np.asarray(volume["pressure_volume_hpa"][level_idx])
+
+    d_dlat, d_dlon = np.gradient(wind_speed)
+    turbulence = np.hypot(d_dlat, d_dlon)
+
+    n_lat, n_lon = wind_speed.shape
+    icing = np.zeros((n_lat, n_lon))
+    for i in range(n_lat):
+        for j in range(n_lon):
+            phase = compute_real_hydrometeor_phase_at_point(
+                temperature_k=float(temperature[i, j]),
+                specific_humidity=float(specific_humidity[i, j]),
+                pressure_hpa=float(pressure_hpa[i, j]),
+            )
+            icing[i, j] = phase["phase_severity"]
+
+    return {
+        "lats": volume["lats"],
+        "lons": volume["lons"],
+        "wind": wind_speed,
+        "turbulence": turbulence,
+        "icing": icing,
+    }
+
+
 def crop_field_to_extent(
     lats: Any, lons: Any, field: np.ndarray, extent: tuple[float, float, float, float]
 ) -> dict[str, Any]:

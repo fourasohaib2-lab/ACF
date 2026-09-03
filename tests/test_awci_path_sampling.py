@@ -14,6 +14,7 @@ import pytest
 from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
 from acf.awci.path_sampling import (
     crop_field_to_extent,
+    real_layer_grids_at_level,
     sample_cross_section_hazards,
     sample_field_along_path,
     sample_volume_cross_section,
@@ -183,6 +184,61 @@ def test_sample_cross_section_hazards_phase_severity_bounded_0_1():
     )
     assert np.all(result["phase_severity_grid"] >= 0.0)
     assert np.all(result["phase_severity_grid"] <= 1.0)
+
+
+# ------------------------------------------- real_layer_grids_at_level (§12 LAYERS)
+
+
+def test_real_layer_grids_at_level_shapes():
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=2)
+    n_lat, n_lon = len(volume["lats"]), len(volume["lons"])
+    for key in ("wind", "turbulence", "icing"):
+        assert result[key].shape == (n_lat, n_lon)
+
+
+def test_real_layer_grids_at_level_wind_matches_the_real_volume_directly():
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=3)
+    assert np.array_equal(result["wind"], volume["wind_speed_volume"][3])
+
+
+def test_real_layer_grids_at_level_icing_matches_a_direct_real_call():
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=1)
+    i, j = 2, 4
+    expected = compute_real_hydrometeor_phase_at_point(
+        float(volume["temperature_volume"][1, i, j]),
+        float(volume["specific_humidity_volume"][1, i, j]),
+        float(volume["pressure_volume_hpa"][1, i, j]),
+    )
+    assert result["icing"][i, j] == pytest.approx(expected["phase_severity"])
+
+
+def test_real_layer_grids_at_level_icing_bounded_0_1():
+    volume = _real_volume_for_hazards(seed=11, perturbation_scale=6.0)
+    result = real_layer_grids_at_level(volume, level_idx=0)
+    assert np.all(result["icing"] >= 0.0)
+    assert np.all(result["icing"] <= 1.0)
+
+
+def test_real_layer_grids_at_level_turbulence_is_a_real_nonnegative_gradient():
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=2)
+    d_dlat, d_dlon = np.gradient(volume["wind_speed_volume"][2])
+    expected = np.hypot(d_dlat, d_dlon)
+    assert np.allclose(result["turbulence"], expected)
+    assert np.all(result["turbulence"] >= 0.0)
+
+
+def test_real_layer_grids_at_level_has_no_cape_convection_clouds_keys():
+    """Honest scope guard: the real solver volume carries no CAPE/
+    precipitation field, so this function must never fabricate one."""
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=0)
+    assert "cape" not in result
+    assert "convection" not in result
+    assert "clouds" not in result
 
 
 def test_crop_field_to_extent_keeps_only_points_inside_it():

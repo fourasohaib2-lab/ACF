@@ -143,3 +143,52 @@ def test_map_panel_external_field_round_trip(qapp):
     panel.clear_external_field()
     assert panel._external_field is None
     assert panel._title == panel._base_title
+
+
+# --------------------------- real LAYERS (Wind/Turbulence/Icing) in Real Physics mode
+
+
+def test_real_physics_ready_wires_wind_turbulence_icing_layers(qapp):
+    """Explicit user request "je veux rendre tout les boutons de awci
+    en marche" - the global map's Wind/Turbulence/Icing checkboxes
+    must draw a real contour in Real Physics mode too, not just demo
+    mode."""
+    dashboard = AWCIDashboard()
+    volume = _real_volume()
+
+    dashboard._on_real_physics_ready(volume)
+
+    assert dashboard.global_map._external_layer_grids is not None
+    for name in ("Wind", "Turbulence", "Icing"):
+        checkbox = dashboard.global_map.extra_layer_checkboxes[name]
+        checkbox.setChecked(True)
+        assert dashboard.global_map._extra_layer_contours[name].get_visible() is True
+
+
+def test_real_physics_mode_cape_convection_clouds_stay_a_real_no_op(qapp):
+    """Honest scope guard: these 3 checkboxes have no real counterpart
+    in Real Physics mode (the solver volume carries no CAPE/
+    precipitation field) - checking them must not draw a fabricated
+    contour, and must not raise."""
+    dashboard = AWCIDashboard()
+    volume = _real_volume()
+
+    dashboard._on_real_physics_ready(volume)
+
+    for name in ("Convection", "CAPE", "Clouds"):
+        dashboard.global_map.extra_layer_checkboxes[name].setChecked(True)  # must not raise
+        assert name not in dashboard.global_map._extra_layer_contours
+
+
+def test_revert_to_demo_clears_the_real_layer_grids_and_restores_all_6(qapp):
+    dashboard = AWCIDashboard()
+    volume = _real_volume()
+    dashboard._on_real_physics_ready(volume)
+    assert dashboard.global_map._external_layer_grids is not None
+
+    dashboard._revert_to_demo()
+
+    assert dashboard.global_map._external_layer_grids is None
+    for name in ("Wind", "Turbulence", "Icing", "Convection", "CAPE", "Clouds"):
+        dashboard.global_map.extra_layer_checkboxes[name].setChecked(True)
+        assert dashboard.global_map._extra_layer_contours[name].get_visible() is True

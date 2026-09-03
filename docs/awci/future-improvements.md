@@ -70,7 +70,10 @@ request "je veux rendre tout les boutons de awci en marche") — it
 shows a horizontal wind-speed gradient magnitude
 (`awci_layer_grids()`'s own `numpy.gradient()` over the real demo wind
 grid), a different disclosed proxy from the cross-section's vertical
-one. Still not the full Ellrod-Knapp index — this remains open.
+one. Still not the full Ellrod-Knapp index — this remains open. Also
+now real in Real Physics mode (`acf.awci.path_sampling.
+real_layer_grids_at_level()`, same disclosed proxy, applied to that
+mode's own real wind field).
 
 ## 6. Real per-grid-cell CAPE contour map layer
 
@@ -78,11 +81,18 @@ one. Still not the full Ellrod-Knapp index — this remains open.
 tout les boutons de awci en marche": `awci_synthetic_field.awci_layer_grids()`
 now computes CAPE (and Wind/Icing/Convection/Clouds) across the same
 real grid `awci_grid()` already uses, wired as 6 real LAYERS checkboxes
-in `AWCIMapPanel` (`_EXTRA_LAYER_SPECS`, `_on_extra_layer_toggled()`) —
-demo mode only; see AWCI_BUTTON_CONTRACT.md for the real no-op scope
-limit in Real Physics mode (that real volume's own component fields
-are not yet threaded through to this panel — a smaller, separate
-follow-up, not re-opening this item).
+in `AWCIMapPanel` (`_EXTRA_LAYER_SPECS`, `_on_extra_layer_toggled()`).
+**Update 2026-09-03 (suite):** Wind/Turbulence/Icing are now also real
+in Real Physics mode (`acf.awci.path_sampling.real_layer_grids_at_level()`,
+wired via `AWCIDashboard._apply_volume_at_level()` ->
+`AWCIMapPanel.set_external_layer_grids()`). Convection/CAPE/Clouds stay
+demo-mode-only by necessity, not by remaining scope: `compute_real_complexity_volume()`'s
+own real volume carries temperature/wind_speed/u/v/specific_humidity/pressure
+but genuinely no CAPE or precipitation field (the same limitation
+already disclosed for the AWCI module scores themselves in Real
+Physics mode) — a real CAPE/precipitation field for that mode would
+require the solver itself to produce one, a separate, larger physics
+task, not a UI wiring gap.
 
 ## 7. Reconciling the two incompatible map-layer systems
 

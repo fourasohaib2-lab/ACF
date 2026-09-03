@@ -80,6 +80,7 @@ from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
     crop_field_to_extent,
+    real_layer_grids_at_level,
     sample_cross_section_hazards,
     sample_field_along_path,
     sample_volume_cross_section,
@@ -915,6 +916,10 @@ class AWCIDashboard(QWidget):
 
         awci_level = volume["awci_volume"][level_idx]
         self.global_map.set_external_field(lons, lats, awci_level, f"REAL PHYSICS — {level_label}")
+        # Real Wind/Turbulence/Icing LAYERS at this same real level -
+        # see real_layer_grids_at_level()'s own docstring for why
+        # Convection/CAPE/Clouds have no real counterpart here.
+        self.global_map.set_external_layer_grids(real_layer_grids_at_level(volume, level_idx))
 
         cropped = crop_field_to_extent(lats, lons, awci_level, _REGIONAL_EXTENT)
         if cropped["n_points_in_extent"][0] >= 2 and cropped["n_points_in_extent"][1] >= 2:
@@ -1313,6 +1318,7 @@ class AWCIDashboard(QWidget):
         self.real_physics_button.setText("🔬 Real Physics")
         self.real_physics_status.setText("Concept Output – Research Prototype")
         self.global_map.clear_external_field()
+        self.global_map.clear_external_layer_grids()
         self.regional_map.clear_external_field()
         self.route_chart.clear_external_route()
         self.cross_section.clear_external_cross_section()

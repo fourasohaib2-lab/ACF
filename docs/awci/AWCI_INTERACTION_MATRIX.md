@@ -18,7 +18,8 @@ Real interactions only. No row describes a decorative/dead control.
 | Global/Regional map | double-click | camera reset | `MapCamera.reset()` | map returns to default view |
 | Global/Regional map | click (not a drag — see `AWCIMapPanel.mouseReleaseEvent()`'s own real ≤4px click-vs-drag distance check) | `_point_of_interest=(lat, lon)` | re-runs the real per-point pipeline (`refresh()` in demo mode, `_apply_volume_at_level()` in Real Physics mode) | Point Information card, radar, component list, risk summary, recommendation banner all update for the new point |
 | LAYERS → AWCI checkbox | toggle | contour visibility | `self._contour.set_visible()` | heatmap shown/hidden |
-| LAYERS → Wind/Turbulence/Icing/Convection/CAPE/Clouds | toggle | shows/hides a real contour built from `awci_layer_grids()` | `contour.set_visible()` | real per-layer contour appears/disappears (demo mode only — real no-op while Real Physics mode is active, see AWCI_BUTTON_CONTRACT.md) |
+| LAYERS → Wind/Turbulence/Icing | toggle | shows/hides a real contour (demo: `awci_layer_grids()`; Real Physics: `real_layer_grids_at_level()`) | `contour.set_visible()` | real per-layer contour appears/disappears in BOTH modes |
+| LAYERS → Convection/CAPE/Clouds | toggle | shows/hides a real contour built from `awci_layer_grids()` | `contour.set_visible()` | real per-layer contour appears/disappears (demo mode only — real no-op while Real Physics mode is active, see AWCI_BUTTON_CONTRACT.md) |
 | Zoom +/− buttons | click | camera zoom | `MapCamera.zoom_in/out()` | map view zooms |
 | Reset view button | click | camera reset | `MapCamera.reset()`/`set_extent()` | map returns to default |
 | Download PNG button | click | none | `figure.savefig()` | real PNG file written (after explicit user save-dialog confirmation) |
