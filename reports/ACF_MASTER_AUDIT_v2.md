@@ -2922,3 +2922,87 @@ corrompre le modèle qu'il vient de refuser. Suite complète
   algorithme de calibration/apprentissage automatique n'existe encore
   (délibéré, aucune donnée réelle pour l'alimenter).
 - §36/§37/§41 — toujours absents, non traités par cette mise à jour.
+
+## Mise à jour 2026-09-03 (suite) — cadre de comparaison Physics/Statistical/ML/Hybrid réel (§41)
+
+Suite explicite ("continue"), dernier des 4 gaps ❌ traitable sans
+données réelles indisponibles (§36/§37 restent hors périmètre — voir
+ci-dessous).
+
+**Pourquoi** : §41 exige "une architecture sérieuse [qui] doit pouvoir
+comparer Physics-based contre Statistical contre Machine Learning
+contre Hybrid Physics + ML, et mesurer leurs performances" — l'audit
+confirmait qu'aucun cadre de ce type n'existait.
+
+**Décision de périmètre honnête, explicite avant tout code, cohérente
+avec le §42 (PHYSICS-FIRST) et le §88** : construire un faux "modèle
+ML" qui prétendrait produire des prédictions réelles sans jamais avoir
+été entraîné sur de vraies données aurait été exactement
+l'anti-pattern que le §42 interdit explicitement ("ML → invented score
+→ physical interpretation") et le type de réponse inventée que le §88
+interdit. Seules les 2 catégories pour lesquelles une vraie
+implémentation existe déjà dans ce dépôt sont construites ici :
+**Physics-based** (`AWCICalculator` lui-même) et **Statistical** (une
+vraie ligne de base non-physique : le rang de percentile empirique
+réel contre une climatologie réelle, réutilisant
+`Normalizer.normalize_percentile()`, §20). **Machine Learning** et
+**Hybrid** restent de vrais points d'intégration honnêtement vides
+(`NotYetImplementedMethod` lève une erreur réelle plutôt que de
+fabriquer un nombre) — aucun modèle ML entraîné n'existe nulle part
+dans ce dépôt à envelopper.
+
+**Construit** : nouveau
+[`acf.awci.method_comparison`](../src/acf/awci/method_comparison.py) —
+`PredictionMethod` (ABC réelle, une catégorie + un `predict()` par
+sous-classe), `PhysicsBasedMethod` (enveloppe fine et réelle
+d'`AWCICalculator`), `ClimatologicalBaselineMethod` (ligne de base
+statistique réelle, ignore délibérément toute variable autre que celle
+choisie — un vrai point de comparaison simple, pas une seconde
+tentative de physique déguisée), `NotYetImplementedMethod` (lève
+`NotImplementedError`, refuse explicitement d'être utilisée pour une
+catégorie qui a déjà une vraie implémentation). `compare_methods()`
+réutilise directement `acf.verification.nwp_metrics.
+NWPVerificationMetrics.evaluate_all()` (RMSE/bias/MAE/ACC/POD/FAR/CSI/
+ETS, déjà réel et testé) — jamais réimplémenté — avec un seuil par
+défaut réel de 50.0 (le seuil "Moderate" d'`AWCICalculator.
+LEVEL_THRESHOLDS`, pas le défaut générique 1.0 de `NWPVerificationMetrics`,
+quasi dénué de sens sur l'échelle réelle 0-100 de l'AWCI).
+
+**Disclosure honnête réutilisée du §40** : `compare_methods()` a
+besoin de vraies observations pour produire des métriques
+significatives — aucun jeu de données AWCI observées réelles n'existe
+dans ce dépôt (§36/§37, toujours absents) ; les tests de ce module
+utilisent donc des cas/observations d'exemple clairement synthétiques
+(la même convention honnête déjà appliquée dans toute la suite de
+tests du projet), jamais présentés comme de vraies observations.
+
+**Validation réelle** : 14 nouveaux tests
+(`tests/test_awci_method_comparison.py`) — `PhysicsBasedMethod`
+correspond exactement à un appel direct `AWCICalculator().calculate()`
+(y compris avec un calculateur personnalisé), `ClimatologicalBaselineMethod`
+correspond exactement à un appel direct `normalize_percentile()`, lève
+une vraie erreur pour une variable manquante, `NotYetImplementedMethod`
+lève réellement `NotImplementedError` pour ML et Hybrid, refuse
+explicitement d'être construite pour une catégorie déjà réelle,
+`compare_methods()` produit des métriques correspondant à un calcul
+indépendant, utilise le vrai seuil par défaut 50.0, propage l'erreur
+réelle d'une méthode placeholder incluse (jamais ignorée
+silencieusement), rejette un décalage de longueur, et gère
+correctement zéro méthode. Suite complète **3547/3547** (3533 + 14),
+`ruff`/`mypy` propres.
+
+**Statut final des 6 gaps ❌ de l'audit exhaustif du 2026-09-03** :
+- §20/§22/§27-29/§32/§45-47/§64 (tableau de conformité initial) — tous
+  fermés ou honnêtement partiels avec la raison exacte disclosed.
+- §28-29 — fermé pour les données/couches/contrôle interactif ;
+  Model Consensus/Spread/Turbulence/Icing/Visibility restent ouverts
+  (limites déjà documentées).
+- §40 — fermé pour le garde-fou méthodologique réel.
+- §41 — fermé pour les 2 catégories réellement implémentables
+  (Physics-based/Statistical) ; ML/Hybrid restent de vrais points
+  d'intégration honnêtement vides.
+- **§36/§37 restent les deux seuls gaps réellement non traités** — les
+  deux nécessitent de vraies données (cas météorologiques historiques
+  vérifiés, évaluations réelles de prévisionnistes) qui n'existent pas
+  dans ce dépôt et que Claude ne peut ni collecter ni inventer sans
+  violer le §69/§88 du prompt lui-même.
