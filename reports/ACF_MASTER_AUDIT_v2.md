@@ -2856,3 +2856,69 @@ resynchronise bien le panel réel). Suite complète **3522/3522**
   `LayerPanel`×2) restent en l'état — une consolidation ou suppression
   serait une décision architecturale à part, pas prise unilatéralement
   ici.
+
+## Mise à jour 2026-09-03 (suite) — garde-fou méthodologique réel de calibration (§40)
+
+Suite explicite ("continue"), choix libre parmi les 4 gaps ❌ restants
+de l'audit exhaustif (§36/§37/§40/§41).
+
+**Pourquoi** : §40 exige une séparation formelle
+`DATASET TRAIN → CALIBRATION → MODEL PARAMETERS → LOCKED MODEL →
+INDEPENDENT VALIDATION DATA`, et interdit explicitement de "calibrer et
+valider sur exactement les mêmes cas sans contrôle méthodologique."
+L'audit confirmait qu'aucun pipeline de ce type n'existait — cohérent
+avec le fait que tous les poids actuels sont `INITIAL`/`EXPERT_BASED`
+(§77-81), mais confirmant aussi qu'aucune infrastructure n'existait
+pour calibrer proprement le jour venu.
+
+**Décision de périmètre honnête, explicite avant tout code** : §36 et
+§37 (base de cas historiques réels, validation contre l'expertise
+humaine réelle) restent absents — ce module ne les construit PAS,
+faute de vraies données étiquetées (aucun cas météorologique réel avec
+résultat AWCI vérifié par un prévisionniste n'existe dans ce dépôt).
+Construire un "auto-calibrateur" qui prétendrait apprendre des poids
+optimaux à partir de données inexistantes aurait été exactement le
+type de résultat inventé que le §88 du prompt interdit. Le périmètre
+réel de cette mise à jour est donc volontairement restreint au **vrai
+garde-fou méthodologique** — le mécanisme qui empêchera un vrai
+mésusage le jour où de vraies données arriveront — pas un algorithme
+d'apprentissage.
+
+**Construit** : nouveau
+[`acf.awci.calibration`](../src/acf/awci/calibration.py) —
+`lock_calibration()` gèle une configuration réelle d'`AWCICalculator`
+(poids/termes d'interaction/seuils de niveau — les mêmes 4 paramètres
+réels rendus configurables cette session au §22/§45-47) dans un
+`LockedModel` (`dataclass(frozen=True)`), taguée d'une vraie
+`calibration_version` et de l'ensemble exact des identifiants de cas
+réels utilisés pour la calibrer. `lock_calibration()` réutilise la
+validation déjà réelle d'`AWCICalculator.__init__()` (clés
+d'interaction cohérentes, seuils strictement croissants) au lieu de la
+dupliquer, et refuse une calibration sur zéro cas réel (une
+"calibration" sans aucun cas réel derrière n'en est pas une).
+`validate_locked_model()` compare l'ensemble des cas de validation
+proposés à `calibrated_on_case_ids` et lève
+`ValidationOverlapError` — avec le détail exact du chevauchement, pas
+un message générique — **avant** qu'aucun calcul de validation ne
+s'exécute, pour qu'une validation méthodologiquement invalide ne
+produise jamais silencieusement un chiffre.
+
+**Validation réelle** : 11 nouveaux tests
+(`tests/test_awci_calibration.py`) — configuration invalide propage
+bien l'erreur réelle d'`AWCICalculator` (jamais réimplémentée), zéro
+cas réel lève une erreur explicite, `build_calculator()` produit un
+`AWCICalculator` bit-identique à une construction indépendante avec les
+mêmes paramètres, mutation ultérieure du dict original de l'appelant
+n'affecte jamais le modèle déjà gelé, `LockedModel` refuse réellement
+toute réassignation de champ après construction
+(`dataclasses.FrozenInstanceError`), chevauchement total/partiel
+détecté avec le détail exact (jamais les IDs non chevauchants inclus
+par erreur), et le garde-fou fonctionne de façon autonome sans
+corrompre le modèle qu'il vient de refuser. Suite complète
+**3533/3533** (3522 + 11), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** :
+- §40 — **fermé pour le garde-fou méthodologique réel** ; aucun
+  algorithme de calibration/apprentissage automatique n'existe encore
+  (délibéré, aucune donnée réelle pour l'alimenter).
+- §36/§37/§41 — toujours absents, non traités par cette mise à jour.
