@@ -3071,3 +3071,57 @@ vraies données, pas une démonstration du contenu qu'ils pourraient
 avoir. §36/§37 restent donc "infrastructure fermée, contenu réel
 manquant" tant qu'aucune vraie donnée n'est fournie — la seule façon
 honnête de les fermer complètement.
+
+## Mise à jour 2026-09-03 (suite) — objet de résultat AWCI complet (§81)
+
+Suite explicite ("continue with the rest of the audit") — reprise des
+lignes ⚠️ PARTIELLES du tableau exhaustif, en commençant par §81
+(champs minimums du résultat AWCI lui-même), un gap concret et bien
+délimité, directement au cœur de ce que `calculate()` retourne.
+
+**Pourquoi** : §81 exige que chaque résultat AWCI conserve "au
+minimum : AWCI score, AWCI class, AWCI confidence, AWCI dominant
+factors, AWCI interactions, AWCI model spread, AWCI quality, AWCI
+provenance." L'audit confirmait que `model spread`/`quality`/
+`provenance` existaient bien, réellement, mais comme 3 systèmes
+séparés (`ModelConsensusEngine`, `assess_variable_quality()`,
+`Provenance`) jamais assemblés avec le résultat `calculate()`
+lui-même.
+
+**Construit** : nouveau
+[`acf.awci.result`](../src/acf/awci/result.py) — `AWCIResult`
+(dataclass réelle avec les 8 champs exacts du §81) et
+`build_awci_result()`, un vrai **assembleur**, pas un nouveau calcul :
+il ne calcule jamais lui-même `model_spread`/`quality`/`provenance` —
+cela demanderait de deviner quelle vraie comparaison multi-modèle,
+quelle vraie climatologie ou quelle vraie chaîne de provenance
+l'appelant a en tête (les noms de variable simplifiés d'AWCI, ex.
+`wind_speed`, ne correspondent pas directement aux noms CF/unités
+qu'attend `assess_variable_quality()` sans un vrai pont, comme celui
+déjà construit pour METAR). L'appelant fournit ses propres valeurs
+réelles déjà calculées ailleurs ; un champ non fourni reste
+honnêtement `None`, jamais un `0.0`/une valeur fabriquée — même
+discipline que le §61 partout ailleurs dans ce dépôt.
+
+**Validation réelle** : 9 nouveaux tests
+(`tests/test_awci_result.py`) — chaque champ de base correspond
+exactement à `calculate()`, les facteurs dominants correspondent aux
+entrées déjà triées de `explanation` (jamais recalculées), les 3
+champs optionnels restent `None` par défaut, un vrai `Provenance`/une
+vraie `assess_variable_quality()`/un vrai dict de spread multi-modèle
+s'attachent sans modification, les trois ensemble fonctionnent, et le
+`calculate_output` d'origine n'est jamais muté. Suite complète
+**3587/3587** (3578 + 9), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, disclosed honnêtement** : `build_awci_result()`
+n'est pas encore branché à un vrai point de consommation GUI/pipeline
+(même situation transitoire déjà acceptée cette session pour
+`normalize_percentile()` avant son branchement, et pour §36/§37/§40/§41
+qui restent tous des infrastructures réelles non encore consommées) —
+`acf.gui.dashboard.awci_messages_panel` ne calcule aujourd'hui aucun
+score AWCI à partir des données METAR réelles (seulement décodage +
+statut qualité §32), donc un branchement réel demanderait d'abord de
+construire ce pont METAR→AWCI, une pièce de travail distincte, pas
+faite ici pour ne pas mélanger deux changements dans une même passe.
+§81 reste donc **partiellement fermé** : l'objet complet existe et est
+réel, mais rien ne le construit encore automatiquement en production.
