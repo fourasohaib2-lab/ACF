@@ -85,13 +85,8 @@ from acf.awci.path_sampling import (
     sample_field_along_path,
     sample_volume_cross_section,
 )
-from acf.awci.input_adapter import (
-    AWCI_KEY_NATIVE_UNIT,
-    AWCI_KEY_TO_CF_STANDARD_NAME,
-    build_awci_data_from_datasets,
-)
+from acf.awci.pipeline import quality_for_awci_point_data
 from acf.awci.result import AWCIResult, build_awci_result
-from acf.physics_guard.variable_quality import VariableQualityStatus
 from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
@@ -192,50 +187,13 @@ _FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA: dict[str, float] = {
 }
 
 
-def _quality_for_point_raw_data(point_raw_data: dict[str, Any]) -> dict[str, VariableQualityStatus]:
-    """
-    Real per-variable quality (docs/ACF_MASTER_PROMPT.md §32/§75),
-    reused - not reimplemented - from `acf.awci.input_adapter`
-    (added 2026-09-03, explicit user request "je veux rendre tout les
-    boutons de awci en marche" leading into the §75 execution-report
-    closure): wraps this point's own real raw values for the 4 CF-
-    mappable keys (temperature/specific_humidity/wind_speed/pressure)
-    into minimal real `Dataset`s at their own known native units (the
-    exact same convention `_synthetic_inputs()`/`AWCICalculator`
-    itself uses), then calls `build_awci_data_from_datasets()` and
-    keeps only its real `quality` half - its `data` half is discarded
-    here since `point_raw_data` already IS that dict (built once,
-    already fed to `AWCICalculator.calculate()` by the caller).
-
-    Reusing the adapter here (rather than calling
-    `assess_variable_quality()` directly) avoids re-deriving the exact
-    hPa-vs-Pa pressure unit conversion that adapter's own docstring
-    already discloses as a real, previously-found bug - one real
-    conversion path, not two."""
-    from datetime import UTC, datetime, timedelta
-
-    from acf.core.contracts.dataset import Dataset
-
-    now = datetime.now(UTC)
-    datasets: dict[str, Dataset] = {}
-    for awci_key in AWCI_KEY_TO_CF_STANDARD_NAME:
-        if awci_key not in point_raw_data:
-            continue
-        datasets[awci_key] = Dataset(
-            id=f"point-of-interest-{awci_key}",
-            source="awci_synthetic_field._synthetic_inputs",
-            model="ACF-DEMO",
-            run="n/a",
-            forecast_reference_time=now,
-            valid_time=now,
-            lead_time=timedelta(0),
-            variable=AWCI_KEY_TO_CF_STANDARD_NAME[awci_key],
-            unit=AWCI_KEY_NATIVE_UNIT[awci_key],
-            dimensions=(),
-            values=float(point_raw_data[awci_key]),
-        )
-    _data, quality = build_awci_data_from_datasets(datasets)
-    return quality
+#: Real per-variable quality assessment (docs/ACF_MASTER_PROMPT.md
+#: §32/§75) - moved into acf.awci.pipeline (added 2026-09-03, priority
+#: freely chosen from the 90-section audit's own remaining §8/§31
+#: "pipeline never assembled" gap) so this same real logic has one real
+#: home in the science layer, not duplicated in the GUI layer that
+#: merely calls it. quality_for_awci_point_data() is that module's own
+#: real function - imported directly above, not reimplemented here.
 
 
 class _ComponentRow(QFrame):
@@ -837,10 +795,10 @@ class AWCIDashboard(QWidget):
         self._last_point_mode = "demo"
         # Real drill-down chain (§26/§53) for whichever component the
         # user clicks next - see _last_awci_result's own docstring.
-        # Real quality (§32/§75) - see _quality_for_point_raw_data()'s
-        # own docstring; reused, not reimplemented.
+        # Real quality (§32/§75) - see quality_for_awci_point_data()'s
+        # own docstring (acf.awci.pipeline); reused, not reimplemented.
         self._last_awci_result = build_awci_result(
-            point_result, raw_variables=point_raw_data, quality=_quality_for_point_raw_data(point_raw_data)
+            point_result, raw_variables=point_raw_data, quality=quality_for_awci_point_data(point_raw_data)
         )
         # Real Point Information card on the regional map (matching the
         # reference mockup) - the exact same real AWCI score point_result
@@ -1083,7 +1041,7 @@ class AWCIDashboard(QWidget):
             point_result,
             raw_variables=point_raw_data,
             vertical_level=level_idx,
-            quality=_quality_for_point_raw_data(point_raw_data),
+            quality=quality_for_awci_point_data(point_raw_data),
         )
         # Real Point Information card, same real per-point result just
         # computed above at this level - not left showing a stale

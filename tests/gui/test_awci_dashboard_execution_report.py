@@ -28,7 +28,7 @@ def _real_volume(**overrides):
 def test_dashboard_populates_real_quality_on_the_last_awci_result(qapp):
     """refresh() in __init__ already built one real point-of-interest
     result - it must carry real quality (§32), not None, now that
-    _quality_for_point_raw_data() is wired in."""
+    acf.awci.pipeline.quality_for_awci_point_data() is wired in."""
     dashboard = AWCIDashboard()
     assert dashboard._last_awci_result is not None
     assert dashboard._last_awci_result.quality is not None

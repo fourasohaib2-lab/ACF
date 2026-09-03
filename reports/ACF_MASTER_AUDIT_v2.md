@@ -2593,7 +2593,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 5 | Objectifs scientifiques | 🔵 | Objectifs directeurs, non vérifiables individuellement en code. |
 | 6 | AWCI — définition | ✅ | `AWCICalculator` existe, réel, testé (3497 tests), documenté "Concept Output – Research Prototype" dans le dashboard (`awci_dashboard.py`) — le statut "indicateur conceptuel de recherche" du prompt est honnêtement affiché à l'utilisateur, pas caché. |
 | 7 | Ce que l'AWCI ne doit pas être | ✅ | Confirmé PAR LA STRUCTURE du code : `AWCICalculator.calculate()` n'est jamais une simple moyenne — 9 modules pondérés + interactions + split physical/forecast + incertitude optionnelle. |
-| 8 | Architecture conceptuelle générale | ⚠️ | Le flux `INGESTION→QUALITÉ→HARMONISATION→NORMALISATION→DIAGNOSTICS→MODULES→INTERACTIONS→INCERTITUDE→FUSION→AWCI→CARTES/PROFILS/DASHBOARD` existe par MORCEAUX réels (chaque étape a un vrai module quelque part) mais jamais assemblé en un seul pipeline nommé et traçable de bout en bout — voir §31 ci-dessous, même constat. |
+| 8 | Architecture conceptuelle générale | ⚠️ | Le flux `INGESTION→QUALITÉ→HARMONISATION→NORMALISATION→DIAGNOSTICS→MODULES→INTERACTIONS→INCERTITUDE→FUSION→AWCI→CARTES/PROFILS/DASHBOARD` existe par MORCEAUX réels (chaque étape a un vrai module quelque part) mais jamais assemblé en un seul pipeline nommé et traçable de bout en bout — voir §31 ci-dessous, même constat. *(Voir mise à jour du 2026-09-03 ci-dessous : fermé pour le chemin mono-point.)* |
 | 9 | Multi-modèles | ✅ | Déjà confirmé (audit précédent) : `acf.models.base_model.BaseWeatherModel` (Protocol) + 7 adaptateurs réels (AROME/ALADIN/ARPEGE/ERA5/WRF/ICON/OpenIFS). |
 | 10 | Modèle de données atmosphériques commun | ✅ | `acf.core.contracts.dataset.Dataset`/`VariableContract`/`Provenance`/`QualityInfo` — réel, construit le 2026-09-02, couvre spatial/vertical/temporel/variables/métadonnées comme demandé. |
 | 11 | Contrôle physique des unités | ⚠️ | Déjà confirmé PARTIEL (audit précédent) : `PhysicsGuard` réel mais pas invoqué systématiquement à chaque point d'entrée du pipeline scientifique. |
@@ -2616,7 +2616,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 28 | Cartographie (couches par type de complexité) | ❌ | **Gap réel confirmé, pas trouvé avant cet audit.** `acf.gui.map.map_layers.LayerManager.available_layers` ne contient que 7 couches (`Satellite RGB`, `Radar Mosaic`, `2m Temp`, `Wind Vectors`, `MSLP`, `Cloud Cover`, `AWCI Complexity` — un seul score combiné). Aucune couche séparée `Dynamic complexity`/`Thermodynamic complexity`/`Convective complexity`/`Microphysical complexity`/`Orographic complexity`/`Temporal complexity`/`Uncertainty`/`Model disagreement` comme le §28 le demande explicitement — l'utilisateur ne peut activer/désactiver que le score AWCI total, pas sa décomposition par module sur la carte. *(Voir mise à jour du 2026-09-03 ci-dessous : partiellement fermé depuis.)* |
 | 29 | Architecture des couches | ❌ | Même constat que §28 — la liste de 17 couches du §29 (`AWCI/Dynamic/Thermodynamic/.../Turbulence/Icing/Visibility`) n'a qu'1 correspondance réelle (`AWCI`) sur 17 dans `LayerManager`. *(Voir mise à jour du 2026-09-03 ci-dessous : partiellement fermé depuis.)* |
 | 30 | Architecture logicielle | ⚠️ | Voir décision explicite §45/§47 (2026-09-03) : le paquet cible `acf/complexity/` n'existe pas et ne sera pas créé ("ne rien déplacer") — la frontière est formalisée en place dans `AWCICalculator`, pas comme une arborescence de paquets séparée. Les autres paquets cibles (`ingestion/`, `adapters/`, `interactions/`, `uncertainty/`, `consensus/`, `verification/`, `calibration/`, `climatology/`, `provenance/`) existent tous par LEUR FONCTION réelle ailleurs dans `src/acf/` (`models/`, `physics_guard/`, `verification/`, `core/contracts/provenance.py`...) mais rarement sous ces noms exacts — dispersion déjà documentée dans le gap-map du 2 septembre. |
-| 31 | Pipeline scientifique (21 étapes) | ⚠️ | Chaque étape existe RÉELLEMENT quelque part (ingestion via les adaptateurs modèles, QC via `PhysicsGuard`/`assess_variable_quality()`, diagnostics via `acf.science`, normalisation via `Normalizer`, modules/interactions/incertitude/AWCI via `AWCICalculator`, produits/visualisation/dashboard via `gui/`) mais jamais assemblées en une seule classe/fonction "pipeline" nommée et orchestrée de bout en bout, contrairement à ce que le diagramme suggère. |
+| 31 | Pipeline scientifique (21 étapes) | ⚠️ | Chaque étape existe RÉELLEMENT quelque part (ingestion via les adaptateurs modèles, QC via `PhysicsGuard`/`assess_variable_quality()`, diagnostics via `acf.science`, normalisation via `Normalizer`, modules/interactions/incertitude/AWCI via `AWCICalculator`, produits/visualisation/dashboard via `gui/`) mais jamais assemblées en une seule classe/fonction "pipeline" nommée et orchestrée de bout en bout, contrairement à ce que le diagramme suggère. *(Voir mise à jour du 2026-09-03 ci-dessous : fermé pour le chemin mono-point, avec statut honnête par étape.)* |
 | 32 | Qualité des données | ✅ | Fermé le 2026-09-03 (`acf.physics_guard.variable_quality`, vocabulaire exact §32, branché sur les données METAR en direct). |
 | 33 | Provenance | ⚠️ | `acf.core.contracts.provenance.Provenance` réel (`generator`/`algorithm_version`/`science_version`/`config_version`/`created_at`/`notes`) — couvre la chaîne conceptuelle du §33 mais pas exactement les 8 maillons littéraux (`module values → diagnostics → normalized variables → harmonized variables → source files → model → run → forecast hour`) comme une trace explicite par résultat AWCI individuel. |
 | 34 | Validation scientifique | ⚠️ | `acf.verification`/`acf.validation`/`acf.certification` réels (RMSE/bias/MAE/ACC/POD/FAR/CSI/ETS dans `nwp_metrics.py`, `CertificationEngine` à 6 étapes réelles) — mais pas le protocole en 5 points exact du §34 (sélection de cas représentatifs → calcul expérimental → comparaison prévisionniste → comparaison observations → ajustement/validation statistique) assemblé comme une procédure unique. |
@@ -2633,7 +2633,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 45 | ACF ≠ AWCI | ✅ | Fermé le 2026-09-03 (frontière formalisée en place, sans déplacement de fichier). |
 | 46 | Écosystème futur (DWCI/MWCI/...) | 🔵 | Explicitement présenté par le prompt comme vision, "pas des produits déjà développés" — rien construit ici, conforme à l'intention du prompt lui-même. Le test de réutilisation du §45/§47 (`test_awci_calculator_reuse_boundary.py`) prouve que la porte est réellement ouverte pour ça le jour où demandé. |
 | 47 | Principe de réutilisation | ✅ | Fermé le 2026-09-03 avec §45. |
-| 48 | Architecture des produits (niveaux brut→opérationnel) | ⚠️ | Les 7 niveaux existent en pratique dispersés (variables brutes dans `data`, diagnostics dans `acf.science`, modules/interactions/AWCI dans `AWCICalculator`, textes dans `_explain()`, alertes dans `AWCIAlertsPanel`) mais pas comme une chaîne de transformation explicite et nommée. |
+| 48 | Architecture des produits (niveaux brut→opérationnel) | ⚠️ | Les 7 niveaux existent en pratique dispersés (variables brutes dans `data`, diagnostics dans `acf.science`, modules/interactions/AWCI dans `AWCICalculator`, textes dans `_explain()`, alertes dans `AWCIAlertsPanel`) mais pas comme une chaîne de transformation explicite et nommée. *(Voir mise à jour du 2026-09-03 ci-dessous : la chaîne réelle "variables → qualité → modules → interactions/incertitude → AWCI → produit" est maintenant nommée et tracée pour le chemin mono-point ; les niveaux "alertes"/dashboard restent des consommateurs séparés, non intégrés à ce pipeline.)* |
 | 49 | Exemple de chaîne explicable | ✅ | `_explain()` génère bien du texte à partir de données calculées (jamais inventé) — vérifié par les tests existants (`test_explanation_present_and_ordered_by_contribution`). |
 | 50 | Dashboard 2D/3D/4D | ✅ | Les 3 dimensions réelles existent et sont branchées au dashboard (§23-27). |
 | 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). *(Voir mise à jour du 2026-09-03 ci-dessous : fermé en mode démo pour la liste de niveaux ; la ventilation par variable — vent/température/humidité/stabilité/convection/turbulence/givrage — reste non construite.)* |
@@ -2659,7 +2659,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 71 | Priorité à la préservation | 🔵 | Respectée explicitement : décision de "zéro déplacement de fichier" pour §45/§47, les 23 fichiers citant le "Prompt Maître v2.0" jamais réécrits en masse. |
 | 72 | Git | 🔵 | Chaque commit de cette session suit fetch→check→commit→push avec message détaillé (quoi/pourquoi/impact/tests). |
 | 73 | Performance HPC | ✅ | Infrastructure HPC réelle et confirmée fonctionnelle : `acf.hpc_connector` (SSH/Slurm/job manager/resource optimizer réels), connexion SSH réelle vérifiée vers FENNEC (mémoire de session du 2026-09-02, `sfoura@sms1.meteo.dz`, authentification confirmée par log réel). `acf.hpc` (`distributed_grid`/`mpi_solver`/`gpu_acceleration`/`parallel_scheduler`) réel également. |
-| 74 | Architecture data (RAW→STAGING→...→PRODUCTS) | ⚠️ | Chaque étape existe par sa fonction réelle ailleurs (`Dataset`/`QualityInfo` pour RAW/STAGING, `acf.science` pour DIAGNOSTICS, `AWCICalculator` pour FEATURES/COMPLEXITY, `gui/` pour PRODUCTS) mais pas nommée/étiquetée comme ce pipeline précis nulle part. |
+| 74 | Architecture data (RAW→STAGING→...→PRODUCTS) | ⚠️ | Chaque étape existe par sa fonction réelle ailleurs (`Dataset`/`QualityInfo` pour RAW/STAGING, `acf.science` pour DIAGNOSTICS, `AWCICalculator` pour FEATURES/COMPLEXITY, `gui/` pour PRODUCTS) mais pas nommée/étiquetée comme ce pipeline précis nulle part. *(Voir mise à jour du 2026-09-03 ci-dessous : la même chaîne RAW→QC→FEATURES/COMPLEXITY→PRODUCTS est maintenant nommée pour le chemin mono-point.)* |
 | 75 | Observabilité | ⚠️ | `acf.monitoring` réel et large (`realtime_monitor`/`telemetry_engine`/`anomaly_monitor`/`alert_dispatcher`) mais générique — pas spécifiquement branché pour produire le type de rapport de qualité par exécution AWCI que le §75 illustre ("Input files: 48, Valid: 46..."). *(Voir mise à jour du 2026-09-03 ci-dessous : fermé.)* |
 | 76 | Mode d'explication de Claude | 🔵 | Ordre Pourquoi→Physique→Mathématiques→Architecture→Code→Tests→Validation suivi dans chaque réponse "Résumé" de cette session. |
 | 77 | Décision scientifique incertaine → statut explicite | ✅ | Fermé le 2026-09-03 (registre `acf.awci.scientific_status`, vocabulaire exact du §77). |
@@ -4572,3 +4572,56 @@ pas seulement le score composite) ; les niveaux de pression standards
 en mode Real Physics (bloqué par l'absence réelle d'interpolation
 verticale dans `acf.awci.vertical_field` — un chantier de physique
 séparé, pas un manque de câblage UI).
+
+## Mise à jour 2026-09-03 (suite) — §8/§31/§48/§74 : pipeline scientifique réellement orchestré (chemin mono-point)
+
+Suite explicite ("continue"), priorité choisie librement — le plus
+gros gap ⚠️ encore réellement ouvert dans l'audit exhaustif des 90
+sections, touchant 4 lignes à la fois (§8/§31/§48/§74 décrivent tous
+le même vrai constat : chaque étape existe quelque part, jamais
+assemblée en un seul pipeline nommé).
+
+**Construit** : `acf.awci.pipeline.run_awci_point_pipeline()` — un vrai
+assembleur (même discipline que `build_awci_result()`/
+`summarize_execution()` : ne recalcule rien) qui enchaîne, pour un
+point réel : mapping de variables + contrôle qualité (réutilise
+`acf.awci.input_adapter`) → modules/interactions/incertitude
+(`AWCICalculator.calculate_with_uncertainty()`) → consensus (opt-in,
+jamais lancé automatiquement — un vrai run solveur par modèle est
+coûteux) → produit assemblé (`build_awci_result()`) → rapport
+d'exécution réel (`summarize_execution()`, §75). Chaque étape retourne
+un vrai `PipelineStage(name, status, detail)` — `RAN`/`SKIPPED`/
+`NOT_APPLICABLE`, jamais un statut fabriqué.
+
+**Honnêteté de périmètre, disclosed dans le docstring du module lui-même
+sous forme de tableau** : sur les 21 étapes du §31, certaines n'ont
+réellement aucun équivalent dans cette architecture (DISCOVERY/FORMAT
+DETECTION — pas de découverte de fichiers, données déjà en mémoire) ;
+d'autres restent volontairement des consommateurs séparés déjà réels
+(VISUALIZATION/DASHBOARD = `acf.gui.dashboard.awci_dashboard`,
+déjà branché) ; CONSENSUS ENGINE reste opt-in (jamais lancé
+automatiquement, coût réel trop élevé) ; CERTIFICATION reste une
+intégration séparée non tentée ici (`CertificationEngine` opère sur un
+vrai `Dataset` avec provenance/qualité complètes, pas sur ce pipeline
+basé dict).
+
+**Refactor réel en prime** : la logique de contrôle qualité par point
+(`quality_for_awci_point_data()`) vivait en double dans
+`awci_dashboard.py` (couche GUI) depuis la clôture §75 précédente —
+déplacée dans `acf.awci.pipeline` (couche science), le dashboard
+l'importe maintenant au lieu de la dupliquer. Un seul vrai chemin de
+conversion d'unité hPa/Pa, pas deux.
+
+**Validation réelle** : 13 nouveaux tests (recoupement direct avec
+`AWCICalculator.calculate_with_uncertainty()`/`summarize_execution()`,
+ordre réel des étapes, `consensus_engine` RAN/SKIPPED selon
+`model_spread` fourni ou non, étapes NOT_APPLICABLE jamais silencieuses,
+déterminisme, incertitude réelle avec un vrai ensemble fourni). Suite
+complète **3925 → 3938**, `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : la certification réelle par `Dataset`
+(§21) n'est pas fusionnée à ce pipeline ; le consensus multi-modèle
+(§15) reste opt-in par design, jamais automatique ; un chemin
+multi-points/grille (pas seulement mono-point) resterait un vrai
+chantier d'extension séparé si un usage en dehors du dashboard GUI
+(déjà branché point par point) le demandait.
