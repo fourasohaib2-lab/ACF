@@ -36,6 +36,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from acf.physics_guard.variable_quality import VariableQualityStatus, assess_variable_quality
+
 INHG_TO_HPA = 33.8639  # 1 inHg = 1013.25/29.9212 hPa, standard atmosphere conversion.
 
 _WIND_RE = re.compile(r"^(?P<dir>\d{3}|VRB)(?P<speed>\d{2,3})(G(?P<gust>\d{2,3}))?(?P<unit>KT|MPS)$")
@@ -297,3 +299,50 @@ class METARDecoder:
             qnh_hpa=qnh_hpa,
             trend=trend,
         )
+
+
+def metar_report_quality(report: METARReport) -> dict[str, VariableQualityStatus]:
+    """
+    Real per-variable quality status (docs/ACF_MASTER_PROMPT.md section
+    32) for one decoded, real, live METAR/SPECI report - explicit user
+    request: "le but est de brancher acf et awci avec des vrais station
+    pour nous rendre des vrai reponse instantanément" (this closes the
+    quality-flagging half of that loop for real live station data, not
+    just decoding it).
+
+    Bridges METARReport's own real native units (Celsius, hPa, knots)
+    to acf.physics_guard.variable_quality.assess_variable_quality()'s
+    CF-standard_name-keyed real range/consistency checks via that
+    function's own `units` parameter (real MetPy/pint conversion, not
+    reimplemented here).
+
+    Only fields the report actually reports (not None) are assessed -
+    a METAR that omits temperature, say, is not claimed to be MISSING
+    a variable this function never confirmed the station was expected
+    to report (see assess_variable_quality()'s own `expected_variables`
+    default - unused here for the same reason).
+
+    Returns
+    -------
+    dict[str, VariableQualityStatus]
+        Keyed by CF standard_name ("air_temperature",
+        "dewpoint_temperature", "air_pressure", "wind_speed") - NOT by
+        METARReport's own field names.
+    """
+    data: dict[str, float] = {}
+    units: dict[str, str] = {}
+
+    if report.temperature_c is not None:
+        data["air_temperature"] = report.temperature_c
+        units["air_temperature"] = "degC"
+    if report.dewpoint_c is not None:
+        data["dewpoint_temperature"] = report.dewpoint_c
+        units["dewpoint_temperature"] = "degC"
+    if report.qnh_hpa is not None:
+        data["air_pressure"] = report.qnh_hpa
+        units["air_pressure"] = "hPa"
+    if report.wind_speed_kt is not None:
+        data["wind_speed"] = report.wind_speed_kt
+        units["wind_speed"] = "kt"
+
+    return assess_variable_quality(data, units=units)

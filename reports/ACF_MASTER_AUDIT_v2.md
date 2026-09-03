@@ -2406,3 +2406,76 @@ ne sont jamais mutés. Suite complète **3472/3472** (3463 + 9),
   reste à brancher dans un vrai point de consommation si demandé.
 - §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
   architectural, refactor large et risqué, délibérément différé.
+
+## Mise à jour 2026-09-03 (suite) — §32 branché sur les vraies données METAR en direct
+
+Suite explicite ("continue"), septième priorité — fermeture du point
+resté ouvert à la mise à jour précédente ("§32 — infrastructure réelle
+construite ; reste à brancher dans un vrai point de consommation").
+
+**Pourquoi** : l'infrastructure `assess_variable_quality()` construite
+la dernière fois restait un utilitaire réel mais orphelin — même
+situation transitoire que `Normalizer.normalize_percentile()` avant
+d'être branché. Le point de consommation le plus fidèle à l'intention
+du projet ("le but est de brancher acf et awci avec des vrais station
+pour nous rendre des vrai reponse instantanément") est le panneau de
+messages METAR/TAF/SPECI/SIGMET en direct déjà construit cette session
+(`AWCIMessagesDialog`) — de vraies données de vraies stations,
+jamais encore contrôlées physiquement.
+
+**Trouvaille faite en inspectant avant de brancher** :
+`assess_variable_quality()` n'acceptait que des valeurs déjà dans leur
+unité CF canonique (Kelvin, Pa, m/s) — or `METARReport` décode ses
+valeurs dans leurs vraies unités natives (Celsius, hPa, nœuds). Plutôt
+que de réinventer une conversion, ajout d'un paramètre `units` réel qui
+réutilise `check_range()`'s propre conversion déjà existante
+(`acf.normalization.units.convert_unit()`, MetPy/pint) — et application
+de la même conversion avant le check de cohérence température/point de
+rosée (qui suppose Kelvin), pour que la comparaison et son message
+d'erreur restent physiquement corrects, pas une coïncidence de l'unité
+choisie.
+
+**Deuxième trouvaille** : `cf_canonical_unit()` lit une vraie table JSON
+finie (`resources/standards/cf/cf_standard_names.json`) qui ne
+contenait ni `dewpoint_temperature` ni `wind_speed` (vitesse scalaire,
+distincte de `eastward_wind`/`northward_wind`, des composantes
+vectorielles signées). Ajoutés à la table (unités réelles K et m/s) et
+à `OPERATIONAL_RANGES` (bornes réelles et justifiées : même plage
+généreuse que `air_temperature`/`eastward_wind`, `wind_speed` non-signée
+contrairement aux composantes). La clé `dewpoint_temperature` (sans
+underscore, différente de l'orthographe CF stricte
+`dew_point_temperature`) est gardée telle quelle — c'est déjà la
+convention interne établie par `consistency_check.py`/`guard.py`,
+préexistante à ce travail, pas silencieusement "corrigée".
+
+**Construit** : `acf.aviation.icao.metar_decoder.metar_report_quality(report)` —
+pont réel entre un `METARReport` décodé et
+`assess_variable_quality()`, ne considérant que les champs réellement
+présents dans le rapport (jamais de `MISSING` deviné pour un champ
+qu'un METAR omet légitimement). Branché dans
+`AWCIMessagesDialog._on_fetch_ready()` via une nouvelle
+`_format_metar_quality()` — une ligne "Quality (§32): N/N variable(s)
+VALID" ou listant explicitement chaque variable non-VALID, affichée
+sous le résumé décodé de chaque station en direct.
+
+**Validation réelle** : 16 nouveaux tests au total —
+`tests/test_physics_guard_variable_quality.py` (+8, paramètre `units` :
+conversion correcte, valeur réellement hors-plage toujours détectée
+après conversion, comportement par défaut bit-identique sans `units`,
+cohérence point de rosée convertie, nouvelles entrées `wind_speed`/
+`dewpoint_temperature` réelles et documentées),
+`tests/test_metar_quality_bridge.py` (+6, station normale → tout
+VALID, seuls les champs réellement présents évalués, température
+extrême détectée, vitesse de vent en nœuds correctement convertie,
+incohérence point de rosée/température réelle détectée),
+`tests/test_awci_messages_panel.py` (+2, la ligne de qualité réelle
+apparaît dans le panneau en direct pour une station normale et pour
+une valeur réellement hors-plage). Suite complète **3488/3488**
+(3472 + 16), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du tableau d'audit du 2026-09-03** :
+- §32 — fermé : infrastructure réelle, branchée dans un vrai point de
+  consommation (données METAR en direct).
+- §45/§47 séparation architecturale ACF ≠ AWCI — seul gap encore
+  ouvert du tableau d'audit initial ; refactor large et risqué,
+  délibérément différé sauf demande explicite.

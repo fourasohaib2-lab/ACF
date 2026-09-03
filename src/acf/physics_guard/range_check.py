@@ -29,6 +29,20 @@ OPERATIONAL_RANGES: dict[str, tuple[float, float]] = {
     # mistakenly treated as Kelvin), not to flag genuinely extreme
     # real weather.
     "air_temperature": (173.15, 333.15),
+    # Same generous bound as air_temperature above - a dewpoint this
+    # extreme would already be a data/decoding error regardless of the
+    # separate, stricter real physical relationship (dewpoint cannot
+    # exceed air temperature) that
+    # acf.physics_guard.consistency_check.check_dewpoint_not_above_temperature()
+    # checks instead. Added for acf.physics_guard.variable_quality's
+    # real per-variable range check on dewpoint, previously undocumented.
+    # Key spelled "dewpoint_temperature" (no underscore between "dew"
+    # and "point"), NOT the strict CF Conventions spelling
+    # "dew_point_temperature" - matches this project's own
+    # already-established internal key throughout acf.physics_guard
+    # (consistency_check.py/guard.py, both predating this entry), kept
+    # consistent rather than silently "corrected" to true CF spelling.
+    "dewpoint_temperature": (173.15, 333.15),
     # 10 hPa (extreme high-altitude / low-pressure system core) to
     # 1085 hPa (highest sea-level pressure ever recorded is ~1084 hPa).
     "air_pressure": (1000.0, 108500.0),
@@ -36,6 +50,12 @@ OPERATIONAL_RANGES: dict[str, tuple[float, float]] = {
     # (~113 m/s, Barrow Island 1996), generous for jet-stream-level winds.
     "eastward_wind": (-150.0, 150.0),
     "northward_wind": (-150.0, 150.0),
+    # Scalar wind speed magnitude (e.g. METAR-reported surface wind
+    # speed) - the non-negative counterpart to eastward_wind/
+    # northward_wind above, same generous 150 m/s ceiling, but never
+    # negative (a real reported speed can't be, unlike a signed vector
+    # component).
+    "wind_speed": (0.0, 150.0),
     "relative_humidity": (0.0, 100.0),
     # 0 to 40 g/kg - saturation specific humidity at very warm, very
     # humid tropical surface conditions is well under this.

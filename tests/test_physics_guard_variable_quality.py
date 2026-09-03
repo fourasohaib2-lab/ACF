@@ -162,3 +162,73 @@ def test_missing_dewpoint_partner_means_no_consistency_check_runs():
     result = assess_variable_quality({"air_temperature": 280.0})
     assert "dewpoint_temperature" not in result
     assert result["air_temperature"].status == "VALID"
+
+
+# ------------------------------------------------------- units (real conversion)
+
+
+def test_units_parameter_converts_before_the_range_check():
+    """15 degC is comfortably within the real air_temperature range in
+    Kelvin (288.15K) - omitting the real unit would silently compare
+    the raw 15 against the Kelvin bound and wrongly flag it."""
+    result = assess_variable_quality(
+        {"air_temperature": 15.0}, expected_variables=["air_temperature"], units={"air_temperature": "degC"}
+    )
+    assert result["air_temperature"].status == "VALID"
+
+
+def test_units_parameter_still_catches_a_real_out_of_range_value():
+    # 200 degC is a real, genuine out-of-range surface air temperature.
+    result = assess_variable_quality(
+        {"air_temperature": 200.0}, expected_variables=["air_temperature"], units={"air_temperature": "degC"}
+    )
+    assert result["air_temperature"].status == "OUT_OF_RANGE"
+
+
+def test_units_parameter_default_none_is_bit_identical_to_before():
+    without_units = assess_variable_quality({"air_temperature": 288.0}, expected_variables=["air_temperature"])
+    with_units_none = assess_variable_quality({"air_temperature": 288.0}, expected_variables=["air_temperature"], units=None)
+    assert without_units == with_units_none
+
+
+def test_units_parameter_a_variable_without_a_units_entry_is_assumed_native_cf_unit():
+    result = assess_variable_quality(
+        {"air_temperature": 288.0, "eastward_wind": 10.0},
+        expected_variables=["air_temperature", "eastward_wind"],
+        units={"air_temperature": "degC"},
+    )
+    # eastward_wind has no units entry - assumed already m/s (its real
+    # CF canonical unit), 10.0 m/s is real and valid.
+    assert result["eastward_wind"].status == "VALID"
+
+
+def test_units_parameter_converts_the_dewpoint_consistency_check_too():
+    """15 degC / 20 degC in Celsius is the same real physical
+    inconsistency as 288.15K / 293.15K - the consistency check must
+    apply the real unit conversion, not compare raw Celsius against an
+    implicit Kelvin assumption (they'd disagree by the same margin
+    either way here, but the real conversion is what makes the check
+    correct in general, not a coincidence of this example)."""
+    result = assess_variable_quality(
+        {"air_temperature": 15.0, "dewpoint_temperature": 20.0},
+        units={"air_temperature": "degC", "dewpoint_temperature": "degC"},
+    )
+    assert result["air_temperature"].status == "PHYSICAL_INCONSISTENCY"
+    assert result["dewpoint_temperature"].status == "PHYSICAL_INCONSISTENCY"
+
+
+def test_new_wind_speed_and_dewpoint_temperature_range_entries_are_real_and_documented():
+    from acf.physics_guard.range_check import OPERATIONAL_RANGES
+
+    assert OPERATIONAL_RANGES["wind_speed"] == (0.0, 150.0)
+    assert OPERATIONAL_RANGES["dewpoint_temperature"] == (173.15, 333.15)
+
+
+def test_wind_speed_out_of_range_is_caught():
+    result = assess_variable_quality({"wind_speed": 200.0}, expected_variables=["wind_speed"])
+    assert result["wind_speed"].status == "OUT_OF_RANGE"
+
+
+def test_wind_speed_negative_is_out_of_range_unlike_the_signed_vector_components():
+    result = assess_variable_quality({"wind_speed": -5.0}, expected_variables=["wind_speed"])
+    assert result["wind_speed"].status == "OUT_OF_RANGE"

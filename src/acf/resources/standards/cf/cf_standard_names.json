@@ -26,5 +26,13 @@
   "precipitation_amount": {
     "name": "Precipitation Amount",
     "units": "kg m-2"
+  },
+  "dewpoint_temperature": {
+    "name": "Dew Point Temperature",
+    "units": "K"
+  },
+  "wind_speed": {
+    "name": "Wind Speed",
+    "units": "m s-1"
   }
 }

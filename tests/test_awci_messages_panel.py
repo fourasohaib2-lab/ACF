@@ -16,7 +16,7 @@ from unittest.mock import patch
 from PySide6.QtCore import Qt
 
 from acf.aviation.icao.live_source import LiveReport, LiveStationBundle
-from acf.aviation.icao.metar_decoder import METARDecoder
+from acf.aviation.icao.metar_decoder import METARDecoder, METARReport
 from acf.aviation.icao.taf_decoder import TAFDecoder
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
@@ -61,6 +61,41 @@ def test_dialog_shows_real_decoded_fields_from_a_successful_fetch(qtbot):
     text = dialog.station_text_edits["KJFK"].toPlainText()
     assert "METAR KJFK" in text
     assert "Wind: 060° at 3 kt" in text  # real decoded field, not just raw text
+
+
+def test_dialog_shows_real_section_32_quality_status_for_a_normal_station(qtbot):
+    """docs/ACF_MASTER_PROMPT.md section 32 - real per-variable quality
+    status, closing the quality-flagging half of "brancher acf et awci
+    avec des vrais station" for this panel's own real live data."""
+    with patch(
+        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
+    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+        dialog = AWCIMessagesDialog()
+        qtbot.addWidget(dialog)
+        _wait_until(lambda: "Fetching" not in dialog.status_label.text())
+
+    text = dialog.station_text_edits["KJFK"].toPlainText()
+    assert "Quality (§32): 4/4 variable(s) VALID." in text
+
+
+def test_dialog_surfaces_a_real_out_of_range_variable_in_the_quality_line(qtbot):
+    def _bundle_with_bad_temperature(icao: str, timeout: float = 8.0) -> LiveStationBundle:
+        bundle = _fake_bundle(icao)
+        assert isinstance(bundle.metar.decoded, METARReport)
+        bundle.metar.decoded.temperature_c = 99.0  # a real, genuine out-of-range value
+        return bundle
+
+    with patch(
+        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station", side_effect=_bundle_with_bad_temperature
+    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+        dialog = AWCIMessagesDialog()
+        qtbot.addWidget(dialog)
+        _wait_until(lambda: "Fetching" not in dialog.status_label.text())
+
+    text = dialog.station_text_edits["KJFK"].toPlainText()
+    assert "Quality (§32): 3/4 VALID" in text
+    assert "air_temperature=OUT_OF_RANGE" in text
 
 
 def test_dialog_shows_an_honest_error_not_blank_on_fetch_failure(qtbot):

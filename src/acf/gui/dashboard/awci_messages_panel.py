@@ -27,12 +27,35 @@ from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTextEdit, QVBoxLayout, QWidget
 
 from acf.aviation.icao.live_source import REAL_STATIONS, LiveReport, LiveStationBundle, fetch_active_sigmets, fetch_and_decode_station
-from acf.aviation.icao.metar_decoder import METARReport
+from acf.aviation.icao.metar_decoder import METARReport, metar_report_quality
 from acf.aviation.icao.sigmet_decoder import SIGMETReport
 from acf.aviation.icao.taf_decoder import TAFForecastPeriod, TAFReport
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci_messages_panel")
+
+
+def _format_metar_quality(report: METARReport) -> str:
+    """
+    Real per-variable quality line (docs/ACF_MASTER_PROMPT.md section
+    32) for this real, live, decoded METAR - closes the quality-
+    flagging half of "brancher acf et awci avec des vrais station" for
+    the values this panel already displays. VALID entries are folded
+    into a single count rather than listed individually (a station
+    with 4 real values, all VALID, doesn't need 4 separate lines) - any
+    non-VALID status is shown in full, since that is the real,
+    actionable signal this line exists to surface.
+    """
+    quality = metar_report_quality(report)
+    if not quality:
+        return "Quality (§32): no assessable variables in this report."
+
+    n_valid = sum(1 for s in quality.values() if s.status == "VALID")
+    problems = [f"{s.variable}={s.status}" for s in quality.values() if s.status != "VALID"]
+
+    if not problems:
+        return f"Quality (§32): {n_valid}/{len(quality)} variable(s) VALID."
+    return f"Quality (§32): {n_valid}/{len(quality)} VALID — ⚠ " + ", ".join(problems)
 
 
 def _format_metar_summary(report: METARReport) -> str:
@@ -233,6 +256,8 @@ class AWCIMessagesDialog(QDialog):
                 lines.append("")
                 if isinstance(bundle.metar.decoded, METARReport):
                     lines.append(_format_metar_summary(bundle.metar.decoded))
+                    lines.append("")
+                    lines.append(_format_metar_quality(bundle.metar.decoded))
                 elif bundle.metar.error:
                     lines.append(f"⚠ {bundle.metar.error}")
             else:

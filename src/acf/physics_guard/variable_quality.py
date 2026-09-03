@@ -75,6 +75,7 @@ from acf.core.exceptions import (
     UnitError,
     VerticalError,
 )
+from acf.normalization.units import convert_unit
 from acf.physics_guard.consistency_check import check_dewpoint_not_above_temperature
 from acf.physics_guard.range_check import OPERATIONAL_RANGES, check_range
 
@@ -155,7 +156,9 @@ def _finite_number_or_none(value: Any) -> float | None:
 
 
 def assess_variable_quality(
-    data: dict[str, Any], expected_variables: Iterable[str] | None = None
+    data: dict[str, Any],
+    expected_variables: Iterable[str] | None = None,
+    units: dict[str, str] | None = None,
 ) -> dict[str, VariableQualityStatus]:
     """
     Real per-variable quality status for a data dict keyed by real CF
@@ -176,6 +179,18 @@ def assess_variable_quality(
         `data` - i.e. without an explicit expectation, a variable
         `data` never claims to have is never marked MISSING (this
         module never guesses what a caller expected).
+    units : dict[str, str], optional
+        Real declared native unit for one or more variables in `data`,
+        when different from that variable's CF canonical unit (e.g.
+        {"air_temperature": "degC"} for a real METAR/TAF report, which
+        reports Celsius, not Kelvin). Passed straight through to
+        check_range()'s own real conversion
+        (acf.normalization.units.convert_unit(), MetPy/pint-based - not
+        reimplemented here) for the range check, and applied before the
+        dewpoint/temperature consistency check below (which otherwise
+        assumes both are already in Kelvin). A variable absent from
+        `units` is assumed already in its CF canonical unit - the exact
+        prior behavior when `units` is omitted entirely.
 
     Returns
     -------
@@ -217,7 +232,7 @@ def assess_variable_quality(
             continue
 
         try:
-            check_range(numeric_value, variable)
+            check_range(numeric_value, variable, unit=units.get(variable) if units else None)
         except RangeError as exc:
             statuses[variable] = VariableQualityStatus(variable, classify_guard_exception(exc), str(exc))
         else:
@@ -226,6 +241,15 @@ def assess_variable_quality(
     temperature = _finite_number_or_none(data.get("air_temperature"))
     dewpoint = _finite_number_or_none(data.get("dewpoint_temperature"))
     if temperature is not None and dewpoint is not None:
+        # check_dewpoint_not_above_temperature() assumes Kelvin - real
+        # conversion first when the caller declared a different native
+        # unit for either variable (see `units` above), so the
+        # comparison and its own error message stay physically correct
+        # rather than silently comparing/mislabeling raw Celsius as K.
+        if units and "air_temperature" in units:
+            temperature = convert_unit(temperature, units["air_temperature"], "K")
+        if units and "dewpoint_temperature" in units:
+            dewpoint = convert_unit(dewpoint, units["dewpoint_temperature"], "K")
         try:
             check_dewpoint_not_above_temperature(temperature, dewpoint)
         except ScientificConsistencyError as exc:
