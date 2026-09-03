@@ -166,6 +166,81 @@ def test_vertical_profile_widget_trusts_the_callers_own_order():
     assert list(widget._profile.items()) == [("Surface", 10.0), ("FL180", 40.0), ("700 hPa", 25.0)]
 
 
+def test_vertical_profile_data_carries_the_real_module_scores_per_level(qapp):
+    """§51's own request ("vent, température, humidité, ..." at each
+    level, not just the composite score) - priority freely chosen
+    ("suit ton jugement")."""
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+
+    assert set(dashboard._vertical_profile_data.keys()) == set(dashboard._vertical_profile_widget._profile.keys())
+    entry = dashboard._vertical_profile_data["300 hPa"]
+    assert entry["hpa"] == pytest.approx(300.0)
+    assert "module_scores" in entry["result"]
+    assert set(entry["result"]["module_scores"].keys()) == {
+        "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
+        "ensemble_spread", "model_disagreement",
+    }
+
+
+def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+    assert dashboard._vertical_profile_detail_window is None
+
+    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+
+    assert dashboard._vertical_profile_detail_window is not None
+    assert "FL280" in dashboard._vertical_profile_detail_window.windowTitle()
+
+
+def test_clicking_a_different_bar_reuses_the_same_dialog_instance(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+    first = dashboard._vertical_profile_detail_window
+
+    dashboard._vertical_profile_widget.levelClicked.emit("850 hPa")
+
+    assert dashboard._vertical_profile_detail_window is first
+    assert "850 hPa" in dashboard._vertical_profile_detail_window.windowTitle()
+
+
+def test_level_detail_dialog_reflects_the_real_awci_score_for_that_level(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+
+    dashboard._vertical_profile_widget.levelClicked.emit("500 hPa")
+
+    expected = dashboard._vertical_profile_data["500 hPa"]["result"]
+    dialog = dashboard._vertical_profile_detail_window
+    assert f"{expected['awci']:.1f}" in dialog._score_label.text()
+
+
+def test_clicking_a_real_bar_via_a_real_mouse_event_opens_the_dialog(qapp):
+    """End-to-end: a real mousePressEvent on the widget (not a direct
+    signal .emit()) must reach the dashboard's own handler."""
+    from PySide6.QtCore import QEvent, QPointF, Qt as QtCore_Qt
+    from PySide6.QtGui import QMouseEvent
+
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+    widget = dashboard._vertical_profile_widget
+    widget.resize(400, 300)
+    widget.repaint()
+    assert widget._bar_geometry  # real geometry ready before the click
+
+    level, x, bar_width = widget._bar_geometry[0]
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonPress, QPointF(x + bar_width / 2, 100),
+        QtCore_Qt.MouseButton.LeftButton, QtCore_Qt.MouseButton.LeftButton, QtCore_Qt.KeyboardModifier.NoModifier,
+    )
+    widget.mousePressEvent(event)
+
+    assert dashboard._vertical_profile_detail_window is not None
+    assert level in dashboard._vertical_profile_detail_window.windowTitle()
+
+
 # ------------------------------------------------------ regional trend
 
 

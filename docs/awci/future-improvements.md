@@ -105,19 +105,21 @@ own LAYERS checkbox panel should attempt unilaterally.
 
 ## 8. Multi-variable vertical profile (§51)
 
-**Update 2026-09-03:** `AWCIVerticalProfile` now covers §51's full real
-level list (Surface/850/700/500/300/250 hPa + real named flight levels,
-demo mode) — see `reports/ACF_MASTER_AUDIT_v2.md`'s own "§51" closure.
-Still open: §51 also asks each level to show wind/temperature/humidity/
-stability/convection/turbulence/icing individually, not just the
-composite AWCI score. `AWCIVerticalProfile` is a single-series bar
-chart; showing 7+ real variables per level would need a genuine widget
-redesign (a real per-level breakdown table, or a multi-series chart) —
-a separate, larger UI task, not attempted in this closure. The real
-data itself (`AWCICalculator.calculate()`'s own `module_scores`) is
-already computed at every level this widget already loops over
-(`_open_vertical_profile()`) — the gap is purely in how it is
-displayed, not in what is computed.
+**Update 2026-09-03 (closed):** `AWCIVerticalProfile` now covers §51's
+full real level list (Surface/850/700/500/300/250 hPa + real named
+flight levels, demo mode) AND §51's own "show each variable per level"
+request — every real bar is now clickable (`levelClicked` signal, real
+x-geometry hit-testing) and opens `AWCIVerticalProfileLevelDialog`
+showing the real per-level breakdown across all 9 real AWCICalculator
+modules (dynamic/thermodynamic/convective/microphysical/topographic/
+temporal/confidence/ensemble_spread/model_disagreement) - the exact
+same real `module_scores` this session's own earlier closure already
+computed at every level but never displayed. Honest, disclosed gap
+kept: §51 also names "stabilité" and "turbulence" specifically -
+neither has a real dedicated per-point module anywhere in this
+codebase today, so the dialog shows a real note instead of a
+fabricated number for either. See `reports/ACF_MASTER_AUDIT_v2.md`'s
+own "§51" closure entries for the full history.
 
 ## 9. Real Physics mode's own standard-pressure-level profile
 

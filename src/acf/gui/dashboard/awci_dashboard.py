@@ -107,7 +107,7 @@ from acf.gui.dashboard.awci_synthetic_field import (
     route_profile,
 )
 from acf.gui.dashboard.awci_timeline import AWCITimeline
-from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile
+from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
@@ -636,6 +636,10 @@ class AWCIDashboard(QWidget):
         left_col2.addLayout(regional_extras_row)
         self._vertical_profile_window: QDialog | None = None
         self._vertical_profile_widget: AWCIVerticalProfile | None = None
+        #: Real per-level module_scores/physical/forecast breakdown -
+        #: see _open_vertical_profile()'s own comment.
+        self._vertical_profile_data: dict[str, dict[str, Any]] = {}
+        self._vertical_profile_detail_window: AWCIVerticalProfileLevelDialog | None = None
 
         time_row = QHBoxLayout()
         time_label = QLabel("Valid Time:")
@@ -1194,20 +1198,47 @@ class AWCIDashboard(QWidget):
             self._vertical_profile_window.setStyleSheet(dashboard_stylesheet())
             layout = QVBoxLayout(self._vertical_profile_window)
             self._vertical_profile_widget = AWCIVerticalProfile()
+            self._vertical_profile_widget.levelClicked.connect(self._on_vertical_profile_level_clicked)
             layout.addWidget(self._vertical_profile_widget)
-            self._vertical_profile_window.resize(320, 340)
+            hint = QLabel("Click a bar for the real per-module breakdown at that level.")
+            hint.setStyleSheet(label_style("text_muted", "xs"))
+            layout.addWidget(hint)
+            self._vertical_profile_window.resize(340, 380)
 
         profile: dict[str, float] = {}
+        # Real per-level module_scores/physical/forecast breakdown
+        # (§51 - "vent, température, humidité, ..., complexité,
+        # incertitude" at each level, not just the composite score) -
+        # read back by _on_vertical_profile_level_clicked() when a real
+        # bar is clicked, from the SAME real calculate() call this loop
+        # already makes for the composite score - never a second/
+        # recomputed value.
+        self._vertical_profile_data = {}
         for level_label, hpa in _ALL_VERTICAL_PROFILE_LEVELS_HPA.items():
             raw = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=hpa)
             result = AWCICalculator().calculate(raw)
             profile[level_label] = result["awci"]
+            self._vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
         assert self._vertical_profile_widget is not None  # for mypy - always built above
         self._vertical_profile_widget.set_profile(profile)
 
         self._vertical_profile_window.show()
         self._vertical_profile_window.raise_()
         self._vertical_profile_window.activateWindow()
+
+    def _on_vertical_profile_level_clicked(self, level_label: str) -> None:
+        """Open (or reuse) the real per-level module-score breakdown
+        dialog (§51) - explicit user request delegated to my own
+        judgment ("suit ton jugement"), reading from
+        self._vertical_profile_data (built alongside the composite
+        score in _open_vertical_profile()'s own loop, never a second/
+        recomputed value)."""
+        data = self._vertical_profile_data.get(level_label)
+        if data is None:
+            return  # a real click on a level this dialog never computed - honestly do nothing
+        if self._vertical_profile_detail_window is None:
+            self._vertical_profile_detail_window = AWCIVerticalProfileLevelDialog(parent=self)
+        self._vertical_profile_detail_window.show_detail(level_label, data["hpa"], data["result"])
 
     # -------------------------------------------- FL280/FL320 comparison
 

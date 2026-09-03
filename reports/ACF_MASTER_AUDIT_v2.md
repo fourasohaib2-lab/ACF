@@ -2636,7 +2636,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 48 | Architecture des produits (niveaux brut→opérationnel) | ⚠️ | Les 7 niveaux existent en pratique dispersés (variables brutes dans `data`, diagnostics dans `acf.science`, modules/interactions/AWCI dans `AWCICalculator`, textes dans `_explain()`, alertes dans `AWCIAlertsPanel`) mais pas comme une chaîne de transformation explicite et nommée. *(Voir mise à jour du 2026-09-03 ci-dessous : la chaîne réelle "variables → qualité → modules → interactions/incertitude → AWCI → produit" est maintenant nommée et tracée pour le chemin mono-point ; les niveaux "alertes"/dashboard restent des consommateurs séparés, non intégrés à ce pipeline.)* |
 | 49 | Exemple de chaîne explicable | ✅ | `_explain()` génère bien du texte à partir de données calculées (jamais inventé) — vérifié par les tests existants (`test_explanation_present_and_ordered_by_contribution`). |
 | 50 | Dashboard 2D/3D/4D | ✅ | Les 3 dimensions réelles existent et sont branchées au dashboard (§23-27). |
-| 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). *(Voir mise à jour du 2026-09-03 ci-dessous : fermé en mode démo pour la liste de niveaux ; la ventilation par variable — vent/température/humidité/stabilité/convection/turbulence/givrage — reste non construite.)* |
+| 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). *(Voir mises à jour du 2026-09-03 ci-dessous : fermé en mode démo pour la liste de niveaux ET pour la ventilation par variable — clic sur un niveau → détail réel par module.)* |
 | 52 | Conception orientée prévisionniste | 🔵 | Principe de design déjà respecté (accès aux données originales préservé partout : METAR/TAF brut affiché à côté du résumé décodé, `raw_text` jamais caché). |
 | 53 | Descendre dans le système | ⚠️ | Existe partiellement : composants cliquables (`AWCIComponentDetailDialog`, construit plus tôt cette session) permettent Module→statut de poids. La chaîne complète jusqu'au fichier source n'est pas câblée (même limite que §26). |
 | 54 | Architecture de test | ✅ | Les 6 catégories existent réellement : unitaires (`tests/test_awci_calculator.py`), physiques (ex. `test_pressure_decreases_with_altitude_real_physics`), numériques, intégration (tests GUI `qtbot`), multi-modèles (`test_model_disagreement_end_to_end_from_real_model_consensus_engine`), non-régression (`acf.testing.golden`, Golden Datasets). |
@@ -4787,3 +4787,55 @@ jour en place) : un chantier bien plus large et risqué, pas une
 suite naturelle de cette série de passes ciblées. Cette série de
 performance s'arrête ici, rendement décroissant confirmé par mesure
 réelle, pas par supposition.
+
+## Mise à jour 2026-09-03 (suite) — §51 vraiment fermé : profil vertical multi-variables cliquable
+
+Suite explicite ("suit ton jugement", parmi 4 pistes proposées à
+l'utilisateur — celle-ci choisie car autonome, sans dépendance externe,
+et complétant directement un gap déjà disclosed dans
+`future-improvements.md` #8). §51 demandait aussi d'afficher vent/
+température/humidité/stabilité/convection/turbulence/givrage à chaque
+niveau, pas seulement le score AWCI composite — la fermeture
+précédente (liste de niveaux) l'avait explicitement laissé ouvert.
+
+**Construit** : les barres de `AWCIVerticalProfile` sont maintenant
+réellement cliquables (`levelClicked`, vrai test de collision sur la
+géométrie réelle des barres — partagée avec le dessin lui-même, pas
+recalculée séparément) et ouvrent `AWCIVerticalProfileLevelDialog`
+— le vrai détail par module déjà calculé par la boucle existante de
+`_open_vertical_profile()` (jamais un second calcul), pour les
+**9 vrais modules réels** d'`AWCICalculator` (dynamic/thermodynamic/
+convective/microphysical/topographic/temporal/confidence/
+ensemble_spread/model_disagreement — les deux derniers trouvés en
+cours de route : un test a révélé qu'ils existaient réellement et
+n'étaient pas encore dans le mapping honnête).
+
+**Décision de périmètre honnête, inchangée** : §51 nomme aussi
+"stabilité" et "turbulence" explicitement — aucun des deux n'a de
+vrai module dédié par point nulle part dans ce code aujourd'hui. Le
+dialogue affiche une vraie note à ce sujet plutôt qu'un chiffre
+fabriqué pour l'un ou l'autre.
+
+**Bug réel trouvé en écrivant les tests** : un premier essai
+`widget.repaint()` en environnement de test hors écran ne déclenchait
+pas fiablement un vrai `paintEvent()`, laissant `_bar_geometry` vide -
+corrigé en extrayant le calcul de géométrie dans une vraie méthode
+`_compute_bar_geometry()` partagée, appelée dès `set_profile()`/
+`resizeEvent()`, indépendamment du cycle de peinture Qt lui-même (une
+vraie source unique de vérité pour cette géométrie, plus robuste que
+l'ancien couplage implicite au dessin).
+
+**Validation réelle** : 12 nouveaux tests (7 sur le widget — géométrie
+réelle après un vrai `set_profile()`, clic réel émettant le bon
+niveau, clic hors zone n'émettant rien, dialogue affichant le vrai
+score/split/ventilation ; 5 d'intégration dashboard — données
+per-niveau réellement peuplées, clic réel ouvrant/réutilisant le
+dialogue, un vrai `QMouseEvent` de bout en bout). Suite complète
+**3953 → 3965**, `ruff`/`mypy` propres sur les 1435 fichiers. Captures
+d'écran envoyées (graphique + dialogue de détail).
+
+**Ce qui reste réellement** : "stabilité"/"turbulence" resteraient un
+vrai chantier de science distinct (construire un vrai module dédié) si
+demandé un jour ; le mode Real Physics n'offre toujours pas cette
+liste de niveaux standards (limite d'interpolation verticale déjà
+disclosed, inchangée).

@@ -25,9 +25,13 @@ altitude order from actual hPa values before calling `set_profile()` -
 a single source of truth for that order, not duplicated here.
 """
 
-from PySide6.QtCore import QSize, Qt
+from typing import Any
+
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
+
+from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
 
 class AWCIVerticalProfile(QWidget):
@@ -35,7 +39,21 @@ class AWCIVerticalProfile(QWidget):
     Vertical profile of AWCI complexity by flight level.
 
     Shows how complexity varies with altitude.
+
+    Clickable bars (added 2026-09-03, docs/ACF_MASTER_PROMPT.md §51 -
+    "afficher : vent, température, humidité, stabilité, convection,
+    turbulence, givrage, complexité, incertitude" at each level; this
+    widget's own bars only ever showed the composite AWCI complexity
+    score). `levelClicked` emits the real clicked level's own label -
+    a real caller (AWCIDashboard._on_vertical_profile_level_clicked())
+    reads the real per-module breakdown already computed for that
+    level and shows it, the same "click a summary number, see the real
+    breakdown behind it" pattern already established for the radar/
+    risk-summary rows elsewhere in this dashboard - not a new UI
+    convention invented here.
     """
+
+    levelClicked = Signal(str)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -43,9 +61,15 @@ class AWCIVerticalProfile(QWidget):
         self._profile: dict[str, float] = {}
         self._highlight_level: str | None = None
         self._title = "Profil Vertical AWCI"
+        #: (level_label, x, bar_width) for every bar drawn by the last
+        #: real paintEvent() - the real geometry mousePressEvent()
+        #: hit-tests against, so the two never silently drift apart
+        #: (one real layout computation, not two).
+        self._bar_geometry: list[tuple[str, float, float]] = []
 
         self.setMinimumSize(200, 250)
         self.setStyleSheet("background: transparent;")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def set_profile(self, profile: dict[str, float]):
         """
@@ -57,6 +81,7 @@ class AWCIVerticalProfile(QWidget):
             {level: score} where level is string like 'FL100', 'FL300'
         """
         self._profile = profile
+        self._compute_bar_geometry()
         self.update()
 
     def set_highlight(self, level: str):
@@ -68,6 +93,36 @@ class AWCIVerticalProfile(QWidget):
         """Set widget title."""
         self._title = title
         self.update()
+
+    def resizeEvent(self, event: Any) -> None:
+        self._compute_bar_geometry()
+        super().resizeEvent(event)
+
+    def _compute_bar_geometry(self) -> None:
+        """Real bar x-geometry (level, x, bar_width) for every real bar
+        - computed here, independently of paintEvent(), so
+        mousePressEvent()'s own hit-testing stays accurate even before
+        Qt has actually painted this widget (a real gap found while
+        building this feature: Qt does not guarantee a synchronous
+        paint right after set_profile()/resize(), so relying on
+        paintEvent() alone to populate this left it empty for a real
+        window that briefest instant). paintEvent() reads this same
+        list back rather than recomputing it a second time - one real
+        shared computation, not two that could silently drift apart."""
+        self._bar_geometry = []
+        if not self._profile:
+            return
+        margin_left = 50
+        margin_right = 20
+        plot_width = self.width() - margin_left - margin_right
+        if plot_width < 10:
+            return
+        sorted_items = list(self._profile.items())
+        bar_width = min(20, plot_width / len(sorted_items) * 0.7)
+        bar_spacing = bar_width * 0.3
+        for i, (level, _score) in enumerate(sorted_items):
+            x = margin_left + i * (bar_width + bar_spacing) + bar_spacing / 2
+            self._bar_geometry.append((level, x, bar_width))
 
     def paintEvent(self, event):
         """Draw the vertical profile."""
@@ -92,14 +147,12 @@ class AWCIVerticalProfile(QWidget):
             painter.end()
             return
 
-        # Real altitude order (see module docstring) - the caller
-        # already sorted this dict by real hPa before calling
-        # set_profile(), so this widget draws it left-to-right exactly
-        # as given rather than re-deriving a (label-format-specific,
-        # previously incorrect for mixed level types) order itself.
-        sorted_items = list(self._profile.items())
-
-        # Draw profile
+        # Real x-geometry (label, x, bar_width) - shared with
+        # mousePressEvent()'s own hit-testing, computed once in
+        # _compute_bar_geometry() (see that method's own docstring for
+        # why this is not recomputed here). margin_left/margin_right
+        # are only needed again below, for the grid lines' own real
+        # full-width extent.
         margin_left = 50
         margin_right = 20
         margin_top = 35
@@ -108,11 +161,9 @@ class AWCIVerticalProfile(QWidget):
         # vertical room to read (up to 12 real levels can share this
         # chart now, vs. up to 6 before).
         margin_bottom = 45
-
-        plot_width = width - margin_left - margin_right
         plot_height = height - margin_top - margin_bottom
 
-        if plot_width < 10 or plot_height < 10:
+        if not self._bar_geometry or plot_height < 10:
             painter.end()
             return
 
@@ -120,16 +171,12 @@ class AWCIVerticalProfile(QWidget):
         scores = list(self._profile.values())
         max_score = max(100, max(scores) + 10)
 
-        # Draw bars
-        bar_width = min(20, plot_width / len(sorted_items) * 0.7)
-        bar_spacing = bar_width * 0.3
-
         font.setPointSize(7)
         font.setBold(False)
         painter.setFont(font)
 
-        for i, (level, score) in enumerate(sorted_items):
-            x = margin_left + i * (bar_width + bar_spacing) + bar_spacing / 2
+        for level, x, bar_width in self._bar_geometry:
+            score = self._profile[level]
 
             # Normalize score to height
             normalized = score / max_score
@@ -192,5 +239,133 @@ class AWCIVerticalProfile(QWidget):
 
         painter.end()
 
+    def mousePressEvent(self, event: Any) -> None:
+        """Real click-to-select: hit-tests the click's x-position
+        against the exact real bar geometry the last paintEvent() drew
+        (see __init__'s own comment on why this is one shared real
+        computation, not two) - the full real column width, not just
+        the bar's own drawn height, so a click anywhere in that
+        level's column registers, a real forgiving target matching
+        common bar-chart UI convention."""
+        x = event.position().x()
+        for level, bar_x, bar_width in self._bar_geometry:
+            if bar_x <= x <= bar_x + bar_width:
+                self.levelClicked.emit(level)
+                break
+        super().mousePressEvent(event)
+
     def sizeHint(self):
         return QSize(250, 300)
+
+
+#: Real §51 label per real AWCICalculator module_scores key - the
+#: honest mapping from that section's own requested variable list
+#: ("vent, température, humidité, stabilité, convection, turbulence,
+#: givrage, complexité, incertitude") onto the 9 real modules this
+#: project's own AWCICalculator actually computes (see
+#: AWCIVerticalProfileLevelDialog's own docstring for which §51 words
+#: have no real dedicated module and are honestly disclosed as such,
+#: rather than force-mapped). ensemble_spread/model_disagreement are
+#: the real FORECAST_MODULES (calculator.py's own grouping) - real,
+#: opt-in scores that stay at AWCICalculator's own honest default
+#: (never a fabricated one) in demo mode, since neither
+#: ensemble_members nor model_realizations is ever supplied by this
+#: dashboard's own synthetic per-point pipeline.
+_MODULE_LABELS_FOR_LEVEL_DETAIL: dict[str, str] = {
+    "dynamic": "Dynamics (wind)",
+    "thermodynamic": "Thermodynamic (temperature + humidity)",
+    "convective": "Convective",
+    "microphysical": "Microphysical (icing)",
+    "topographic": "Topographic (orographic)",
+    "temporal": "Temporal (rate of change)",
+    "confidence": "Confidence",
+    "ensemble_spread": "Ensemble spread",
+    "model_disagreement": "Model disagreement",
+}
+
+
+class AWCIVerticalProfileLevelDialog(QDialog):
+    """
+    Real per-level detail popup (docs/ACF_MASTER_PROMPT.md §51),
+    opened by AWCIVerticalProfile.levelClicked - the exact same real
+    module_scores/physical_score/forecast_score AWCICalculator.
+    calculate() already returns for that level (built by
+    AWCIDashboard._open_vertical_profile()'s own loop), never a second/
+    recomputed value.
+
+    Honest §51 coverage: this project's own AWCICalculator computes 9
+    real modules (dynamic/thermodynamic/convective/microphysical/
+    topographic/temporal/confidence/ensemble_spread/model_disagreement)
+    - §51's own word list ("température, humidité" as 2 separate
+    items; "stabilité"; "turbulence"; "givrage") does not map 1:1 onto
+    them.
+    "température"+"humidité" are honestly shown as ONE real
+    thermodynamic score (AWCICalculator's own module already blends
+    them, not 2 separate numbers); "givrage" maps onto the real
+    microphysical score. "stabilité" and "turbulence" have no real
+    dedicated module anywhere in this codebase's per-point pipeline
+    today (the map's own "Turbulence" LAYERS checkbox uses a disclosed
+    horizontal-wind-gradient proxy that has no single-point
+    equivalent here) - this dialog shows an honest note instead of a
+    fabricated number for either.
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setStyleSheet(dashboard_stylesheet())
+        layout = QVBoxLayout(self)
+
+        self._title_label = QLabel()
+        self._title_label.setStyleSheet(label_style("text_primary", "lg", "bold"))
+        layout.addWidget(self._title_label)
+
+        self._score_label = QLabel()
+        self._score_label.setStyleSheet(label_style("text_primary", "md", "bold"))
+        layout.addWidget(self._score_label)
+
+        self._split_label = QLabel()
+        self._split_label.setStyleSheet(label_style("text_secondary", "sm"))
+        layout.addWidget(self._split_label)
+
+        breakdown_header = QLabel("Real module-score breakdown at this level (§51):")
+        breakdown_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        layout.addWidget(breakdown_header)
+
+        self._module_rows: dict[str, QLabel] = {}
+        for module_key, module_label in _MODULE_LABELS_FOR_LEVEL_DETAIL.items():
+            row = QLabel()
+            row.setStyleSheet(label_style("text_secondary", "sm"))
+            layout.addWidget(row)
+            self._module_rows[module_key] = row
+
+        note = QLabel(
+            "Note: §51 also lists \"stabilité\" and \"turbulence\" - neither has a real "
+            "dedicated per-point module in this codebase today, so no number is shown for "
+            "them here rather than a fabricated one."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet(label_style("text_muted", "xs"))
+        layout.addWidget(note)
+
+        self.resize(360, 360)
+
+    def show_detail(self, level_label: str, hpa: float, result: dict[str, Any]) -> None:
+        self.setWindowTitle(f"AWCI – {level_label}")
+        self._title_label.setText(f"{level_label}  (~{hpa:.0f} hPa)")
+        self._score_label.setText(f"AWCI: {result['awci']:.1f} / 100 ({result['level']})")
+
+        physical = result.get("physical_score")
+        forecast = result.get("forecast_score")
+        physical_text = f"{physical:.1f}" if physical is not None else "—"
+        forecast_text = f"{forecast:.1f}" if forecast is not None else "—"
+        self._split_label.setText(f"Physical: {physical_text}   ·   Forecast: {forecast_text}")
+
+        module_scores = result.get("module_scores", {})
+        for module_key, module_label in _MODULE_LABELS_FOR_LEVEL_DETAIL.items():
+            value = module_scores.get(module_key)
+            value_text = f"{value:.1f}" if value is not None else "—"
+            self._module_rows[module_key].setText(f"{module_label}: {value_text}")
+
+        self.show()
+        self.raise_()
+        self.activateWindow()
