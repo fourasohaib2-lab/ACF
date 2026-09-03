@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 from acf.awci.spatial_field import compute_real_complexity_field
@@ -19,6 +19,7 @@ from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
 from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
 from acf.gui.esoc.log_viewer_dialog import LogViewerDialog
 from acf.gui.esoc.module_registry import ModuleRegistry
+from acf.gui.map.layer_toggle_panel import LayerTogglePanel
 from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.session_manager import SessionManager
 from acf.gui.esoc.settings_dialog import SettingsDialog
@@ -97,6 +98,14 @@ class ESOCWindow(QMainWindow):
 
         self.status_bar = ESOCStatusBar()
         self.setStatusBar(self.status_bar)
+
+        # Real per-layer show/hide control (docs/ACF_MASTER_PROMPT.md
+        # section 28: "l'utilisateur doit pouvoir activer/désactiver
+        # les couches") - closes the piece of section 28 the
+        # per-module-complexity-layers work left open: real data/API
+        # existed, but no interactive control to pick a layer.
+        self.layer_toggle_panel = LayerTogglePanel(self.layout_manager.view_manager.map_canvas, self)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.layer_toggle_panel)
 
         # Toolbar-driven UI state (real, not fabricated: reflects only what the user
         # actually triggered from this window - a chosen theme, an opened log viewer).
@@ -506,14 +515,16 @@ class ESOCWindow(QMainWindow):
         # so populating the 6 module layers + Uncertainty here costs
         # nothing extra. activate=False: showing all 7 at once stacked
         # on top of the combined AWCI layer would be a cluttered,
-        # unreadable overlay with no per-layer toggle UI yet to pick
-        # just one - real data is ready the moment such a control
-        # exists (map_canvas.set_module_complexity_field(key, ...,
-        # activate=True) / layer_manager.active_layer_names), not
-        # fabricated as "displayed" before it actually is.
+        # unreadable overlay - real data is populated and ready for the
+        # user to pick individually via self.layer_toggle_panel's real
+        # checkboxes (built 2026-09-03), not auto-displayed all at once.
         for module_key, field in result["module_fields"].items():
             map_canvas.set_module_complexity_field(module_key, result["lons"], result["lats"], field, activate=False)
         map_canvas.set_uncertainty_field(result["lons"], result["lats"], result["forecast_field"], activate=False)
+        # set_awci_field() above DID activate "AWCI Complexity" directly
+        # (bypassing the toggle panel's own _on_toggled()) - re-sync the
+        # checkboxes so the panel honestly reflects what's actually showing.
+        self.layer_toggle_panel.refresh()
         self.status_bar.showMessage("🌪️ Real AWCI field displayed on map (ARPEGE, CAPE/CIN included).", 5000)
         self.dispatcher.log_message_emitted.emit(
             "INFO",

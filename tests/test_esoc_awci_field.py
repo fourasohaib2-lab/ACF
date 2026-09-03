@@ -81,6 +81,26 @@ def test_show_awci_field_on_map_also_populates_real_module_layers(qtbot):
     assert "Uncertainty" not in map_canvas.layer_manager.active_layer_names
 
 
+def test_show_awci_field_on_map_syncs_the_real_layer_toggle_panel(qtbot):
+    """set_awci_field() activates "AWCI Complexity" directly (not
+    through LayerTogglePanel's own checkbox), so
+    _on_awci_field_ready() must call refresh() afterward - otherwise
+    the panel's checkbox would honestly disagree with what the map
+    actually shows."""
+    win = ESOCWindow()
+    qtbot.addWidget(win)
+    map_canvas = win.layout_manager.view_manager.map_canvas
+    assert win.layer_toggle_panel._checkboxes["AWCI Complexity"].isChecked() is False
+
+    win._show_awci_field_on_map()
+
+    qtbot.waitUntil(
+        lambda: "AWCI Complexity" in map_canvas.layer_manager.active_layer_names,
+        timeout=60000,
+    )
+    assert win.layer_toggle_panel._checkboxes["AWCI Complexity"].isChecked() is True
+
+
 def test_toolbar_action_dispatch_reaches_the_real_handler(qtbot):
     """End-to-end from the actual dispatch path (_handle_toolbar_action),
     not by calling _show_awci_field_on_map() directly - proves the

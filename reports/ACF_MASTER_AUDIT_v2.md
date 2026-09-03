@@ -2782,3 +2782,77 @@ données, non affichées). Suite complète **3514/3514** (3497 + 17),
   Model Consensus/Spread/Turbulence/Icing/Visibility restent ouverts.
 - §36/§37/§40/§41 — toujours absents, non traités par cette mise à
   jour (choix explicite de périmètre, pas oublié).
+
+## Mise à jour 2026-09-03 (suite) — contrôle interactif réel par couche (§28)
+
+Suite explicite ("continue"), fermeture du point resté ouvert à la
+mise à jour précédente ("UI de bascule par couche... reste à
+construire").
+
+**Pourquoi** : §28 exige explicitement "l'utilisateur doit pouvoir
+activer/désactiver les couches" — la mise à jour précédente avait rendu
+les données/l'API réelles (`MapCanvas.set_module_complexity_field(...,
+activate=True)`) mais aucun contrôle visuel interactif n'existait
+encore pour qu'un utilisateur choisisse quelle couche afficher.
+
+**Trouvaille faite en inspectant avant de construire, pas ignorée** :
+un système de gestion de couches **entièrement différent et déjà
+orphelin** existe dans ce dépôt —
+[`acf.gui.map.layers.layer_manager.LayerManager`](../src/acf/gui/map/layers/layer_manager.py)
+(un vrai `QObject` à signaux Qt, `add_layer()`/`remove_layer()`/
+`layers()`/`visible_layers()`) plus deux vrais widgets de case à cocher
+(`acf.gui.docks.layer_panel.LayerPanel` et
+`acf.gui.layer_panel.layer_panel`) construits pour lui — dont le propre
+docstring de `LayerPanel` confirme déjà : "currently unused/unwired
+anywhere else in the codebase". Ce couple cible une interface
+totalement différente et incompatible (signaux Qt, `layer.id`/
+`layer.visible`, sémantique add/remove/move) du vrai `LayerManager`
+simple (`available_layers: dict` + `active_layer_names: list[str]`,
+sans signal) que `MapCanvas` — la vraie carte connectée d'ESOC —
+utilise réellement. Adapter l'un à l'autre reviendrait quasiment à une
+réécriture, pas une vraie réutilisation ; **non consolidé/supprimé ici**
+(§71 du prompt : ne jamais supprimer massivement) — trouvaille
+architecturale réelle, disclosed, pas cachée.
+
+**Construit** : nouveau
+[`acf.gui.map.layer_toggle_panel.LayerTogglePanel`](../src/acf/gui/map/layer_toggle_panel.py) —
+une vraie case à cocher par couche de `map_canvas.layer_manager.
+available_layers` (les 15 couches réelles : les 7 préexistantes + les 8
+construites la mise à jour précédente), cocher/décocher ajoute/retire
+réellement le nom de la couche de `active_layer_names` et redessine.
+`refresh()` resynchronise l'état des cases après tout changement
+programmatique externe (ex. le bouton toolbar "🌪️ AWCI Field" active
+directement "AWCI Complexity" sans passer par une case à cocher).
+Nouvelle méthode publique `MapCanvas.redraw()` (expose le même
+redessin/`_apply_camera_extent()` que chaque `set_*_field()` fait déjà,
+sans que le panel n'ait à toucher une méthode "privée"). Branché comme
+un vrai `QDockWidget` dans `ESOCWindow.__init__()` ; `_on_awci_field_ready()`
+appelle maintenant `self.layer_toggle_panel.refresh()` pour que la case
+"AWCI Complexity" reflète honnêtement ce que la carte affiche
+réellement.
+
+**Validation réelle** : 8 nouveaux tests —
+`tests/test_map_layer_toggle_panel.py` (+7 : une case par couche
+réelle, état initial cohérent avec `active_layer_names` (un exemple
+actif par défaut, un exemple inactif — pas trivialement tout coché/
+décoché), cocher/décocher active/désactive réellement la couche,
+garde-fou anti-duplication testé directement sur `_on_toggled()` (pas
+seulement la dé-duplication native de Qt), `refresh()` resynchronise
+après un changement externe sans se re-déclencher elle-même deux fois),
+`tests/test_esoc_awci_field.py` (+1 : le bouton toolbar existant
+resynchronise bien le panel réel). Suite complète **3522/3522**
+(3514 + 8), `ruff`/`mypy` propres, aucun import circulaire introduit
+(vérifié directement par `import acf.gui`).
+
+**Ce qui reste réellement** :
+- §28-29 — **le contrôle interactif par couche est maintenant réel**
+  pour les 15 couches connectées. `Model Consensus`/`Model Spread`/
+  `Turbulence`/`Icing`/`Visibility` restent sans champ réel calculé
+  point par point (limites déjà documentées, non résolues ici).
+- §36/§37/§40/§41 — toujours absents, non traités par cette mise à
+  jour (choix explicite de périmètre, pas oublié).
+- Les deux systèmes de gestion de couches orphelins/parallèles trouvés
+  ci-dessus (`acf.gui.map.layers.layer_manager.LayerManager` +
+  `LayerPanel`×2) restent en l'état — une consolidation ou suppression
+  serait une décision architecturale à part, pas prise unilatéralement
+  ici.

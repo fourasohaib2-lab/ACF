@@ -374,6 +374,18 @@ class MapCanvas(EventMixin, QWidget):
         self.draw_map()
         self._apply_camera_extent()
 
+    def redraw(self) -> None:
+        """Public redraw hook for an external caller that directly
+        mutated `self.layer_manager.active_layer_names` (e.g.
+        acf.gui.map.layer_toggle_panel.LayerTogglePanel's real
+        per-layer checkboxes, docs/ACF_MASTER_PROMPT.md section 28) -
+        same two calls set_awci_field()/set_module_complexity_field()/
+        etc. already make after any layer-visibility change, exposed
+        here so a caller outside this class doesn't need to reach into
+        the "private" _apply_camera_extent()."""
+        self.draw_map()
+        self._apply_camera_extent()
+
     def _apply_camera_extent(self) -> None:
         """Apply the camera's real current extent to the live Cartopy
         axes and redraw - the missing link EventMixin/MapCamera never
