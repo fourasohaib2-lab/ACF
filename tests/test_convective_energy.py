@@ -8,7 +8,6 @@ documented "CAPE/CIN... NOT derived here" limitation).
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from acf.awci.convective_energy import MIN_PRESSURE_HPA_FOR_CONVECTIVE_ENERGY, compute_real_cape_cin_at_point
