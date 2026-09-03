@@ -3214,3 +3214,51 @@ version réels, et n'exige pas `input_files`. Suite complète
 appel existant à `Provenance(...)` dans le dépôt n'utilise
 d'arguments positionnels au-delà de `generator` (tous par mot-clé),
 donc aucun risque de décalage de position.
+
+## Mise à jour 2026-09-03 (suite) — classification réelle d'échelle spatiale/temporelle (§43)
+
+Suite explicite ("continue selon ton jugement"), choix libre parmi les
+lignes ⚠️ restantes.
+
+**Pourquoi** : §43 liste 4 échelles (Micro/Méso/Synoptique/Temporelle)
+et exige explicitement d'"éviter de mélanger des phénomènes
+incompatibles sans justification" — l'audit constatait que les vraies
+résolutions de grille (`MODEL_CONFIGS`) couvraient implicitement
+plusieurs échelles sans qu'aucune classification explicite ne soit
+jamais attachée nulle part.
+
+**Choix de référence réelle et publiée, pas des seuils inventés** :
+`classify_spatial_scale()` utilise Orlanski (1975), "A rational
+subdivision of scales for atmospheric processes" — la taxonomie
+d'échelles météorologiques standard et largement citée — repliée
+depuis ses propres sous-catégories alpha/beta/gamma plus fines vers les
+3 catégories exactes que le §43 demande, en gardant les vraies bornes
+Orlanski exactes (2 km micro/méso, 2000 km méso/synoptique).
+`classify_temporal_scale()` utilise la vraie convention opérationnelle
+NWP établie (nowcasting/short-range/medium-range, terminologie OMM
+réelle) plutôt que d'inventer des seuils minute/heure/jour à partir de
+rien.
+
+**Construit** : nouveau
+[`acf.awci.scale_classification`](../src/acf/awci/scale_classification.py) —
+`SpatialScale`/`TemporalScale` (enums), `classify_spatial_scale(resolution_km)`
+et `classify_temporal_scale(lead_time_hours)`, tous deux réels et
+validés (rejettent une résolution/un délai non physiquement valide).
+
+**Validation réelle contre les vraies résolutions déjà utilisées par ce
+dépôt** : un test applique la classification aux 3 vraies résolutions
+de `MODEL_CONFIGS` — AROME (1.3 km, résolution convective réelle) tombe
+bien en micro-échelle réelle Orlanski ; ALADIN (7.5 km) et ARPEGE
+(10 km) tombent tous deux en méso-échelle réelle, pas synoptique,
+malgré le fait d'être les modèles les "plus grossiers" d'ACF — un vrai
+résultat de classification physiquement sensé, pas une valeur
+arbitraire. 9 nouveaux tests
+(`tests/test_awci_scale_classification.py`), suite complète
+**3613/3613** (3604 + 9), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : ces classificateurs sont réels et testés
+mais pas encore attachés automatiquement à un résultat AWCI/évolution
+temporelle en production — un caller doit les appeler explicitement
+(ex. `classify_spatial_scale(MODEL_CONFIGS[model]["resolution_km"])`),
+même situation transitoire déjà acceptée plusieurs fois cette session
+pour de l'infrastructure réelle avant son branchement.
