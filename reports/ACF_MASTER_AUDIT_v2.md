@@ -3171,3 +3171,46 @@ encore appelées depuis `acf.awci.method_comparison.compare_methods()`
 reformulation probabiliste (ex. "P(complexité ≥ seuil)"), une décision
 de conception distincte, pas prise ici pour ne pas mélanger deux
 changements.
+
+## Mise à jour 2026-09-03 (suite) — champs de provenance manquants du §57-58
+
+Suite explicite ("poursuis selon ton jugement"), choix libre parmi les
+lignes ⚠️ restantes — celle-ci petite, sûre, purement additive.
+
+**Pourquoi** : §57 demande "code version, configuration version, model
+version, input files, run identifier, calibration version, software
+environment" et §58 ajoute "dataset_version" — `Provenance` réel
+existant ne couvrait que `algorithm_version`/`science_version`/
+`config_version`/`created_at`/`notes`.
+
+**Trouvaille faite en inspectant avant de construire** : `is_complete()`
+a un vrai contrat existant et testé (`tests/test_core_contracts.py`) —
+elle vérifie exactement 3 champs (`algorithm_version`/`science_version`/
+`config_version`), rien de plus. Ajouter les nouveaux champs à cette
+même vérification aurait été un vrai changement de comportement pour
+tout appelant existant qui considère déjà un `Provenance` "complet"
+avec seulement ces 3 champs — **délibérément non fait**. `is_complete()`
+garde son sens exact d'avant, inchangé.
+
+**Construit** : 5 nouveaux champs réels sur `Provenance`
+(`run_identifier`/`calibration_version` — même nom exact que
+`acf.awci.calibration.LockedModel.calibration_version`, construit
+au §40, pas une convention de nommage séparée inventée —
+`dataset_version`/`software_environment`/`input_files`), tous avec le
+même défaut honnête `"unknown"` (`[]` pour `input_files`, un vrai état
+valide — "aucun fichier d'entrée" — pas un "non renseigné"). Nouvelle
+méthode séparée `is_fully_specified()` — le vrai check plus strict
+couvrant les 3 champs originaux **et** les 4 nouveaux champs de version
+(`input_files` volontairement exclu, une liste vide étant un état réel
+valide, pas un défaut non renseigné).
+
+**Validation réelle** : 4 nouveaux tests
+(`tests/test_core_contracts.py`) — les 5 nouveaux champs ont bien le
+même défaut honnête que les champs existants, `is_complete()` reste
+inchangée par les nouveaux champs (test dédié au non-régression du
+contrat existant), `is_fully_specified()` exige bien tous les champs de
+version réels, et n'exige pas `input_files`. Suite complète
+**3604/3604** (3600 + 4), `ruff`/`mypy` propres — vérifié qu'aucun
+appel existant à `Provenance(...)` dans le dépôt n'utilise
+d'arguments positionnels au-delà de `generator` (tous par mot-clé),
+donc aucun risque de décalage de position.

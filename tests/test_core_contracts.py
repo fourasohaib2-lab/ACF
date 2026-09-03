@@ -29,6 +29,62 @@ def test_provenance_complete_when_all_versions_supplied():
     assert prov.is_complete() is True
 
 
+def test_provenance_new_fields_default_to_the_same_honest_unknown_sentinel():
+    """docs/ACF_MASTER_PROMPT.md sections 57-58 fields, added 2026-09-03 -
+    purely additive, same honest default as the pre-existing fields."""
+    prov = Provenance(generator="TestGenerator")
+    assert prov.run_identifier == "unknown"
+    assert prov.calibration_version == "unknown"
+    assert prov.dataset_version == "unknown"
+    assert prov.software_environment == "unknown"
+    assert prov.input_files == []
+
+
+def test_provenance_is_complete_unaffected_by_the_new_fields():
+    """A real, pre-existing contract: is_complete() must keep meaning
+    exactly what it always did (the original 3 fields), not silently
+    grow stricter when new fields are added - a caller who already
+    relies on is_complete() must not see it start returning False for
+    an object it used to call complete."""
+    prov = Provenance(
+        generator="TestGenerator", algorithm_version="1.0", science_version="2026.09", config_version="default"
+    )
+    assert prov.is_complete() is True
+    assert prov.is_fully_specified() is False  # the 5 newer fields are still "unknown"
+
+
+def test_provenance_is_fully_specified_requires_every_real_version_field():
+    prov = Provenance(
+        generator="TestGenerator",
+        algorithm_version="1.0",
+        science_version="2026.09",
+        config_version="default",
+        run_identifier="run-2026-09-03-001",
+        calibration_version="test-2026.09",
+        dataset_version="golden-v1",
+        software_environment="python-3.12",
+    )
+    assert prov.is_fully_specified() is True
+
+
+def test_provenance_is_fully_specified_does_not_require_input_files():
+    """An empty input_files list is a real, valid state (no file
+    inputs - e.g. a pure in-memory solver run), not an "unfilled"
+    field that should block is_fully_specified()."""
+    prov = Provenance(
+        generator="TestGenerator",
+        algorithm_version="1.0",
+        science_version="2026.09",
+        config_version="default",
+        run_identifier="run-2026-09-03-001",
+        calibration_version="test-2026.09",
+        dataset_version="golden-v1",
+        software_environment="python-3.12",
+        input_files=[],
+    )
+    assert prov.is_fully_specified() is True
+
+
 # -------------------------------------------------------------------- Quality
 
 
