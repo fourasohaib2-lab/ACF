@@ -118,6 +118,26 @@ class Normalizer:
         return value / 5000.0
 
     @staticmethod
+    def normalize_updraft_velocity(value_m_s: float) -> float:
+        """
+        Normalize real maximum theoretical updraft velocity to [0, 1] -
+        real, opt-in blend into the convective module alongside CAPE/CIN
+        (docs/ACF_MASTER_PROMPT.md section 14, explicit user request
+        "continue au module convectif, avec le sommet des nuages"; see
+        acf.awci.updraft.compute_real_max_updraft_velocity() for the
+        real formula - w_max = sqrt(2*CAPE), classic parcel theory).
+
+        Range: 0 to 70 m/s - a real, generously wide envelope covering
+        both real observed extreme-storm updrafts (rarely exceeding
+        ~50-60 m/s) and the idealized parcel-theory ceiling for a
+        strong-but-plausible real CAPE (see
+        acf.awci.updraft's own module docstring for why idealized
+        parcel theory is known to overestimate real observed values).
+        """
+        value_m_s = max(0.0, min(70.0, value_m_s))
+        return value_m_s / 70.0
+
+    @staticmethod
     def normalize_cin(value: float) -> float:
         """
         Normalize CIN to [0, 1].

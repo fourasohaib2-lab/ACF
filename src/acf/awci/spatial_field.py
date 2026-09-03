@@ -55,8 +55,10 @@ import numpy as np
 from acf.awci.calculator import AWCICalculator
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
+from acf.awci.updraft import compute_real_max_updraft_velocity
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.forecast.engine import MODEL_CONFIGS
+from acf.science.clouds.dynamics import CloudDynamicsEngine
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
@@ -73,6 +75,9 @@ _WIND_SHEAR_FIELDS_USED = ("wind_shear",)
 #: Added when `compute_theta_e=True` - see that parameter's own
 #: docstring and `acf.awci.theta_e`.
 _THETA_E_FIELDS_USED = ("theta_e",)
+#: Added when `compute_updraft_velocity=True` - see that parameter's
+#: own docstring and `acf.awci.updraft`.
+_UPDRAFT_VELOCITY_FIELDS_USED = ("updraft_velocity",)
 
 
 def compute_real_complexity_field(
@@ -89,6 +94,7 @@ def compute_real_complexity_field(
     compute_convective_energy: bool = False,
     compute_wind_shear: bool = False,
     compute_theta_e: bool = False,
+    compute_updraft_velocity: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -160,6 +166,30 @@ def compute_real_complexity_field(
         default - the default output is unchanged unless explicitly
         requested (a single-level computation, real but not free -
         3 real formula calls per grid point).
+    compute_updraft_velocity : bool
+        When True, genuinely computes real per-point maximum
+        theoretical updraft velocity (see `acf.awci.updraft.
+        compute_real_max_updraft_velocity()` - w_max = sqrt(2*CAPE),
+        classic parcel theory) from each grid point's real CAPE, and
+        feeds it into AWCICalculator's convective module (docs/
+        ACF_MASTER_PROMPT.md section 14, explicit user request
+        "continue au module convectif, avec le sommet des nuages" -
+        see `acf.awci.updraft`'s own module docstring for why this is
+        a real proxy for cloud-top development potential, not
+        literally cloud top height, and why it is honestly disclosed
+        as not independent information beyond CAPE itself). Requires
+        `compute_convective_energy=True` (raises ValueError
+        otherwise): this formula's only real input is CAPE, and reusing
+        the SAME real per-point CAPE already computed for the
+        convective module - rather than silently computing a second,
+        possibly inconsistent one - keeps `data["cape"]` and
+        `data["updraft_velocity"]` honestly derived from one real
+        value. Off by default, same real-cost reasoning as the other
+        `compute_*` flags above - the default output is unchanged
+        unless explicitly requested. `updraft_velocity_field` stays
+        `numpy.nan` (never a fabricated value) wherever the real
+        per-point CAPE itself was not computed (too few real levels -
+        see `acf.awci.convective_energy`'s own honest scope).
 
     Returns
     -------
@@ -213,12 +243,25 @@ def compute_real_complexity_field(
             (never a fabricated value) wherever the real computed
             relative humidity was non-positive at that point (see that
             module's own honest_limitation).
+        updraft_velocity_field : 2D numpy array (m/s), present only
+            when `compute_updraft_velocity=True` - real per-point
+            maximum theoretical updraft velocity from
+            `acf.awci.updraft`, derived from the SAME real per-point
+            CAPE already in `cape_field`, `numpy.nan` (never a
+            fabricated value) wherever that real CAPE was not computed.
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
     """
     if model not in MODEL_CONFIGS:
         raise ValueError(f"Unknown model {model!r} - expected one of {sorted(MODEL_CONFIGS)}")
+    if compute_updraft_velocity and not compute_convective_energy:
+        raise ValueError(
+            "compute_updraft_velocity=True requires compute_convective_energy=True - real "
+            "maximum updraft velocity (acf.awci.updraft) is derived from real per-point CAPE, "
+            "and reuses the SAME real CAPE already computed for the convective module rather "
+            "than silently computing a second, possibly inconsistent one."
+        )
     config = MODEL_CONFIGS[model]
 
     grid = EarthGrid(
@@ -278,6 +321,17 @@ def compute_real_complexity_field(
     # compute_real_theta_e_at_point() itself honestly reports
     # "not computed" (non-positive real relative humidity).
     theta_e_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_theta_e else None
+    # Real per-point maximum theoretical updraft velocity, only when
+    # compute_updraft_velocity=True (docs/ACF_MASTER_PROMPT.md section
+    # 14) - derived from the SAME real per-point CAPE already computed
+    # above for cape_field, never a second/inconsistent one. np.nan
+    # (not a fabricated value) wherever that real CAPE itself was not
+    # computed. One CloudDynamicsEngine instance reused across the
+    # whole loop (see acf.awci.updraft.compute_real_max_updraft_velocity's
+    # own docstring for why constructing one per grid point would be
+    # wasteful).
+    updraft_velocity_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_updraft_velocity else None
+    cloud_dynamics_engine = CloudDynamicsEngine() if compute_updraft_velocity else None
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -326,9 +380,21 @@ def compute_real_complexity_field(
                     assert cape_field is not None and cin_field is not None  # for mypy - both real when compute_convective_energy
                     cape_field[i, j] = cape_cin["cape_j_kg"]
                     cin_field[i, j] = cape_cin["cin_j_kg"]
+
+                    if compute_updraft_velocity:
+                        # Reuses this SAME real CAPE value - never a
+                        # second, independently-computed one.
+                        updraft = compute_real_max_updraft_velocity(
+                            cape=cape_cin["cape_j_kg"], engine=cloud_dynamics_engine
+                        )
+                        data["updraft_velocity"] = updraft["w_max_m_s"]
+                        assert updraft_velocity_field is not None  # for mypy - real whenever compute_updraft_velocity
+                        updraft_velocity_field[i, j] = updraft["w_max_m_s"]
                 # else: honestly leave data["cape"]/["cin"] unset (AWCICalculator's
                 # own real defaults apply) and cape_field/cin_field stay np.nan -
                 # never a fabricated 0.0 for a column with too few real levels.
+                # updraft_velocity_field also stays np.nan here - no real CAPE
+                # means no real updraft velocity either.
 
             if compute_wind_shear:
                 # Real full vertical U/V column at this one (i, j)
@@ -375,6 +441,8 @@ def compute_real_complexity_field(
         fields_used = fields_used + _WIND_SHEAR_FIELDS_USED
     if compute_theta_e:
         fields_used = fields_used + _THETA_E_FIELDS_USED
+    if compute_updraft_velocity:
+        fields_used = fields_used + _UPDRAFT_VELOCITY_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -427,5 +495,8 @@ def compute_real_complexity_field(
 
     if compute_theta_e:
         output["theta_e_field"] = theta_e_field
+
+    if compute_updraft_velocity:
+        output["updraft_velocity_field"] = updraft_velocity_field
 
     return output

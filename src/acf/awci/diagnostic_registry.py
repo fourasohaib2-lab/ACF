@@ -197,6 +197,35 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         tests=["tests/test_awci_calculator.py::test_normalizer_methods"],
         status=NORMALIZER_RANGE_STATUS["cape"],
     ),
+    "normalize_updraft_velocity": DiagnosticSpec(
+        name="normalize_updraft_velocity",
+        description="Real, opt-in normalization of maximum theoretical updraft velocity to [0, 1] - BLENDS "
+        "into the convective module's own CAPE/CIN combination when a real value is supplied (added "
+        "2026-09-03, explicit user request 'continue au module convectif, avec le sommet des nuages').",
+        physical_meaning="A real physical PROXY for cloud-top convective development potential (docs/"
+        "ACF_MASTER_PROMPT.md section 14 lists 'hauteur/sommet des nuages' among the convective module's own "
+        "candidate variables) - not literally cloud top height itself (m/s, not m). No real, peer-reviewed "
+        "single-point cloud-top-HEIGHT formula exists in this codebase (the one candidate found was uncited "
+        "and sat alongside a CAPE/CIN duplicate inconsistent with the real one used here); the user was asked "
+        "directly and chose this real, well-established parcel-theory alternative instead.",
+        equation="clip(value_m_s, 0, 70) / 70",
+        inputs=["updraft_velocity (m/s) - see acf.awci.updraft.compute_real_max_updraft_velocity() for the "
+        "real w_max=sqrt(2*CAPE) classic parcel-theory formula that produces it"],
+        output="convective module input (50% weight when supplied - see convective_module_combination below), [0, 1]",
+        units="m/s -> dimensionless",
+        valid_range="0 to 70 m/s",
+        assumptions="Linear scaling across a real, generously wide envelope covering both real observed "
+        "extreme-storm updrafts and idealized parcel theory's own known tendency to overestimate.",
+        limitations="w_max=sqrt(2*CAPE) is a real, classic, textbook parcel-theory result, but a purely "
+        "DETERMINISTIC, MONOTONIC function of CAPE alone - it carries no real independent information beyond "
+        "what CAPE itself already provides (honest disclosure, unlike normalize_wind_shear/normalize_theta_e "
+        "above - see convective_module_combination below and acf.awci.updraft's own module docstring).",
+        reference="Normalization range: ACF design choice. Underlying formula: classic parcel theory "
+        "(w_max^2/2 = CAPE, a textbook derivation - acf.science.clouds.dynamics.CloudDynamicsEngine."
+        "max_updraft_velocity()), not invented here.",
+        tests=["tests/test_awci_updraft.py", "tests/test_awci_calculator_updraft.py"],
+        status=NORMALIZER_RANGE_STATUS["updraft_velocity"],
+    ),
     "normalize_cin": DiagnosticSpec(
         name="normalize_cin",
         description="Normalizes the magnitude of CIN to [0, 1] - feeds the convective module alongside CAPE.",
@@ -343,20 +372,35 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
     ),
     "convective_module_combination": DiagnosticSpec(
         name="convective_module_combination",
-        description="Combines normalized CAPE and CIN into the convective module score.",
+        description="Combines normalized CAPE and CIN into the convective module score by default, and BLENDS "
+        "in real, opt-in maximum updraft velocity (added 2026-09-03) alongside that CAPE/CIN combination when "
+        "a caller supplies one.",
         physical_meaning="Convective complexity is driven primarily by available energy (CAPE), moderated by "
-        "inhibition (CIN).",
-        equation="0.7 * normalize_cape(cape) + 0.3 * normalize_cin(cin)",
-        inputs=["cape (J/kg)", "cin (J/kg)"],
+        "inhibition (CIN); maximum updraft velocity, when supplied, is a real physical PROXY for cloud-top "
+        "development potential (section 14's own explicit candidate variable) that this combination weighs "
+        "equally alongside the CAPE/CIN base.",
+        equation="cape_cin_base = 0.7 * normalize_cape(cape) + 0.3 * normalize_cin(cin); "
+        "if 'updraft_velocity' not in data: cape_cin_base; "
+        "else: 0.5 * cape_cin_base + 0.5 * normalize_updraft_velocity(updraft_velocity)",
+        inputs=["cape (J/kg)", "cin (J/kg)", "updraft_velocity (m/s, optional)"],
         output="convective module score, [0, 1]",
         units="dimensionless",
         valid_range="[0, 1]",
-        assumptions="70/30 weighting - CAPE dominates - a real, disclosed design choice, not derived from a "
-        "published formula.",
+        assumptions="70/30 CAPE/CIN weighting, then 50/50 with updraft_velocity when supplied - real, disclosed "
+        "ACF design choices, not derived from a published formula. Unlike wind_shear/theta_e in the other two "
+        "modules, updraft_velocity is a deterministic, monotonic function of CAPE alone (w_max=sqrt(2*CAPE)) - "
+        "blending it in therefore adds a real nonlinear response curve applied to the same CAPE value, not "
+        "genuinely independent information (honestly disclosed, not hidden - see normalize_updraft_velocity's "
+        "own entry and acf.awci.updraft's own module docstring). Omitting updraft_velocity entirely keeps the "
+        "convective module exactly the CAPE/CIN blend - zero behavior change for every caller that doesn't "
+        "supply it.",
         limitations="Does not distinguish convective POTENTIAL from real observed/forecast convection (section "
-        "14's own explicit warning).",
+        "14's own explicit warning). Opt-in updraft_velocity case: a real physical proxy for cloud-top "
+        "development potential, not literally cloud top height (m/s, not m) - no real, peer-reviewed "
+        "single-point cloud-top-HEIGHT formula exists in this codebase (see normalize_updraft_velocity's own "
+        "entry for why this substitution was made, explicitly with the user).",
         reference="ACF design choice - not derived from a published formula.",
-        tests=["tests/test_awci_calculator.py::test_calculate_module_scores"],
+        tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_updraft.py"],
         status=MODULE_WEIGHT_STATUS["convective"],
     ),
     "wind_topo_interaction": DiagnosticSpec(

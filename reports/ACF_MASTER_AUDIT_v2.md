@@ -3634,3 +3634,105 @@ et variant spatialement une fois activé, correspond à l'API ponctuelle),
 et thermodynamique (theta-e) étendus, chacun avec une seule variable.
 Convectif/microphysique/relief (§14-16) restent avec leurs entrées
 d'origine — même démarche disponible au cas par cas, à la demande.
+
+## Mise à jour 2026-09-03 (suite) — vitesse d'ascendance maximale réelle dans le module convectif (§14)
+
+Suite explicite de l'utilisateur ("continue au module convectif, avec
+le sommet des nuages") — troisième fermeture ciblée du chantier §12-16,
+même méthodologie que le cisaillement de vent et theta-e.
+
+**Pourquoi** : §14 liste explicitement "hauteur/sommet des nuages"
+parmi les variables candidates du module convectif — le module
+`convective` ne combinait jusqu'ici que CAPE/CIN (70/30).
+
+**Trouvaille faite en inspectant avant de construire, disclosed
+explicitement à l'utilisateur plutôt que tranchée en silence** : aucune
+formule réelle, publiée, à un seul point, pour la HAUTEUR de sommet de
+nuage n'existe dans ce code. Le seul candidat trouvé —
+`acf.model4d.physics.cloud_dynamics_advanced.CloudDynamicsAdvancedPhysics.cloud_top_height()`
+— n'a aucune référence citée, aucune unité documentée, et cohabite
+dans le même module avec un doublon "simplifié" de CAPE/CIN
+explicitement labellisé comme tel et physiquement incohérent avec le
+vrai `acf.science.cape.CAPE`/`acf.science.cin` déjà utilisé ailleurs
+dans AWCI — un vrai problème de crédibilité, pas utilisé ici pour
+cette raison précise. Question posée directement à l'utilisateur via
+`AskUserQuestion` (3 options : utiliser `max_updraft_velocity`,
+utiliser `cloud_top_height` quand même avec disclosure, changer de
+variable) — l'utilisateur a choisi **"Utiliser max_updraft_velocity
+(Recommandé)"** : `acf.science.clouds.dynamics.CloudDynamicsEngine.max_updraft_velocity(cape)
+= sqrt(2 * CAPE)`, le résultat classique et textbook de la théorie de
+la parcelle (w_max²/2 = CAPE) — réel, mais un vrai PROXY du potentiel
+de développement convectif au sommet, pas littéralement la hauteur du
+sommet des nuages (m/s, pas m).
+
+**Décision de conception disclosed, différente de theta-e (remplace)
+et proche du cisaillement (mélange), avec une nuance honnête
+supplémentaire** : `updraft_velocity` est **mélangé** 50/50 avec la
+base CAPE/CIN existante — mais contrairement au cisaillement (réellement
+indépendant de la vitesse du vent) ou à theta-e (une vraie combinaison
+distincte température+humidité), `max_updraft_velocity(cape)` est une
+fonction **déterministe et monotone de CAPE seul** — elle n'ajoute donc
+pas d'information physique réellement indépendante, seulement une
+courbe de réponse non linéaire appliquée à la même valeur de CAPE déjà
+utilisée. Disclosed explicitement partout (docstrings du module, de
+`AWCICalculator`, de `NORMALIZER_RANGE_STATUS`, et du registre de
+diagnostics) plutôt que caché. Comportement par défaut **bit-identique**
+sans `data["updraft_velocity"]`.
+
+**Dépendance honnête, disclosed dans `compute_real_complexity_field`** :
+`compute_updraft_velocity=True` exige `compute_convective_energy=True`
+(lève `ValueError` sinon) — la formule n'a qu'une seule vraie entrée
+(CAPE), et réutiliser le MÊME CAPE réel déjà calculé pour le module
+convectif (plutôt que d'en calculer un second, potentiellement
+incohérent) est la seule construction honnête.
+
+**Construit** :
+- Nouveau [`acf.awci.updraft`](../src/acf/awci/updraft.py) —
+  `compute_real_max_updraft_velocity()`, enveloppe fine autour de
+  `CloudDynamicsEngine.max_updraft_velocity()`, aucune nouvelle
+  physique inventée. CAPE négatif honnêtement bloqué à 0.0 m/s (la
+  méthode réelle sous-jacente le fait déjà). Reçoit en option une
+  instance `CloudDynamicsEngine` à réutiliser (évite de reconstruire
+  l'enregistrement `CloudScientificRegistry` à chaque point de grille).
+- `Normalizer.normalize_updraft_velocity()` — enveloppe réelle 0-70 m/s
+  (couvre les ascendances observées réelles les plus extrêmes ~50-60
+  m/s ET le plafond théorique de la théorie de la parcelle idéalisée,
+  connue pour surestimer les valeurs réelles), plus
+  `NORMALIZER_RANGE_STATUS["updraft_velocity"]` (`HYPOTHESIS` pour
+  l'enveloppe de normalisation — la formule w_max=sqrt(2*CAPE)
+  elle-même est un vrai résultat textbook, disclosed explicitement).
+- `AWCICalculator.calculate_module_scores()` — le module `convective`
+  gère maintenant réellement `data["updraft_velocity"]` (mélange 50/50
+  avec la base CAPE/CIN, climatology-aware).
+- `acf.awci.spatial_field.compute_real_complexity_field(compute_updraft_velocity=True)` —
+  intégration de bout en bout réelle, réutilise le MÊME CAPE réel déjà
+  calculé pour `cape_field` (jamais un second), vrai
+  `updraft_velocity_field`, `np.nan` honnête là où le CAPE réel
+  lui-même n'a pas pu être calculé, `ValueError` explicite si
+  `compute_convective_energy=False`, désactivé par défaut.
+- `acf.awci.diagnostic_registry` — nouvelle entrée
+  `normalize_updraft_velocity` et mise à jour de
+  `convective_module_combination` pour disclosed le vrai comportement
+  "mélange, information non indépendante".
+
+**Validation réelle** : correspondance exacte avec `CloudDynamicsEngine.max_updraft_velocity()`
+directement, valeur connue par calcul manuel (CAPE=2500 → w_max=√5000≈70.71),
+CAPE nul/négatif → 0.0 honnête, monotonicité stricte en CAPE, réutilisation
+d'instance `CloudDynamicsEngine` fonctionnelle, `updraft_velocity_field`
+prouvé égal à `sqrt(2 * cape_field)` point par point sur tout le champ
+(preuve qu'aucun second CAPE indépendant n'est calculé). 25 nouveaux
+tests répartis sur 4 fichiers — `tests/test_awci_updraft.py` (+9),
+`tests/test_awci_calculator_updraft.py` (+8 : comportement par défaut
+bit-identique, mélange exact 50/50 avec updraft_velocity, preuve que ce
+n'est PAS un remplacement, climatology-aware), `tests/test_awci_spatial_field.py`
+(+6 : champ absent par défaut, `ValueError` si `compute_convective_energy=False`,
+réel et variant spatialement une fois activé, correspond à l'API
+ponctuelle, réutilisation prouvée du même CAPE), `tests/test_awci_diagnostic_registry.py`
+(+2). Suite complète **3716/3716** (3691 + 25), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du chantier §12-16** : dynamique
+(cisaillement), thermodynamique (theta-e) et convectif (vitesse
+d'ascendance, un proxy honnêtement disclosed, pas la hauteur de sommet
+elle-même) étendus, chacun avec une seule variable. Microphysique/relief
+(§15-16) restent avec leurs entrées d'origine — même démarche
+disponible au cas par cas, à la demande.

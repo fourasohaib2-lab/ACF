@@ -166,6 +166,32 @@ class AWCICalculator:
     module stays exactly the naive temperature/humidity blend,
     bit-identical to before this capability existed.
 
+    Real maximum updraft velocity in the convective module (NOTE, added
+    2026-09-03, explicit user request "continue au module convectif,
+    avec le sommet des nuages")
+    -----------------------------------------------------------------
+    Section 14 lists "hauteur/sommet des nuages" among the convective
+    module's own candidate variables. No real, peer-reviewed,
+    single-point cloud-TOP-HEIGHT formula exists anywhere in this
+    codebase (the one candidate found had no citation and sat in a
+    module whose own duplicate CAPE/CIN formulas are less rigorous than
+    the real ones this class already uses - a real credibility concern,
+    disclosed to the user directly rather than used silently). Asked
+    explicitly; the user chose the real, well-established alternative
+    instead: `acf.science.clouds.dynamics.CloudDynamicsEngine.
+    max_updraft_velocity(cape) = sqrt(2*CAPE)`, the classic parcel-
+    theory result - see `acf.awci.updraft.
+    compute_real_max_updraft_velocity()`. `data["updraft_velocity"]`
+    (m/s) is blended 50/50 into the convective module alongside the
+    existing CAPE/CIN combination when supplied. Honest disclosure,
+    unlike wind shear/theta-e above: this is a deterministic,
+    monotonic function of CAPE alone, so it adds a real nonlinear
+    response curve to the same CAPE value already used, not genuinely
+    independent information - see `acf.awci.updraft`'s own module
+    docstring for the full disclosure. Omitted entirely (the default):
+    zero behavior change - the convective module stays exactly the
+    CAPE/CIN blend, bit-identical to before this capability existed.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -425,6 +451,20 @@ class AWCICalculator:
               full disclosure of that design choice.
             - cape: CAPE in J/kg
             - cin: CIN in J/kg
+            - updraft_velocity: optional, real maximum theoretical
+              updraft velocity in m/s (docs/ACF_MASTER_PROMPT.md
+              section 14) - see
+              acf.awci.updraft.compute_real_max_updraft_velocity() for
+              the real formula (w_max=sqrt(2*CAPE), classic parcel
+              theory - a real proxy for cloud-top development
+              potential, not literally cloud top height). Omitted:
+              zero behavior change, the convective module stays the
+              naive CAPE/CIN blend. Supplied: blended 50/50 with that
+              CAPE/CIN blend - honest disclosure: since this is a
+              deterministic function of CAPE alone, it adds a real
+              nonlinear response curve, not independent information
+              (see calculate_module_scores()'s own inline comment for
+              the full disclosure).
             - precipitation: Precipitation in mm/h
             - pressure: Pressure in hPa
             - altitude: Altitude in meters
@@ -549,12 +589,41 @@ class AWCICalculator:
             hum_norm = self._normalize("specific_humidity", hum, self.normalizer.normalize_humidity, climatology)
             scores["thermodynamic"] = 0.5 * temp_norm + 0.5 * hum_norm
 
-        # Convective module - based on CAPE and CIN
+        # Convective module - based on CAPE and CIN, plus real maximum
+        # updraft velocity when a caller supplies one (docs/
+        # ACF_MASTER_PROMPT.md section 14 - "hauteur/sommet des
+        # nuages" is one of the module's own candidate variables;
+        # explicit user request "continue au module convectif, avec le
+        # sommet des nuages"). data["updraft_velocity"] is expected to
+        # be a real m/s value from
+        # acf.awci.updraft.compute_real_max_updraft_velocity() (a real
+        # classic parcel-theory PROXY for cloud-top development
+        # potential, w_max=sqrt(2*CAPE) - not literally cloud top
+        # height; see that module's own docstring for why no real,
+        # peer-reviewed single-point cloud-top-HEIGHT formula exists in
+        # this codebase, a decision made explicitly with the user
+        # rather than silently). Honest disclosure, unlike wind
+        # shear/theta-e above: updraft_velocity is a deterministic
+        # function of CAPE alone, so blending it here does not add real
+        # independent physical information - its real, disclosed effect
+        # is a different nonlinear (square-root) response curve applied
+        # to the same real CAPE value already used, at a real, disclosed
+        # 50/50 ACF design-choice weight. Omitted entirely (the
+        # default): zero behavior change - the convective module stays
+        # exactly the CAPE/CIN blend, bit-identical to before this
+        # capability existed.
         cape = data.get("cape", 0.0)
         cin = data.get("cin", 0.0)
         cape_norm = self._normalize("cape", cape, self.normalizer.normalize_cape, climatology)
         cin_norm = self._normalize("cin", cin, self.normalizer.normalize_cin, climatology)
-        scores["convective"] = 0.7 * cape_norm + 0.3 * cin_norm
+        convective_base = 0.7 * cape_norm + 0.3 * cin_norm
+        if "updraft_velocity" in data:
+            updraft_norm = self._normalize(
+                "updraft_velocity", data["updraft_velocity"], self.normalizer.normalize_updraft_velocity, climatology
+            )
+            scores["convective"] = 0.5 * convective_base + 0.5 * updraft_norm
+        else:
+            scores["convective"] = convective_base
 
         # Microphysical module - based on precipitation
         precip = data.get("precipitation", 0.0)

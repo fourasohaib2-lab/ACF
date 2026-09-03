@@ -401,3 +401,120 @@ def test_thermodynamic_module_field_matches_the_point_api_with_real_theta_e():
         data["theta_e"] = float(result["theta_e_field"][i, j])
     expected = AWCICalculator().calculate_module_scores(data)
     assert result["module_fields"]["thermodynamic"][i, j] == pytest.approx(round(expected["thermodynamic"] * 100, 1))
+
+
+# ----------------------------------------------- compute_updraft_velocity (§14)
+
+
+def test_updraft_velocity_field_absent_by_default():
+    result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2)
+    assert "updraft_velocity_field" not in result
+    assert "updraft_velocity" not in result["fields_used"]
+
+
+def test_updraft_velocity_requires_convective_energy():
+    """Real w_max=sqrt(2*CAPE) needs real per-point CAPE - reusing the
+    SAME real value already computed for cape_field, never a second,
+    possibly inconsistent one (see compute_real_complexity_field's own
+    docstring for this explicit dependency)."""
+    with pytest.raises(ValueError, match="compute_convective_energy"):
+        compute_real_complexity_field(
+            model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2, compute_updraft_velocity=True
+        )
+
+
+def test_updraft_velocity_field_present_and_real_when_opted_in():
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=6,
+        n_lon=10,
+        n_levels=8,
+        steps=3,
+        seed=1,
+        perturbation_scale=3.0,
+        compute_convective_energy=True,
+        compute_updraft_velocity=True,
+    )
+    assert "updraft_velocity_field" in result
+    assert result["updraft_velocity_field"].shape == (6, 10)
+    assert "updraft_velocity" in result["fields_used"]
+    assert "cape" in result["fields_used"]
+    # Real, non-negative wherever computed (np.nan is allowed, never a
+    # fabricated negative value).
+    finite = result["updraft_velocity_field"][~np.isnan(result["updraft_velocity_field"])]
+    assert np.all(finite >= 0.0)
+
+
+def test_updraft_velocity_field_matches_a_direct_compute_real_max_updraft_velocity_call():
+    from acf.awci.updraft import compute_real_max_updraft_velocity
+
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=6,
+        n_lon=10,
+        n_levels=8,
+        steps=2,
+        seed=None,
+        compute_convective_energy=True,
+        compute_updraft_velocity=True,
+    )
+    i, j = 2, 3
+    if not np.isnan(result["cape_field"][i, j]):
+        expected = compute_real_max_updraft_velocity(cape=float(result["cape_field"][i, j]))
+        assert result["updraft_velocity_field"][i, j] == pytest.approx(expected["w_max_m_s"])
+    else:
+        assert np.isnan(result["updraft_velocity_field"][i, j])
+
+
+def test_updraft_velocity_field_reuses_the_same_real_cape_as_cape_field():
+    """Real proof this never computes a second, independent CAPE value -
+    w_max must be exactly sqrt(2 * cape_field[i, j]) at every real point."""
+    import math
+
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=6,
+        n_lon=10,
+        n_levels=8,
+        steps=2,
+        seed=3,
+        perturbation_scale=4.0,
+        compute_convective_energy=True,
+        compute_updraft_velocity=True,
+    )
+    cape_field = result["cape_field"]
+    updraft_field = result["updraft_velocity_field"]
+    for i in range(cape_field.shape[0]):
+        for j in range(cape_field.shape[1]):
+            if np.isnan(cape_field[i, j]):
+                assert np.isnan(updraft_field[i, j])
+            else:
+                assert updraft_field[i, j] == pytest.approx(math.sqrt(2.0 * max(0.0, cape_field[i, j])))
+
+
+def test_convective_module_field_matches_the_point_api_with_real_updraft_velocity():
+    """Same discipline as test_dynamic_module_field_matches_the_point_api_with_real_wind_shear()
+    above - compares against calculate_module_scores() fed THIS run's
+    own real field values, never a second, separately non-reproducible
+    solver run."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=6,
+        n_lon=10,
+        n_levels=8,
+        steps=2,
+        seed=None,
+        compute_convective_energy=True,
+        compute_updraft_velocity=True,
+    )
+    i, j = 1, 4
+    data: dict = {}
+    if not np.isnan(result["cape_field"][i, j]):
+        data["cape"] = float(result["cape_field"][i, j])
+        data["cin"] = float(result["cin_field"][i, j])
+    if not np.isnan(result["updraft_velocity_field"][i, j]):
+        data["updraft_velocity"] = float(result["updraft_velocity_field"][i, j])
+    expected = AWCICalculator().calculate_module_scores(data)
+    assert result["module_fields"]["convective"][i, j] == pytest.approx(round(expected["convective"] * 100, 1))

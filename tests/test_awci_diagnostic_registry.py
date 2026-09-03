@@ -89,6 +89,7 @@ def test_normalizer_range_entries_cross_reference_the_real_status_registry():
         ("normalize_temperature", "temperature"),
         ("normalize_humidity", "humidity"),
         ("normalize_cape", "cape"),
+        ("normalize_updraft_velocity", "updraft_velocity"),
         ("normalize_cin", "cin"),
         ("normalize_precipitation", "precipitation"),
         ("normalize_topographic", "topographic"),
@@ -190,3 +191,22 @@ def test_documented_thermodynamic_module_combination_matches_the_real_calculator
         {"temperature": 300.0, "specific_humidity": 0.01, "theta_e": 330.0}
     )
     assert theta_e_case["thermodynamic"] == pytest.approx(Normalizer.normalize_theta_e(330.0))
+
+
+def test_normalize_updraft_velocity_entry_matches_the_real_live_normalizer():
+    assert Normalizer.normalize_updraft_velocity(35.0) == pytest.approx(0.5)  # clip(35,0,70)/70
+
+
+def test_documented_convective_module_combination_matches_the_real_calculator():
+    """Real proof the documented 70/30 CAPE/CIN base and its own 50/50
+    updraft_velocity blend aren't stale - reconstructs both real cases
+    directly and compares to AWCICalculator's own real output."""
+    default_case = AWCICalculator().calculate_module_scores({"cape": 1500.0, "cin": -100.0})
+    expected_default = 0.7 * Normalizer.normalize_cape(1500.0) + 0.3 * Normalizer.normalize_cin(-100.0)
+    assert default_case["convective"] == pytest.approx(expected_default)
+
+    updraft_case = AWCICalculator().calculate_module_scores(
+        {"cape": 1500.0, "cin": -100.0, "updraft_velocity": 40.0}
+    )
+    expected_updraft = 0.5 * expected_default + 0.5 * Normalizer.normalize_updraft_velocity(40.0)
+    assert updraft_case["convective"] == pytest.approx(expected_updraft)
