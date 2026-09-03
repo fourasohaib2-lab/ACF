@@ -2329,3 +2329,80 @@ d'être branché lors de la mise à jour précédente (§20).
   vrai point de consommation (pipeline `Dataset`/GUI) si demandé.
 - §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
   architectural, refactor large et risqué, délibérément différé.
+
+## Mise à jour 2026-09-03 (suite) — vrai moteur d'interactions généralisé, optionnel (§22)
+
+Suite explicite ("continue"), sixième priorité choisie dans les
+manques identifiés par le tableau d'audit, méthodologie suivie dans
+l'ordre imposé par le prompt (§86).
+
+**Pourquoi** : §22 demande d'étudier scientifiquement les interactions
+entre modules — "Vent élevé + Humidité élevée + Relief peut produire
+une situation différente de la simple somme de trois risques" — un
+exemple **à 3 variables**, en avertissant explicitement : "ne pas
+inventer arbitrairement `interaction = A × B` sans justification
+physique ou statistique." L'audit du 2026-09-03 constatait que
+`AWCICalculator` n'avait que 2 termes d'interaction **codés en dur**
+(multiplication littérale dans `calculate_interaction_scores()`), pas
+une architecture généralisée — et ne pouvait même pas représenter
+l'exemple à 3 variables du prompt lui-même.
+
+**Décision explicite, pour respecter l'avertissement du §22** : ne
+**pas** inventer de nouveau terme d'interaction activé par défaut —
+cela changerait silencieusement le score AWCI de tout appelant
+existant, sans justification physique nouvelle et rigoureuse au-delà
+des deux termes déjà documentés. À la place : généraliser
+l'**architecture** pour qu'elle soit réellement configurable, tout en
+gardant les 2 termes existants comme comportement par défaut
+bit-identique.
+
+**Construit** : `AWCICalculator.__init__()` accepte maintenant
+`interaction_terms`/`interaction_weights` réels et optionnels —
+`interaction_terms` associe un nom de terme à un **tuple** de clés de
+module (2 pour un terme par paires comme avant, **N pour un terme
+d'ordre supérieur**, ex. 3 pour l'exemple littéral du §22).
+`calculate_interaction_scores()` généralisé multiplie génériquement
+tous les scores de module du tuple, au lieu de deux multiplications
+codées en dur. Nouveau `INTERACTION_TERMS` (classe, `dict[str,
+tuple[str, ...]]`) documente les 2 termes existants comme données,
+plus `INTERACTION_WEIGHTS` (inchangé). Validation réelle : fournir
+`interaction_terms`/`interaction_weights` avec des clés différentes
+lève une erreur explicite plutôt que de laisser un terme calculé mais
+jamais pondéré (ou l'inverse) passer silencieusement.
+
+**Preuve travaillée de l'exemple du §22** : un test construit
+explicitement le terme à 3 variables du prompt — Vent (`dynamic`) x
+Humidité (repliée dans `thermodynamic`, qui combine déjà température +
+humidité spécifique — voir `calculate_module_scores()`) x Relief
+(`topographic`) — et vérifie qu'il traverse tout le pipeline
+`calculate()` normalement. Documenté explicitement comme un exemple de
+travail, pas une prétention que ce terme précis est physiquement
+validé ou activé par défaut.
+
+**Zéro changement de comportement par défaut** : `AWCICalculator()`
+sans arguments produit un résultat **bit-identique** à avant cette
+mise à jour (`interaction_terms`/`interaction_weights` par défaut =
+copies exactes des 2 anciens dicts codés en dur) — vérifié par un test
+comparant deux instances côte à côte sur un jeu de données réel.
+
+**Validation réelle** : 9 nouveaux tests
+(`tests/test_awci_calculator_interaction_engine.py`) — comportement
+par défaut bit-identique, clés incohérentes entre termes/poids lève
+une erreur, un terme personnalisé remplace complètement les 2
+existants et traverse tout le pipeline, la configuration dégénérée
+"zéro terme d'interaction" (somme linéaire pure) reste valide et
+cohérente, le triplet littéral du §22 fonctionne réellement, le statut
+de poids (§80) reste honnête pour un terme personnalisé non reconnu
+(`INITIAL`, "no status recorded"), et les dicts fournis par l'appelant
+ne sont jamais mutés. Suite complète **3472/3472** (3463 + 9),
+`ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du tableau d'audit du 2026-09-03** :
+- §22 — architecture généralisée réelle et testée fermée ; aucun
+  nouveau terme physiquement validé ajouté par défaut (délibéré, voir
+  ci-dessus) — reste ouvert si l'utilisateur veut qu'un terme
+  spécifique soit étudié et activé.
+- §32 — infrastructure réelle construite (mise à jour précédente) ;
+  reste à brancher dans un vrai point de consommation si demandé.
+- §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
+  architectural, refactor large et risqué, délibérément différé.

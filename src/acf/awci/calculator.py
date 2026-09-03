@@ -144,6 +144,21 @@ class AWCICalculator:
         "conv_thermo_interaction": 0.05,
     }
 
+    # General interaction-term engine (docs/ACF_MASTER_PROMPT.md
+    # section 22 - see __init__'s own docstring for the full
+    # disclosure). Each value is a tuple of calculate_module_scores()
+    # module keys multiplied together - this default set is exactly
+    # the same 2 pairwise terms calculate_interaction_scores() has
+    # always computed, kept here as data instead of hardcoded
+    # multiplication so a caller can supply their own real,
+    # individually-justified terms (pairs or higher-order) via
+    # __init__'s interaction_terms/interaction_weights parameters,
+    # without touching this class's own compiled-in default.
+    INTERACTION_TERMS: dict[str, tuple[str, ...]] = {
+        "wind_topo_interaction": ("dynamic", "topographic"),
+        "conv_thermo_interaction": ("convective", "thermodynamic"),
+    }
+
     # Physical/Forecast classification (see class docstring). Every
     # module produced by calculate_module_scores() must appear in
     # exactly one of these two sets — enforced by a unit test
@@ -154,7 +169,12 @@ class AWCICalculator:
     )
     FORECAST_MODULES = frozenset({"confidence", "ensemble_spread", "model_disagreement"})
 
-    def __init__(self, weights: dict[str, float] | None = None):
+    def __init__(
+        self,
+        weights: dict[str, float] | None = None,
+        interaction_terms: dict[str, tuple[str, ...]] | None = None,
+        interaction_weights: dict[str, float] | None = None,
+    ):
         """
         Initialize AWCI calculator.
 
@@ -163,10 +183,49 @@ class AWCICalculator:
         weights : dict, optional
             Custom weights for each module.
             Default weights are used if not provided.
+        interaction_terms : dict[str, tuple[str, ...]], optional
+            Real, general interaction-term engine (docs/
+            ACF_MASTER_PROMPT.md section 22: "étudier les interactions
+            entre modules... ne pas inventer arbitrairement interaction
+            = A x B sans justification physique ou statistique"). Maps
+            a term name to a tuple of `calculate_module_scores()`
+            module keys whose scores are multiplied together - 2
+            modules for a pairwise term (INTERACTION_WEIGHTS' own
+            wind_topo_interaction/conv_thermo_interaction), or MORE for
+            a higher-order term, matching section 22's own literal
+            example ("Vent élevé + Humidité élevée + Relief" - a real
+            3-way interaction; see this class's own test suite for a
+            worked example of exactly that triplet). Defaults to
+            INTERACTION_TERMS (the same 2 pairwise terms this class has
+            always computed) when not supplied - zero behavior change
+            for every existing caller.
+        interaction_weights : dict, optional
+            Weight for each key in `interaction_terms` (or
+            INTERACTION_TERMS when that is omitted) - must have exactly
+            the same keys. Defaults to INTERACTION_WEIGHTS.
+
+        Raises
+        ------
+        ValueError
+            If `interaction_weights` is supplied with keys that don't
+            exactly match `interaction_terms`'s (or the reverse) - a
+            silent partial mismatch would leave some real interaction
+            score computed but never weighted into `awci` (or a weight
+            with no matching term), never allowed to happen quietly.
         """
         self.weights_manager = WeightsManager(weights)
         self.normalizer = Normalizer()
         self._last_decomposition: dict[str, float] | None = None
+
+        self.interaction_terms = dict(interaction_terms) if interaction_terms is not None else dict(self.INTERACTION_TERMS)
+        self.interaction_weights = (
+            dict(interaction_weights) if interaction_weights is not None else dict(self.INTERACTION_WEIGHTS)
+        )
+        if set(self.interaction_terms) != set(self.interaction_weights):
+            raise ValueError(
+                "interaction_terms and interaction_weights must have exactly the same keys - got "
+                f"{sorted(self.interaction_terms)} vs {sorted(self.interaction_weights)}"
+            )
 
     def calculate_module_scores(self, data: dict[str, Any]) -> dict[str, float]:
         """
@@ -413,7 +472,10 @@ class AWCICalculator:
 
     def calculate_interaction_scores(self, module_scores: dict[str, float]) -> dict[str, float]:
         """
-        Calculate the non-linear interaction terms from module scores.
+        Calculate the non-linear interaction terms from module scores -
+        real product of every module named in each of
+        `self.interaction_terms`' tuples (2 modules for a pairwise
+        term, more for a higher-order one - see __init__'s docstring).
 
         Parameters
         ----------
@@ -423,12 +485,16 @@ class AWCICalculator:
         Returns
         -------
         dict
-            Interaction scores in [0, 1], keyed like INTERACTION_WEIGHTS.
+            Interaction scores in [0, 1], keyed like
+            `self.interaction_terms`/`self.interaction_weights`.
         """
-        return {
-            "wind_topo_interaction": module_scores["dynamic"] * module_scores["topographic"],
-            "conv_thermo_interaction": module_scores["convective"] * module_scores["thermodynamic"],
-        }
+        scores = {}
+        for term, modules in self.interaction_terms.items():
+            value = 1.0
+            for module in modules:
+                value *= module_scores[module]
+            scores[term] = value
+        return scores
 
     def calculate(self, data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -462,7 +528,7 @@ class AWCICalculator:
         # [0, 1] regardless of how many interaction terms are added, so
         # 'awci' is always within [0, 100] and decomposition always sums
         # to it (up to rounding) — no ad hoc clipping needed.
-        interaction_weight_total = sum(self.INTERACTION_WEIGHTS.values())
+        interaction_weight_total = sum(self.interaction_weights.values())
         weight_budget = 1.0 + interaction_weight_total
 
         weighted_sum = 0.0
@@ -475,7 +541,7 @@ class AWCICalculator:
             decomposition[module] = round(weighted * 100, 1)
 
         for term, score in interaction_scores.items():
-            weight = self.INTERACTION_WEIGHTS[term]
+            weight = self.interaction_weights[term]
             weighted = (score * weight) / weight_budget
             weighted_sum += weighted
             decomposition[term] = round(weighted * 100, 1)
@@ -639,12 +705,12 @@ class AWCICalculator:
         points_total = sum(points for name, points in decomposition.items() if name in module_names)
 
         if include_interactions:
-            weight_total += sum(self.INTERACTION_WEIGHTS.values())
+            weight_total += sum(self.interaction_weights.values())
             points_total += sum(
-                points for name, points in decomposition.items() if name in self.INTERACTION_WEIGHTS
+                points for name, points in decomposition.items() if name in self.interaction_weights
             )
 
-        weight_budget = 1.0 + sum(self.INTERACTION_WEIGHTS.values())
+        weight_budget = 1.0 + sum(self.interaction_weights.values())
         weight_fraction_of_budget = weight_total / weight_budget
 
         if weight_fraction_of_budget <= 1e-9:
