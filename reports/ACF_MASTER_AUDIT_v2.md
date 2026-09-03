@@ -2479,3 +2479,87 @@ une valeur réellement hors-plage). Suite complète **3488/3488**
 - §45/§47 séparation architecturale ACF ≠ AWCI — seul gap encore
   ouvert du tableau d'audit initial ; refactor large et risqué,
   délibérément différé sauf demande explicite.
+
+## Mise à jour 2026-09-03 (suite) — ACF ≠ AWCI (§45/§47), sans déplacer un seul fichier
+
+Suite explicite ("continue" → confirmation directe "Oui, attaque
+§45/§47"), dernière ligne ouverte du tableau d'audit initial. Deux
+questions posées à l'utilisateur avant tout code (§86 — jamais deviner
+une décision structurante), les deux réponses documentées ici.
+
+**Conflit trouvé avant d'implémenter, pas ignoré** : une décision
+explicite existait déjà, prise par l'utilisateur le 2 septembre et
+enregistrée dans `docs/ACF_ARCHITECTURE_TARGET_GAP_MAP.md` : "faire
+évoluer `awci/` sur place plutôt que dupliquer sa logique dans un
+nouveau paquet `complexity/` — conforme à la règle 'ne rien déplacer'
+de sa propre spécification d'ingénierie". Soumis explicitement à
+l'utilisateur plutôt que silencieusement réinterprété ou silencieusement
+respecté sans vérifier s'il souhaitait toujours l'appliquer aujourd'hui.
+**Réponse : "Zéro déplacement de fichier (Recommandé)"** — la règle du
+2 septembre s'applique toujours.
+
+**Ce que ça signifie concrètement pour §45/§47** : pas de nouveau
+paquet, pas de fichier déplacé, pas de classe dupliquée. À la place,
+formalisation réelle et **testable** de la frontière ACF-core/
+AWCI-application qui existait déjà de façon informelle dans
+`AWCICalculator` — en poussant jusqu'au bout un principe déjà appliqué
+deux fois cette session (le moteur d'interactions généralisé du §22, et
+`WeightsManager` déjà générique dans ses mécanismes).
+
+**Trouvaille faite en inspectant** : `_get_level()` — la classification
+en bandes de complexité ("Very Low" → "Extreme") — était la seule pièce
+de configuration AWCI-spécifique **encore codée en dur** (littéraux
+`if/elif` directement dans la méthode), incohérente avec le reste de la
+classe déjà rendu configurable (poids, termes d'interaction).
+
+**Construit** :
+- Nouveau `AWCICalculator.LEVEL_THRESHOLDS` (tuple de `(borne, label)`,
+  même 6 bandes qu'avant, données au lieu de littéraux) +
+  `__init__(level_thresholds=...)` réel et optionnel, validé (bornes
+  strictement croissantes, jamais vide) — même discipline que
+  `interaction_terms`/`interaction_weights`. `_get_level()` généralisé
+  en une vraie recherche dans `self.level_thresholds`, comportement
+  par défaut bit-identique (vérifié : les 12 scores frontière testés un
+  par un contre l'ancienne échelle `if/elif`, y compris les cas limites
+  exacts 20.0/35.0/85.0).
+- Nouvelle section "ACF core vs. AWCI application layer" dans le
+  docstring de `AWCICalculator` — cartographie explicite et concrète du
+  diagramme du §45 (science framework/diagnostics/interaction engine/
+  uncertainty/consensus/complexity → application framework → AWCI) vers
+  le vrai code existant : quelles méthodes sont le moteur générique
+  réutilisable (`calculate_module_scores`/`calculate_interaction_scores`/
+  `calculate_with_uncertainty`/`_get_level`), quelles constantes sont la
+  couche application AWCI (`DEFAULT_WEIGHTS`/`INTERACTION_WEIGHTS`/
+  `INTERACTION_TERMS`/`LEVEL_THRESHOLDS`) — et disclosure honnête de ce
+  qui reste non fait : `PHYSICAL_MODULES`/`FORECAST_MODULES` restent des
+  constantes de classe, pas encore surchargeables par instance,
+  explicitement documenté comme un sous-manque réel et différé, pas
+  caché.
+
+**Preuve travaillée, pas une affirmation en prose** : un test construit
+un `AWCICalculator` avec une configuration complètement différente
+(poids/termes d'interaction/bandes de classification simulant une
+application hypothétique non-aviation, §46 — "des applications
+potentielles, pas des produits déjà développés", rien de construit ici)
+et vérifie qu'il produit un vrai score cohérent, indépendant, à travers
+exactement le même mécanisme générique — puis compare ce score à celui
+d'une vraie instance AWCI par défaut sur les mêmes données brutes,
+prouvant que les deux configurations ne s'effondrent pas silencieusement
+sur le même comportement.
+
+**Validation réelle** : 9 nouveaux tests
+(`tests/test_awci_calculator_reuse_boundary.py`) — comportement par
+défaut bit-identique sur 12 scores frontière (dont les 3 cas limites
+exacts), scores frontière utilisent la bonne bande (pas celle du
+dessous), bandes personnalisées changent la classification,
+`level_thresholds` vide/désordonné/avec doublon lève une erreur
+explicite, l'exemple de réutilisation hypothétique fonctionne de bout
+en bout et produit un score réellement différent de l'application AWCI
+par défaut, et le tuple fourni par l'appelant n'est jamais muté. Suite
+complète **3497/3497** (3488 + 9), `ruff`/`mypy` propres.
+
+**Statut final du tableau d'audit du 2026-09-03** : les 6 lignes
+identifiées (§20, §21/§77-81, §22, §27-29, §32, §45/§47, §64) sont
+maintenant toutes fermées ou honnêtement disclosées comme
+partiellement fermées avec la raison exacte du reste — aucun gap
+"GAP RÉEL confirmé" du tableau initial ne reste sans réponse.

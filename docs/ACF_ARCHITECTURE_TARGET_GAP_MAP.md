@@ -461,3 +461,29 @@ Approche proposée à la place :
   déplacer du code qui fonctionne déjà.
 - Renommer/regrouper au cas par cas, uniquement quand un module est de
   toute façon touché pour une autre raison — pas en bloc.
+
+## Mise à jour — 3 septembre 2026 : "ne rien déplacer" reconfirmée pour ACF ≠ AWCI (§45/§47)
+
+`docs/ACF_MASTER_PROMPT.md` (le document faisant désormais autorité,
+voir sa propre section d'en-tête) demande explicitement au §45/§47 une
+séparation architecturale ACF-core/AWCI-application — proche de ce que
+la règle "ne rien déplacer" ci-dessus avait explicitement écarté pour
+`complexity/`. Plutôt que de silencieusement réinterpréter ou
+silencieusement respecter la règle du 2 septembre sans vérifier si elle
+tenait toujours, la question a été posée directement à l'utilisateur :
+la règle du 2 septembre s'applique toujours ("Zéro déplacement de
+fichier").
+
+Résultat réel construit sur cette base (voir
+`reports/ACF_MASTER_AUDIT_v2.md`, mise à jour 2026-09-03 "ACF ≠ AWCI
+(§45/§47), sans déplacer un seul fichier", pour le détail complet) :
+`AWCICalculator` (`src/acf/awci/calculator.py`) reste à l'exact même
+endroit, mais sa frontière ACF-core/AWCI-application — déjà réelle mais
+informelle — est maintenant formalisée et testable : `LEVEL_THRESHOLDS`
+(dernière pièce de configuration encore codée en dur) généralisée sur le
+même modèle que le moteur d'interactions du §22, une nouvelle section de
+docstring cartographiant explicitement le diagramme du §45 vers le code
+réel, et un test qui reconfigure la classe entière (poids + termes
+d'interaction + bandes de classification) pour prouver, par exécution
+réelle et non par affirmation, que le moteur est réutilisable au-delà de
+l'aviation - sans qu'un seul fichier n'ait bougé.

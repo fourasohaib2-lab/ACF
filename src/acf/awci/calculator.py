@@ -41,6 +41,83 @@ class AWCICalculator:
     and `gui/esoc/panel_manager.py` already depend on this exact
     class/module path.
 
+    ACF core vs. AWCI application layer (docs/ACF_MASTER_PROMPT.md
+    sections 45/47, added 2026-09-03)
+    -----------------------------------------------------------------
+    Section 45 draws a real architectural distinction:
+    ```
+    ACF
+    ├── science framework / diagnostics / interaction engine /
+    │   uncertainty / consensus / complexity   (generic, reusable)
+    └── application framework
+            └── AWCI                            (aviation-specific)
+    ```
+    and section 47's reuse chain: `core atmospheric diagnostics → ACF
+    modules → application-specific weighting/context → AWCI/DWCI/
+    MWCI/...`. This session's own conformance audit
+    (reports/ACF_MASTER_AUDIT_v2.md) found this genuinely undistinguished
+    in `src/acf/` — confirmed real, not assumed. The explicit decision
+    above ("evolved in place... per the user's own 'move nothing'
+    engineering rule", docs/ACF_ARCHITECTURE_TARGET_GAP_MAP.md, 2026-09-02)
+    rules out splitting this into a separate top-level package - so this
+    section formalizes the boundary that already exists in this class's
+    real behavior, in place, rather than relocating any code:
+
+    **Generic ACF core (section 45's "science framework / diagnostics /
+    interaction engine / uncertainty / consensus / complexity") - real
+    methods that make no aviation-specific assumption, driven entirely
+    by whatever configuration they are given:**
+    - `calculate_module_scores()` - normalizes whatever variables are
+      present against `self.normalizer`'s dispatch (naive range or, if
+      `data["climatology"]` is supplied, real percentile rank -
+      section 20), combined per the module weights `self.weights_manager`
+      holds - genuinely generic given ANY module/weight configuration.
+    - `calculate_interaction_scores()` - the real, general N-ary
+      interaction-term engine (section 22, built 2026-09-03): multiplies
+      whatever module tuples `self.interaction_terms` names, with no
+      built-in assumption about which pairs/triplets are aviation-
+      relevant.
+    - `calculate_with_uncertainty()` - real per-realization statistics
+      (section 64) from whatever `ensemble_members`/`model_realizations`
+      are supplied - no aviation-specific logic.
+    - `_normalize()`, `_renormalized_score()`, `_explain()`, `_get_level()`
+      - generic mechanics operating on whatever weights/terms/thresholds
+      this instance was configured with (see below).
+
+    **AWCI application layer (section 47's "application-specific
+    weighting/context") - real DATA, not mechanism, that happens to be
+    this class's compiled-in DEFAULT but is fully overridable per
+    instance (proving the mechanism above is genuinely reusable, not
+    just asserted to be):**
+    - `WeightsManager.DEFAULT_WEIGHTS` - aviation-tuned module weights
+      (overridable via `AWCICalculator(weights=...)`).
+    - `INTERACTION_WEIGHTS`/`INTERACTION_TERMS` - the 2 aviation-relevant
+      interaction pairs (overridable via `AWCICalculator(interaction_terms=...,
+      interaction_weights=...)`).
+    - `LEVEL_THRESHOLDS` - the aviation complexity bands ("Very Low"
+      through "Extreme") `_get_level()` classifies into (overridable via
+      `AWCICalculator(level_thresholds=...)`).
+    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 9 real
+      modules this application considers physical vs. forecast-derived.
+      NOT YET overridable per instance (still class-level constants) -
+      a real, disclosed, deliberately deferred sub-item, not silently
+      complete.
+    - The specific 7+2-module set itself (dynamic/thermodynamic/
+      convective/microphysical/topographic/temporal/confidence +
+      ensemble_spread/model_disagreement) is itself an AWCI application
+      choice - a hypothetical DWCI/MWCI application (section 46 - "des
+      applications potentielles, pas des produits déjà développés", not
+      built here) could choose a different module set entirely, as long
+      as it supplies real per-module scores in [0, 1] to the same
+      generic mechanism above.
+
+    See tests/test_awci_calculator_reuse_boundary.py for a real, worked
+    proof: an `AWCICalculator` configured with a completely different
+    weight/interaction/threshold set (simulating a hypothetical
+    non-aviation application) still produces a real, coherent,
+    independently-computed score through the exact same generic
+    mechanism - not a hypothetical claim, an executed test.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -159,6 +236,25 @@ class AWCICalculator:
         "conv_thermo_interaction": ("convective", "thermodynamic"),
     }
 
+    # Real AWCI application-layer config (docs/ACF_MASTER_PROMPT.md
+    # section 47 - see class docstring's "ACF core vs. AWCI application
+    # layer" section) - the aviation-specific complexity bands
+    # _get_level() classifies a real [0, 100] score into. A tuple of
+    # (upper_bound_exclusive, label) pairs, checked in order, the last
+    # entry's bound ignored (catches everything up to 100). Kept here as
+    # data instead of hardcoded if/elif literals so a caller can supply
+    # their own real, differently-labeled bands via __init__'s
+    # level_thresholds parameter - this default set is exactly the same
+    # 6 bands _get_level() has always used, zero behavior change.
+    LEVEL_THRESHOLDS: tuple[tuple[float, str], ...] = (
+        (20.0, "Very Low"),
+        (35.0, "Low"),
+        (50.0, "Moderate"),
+        (65.0, "High"),
+        (85.0, "Very High"),
+        (float("inf"), "Extreme"),
+    )
+
     # Physical/Forecast classification (see class docstring). Every
     # module produced by calculate_module_scores() must appear in
     # exactly one of these two sets — enforced by a unit test
@@ -174,6 +270,7 @@ class AWCICalculator:
         weights: dict[str, float] | None = None,
         interaction_terms: dict[str, tuple[str, ...]] | None = None,
         interaction_weights: dict[str, float] | None = None,
+        level_thresholds: tuple[tuple[float, str], ...] | None = None,
     ):
         """
         Initialize AWCI calculator.
@@ -203,6 +300,18 @@ class AWCICalculator:
             Weight for each key in `interaction_terms` (or
             INTERACTION_TERMS when that is omitted) - must have exactly
             the same keys. Defaults to INTERACTION_WEIGHTS.
+        level_thresholds : tuple[tuple[float, str], ...], optional
+            Real, general classification-band engine (docs/
+            ACF_MASTER_PROMPT.md section 47 - see class docstring's "ACF
+            core vs. AWCI application layer" section): a tuple of
+            `(upper_bound_exclusive, label)` pairs, checked in ascending
+            order - `_get_level(score)` returns the label of the first
+            pair whose bound exceeds `score`. Defaults to
+            LEVEL_THRESHOLDS (the same 6 aviation complexity bands this
+            class has always used, "Very Low" through "Extreme") - zero
+            behavior change for every existing caller. A hypothetical
+            non-aviation application could supply its own real bands/
+            labels here without touching this class's own mechanism.
 
         Raises
         ------
@@ -211,7 +320,10 @@ class AWCICalculator:
             exactly match `interaction_terms`'s (or the reverse) - a
             silent partial mismatch would leave some real interaction
             score computed but never weighted into `awci` (or a weight
-            with no matching term), never allowed to happen quietly.
+            with no matching term), never allowed to happen quietly. Also
+            raised if `level_thresholds` is empty, or its bounds are not
+            in strictly ascending order - a silently misordered band
+            table would misclassify every score, not just fail loudly.
         """
         self.weights_manager = WeightsManager(weights)
         self.normalizer = Normalizer()
@@ -226,6 +338,13 @@ class AWCICalculator:
                 "interaction_terms and interaction_weights must have exactly the same keys - got "
                 f"{sorted(self.interaction_terms)} vs {sorted(self.interaction_weights)}"
             )
+
+        self.level_thresholds = tuple(level_thresholds) if level_thresholds is not None else self.LEVEL_THRESHOLDS
+        if not self.level_thresholds:
+            raise ValueError("level_thresholds must not be empty")
+        bounds = [bound for bound, _label in self.level_thresholds]
+        if bounds != sorted(bounds) or len(set(bounds)) != len(bounds):
+            raise ValueError(f"level_thresholds bounds must be strictly ascending - got {bounds}")
 
     def calculate_module_scores(self, data: dict[str, Any]) -> dict[str, float]:
         """
@@ -762,7 +881,14 @@ class AWCICalculator:
 
     def _get_level(self, score: float) -> str:
         """
-        Determine complexity level from AWCI score.
+        Determine complexity level from AWCI score, from
+        `self.level_thresholds` (docs/ACF_MASTER_PROMPT.md section 47 -
+        see class docstring's "ACF core vs. AWCI application layer"
+        section) - a real, general classification-band lookup, not
+        aviation-specific literals: the same 6-band table
+        `LEVEL_THRESHOLDS` still supplies by default, but any instance
+        configured with different `level_thresholds` classifies with
+        that table instead, unchanged code.
 
         Parameters
         ----------
@@ -774,18 +900,10 @@ class AWCICalculator:
         str
             Complexity level
         """
-        if score < 20:
-            return "Very Low"
-        elif score < 35:
-            return "Low"
-        elif score < 50:
-            return "Moderate"
-        elif score < 65:
-            return "High"
-        elif score < 85:
-            return "Very High"
-        else:
-            return "Extreme"
+        for upper_bound, label in self.level_thresholds:
+            if score < upper_bound:
+                return label
+        return self.level_thresholds[-1][1]
 
     def get_decomposition(self) -> dict[str, float]:
         """
