@@ -16,6 +16,7 @@ import math
 import pytest
 
 from acf.awci.orographic_froude import compute_real_mountain_wave_froude_number_at_point
+from acf.core.exceptions import RangeError
 from acf.science.cyclones import BruntVaisalaFrequency
 from acf.science.encyclopedia.aviation_extended import calculate_mountain_wave_froude_number
 
@@ -99,3 +100,27 @@ def test_froude_number_is_never_negative_for_real_non_negative_wind():
         )
         assert result["froude_number"] >= 0.0
         assert not math.isnan(result["froude_number"])
+
+
+# --------------------------------- validate_physics (§11, opt-in PhysicsGuard)
+
+
+def test_validate_physics_defaults_to_false_and_never_raises_for_out_of_range_input():
+    result = compute_real_mountain_wave_froude_number_at_point(
+        wind_speed_perpendicular=200.0, brunt_vaisala_n=0.02, mountain_height_m=1500.0
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_passes_silently_for_real_valid_inputs():
+    result = compute_real_mountain_wave_froude_number_at_point(
+        wind_speed_perpendicular=15.0, brunt_vaisala_n=0.02, mountain_height_m=1500.0, validate_physics=True
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_raises_for_out_of_range_wind_speed():
+    with pytest.raises(RangeError):
+        compute_real_mountain_wave_froude_number_at_point(
+            wind_speed_perpendicular=200.0, brunt_vaisala_n=0.02, mountain_height_m=1500.0, validate_physics=True
+        )

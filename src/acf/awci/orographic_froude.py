@@ -69,17 +69,29 @@ fabricated infinite or zero Froude number. `froude_number` is honestly
 None-not-a-placeholder-value discipline throughout §12-16 (see
 acf.awci.theta_e's own identical convention for non-positive relative
 humidity).
+
+Real, opt-in PhysicsGuard validation (added 2026-09-03, docs/
+ACF_MASTER_PROMPT.md section 11) - see acf.awci.theta_e's own module
+docstring for the full disclosure of this same real, opt-in
+`validate_physics` capability - here it checks wind_speed_perpendicular
+only (mountain_height_m/brunt_vaisala_n have no documented CF
+operational range in acf.physics_guard.range_check.OPERATIONAL_RANGES
+to check against - not fabricated here).
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from acf.physics_guard import PhysicsGuard
 from acf.science.encyclopedia.aviation_extended import calculate_mountain_wave_froude_number
 
 
 def compute_real_mountain_wave_froude_number_at_point(
-    wind_speed_perpendicular: float, brunt_vaisala_n: float, mountain_height_m: float
+    wind_speed_perpendicular: float,
+    brunt_vaisala_n: float,
+    mountain_height_m: float,
+    validate_physics: bool = False,
 ) -> dict[str, Any]:
     """
     Real mountain-wave Froude number Fr = U / (N * H) at one point -
@@ -99,6 +111,11 @@ def compute_real_mountain_wave_froude_number_at_point(
         N=0 (neutral/unstable) edge case.
     mountain_height_m : float
         Real terrain/ridge height (m), > 0.
+    validate_physics : bool
+        When True, runs a real PhysicsGuard range check on
+        wind_speed_perpendicular (docs/ACF_MASTER_PROMPT.md section 11
+        - see module docstring). Off by default, zero behavior change
+        unless explicitly requested.
 
     Returns
     -------
@@ -113,9 +130,15 @@ def compute_real_mountain_wave_froude_number_at_point(
         If mountain_height_m <= 0 - a genuine caller-input error for a
         real physical quantity this module does not itself derive
         (unlike brunt_vaisala_n's own real, expected N=0 edge case).
+    acf.core.exceptions.PhysicsError
+        (or a subclass, RangeError) when `validate_physics=True` and
+        the real PhysicsGuard range check fails.
     """
     if mountain_height_m <= 0:
         raise ValueError("mountain_height_m must be positive.")
+
+    if validate_physics:
+        PhysicsGuard().check_range(wind_speed_perpendicular, "wind_speed")
 
     if brunt_vaisala_n <= 0:
         return {

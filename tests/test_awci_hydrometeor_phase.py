@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 from acf.awci.hydrometeor_phase import PHASE_SEVERITY, compute_real_hydrometeor_phase_at_point
+from acf.core.exceptions import RangeError
 from acf.science.precipitation import HydrometeorType
 from acf.science.thermodynamics import Thermodynamics
 
@@ -94,3 +95,41 @@ def test_freezing_rain_and_ice_pellets_is_the_most_severe_real_category():
     rain/ice pellets must carry the highest severity of all 4 real
     categories - not just an arbitrary value."""
     assert PHASE_SEVERITY["Freezing Rain / Ice Pellets"] == max(PHASE_SEVERITY.values())
+
+
+# --------------------------------- validate_physics (§11, opt-in PhysicsGuard)
+
+
+def test_validate_physics_defaults_to_false_and_never_raises_for_out_of_range_input():
+    result = compute_real_hydrometeor_phase_at_point(
+        temperature_k=500.0, specific_humidity=0.01, pressure_hpa=1000.0
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_passes_silently_for_real_valid_inputs():
+    result = compute_real_hydrometeor_phase_at_point(
+        temperature_k=290.0, specific_humidity=0.008, pressure_hpa=1000.0, validate_physics=True
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_raises_for_out_of_range_temperature():
+    with pytest.raises(RangeError):
+        compute_real_hydrometeor_phase_at_point(
+            temperature_k=500.0, specific_humidity=0.01, pressure_hpa=1000.0, validate_physics=True
+        )
+
+
+def test_validate_physics_true_raises_for_out_of_range_specific_humidity():
+    with pytest.raises(RangeError):
+        compute_real_hydrometeor_phase_at_point(
+            temperature_k=290.0, specific_humidity=1.5, pressure_hpa=1000.0, validate_physics=True
+        )
+
+
+def test_validate_physics_true_raises_for_out_of_range_pressure():
+    with pytest.raises(RangeError):
+        compute_real_hydrometeor_phase_at_point(
+            temperature_k=290.0, specific_humidity=0.01, pressure_hpa=1.0, validate_physics=True
+        )

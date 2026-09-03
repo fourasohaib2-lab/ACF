@@ -587,3 +587,62 @@ def test_microphysical_module_field_matches_the_point_api_with_real_precipitatio
     }
     expected = AWCICalculator().calculate_module_scores(data)
     assert result["module_fields"]["microphysical"][i, j] == pytest.approx(round(expected["microphysical"] * 100, 1))
+
+
+# --------------------------------------------------- validate_physics (§11)
+
+
+def test_validate_physics_defaults_to_false_and_is_not_propagated_unless_requested():
+    """Bit-identical default: validate_physics defaults to False, so a
+    real solver run (which can genuinely produce values outside
+    PhysicsGuard's own ACF-operational bounds during early, unsettled
+    integration steps) must never raise unless explicitly requested."""
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=4,
+        n_lon=6,
+        n_levels=4,
+        steps=2,
+        seed=1,
+        perturbation_scale=3.0,
+        compute_wind_shear=True,
+        compute_theta_e=True,
+        compute_convective_energy=True,
+        compute_precipitation_phase=True,
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_runs_without_raising_for_a_real_well_behaved_run():
+    """A real, small, gently-perturbed run stays within PhysicsGuard's
+    own generous operational bounds - validate_physics=True must not
+    spuriously fail for genuinely reasonable real atmospheric values.
+
+    Real finding, disclosed rather than worked around silently: with
+    the default level=0, this solver's own hybrid sigma-pressure
+    initialization (EarthGrid's a_coeff/b_coeff) produces a real
+    level-0 "surface" pressure around 2013 hPa - genuinely outside
+    PhysicsGuard's own real operational ceiling (1085 hPa), a
+    pre-existing characteristic of this synthetic solver's vertical
+    coordinate, not a bug in validate_physics itself. level=2 (for
+    this n_levels=4 grid) lands in a realistic ~672 hPa range instead -
+    used here so this test exercises the real, non-spurious pass case.
+    """
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=4,
+        n_lon=6,
+        n_levels=4,
+        level=2,
+        steps=2,
+        seed=1,
+        perturbation_scale=1.0,
+        compute_wind_shear=True,
+        compute_theta_e=True,
+        compute_precipitation_phase=True,
+        validate_physics=True,
+    )
+    assert result["is_real_data"] is True
+    assert "wind_shear_field" in result
+    assert "theta_e_field" in result
+    assert "precipitation_phase_field" in result

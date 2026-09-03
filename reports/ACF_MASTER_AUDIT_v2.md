@@ -3955,3 +3955,95 @@ volontairement point-only : câbler un vrai champ spatial nécessiterait
 une vraie infrastructure d'élévation de terrain/coordonnée de hauteur
 qui n'existe pas encore dans ACF — un vrai chantier distinct, pas un
 oubli.
+
+## Mise à jour 2026-09-03 (suite) — PhysicsGuard réel invoqué aux points d'entrée réels de ce chantier (§11)
+
+Suite de l'utilisateur ("continue") — sélection faite selon le même
+jugement que les fermetures "continue selon ton jugement" du reste de
+la session : après la clôture du chantier §12-16, §11 (`⚠️` :
+"`PhysicsGuard` réel mais pas invoqué systématiquement à chaque point
+d'entrée du pipeline scientifique") est le gap le plus concret et le
+mieux borné restant, et il concerne directement les 5 nouveaux modules
+ponctuels construits cette session (`wind_shear.py`/`theta_e.py`/
+`updraft.py`/`hydrometeor_phase.py`/`orographic_froude.py`) — aucun
+d'entre eux n'invoquait `PhysicsGuard`.
+
+**Pourquoi** : `acf.physics_guard.PhysicsGuard` est réel, déjà
+construit (`check_range()`/`check_consistency()`/`validate()`), avec
+de vraies bornes opérationnelles par nom standard CF
+(`OPERATIONAL_RANGES`) et de vrais contrôles de cohérence physique
+(point de rosée ≤ température, humidité relative bornée) — mais rien
+dans les 5 nouveaux modules ponctuels de cette session ne l'appelait.
+
+**Décision de conception disclosed, un vrai périmètre borné** : plutôt
+que de tenter de câbler `PhysicsGuard` dans `AWCICalculator` lui-même
+(déjà disclosed comme un vrai gap séparé — les noms de variables
+simplifiés d'AWCI, ex. `"wind_speed"`/`"temperature"`, ne se
+correspondent pas automatiquement aux noms standard CF sans deviner
+une convention d'unité, voir `AWCIResult`'s own field docstrings),
+cette fermeture cible uniquement les 4 modules ponctuels dont les
+entrées ont une correspondance CF réelle et non ambiguë (unités déjà
+documentées explicitement dans chaque docstring) :
+- `theta_e.py` : `air_temperature`/`specific_humidity`/`air_pressure`
+  (conversion hPa→Pa réelle via `check_range(..., unit="hPa")`) sur
+  les 3 entrées brutes, plus le vrai contrôle de cohérence
+  `check_dewpoint_not_above_temperature()` sur le point de rosée
+  calculé — une vraie vérification croisée indépendante entre 2
+  chaînes de formules différentes (Magnus-Tetens vs. l'entrée
+  température), pas une simple redite.
+- `hydrometeor_phase.py` : mêmes 3 contrôles de plage sur les entrées
+  brutes.
+- `wind_shear.py` : `eastward_wind`/`northward_wind` sur les 2 réels
+  couples (u, v) effectivement utilisés (bottom/top level), pas tout
+  le profil.
+- `orographic_froude.py` : `wind_speed` sur `wind_speed_perpendicular`
+  uniquement (`mountain_height_m`/`brunt_vaisala_n` n'ont aucune plage
+  CF documentée dans `OPERATIONAL_RANGES` — rien inventé ici).
+- `updraft.py` — **intentionnellement non touché** : aucune plage CF
+  n'existe pour le CAPE dans `OPERATIONAL_RANGES` ; rien à câbler sans
+  fabriquer une borne.
+- `acf.awci.spatial_field.compute_real_complexity_field()` reçoit un
+  nouveau `validate_physics: bool = False` propagé aux 3 sous-appels
+  concernés (`compute_wind_shear`/`compute_theta_e`/
+  `compute_precipitation_phase` — pas `compute_updraft_velocity`, pour
+  la même raison que ci-dessus).
+
+Chaque nouveau paramètre `validate_physics: bool = False` est
+strictement opt-in — comportement par défaut **bit-identique**, un
+vrai `acf.core.exceptions.PhysicsError` (ou sous-classe) ne se
+déclenche que si explicitement demandé.
+
+**Trouvaille réelle faite en testant, disclosed** : la propre
+convention de coordonnée hybride sigma-pression du solveur
+(`EarthGrid.a_coeff`/`b_coeff`) produit une vraie pression de niveau 0
+d'environ 2013 hPa (`a=100000 Pa + b=1.0 × Ps≈101325 Pa`) — au-delà du
+vrai plafond opérationnel de `PhysicsGuard` (1085 hPa). Un vrai
+caractère préexistant de ce solveur synthétique (pas un bug de ce
+câblage) : seul un niveau intermédiaire (ex. niveau 2 sur 4) retombe
+dans une plage réaliste. Disclosed dans le test concerné plutôt que
+masqué.
+
+**Validation réelle** : comportement par défaut prouvé inchangé pour
+chacun des 4 modules (une entrée hors plage ne lève rien sans
+`validate_physics=True`) ; chaque contrôle de plage prouvé lever
+`RangeError` pour une entrée réellement hors plage quand activé ; le
+contrôle de cohérence dewpoint≤température prouvé ne jamais échouer
+spuriement pour un cas réel valide ; `compute_real_complexity_field`
+prouvé fonctionner sans lever pour un vrai run bien réglé (niveau 2,
+perturbation modérée) une fois `validate_physics=True` propagé aux 3
+sous-appels. 19 nouveaux tests répartis sur 5 fichiers —
+`tests/test_awci_theta_e.py` (+5), `tests/test_awci_hydrometeor_phase.py`
+(+5), `tests/test_awci_wind_shear.py` (+4),
+`tests/test_awci_orographic_froude.py` (+3),
+`tests/test_awci_spatial_field.py` (+2). Suite complète **3778/3778**
+(3759 + 19), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `AWCICalculator` lui-même reste sans
+appel `PhysicsGuard` direct (le vrai gap de correspondance de noms/
+unités CF reste disclosed, pas résolu ici) ; `updraft.py` reste sans
+contrôle de plage réel tant qu'aucune plage CF pour le CAPE n'est
+documentée dans `OPERATIONAL_RANGES` ; les autres points d'entrée du
+pipeline scientifique plus large (ingestion/adaptateurs modèles) —
+hors du périmètre de cette fermeture — restent un vrai chantier
+distinct pour le futur §31/§8 (pipeline en 21 étapes assemblé de bout
+en bout).

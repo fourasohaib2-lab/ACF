@@ -64,12 +64,18 @@ input). The specific numeric values (0.2/0.5/0.7/1.0) are still an
 ACF choice, not sourced from a published severity index - disclosed
 as such throughout (PHASE_SEVERITY_STATUS, AWCICalculator's own
 class docstring, the diagnostic registry).
+
+Real, opt-in PhysicsGuard validation (added 2026-09-03, docs/
+ACF_MASTER_PROMPT.md section 11) - see acf.awci.theta_e's own module
+docstring for the full disclosure of this same real, opt-in
+`validate_physics` capability, reused identically here.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from acf.physics_guard import PhysicsGuard
 from acf.science.precipitation import HydrometeorType
 from acf.science.thermodynamics import Thermodynamics
 
@@ -87,7 +93,7 @@ PHASE_SEVERITY: dict[str, float] = {
 
 
 def compute_real_hydrometeor_phase_at_point(
-    temperature_k: float, specific_humidity: float, pressure_hpa: float
+    temperature_k: float, specific_humidity: float, pressure_hpa: float, validate_physics: bool = False
 ) -> dict[str, Any]:
     """
     Real surface precipitation phase (and its ACF-assigned severity) at
@@ -103,6 +109,12 @@ def compute_real_hydrometeor_phase_at_point(
         Real specific humidity (kg/kg).
     pressure_hpa : float
         Real atmospheric pressure (hPa).
+    validate_physics : bool
+        When True, runs real `acf.physics_guard.PhysicsGuard` range
+        checks on the 3 raw inputs (docs/ACF_MASTER_PROMPT.md section
+        11 - see acf.awci.theta_e's own module docstring for the full
+        disclosure of this same real, opt-in capability). Off by
+        default, zero behavior change unless explicitly requested.
 
     Returns
     -------
@@ -114,7 +126,19 @@ def compute_real_hydrometeor_phase_at_point(
         relative_humidity_pct, wet_bulb_c : the real intermediate
             values actually used, for transparency/debugging.
         status, is_real_data, honest_limitation.
+
+    Raises
+    ------
+    acf.core.exceptions.PhysicsError
+        (or a subclass) when `validate_physics=True` and a real
+        PhysicsGuard range check fails.
     """
+    if validate_physics:
+        guard = PhysicsGuard()
+        guard.check_range(temperature_k, "air_temperature")
+        guard.check_range(specific_humidity, "specific_humidity")
+        guard.check_range(pressure_hpa, "air_pressure", unit="hPa")
+
     relative_humidity_pct = Thermodynamics.calculate_relative_humidity(
         specific_humidity, pressure_hpa, temperature_k, is_kelvin=True
     )

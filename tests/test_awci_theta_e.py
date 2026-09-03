@@ -13,6 +13,7 @@ from __future__ import annotations
 import pytest
 
 from acf.awci.theta_e import compute_real_theta_e_at_point
+from acf.core.exceptions import RangeError
 from acf.science.dewpoint import DewPoint
 from acf.science.equivalent_potential_temperature import EquivalentPotentialTemperature
 from acf.science.thermodynamics import Thermodynamics
@@ -74,3 +75,43 @@ def test_higher_humidity_produces_a_real_higher_theta_e_all_else_equal():
     drier = compute_real_theta_e_at_point(temperature_k=295.0, specific_humidity=0.008, pressure_hpa=1000.0)
     moister = compute_real_theta_e_at_point(temperature_k=295.0, specific_humidity=0.015, pressure_hpa=1000.0)
     assert moister["theta_e_k"] > drier["theta_e_k"]
+
+
+# --------------------------------- validate_physics (§11, opt-in PhysicsGuard)
+
+
+def test_validate_physics_defaults_to_false_and_never_raises_for_out_of_range_input():
+    """Bit-identical default behavior: an out-of-range temperature is
+    NOT checked unless validate_physics=True is explicitly requested."""
+    result = compute_real_theta_e_at_point(temperature_k=500.0, specific_humidity=0.01, pressure_hpa=1000.0)
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_passes_silently_for_real_valid_inputs():
+    """A real, physically valid case must not spuriously raise, including
+    the real dewpoint-not-above-temperature cross-check."""
+    result = compute_real_theta_e_at_point(
+        temperature_k=303.0, specific_humidity=0.018, pressure_hpa=1000.0, validate_physics=True
+    )
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_raises_for_out_of_range_temperature():
+    with pytest.raises(RangeError):
+        compute_real_theta_e_at_point(
+            temperature_k=500.0, specific_humidity=0.01, pressure_hpa=1000.0, validate_physics=True
+        )
+
+
+def test_validate_physics_true_raises_for_out_of_range_specific_humidity():
+    with pytest.raises(RangeError):
+        compute_real_theta_e_at_point(
+            temperature_k=290.0, specific_humidity=1.5, pressure_hpa=1000.0, validate_physics=True
+        )
+
+
+def test_validate_physics_true_raises_for_out_of_range_pressure():
+    with pytest.raises(RangeError):
+        compute_real_theta_e_at_point(
+            temperature_k=290.0, specific_humidity=0.01, pressure_hpa=1.0, validate_physics=True
+        )

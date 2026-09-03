@@ -100,6 +100,7 @@ def compute_real_complexity_field(
     compute_theta_e: bool = False,
     compute_updraft_velocity: bool = False,
     compute_precipitation_phase: bool = False,
+    validate_physics: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -209,6 +210,18 @@ def compute_real_complexity_field(
         unchanged unless explicitly requested (a single-level
         computation, real but not free - 3 real formula calls per grid
         point, same cost class as `compute_theta_e`).
+    validate_physics : bool
+        When True, propagates a real, opt-in PhysicsGuard sanity check
+        (docs/ACF_MASTER_PROMPT.md section 11) into every
+        `compute_wind_shear`/`compute_theta_e`/`compute_precipitation_phase`
+        sub-call that is itself enabled (see each of those real point
+        modules' own `validate_physics` docstring - not
+        `compute_updraft_velocity`, which has no documented CF
+        operational range for CAPE to check against). Off by default,
+        zero behavior change unless explicitly requested; raises a real
+        `acf.core.exceptions.PhysicsError` immediately if the real
+        solver's own state ever produces a genuinely out-of-range value
+        at some grid point.
 
     Returns
     -------
@@ -442,6 +455,7 @@ def compute_real_complexity_field(
                 shear = compute_real_wind_shear_at_point(
                     u_profile=state["U"][:, i, j],
                     v_profile=state["V"][:, i, j],
+                    validate_physics=validate_physics,
                 )
                 data["wind_shear"] = shear["shear_m_s"]
                 assert wind_shear_field is not None  # for mypy - real whenever compute_wind_shear
@@ -455,6 +469,7 @@ def compute_real_complexity_field(
                     temperature_k=float(temperature[i, j]),
                     specific_humidity=float(specific_humidity[i, j]),
                     pressure_hpa=float(pressure_hpa[i, j]),
+                    validate_physics=validate_physics,
                 )
                 assert theta_e_field is not None  # for mypy - real whenever compute_theta_e
                 if theta_e["is_real_data"]:
@@ -473,6 +488,7 @@ def compute_real_complexity_field(
                     temperature_k=float(temperature[i, j]),
                     specific_humidity=float(specific_humidity[i, j]),
                     pressure_hpa=float(pressure_hpa[i, j]),
+                    validate_physics=validate_physics,
                 )
                 data["precipitation_phase_severity"] = phase["phase_severity"]
                 assert precipitation_phase_field is not None  # for mypy

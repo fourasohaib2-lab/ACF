@@ -16,6 +16,7 @@ import random
 import pytest
 
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
+from acf.core.exceptions import RangeError
 from acf.science.bulk_wind_shear import BulkWindShear
 
 
@@ -82,3 +83,26 @@ def test_shear_is_never_negative():
         result = compute_real_wind_shear_at_point(u, v)
         assert result["shear_m_s"] >= 0.0
         assert not math.isnan(result["shear_m_s"])
+
+
+# --------------------------------- validate_physics (§11, opt-in PhysicsGuard)
+
+
+def test_validate_physics_defaults_to_false_and_never_raises_for_out_of_range_input():
+    result = compute_real_wind_shear_at_point([1.0, 200.0], [0.0, 0.0])
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_passes_silently_for_real_valid_inputs():
+    result = compute_real_wind_shear_at_point([5.0, 12.0], [0.0, 4.0], validate_physics=True)
+    assert result["is_real_data"] is True
+
+
+def test_validate_physics_true_raises_for_out_of_range_u_component():
+    with pytest.raises(RangeError):
+        compute_real_wind_shear_at_point([1.0, 200.0], [0.0, 0.0], validate_physics=True)
+
+
+def test_validate_physics_true_raises_for_out_of_range_v_component():
+    with pytest.raises(RangeError):
+        compute_real_wind_shear_at_point([1.0, 5.0], [0.0, -200.0], validate_physics=True)

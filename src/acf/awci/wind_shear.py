@@ -36,12 +36,19 @@ full real vertical extent this codebase actually has today, not a
 fabricated 850/500 hPa or 0-6 km layer - the real value computed is
 genuine, but its real vertical extent should not be read as matching
 any specific named operational shear layer.
+
+Real, opt-in PhysicsGuard validation (added 2026-09-03, docs/
+ACF_MASTER_PROMPT.md section 11) - see acf.awci.theta_e's own module
+docstring for the full disclosure of this same real, opt-in
+`validate_physics` capability - here it checks the 2 real (u, v) pairs
+actually used (bottom_level/top_level), not the whole profile.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from acf.physics_guard import PhysicsGuard
 from acf.science.bulk_wind_shear import BulkWindShear
 
 
@@ -50,6 +57,7 @@ def compute_real_wind_shear_at_point(
     v_profile: Any,
     bottom_level: int = 0,
     top_level: int = -1,
+    validate_physics: bool = False,
 ) -> dict[str, Any]:
     """
     Real bulk wind shear (m/s) between two real levels of one real
@@ -67,6 +75,11 @@ def compute_real_wind_shear_at_point(
         indexing - `-1` is the real highest level). Defaults span the
         full real vertical extent of the profile (see module docstring
         for why this is not a fixed physical layer).
+    validate_physics : bool
+        When True, runs real PhysicsGuard range checks on the 2 real
+        (u, v) pairs actually used (docs/ACF_MASTER_PROMPT.md section
+        11 - see module docstring). Off by default, zero behavior
+        change unless explicitly requested.
 
     Returns
     -------
@@ -83,11 +96,21 @@ def compute_real_wind_shear_at_point(
         If `bottom_level`/`top_level` are out of range for the real
         supplied profile - propagated from the real array indexing,
         never silently clamped to a different, unrequested level.
+    acf.core.exceptions.PhysicsError
+        (or a subclass, RangeError) when `validate_physics=True` and a
+        real PhysicsGuard range check fails.
     """
     u_bottom = float(u_profile[bottom_level])
     v_bottom = float(v_profile[bottom_level])
     u_top = float(u_profile[top_level])
     v_top = float(v_profile[top_level])
+
+    if validate_physics:
+        guard = PhysicsGuard()
+        guard.check_range(u_bottom, "eastward_wind")
+        guard.check_range(v_bottom, "northward_wind")
+        guard.check_range(u_top, "eastward_wind")
+        guard.check_range(v_top, "northward_wind")
 
     shear_m_s = BulkWindShear.calculate(u_bottom, v_bottom, u_top, v_top)
 
