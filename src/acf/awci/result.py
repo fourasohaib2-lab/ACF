@@ -34,6 +34,25 @@ convention - see AWCIResult's own field docstrings) - fields left
 unsupplied stay honestly `None`, matching every other "prefer UNKNOWN
 to a fabricated value" convention already used throughout this project
 (section 61).
+
+Drill-down chain (added 2026-09-03, docs/ACF_MASTER_PROMPT.md sections
+26/53)
+-------------------------------------------------------------------------
+Section 26: "Score global → Contributions → Variables → Diagnostics →
+données sources → modèle → échéance → niveau vertical. Chaque résultat
+doit être traçable." Section 53: "AWCI → Module → Diagnostic → Variable
+→ Modèle → Fichier source. Il doit être possible de passer du résumé à
+la donnée détaillée." This session's exhaustive 90-section conformance
+audit found each link real somewhere, never assembled into one
+traceable chain. `raw_variables`/`lead_time_hours`/`vertical_level`
+(all optional, all `None` by default - same honest-assembler
+discipline as model_spread/quality/provenance above) close the
+remaining links: "modèle"/"données sources" already map onto
+`provenance.algorithm_version`/`provenance.input_files` (no separate
+field invented for those - `Provenance` already real, already
+attached above). `trace_chain()` renders the real, ordered chain as
+text, from this object's own real fields - a link never supplied
+renders as an honest "not available", never silently skipped.
 """
 
 from __future__ import annotations
@@ -96,6 +115,51 @@ class AWCIResult:
     #: config_version/created_at). None when no real provenance was
     #: attached.
     provenance: Provenance | None = None
+    #: Drill-down chain (sections 26/53) - the real "Variables" link:
+    #: the exact `data` dict passed to the `calculate()` call this
+    #: result came from. None when not supplied (never reconstructed
+    #: from `module_scores`, which is already-normalized [0,100] data,
+    #: not the real raw input).
+    raw_variables: dict[str, Any] | None = None
+    #: Drill-down chain - the real "échéance" link, in hours, e.g. from
+    #: acf.awci.temporal_field.compute_real_complexity_evolution()'s
+    #: own `valid_time_seconds[frame_index] / 3600.0`. None when this
+    #: result is not tied to a specific real forecast lead time.
+    lead_time_hours: float | None = None
+    #: Drill-down chain - the real "niveau vertical" link, the real
+    #: vertical level INDEX (matching acf.awci.vertical_field/
+    #: acf.awci.spatial_field's own `level` parameter - a native model
+    #: level index, not yet a physical unit - see
+    #: acf.awci.scale_classification for real horizontal-scale
+    #: classification, no vertical equivalent exists yet). None when
+    #: this result is not tied to a specific real vertical level.
+    vertical_level: int | None = None
+
+    def trace_chain(self) -> list[str]:
+        """
+        Real, ordered drill-down chain (sections 26/53): Score →
+        Contributions → Variables → Diagnostics → données sources →
+        modèle → échéance → niveau vertical - one real line per link,
+        built entirely from this object's own real fields (nothing
+        recomputed here). A link whose real value was never supplied
+        renders as an honest "not available" (section 61: prefer
+        UNKNOWN to a fabricated value) - never silently omitted, so a
+        caller drilling down sees exactly how far the real trace
+        actually goes.
+        """
+        contributions = ", ".join(self.dominant_factors) if self.dominant_factors else "none above threshold"
+        model = self.provenance.algorithm_version if self.provenance is not None else None
+        source_files = self.provenance.input_files if self.provenance is not None else None
+        return [
+            f"Score: AWCI = {self.awci} ({self.level})",
+            f"Contributions: {contributions}",
+            f"Variables: {self.raw_variables if self.raw_variables is not None else 'not available'}",
+            f"Diagnostics (module scores): {self.module_scores}",
+            f"Données sources: {source_files if source_files else 'not available'}",
+            f"Modèle: {model if model is not None else 'not available'}",
+            f"Échéance: {f'{self.lead_time_hours:.2f}h' if self.lead_time_hours is not None else 'not available'}",
+            f"Niveau vertical: {self.vertical_level if self.vertical_level is not None else 'not available'}",
+        ]
 
 
 def build_awci_result(
@@ -104,6 +168,9 @@ def build_awci_result(
     model_spread: dict[str, Any] | None = None,
     quality: dict[str, VariableQualityStatus] | None = None,
     provenance: Provenance | None = None,
+    raw_variables: dict[str, Any] | None = None,
+    lead_time_hours: float | None = None,
+    vertical_level: int | None = None,
     max_dominant_factors: int = 3,
 ) -> AWCIResult:
     """
@@ -123,6 +190,10 @@ def build_awci_result(
         Real values from the caller's own real computation elsewhere -
         see AWCIResult's own field docstrings for what each expects.
         Left as None (never fabricated) when not supplied.
+    raw_variables, lead_time_hours, vertical_level : optional
+        Real drill-down chain context (sections 26/53) - see
+        AWCIResult's own field docstrings. Left as None when not
+        supplied.
     max_dominant_factors : int
         How many of `calculate_output['explanation']`'s own real,
         already-contribution-sorted entries to surface as
@@ -148,4 +219,7 @@ def build_awci_result(
         model_spread=model_spread,
         quality=quality,
         provenance=provenance,
+        raw_variables=raw_variables,
+        lead_time_hours=lead_time_hours,
+        vertical_level=vertical_level,
     )

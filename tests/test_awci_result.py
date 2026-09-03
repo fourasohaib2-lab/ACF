@@ -109,3 +109,73 @@ def test_build_awci_result_never_mutates_the_original_calculate_output():
     original = dict(calc_output)
     build_awci_result(calc_output)
     assert calc_output == original
+
+
+# ---------------------------------------- drill-down chain (§26/§53)
+
+
+def test_drill_down_fields_default_to_none_never_fabricated():
+    calc_output = AWCICalculator().calculate(dict(_DATA))
+    result = build_awci_result(calc_output)
+    assert result.raw_variables is None
+    assert result.lead_time_hours is None
+    assert result.vertical_level is None
+
+
+def test_drill_down_fields_attach_unchanged():
+    calc_output = AWCICalculator().calculate(dict(_DATA))
+    result = build_awci_result(calc_output, raw_variables=dict(_DATA), lead_time_hours=6.5, vertical_level=3)
+    assert result.raw_variables == _DATA
+    assert result.lead_time_hours == 6.5
+    assert result.vertical_level == 3
+
+
+def test_trace_chain_has_exactly_the_8_real_links_sections_26_53_name():
+    calc_output = AWCICalculator().calculate(dict(_DATA))
+    result = build_awci_result(calc_output)
+    chain = result.trace_chain()
+    assert len(chain) == 8
+    labels = [line.split(":")[0] for line in chain]
+    assert labels == [
+        "Score",
+        "Contributions",
+        "Variables",
+        "Diagnostics (module scores)",
+        "Données sources",
+        "Modèle",
+        "Échéance",
+        "Niveau vertical",
+    ]
+
+
+def test_trace_chain_shows_not_available_for_unsupplied_links_not_silently_skipped():
+    calc_output = AWCICalculator().calculate(dict(_DATA))
+    result = build_awci_result(calc_output)  # nothing optional supplied
+    chain = result.trace_chain()
+    assert "not available" in chain[2]  # Variables
+    assert "not available" in chain[4]  # Données sources
+    assert "not available" in chain[5]  # Modèle
+    assert "not available" in chain[6]  # Échéance
+    assert "not available" in chain[7]  # Niveau vertical
+
+
+def test_trace_chain_shows_real_supplied_values():
+    calc_output = AWCICalculator().calculate(dict(_DATA))
+    provenance = Provenance(
+        generator="test", algorithm_version="ARPEGE", input_files=["metar_LFPG_2026090312.txt"]
+    )
+    result = build_awci_result(
+        calc_output,
+        provenance=provenance,
+        raw_variables=dict(_DATA),
+        lead_time_hours=12.0,
+        vertical_level=2,
+    )
+
+    chain = result.trace_chain()
+
+    assert "ARPEGE" in chain[5]  # Modèle
+    assert "metar_LFPG_2026090312.txt" in chain[4]  # Données sources
+    assert "12.00h" in chain[6]  # Échéance
+    assert "2" in chain[7]  # Niveau vertical
+    assert str(_DATA) == chain[2].split("Variables: ")[1]  # Variables, exact real dict

@@ -3262,3 +3262,46 @@ temporelle en production — un caller doit les appeler explicitement
 (ex. `classify_spatial_scale(MODEL_CONFIGS[model]["resolution_km"])`),
 même situation transitoire déjà acceptée plusieurs fois cette session
 pour de l'infrastructure réelle avant son branchement.
+
+## Mise à jour 2026-09-03 (suite) — chaîne de traçabilité complète (§26/§53)
+
+Suite explicite ("continue selon ton jugement"), extension naturelle du
+§81 déjà fermé cette session : `AWCIResult`/`build_awci_result()`
+existaient déjà comme assembleur réel — cette mise à jour complète la
+chaîne de traçabilité que le §26/§53 exigent explicitement.
+
+**Pourquoi** : §26 exige `Score global → Contributions → Variables →
+Diagnostics → données sources → modèle → échéance → niveau vertical`,
+"chaque résultat doit être traçable" ; §53 la même idée en plus court
+(`AWCI → Module → Diagnostic → Variable → Modèle → Fichier source`,
+"il doit être possible de passer du résumé à la donnée détaillée").
+L'audit constatait que chaque maillon existait réellement quelque part
+mais jamais assemblé en un seul objet traçable.
+
+**Construit** : 3 nouveaux champs réels sur `AWCIResult`
+(`raw_variables` — le vrai dict `data` passé à `calculate()`,
+`lead_time_hours`, `vertical_level`), tous optionnels avec le même
+défaut honnête `None` que les 3 champs du §81 — "modèle" et "données
+sources" réutilisent directement `provenance.algorithm_version`/
+`provenance.input_files` (déjà réels, aucun champ redondant inventé).
+Nouvelle méthode `AWCIResult.trace_chain()` — rend la vraie chaîne
+ordonnée en 8 lignes textuelles, un maillon jamais fourni s'affichant
+honnêtement "not available" plutôt que d'être silencieusement omis
+(§61) — pour qu'un appelant voie exactement jusqu'où la trace réelle va
+réellement, pas une chaîne qui a l'air complète mais a sauté une étape
+en silence.
+
+**Validation réelle** : 5 nouveaux tests
+(`tests/test_awci_result.py`) — les 3 nouveaux champs par défaut `None`,
+s'attachent sans modification une fois fournis, `trace_chain()` a
+exactement les 8 maillons réels dans l'ordre exact du §26/§53, les
+maillons non fournis affichent bien "not available" (pas silencieusement
+sautés), et les valeurs réellement fournies apparaissent bien dans le
+texte. Suite complète **3618/3618** (3613 + 5), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `trace_chain()` reste un texte de
+diagnostic/journal simple (liste de chaînes), pas encore affiché dans
+un panneau GUI dédié de "descente du résumé à la donnée détaillée"
+comme le §53 le décrit — même situation transitoire déjà acceptée pour
+plusieurs infrastructures réelles cette session avant leur branchement
+visuel.
