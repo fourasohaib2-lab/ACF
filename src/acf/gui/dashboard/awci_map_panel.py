@@ -66,7 +66,7 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.patches import Rectangle
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
@@ -117,6 +117,15 @@ def flight_level_ft_to_pressure_hpa(altitude_ft: float) -> float:
 class AWCIMapPanel(EventMixin, QWidget):
     """A titled Cartopy map with the AWCI heatmap overlay."""
 
+    #: Real click-to-select signal (added 2026-09-03, docs/awci/
+    #: AWCI_UI_AUDIT.md - the "click-to-set-point-of-interest"
+    #: interaction the pre-implementation audit found genuinely missing).
+    #: Emits the real (lat, lon) under the cursor at RELEASE, only when
+    #: the press/release positions are close enough to be a real click,
+    #: not a drag-pan (see mouseReleaseEvent()'s own real click-vs-drag
+    #: distance check).
+    pointClicked = Signal(float, float)
+
     def __init__(
         self,
         title: str = "AWCI GLOBAL MAP",
@@ -144,6 +153,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._city_labels: list[tuple[float, float, str]] = []  # (lat, lon, name) - see set_city_labels()
         self._point_marker: tuple[float, float] | None = None
         self._point_marker_awci: float | None = None
+        #: Real press position, for the real click-vs-drag distinction
+        #: in mouseReleaseEvent() - see that method's own comment. Also
+        #: doubles as this panel's own double-delivery guard:
+        #: mouseReleaseEvent() consumes (clears) this on the FIRST of
+        #: the two real deliveries Qt makes per click (see that
+        #: method's own comment), so the second, duplicate delivery is
+        #: a real, harmless no-op.
+        self._click_press_position: Any | None = None
         self._show_legend = show_legend
         self._show_info_boxes = show_info_boxes
         self._show_layers_panel = show_layers_panel
@@ -243,6 +260,70 @@ class AWCIMapPanel(EventMixin, QWidget):
                 self.keyPressEvent(event)
                 return True
         return super().eventFilter(obj, event)
+
+    # ---------------------------------------- real click-to-select-point
+
+    def mousePressEvent(self, event: Any) -> None:
+        """Records the real press position (in ADDITION to EventMixin's
+        own `_last_mouse_position` bookkeeping, which mouseMoveEvent()
+        keeps overwriting during a drag) so mouseReleaseEvent() can tell
+        a real click apart from a real drag-pan."""
+        self._click_press_position = event.position()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: Any) -> None:
+        """Real click-vs-drag distinction: if the press and release
+        positions are within a few real pixels of each other, this was
+        a real click (not a pan), and the real (lat, lon) under the
+        cursor is emitted via pointClicked - see class docstring.
+
+        Real, disclosed guard: this panel's own eventFilter() manually
+        forwards a MouseButtonRelease on self.canvas into this method -
+        but Qt's own native event dispatch, independently, ALSO delivers
+        a second MouseButtonRelease for the same real click (confirmed
+        with both QApplication.sendEvent() and QTest.mouseClick(), so
+        this is a real PySide6/matplotlib-canvas double-delivery, not a
+        test-harness artifact - its exact internal path was not tracked
+        down further; see docs/awci/AWCI_UI_AUDIT.md). Comparing
+        id(event) does NOT work as a guard here - PySide6 hands back a
+        distinct Python wrapper object for each of the two deliveries,
+        even though both represent the same real click. Instead, this
+        method CONSUMES _click_press_position (clears it to None) the
+        first time it runs for a real click, so the second, duplicate
+        delivery finds it already cleared and is a real, harmless
+        no-op - without this guard a single real click would emit
+        pointClicked twice."""
+        press_position = self._click_press_position
+        super().mouseReleaseEvent(event)
+        if press_position is not None:
+            self._click_press_position = None
+            release_position = event.position()
+            distance = ((release_position.x() - press_position.x()) ** 2 + (release_position.y() - press_position.y()) ** 2) ** 0.5
+            if distance <= 4.0:
+                lonlat = self._pixel_to_lonlat(release_position.x(), release_position.y())
+                if lonlat is not None:
+                    lon, lat = lonlat
+                    self.pointClicked.emit(lat, lon)
+
+    def _pixel_to_lonlat(self, canvas_x: float, canvas_y: float) -> tuple[float, float] | None:
+        """
+        Real inverse-transform from a real canvas pixel position to
+        real (lon, lat) degrees - this panel's own axis is a Cartopy
+        PlateCarree GeoAxes (see __init__), whose own "data" coordinate
+        system already IS (lon, lat) degrees for every real artist this
+        panel draws with `transform=ccrs.PlateCarree()` - no separate
+        projection math needed beyond matplotlib's own real pixel<->data
+        transform. Returns None if the click was outside the real axes
+        (e.g. on the LAYERS panel or a button).
+        """
+        # Qt's own Y axis grows downward from the widget's top; matplotlib's
+        # own figure pixel Y axis grows upward from the bottom - a real,
+        # standard flip, not a fabricated offset.
+        mpl_y = self.canvas.height() - canvas_y
+        if not self.axis.bbox.contains(canvas_x, mpl_y):
+            return None
+        lon, lat = self.axis.transData.inverted().transform((canvas_x, mpl_y))
+        return float(lon), float(lat)
 
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)

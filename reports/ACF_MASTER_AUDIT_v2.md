@@ -4292,3 +4292,117 @@ les deux systèmes de calques de carte incompatibles trouvés dans ce
 dépôt (`acf.gui.map.layers.layer_manager` vs `acf.gui.map.map_layers`)
 restent non unifiés — un vrai chantier architectural séparé, pas une
 simple case à cocher.
+
+## Mise à jour 2026-09-03 (suite) — contrat d'intégration ACF→AWCI, interactivité réelle, audit documentaire
+
+Demande explicite de l'utilisateur : un "AWCI — MASTER ENGINEERING
+PROMPT V3.0" de 89 sections, collé en clair, exigeant (1) fidélité
+pixel-perfect au mockup déjà atteinte la clôture précédente, (2) zéro
+contrôle UI décoratif/mort, (3) que AWCI n'invente JAMAIS ses entrées
+météorologiques et consomme les vraies sorties d'ACF via un "AWCI
+Input Adapter", (4) une source de vérité unique pour l'état partagé
+(heure, niveau de vol, point), (5) un jeu de documents d'audit complet
+avant tout code, avec discipline explicite "INSPECTE, ne suppose pas".
+Le prompt est écrit dans un langage générique React/web (build npm,
+hooks, WebGL, ARIA, un "RouteOptimizationEngine") qui ne correspond pas
+à la vraie stack de ce projet (Python/PySide6/matplotlib) — disclosed
+en clair à l'utilisateur, traité comme les fermetures précédentes : une
+liste d'exigences fonctionnelles à satisfaire dans la vraie stack, pas
+des instructions d'implémentation littérales.
+
+**Méthode** : deux agents Explore lancés en parallèle avant tout code
+(un pour l'infrastructure ACF réelle existante — Data Contract, Model
+Adapter Protocol, PhysicsGuard — un pour les vraies interactions
+mortes/manquantes du dashboard), puis un plan détaillé écrit et
+approuvé avant implémentation. Les agents ont trouvé qu'un vrai Data
+Contract (`acf.core.contracts`) et un vrai Model Adapter Protocol
+(`acf.models.base_model`) existaient déjà (chantiers antérieurs de
+cette même session) — donc le vrai travail restant n'était pas de les
+reconstruire mais de combler le seul vrai manque : rien ne pontait
+`Dataset` vers le dict de `AWCICalculator`.
+
+**Construit** :
+1. **`AWCI Input Adapter`** (`src/acf/awci/input_adapter.py`, nouveau)
+   — pont réel entre `Dataset`/`VariableContract` et le dict
+   `AWCICalculator`, avec vraie évaluation de qualité
+   (`assess_variable_quality()`) par variable CF nommée, jamais une
+   valeur fabriquée pour une variable absente (honnêtement `MISSING`).
+2. **Clic sur la carte → point d'intérêt réel** — `AWCIMapPanel.pointClicked`
+   (nouveau signal Qt), câblé sur la carte globale ET régionale,
+   remplace la constante `_POINT_OF_INTEREST` en dur par
+   `self._point_of_interest`, relance le vrai pipeline par point.
+3. **Badges RISK SUMMARY cliquables** — réutilisent le vrai pattern de
+   clic déjà prouvé pour la liste de composants (`_ComponentRow`) ;
+   Turbulence/Icing/Convective réutilisent le vrai dialogue de détail
+   déjà existant (pas un doublon) ; Overall/Physical/Forecast ouvrent
+   un nouveau dialogue montrant le vrai détail des `module_scores` qui
+   composent ce score composite.
+4. **Sélecteur "Flight Level:"** — nouvelle source de vérité unique
+   réelle pour 3 des ~7 constantes `flight_level_hpa` trouvées en dur
+   par l'audit (le calcul au point d'intérêt) ; les 4 autres restent
+   volontairement indépendantes (routes/affichages réels différents,
+   certains fixés par le titre même de la carte, ex. "(FL300)" —
+   les unifier aurait changé ce que ces panneaux affichent, ce que
+   l'audit n'a pas trouvé cassé). Défaut "FL300" gardé bit-identique
+   (300.0 hPa littéral, pas la valeur ISA réelle ~300.9 hPa) pour ne
+   décaler aucun score déjà calculé avant ce chantier.
+5. **8 documents d'audit** sous `docs/awci/` — `AWCI_UI_AUDIT.md`,
+   `AWCI_COMPONENT_INVENTORY.md`, `AWCI_INTERACTION_MATRIX.md`,
+   `AWCI_LAYOUT_SPEC.md`, `AWCI_BUTTON_CONTRACT.md`,
+   `AWCI_IMPLEMENTATION_STATUS.md`, `AWCI_FINAL_VALIDATION.md`,
+   `future-improvements.md`.
+
+**Décision disclosed, pas silencieuse** : le `RouteOptimizationEngine`
+(§30 du prompt) n'a pas été construit. Deux vrais stubs délibérés
+existent déjà dans ce dépôt (`acf/science/query_engine.py`,
+`acf/ai_expert/aviation_reasoning.py`), tous deux explicitement vidés
+d'une recommandation fabriquée `"FL360"` et retournant honnêtement
+`None`/`is_real_data: False`. Un nouveau moteur produisant une
+recommandation de niveau de vol à partir des seuls scores AWCI
+composites n'aurait pas plus de base scientifique réelle que ce qui a
+déjà été retiré deux fois dans l'histoire de ce projet — ressusciter
+exactement la même fabrication. Documenté dans `AWCI_UI_AUDIT.md` §8
+et `future-improvements.md` §1.
+
+**Trouvaille et correction en cours de route, disclosed** : un vrai
+bug de double-émission Qt trouvé pendant l'écriture des tests —
+`AWCIMapPanel.pointClicked` s'émettait deux fois par vrai clic. Un
+seul clic sur `self.canvas` atteignait `mouseReleaseEvent()` deux fois
+— une fois via le `eventFilter()` de ce panneau (le chemin voulu), une
+fois via un second chemin de livraison Qt natif, indépendant, dont le
+mécanisme interne exact n'a pas été identifié plus loin (confirmé à la
+fois avec `QApplication.sendEvent()` et `QTest.mouseClick()` — donc un
+vrai comportement, pas un artefact du harnais de test). La déduplication
+par `id(event)` ne fonctionne PAS : PySide6 renvoie un objet wrapper
+Python distinct à chaque livraison, même pour le même vrai clic. Corrigé
+en faisant CONSOMMER (remettre à `None`) `_click_press_position` par
+`mouseReleaseEvent()` dès la première des deux livraisons, rendant la
+seconde un no-op réel et inoffensif — régression gardée par les 4 tests
+de `tests/test_awci_map_panel_point_click.py`. Un second vrai bug (déjà
+connu de ce projet, retrouvé en testant l'adaptateur) : `AWCICalculator`
+attend la pression en hPa, pas en Pa (l'unité canonique CF réelle) —
+corrigé via une table d'unité native séparée (`AWCI_KEY_NATIVE_UNIT`),
+isolée de la conversion CF utilisée uniquement pour l'évaluation de
+qualité.
+
+**Validation réelle** : capture d'écran offscreen complète comparée au
+mockup — aucun élément déjà validé altéré, seul ajout visible : le
+sélecteur "Flight Level:" (ajout fonctionnel disclosed, même précédent
+que VIEW MODE/🔬 Real Physics/🛩 Compare FL280/FL320 ajoutés aux
+chantiers précédents). 31 nouveaux tests répartis sur 3 fichiers
+(`tests/test_awci_input_adapter.py` — 12,
+`tests/test_awci_map_panel_point_click.py` — 4,
+`tests/gui/test_awci_dashboard_synchronization.py` — 15). Suite
+complète **3883/3883** (3852 + 31), `ruff`/`mypy` propres sur tous les
+fichiers touchés.
+
+**Ce qui reste réellement** : le `RouteOptimizationEngine` reste
+délibérément non construit (voir plus haut) ; 4 des ~7 constantes de
+niveau de vol trouvées en dur par l'audit restent volontairement
+indépendantes (routes/affichages réels différents) ; la couverture
+CF/unités de `acf.normalization` reste réelle mais étroite (9 noms
+CF, 4 noms courts ECMWF) — limite déjà connue, pas adressée par ce
+chantier ; le sélecteur de picker calendrier, le rendu WebGL/GPU, le
+balayage accessibilité complet du dépôt, l'indice CAT complet
+Ellrod-Knapp et le calque CAPE par point de grille restent non
+construits, documentés dans `future-improvements.md`.
