@@ -1905,3 +1905,51 @@ aucun dashboard ACF général multi-échéances n'existe). C'est
 l'enregistrement durable de la référence conceptuelle à respecter pour
 tout travail futur — un vrai audit de conformité point-par-point à ce
 prompt serait un travail séparé, non fait ici.
+
+## Mise à jour 2026-09-03 (suite) — décision d'autorité + premier audit de conformité réel au prompt maître
+
+**Trouvaille majeure faite en préparant cet audit, pas supposée** : 23
+fichiers du code existant (`acf.core.contracts.*`, `acf.certification`,
+`acf.events`, `acf.jobs`, `acf.verification`, `acf.physics_guard`,
+etc.) citent déjà en commentaires un **« Prompt Maître ACF v2.0 »**
+avec une numérotation de section totalement différente de celui reçu
+aujourd'hui (ex. code : « section 13 = Data Contract », « section
+22/46 = Job contract », « section 91 = QualityInfo » — des contrats
+logiciels concrets absents à ces numéros dans le document reçu
+aujourd'hui, qui s'arrête à 90 et reste conceptuel). Ce v2.0 complet
+n'existe nulle part dans le dépôt comme document autonome — seulement
+cité en commentaires épars, jamais retrouvé (recherché dans
+`ROADMAP.md`, absent). **Décision explicite de l'utilisateur** : le
+document reçu aujourd'hui (`docs/ACF_MASTER_PROMPT.md`) fait
+désormais autorité et remplace le v2.0 pour tout travail futur ; les
+23 fichiers citant "v2.0" ne sont PAS réécrits en masse (règle d'or
+§71 du prompt lui-même — leur code reste réel et fonctionnel, leurs
+citations deviennent des références historiques). Détail dans
+l'en-tête de `docs/ACF_MASTER_PROMPT.md`.
+
+**Premier audit réel (évidence par évidence, pas exhaustif des 90
+sections) de l'existant contre ce document faisant autorité :**
+
+| Exigence du prompt | Statut réel vérifié |
+|---|---|
+| §9-10 Abstraction multi-modèles + modèle de données commun | **CONFIRMÉ** — `acf.models.base_model.BaseWeatherModel` (Protocol), 7 adaptateurs réels (AROME/ALADIN/ARPEGE/ERA5/WRF/ICON/OpenIFS), `acf.core.contracts.dataset.Dataset`/`Provenance`/`VariableContract` communs. |
+| §11 Contrôle physique des unités avant combinaison | **CONFIRMÉ, partiel** — `acf.physics_guard.guard.PhysicsGuard` réel (unités/plages/coordonnées/dimensions), mais pas systématiquement invoqué à chaque point d'entrée du pipeline. |
+| §18-19 Incertitude + désaccord inter-modèles | **CONFIRMÉ, partiel** — `ModelConsensusEngine.compute_real_multi_model_disagreement()` réel (dispersion/écart-type), module `ensemble_spread`/`model_disagreement` réel dans `AWCICalculator` — mais seulement 2-3 modèles réellement testés ensemble à la fois, pas un vrai consensus N-modèles opérationnel. |
+| §20 Normalisation au-delà du min-max naïf | **HYPOTHÈSE non résolue** — `acf.awci.normalizer.Normalizer` utilise exclusivement un clip-puis-division linéaire (ex. vent 0-50 m/s, CAPE 0-5000 J/kg) ; aucune fonction sigmoïde/percentile-climatologique/saisonnière comme le prompt le demande d'étudier. Les bornes elles-mêmes ne sont sourcées nulle part (pas de référence physique/statistique citée). |
+| §21/§77-81 Statut explicite CONFIRMED/HYPOTHESIS sur chaque seuil/poids | **GAP RÉEL confirmé** — `WeightsManager.DEFAULT_WEIGHTS` et `Normalizer`'s bornes sont de simples constantes avec une prose honnête ponctuelle ("expert knowledge", "ACF design choice... not derived from an external published formula" sur `INTERACTION_WEIGHTS`) mais **aucun champ de statut structuré, interrogeable par le code ou les tests**, comme le prompt l'exige explicitement et de façon répétée. |
+| §22 Moteur d'interactions général | **PARTIEL** — seulement 2 termes d'interaction codés en dur (`wind_topo_interaction`, `conv_thermo_interaction`), pas un vrai moteur généralisé étudiant les interactions entre paires/triplets de modules. |
+| §32 Statuts de qualité des données | **PARTIEL, vocabulaire différent** — `acf.core.contracts.quality.QualityInfo` réel et honnête (défaut `NOT_ASSESSED`, jamais `PASS` par défaut) mais utilise `NOT_ASSESSED/PASS/WARNING/FAIL`, pas la liste précise du prompt (`VALID/SUSPECT/MISSING/INVALID/OUT_OF_RANGE/UNIT_ERROR/GRID_ERROR/TIME_ERROR/PHYSICAL_INCONSISTENCY`). |
+| §33 Provenance | **CONFIRMÉ** — `acf.core.contracts.provenance.Provenance` réel. |
+| §45/§47 ACF ≠ AWCI comme couches logicielles séparées et réutilisables | **GAP ARCHITECTURAL RÉEL** — `src/acf/` a ~50 paquets de premier niveau (`awci/`, `science/`, `hazard_operations/`, `ocean/`, `hydrology/`, etc.) tous à plat ; il n'existe pas de séparation claire "cœur scientifique ACF réutilisable" → "pondération/contexte spécifique à AWCI" telle que décrite au §47 — `awci/` n'est pas architecturalement distingué comme une application au-dessus d'un cœur ACF générique. |
+| §27-29 Dashboard multi-vues (général, vertical, multi-modèle, scientifique) | **PARTIEL** — le dashboard AWCI (`acf.gui.dashboard.awci_dashboard`) existe et est déjà construit contre sa maquette de référence ; **aucun dashboard ACF général multi-échéances/multi-modèles** (la première maquette, `docs/reference/acf_dashboard_reference.jpg`) n'existe. |
+| §61-62 UNKNOWN plutôt que fausse certitude, jamais missing→0 silencieux | **CONFIRMÉ, pratique déjà établie** — convention déjà omniprésente dans le code de cette session (`None` réel plutôt que `0.0` fabriqué, ex. `physical_score`/`forecast_score` d'`AWCICalculator`, `cape_j_kg`/`cin_j_kg` de `convective_energy.py`). |
+| §64 AWCI = score ± incertitude ou distribution | **NON IMPLÉMENTÉ** — `AWCICalculator` retourne un score ponctuel unique (+ `confidence` séparé), jamais un intervalle ou une distribution de probabilité par classe, alors que le prompt le présente explicitement comme "à étudier". |
+
+**Recommandation** (pas encore exécutée dans cette mise à jour) : le
+gap le plus concret, le plus sûr à corriger (aucun risque de casser
+l'existant) et le plus explicitement et répétitivement exigé par le
+prompt (§21, §77, §78, §79, §80, §81) est le **statut structuré
+CONFIRMED/PROPOSED/HYPOTHESIS/REQUIRES_VALIDATION/UNKNOWN sur chaque
+seuil et poids d'AWCICalculator/Normalizer/WeightsManager** —
+actuellement de simples constantes sans statut interrogeable. C'est le
+prochain chantier proposé.

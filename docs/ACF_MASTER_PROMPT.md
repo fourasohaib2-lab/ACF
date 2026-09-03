@@ -9,6 +9,32 @@
 > pour l'état réel du dépôt), c'est la spécification conceptuelle et
 > la méthodologie de travail que ce projet doit respecter.
 >
+> **Statut d'autorité (confirmé explicitement par l'utilisateur le
+> 2026-09-03)** : ce document EST désormais la spécification primaire
+> et faisant autorité du projet — *« il va remplacer le programme
+> actuel dans son comportement car c'est le programme primaire et la
+> vraie idée du projet »*. Trouvaille réelle faite en préparant l'audit
+> de conformité : 23 fichiers du code existant (`src/acf/core/
+> contracts/*.py`, `src/acf/certification/`, `src/acf/events/`,
+> `src/acf/jobs/`, `src/acf/verification/`, etc.) citent déjà un
+> **« Prompt Maître ACF v2.0 »** avec une numérotation de sections
+> totalement différente de celle-ci (ex. le code cite « section 13 =
+> Data Contract », « section 22/46 = Job contract », « section 91 =
+> QualityInfo » — des contrats logiciels concrets qui n'existent à
+> aucun de ces numéros dans CE document). Ce v2.0 complet n'est
+> sauvegardé nulle part dans le dépôt en tant que document autonome
+> (seulement cité en commentaires épars dans le code) et est
+> **explicitement superseded** par ce document-ci selon la décision de
+> l'utilisateur. Conformément à la règle d'or du projet
+> (§71 ci-dessous, « NE JAMAIS SUPPRIMER MASSIVEMENT DES FICHIERS »),
+> les 23 fichiers citant « v2.0 » n'ont pas été réécrits en masse —
+> leur code réel reste fonctionnel et n'est pas invalidé par ce
+> changement de statut ; les citations "v2.0" y sont maintenant des
+> références historiques (le v2.0 qui a réellement guidé leur
+> construction), pas la spécification active pour du nouveau travail.
+> Tout travail futur doit se référer à CE document comme source de
+> vérité conceptuelle.
+>
 > Deux maquettes de référence visuelles accompagnent ce prompt — voir
 > [`reference/acf_dashboard_reference.jpg`](reference/acf_dashboard_reference.jpg)
 > (dashboard ACF général — vue synoptique multi-échéances, coupe
