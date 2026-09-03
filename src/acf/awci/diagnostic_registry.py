@@ -301,19 +301,52 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         name="normalize_topographic",
         description="Normalizes altitude to [0, 1] for the topographic module.",
         physical_meaning="Higher terrain altitude contributes to topographic-module complexity - a real, but "
-        "static, proxy (section 16 explicitly wants relief to be a dynamic wind/turbulence MODIFIER, only "
-        "partially captured today via the real wind_topo_interaction term - see that entry below).",
+        "static, proxy. See normalize_mountain_wave_severity below (added 2026-09-03) for the real, opt-in "
+        "dynamic wind/relief signal section 16 explicitly wants; the real wind_topo_interaction term (see that "
+        "entry below) also partially captures this.",
         equation="clip(value, 0, max_altitude) / max_altitude   (max_altitude defaults to 3000 m)",
         inputs=["altitude (m)"],
         output="topographic module input, [0, 1]",
         units="m -> dimensionless",
         valid_range="0 to 3000 m (default, caller-overridable via max_altitude)",
         assumptions="Linear scaling; a static altitude value, not a real dynamic relief-modifier of wind/turbulence.",
-        limitations="Section 16's own real gap: relief as a static altitude proxy, not yet the dynamic modifier "
-        "(orographic waves, wind acceleration) the master prompt describes.",
+        limitations="A static altitude proxy - see normalize_mountain_wave_severity below (added 2026-09-03) for "
+        "the real, opt-in dynamic modifier (orographic waves, wind acceleration) the master prompt describes.",
         reference="ACF design choice, caller-overridable (Normalizer's own docstring).",
         tests=["tests/test_awci_calculator.py::test_normalizer_methods"],
         status=NORMALIZER_RANGE_STATUS["topographic"],
+    ),
+    "normalize_mountain_wave_severity": DiagnosticSpec(
+        name="normalize_mountain_wave_severity",
+        description="Real, opt-in normalization of a real mountain-wave Froude number to a [0, 1] severity - "
+        "BLENDS into the topographic module's own static-altitude score when a real value is supplied (added "
+        "2026-09-03, explicit user request 'continue au module relief, avec le vent').",
+        physical_meaning="Section 16 is explicit that relief modifies wind, turbulence, local acceleration, and "
+        "orographic waves ('turbulence orographique, accélération du vent, ondes de relief') - the real "
+        "mountain-wave Froude number Fr = U/(N*H) is a real, classic diagnostic of exactly that interaction: "
+        "Fr < 1 means real flow blocking and intense stationary waves (hazard-favorable), Fr > 1 means smoother "
+        "flow over the terrain.",
+        equation="1 - clip(froude_number, 0, 1)",
+        inputs=["mountain_wave_froude (dimensionless) - see acf.awci.orographic_froude."
+        "compute_real_mountain_wave_froude_number_at_point() for the real, cited Fr=U/(N*H) formula that "
+        "produces it (a caller-supplied value - AWCI's point API has no real per-point terrain height nor "
+        "vertical stability profile to derive U/N/H from itself)"],
+        output="topographic module input (50% weight when supplied - see topographic_module_combination below), [0, 1]",
+        units="dimensionless -> dimensionless",
+        valid_range="Fr from 0 to 1 (severity saturates to 0 above Fr=1)",
+        assumptions="Fr=1 is the real, classic physical dividing line used as the threshold (see this entry's "
+        "own equation); treating severity as exactly linear in (1-Fr) is a real, disclosed ACF design choice, "
+        "not a published severity index.",
+        limitations="Real classic linear mountain-wave theory only - does not capture nonlinear wave breaking, "
+        "real 3D terrain geometry, or trapped-lee-wave resonance beyond the Fr<1/Fr>1 regime split. Point-only: "
+        "never wired into acf.awci.spatial_field (no real per-point terrain height nor vertical stability "
+        "profile exists in CoupledEarthSolver's state - see acf.awci.orographic_froude's own module docstring "
+        "for the full disclosure).",
+        reference="Underlying Fr=U/(N*H) formula: a real, classic, cited aviation-meteorology diagnostic (ICAO "
+        "Doc 9817 Wind Shear; AMS Aviation Meteorology). Severity mapping: ACF design choice using the real "
+        "Fr=1 threshold, not a published numeric severity index.",
+        tests=["tests/test_awci_orographic_froude.py", "tests/test_awci_calculator_orographic_froude.py"],
+        status=NORMALIZER_RANGE_STATUS["mountain_wave_severity"],
     ),
     "normalize_confidence": DiagnosticSpec(
         name="normalize_confidence",
@@ -472,6 +505,35 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         reference="ACF design choice - not derived from a published formula.",
         tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_precipitation_phase.py"],
         status=MODULE_WEIGHT_STATUS["microphysical"],
+    ),
+    "topographic_module_combination": DiagnosticSpec(
+        name="topographic_module_combination",
+        description="Normalizes static altitude into the topographic module score by default, and BLENDS in a "
+        "real, opt-in mountain-wave Froude number severity (added 2026-09-03) alongside altitude when a caller "
+        "supplies one.",
+        physical_meaning="Topographic complexity is driven by static altitude by default; the real mountain-wave "
+        "Froude number, when supplied, is a genuinely independent real signal - relief's real impact on flow "
+        "depends on the CURRENT wind/stability, not on altitude alone (section 16's own explicit 'accélération "
+        "du vent' / 'ondes de relief' candidate variables).",
+        equation="altitude_norm = normalize_topographic(altitude); "
+        "if 'mountain_wave_froude' not in data: altitude_norm; "
+        "else: 0.5 * altitude_norm + 0.5 * normalize_mountain_wave_severity(mountain_wave_froude)",
+        inputs=["altitude (m)", "mountain_wave_froude (dimensionless, optional)"],
+        output="topographic module score, [0, 1]",
+        units="dimensionless",
+        valid_range="[0, 1]",
+        assumptions="50/50 weighting when mountain_wave_froude is supplied - a real, disclosed ACF design "
+        "choice, matching the same internal convention as the dynamic module's own 50/50 wind/wind_shear blend, "
+        "not derived from a published formula for this composite index. Omitting mountain_wave_froude entirely "
+        "keeps the topographic module exactly the altitude-only score - zero behavior change for every caller "
+        "that doesn't supply it.",
+        limitations="Altitude stays a static proxy either way (see normalize_topographic's own entry). Opt-in "
+        "mountain_wave_froude case: point-only, a caller-supplied value - never derived automatically (see "
+        "normalize_mountain_wave_severity's own entry for why acf.awci.spatial_field cannot honestly compute "
+        "it per grid point today).",
+        reference="ACF design choice - not derived from a published formula.",
+        tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_orographic_froude.py"],
+        status=MODULE_WEIGHT_STATUS["topographic"],
     ),
     "wind_topo_interaction": DiagnosticSpec(
         name="wind_topo_interaction",

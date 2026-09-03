@@ -221,6 +221,33 @@ class AWCICalculator:
     microphysical module stays exactly the precipitation-rate-only
     score, bit-identical to before this capability existed.
 
+    Real mountain-wave Froude number in the topographic module (NOTE,
+    added 2026-09-03, explicit user request "continue au module
+    relief, avec le vent")
+    -----------------------------------------------------------------
+    Section 16 is explicit that relief is not a static variable - it
+    modifies wind, turbulence, local acceleration, orographic waves -
+    and explicitly cites "turbulence orographique, accélération du
+    vent, ondes de relief". `data["mountain_wave_froude"]` (real,
+    dimensionless) is blended 50/50 into the topographic module
+    alongside static altitude - see `acf.awci.orographic_froude.
+    compute_real_mountain_wave_froude_number_at_point()`, the real,
+    classic, cited Fr = U/(N*H) diagnostic (ICAO Doc 9817 Wind Shear;
+    AMS Aviation Meteorology): Fr < 1 means real flow blocking/intense
+    stationary waves (hazard-favorable), Fr > 1 means smoother flow
+    over the terrain. Honest scope, unlike the four NOTEs above: this
+    stays a point-only, caller-supplied capability, never wired into
+    `acf.awci.spatial_field` - CoupledEarthSolver's real state has no
+    terrain-elevation field at all and no real geometric height
+    coordinate to derive a real vertical stability profile from, so
+    neither H nor N can be honestly computed per grid point today (see
+    that module's own docstring for the full disclosure). A genuinely
+    independent real signal, unlike updraft_velocity: relief's real
+    impact on flow depends on the CURRENT wind/stability, not on
+    altitude alone. Omitted entirely (the default): zero behavior
+    change - the topographic module stays exactly the altitude-only
+    score, bit-identical to before this capability existed.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -511,6 +538,20 @@ class AWCICalculator:
               above.
             - pressure: Pressure in hPa
             - altitude: Altitude in meters
+            - mountain_wave_froude: optional, real dimensionless
+              mountain-wave Froude number Fr = U/(N*H) (docs/
+              ACF_MASTER_PROMPT.md section 16) - see
+              acf.awci.orographic_froude.
+              compute_real_mountain_wave_froude_number_at_point() for
+              the real, cited formula that produces it (a caller-
+              supplied value: this point API has no real per-point
+              terrain height nor vertical stability profile to derive
+              U/N/H from itself). Omitted: zero behavior change, the
+              topographic module stays the naive altitude-only score.
+              Supplied: blended 50/50 with
+              normalize_topographic(altitude) - a genuinely independent
+              real signal (relief's real impact on flow depends on
+              current wind/stability, not on altitude alone).
             - confidence: Forecast confidence in %
             - temporal_change: Rate of change
             - ensemble_members: optional dict[str, list[float]], real
@@ -684,7 +725,22 @@ class AWCICalculator:
 
         # Topographic module - based on altitude
         altitude = data.get("altitude", 0.0)
-        scores["topographic"] = self.normalizer.normalize_topographic(altitude)
+        # NOTE (found while building this, not fixed here - out of scope):
+        # unlike every other module above, this one has never gone
+        # through self._normalize() - it is not climatology-aware even
+        # though Normalizer.normalize_percentile() exists and altitude
+        # would be a real, legitimate candidate for it (section 20).
+        altitude_norm = self.normalizer.normalize_topographic(altitude)
+        if "mountain_wave_froude" in data:
+            severity_norm = self._normalize(
+                "mountain_wave_froude",
+                data["mountain_wave_froude"],
+                self.normalizer.normalize_mountain_wave_severity,
+                climatology,
+            )
+            scores["topographic"] = 0.5 * altitude_norm + 0.5 * severity_norm
+        else:
+            scores["topographic"] = altitude_norm
 
         # Temporal module - rate of change
         temporal = data.get("temporal_change", 0.0)

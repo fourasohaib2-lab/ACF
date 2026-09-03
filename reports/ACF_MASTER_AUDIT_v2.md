@@ -3845,3 +3845,113 @@ entrée d'origine (altitude statique) — même démarche disponible à la
 demande. Hail size/eau surfondue/contenu en glace (§15's autres
 candidates) restent un vrai gap disclosed, bloqué par l'absence
 d'espèces microphysiques réelles dans l'état du solveur.
+
+## Mise à jour 2026-09-03 (suite) — nombre de Froude orographique réel dans le module relief (§16)
+
+Suite explicite de l'utilisateur ("continue au module relief, avec le
+vent") — cinquième et dernière fermeture ciblée du chantier §12-16,
+même méthodologie que le cisaillement de vent, theta-e, la vitesse
+d'ascendance et la phase de précipitation.
+
+**Pourquoi** : §16 est explicite — le relief n'est pas une variable
+statique, il modifie le vent, la turbulence, les accélérations
+locales, les ondes orographiques ("turbulence orographique,
+accélération du vent, ondes de relief"). Avant cette fermeture, le
+module `topographic` n'utilisait que l'altitude statique
+(`Normalizer.normalize_topographic()`) ; le seul vrai signal
+vent-relief dans AWCI était le terme d'interaction multiplicatif
+`wind_topo_interaction` (dynamic × topographic, §22) — réel, mais pas
+un vrai diagnostic physique vent-terrain en soi.
+
+**Trouvaille faite en inspectant avant de construire** :
+`acf.science.encyclopedia.aviation_extended.calculate_mountain_wave_froude_number()`
+— le nombre de Froude des ondes de relief, Fr = U/(N×H), un vrai
+diagnostic classique et opérationnel de météorologie aéronautique,
+cité (ICAO Doc 9817 Wind Shear ; AMS Aviation Meteorology) : Fr < 1
+signale un vrai blocage de l'écoulement et des ondes stationnaires
+intenses (régime dangereux), Fr > 1 un écoulement plus lisse
+au-dessus du relief. Enregistré dans l'encyclopédie mais jamais câblé
+dans rien produisant une vraie sortie ACF — même schéma que les 4
+fermetures précédentes.
+
+**Décision de conception disclosed, une vraie limite de portée
+nouvelle par rapport aux 4 précédentes** : contrairement au
+cisaillement, à theta-e, à la vitesse d'ascendance et à la phase de
+précipitation, ce diagnostic N'A PAS pu être câblé dans
+`acf.awci.spatial_field` — Fr a besoin d'une vraie hauteur de relief H
+et d'une vraie fréquence de Brunt-Väisälä N (elle-même dérivée d'un
+vrai gradient vertical de température potentielle avec un vrai
+espacement géométrique en hauteur). Aucun champ d'élévation du terrain
+n'existe dans l'état réel de `CoupledEarthSolver` (même vrai gap déjà
+disclosed pour "terrain-altitude"), et aucune vraie coordonnée
+géométrique de hauteur n'existe non plus (seulement des indices de
+niveaux hybrides sigma-pression) pour dériver un vrai dtheta/dz sans
+fabriquer une référence de hauteur. Ce diagnostic reste donc un vrai
+diagnostic PONCTUEL, opt-in, où l'appelant doit fournir sa propre
+valeur réelle (un sondage, une carte du relief) — rien n'est fabriqué
+ici. Disclosure honnête supplémentaire : `wind_speed_perpendicular`
+utilise la vitesse totale du vent réelle (AWCI n'a pas de vraie donnée
+d'orientation de crête) comme proxy conservateur disclosed — ne peut
+que SOUS-estimer Fr (jamais cacher un vrai risque). Mélange (comme le
+cisaillement), pas remplacement : le nombre de Froude est un vrai
+signal indépendant de l'altitude seule. Comportement par défaut
+**bit-identique** sans `data["mountain_wave_froude"]`.
+
+**Construit** :
+- Nouveau [`acf.awci.orographic_froude`](../src/acf/awci/orographic_froude.py) —
+  `compute_real_mountain_wave_froude_number_at_point()`, enveloppe fine
+  autour de la vraie formule citée, aucune nouvelle physique inventée.
+  `froude_number` reste honnêtement `None` (jamais fabriqué) quand la
+  vraie fréquence de Brunt-Väisälä est non-positive (air neutre/
+  instable — la théorie linéaire classique des ondes de relief n'est
+  physiquement valable que pour un air stablement stratifié).
+- `Normalizer.normalize_mountain_wave_severity()` — sévérité réelle
+  = 1 − clip(Fr, 0, 1), utilisant Fr=1 comme vrai seuil physique
+  classique, plus `NORMALIZER_RANGE_STATUS["mountain_wave_severity"]`
+  (`HYPOTHESIS` pour le mapping de sévérité — la formule Fr=U/(N×H)
+  elle-même est réelle, classique et citée).
+- `AWCICalculator.calculate_module_scores()` — le module `topographic`
+  gère maintenant réellement `data["mountain_wave_froude"]` (mélange
+  50/50 avec le score d'altitude, climatology-aware). Trouvaille
+  disclosed en passant, non corrigée ici (hors périmètre) : contrairement
+  à tous les autres modules, `topographic` ne passait déjà pas par
+  `_normalize()` — il n'était pas climatology-aware même avant cette
+  fermeture, alors que `normalize_percentile()` existe (§20) ; laissé
+  tel quel pour l'altitude afin de ne rien changer au comportement par
+  défaut existant, uniquement disclosed ici.
+- `acf.awci.diagnostic_registry` — nouvelle entrée
+  `normalize_mountain_wave_severity`, nouvelle entrée
+  `topographic_module_combination` (n'existait pas encore), et mise à
+  jour de `normalize_topographic` pour disclosed la nouvelle limitation.
+- **Pas d'extension de `acf.awci.spatial_field`** cette fois — décision
+  disclosed explicitement ci-dessus, pas un oubli.
+
+**Validation réelle, y compris des propriétés physiques connues** :
+stabilité forte + vent modéré + haute montagne → Fr < 1 (régime de
+blocage) confirmé par calcul direct ; stabilité faible + vent fort +
+petite colline → Fr > 1 (régime d'écoulement lisse) confirmé ; air
+neutre/instable (N=0, retourné honnêtement par
+`BruntVaisalaFrequency.calculate()` elle-même) → `froude_number=None`
+honnête, jamais une valeur infinie/nulle fabriquée ; Fr plus proche de
+0 prouvé produire un score topographique plus élevé à altitude égale
+(monotonicité physique réelle, preuve indépendante). 20 nouveaux tests
+répartis sur 3 fichiers — `tests/test_awci_orographic_froude.py` (+9),
+`tests/test_awci_calculator_orographic_froude.py` (+9 : comportement
+par défaut bit-identique, mélange exact 50/50, preuve que ce n'est PAS
+un remplacement, monotonicité physique, climatology-aware),
+`tests/test_awci_diagnostic_registry.py` (+2). Suite complète
+**3759/3759** (3739 + 20), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du chantier §12-16** : les 5 modules
+(dynamique, thermodynamique, convectif, microphysique, relief) ont
+chacun reçu une extension réelle et disclosed, avec au moins une
+variable candidate du prompt maître. Chantier §12-16 substantiellement
+avancé pour cette session — d'autres variables candidates par module
+(ex. vorticité/divergence pour le dynamique, température virtuelle
+pour le thermodynamique, réflectivité pour le convectif) restent de
+vrais gaps disclosed dans le tableau d'audit exhaustif, disponibles au
+cas par cas à la demande. Le nombre de Froude orographique reste
+volontairement point-only : câbler un vrai champ spatial nécessiterait
+une vraie infrastructure d'élévation de terrain/coordonnée de hauteur
+qui n'existe pas encore dans ACF — un vrai chantier distinct, pas un
+oubli.

@@ -200,6 +200,30 @@ class Normalizer:
         return value / max_altitude
 
     @staticmethod
+    def normalize_mountain_wave_severity(froude_number: float) -> float:
+        """
+        Normalize a real mountain-wave Froude number to a [0, 1]
+        severity - real, opt-in blend into the topographic module
+        alongside static altitude (docs/ACF_MASTER_PROMPT.md section
+        16, explicit user request "continue au module relief, avec le
+        vent"; see acf.awci.orographic_froude.
+        compute_real_mountain_wave_froude_number_at_point() for the
+        real Fr = U/(N*H) formula that produces this input).
+
+        Real, disclosed ACF design choice using Fr = 1 as the
+        threshold: Fr = 1 is the real, classic physical dividing line
+        between flow blocking/intense stationary-wave hazard (Fr < 1)
+        and smoother flow-over (Fr > 1) - severity = 1 at Fr = 0
+        (strongest disclosed blocking), severity = 0 at Fr >= 1
+        (saturates - real mountain-wave turbulence can still occur for
+        Fr > 1, just less associated with the severe trapped-lee-wave/
+        rotor regime this specific linear theory targets, a real,
+        disclosed simplification, not a claim of zero risk above Fr=1).
+        """
+        froude_number = max(0.0, min(1.0, froude_number))
+        return 1.0 - froude_number
+
+    @staticmethod
     def normalize_confidence(value: float) -> float:
         """
         Normalize confidence to [0, 1].

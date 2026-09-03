@@ -94,6 +94,7 @@ def test_normalizer_range_entries_cross_reference_the_real_status_registry():
         ("normalize_precipitation", "precipitation"),
         ("normalize_precipitation_phase_severity", "precipitation_phase_severity"),
         ("normalize_topographic", "topographic"),
+        ("normalize_mountain_wave_severity", "mountain_wave_severity"),
         ("normalize_confidence", "confidence"),
     ]:
         assert DIAGNOSTIC_REGISTRY[key].status is NORMALIZER_RANGE_STATUS[status_key]
@@ -103,6 +104,7 @@ def test_module_combination_entries_cross_reference_the_real_status_registry():
     assert DIAGNOSTIC_REGISTRY["thermodynamic_module_combination"].status is MODULE_WEIGHT_STATUS["thermodynamic"]
     assert DIAGNOSTIC_REGISTRY["convective_module_combination"].status is MODULE_WEIGHT_STATUS["convective"]
     assert DIAGNOSTIC_REGISTRY["microphysical_module_combination"].status is MODULE_WEIGHT_STATUS["microphysical"]
+    assert DIAGNOSTIC_REGISTRY["topographic_module_combination"].status is MODULE_WEIGHT_STATUS["topographic"]
 
 
 def test_interaction_entries_cross_reference_the_real_status_registry():
@@ -232,3 +234,22 @@ def test_documented_microphysical_module_combination_matches_the_real_calculator
     )
     expected_phase = 0.5 * expected_default + 0.5 * Normalizer.normalize_precipitation_phase_severity(1.0)
     assert phase_case["microphysical"] == pytest.approx(expected_phase)
+
+
+def test_normalize_mountain_wave_severity_entry_matches_the_real_live_normalizer():
+    assert Normalizer.normalize_mountain_wave_severity(0.3) == pytest.approx(0.7)  # 1 - clip(0.3,0,1)
+
+
+def test_documented_topographic_module_combination_matches_the_real_calculator():
+    """Real proof the documented altitude default and its own 50/50
+    mountain_wave_froude blend aren't stale - reconstructs both real
+    cases directly and compares to AWCICalculator's own real output."""
+    default_case = AWCICalculator().calculate_module_scores({"altitude": 1800.0})
+    expected_default = Normalizer.normalize_topographic(1800.0)
+    assert default_case["topographic"] == pytest.approx(expected_default)
+
+    froude_case = AWCICalculator().calculate_module_scores(
+        {"altitude": 1800.0, "mountain_wave_froude": 0.3}
+    )
+    expected_froude = 0.5 * expected_default + 0.5 * Normalizer.normalize_mountain_wave_severity(0.3)
+    assert froude_case["topographic"] == pytest.approx(expected_froude)
