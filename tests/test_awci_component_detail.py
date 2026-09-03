@@ -10,6 +10,7 @@ own real formulas, not a re-derived guess.
 from __future__ import annotations
 
 from acf.awci.calculator import AWCICalculator
+from acf.awci.diagnostic_registry import DIAGNOSTIC_REGISTRY
 from acf.awci.normalizer import Normalizer
 from acf.awci.result import build_awci_result
 from acf.gui.dashboard.awci_component_detail import COMPONENT_INFO, AWCIComponentDetailDialog
@@ -145,3 +146,49 @@ def test_dialog_trace_chain_matches_the_real_result_objects_own_output(qtbot):
     dialog.show_component("convective", calc_output["module_scores"]["convective"] * 100, data, "demo", result)
 
     assert dialog.trace_label.text() == "\n".join(result.trace_chain())
+
+
+# ------------------------------- real diagnostic-registry documentation (§55, added 2026-09-03)
+
+
+def test_dialog_shows_the_real_diagnostic_registry_entry_for_a_covered_module(qtbot):
+    """acf.awci.diagnostic_registry.DIAGNOSTIC_REGISTRY (§55) existed
+    since an earlier closure this session but was never shown anywhere
+    in the GUI - real regression guard that the dialog now shows the
+    real physical_meaning/limitations/reference text, not a re-written
+    copy."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("dynamic", 50.0, {"wind_speed": 25.0}, "demo")
+
+    spec = DIAGNOSTIC_REGISTRY["dynamic_module_combination"]
+    text = dialog.diagnostic_label.text()
+    assert spec.physical_meaning in text
+    assert spec.limitations in text
+    assert spec.reference in text
+
+
+def test_dialog_diagnostic_text_matches_every_covered_modules_own_real_entry(qtbot):
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    for key, registry_key in {
+        "dynamic": "dynamic_module_combination",
+        "thermodynamic": "thermodynamic_module_combination",
+        "convective": "convective_module_combination",
+        "microphysical": "microphysical_module_combination",
+        "topographic": "topographic_module_combination",
+    }.items():
+        dialog.show_component(key, 50.0, {}, "demo")
+        spec = DIAGNOSTIC_REGISTRY[registry_key]
+        assert spec.physical_meaning in dialog.diagnostic_label.text()
+
+
+def test_dialog_shows_an_honest_fallback_for_modules_not_yet_in_the_registry(qtbot):
+    """temporal/confidence have no real "_module_combination" entry in
+    DIAGNOSTIC_REGISTRY yet - a real, disclosed gap, never a fabricated
+    stand-in description."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    for key in ("temporal", "confidence"):
+        dialog.show_component(key, 50.0, {}, "demo")
+        assert "not yet in the centralized diagnostic registry" in dialog.diagnostic_label.text()

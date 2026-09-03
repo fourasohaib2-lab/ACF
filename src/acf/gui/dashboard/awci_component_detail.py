@@ -32,8 +32,24 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
+from acf.awci.diagnostic_registry import DIAGNOSTIC_REGISTRY
 from acf.awci.weights import WeightsManager
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+
+#: Maps a real COMPONENT_INFO module key to its real
+#: acf.awci.diagnostic_registry entry - only the 5 modules with a real
+#: "_module_combination" entry (dynamic/thermodynamic/convective/
+#: microphysical/topographic). "temporal"/"confidence" have no entry
+#: yet (a real, disclosed gap of the registry itself, section 55 - see
+#: AWCIComponentDetailDialog.show_component()'s own honest fallback,
+#: never a fabricated stand-in entry).
+_DIAGNOSTIC_REGISTRY_KEY_FOR_MODULE: dict[str, str] = {
+    "dynamic": "dynamic_module_combination",
+    "thermodynamic": "thermodynamic_module_combination",
+    "convective": "convective_module_combination",
+    "microphysical": "microphysical_module_combination",
+    "topographic": "topographic_module_combination",
+}
 
 if TYPE_CHECKING:
     from acf.awci.result import AWCIResult
@@ -178,6 +194,21 @@ class AWCIComponentDetailDialog(QDialog):
         self.weight_status_label.setWordWrap(True)
         outer.addWidget(self.weight_status_label)
 
+        # Real diagnostic-registry documentation (§55, added 2026-09-03)
+        # - acf.awci.diagnostic_registry.DIAGNOSTIC_REGISTRY existed
+        # since an earlier closure this session but was never shown
+        # anywhere in the GUI (only queryable from Python). Shows the
+        # real physical meaning/limitations/reference already written
+        # for this module's own "_module_combination" entry - not a
+        # second, independently-written description.
+        self.diagnostic_header = QLabel("Diagnostic documentation (docs/ACF_MASTER_PROMPT.md §55)")
+        self.diagnostic_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        outer.addWidget(self.diagnostic_header)
+        self.diagnostic_label = QLabel("")
+        self.diagnostic_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
+        self.diagnostic_label.setWordWrap(True)
+        outer.addWidget(self.diagnostic_label)
+
         # Real drill-down chain (§26/§53, added 2026-09-03) - built by
         # acf.awci.result.build_awci_result()/AWCIResult.trace_chain(),
         # a real capability that existed since this session's earlier
@@ -245,6 +276,20 @@ class AWCIComponentDetailDialog(QDialog):
         self.weight_status_label.setText(
             f"Weight status: {weight_status.status.value.upper()} — {weight_status.rationale}"
         )
+
+        diagnostic_key = _DIAGNOSTIC_REGISTRY_KEY_FOR_MODULE.get(key)
+        if diagnostic_key is not None:
+            spec = DIAGNOSTIC_REGISTRY[diagnostic_key]
+            self.diagnostic_label.setText(
+                f"Physical meaning: {spec.physical_meaning}\n\n"
+                f"Limitations: {spec.limitations}\n\n"
+                f"Reference: {spec.reference}"
+            )
+        else:
+            self.diagnostic_label.setText(
+                "not yet in the centralized diagnostic registry (see acf.awci.diagnostic_registry's own "
+                "documented scope, section 55)"
+            )
 
         if awci_result is not None:
             self.trace_label.setText("\n".join(awci_result.trace_chain()))

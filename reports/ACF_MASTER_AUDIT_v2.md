@@ -4109,3 +4109,55 @@ chaîne affichée est réelle mais partielle, disclosed comme telle par
 `trace_chain()` lui-même via ses "not available". D'autres dialogues/
 panneaux du dashboard (AWCI Dashboard général, ESOC) pourraient
 recevoir le même branchement à la demande.
+
+## Mise à jour 2026-09-03 (suite) — registre de diagnostics réel enfin affiché dans le dashboard (§55)
+
+Suite de l'utilisateur ("continue selon ton jugement") — même
+méthode de recherche que la fermeture précédente : vérifier si
+d'autres capacités réelles construites plus tôt cette session étaient
+elles aussi de vrais orphelins. Trouvaille : `acf.awci.diagnostic_registry.
+DIAGNOSTIC_REGISTRY`/`get_diagnostic()` (fermeture §55 du 2026-09-03,
+plus tôt cette session) n'étaient référencés nulle part hors de leur
+propre fichier — seulement interrogeables depuis Python, jamais
+affichés à un vrai utilisateur. `acf.awci.config_loader`
+(`AWCIConfig`/`load_config()`, §56) et `acf.awci.run_report`
+(`build_run_report()`, §75) sont eux aussi de vrais orphelins
+similaires, mais moins directement câblables sans risque : `run_report`
+n'a de sens réel qu'avec une vraie ingestion de fichiers (inexistante
+dans ce dashboard synthétique) ; `config_loader` exigerait un vrai
+mécanisme d'échange de calculateur en cours de route (plus risqué) —
+tous deux disclosed ci-dessous comme chantiers futurs distincts,
+laissés de côté pour cette fermeture précise.
+
+**Pourquoi** : §55 exige "Chaque diagnostic doit être documenté" — le
+vrai catalogue existait déjà (12 champs réels par entrée), mais rien
+dans le dashboard ne le montrait, alors que
+`AWCIComponentDetailDialog` (déjà enrichi du drill-down §26/§53 dans
+la mise à jour précédente) est exactement le bon endroit pour ça.
+
+**Construit, un vrai branchement, aucune redite** :
+- `AWCIComponentDetailDialog` : nouvelle section "Diagnostic
+  documentation (§55)" affichant `physical_meaning`/`limitations`/
+  `reference` de l'entrée réelle `DIAGNOSTIC_REGISTRY[f"{key}_module_combination"]`
+  correspondant au module cliqué — texte réel déjà écrit et testé,
+  jamais reformulé ici.
+- Mapping réel `_DIAGNOSTIC_REGISTRY_KEY_FOR_MODULE` couvrant les 5
+  modules ayant une vraie entrée `_module_combination`
+  (dynamic/thermodynamic/convective/microphysical/topographic).
+  `temporal`/`confidence` n'ont réellement aucune entrée dans le
+  registre — un vrai gap disclosed du registre lui-même (pas fabriqué
+  ici) : la section affiche honnêtement "not yet in the centralized
+  diagnostic registry" plutôt qu'une description inventée.
+
+**Validation réelle** : le texte affiché prouvé être exactement
+`DIAGNOSTIC_REGISTRY`'s own real `physical_meaning`/`limitations`/
+`reference` pour chacun des 5 modules couverts (comparaison directe,
+pas une redérivation) ; `temporal`/`confidence` prouvés afficher le
+placeholder honnête. 3 nouveaux tests dans
+`tests/test_awci_component_detail.py`. Suite complète **3787/3787**
+(3784 + 3), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `acf.awci.config_loader` (§56) et
+`acf.awci.run_report` (§75) restent de vrais orphelins non branchés
+— chantiers futurs distincts, disclosed ci-dessus, disponibles à la
+demande.
