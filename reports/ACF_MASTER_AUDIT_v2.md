@@ -3005,4 +3005,69 @@ correctement zéro méthode. Suite complète **3547/3547** (3533 + 14),
   deux nécessitent de vraies données (cas météorologiques historiques
   vérifiés, évaluations réelles de prévisionnistes) qui n'existent pas
   dans ce dépôt et que Claude ne peut ni collecter ni inventer sans
-  violer le §69/§88 du prompt lui-même.
+  violer le §69/§88 du prompt lui-même. *(Voir mise à jour du
+  2026-09-03 ci-dessous : infrastructure réelle construite pour les
+  deux, en gardant cette même limite.)*
+
+## Mise à jour 2026-09-03 (suite) — infrastructures réelles pour §36 et §37 (sans données fabriquées)
+
+Suite explicite ("continue"), même raisonnement déjà appliqué au §40 :
+distinguer le GARDE-FOU/SCHÉMA réel (constructible sans données) de
+l'ALGORITHME/CONTENU (qui nécessiterait de vraies données inexistantes
+ici). §36 (base de cas) et §37 (validation experte) ont chacun une
+vraie partie infrastructure — schéma de données, stockage, statistiques
+d'accord inter-évaluateurs — construisible sans inventer le moindre cas
+historique ni la moindre opinion de prévisionniste, exactement comme
+`Provenance`/`QualityInfo`/`LockedModel` (§40) sont de vraies structures
+réelles, vides de tout contenu fabriqué.
+
+**§36** : nouveau
+[`acf.awci.validation_cases`](../src/acf/awci/validation_cases.py) —
+`ValidationCase` (exactement les champs du §36 :
+`CASE_ID/DATE/REGION/SEASON/WEATHER_REGIME/MODEL_RUNS/OBSERVATIONS/
+OPERATIONAL_IMPACT/EXPERT_ASSESSMENT/AWCI/UNCERTAINTY/ERROR`),
+`WeatherRegime` (les 10 catégories exactes que le §36 demande
+d'inclure — simple/complexe/convectif/vent/givrage/brouillard/
+montagneux/forte divergence modèle/faible impact/fort impact) et
+`CaseDatabase` (store réel interrogeable, **vide à la construction, zéro
+cas d'exemple pré-chargé**) — `add_case()`/`get_case()`/
+`cases_by_regime()`/`cases_by_region()`/`cases_with_expert_assessment()`/
+`regime_coverage()` (comptage réel par catégorie, y compris zéro),
+`compute_error()` (le champ `ERROR` du §36 — un vrai
+`|awci - ground_truth|`, calculé seulement si un vrai score AWCI existe
+déjà pour ce cas, jamais 0.0 par défaut), `to_json()`/`from_json()`
+(persistance réelle).
+
+**§37** : nouveau
+[`acf.awci.forecaster_validation`](../src/acf/awci/forecaster_validation.py) —
+`ForecasterAssessment` (un vrai jugement humain sur un vrai cas),
+`agreement_fraction()` (accord observé réel), et surtout
+`cohens_kappa()` — le vrai coefficient kappa de Cohen (1960), une
+formule statistique publiée et établie, pas inventée ici, qui corrige
+l'accord observé de l'accord attendu par le seul hasard. Utilisée à la
+fois pour AWCI-vs-prévisionniste et prévisionniste-vs-prévisionniste
+(`inter_forecaster_variability()`, la "variabilité inter-prévisionnistes"
+explicitement demandée par le §37) via la même formule réelle.
+
+**Validation réelle, y compris contre une référence externe indépendante** :
+`test_cohens_kappa_matches_the_classic_textbook_reference_case` vérifie
+le calcul contre un exemple de manuel de statistique connu et publié
+(matrice de confusion 50 cas, κ=0.40 exact) — pas une valeur dérivée du
+code lui-même, une vraie preuve d'exactitude de la formule, pas
+seulement de sa cohérence interne. 31 nouveaux tests au total —
+`tests/test_awci_validation_cases.py` (+16 : base vide au départ,
+ajout/doublon/mise à jour/recherche par régime ou région, couverture
+réelle par catégorie, `ERROR` refuse un cas sans score AWCI réel, aller-retour JSON réel), `tests/test_awci_forecaster_validation.py` (+15 :
+accord parfait/partiel, cas dégénéré à une seule catégorie géré sans
+division par zéro, désaccord pire que le hasard donne bien un kappa
+négatif, variabilité inter-prévisionnistes calcule chaque paire réelle
+sans doublon). Suite complète **3578/3578** (3547 + 31), `ruff`/`mypy`
+propres.
+
+**Ce qui reste réellement — la limite honnête n'a pas changé** : ces
+deux modules contiennent **zéro cas réel et zéro évaluation réelle de
+prévisionniste** — ce sont des conteneurs réels prêts à recevoir de
+vraies données, pas une démonstration du contenu qu'ils pourraient
+avoir. §36/§37 restent donc "infrastructure fermée, contenu réel
+manquant" tant qu'aucune vraie donnée n'est fournie — la seule façon
+honnête de les fermer complètement.
