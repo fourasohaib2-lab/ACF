@@ -85,10 +85,17 @@ from acf.awci.path_sampling import (
     sample_field_along_path,
     sample_volume_cross_section,
 )
+from acf.awci.input_adapter import (
+    AWCI_KEY_NATIVE_UNIT,
+    AWCI_KEY_TO_CF_STANDARD_NAME,
+    build_awci_data_from_datasets,
+)
 from acf.awci.result import AWCIResult, build_awci_result
+from acf.physics_guard.variable_quality import VariableQualityStatus
 from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
+from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDialog
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
@@ -151,6 +158,52 @@ _FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA: dict[str, float] = {
     "FL320": _VERTICAL_PROFILE_LEVELS_HPA["FL320"],
     "FL390": _VERTICAL_PROFILE_LEVELS_HPA["FL390"],
 }
+
+
+def _quality_for_point_raw_data(point_raw_data: dict[str, Any]) -> dict[str, VariableQualityStatus]:
+    """
+    Real per-variable quality (docs/ACF_MASTER_PROMPT.md §32/§75),
+    reused - not reimplemented - from `acf.awci.input_adapter`
+    (added 2026-09-03, explicit user request "je veux rendre tout les
+    boutons de awci en marche" leading into the §75 execution-report
+    closure): wraps this point's own real raw values for the 4 CF-
+    mappable keys (temperature/specific_humidity/wind_speed/pressure)
+    into minimal real `Dataset`s at their own known native units (the
+    exact same convention `_synthetic_inputs()`/`AWCICalculator`
+    itself uses), then calls `build_awci_data_from_datasets()` and
+    keeps only its real `quality` half - its `data` half is discarded
+    here since `point_raw_data` already IS that dict (built once,
+    already fed to `AWCICalculator.calculate()` by the caller).
+
+    Reusing the adapter here (rather than calling
+    `assess_variable_quality()` directly) avoids re-deriving the exact
+    hPa-vs-Pa pressure unit conversion that adapter's own docstring
+    already discloses as a real, previously-found bug - one real
+    conversion path, not two."""
+    from datetime import UTC, datetime, timedelta
+
+    from acf.core.contracts.dataset import Dataset
+
+    now = datetime.now(UTC)
+    datasets: dict[str, Dataset] = {}
+    for awci_key in AWCI_KEY_TO_CF_STANDARD_NAME:
+        if awci_key not in point_raw_data:
+            continue
+        datasets[awci_key] = Dataset(
+            id=f"point-of-interest-{awci_key}",
+            source="awci_synthetic_field._synthetic_inputs",
+            model="ACF-DEMO",
+            run="n/a",
+            forecast_reference_time=now,
+            valid_time=now,
+            lead_time=timedelta(0),
+            variable=AWCI_KEY_TO_CF_STANDARD_NAME[awci_key],
+            unit=AWCI_KEY_NATIVE_UNIT[awci_key],
+            dimensions=(),
+            values=float(point_raw_data[awci_key]),
+        )
+    _data, quality = build_awci_data_from_datasets(datasets)
+    return quality
 
 
 class _ComponentRow(QFrame):
@@ -431,6 +484,15 @@ class AWCIDashboard(QWidget):
         self.alerts_button.clicked.connect(self._open_alerts)
         header_row.addWidget(self.alerts_button)
 
+        self.execution_report_button = QPushButton("📊 Report")
+        self.execution_report_button.setToolTip(
+            "Open the real per-execution report (docs/ACF_MASTER_PROMPT.md §75) for the\n"
+            "current point of interest - real per-variable quality counts (§32), real\n"
+            "diagnostics count, real AWCI-generated status. acf.awci.execution_report."
+        )
+        self.execution_report_button.clicked.connect(self._open_execution_report)
+        header_row.addWidget(self.execution_report_button)
+
         # Real, static status badge (added 2026-09-03, docs/reference/
         # awci_dashboard_reference.jpg parity work) - the mockup's own
         # top-right "RESEARCH STAGE / Prototype Version" badge. Pure
@@ -449,6 +511,7 @@ class AWCIDashboard(QWidget):
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
         self._alerts_window: AWCIAlertsDialog | None = None
+        self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
         self._risk_badge_detail_window: AWCIRiskBadgeDetailDialog | None = None
 
@@ -742,7 +805,11 @@ class AWCIDashboard(QWidget):
         self._last_point_mode = "demo"
         # Real drill-down chain (§26/§53) for whichever component the
         # user clicks next - see _last_awci_result's own docstring.
-        self._last_awci_result = build_awci_result(point_result, raw_variables=point_raw_data)
+        # Real quality (§32/§75) - see _quality_for_point_raw_data()'s
+        # own docstring; reused, not reimplemented.
+        self._last_awci_result = build_awci_result(
+            point_result, raw_variables=point_raw_data, quality=_quality_for_point_raw_data(point_raw_data)
+        )
         # Real Point Information card on the regional map (matching the
         # reference mockup) - the exact same real AWCI score point_result
         # just computed for this same point, not a second/fabricated value.
@@ -980,7 +1047,12 @@ class AWCIDashboard(QWidget):
         # not a fabricated physical level (see acf.awci.wind_shear's
         # own disclosure on why native levels aren't yet pinned to real
         # pressures/heights).
-        self._last_awci_result = build_awci_result(point_result, raw_variables=point_raw_data, vertical_level=level_idx)
+        self._last_awci_result = build_awci_result(
+            point_result,
+            raw_variables=point_raw_data,
+            vertical_level=level_idx,
+            quality=_quality_for_point_raw_data(point_raw_data),
+        )
         # Real Point Information card, same real per-point result just
         # computed above at this level - not left showing a stale
         # synthetic-demo score while in Real Physics mode.
@@ -1201,6 +1273,19 @@ class AWCIDashboard(QWidget):
         self._alerts_window.show()
         self._alerts_window.raise_()
         self._alerts_window.activateWindow()
+
+    def _open_execution_report(self) -> None:
+        """Open (or raise) the real §75 execution-report dialog -
+        explicit user request "je veux rendre tout les boutons de awci
+        en marche". Always available; refreshed from
+        self._last_awci_result (the exact real result the point-of-
+        interest pipeline last built) every time it is opened."""
+        if self._execution_report_window is None:
+            self._execution_report_window = AWCIExecutionReportDialog(parent=self)
+        self._execution_report_window.refresh(self._last_awci_result)
+        self._execution_report_window.show()
+        self._execution_report_window.raise_()
+        self._execution_report_window.activateWindow()
 
     def _refresh_alerts_badge(self) -> None:
         """Real alert count on the button label - recomputed from the

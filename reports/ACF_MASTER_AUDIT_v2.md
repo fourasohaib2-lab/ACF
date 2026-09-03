@@ -2660,7 +2660,7 @@ cette session a travaillé, pas quelque chose à "construire").
 | 72 | Git | 🔵 | Chaque commit de cette session suit fetch→check→commit→push avec message détaillé (quoi/pourquoi/impact/tests). |
 | 73 | Performance HPC | ✅ | Infrastructure HPC réelle et confirmée fonctionnelle : `acf.hpc_connector` (SSH/Slurm/job manager/resource optimizer réels), connexion SSH réelle vérifiée vers FENNEC (mémoire de session du 2026-09-02, `sfoura@sms1.meteo.dz`, authentification confirmée par log réel). `acf.hpc` (`distributed_grid`/`mpi_solver`/`gpu_acceleration`/`parallel_scheduler`) réel également. |
 | 74 | Architecture data (RAW→STAGING→...→PRODUCTS) | ⚠️ | Chaque étape existe par sa fonction réelle ailleurs (`Dataset`/`QualityInfo` pour RAW/STAGING, `acf.science` pour DIAGNOSTICS, `AWCICalculator` pour FEATURES/COMPLEXITY, `gui/` pour PRODUCTS) mais pas nommée/étiquetée comme ce pipeline précis nulle part. |
-| 75 | Observabilité | ⚠️ | `acf.monitoring` réel et large (`realtime_monitor`/`telemetry_engine`/`anomaly_monitor`/`alert_dispatcher`) mais générique — pas spécifiquement branché pour produire le type de rapport de qualité par exécution AWCI que le §75 illustre ("Input files: 48, Valid: 46..."). |
+| 75 | Observabilité | ⚠️ | `acf.monitoring` réel et large (`realtime_monitor`/`telemetry_engine`/`anomaly_monitor`/`alert_dispatcher`) mais générique — pas spécifiquement branché pour produire le type de rapport de qualité par exécution AWCI que le §75 illustre ("Input files: 48, Valid: 46..."). *(Voir mise à jour du 2026-09-03 ci-dessous : fermé.)* |
 | 76 | Mode d'explication de Claude | 🔵 | Ordre Pourquoi→Physique→Mathématiques→Architecture→Code→Tests→Validation suivi dans chaque réponse "Résumé" de cette session. |
 | 77 | Décision scientifique incertaine → statut explicite | ✅ | Fermé le 2026-09-03 (registre `acf.awci.scientific_status`, vocabulaire exact du §77). |
 | 78 | Règle sur les formules | ✅ | Respectée : chaque formule ajoutée cette session (rang de percentile, moteur d'interactions généralisé, seuils de niveau) documente notation/hypothèses/limites dans son propre docstring. |
@@ -4463,3 +4463,55 @@ toujours qu'un proxy, disclosed) ; Convection/CAPE/Clouds resteront
 honnêtement sans effet en Real Physics tant que le solveur lui-même ne
 produira pas de champ CAPE/précipitation réel — un chantier de physique
 séparé, pas un manque de câblage UI.
+
+## Mise à jour 2026-09-03 (suite) — rapport d'exécution réel §75, priorité choisie librement dans l'audit exhaustif
+
+Suite explicite ("continue", sans qualificatif — le fil "rendre tout
+les boutons en marche" étant clos, priorité choisie librement parmi
+les gaps ⚠️ restants de l'audit exhaustif des 90 sections). §75
+demande : "Le pipeline doit produire : logs, metrics, warnings,
+errors, quality reports, runtime statistics", avec un exemple concret
+("Input files: 48, Valid: 46, Rejected: 2, Diagnostics: 123, AWCI
+generated: YES, Quality: GOOD, Model spread: HIGH"). `acf.monitoring`
+existait déjà, réel mais générique — jamais branché pour produire ce
+format précis par exécution AWCI.
+
+**Construit** : `acf.awci.execution_report.summarize_execution()` — un
+vrai assembleur (même discipline que `build_awci_result()` : ne
+recalcule rien, lit uniquement un `AWCIResult` déjà construit) plus une
+nouvelle `AWCIExecutionReportDialog` (bouton "📊 Report" dans le
+header). Deux réinterprétations honnêtes, disclosed plutôt que
+devinées : "Input files" devient "Input variables" (`calculate()` ne
+lit jamais de fichiers, seulement un dict de variables nommées) ; "Model
+spread: HIGH" n'est JAMAIS deviné automatiquement — `disagreement_spread`
+n'a pas d'échelle universelle (Kelvin pour la température, m/s pour le
+vent...), un seuil LOW/MEDIUM/HIGH global aurait été exactement le
+genre de classification non validée que le §79 interdit ; le rapport
+affiche la vraie valeur numérique et n'affiche un mot catégorique que
+si l'appelant en fournit un lui-même.
+
+**Câblage réel dans le dashboard** : `_last_awci_result.quality` était
+toujours `None` jusqu'ici (aucun des 2 sites `build_awci_result()` ne
+fournissait `quality=`). Fermé en réutilisant — pas réinventant —
+`acf.awci.input_adapter` : nouvelle `_quality_for_point_raw_data()`
+enveloppe les 4 valeurs réelles du point (temperature/wind_speed/
+specific_humidity/pressure) dans de vrais `Dataset` minimaux à leurs
+unités natives connues, puis appelle `build_awci_data_from_datasets()`
+et ne garde que son vrai `quality` — réutilise ainsi la conversion
+d'unité hPa-vs-Pa déjà disclosed comme bug corrigé dans cet adaptateur,
+au lieu de la re-dériver une seconde fois.
+
+**Validation réelle** : 18 nouveaux tests (12 pour
+`summarize_execution()`/`AWCIExecutionReport` — bucket GOOD/DEGRADED/BAD
+recoupé avec des `VariableQualityStatus` construits à la main, garde
+explicite que `model_spread_level` n'est jamais deviné ; 6 d'intégration
+dashboard — quality réellement peuplée en démo ET en Real Physics,
+bouton ouvre/réutilise le même dialogue, rapport reflète le nouveau
+point après un clic carte). Suite complète **3904 → 3922**, `ruff`/`mypy`
+propres. Capture d'écran du bouton et du dialogue envoyée.
+
+**Ce qui reste réellement** : `acf.monitoring`'s propres
+`realtime_monitor`/`telemetry_engine` restent des systèmes génériques
+séparés, non fusionnés avec ce rapport ponctuel par exécution — resterait
+un vrai chantier d'intégration distinct si un usage opérationnel
+continu (pas seulement à la demande) était requis.

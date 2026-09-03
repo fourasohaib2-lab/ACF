@@ -47,3 +47,6 @@ components — see `AWCI_UI_AUDIT.md` §0). Status column: ✅ real and wired,
 | 37 | Flight-level selector | `awci_dashboard.py` | ⬜→✅ this closure | real named FLs; drives `_current_flight_level_hpa` (demo mode's point-of-interest pipeline) or the nearest real native level (Real Physics mode, syncing `level_slider`) |
 | 38 | Date/calendar picker | — | ⬜ | not built — see `future-improvements.md` |
 | 39 | RouteOptimizationEngine | — | ⬜ | intentionally not built — see `AWCI_UI_AUDIT.md` §8 |
+| 40 | LAYERS: Wind/Turbulence/Icing checkboxes | `awci_map_panel.py` | ✅ | real (demo: `awci_layer_grids()`; Real Physics: `real_layer_grids_at_level()`) |
+| 41 | LAYERS: Convection/CAPE/Clouds checkboxes | `awci_map_panel.py` | 🟡 | real formula/disclosed proxy in demo mode; real no-op in Real Physics mode (solver volume has no CAPE/precipitation field) |
+| 42 | 📊 Execution Report button + dialog (§75) | `awci_execution_report_dialog.py` (new) | ⬜→✅ this closure | real per-execution report (input-variable quality counts, diagnostics count, quality bucket) from `acf.awci.execution_report.summarize_execution()` |
