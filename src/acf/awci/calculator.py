@@ -10,6 +10,7 @@ from typing import Any
 
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
 from acf.awci.scientific_status import (
+    CLIMATOLOGY_NORMALIZATION_METHOD_STATUS,
     UNCERTAINTY_METHOD_STATUS,
     ThresholdStatus,
     WeightStatusEntry,
@@ -200,6 +201,21 @@ class AWCICalculator:
               disagreement()'s own `model_realizations` return value,
               handed straight through. Drives the real
               model_disagreement module (see class docstring).
+            - climatology: optional dict[str, list[float]], real
+              climatological reference samples for this exact point/
+              station/season, keyed by variable name ("wind_speed",
+              "temperature", "specific_humidity", "cape", "cin",
+              "precipitation" - the same names used above). Any
+              variable present here uses its real empirical percentile
+              rank (Normalizer.normalize_percentile()) instead of the
+              fixed min-max range for that variable only (docs/
+              ACF_MASTER_PROMPT.md section 20 - see
+              get_climatology_normalization_status() for the real
+              scientific status of this method). Omitted entirely: zero
+              behavior change - every variable keeps its prior fixed
+              min-max normalization. Not stratified by season/region/
+              altitude internally - pre-filter the sample yourself if
+              that nuance matters.
 
         Returns
         -------
@@ -208,29 +224,47 @@ class AWCICalculator:
         """
         scores = {}
 
+        # Real, opt-in climatological-percentile normalization
+        # (docs/ACF_MASTER_PROMPT.md section 20 - see
+        # CLIMATOLOGY_NORMALIZATION_METHOD_STATUS for the full
+        # disclosure). `data["climatology"]`, when supplied, is a real
+        # dict[str, list[float]] mapping a variable name (matching the
+        # keys below: "wind_speed"/"temperature"/"specific_humidity"/
+        # "cape"/"cin"/"precipitation") to a real climatological
+        # reference sample for THIS point/station/season - each
+        # variable present there uses its real empirical percentile
+        # rank (Normalizer.normalize_percentile()) instead of the fixed
+        # min-max range for that variable only. Omitted entirely (the
+        # default): zero behavior change from before this method
+        # existed - every existing caller keeps the exact naive min-max
+        # normalization it always got.
+        climatology = data.get("climatology")
+
         # Dynamic module - based on wind
         wind = data.get("wind_speed", 0.0)
-        scores["dynamic"] = self.normalizer.normalize_wind(wind)
+        scores["dynamic"] = self._normalize("wind_speed", wind, self.normalizer.normalize_wind, climatology)
 
         # Thermodynamic module - based on temperature and humidity
         temp = data.get("temperature", 273.15)
         hum = data.get("specific_humidity", 0.001)
 
         # Combine temperature and humidity for thermodynamic complexity
-        temp_norm = self.normalizer.normalize_temperature(temp)
-        hum_norm = self.normalizer.normalize_humidity(hum)
+        temp_norm = self._normalize("temperature", temp, self.normalizer.normalize_temperature, climatology)
+        hum_norm = self._normalize("specific_humidity", hum, self.normalizer.normalize_humidity, climatology)
         scores["thermodynamic"] = 0.5 * temp_norm + 0.5 * hum_norm
 
         # Convective module - based on CAPE and CIN
         cape = data.get("cape", 0.0)
         cin = data.get("cin", 0.0)
-        cape_norm = self.normalizer.normalize_cape(cape)
-        cin_norm = self.normalizer.normalize_cin(cin)
+        cape_norm = self._normalize("cape", cape, self.normalizer.normalize_cape, climatology)
+        cin_norm = self._normalize("cin", cin, self.normalizer.normalize_cin, climatology)
         scores["convective"] = 0.7 * cape_norm + 0.3 * cin_norm
 
         # Microphysical module - based on precipitation
         precip = data.get("precipitation", 0.0)
-        scores["microphysical"] = self.normalizer.normalize_precipitation(precip)
+        scores["microphysical"] = self._normalize(
+            "precipitation", precip, self.normalizer.normalize_precipitation, climatology
+        )
 
         # Topographic module - based on altitude
         altitude = data.get("altitude", 0.0)
@@ -271,6 +305,48 @@ class AWCICalculator:
         )
 
         return scores
+
+    def _normalize(
+        self,
+        variable: str,
+        value: float,
+        naive_normalize: Callable[[float], float],
+        climatology: dict[str, list[float]] | None,
+    ) -> float:
+        """
+        Real, opt-in switch between the fixed min-max `naive_normalize`
+        and a real climatological-percentile rank (docs/
+        ACF_MASTER_PROMPT.md section 20 - see
+        CLIMATOLOGY_NORMALIZATION_METHOD_STATUS for the full
+        disclosure of this method's own real scientific status).
+
+        Parameters
+        ----------
+        variable : str
+            Key `climatology` is checked under, e.g. "wind_speed" -
+            matches calculate_module_scores()'s own docstring for
+            data["climatology"].
+        value : float
+            The raw value to normalize (same units `naive_normalize`
+            expects).
+        naive_normalize : callable
+            The existing fixed-range Normalizer.normalize_<variable>()
+            method - used whenever no climatology sample is supplied
+            for this exact variable.
+        climatology : dict, optional
+            data.get("climatology") - real per-variable climatological
+            reference samples, or None.
+
+        Returns
+        -------
+        float
+            Normalize_percentile(value, sample) when a real non-empty
+            sample is supplied for `variable`; naive_normalize(value)
+            otherwise (the exact prior behavior).
+        """
+        if climatology and climatology.get(variable):
+            return Normalizer.normalize_percentile(value, climatology[variable])
+        return naive_normalize(value)
 
     def _compute_spread_score(
         self, realizations: dict[str, list[float]], normalize: Callable[[float, str], float]
@@ -535,6 +611,14 @@ class AWCICalculator:
         method (docs/ACF_MASTER_PROMPT.md section 64) - see
         acf.awci.scientific_status for the real classification."""
         return UNCERTAINTY_METHOD_STATUS
+
+    @staticmethod
+    def get_climatology_normalization_status() -> ThresholdStatus:
+        """Real scientific status of the opt-in climatological-percentile
+        normalization path (docs/ACF_MASTER_PROMPT.md section 20,
+        data["climatology"] in calculate_module_scores()) - see
+        acf.awci.scientific_status for the real classification."""
+        return CLIMATOLOGY_NORMALIZATION_METHOD_STATUS
 
     def _renormalized_score(
         self, decomposition: dict[str, float], module_names: frozenset[str], include_interactions: bool

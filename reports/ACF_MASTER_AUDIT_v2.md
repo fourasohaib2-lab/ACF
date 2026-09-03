@@ -2156,3 +2156,90 @@ fichiers neufs/modifiés. Vérification visuelle manuelle (capture
 d'écran réelle du dashboard avec évolution + consensus multi-modèle
 calculés) envoyée à l'utilisateur pour comparaison avec
 `docs/reference/acf_dashboard_reference.jpg`.
+
+## Mise à jour 2026-09-03 (suite) — normalisation climatologique réelle, en option (§20)
+
+Suite explicite ("continue"), quatrième priorité choisie dans les
+manques identifiés par le tableau d'audit de conformité (mise à jour
+du 2026-09-03 "décision d'autorité"), méthodologie suivie dans l'ordre
+imposé par le prompt (§86).
+
+**Pourquoi** : §20 du prompt maître avertit explicitement qu'une
+normalisation min-max naïve "peut être scientifiquement mauvaise" et
+demande d'étudier plusieurs alternatives (seuils physiques, percentiles
+climatologiques, fonctions sigmoïdes, fonctions piecewise,
+distributions historiques, saisonnalité, région, altitude, contexte
+opérationnel), en précisant : "le choix de la normalisation doit être
+documenté." Le tableau d'audit du 2026-09-03 classait ce point
+**HYPOTHÈSE non résolue**.
+
+**Inspecté/audité avant de construire quoi que ce soit** : une méthode
+`Normalizer.normalize_percentile()` existait déjà — réelle, testée,
+correcte — mais **jamais appelée** par `AWCICalculator`. Le pipeline de
+production utilisait exclusivement les 6 fonctions `normalize_<var>()`
+à plage fixe. L'infrastructure existait sans être branchée — l'audit
+avait raison de marquer le point comme non résolu malgré la présence de
+ce code mort.
+
+**Construit** : nouvelle méthode privée
+[`AWCICalculator._normalize()`](../src/acf/awci/calculator.py) — bascule
+réelle et optionnelle entre la normalisation min-max existante et le
+rang de percentile empirique réel (`Normalizer.normalize_percentile()`)
+quand l'appelant fournit `data["climatology"]` (un vrai
+`dict[str, list[float]]` d'échantillons climatologiques réels, par
+variable : `wind_speed`/`temperature`/`specific_humidity`/`cape`/`cin`/
+`precipitation`). Branché dans les 4 modules physiques concernés
+(`dynamic`, `thermodynamic`, `convective`, `microphysical`) de
+`calculate_module_scores()`. Purement additif : `data["climatology"]`
+absent = comportement bit-identique à avant (vérifié par un test dédié
+comparant clé absente / `None` / `{}`), et fournir un échantillon pour
+UNE seule variable ne change que le module correspondant, tous les
+autres restant identiques (également vérifié).
+
+**Choix documenté (exigence explicite du §20)** : le rang de percentile
+a été choisi comme unique alternative construite dans cette passe car
+c'était la seule pour laquelle une implémentation réelle et testée
+existait déjà dans le code — les autres alternatives listées par le
+prompt (fonctions sigmoïdes, fonctions piecewise, courbes de seuils
+physiques) restent **non construites**, explicitement déclarées comme
+telles dans le docstring du code, pas fabriquées comme équivalentes. La
+méthode ne stratifie pas automatiquement par saison/région/altitude —
+c'est à l'appelant de pré-filtrer son échantillon climatologique en
+conséquence ; limite réelle, documentée, pas silencieusement ignorée.
+
+**Statut scientifique honnête de la méthode elle-même** : nouvelle
+entrée `CLIMATOLOGY_NORMALIZATION_METHOD_STATUS` dans
+[`acf.awci.scientific_status`](../src/acf/awci/scientific_status.py) —
+`HYPOTHESIS`, même raisonnement qu'`UNCERTAINTY_METHOD_STATUS` (§64) :
+le rang de percentile contre un échantillon réel fourni par
+l'appelant est un vrai choix de conception ACF défendable, pas une
+technique de normalisation externellement validée ou publiée pour cet
+indice composite — alors que l'arithmétique du rang de percentile
+elle-même (fraction empirique exacte) est exacte, réelle. Interrogeable
+via `AWCICalculator.get_climatology_normalization_status()`.
+
+**Validation réelle** : 11 nouveaux tests
+(`tests/test_awci_calculator_climatology_normalization.py`) — preuve
+que chaque module climatologique correspond exactement à un appel
+indépendant de `Normalizer.normalize_percentile()`, que fournir une
+climatologie pour une seule variable laisse les autres modules
+inchangés, que la clé absente/`None`/vide donne un résultat
+bit-identique à avant, qu'une clé de variable non reconnue est
+silencieusement ignorée (même convention que les autres clés
+optionnelles de la méthode), et que le pipeline complet `calculate()`
+(pondération, interactions, classification de niveau) reste cohérent
+avec des scores de module climatologiques en entrée. Suite complète
+**3444/3444** (3433 + 11), `ruff`/`mypy` propres, aucune régression sur
+le calcul AWCI naïf existant (zéro appelant existant affecté).
+
+**Ce qui reste réellement, du tableau d'audit du 2026-09-03** :
+- §20 Normalisation — **partiellement fermé** : le rang de percentile
+  climatologique est maintenant réel et branché ; sigmoïde/piecewise/
+  seuils physiques restent à étudier si demandé.
+- §22 Moteur d'interactions général — toujours seulement 2 termes
+  câblés en dur, pas un vrai moteur généralisé.
+- §32 Statuts de qualité des données — vocabulaire du code
+  (`NOT_ASSESSED/PASS/WARNING/FAIL`) toujours différent de celui du
+  prompt.
+- §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
+  architectural, refactor large et risqué, délibérément différé.

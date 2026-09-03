@@ -189,6 +189,31 @@ UNCERTAINTY_METHOD_STATUS = ThresholdStatus(
     "or published uncertainty-quantification technique for this composite index.",
 )
 
+#: Status for AWCICalculator's opt-in climatological-percentile
+#: normalization path (docs/ACF_MASTER_PROMPT.md section 20: naive
+#: min-max normalization "peut être scientifiquement mauvaise" -
+#: percentile rank within a real climatological sample is one of the
+#: alternatives the section explicitly asks to be studied). When a
+#: caller supplies data["climatology"], the affected variable(s) use
+#: Normalizer.normalize_percentile() (an exact real empirical-fraction
+#: computation) instead of the fixed min-max range. The ARITHMETIC is
+#: exact; the METHOD - percentile rank against a caller-supplied sample,
+#: with no built-in season/region/altitude stratification (the caller
+#: is responsible for pre-filtering the sample to the relevant
+#: season/region/altitude if that nuance matters - a real, disclosed
+#: limitation, not silently ignored) - is HYPOTHESIS, same reasoning as
+#: UNCERTAINTY_METHOD_STATUS above. Section 20's other listed
+#: alternatives (sigmoid functions, piecewise functions, physical
+#: threshold curves) remain NOT built - not fabricated as equivalent.
+CLIMATOLOGY_NORMALIZATION_METHOD_STATUS = ThresholdStatus(
+    ScientificStatus.HYPOTHESIS,
+    "Real empirical percentile rank against a caller-supplied real climatological sample is a real, "
+    "defensible ACF design choice among section 20's several listed alternatives (sigmoid/piecewise/"
+    "physical-threshold-curve normalization remain unbuilt) - not itself an externally validated or "
+    "published normalization technique for this composite index, and with no built-in season/region/"
+    "altitude stratification of the supplied sample.",
+)
+
 
 def get_normalizer_range_status(variable: str) -> ThresholdStatus:
     """Real status for one Normalizer range (by the variable name used in normalize_<variable>())."""
