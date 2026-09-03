@@ -64,15 +64,25 @@ Disclosed in the previous closure (`reports/ACF_MASTER_AUDIT_v2.md`,
 formula (`acf.science.wind_turbulence.CATIndex`) needs real horizontal
 wind gradients no per-point pipeline in this codebase computes yet. The
 cross-section's turbulence icons use a disclosed, honest proxy (real
-vertical bulk wind shear) instead.
+vertical bulk wind shear) instead. **Update 2026-09-03 (suite):** the
+map's own "Turbulence" LAYERS checkbox is now real too (explicit user
+request "je veux rendre tout les boutons de awci en marche") — it
+shows a horizontal wind-speed gradient magnitude
+(`awci_layer_grids()`'s own `numpy.gradient()` over the real demo wind
+grid), a different disclosed proxy from the cross-section's vertical
+one. Still not the full Ellrod-Knapp index — this remains open.
 
 ## 6. Real per-grid-cell CAPE contour map layer
 
-Also disclosed in the previous closure: a real per-point CAPE formula
-exists (`acf.awci.convective_energy.compute_real_cape_cin_at_point()`)
-but a real contour layer needs it computed across a whole grid plus a
-new map-overlay layer class — a separate, larger feature than a LAYERS
-checkbox. The checkbox exists, honestly disabled.
+**Closed 2026-09-03 (suite)**, explicit user request "je veux rendre
+tout les boutons de awci en marche": `awci_synthetic_field.awci_layer_grids()`
+now computes CAPE (and Wind/Icing/Convection/Clouds) across the same
+real grid `awci_grid()` already uses, wired as 6 real LAYERS checkboxes
+in `AWCIMapPanel` (`_EXTRA_LAYER_SPECS`, `_on_extra_layer_toggled()`) —
+demo mode only; see AWCI_BUTTON_CONTRACT.md for the real no-op scope
+limit in Real Physics mode (that real volume's own component fields
+are not yet threaded through to this panel — a smaller, separate
+follow-up, not re-opening this item).
 
 ## 7. Reconciling the two incompatible map-layer systems
 

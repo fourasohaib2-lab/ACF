@@ -70,7 +70,7 @@ from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
-from acf.gui.dashboard.awci_synthetic_field import awci_grid
+from acf.gui.dashboard.awci_synthetic_field import awci_grid, awci_layer_grids
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
 from acf.gui.theme_tokens import TOKENS, label_style
@@ -220,6 +220,13 @@ class AWCIMapPanel(EventMixin, QWidget):
 
         self.axis = self.figure.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
         self._contour: Any = None
+        #: Real extra-layer contour artists (Wind/Turbulence/Icing/
+        #: Convection/CAPE/Clouds), keyed by the same name as
+        #: extra_layer_checkboxes - see _build_layers_panel()'s own
+        #: _EXTRA_LAYER_SPECS. Rebuilt every update_data() call (demo
+        #: mode only, see that method's own comment); empty when
+        #: show_layers_panel=False or Real Physics mode is active.
+        self._extra_layer_contours: dict[str, Any] = {}
         self._flight_level_hpa = 300.0
         self._time_offset_hours = 0.0
         # When set (via set_external_field()), update_data() draws THIS
@@ -393,11 +400,50 @@ class AWCIMapPanel(EventMixin, QWidget):
 
     # ------------------------------------------------------ Layers panel
 
+    #: Real (key into awci_layer_grids()'s own return dict, real matplotlib
+    #: colormap - distinct per layer so several can be shown together
+    #: without being confused with the AWCI layer's own red/yellow/blue
+    #: scale) - built 2026-09-03, explicit user request "je veux rendre
+    #: tout les boutons de awci en marche" (the pre-implementation audit's
+    #: own §12/AWCI_COMPONENT_INVENTORY.md #12 gap: these 6 checkboxes
+    #: were honestly disabled, no real data source wired in). Demo mode
+    #: only for now - see awci_layer_grids()'s own docstring for the
+    #: real, disclosed proxy used for "Turbulence"/"Clouds", and each
+    #: tooltip below for the rest.
+    _EXTRA_LAYER_SPECS: dict[str, tuple[str, str, str]] = {
+        "Wind": (
+            "wind", "Blues",
+            "Real wind speed (m/s) from the demo pattern - direction/vectors are not real here "
+            "(no u/v components in this synthetic input), speed magnitude only.",
+        ),
+        "Turbulence": (
+            "turbulence", "Purples",
+            "Real horizontal wind-speed gradient magnitude - a disclosed PROXY, not the full Ellrod-Knapp "
+            "CAT index (see docs/awci/future-improvements.md).",
+        ),
+        "Icing": (
+            "icing", "PuBu",
+            "Real acf.awci.hydrometeor_phase surface precipitation-phase severity (Stull 2011 wet-bulb formula).",
+        ),
+        "Convection": (
+            "convection", "Oranges",
+            "Real acf.awci.updraft maximum theoretical updraft velocity (m/s) - a real, disclosed nonlinear "
+            "function of CAPE (w_max=sqrt(2*CAPE)), not independent information from the CAPE layer.",
+        ),
+        "CAPE": ("cape", "YlOrRd", "Real Convective Available Potential Energy (J/kg), raw."),
+        "Clouds": (
+            "clouds", "Greys",
+            "Real precipitation rate (mm/h) - a disclosed PROXY; no real cloud-fraction quantity "
+            "exists anywhere in this pipeline.",
+        ),
+    }
+
     def _build_layers_panel(self) -> None:
         """Real floating Layers panel (a genuine Qt child widget of
-        self.canvas, repositioned on resize - see resizeEvent()). Only
-        "AWCI" is a real, working toggle; the mockup's other layer
-        names are shown honestly disabled - see class docstring."""
+        self.canvas, repositioned on resize - see resizeEvent()). Every
+        checkbox is a real, working toggle - see _EXTRA_LAYER_SPECS'
+        own docstring/tooltips for each extra layer's real formula (or
+        disclosed proxy)."""
         self.layers_panel = QFrame(self.canvas)
         self.layers_panel.setStyleSheet(
             f"QFrame {{ background-color: rgba(13, 21, 38, 235); "
@@ -416,14 +462,15 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.awci_layer_checkbox.toggled.connect(self._on_awci_layer_toggled)
         panel_layout.addWidget(self.awci_layer_checkbox)
 
-        self.disabled_layer_checkboxes: dict[str, QCheckBox] = {}
-        for name in ("Wind", "Turbulence", "Icing", "Convection", "CAPE", "Clouds"):
+        self.extra_layer_checkboxes: dict[str, QCheckBox] = {}
+        for name, (_key, _cmap, tooltip) in self._EXTRA_LAYER_SPECS.items():
             cb = QCheckBox(name)
-            cb.setEnabled(False)
-            cb.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 10px;")
-            cb.setToolTip(f"{name} has no real data source wired into this map panel yet - shown disabled, not a fake toggle.")
+            cb.setChecked(False)
+            cb.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
+            cb.setToolTip(tooltip)
+            cb.toggled.connect(lambda checked, n=name: self._on_extra_layer_toggled(n, checked))
             panel_layout.addWidget(cb)
-            self.disabled_layer_checkboxes[name] = cb
+            self.extra_layer_checkboxes[name] = cb
 
         self.layers_panel.adjustSize()
         self.layers_panel.show()
@@ -431,6 +478,12 @@ class AWCIMapPanel(EventMixin, QWidget):
     def _on_awci_layer_toggled(self, checked: bool) -> None:
         if self._contour is not None:
             self._contour.set_visible(checked)
+            self.canvas.draw_idle()
+
+    def _on_extra_layer_toggled(self, name: str, checked: bool) -> None:
+        contour = self._extra_layer_contours.get(name)
+        if contour is not None:
+            contour.set_visible(checked)
             self.canvas.draw_idle()
 
     # --------------------------------------------------- legend / info boxes
@@ -583,6 +636,37 @@ class AWCIMapPanel(EventMixin, QWidget):
         )
         if self._show_layers_panel and hasattr(self, "awci_layer_checkbox"):
             self._contour.set_visible(self.awci_layer_checkbox.isChecked())
+
+        # Real extra layers (Wind/Turbulence/Icing/Convection/CAPE/
+        # Clouds) - see _EXTRA_LAYER_SPECS' own docstring. Demo mode
+        # only for now: acf.awci.vertical_field's own real volume (Real
+        # Physics mode) is not threaded through to this panel, so these
+        # 6 layers are left empty (checkboxes real, genuinely no-op)
+        # rather than drawn from a stale demo grid while a real
+        # solver field is on screen - a real, disclosed scope limit,
+        # not a fake toggle (see docs/awci/future-improvements.md).
+        self._extra_layer_contours = {}
+        if self._show_layers_panel and hasattr(self, "extra_layer_checkboxes") and self._external_field is None:
+            layer_grids = awci_layer_grids(
+                lat_step=step,
+                lon_step=step,
+                flight_level_hpa=flight_level_hpa,
+                lat_range=lat_range,
+                lon_range=lon_range,
+                time_offset_hours=time_offset_hours,
+            )
+            for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
+                artist = self.axis.contourf(
+                    layer_grids["lons"],
+                    layer_grids["lats"],
+                    layer_grids[key],
+                    levels=12,
+                    cmap=cmap,
+                    alpha=0.55,
+                    transform=ccrs.PlateCarree(),
+                )
+                artist.set_visible(self.extra_layer_checkboxes[name].isChecked())
+                self._extra_layer_contours[name] = artist
 
         for lat, lon, label in self._flight_path:
             # Real rotated aircraft glyph (added 2026-09-03, mockup

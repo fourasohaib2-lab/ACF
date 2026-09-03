@@ -128,13 +128,24 @@ def test_layers_panel_awci_checkbox_genuinely_toggles_contour_visibility(qtbot):
     assert panel._contour.get_visible() is False
 
 
-def test_layers_panel_other_layers_are_honestly_disabled_not_fake_toggles():
-    """No fabricated interactivity - every layer this panel has no real
-    data source for is shown genuinely non-interactive."""
+def test_layers_panel_extra_layers_are_real_working_toggles(qtbot):
+    """Real regression guard (added 2026-09-03, explicit user request
+    "je veux rendre tout les boutons de awci en marche"): every extra
+    layer checkbox is a real, enabled toggle that shows/hides a real
+    matplotlib contour built from awci_layer_grids() - not a fabricated
+    interactivity, and not honestly-disabled decoration either."""
     panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
-    for name, checkbox in panel.disabled_layer_checkboxes.items():
-        assert checkbox.isEnabled() is False, f"{name} checkbox should be disabled (no real data source)"
-        assert checkbox.isChecked() is False
+    qtbot.addWidget(panel)
+    for name, checkbox in panel.extra_layer_checkboxes.items():
+        assert checkbox.isEnabled() is True, f"{name} checkbox should be a real, enabled toggle"
+        assert checkbox.isChecked() is False  # off by default, same convention as before
+
+        checkbox.setChecked(True)
+        contour = panel._extra_layer_contours[name]
+        assert contour.get_visible() is True
+
+        checkbox.setChecked(False)
+        assert contour.get_visible() is False
 
 
 def test_layers_panel_state_survives_a_real_data_refresh(qtbot):
@@ -186,11 +197,11 @@ def test_set_city_labels_does_not_raise_when_drawn(qtbot):
     panel.set_city_labels([(36.8065, 10.1815, "Tunis")])  # must not raise
 
 
-def test_cape_checkbox_exists_and_is_honestly_disabled(qtbot):
+def test_cape_checkbox_exists_and_is_a_real_working_toggle(qtbot):
     panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
     qtbot.addWidget(panel)
-    assert "CAPE" in panel.disabled_layer_checkboxes
-    assert panel.disabled_layer_checkboxes["CAPE"].isEnabled() is False
+    assert "CAPE" in panel.extra_layer_checkboxes
+    assert panel.extra_layer_checkboxes["CAPE"].isEnabled() is True
 
 
 def test_set_extent_applies_to_the_real_camera(qtbot):

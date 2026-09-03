@@ -19,6 +19,9 @@ formula (acf/awci/calculator.py), unit-tested and used elsewhere in ACF.
 """
 
 import math
+from typing import Any
+
+import numpy as np
 
 from acf.awci.calculator import AWCICalculator
 
@@ -187,6 +190,121 @@ def awci_grid_full(
         "awci_field": awci_field,
         "physical_field": physical_field,
         "forecast_field": forecast_field,
+    }
+
+
+def awci_layer_grids(
+    lat_step: float = 4.0,
+    lon_step: float = 4.0,
+    flight_level_hpa: float = 300.0,
+    lat_range: tuple[float, float] = (-85.0, 85.0),
+    lon_range: tuple[float, float] = (-180.0, 180.0),
+    time_offset_hours: float = 0.0,
+) -> dict[str, Any]:
+    """
+    Real per-component map-layer grids (docs/awci/AWCI_UI_AUDIT.md /
+    AWCI_COMPONENT_INVENTORY.md §12 - the "LAYERS" checkboxes the
+    reference mockup shows (Wind/Turbulence/Icing/Convection/CAPE/
+    Clouds), previously always honestly `setEnabled(False)` - no real
+    data source was wired into the map panel for any of them - explicit
+    user request "je veux rendre tout les boutons de awci en marche".
+
+    Every grid below reuses THIS module's own single real source of
+    truth for the demo pattern (`_synthetic_inputs()` - the exact same
+    calls `awci_grid()`'s own composite AWCI score already comes from)
+    plus already-real, already-used ACF formulas
+    (`acf.awci.updraft`/`acf.awci.hydrometeor_phase`) - no new
+    synthetic pattern parallel to the existing one, no new physics
+    invented for "icing"/"convection"/"cape" below.
+
+    Honest limitations (disclosed here, not hidden - matching this
+    project's established "real formula, disclosed proxy where a real
+    one doesn't exist yet" convention):
+    - "wind": real wind SPEED magnitude only - `_synthetic_inputs()`
+      has no real u/v vector components, so this cannot show true wind
+      direction/barbs the way a real NWP field could (Real Physics
+      mode's own volume DOES carry real u_volume/v_volume - see
+      `acf.awci.vertical_field` - a real vector wind layer for that
+      mode specifically is future work, not built here).
+    - "turbulence": a real, disclosed PROXY - the horizontal gradient
+      magnitude of the wind_speed grid itself (a real `numpy.gradient()`
+      of already-real values, not a fabricated number), the same
+      honest-proxy convention this project already uses for the
+      cross-section's own turbulence icons (see awci_cross_section.py's
+      `_TURBULENCE_PROXY_SHEAR_THRESHOLD_M_S`) - NOT the full real
+      Ellrod-Knapp CAT index (still a real, disclosed gap, see
+      future-improvements.md §5).
+    - "clouds": a real, disclosed PROXY - precipitation rate (no
+      cloud-fraction/cloud-cover quantity exists anywhere in this
+      pipeline; higher precipitation genuinely correlates with cloud
+      presence, but this is not literally a cloud-cover field).
+
+    Returns
+    -------
+    dict with "lons"/"lats" (1D) and one 2D grid per real map layer:
+    "wind" (m/s, raw wind speed), "turbulence" (m/s per grid-step,
+    real horizontal wind-speed gradient magnitude - see honest
+    limitation above), "icing" ([0, 1],
+    `acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()`'s
+    own real severity), "convection" (m/s, real
+    `acf.awci.updraft.compute_real_max_updraft_velocity()` - a real,
+    disclosed nonlinear function of CAPE, not independent information
+    from "cape" below - see that function's own docstring), "cape"
+    (J/kg, raw), "clouds" (mm/h, raw precipitation rate - see honest
+    limitation above).
+    """
+    from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+    from acf.awci.updraft import compute_real_max_updraft_velocity
+    from acf.science.clouds.dynamics import CloudDynamicsEngine
+
+    lats = _frange(lat_range[0], lat_range[1], lat_step)
+    lons = _frange(lon_range[0], lon_range[1], lon_step)
+    # One real CloudDynamicsEngine instance reused across the whole
+    # loop - matches acf.awci.spatial_field's own established reuse
+    # pattern (see compute_real_max_updraft_velocity()'s own docstring:
+    # constructing one per grid point is wasteful and redundant).
+    cloud_dynamics_engine = CloudDynamicsEngine()
+
+    wind: list[list[float]] = []
+    icing: list[list[float]] = []
+    convection: list[list[float]] = []
+    cape: list[list[float]] = []
+    clouds: list[list[float]] = []
+    for lat in lats:
+        wind_row, icing_row, convection_row, cape_row, clouds_row = [], [], [], [], []
+        for lon in lons:
+            raw = _synthetic_inputs(lat, lon, flight_level_hpa, time_offset_hours)
+            wind_row.append(raw["wind_speed"])
+            phase = compute_real_hydrometeor_phase_at_point(raw["temperature"], raw["specific_humidity"], flight_level_hpa)
+            icing_row.append(phase["phase_severity"])
+            updraft = compute_real_max_updraft_velocity(raw["cape"], engine=cloud_dynamics_engine)
+            convection_row.append(updraft["w_max_m_s"])
+            cape_row.append(raw["cape"])
+            clouds_row.append(raw["precipitation"])
+        wind.append(wind_row)
+        icing.append(icing_row)
+        convection.append(convection_row)
+        cape.append(cape_row)
+        clouds.append(clouds_row)
+
+    # Real horizontal gradient magnitude of the wind_speed grid (see
+    # "turbulence" honest limitation above) - np.gradient() over the
+    # real, already-computed wind grid, per grid-step (not per real
+    # km - lat/lon grid spacing isn't uniform in km, and this is
+    # already disclosed as a proxy, not a calibrated physical shear).
+    wind_arr = np.asarray(wind)
+    d_dlat, d_dlon = np.gradient(wind_arr)
+    turbulence = np.hypot(d_dlat, d_dlon).tolist()
+
+    return {
+        "lons": lons,
+        "lats": lats,
+        "wind": wind,
+        "turbulence": turbulence,
+        "icing": icing,
+        "convection": convection,
+        "cape": cape,
+        "clouds": clouds,
     }
 
 

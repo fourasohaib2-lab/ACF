@@ -19,7 +19,7 @@ components — see `AWCI_UI_AUDIT.md` §0). Status column: ✅ real and wired,
 | 9 | AWCI GLOBAL MAP | `awci_map_panel.py::AWCIMapPanel` | ✅ | `awci_grid()` (demo) / real field (Real Physics) |
 | 10 | AWCI SCALE legend | `awci_map_panel.py::_draw_awci_scale_legend` | ✅ | `awci_colors.LEVELS` |
 | 11 | RENDERED / FLIGHT LEVEL info boxes | `awci_map_panel.py::_draw_info_boxes` | ✅ | wall-clock UTC + real ISA FL conversion |
-| 12 | LAYERS panel | `awci_map_panel.py::_build_layers_panel` | 🟡 | AWCI toggle real; Wind/Turbulence/Icing/Convection/CAPE/Clouds honestly disabled (no real per-grid-cell source yet) |
+| 12 | LAYERS panel | `awci_map_panel.py::_build_layers_panel` | 🟡 | All 7 toggles real (`awci_synthetic_field.awci_layer_grids()`, built 2026-09-03) — Wind (real speed, no direction), Turbulence/Clouds are disclosed proxies (wind-speed gradient / precipitation rate), Icing/Convection/CAPE are direct real formulas; demo mode only for now, empty (real no-op) in Real Physics mode — see AWCI_BUTTON_CONTRACT.md |
 | 13 | Zoom/pan/reset/PNG-export buttons | `awci_map_panel.py` | ✅ | real `MapCamera` |
 | 14 | Aircraft glyphs + route line | `awci_map_panel.py` | ✅ | real positions; clicking anywhere on the map (not just the glyph) sets the real point of interest — built this closure |
 | 15 | POINT INFORMATION card | `awci_map_panel.py::set_point_marker` | ✅ | real `AWCICalculator.calculate()` at the point |
