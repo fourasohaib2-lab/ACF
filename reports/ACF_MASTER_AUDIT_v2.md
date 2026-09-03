@@ -3305,3 +3305,47 @@ un panneau GUI dédié de "descente du résumé à la donnée détaillée"
 comme le §53 le décrit — même situation transitoire déjà acceptée pour
 plusieurs infrastructures réelles cette session avant leur branchement
 visuel.
+
+## Mise à jour 2026-09-03 (suite) — registre de diagnostics centralisé réel (§55)
+
+Suite explicite ("continue selon ton jugement"), choix libre parmi les
+lignes ⚠️ restantes.
+
+**Pourquoi** : §55 exige que "chaque diagnostic doit être documenté
+avec : NAME, DESCRIPTION, PHYSICAL MEANING, EQUATION, INPUTS, OUTPUT,
+UNITS, VALID RANGE, ASSUMPTIONS, LIMITATIONS, REFERENCE, TESTS." —
+l'audit constatait que chaque diagnostic réel était déjà documenté,
+mais uniquement dans son propre docstring dispersé, jamais assemblé en
+un registre centralisé et interrogeable.
+
+**Construit** : nouveau
+[`acf.awci.diagnostic_registry`](../src/acf/awci/diagnostic_registry.py) —
+`DiagnosticSpec` (les 12 champs exacts du §55, plus un 13e champ
+`status` réel qui **référence directement** (pas une chaîne dupliquée)
+l'entrée correspondante du registre de statut scientifique déjà
+construit au §77-81) et `DIAGNOSTIC_REGISTRY` — 14 entrées réelles
+couvrant le pipeline par défaut d'AWCI : les 9 fonctions
+`normalize_*` réellement utilisées, les 2 formules de combinaison de
+module (thermodynamique 50/50, convectif 70/30), les 2 termes
+d'interaction par défaut, et la méthode d'incertitude du §64. Périmètre
+délibérément limité au pipeline AWCI par défaut, pas à toute la
+bibliothèque `acf.science` (des centaines de modules, la plupart sans
+rapport avec le chemin de score par défaut — voir §12-16, un gap
+distinct et déjà disclosed de cet audit).
+
+**Validation réelle, pas seulement une cohérence interne** : au-delà de
+vérifier que les 12 champs sont bien renseignés, des tests exécutent
+réellement les formules documentées et comparent au résultat réel
+d'appels directs à `Normalizer`/`AWCICalculator` — preuve que le texte
+documenté n'est pas obsolète par rapport au vrai code (ex. le poids
+50/50 documenté pour le module thermodynamique reconstruit et comparé
+au vrai `calculate_module_scores()`). 14 nouveaux tests
+(`tests/test_awci_diagnostic_registry.py`), suite complète
+**3632/3632** (3618 + 14), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : le registre couvre le pipeline AWCI par
+défaut, pas les diagnostics optionnels déjà réels de cette session
+(rang de percentile déjà inclus, mais pas `calibration.py`/
+`method_comparison.py`/`forecaster_validation.py`/
+`scale_classification.py` eux-mêmes) — une extension possible si
+demandée, pas faite ici pour garder cette passe bien délimitée.
