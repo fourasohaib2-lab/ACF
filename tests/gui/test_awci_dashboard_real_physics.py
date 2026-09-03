@@ -50,7 +50,7 @@ def test_real_physics_ready_switches_to_real_mode_and_updates_panels(qapp):
     assert "REAL PHYSICS" in dashboard.real_physics_status.text()
     assert dashboard.global_map._external_field is not None
     assert dashboard.stats_bar.model_box.value_lbl.text() == "CoupledEarthSolver"
-    assert dashboard.component_list._values["convective"].text() != "—"
+    assert dashboard.component_list._rows["convective"].value_label.text() != "—"
     assert dashboard.risk_summary._rows["physical"][1].text() != "—"
 
 

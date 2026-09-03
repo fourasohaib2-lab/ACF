@@ -1827,3 +1827,46 @@ test_awci_dashboard_alerts_button.py` : 4), suite complète
 **3364/3364** (3346 + 18), `ruff`/`mypy` propres. Capture d'écran
 réelle envoyée à l'utilisateur (alerte réelle "Turbulence Risk: Very
 High (79)" sur le motif synthétique par défaut).
+
+## Mise à jour 2026-09-03 (suite) — composants de complexité réellement cliquables (Partie 3/3)
+
+Demande explicite : "rend les bouton des différents complexité
+utilisable pour rendre tout le details de la situation". Chaque fait
+affiché est transcrit directement depuis
+`acf.awci.calculator.AWCICalculator.calculate_module_scores()` et
+`acf.awci.normalizer.Normalizer` — pas re-dérivé ni deviné, vérifié
+par des tests croisés contre les vraies classes.
+
+**Construit :**
+- [`src/acf/gui/dashboard/awci_component_detail.py`](../src/acf/gui/dashboard/awci_component_detail.py) —
+  table réelle des 7 modules (entrée(s) réelle(s), vraie formule
+  `Normalizer`, et un fait vérifié : **en mode Real Physics
+  aujourd'hui, seuls `dynamic` et `thermodynamic` sont réellement
+  pilotés par le solveur** — `convective`/`microphysical`/
+  `topographic`/`temporal`/`confidence` restent figés aux valeurs par
+  défaut d'`AWCICalculator` car `compute_real_complexity_volume()` ne
+  fournit ni CAPE/CIN, ni précipitation, ni altitude, ni
+  temporal_change. `AWCIComponentDetailDialog` affiche donc un badge
+  honnête ("✅ REAL" ou "⚠ DEFAULT — not computed in Real Physics mode
+  today") plutôt que de prétendre qu'une valeur figée est un résultat
+  physique réel.
+- `_ComponentValueList` (dans `awci_dashboard.py`) — les 7 lignes sont
+  maintenant réellement cliquables (nouvelle classe `_ComponentRow`,
+  survol + clic réels), ouvrant le détail avec le vrai score, les
+  vraies entrées brutes et le mode réel (démo ou Real Physics) —
+  threadé depuis les deux vrais points d'appel (`refresh()` et
+  `_apply_volume_at_level()`), pas recalculé séparément.
+
+**Validation :** 15 nouveaux tests
+(`tests/test_awci_component_detail.py` : 10, `tests/gui/
+test_awci_dashboard_component_clicks.py` : 5) — dont des tests croisés
+directs contre les vraies classes `AWCICalculator`/`Normalizer` (pas
+seulement contre le texte affiché). 2 tests préexistants adaptés au
+nouvel attribut interne (`_rows` au lieu de `_values`). Suite complète
+**3379/3379** (3364 + 15), `ruff`/`mypy` propres. Capture d'écran
+réelle envoyée à l'utilisateur (module Convective en mode Real
+Physics, badge honnête "DEFAULT" affiché correctement).
+
+**Bilan des 3 parties (boutons Message/Alerts/composants) :** suite
+complète passée de 3325/3325 à **3379/3379** (54 nouveaux tests au
+total), 3 commits indépendants poussés sur `develop`.

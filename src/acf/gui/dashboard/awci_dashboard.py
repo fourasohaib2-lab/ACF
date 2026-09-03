@@ -58,7 +58,7 @@ not built here).
 """
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
@@ -72,15 +72,16 @@ from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, count_active_alerts
+from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
-from acf.gui.dashboard.awci_synthetic_field import awci_at, awci_grid
+from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs, awci_grid
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
-from acf.gui.theme_tokens import dashboard_stylesheet, label_style
+from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
 
@@ -92,9 +93,59 @@ _REGIONAL_EXTENT = (-12.0, 35.0, 15.0, 40.0)  # lon_min, lon_max, lat_min, lat_m
 _POINT_OF_INTEREST = (34.5, 12.3)  # matches the reference's example point (lat, lon)
 
 
+class _ComponentRow(QFrame):
+    """One real, clickable complexity-component row - a QFrame (not a
+    QPushButton) so the original icon-left/value-right layout is kept
+    exactly, with a real mousePressEvent()-driven click and hover
+    feedback added on top."""
+
+    clicked = Signal(str)
+
+    def __init__(self, key: str, icon: str, label: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._key = key
+        self._base_style = "border: none; border-radius: 4px;"
+        self._hover_style = f"border: none; border-radius: 4px; background-color: {TOKENS.bg_surface_alt};"
+        self.setStyleSheet(self._base_style)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        row_layout = QHBoxLayout(self)
+        row_layout.setContentsMargins(4, 2, 4, 2)
+        lbl = QLabel(f"{icon}  {label}")
+        lbl.setStyleSheet(label_style("text_secondary", "sm"))
+        row_layout.addWidget(lbl)
+        row_layout.addStretch()
+        self.value_label = QLabel("—")
+        self.value_label.setStyleSheet(label_style("text_primary", "sm", "bold"))
+        row_layout.addWidget(self.value_label)
+
+    def mousePressEvent(self, event: Any) -> None:
+        self.clicked.emit(self._key)
+        super().mousePressEvent(event)
+
+    def enterEvent(self, event: Any) -> None:
+        self.setStyleSheet(self._hover_style)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: Any) -> None:
+        self.setStyleSheet(self._base_style)
+        super().leaveEvent(event)
+
+
 class _ComponentValueList(QFrame):
-    """Compact list of module scores next to the radar - mirrors the reference's
-    numeric readout ('Dynamic 0.72', 'Thermodynamic 0.81', ...) alongside its radar."""
+    """Compact, real CLICKABLE list of module scores next to the radar -
+    mirrors the reference's numeric readout ('Dynamic 0.72',
+    'Thermodynamic 0.81', ...) alongside its radar.
+
+    Made clickable (added 2026-09-03, explicit user request "rend les
+    bouton des différents complexité utilisable pour rendre tout le
+    details de la situation"): each row now opens
+    AWCIComponentDetailDialog for that module - the real current
+    score, the real raw input(s) that fed it (threaded through from
+    update_data()'s new `raw_data`/`mode` parameters), the real
+    acf.awci.normalizer.Normalizer formula, and an honest real-vs-
+    default badge (see awci_component_detail.py's own docstring).
+    """
 
     _LABELS = [
         ("dynamic", "🌀", "Dynamic"),
@@ -106,30 +157,40 @@ class _ComponentValueList(QFrame):
         ("confidence", "❓", "Uncertainty"),
     ]
 
+    componentClicked = Signal(str, float, dict, str)  # key, score, raw_data, mode
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setStyleSheet("border: none;")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 4, 0, 4)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
 
-        self._values: dict[str, QLabel] = {}
+        self._rows: dict[str, _ComponentRow] = {}
+        self._current_scores: dict[str, float] = {}
+        self._current_raw_data: dict[str, Any] = {}
+        self._current_mode: str = "demo"
         for key, icon, label in self._LABELS:
-            row = QHBoxLayout()
-            lbl = QLabel(f"{icon}  {label}")
-            lbl.setStyleSheet(label_style("text_secondary", "sm"))
-            row.addWidget(lbl)
-            row.addStretch()
-            value = QLabel("—")
-            value.setStyleSheet(label_style("text_primary", "sm", "bold"))
-            row.addWidget(value)
-            layout.addLayout(row)
-            self._values[key] = value
+            row = _ComponentRow(key, icon, label)
+            row.clicked.connect(self._on_row_clicked)
+            layout.addWidget(row)
+            self._rows[key] = row
 
-    def update_data(self, module_scores: dict[str, float]) -> None:
+    def update_data(
+        self,
+        module_scores: dict[str, float],
+        raw_data: dict[str, Any] | None = None,
+        mode: str = "demo",
+    ) -> None:
+        self._current_scores = dict(module_scores)
+        self._current_raw_data = dict(raw_data) if raw_data is not None else {}
+        self._current_mode = mode
         for key, _icon, _label in self._LABELS:
             value = module_scores.get(key, 0.0) / 100.0  # display as a 0-1 fraction, like the reference
-            self._values[key].setText(f"{value:.2f}")
+            self._rows[key].value_label.setText(f"{value:.2f}")
+
+    def _on_row_clicked(self, key: str) -> None:
+        self.componentClicked.emit(key, self._current_scores.get(key, 0.0), self._current_raw_data, self._current_mode)
 
 
 class _RealFieldWorkerSignals(QObject):
@@ -275,6 +336,7 @@ class AWCIDashboard(QWidget):
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
         self._alerts_window: AWCIAlertsDialog | None = None
+        self._component_detail_window: AWCIComponentDetailDialog | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -301,6 +363,7 @@ class AWCIDashboard(QWidget):
         radar_row = QHBoxLayout()
         self.radar = AWCIRadar("AWCI COMPONENTS (example at point)")
         self.component_list = _ComponentValueList()
+        self.component_list.componentClicked.connect(self._on_component_clicked)
         radar_row.addWidget(self.radar, stretch=2)
         radar_row.addWidget(self.component_list, stretch=1)
         right_col.addLayout(radar_row, stretch=1)
@@ -403,9 +466,15 @@ class AWCIDashboard(QWidget):
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
         self.cross_section.update_data(_GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], cruise_hpa=300.0)
 
-        point_result = awci_at(*_POINT_OF_INTEREST, flight_level_hpa=300.0)
+        # Kept as two real steps (not awci_at()'s single-call shortcut)
+        # so the real raw input dict is also available for
+        # _ComponentValueList's clickable detail dialog - not
+        # recomputed/guessed separately from what AWCICalculator
+        # actually received.
+        point_raw_data = _synthetic_inputs(*_POINT_OF_INTEREST, flight_level_hpa=300.0)
+        point_result = AWCICalculator().calculate(point_raw_data)
         self.radar.update_data(point_result["module_scores"])
-        self.component_list.update_data(point_result["module_scores"])
+        self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="demo")
         # Real Point Information card on the regional map (matching the
         # reference mockup) - the exact same real AWCI score point_result
         # just computed for this same point, not a second/fabricated value.
@@ -585,16 +654,15 @@ class AWCIDashboard(QWidget):
         # _POINT_OF_INTEREST, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - _POINT_OF_INTEREST[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - _POINT_OF_INTEREST[1])))
-        point_result = AWCICalculator().calculate(
-            {
-                "temperature": float(volume["temperature_volume"][level_idx, lat_idx, lon_idx]),
-                "wind_speed": float(volume["wind_speed_volume"][level_idx, lat_idx, lon_idx]),
-                "specific_humidity": float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx]),
-                "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
-            }
-        )
+        point_raw_data = {
+            "temperature": float(volume["temperature_volume"][level_idx, lat_idx, lon_idx]),
+            "wind_speed": float(volume["wind_speed_volume"][level_idx, lat_idx, lon_idx]),
+            "specific_humidity": float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx]),
+            "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
+        }
+        point_result = AWCICalculator().calculate(point_raw_data)
         self.radar.update_data(point_result["module_scores"])
-        self.component_list.update_data(point_result["module_scores"])
+        self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="real_physics")
         # Real Point Information card, same real per-point result just
         # computed above at this level - not left showing a stale
         # synthetic-demo score while in Real Physics mode.
@@ -685,6 +753,21 @@ class AWCIDashboard(QWidget):
         live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
         count = count_active_alerts(module_scores, overall_awci, physical_score, forecast_score, live_bundles)
         self.alerts_button.setText(f"🔔 Alerts ({count})" if count else "🔔 Alerts")
+
+    def _on_component_clicked(self, key: str, score: float, raw_data: dict[str, Any], mode: str) -> None:
+        """Open (or reuse) the real per-component detail dialog -
+        explicit user request "rend les bouton des différents
+        complexité utilisable pour rendre tout le details de la
+        situation"."""
+        if self._component_detail_window is None:
+            self._component_detail_window = AWCIComponentDetailDialog(parent=self)
+        # mode arrives as a plain str off a Qt Signal (componentClicked
+        # only ever emits the two real literal values _ComponentValueList
+        # itself sets via update_data()'s mode parameter) - validated
+        # here rather than blindly cast, so a genuinely unexpected value
+        # fails loudly instead of being silently treated as "demo".
+        real_mode: Literal["demo", "real_physics"] = "real_physics" if mode == "real_physics" else "demo"
+        self._component_detail_window.show_component(key, score, raw_data, real_mode)
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()

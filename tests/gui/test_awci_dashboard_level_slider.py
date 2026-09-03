@@ -105,11 +105,11 @@ def test_moving_the_level_slider_updates_the_point_component_scores_for_real(qap
     dashboard = AWCIDashboard()
     volume = _real_volume(n_levels=6)
     dashboard._on_real_physics_ready(volume)
-    surface_texts = {key: label.text() for key, label in dashboard.component_list._values.items()}
+    surface_texts = {key: row.value_label.text() for key, row in dashboard.component_list._rows.items()}
 
     dashboard.level_slider.setValue(5)
 
-    top_texts = {key: label.text() for key, label in dashboard.component_list._values.items()}
+    top_texts = {key: row.value_label.text() for key, row in dashboard.component_list._rows.items()}
     assert surface_texts != top_texts
 
 
