@@ -148,6 +148,30 @@ def test_layers_panel_extra_layers_are_real_working_toggles(qtbot):
         assert contour.get_visible() is False
 
 
+def test_extra_layer_contours_are_lazily_built_not_all_6_up_front(qtbot):
+    """Real performance regression guard (added 2026-09-03, profiled
+    AWCIDashboard.refresh()): update_data() must not build a real
+    matplotlib contourf artist for a layer nobody has checked - that
+    real construction cost (~4ms each) was previously paid on every
+    single redraw for layers that were never shown."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)  # all 6 extra layers start unchecked
+
+    assert panel._extra_layer_contours == {}
+    assert panel._last_layer_grids is not None  # the real grid itself is still computed
+
+
+def test_checking_a_layer_lazily_builds_its_own_real_contour(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    assert "Icing" not in panel._extra_layer_contours
+
+    panel.extra_layer_checkboxes["Icing"].setChecked(True)
+
+    assert "Icing" in panel._extra_layer_contours
+    assert panel._extra_layer_contours["Icing"].get_visible() is True
+
+
 def test_layers_panel_state_survives_a_real_data_refresh(qtbot):
     """update_data() (e.g. from the time_slider) must not silently
     re-enable a layer the user turned off."""

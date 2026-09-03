@@ -223,10 +223,19 @@ class AWCIMapPanel(EventMixin, QWidget):
         #: Real extra-layer contour artists (Wind/Turbulence/Icing/
         #: Convection/CAPE/Clouds), keyed by the same name as
         #: extra_layer_checkboxes - see _build_layers_panel()'s own
-        #: _EXTRA_LAYER_SPECS. Rebuilt every update_data() call (demo
-        #: mode only, see that method's own comment); empty when
-        #: show_layers_panel=False or Real Physics mode is active.
+        #: _EXTRA_LAYER_SPECS. Lazily built (only CHECKED layers get a
+        #: real matplotlib artist - see update_data()'s own comment);
+        #: rebuilt from scratch every update_data() call; empty when
+        #: show_layers_panel=False.
         self._extra_layer_contours: dict[str, Any] = {}
+        #: The real grid dict (awci_layer_grids() in demo mode,
+        #: set_external_layer_grids()'s own dict in Real Physics mode)
+        #: the extra layers above were last built from - cached so
+        #: _on_extra_layer_toggled() can lazily build a newly-checked
+        #: layer's artist without a full update_data() redraw. None
+        #: before the first real update_data() call, or when
+        #: show_layers_panel=False.
+        self._last_layer_grids: dict[str, Any] | None = None
         self._flight_level_hpa = 300.0
         self._time_offset_hours = 0.0
         # When set (via set_external_field()), update_data() draws THIS
@@ -499,10 +508,38 @@ class AWCIMapPanel(EventMixin, QWidget):
             self.canvas.draw_idle()
 
     def _on_extra_layer_toggled(self, name: str, checked: bool) -> None:
+        """Real, disclosed lazy-build: the first time a layer is
+        checked, its own matplotlib contourf artist is built here (not
+        during the last update_data() call, which only builds artists
+        for layers already checked at that time - see that method's
+        own comment on why). Every later toggle of an already-built
+        layer is a real, cheap set_visible() - no new artist, no
+        recomputation."""
         contour = self._extra_layer_contours.get(name)
         if contour is not None:
             contour.set_visible(checked)
             self.canvas.draw_idle()
+            return
+        if not checked or self._last_layer_grids is None:
+            return  # nothing real to build yet, or being unchecked (already invisible)
+        key, cmap, _tooltip = self._EXTRA_LAYER_SPECS[name]
+        if key not in self._last_layer_grids:
+            # Real, disclosed scope limit (see set_external_layer_grids()'s
+            # own docstring) - e.g. "CAPE" while Real Physics mode is
+            # active, whose real volume carries no CAPE field. A real
+            # no-op, never a fabricated contour.
+            return
+        artist = self.axis.contourf(
+            self._last_layer_grids["lons"],
+            self._last_layer_grids["lats"],
+            self._last_layer_grids[key],
+            levels=12,
+            cmap=cmap,
+            alpha=0.55,
+            transform=ccrs.PlateCarree(),
+        )
+        self._extra_layer_contours[name] = artist
+        self.canvas.draw_idle()
 
     # --------------------------------------------------- legend / info boxes
 
@@ -677,7 +714,20 @@ class AWCIMapPanel(EventMixin, QWidget):
         # Wind/Turbulence/Icing have a real counterpart (see
         # set_external_layer_grids()'s own docstring) - CAPE/
         # Convection/Clouds stay a real no-op there, not fabricated.
+        #
+        # Lazily built (added 2026-09-03, real performance pass - a
+        # profiled full refresh() was building all 6 real matplotlib
+        # contourf artists on every single redraw, ~25ms, even for the
+        # ~5 layers a real user has not checked and will not see this
+        # redraw - real, measurable, avoidable work). The real grid
+        # itself (self._last_layer_grids) is still computed and cached
+        # every redraw (cheap, ~10ms for all 6 combined, and every
+        # layer must share the SAME real grid) - only the expensive
+        # matplotlib artist construction is skipped for unchecked
+        # layers. _on_extra_layer_toggled() builds a layer's own
+        # artist on demand the first time it is checked.
         self._extra_layer_contours = {}
+        self._last_layer_grids = None
         if self._show_layers_panel and hasattr(self, "extra_layer_checkboxes"):
             if self._external_field is None:
                 layer_grids = awci_layer_grids(
@@ -688,7 +738,10 @@ class AWCIMapPanel(EventMixin, QWidget):
                     lon_range=lon_range,
                     time_offset_hours=time_offset_hours,
                 )
+                self._last_layer_grids = layer_grids
                 for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
+                    if not self.extra_layer_checkboxes[name].isChecked():
+                        continue
                     artist = self.axis.contourf(
                         layer_grids["lons"],
                         layer_grids["lats"],
@@ -698,10 +751,13 @@ class AWCIMapPanel(EventMixin, QWidget):
                         alpha=0.55,
                         transform=ccrs.PlateCarree(),
                     )
-                    artist.set_visible(self.extra_layer_checkboxes[name].isChecked())
+                    artist.set_visible(True)
                     self._extra_layer_contours[name] = artist
             elif self._external_layer_grids is not None:
+                self._last_layer_grids = self._external_layer_grids
                 for name in ("Wind", "Turbulence", "Icing"):
+                    if not self.extra_layer_checkboxes[name].isChecked():
+                        continue
                     key = self._EXTRA_LAYER_SPECS[name][0]
                     cmap = self._EXTRA_LAYER_SPECS[name][1]
                     artist = self.axis.contourf(
@@ -713,7 +769,7 @@ class AWCIMapPanel(EventMixin, QWidget):
                         alpha=0.55,
                         transform=ccrs.PlateCarree(),
                     )
-                    artist.set_visible(self.extra_layer_checkboxes[name].isChecked())
+                    artist.set_visible(True)
                     self._extra_layer_contours[name] = artist
 
         for lat, lon, label in self._flight_path:

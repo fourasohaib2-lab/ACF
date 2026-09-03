@@ -86,3 +86,60 @@ def test_cross_section_phase_severity_field_is_bounded_0_1():
     for row in grid:
         for value in row:
             assert 0.0 <= value <= 1.0
+
+
+# --------------------------------------------------------- real @lru_cache (perf)
+
+
+def test_awci_grid_is_cached_a_repeated_call_is_a_real_cache_hit():
+    """Real profiling found awci_grid() the dominant cost of a single
+    AWCIDashboard.refresh() - added 2026-09-03."""
+    awci_grid.cache_clear()
+    first = awci_grid(lat_step=15.0, lon_step=30.0, flight_level_hpa=310.0, time_offset_hours=2.0)
+    misses_after_first = awci_grid.cache_info().misses
+
+    second = awci_grid(lat_step=15.0, lon_step=30.0, flight_level_hpa=310.0, time_offset_hours=2.0)
+
+    assert awci_grid.cache_info().hits == 1
+    assert awci_grid.cache_info().misses == misses_after_first  # no new miss
+    assert second == first
+
+
+def test_awci_grid_cache_correctly_misses_on_a_real_different_flight_level():
+    """The cache key must include every real argument that changes the
+    real output - a stale hit here would silently show the wrong
+    level's data."""
+    awci_grid.cache_clear()
+    at_300 = awci_grid(lat_step=15.0, lon_step=30.0, flight_level_hpa=300.0)
+    at_500 = awci_grid(lat_step=15.0, lon_step=30.0, flight_level_hpa=500.0)
+
+    assert awci_grid.cache_info().misses == 2
+    assert at_300 != at_500  # real, genuinely different AWCICalculator output at a different pressure
+
+
+def test_awci_grid_cache_correctly_misses_on_a_real_different_time_offset():
+    awci_grid.cache_clear()
+    t0 = awci_grid(lat_step=15.0, lon_step=30.0, time_offset_hours=0.0)
+    t6 = awci_grid(lat_step=15.0, lon_step=30.0, time_offset_hours=6.0)
+
+    assert awci_grid.cache_info().misses == 2
+    assert t0 != t6  # real phase-shifted synthetic pattern
+
+
+def test_cross_section_field_is_cached_a_repeated_call_is_a_real_cache_hit():
+    cross_section_field.cache_clear()
+    point_a, point_b = (40.64, -73.78), (49.01, 2.55)  # real _GLOBAL_ROUTE endpoints
+    first = cross_section_field(point_a, point_b, n_along=6, n_levels=4)
+    second = cross_section_field(point_a, point_b, n_along=6, n_levels=4)
+
+    assert cross_section_field.cache_info().hits == 1
+    assert second == first
+
+
+def test_cross_section_field_cache_correctly_misses_on_a_real_different_route():
+    cross_section_field.cache_clear()
+    a = cross_section_field((40.64, -73.78), (49.01, 2.55), n_along=6, n_levels=4)
+    b = cross_section_field((36.75, 3.06), (32.90, 13.19), n_along=6, n_levels=4)
+
+    assert cross_section_field.cache_info().misses == 2
+    assert a != b

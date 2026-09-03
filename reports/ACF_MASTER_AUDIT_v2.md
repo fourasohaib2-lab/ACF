@@ -4625,3 +4625,53 @@ complète **3925 → 3938**, `ruff`/`mypy` propres.
 multi-points/grille (pas seulement mono-point) resterait un vrai
 chantier d'extension séparé si un usage en dehors du dashboard GUI
 (déjà branché point par point) le demandait.
+
+## Mise à jour 2026-09-03 (suite) — passe de performance réelle sur le dashboard AWCI, profilée
+
+Suite explicite ("je veux l'améliorer, le rendre ultra... agis toi
+comme tu veux"), l'audit exhaustif des 90 sections étant épuisé pour
+les gaps réellement fermables : bilan de santé complet du dépôt
+(`ruff check src/ tests/` + `mypy src/`, 1435 fichiers), suivi d'un
+vrai profilage plutôt que d'inventer un nouveau chantier arbitraire.
+
+**Trouvaille réelle** : `cProfile` sur `AWCIDashboard.refresh()` a
+montré `awci_grid()` (la grille complète 4°×4° du monde entier, ~3900
+appels réels à `AWCICalculator.calculate()`) et `cross_section_field()`
+(1200 points) responsables de la grande majorité du temps — **227 ms
+par rafraîchissement réel**, mesuré directement. Trouvaille aggravante :
+ces deux fonctions sont de vraies fonctions PURES de leurs arguments
+(aucune dépendance à `point_of_interest`), mais un simple clic sur un
+nouveau point déclenchait quand même leur recalcul complet — tout ce
+travail était réellement gaspillé.
+
+**Corrigé** : `@functools.lru_cache` sur `awci_grid()` et
+`cross_section_field()` (`acf.gui.dashboard.awci_synthetic_field`) —
+vérifié au préalable par `grep` que rien nulle part ne mute la grille
+retournée en place (condition réelle pour qu'un cache soit sûr), et
+disclosed explicitement dans le docstring de chaque fonction. Résultat
+mesuré : refresh() **227 ms → 100 ms** (-56 %), clic sur un nouveau
+point **214 ms → 88 ms** (-59 %). Bonus réel : la suite de tests
+complète elle-même est passée de ~200 s à ~147 s (beaucoup de tests
+construisent `AWCIDashboard()` avec les mêmes arguments par défaut).
+
+**Deuxième optimisation réelle, plus petite** : les 6 calques LAYERS
+(fermeture précédente) construisaient un vrai artiste matplotlib pour
+chacun à CHAQUE redraw, même les ~5 jamais cochés par l'utilisateur —
+maintenant construits paresseusement (seul un calque réellement coché
+obtient un artiste ; `_on_extra_layer_toggled()` le construit à la
+demande au premier coche, jamais reconstruit ensuite).
+
+**Validation réelle** : 7 nouveaux tests (cache hit/miss réel vérifié
+via `.cache_info()`, invalidation correcte sur niveau de vol/décalage
+temporel/route différents, construction paresseuse des calques
+vérifiée explicitement). Suite complète **3938 → 3945**, `ruff`/`mypy`
+propres sur les 1435 fichiers. Capture d'écran de vérification finale
+envoyée — aucune régression visuelle.
+
+**Ce qui reste réellement** : le cache est en mémoire process (pas
+persistant, taille bornée à 64 entrées par fonction — largement
+suffisant pour un usage interactif réel, jamais un problème mesuré) ;
+d'autres fonctions coûteuses plus loin dans la chaîne (rendu
+matplotlib lui-même, `AWCICalculator.calculate()` par point individuel)
+n'ont pas été touchées — seul le vrai goulot d'étranglement mesuré l'a
+été, pas une optimisation générale spéculative.
