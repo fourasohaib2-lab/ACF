@@ -3397,3 +3397,67 @@ appelé automatiquement à la fin d'une vraie exécution AWCI en
 production (ex. dans `AWCIMessagesDialog`/ESOC) — même situation
 transitoire déjà acceptée pour plusieurs infrastructures réelles cette
 session avant leur branchement.
+
+## Mise à jour 2026-09-03 (suite) — configuration externe versionnée réelle (§56)
+
+Suite explicite ("continue selon ton jugement"), choix libre parmi les
+lignes ⚠️ restantes.
+
+**Pourquoi** : §56 exige que "les seuils et poids ne doivent pas être
+codés en dur partout" et prévoit "une configuration versionnée". Les
+poids/termes d'interaction/seuils de niveau d'`AWCICalculator` étaient
+déjà réellement configurables par instance (paramètres du constructeur,
+construits aux §22/§45-47) mais leurs vraies valeurs ne provenaient
+encore que de constantes Python compilées, jamais d'un vrai fichier de
+configuration externe versionné.
+
+**Décision technique justifiée, pas arbitraire** : JSON, pas YAML —
+`acf.testing.golden`/`acf.awci.validation_cases` (construit au §36)
+utilisent déjà réellement ce format de persistance dans ce dépôt ;
+PyYAML n'est PAS une dépendance réellement déclarée de ce projet (voir
+la propre trouvaille de cette session, "audit complet des dépendances
+non déclarées") — introduire une nouvelle dépendance non déclarée pour
+ce travail aurait recréé exactement ce problème déjà identifié et
+corrigé plus tôt.
+
+**Construit** : nouveau
+[`acf.awci.config_loader`](../src/acf/awci/config_loader.py) —
+`AWCIConfig` (dataclass réelle) et `load_config()`, qui réutilise
+directement la vraie validation d'`AWCICalculator.__init__()` (clés
+d'interaction cohérentes, seuils strictement croissants) en construisant
+réellement un calculateur pendant le chargement — jamais réimplémentée.
+`config_version` réutilise exactement le même nom de champ que
+`Provenance.config_version` (§57-58), pas une convention de versionnage
+séparée inventée. `save_default_config()` exporte les vraies valeurs
+compilées par défaut (`WeightsManager.DEFAULT_WEIGHTS`/
+`AWCICalculator.INTERACTION_TERMS`/`INTERACTION_WEIGHTS`/
+`LEVEL_THRESHOLDS`) comme point de départ réel pour un opérateur, pas un
+exemple fabriqué.
+
+**Validation réelle, y compris un aller-retour complet** : un test
+sauvegarde la vraie configuration par défaut, la recharge, construit un
+`AWCICalculator` à partir du fichier, et vérifie qu'il produit un
+résultat **bit-identique** à `AWCICalculator()` par défaut. D'autres
+tests vérifient qu'une vraie configuration personnalisée (poids
+différents) produit un score réellement différent, que les erreurs de
+validation d'`AWCICalculator` sont bien propagées (jamais réimplémentées),
+et que `null` en JSON devient bien le vrai `float("inf")` du dernier
+seuil de niveau. 8 nouveaux tests
+(`tests/test_awci_config_loader.py`), suite complète **3650/3650**
+(3642 + 8), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `load_config()` n'est pas encore appelée
+automatiquement au démarrage d'un dashboard/pipeline en production
+(aucun fichier de config réel n'existe encore sur disque dans ce
+dépôt) — même situation transitoire déjà acceptée pour plusieurs
+infrastructures réelles cette session.
+
+**Bilan de cette série de mises à jour** : sur les lignes ⚠️ restantes
+du tableau exhaustif du 2026-09-03, il ne reste maintenant que §12-16
+(modules AWCI simplistes vs. bibliothèque de diagnostics riche
+inexploitée — le chantier le plus important restant, nécessitant une
+vraie justification physique par variable avant tout ajout, pas
+entrepris sans confirmation explicite de l'utilisateur sur le
+périmètre) et §48/§51 (niveaux de produits/profils de vol exacts —
+largement recoupés par le travail déjà fait au §26/§53/§81 cette
+session).
