@@ -186,6 +186,12 @@ class AWCIMessagesDialog(QDialog):
         self.status_label.setStyleSheet(label_style("text_muted", "sm"))
         outer.addWidget(self.status_label)
 
+        # Real last-fetched bundles - read by AWCIAlertsDialog (via
+        # AWCIDashboard._open_alerts()) for its "Live station
+        # conditions" section, so a live fetch made here is genuinely
+        # shared rather than the two dialogs staying independent.
+        self.last_bundles: dict[str, LiveStationBundle] | None = None
+
         self.tabs = QTabWidget()
         outer.addWidget(self.tabs, stretch=1)
 
@@ -216,6 +222,7 @@ class AWCIMessagesDialog(QDialog):
 
     def _on_fetch_ready(self, bundles: dict[str, LiveStationBundle], sigmets: list[LiveReport]) -> None:
         self.refresh_button.setEnabled(True)
+        self.last_bundles = bundles
         n_ok = sum(1 for b in bundles.values() if b.metar.raw_text is not None)
         self.status_label.setText(f"✅ Live data fetched for {n_ok}/{len(bundles)} station(s).")
 

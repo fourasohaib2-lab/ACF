@@ -71,6 +71,7 @@ from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
+from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, count_active_alerts
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
@@ -193,6 +194,10 @@ class AWCIDashboard(QWidget):
         # wired in, but every consumer hardcoded level 0 - this is the
         # real, user-controlled level index that closes that gap.
         self._current_level_index = 0
+        # (module_scores, overall_awci, physical_score, forecast_score) -
+        # the exact same real values last shown by risk_summary, read
+        # by the "🔔 Alerts" dialog/badge rather than recomputed.
+        self._last_risk_inputs: tuple[dict[str, float], float, float | None, float | None] = ({}, 0.0, None, None)
         self._evolution: dict[str, Any] | None = None
         self._evolution_frame_index = 0
         self._evolution_timer = QTimer(self)
@@ -256,9 +261,20 @@ class AWCIDashboard(QWidget):
         )
         self.messages_button.clicked.connect(self._open_messages)
         header_row.addWidget(self.messages_button)
+
+        self.alerts_button = QPushButton("🔔 Alerts")
+        self.alerts_button.setToolTip(
+            "Open real active alerts (acf.gui.dashboard.awci_alerts_panel) -\n"
+            "every AWCI risk level currently at High or above (the exact same\n"
+            "real values RISK SUMMARY already shows), plus real METAR-derived\n"
+            "flags once a 📨 Message fetch has completed."
+        )
+        self.alerts_button.clicked.connect(self._open_alerts)
+        header_row.addWidget(self.alerts_button)
         outer.addLayout(header_row)
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
+        self._alerts_window: AWCIAlertsDialog | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -411,6 +427,15 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+        # Stored so "🔔 Alerts" reads the exact same real values
+        # risk_summary just displayed, not a second/independent guess.
+        self._last_risk_inputs = (
+            point_result["module_scores"],
+            overall_awci,
+            point_result["physical_score"],
+            point_result["forecast_score"],
+        )
+        self._refresh_alerts_badge()
 
     # ------------------------------------------------- Real Physics mode
 
@@ -580,6 +605,13 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+        self._last_risk_inputs = (
+            point_result["module_scores"],
+            point_result["awci"],
+            point_result["physical_score"],
+            point_result["forecast_score"],
+        )
+        self._refresh_alerts_badge()
 
     def _on_level_slider_changed(self, value: int) -> None:
         """Re-slice the already-computed real volume at the newly
@@ -629,6 +661,30 @@ class AWCIDashboard(QWidget):
         self._messages_window.show()
         self._messages_window.raise_()
         self._messages_window.activateWindow()
+
+    def _open_alerts(self) -> None:
+        """Open (or raise) the real active-alerts dialog - explicit
+        user request "un autre bouton pour les alertes". Always
+        available; refreshed from self._last_risk_inputs (the exact
+        real values risk_summary last showed) every time it is opened,
+        plus any live METAR data already fetched via 📨 Message."""
+        if self._alerts_window is None:
+            self._alerts_window = AWCIAlertsDialog(parent=self)
+        module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
+        live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
+        self._alerts_window.refresh(module_scores, overall_awci, physical_score, forecast_score, live_bundles)
+        self._alerts_window.show()
+        self._alerts_window.raise_()
+        self._alerts_window.activateWindow()
+
+    def _refresh_alerts_badge(self) -> None:
+        """Real alert count on the button label - recomputed from the
+        exact same real inputs _open_alerts() would show, so the badge
+        is never inconsistent with the dialog."""
+        module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
+        live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
+        count = count_active_alerts(module_scores, overall_awci, physical_score, forecast_score, live_bundles)
+        self.alerts_button.setText(f"🔔 Alerts ({count})" if count else "🔔 Alerts")
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()

@@ -1794,3 +1794,36 @@ test_awci_messages_panel.py` : 7, mockant les fonctions de fetch),
 suite complète **3346/3346** (3325 + 21), `ruff`/`mypy` propres.
 Vérifié de bout en bout avec de vraies données live (capture d'écran
 réelle envoyée à l'utilisateur) avant d'écrire les tests automatisés.
+
+## Mise à jour 2026-09-03 (suite) — bouton Alertes réel, non fabriqué (Partie 2/3)
+
+Demande explicite : "un autre bouton pour les alertes". Construit sur
+les niveaux de risque déjà réellement calculés par `AWCIRiskSummary`
+(Turbulence/Icing/Convective/Overall/Physical/Forecast, via sa propre
+fonction `_band()` interne — réutilisée directement, pas re-dérivée en
+un deuxième barème qui pourrait diverger) — **explicitement pas**
+`acf.hazard_operations`'s `HazardDetectionEngine`/`AlertGenerator`,
+tous deux des stubs confirmés et déjà auto-documentés
+("NOT_ASSESSED_..."/"NOT_SCANNED_...") sans moteur de détection réel
+branché.
+
+**Construit :**
+- [`src/acf/gui/dashboard/awci_alerts_panel.py`](../src/acf/gui/dashboard/awci_alerts_panel.py) —
+  `compute_elevated_risks()` liste chaque score AWCI actuellement à
+  High/Very High/Extreme (jamais Moderate/Low) ; `compute_live_condition_flags()`
+  détecte des conditions réelles depuis un METAR déjà récupéré (via le
+  bouton Message) — orage réel (`TS` dans `present_weather`), rafale
+  forte réelle (≥35kt, seuil documenté), visibilité basse réelle
+  (<1600m) — uniquement si une récupération live a déjà eu lieu,
+  sinon état honnête "pas encore de donnée live".
+- Nouveau bouton "🔔 Alerts" avec un badge de compte réel (recalculé à
+  chaque `refresh()`/`_apply_volume_at_level()`, jamais périmé),
+  partageant les vraies données déjà récupérées par la fenêtre
+  "📨 Message" (`last_bundles`) plutôt que de refaire un fetch séparé.
+
+**Validation :** 18 nouveaux tests
+(`tests/test_awci_alerts_panel.py` : 14, `tests/gui/
+test_awci_dashboard_alerts_button.py` : 4), suite complète
+**3364/3364** (3346 + 18), `ruff`/`mypy` propres. Capture d'écran
+réelle envoyée à l'utilisateur (alerte réelle "Turbulence Risk: Very
+High (79)" sur le motif synthétique par défaut).
