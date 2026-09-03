@@ -53,5 +53,18 @@ not a fully generic dimensional-analysis engine for arbitrary tensors.
 """
 
 from acf.physics_guard.guard import PhysicsGuard, PhysicsGuardReport
+from acf.physics_guard.variable_quality import (
+    VARIABLE_QUALITY_STATUSES,
+    VariableQualityStatus,
+    assess_variable_quality,
+    classify_guard_exception,
+)
 
-__all__ = ["PhysicsGuard", "PhysicsGuardReport"]
+__all__ = [
+    "PhysicsGuard",
+    "PhysicsGuardReport",
+    "VARIABLE_QUALITY_STATUSES",
+    "VariableQualityStatus",
+    "assess_variable_quality",
+    "classify_guard_exception",
+]

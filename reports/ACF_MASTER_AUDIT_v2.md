@@ -2243,3 +2243,89 @@ le calcul AWCI naïf existant (zéro appelant existant affecté).
   prompt.
 - §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
   architectural, refactor large et risqué, délibérément différé.
+
+## Mise à jour 2026-09-03 (suite) — statut de qualité réel par variable (§32)
+
+Suite explicite ("continue"), cinquième priorité choisie dans les
+manques identifiés par le tableau d'audit, méthodologie suivie dans
+l'ordre imposé par le prompt (§86).
+
+**Pourquoi** : §32 exige que "chaque variable" porte un statut parmi
+un vocabulaire précis — `VALID`/`SUSPECT`/`MISSING`/`INVALID`/
+`OUT_OF_RANGE`/`UNIT_ERROR`/`GRID_ERROR`/`TIME_ERROR`/
+`PHYSICAL_INCONSISTENCY` — "le moteur ne doit pas silencieusement
+continuer avec des données douteuses." L'audit avait déjà confirmé que
+`acf.core.contracts.quality.QualityInfo` (réel, honnête, défaut
+`NOT_ASSESSED`) est un statut **au niveau du Dataset entier**
+(`NOT_ASSESSED/PASS/WARNING/FAIL`) — un concept différent, pas
+simplement un vocabulaire à renommer.
+
+**Inspecté avant de construire** : `acf.physics_guard` avait déjà toute
+l'infrastructure réelle nécessaire — `OPERATIONAL_RANGES`/
+`check_range()` (bornes physiques réelles par nom CF), et
+`check_dewpoint_not_above_temperature()` (relation physique réelle
+point de rosée ≤ température) — mais rien ne traduisait leurs
+exceptions réelles (`RangeError`/`UnitError`/`CoordinateError`/
+`DimensionError`/`VerticalError`/`TimeError`/
+`ScientificConsistencyError`) vers le vocabulaire exact du §32.
+
+**Construit** : nouveau module
+[`acf.physics_guard.variable_quality`](../src/acf/physics_guard/variable_quality.py) —
+`classify_guard_exception()` (mapping réel et justifié, une entrée par
+type d'exception réel de `PhysicsGuard`) et `assess_variable_quality()`
+(statut réel par variable, réutilisant `check_range()` pour
+`OUT_OF_RANGE`/`VALID`, `MISSING` pour une variable attendue absente ou
+`None`, `INVALID` pour une valeur non-finie/non-numérique réelle
+(NaN/Inf), et `PHYSICAL_INCONSISTENCY` réel pour le couple
+température/point de rosée quand la relation physique est violée —
+remplace le statut `VALID` déjà attribué par le check de plage, la
+violation relationnelle étant une preuve réelle supplémentaire, pas
+supprimée par un filtre `expected_variables`). Purement additif :
+`QualityInfo` n'est pas touché.
+
+**Honnêteté du périmètre, explicitement documentée dans le module** :
+`SUSPECT` n'est **jamais produit** — aucune heuristique statistique/
+climatologique réelle "plausible mais douteux" n'existe dans ce code ;
+en fabriquer une aurait été exactement le type de règle non fondée que
+le §78 du prompt met en garde contre. `GRID_ERROR`/`TIME_ERROR` ne sont
+produits que si l'appelant exécute lui-même le vrai check
+correspondant (`check_coordinates()`/`check_vertical()`/
+`check_time()`) et passe l'exception à `classify_guard_exception()` —
+`assess_variable_quality()` ne les devine jamais automatiquement, ces
+erreurs étant des propriétés d'un champ/axe entier, pas d'une variable
+nommée. `check_relative_humidity_bounds()` (marge de sursaturation
+réelle 0-110%) n'est délibérément pas ré-appliqué en plus du check de
+plage (0-100% pour `relative_humidity` dans `OPERATIONAL_RANGES`) — une
+vraie ambiguïté trouvée en inspectant le code (deux verdicts différents
+possibles pour la bande 100-110% selon l'ordre des checks), résolue en
+ne se fiant qu'au check de plage pour cette variable, pas en choisissant
+un gagnant silencieusement.
+
+**Validation réelle** : 19 nouveaux tests
+(`tests/test_physics_guard_variable_quality.py`) — les 7 types
+d'exception réels de `PhysicsGuard` mappés correctement, un type non
+mappé lève une erreur explicite (jamais de devinette), `OUT_OF_RANGE`
+correspond exactement à un appel indépendant de `check_range()`,
+NaN/Inf/valeur non numérique donnent `INVALID`, une variable attendue
+absente donne `MISSING`, une variable non réclamée n'apparaît jamais
+dans le résultat (jamais de `MISSING` deviné), l'incohérence
+température/point de rosée écrase un statut `VALID` par ailleurs
+correct pour les deux variables, et une variable réellement hors-plage
+n'est pas masquée par une relation point de rosée par ailleurs valide.
+Suite complète **3463/3463** (3444 + 19), `ruff`/`mypy` propres.
+
+**Non branché dans l'UI/le pipeline de production dans cette passe**
+(disclosure honnête, pas caché) : contrairement au registre de statut
+scientifique (§77-81, branché dans `AWCIComponentDetailDialog`), ce
+module reste pour l'instant une infrastructure réelle et testée,
+appelable, mais sans point de consommation GUI/pipeline — même
+situation transitoire que `Normalizer.normalize_percentile()` avant
+d'être branché lors de la mise à jour précédente (§20).
+
+**Ce qui reste réellement, du tableau d'audit du 2026-09-03** :
+- §22 Moteur d'interactions général — toujours seulement 2 termes
+  câblés en dur, pas un vrai moteur généralisé.
+- §32 — infrastructure réelle construite ; reste à brancher dans un
+  vrai point de consommation (pipeline `Dataset`/GUI) si demandé.
+- §45/§47 séparation architecturale ACF ≠ AWCI — toujours un vrai gap
+  architectural, refactor large et risqué, délibérément différé.
