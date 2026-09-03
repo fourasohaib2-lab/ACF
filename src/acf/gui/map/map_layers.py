@@ -263,6 +263,96 @@ class AWCILayer(BaseMapLayer):
         )
 
 
+#: Real per-module map layers (docs/ACF_MASTER_PROMPT.md sections
+#: 28-29 - "Dynamic complexity, Thermodynamic complexity, Convective
+#: complexity, Microphysical complexity, Orographic complexity,
+#: Temporal complexity" as separate toggleable layers, distinct from
+#: the single combined "AWCI Complexity" layer above). Maps each
+#: user-facing layer name (matching section 28's own wording) to the
+#: real AWCICalculator module key (acf.awci.spatial_field.
+#: compute_real_complexity_field()'s own `module_fields` dict key) it
+#: renders - "Orographic Complexity" is the one name that differs from
+#: its module key ("topographic"), section 28's own chosen wording for
+#: that module.
+MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
+    "Dynamic Complexity": "dynamic",
+    "Thermodynamic Complexity": "thermodynamic",
+    "Convective Complexity": "convective",
+    "Microphysical Complexity": "microphysical",
+    "Orographic Complexity": "topographic",
+    "Temporal Complexity": "temporal",
+}
+
+
+class ModuleComplexityLayer(BaseMapLayer):
+    """
+    Real per-module AWCI complexity heatmap overlay - one instance per
+    MODULE_COMPLEXITY_LAYERS entry. Same real-data-only discipline as
+    AWCILayer above (no synthetic fallback pattern): draws nothing
+    until set_data() has been fed a real
+    acf.awci.spatial_field.compute_real_complexity_field() result's
+    `module_fields[module_key]` array - a fabricated per-module heatmap
+    would be exactly the kind of invented number this project's audits
+    exist to remove.
+    """
+
+    def __init__(self, name: str, module_key: str, zorder: int) -> None:
+        super().__init__(name, zorder=zorder)
+        self.module_key = module_key
+
+    def render(self, axes: Any, transform: ccrs.CRS) -> None:
+        if self.custom_data is None:
+            return
+        lon_grid = self.custom_data["lons"]
+        lat_grid = self.custom_data["lats"]
+        values = self.custom_data["values"]
+        axes.contourf(
+            lon_grid,
+            lat_grid,
+            values,
+            levels=20,
+            cmap=AWCI_CMAP,
+            vmin=0,
+            vmax=100,
+            alpha=0.7,
+            zorder=self.zorder,
+            transform=transform,
+        )
+
+
+class UncertaintyLayer(BaseMapLayer):
+    """
+    Real forecast-uncertainty map layer (docs/ACF_MASTER_PROMPT.md
+    section 28's "Uncertainty" layer) - sourced from
+    compute_real_complexity_field()'s own real `forecast_field`
+    (AWCICalculator's forecast_score at each point, see that field's
+    own honest_limitation for what drives it under default weights).
+    Same real-data-only discipline as AWCILayer/ModuleComplexityLayer.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Uncertainty", zorder=17)
+
+    def render(self, axes: Any, transform: ccrs.CRS) -> None:
+        if self.custom_data is None:
+            return
+        lon_grid = self.custom_data["lons"]
+        lat_grid = self.custom_data["lats"]
+        values = self.custom_data["values"]
+        axes.contourf(
+            lon_grid,
+            lat_grid,
+            values,
+            levels=20,
+            cmap="magma",
+            vmin=0,
+            vmax=100,
+            alpha=0.7,
+            zorder=self.zorder,
+            transform=transform,
+        )
+
+
 class LayerManager:
     """Manages active scientific layers and orchestrates rendering with real NWP data binding."""
 
@@ -275,6 +365,15 @@ class LayerManager:
             "MSLP": PressureLayer(),
             "Cloud Cover & Precipitable Water": CloudLayer(),
             "AWCI Complexity": AWCILayer(),
+            # Real per-module complexity layers (sections 28-29) - one
+            # per MODULE_COMPLEXITY_LAYERS entry, zorder right above
+            # the combined AWCI layer so an active module layer draws
+            # over it rather than being hidden beneath.
+            **{
+                layer_name: ModuleComplexityLayer(layer_name, module_key, zorder=16 + i)
+                for i, (layer_name, module_key) in enumerate(MODULE_COMPLEXITY_LAYERS.items(), start=1)
+            },
+            "Uncertainty": UncertaintyLayer(),
         }
         self.active_layer_names: list[str] = [
             "Satellite RGB",
@@ -282,12 +381,14 @@ class LayerManager:
             "2m Temp",
             "Wind Vectors",
             "MSLP",
-            # AWCI Complexity is intentionally NOT in this default list -
+            # AWCI Complexity, the 6 per-module complexity layers, and
+            # Uncertainty are intentionally NOT in this default list -
             # unlike the layers above (all real, but a synthetic demo
-            # pattern until real data is bound), it draws nothing at all
-            # until MapCanvas.set_awci_field() feeds it a real field, so
-            # there is no synthetic "always-on-by-default" state for it
-            # to silently occupy.
+            # pattern until real data is bound), none of them draws
+            # anything at all until real per-point data is fed in (see
+            # MapCanvas.set_awci_field()/set_module_complexity_field()),
+            # so there is no synthetic "always-on-by-default" state for
+            # any of them to silently occupy.
         ]
         self.current_dataset: Dataset | None = None
 

@@ -50,6 +50,37 @@ def test_show_awci_field_on_map_genuinely_populates_the_real_layer(qtbot):
     assert "Real AWCI field displayed" in win.status_bar.currentMessage()
 
 
+def test_show_awci_field_on_map_also_populates_real_module_layers(qtbot):
+    """docs/ACF_MASTER_PROMPT.md sections 28-29 - the same real
+    compute_real_complexity_field() call that populates the combined
+    AWCI layer also carries module_fields/forecast_field for free;
+    _on_awci_field_ready() must feed them into the real per-module map
+    layers (populated but not yet shown - see MapCanvas.
+    set_module_complexity_field()'s own `activate` parameter for why)."""
+    from acf.gui.map.map_layers import MODULE_COMPLEXITY_LAYERS
+
+    win = ESOCWindow()
+    qtbot.addWidget(win)
+    map_canvas = win.layout_manager.view_manager.map_canvas
+
+    win._show_awci_field_on_map()
+
+    qtbot.waitUntil(
+        lambda: "AWCI Complexity" in map_canvas.layer_manager.active_layer_names,
+        timeout=60000,
+    )
+
+    for layer_name in MODULE_COMPLEXITY_LAYERS:
+        layer = map_canvas.layer_manager.available_layers[layer_name]
+        assert layer.custom_data is not None
+        # Data is real and ready, but not auto-shown alongside the
+        # combined AWCI layer (would stack 7 overlapping heatmaps).
+        assert layer_name not in map_canvas.layer_manager.active_layer_names
+    uncertainty_layer = map_canvas.layer_manager.available_layers["Uncertainty"]
+    assert uncertainty_layer.custom_data is not None
+    assert "Uncertainty" not in map_canvas.layer_manager.active_layer_names
+
+
 def test_toolbar_action_dispatch_reaches_the_real_handler(qtbot):
     """End-to-end from the actual dispatch path (_handle_toolbar_action),
     not by calling _show_awci_field_on_map() directly - proves the

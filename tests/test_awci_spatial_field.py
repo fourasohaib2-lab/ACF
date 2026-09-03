@@ -82,6 +82,65 @@ def test_forecast_field_has_no_nan_with_default_weights():
     assert not np.isnan(result["forecast_field"]).any()
 
 
+def test_module_fields_covers_every_real_awcicalculator_module():
+    """docs/ACF_MASTER_PROMPT.md sections 28-29 - real per-module 2D
+    fields, one per AWCICalculator.PHYSICAL_MODULES/FORECAST_MODULES
+    entry, not a hardcoded/guessed subset."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2)
+
+    expected_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
+    assert set(result["module_fields"].keys()) == expected_modules
+    for field in result["module_fields"].values():
+        assert field.shape == (5, 8)
+
+
+def test_module_fields_match_the_point_api_at_one_cell():
+    """Same discipline as test_field_values_are_consistent_with_the_point_api()
+    - compares against calculate() fed this call's OWN raw field values,
+    not a fresh (non-reproducible) solver run."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None)
+
+    i, j = 1, 4
+    expected = AWCICalculator().calculate(
+        {
+            "temperature": float(result["temperature_field"][i, j]),
+            "wind_speed": float(result["wind_speed_field"][i, j]),
+            "specific_humidity": float(result["specific_humidity_field"][i, j]),
+            "pressure": float(result["pressure_field_hpa"][i, j]),
+        }
+    )
+    for name, expected_score in expected["module_scores"].items():
+        assert result["module_fields"][name][i, j] == pytest.approx(expected_score)
+
+
+def test_module_fields_are_real_not_flat_placeholders():
+    """A real spatially-varying perturbed run must produce genuine
+    per-point variation in at least the modules driven by the fields
+    that actually vary (dynamic/thermodynamic) - not a single value
+    broadcast everywhere."""
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=8, n_lon=14, n_levels=4, steps=6, perturbation_scale=3.0, seed=1
+    )
+    assert np.std(result["module_fields"]["dynamic"]) > 0.0
+    assert np.std(result["module_fields"]["thermodynamic"]) > 0.0
+
+
+def test_module_fields_are_real_bounded_scores():
+    """Every real module score Normalizer.normalize_*() produces is
+    clipped to [0, 1] before scaling to points - module_fields must
+    stay within the same real [0, 100] bound as awci_field."""
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=8, n_lon=14, n_levels=4, steps=6, perturbation_scale=3.0, seed=1
+    )
+    for field in result["module_fields"].values():
+        assert field.min() >= 0.0
+        assert field.max() <= 100.0
+
+
 def test_forecast_field_is_honestly_flat_documented_limitation():
     """
     Locks in the honest limitation documented in spatial_field.py's own

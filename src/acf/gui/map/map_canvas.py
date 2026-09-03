@@ -42,7 +42,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from acf.data.dataset import Dataset
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
-from acf.gui.map.map_layers import LayerManager
+from acf.gui.map.map_layers import MODULE_COMPLEXITY_LAYERS, LayerManager
 from acf.gui.map.map_projection import MapProjection
 from acf.gui.map.map_renderer import MapRenderer
 
@@ -266,6 +266,110 @@ class MapCanvas(EventMixin, QWidget):
             layer.custom_data = None
         if "AWCI Complexity" in self.layer_manager.active_layer_names:
             self.layer_manager.active_layer_names.remove("AWCI Complexity")
+        self.title_text = self.title_text.split(" — ")[0]
+        self.draw_map()
+        self._apply_camera_extent()
+
+    # ------------------------------------------- real per-module complexity fields
+
+    def set_module_complexity_field(
+        self, module_key: str, lons: Any, lats: Any, values: Any, label: str = "", activate: bool = True
+    ) -> None:
+        """
+        Feed a real per-module complexity field (docs/ACF_MASTER_PROMPT.md
+        sections 28-29) - e.g. one entry of
+        acf.awci.spatial_field.compute_real_complexity_field()'s own
+        `module_fields[module_key]` - into the matching
+        ModuleComplexityLayer and redraw. Same real-only discipline and
+        off-GUI-thread-computation convention as set_awci_field().
+
+        Parameters
+        ----------
+        module_key : str
+            One of `acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS`'s
+            values (e.g. "dynamic", "topographic") - the same real
+            AWCICalculator module key `module_fields` is keyed by, NOT
+            the display layer name.
+        activate : bool
+            When True (default), the layer is also added to
+            `active_layer_names` so it actually renders immediately -
+            matches set_awci_field()'s own behavior for a direct,
+            single-layer caller. Pass False to populate real data
+            without displaying it yet (e.g. a caller populating all 6
+            module layers at once from one compute_real_complexity_field()
+            result - auto-activating every one of them simultaneously
+            would stack 6 overlapping heatmaps with no way yet to
+              choose just one; see esoc_window.py's own use of this).
+        """
+        layer_name = next((name for name, key in MODULE_COMPLEXITY_LAYERS.items() if key == module_key), None)
+        if layer_name is None:
+            logger.warning(
+                "MapCanvas.set_module_complexity_field(): unknown module_key %r - expected one of %s",
+                module_key,
+                sorted(MODULE_COMPLEXITY_LAYERS.values()),
+            )
+            return
+        layer = self.layer_manager.available_layers.get(layer_name)
+        if layer is None:
+            logger.warning("MapCanvas.set_module_complexity_field(): %r layer not registered", layer_name)
+            return
+        layer.set_data(lons, lats, values)
+        if not activate:
+            return
+        if layer_name not in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.append(layer_name)
+        base_title = self.title_text.split(" — ")[0]
+        self.title_text = f"{base_title} — {layer_name}" + (f" ({label})" if label else "")
+        self.draw_map()
+        self._apply_camera_extent()
+
+    def clear_module_complexity_field(self, module_key: str) -> None:
+        """Remove the real per-module overlay set by
+        set_module_complexity_field() for this exact module_key."""
+        layer_name = next((name for name, key in MODULE_COMPLEXITY_LAYERS.items() if key == module_key), None)
+        if layer_name is None:
+            return
+        layer = self.layer_manager.available_layers.get(layer_name)
+        if layer is not None:
+            layer.custom_data = None
+        if layer_name in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.remove(layer_name)
+        self.title_text = self.title_text.split(" — ")[0]
+        self.draw_map()
+        self._apply_camera_extent()
+
+    def set_uncertainty_field(
+        self, lons: Any, lats: Any, values: Any, label: str = "Uncertainty", activate: bool = True
+    ) -> None:
+        """Feed a real forecast-uncertainty field (docs/ACF_MASTER_PROMPT.md
+        section 28's "Uncertainty" layer - e.g.
+        compute_real_complexity_field()'s own `forecast_field`) into
+        this canvas's UncertaintyLayer and redraw. Same real-only
+        discipline as set_awci_field(); see
+        set_module_complexity_field()'s own `activate` parameter for
+        why a caller populating this alongside several module layers
+        at once may want activate=False."""
+        layer = self.layer_manager.available_layers.get("Uncertainty")
+        if layer is None:
+            logger.warning("MapCanvas.set_uncertainty_field(): Uncertainty layer not registered")
+            return
+        layer.set_data(lons, lats, values)
+        if not activate:
+            return
+        if "Uncertainty" not in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.append("Uncertainty")
+        base_title = self.title_text.split(" — ")[0]
+        self.title_text = f"{base_title} — {label}"
+        self.draw_map()
+        self._apply_camera_extent()
+
+    def clear_uncertainty_field(self) -> None:
+        """Remove the real uncertainty overlay set by set_uncertainty_field()."""
+        layer = self.layer_manager.available_layers.get("Uncertainty")
+        if layer is not None:
+            layer.custom_data = None
+        if "Uncertainty" in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.remove("Uncertainty")
         self.title_text = self.title_text.split(" — ")[0]
         self.draw_map()
         self._apply_camera_extent()

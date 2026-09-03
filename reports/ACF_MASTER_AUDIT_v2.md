@@ -2613,8 +2613,8 @@ cette session a travaillé, pas quelque chose à "construire").
 | 25 | Produits verticaux | ✅ | `AWCICrossSection` (coupes verticales réelles), `vertical_profile_at_point()` (profils). Trajectoires potentielles / diagnostic par niveau de vol : non trouvés comme produits dédiés séparés — partiellement couvert par le sélecteur de niveau du dashboard AWCI. |
 | 26 | Explicabilité | ⚠️ | `decomposition`/`_explain()`/`interaction_scores` réels (Score→Contributions). La chaîne complète du §26 (`Score → Contributions → Variables → Diagnostics → données sources → modèle → échéance → niveau vertical`) n'est PAS un objet unique traçable de bout en bout — chaque maillon existe séparément (modèle/échéance dans `MODEL_CONFIGS`/`valid_time_seconds`, niveau dans le sélecteur GUI) mais rien ne les relie formellement à un `AWCICalculator.calculate()` donné. |
 | 27 | Dashboard | ✅ | Fermé le 2026-09-03 (dashboard ACF général construit) + `AWCIDashboard` déjà existant — vue générale/explicative/temporelle/verticale/multi-modèle/scientifique toutes réellement présentes à travers les deux dashboards. |
-| 28 | Cartographie (couches par type de complexité) | ❌ | **Gap réel confirmé, pas trouvé avant cet audit.** `acf.gui.map.map_layers.LayerManager.available_layers` ne contient que 7 couches (`Satellite RGB`, `Radar Mosaic`, `2m Temp`, `Wind Vectors`, `MSLP`, `Cloud Cover`, `AWCI Complexity` — un seul score combiné). Aucune couche séparée `Dynamic complexity`/`Thermodynamic complexity`/`Convective complexity`/`Microphysical complexity`/`Orographic complexity`/`Temporal complexity`/`Uncertainty`/`Model disagreement` comme le §28 le demande explicitement — l'utilisateur ne peut activer/désactiver que le score AWCI total, pas sa décomposition par module sur la carte. |
-| 29 | Architecture des couches | ❌ | Même constat que §28 — la liste de 17 couches du §29 (`AWCI/Dynamic/Thermodynamic/.../Turbulence/Icing/Visibility`) n'a qu'1 correspondance réelle (`AWCI`) sur 17 dans `LayerManager`. |
+| 28 | Cartographie (couches par type de complexité) | ❌ | **Gap réel confirmé, pas trouvé avant cet audit.** `acf.gui.map.map_layers.LayerManager.available_layers` ne contient que 7 couches (`Satellite RGB`, `Radar Mosaic`, `2m Temp`, `Wind Vectors`, `MSLP`, `Cloud Cover`, `AWCI Complexity` — un seul score combiné). Aucune couche séparée `Dynamic complexity`/`Thermodynamic complexity`/`Convective complexity`/`Microphysical complexity`/`Orographic complexity`/`Temporal complexity`/`Uncertainty`/`Model disagreement` comme le §28 le demande explicitement — l'utilisateur ne peut activer/désactiver que le score AWCI total, pas sa décomposition par module sur la carte. *(Voir mise à jour du 2026-09-03 ci-dessous : partiellement fermé depuis.)* |
+| 29 | Architecture des couches | ❌ | Même constat que §28 — la liste de 17 couches du §29 (`AWCI/Dynamic/Thermodynamic/.../Turbulence/Icing/Visibility`) n'a qu'1 correspondance réelle (`AWCI`) sur 17 dans `LayerManager`. *(Voir mise à jour du 2026-09-03 ci-dessous : partiellement fermé depuis.)* |
 | 30 | Architecture logicielle | ⚠️ | Voir décision explicite §45/§47 (2026-09-03) : le paquet cible `acf/complexity/` n'existe pas et ne sera pas créé ("ne rien déplacer") — la frontière est formalisée en place dans `AWCICalculator`, pas comme une arborescence de paquets séparée. Les autres paquets cibles (`ingestion/`, `adapters/`, `interactions/`, `uncertainty/`, `consensus/`, `verification/`, `calibration/`, `climatology/`, `provenance/`) existent tous par LEUR FONCTION réelle ailleurs dans `src/acf/` (`models/`, `physics_guard/`, `verification/`, `core/contracts/provenance.py`...) mais rarement sous ces noms exacts — dispersion déjà documentée dans le gap-map du 2 septembre. |
 | 31 | Pipeline scientifique (21 étapes) | ⚠️ | Chaque étape existe RÉELLEMENT quelque part (ingestion via les adaptateurs modèles, QC via `PhysicsGuard`/`assess_variable_quality()`, diagnostics via `acf.science`, normalisation via `Normalizer`, modules/interactions/incertitude/AWCI via `AWCICalculator`, produits/visualisation/dashboard via `gui/`) mais jamais assemblées en une seule classe/fonction "pipeline" nommée et orchestrée de bout en bout, contrairement à ce que le diagramme suggère. |
 | 32 | Qualité des données | ✅ | Fermé le 2026-09-03 (`acf.physics_guard.variable_quality`, vocabulaire exact §32, branché sur les données METAR en direct). |
@@ -2690,6 +2690,95 @@ Physics/Statistical/ML/Hybrid).
 
 **Aucun nouveau chantier lancé automatiquement dans cette mise à jour**
 — c'est un audit, pas une implémentation (§70 : audit avant
-modification majeure). Les 5 gaps ❌ et 16 gaps ⚠️ ci-dessus sont pour
+modification majeure). Les 6 gaps ❌ et 27 gaps ⚠️ ci-dessus sont pour
 que l'utilisateur choisisse la prochaine priorité en connaissance de
 cause, pas une liste que Claude s'engage à combler sans confirmation.
+
+## Mise à jour 2026-09-03 (suite) — couches de complexité par module réelles (§28-29)
+
+Suite explicite ("oui vasy" — priorité choisie librement dans les 6
+gaps ❌ de l'audit exhaustif ci-dessus), méthodologie suivie dans
+l'ordre imposé par le prompt (§86).
+
+**Pourquoi** : §28 demande explicitement des couches cartographiques
+séparées par type de complexité (Dynamic/Thermodynamic/Convective/
+Microphysical/Orographic/Temporal/Uncertainty/Model disagreement),
+activables/désactivables individuellement — l'audit venait de confirmer
+qu'une seule couche combinée (`AWCI Complexity`) existait, sur les 17
+listées au §29.
+
+**Trouvaille faite en inspectant avant de construire** :
+`acf.awci.spatial_field.compute_real_complexity_field()` appelait déjà
+`AWCICalculator.calculate()` en chaque point réel de la grille — et son
+retour `module_scores` (le détail par module) était **jeté** après
+extraction du seul score combiné `awci`. Aucune nouvelle donnée
+physique à calculer : l'information existait déjà, réelle, à chaque
+point, juste non conservée.
+
+**Construit** :
+- `compute_real_complexity_field()` conserve maintenant aussi
+  `module_fields` — un vrai champ 2D par module (`dynamic`/
+  `thermodynamic`/`convective`/`microphysical`/`topographic`/
+  `temporal`/`confidence`/`ensemble_spread`/`model_disagreement`, le
+  même ensemble que `AWCICalculator.PHYSICAL_MODULES`∪`FORECAST_MODULES`
+  utilise déjà et qu'un test dédié vérifie exhaustif) — **coût de calcul
+  supplémentaire nul**, la même boucle réutilise le résultat déjà
+  produit par le même appel `calculate()`.
+- Nouvelles classes réelles
+  [`ModuleComplexityLayer`](../src/acf/gui/map/map_layers.py)
+  (générique, paramétrée par module) et `UncertaintyLayer` (source :
+  `forecast_field`, déjà réel), enregistrées dans `LayerManager` — 6
+  couches par module (`Dynamic Complexity` → `Orographic Complexity`)
+  + `Uncertainty`, portant le total réel de `LayerManager` à 8 des 17
+  couches du §29 (contre 1 avant). Même discipline "aucune donnée
+  fabriquée" que `AWCILayer` : `render()` ne dessine rien tant qu'aucune
+  vraie donnée n'a été fournie.
+- `MapCanvas.set_module_complexity_field()`/`clear_module_complexity_field()`/
+  `set_uncertainty_field()`/`clear_uncertainty_field()` — même schéma
+  que `set_awci_field()` existant, avec un paramètre `activate` réel
+  (voir décision de périmètre ci-dessous).
+- Branché dans le bouton toolbar ESOC existant "🌪️ AWCI Field"
+  (`_on_awci_field_ready()`) : le même calcul déjà déclenché peuple
+  maintenant aussi les 7 nouvelles couches, coût nul.
+
+**Décision de périmètre honnête, explicitement disclosed** : les 7
+nouvelles couches sont peuplées de vraies données mais **pas affichées
+automatiquement** (`activate=False`) en même temps que la couche AWCI
+combinée — les afficher toutes simultanément empilerait 7 heatmaps
+translucides superposées, illisible, sans aucun contrôle utilisateur
+pour n'en choisir qu'une (aucune UI de case à cocher par couche
+n'existe encore dans ESOC pour `LayerManager` — même situation pour la
+couche `AWCI Complexity` déjà existante, qui n'a elle-même qu'un bouton
+"afficher", jamais de case à cocher). Le §28 exige explicitement que
+"l'utilisateur doit pouvoir activer/désactiver les couches" — cette
+mise à jour rend les **données** réelles et prêtes (`layer.custom_data`
+peuplé, `MapCanvas.set_module_complexity_field(..., activate=True)`
+réel et testé), mais **pas encore le contrôle visuel interactif
+par couche** — prochaine étape naturelle si demandée, pas cachée ici.
+`Model Consensus`/`Model Spread` (2 des 17 couches du §29) restent
+absentes : les calculer point par point nécessiterait de refaire
+tourner la fusion multi-modèle à chaque cellule de la grille — limite
+déjà documentée dans `spatial_field.py` et non résolue par cette mise à
+jour. `Turbulence`/`Icing`/`Visibility` (3 autres) n'ont pas de champ
+réel calculé point par point dans ce dépôt.
+
+**Validation réelle** : 17 nouveaux tests —
+`tests/test_awci_spatial_field.py` (+4 : `module_fields` couvre
+exactement l'ensemble réel de modules, correspond à un appel
+indépendant `AWCICalculator.calculate()` sur la même cellule, varie
+réellement dans l'espace pour un run perturbé, reste borné [0,100]),
+`tests/test_map_layers_module_complexity.py` (+12 : les 6 couches +
+`Uncertainty` sont enregistrées, aucune active par défaut, ne dessinent
+rien sans vraie donnée, dessinent la vraie donnée une fois fournie, les
+méthodes `MapCanvas` peuplent la bonne couche et sont indépendantes les
+unes des autres), `tests/test_esoc_awci_field.py` (+1 : le bouton
+toolbar existant peuple bien les 7 nouvelles couches avec de vraies
+données, non affichées). Suite complète **3514/3514** (3497 + 17),
+`ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du tableau d'audit exhaustif ci-dessus** :
+- §28-29 — **partiellement fermé** : données/couches réelles pour 6 des
+  8 modules + incertitude ; UI de bascule par couche et
+  Model Consensus/Spread/Turbulence/Icing/Visibility restent ouverts.
+- §36/§37/§40/§41 — toujours absents, non traités par cette mise à
+  jour (choix explicite de périmètre, pas oublié).

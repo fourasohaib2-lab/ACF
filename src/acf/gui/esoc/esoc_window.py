@@ -499,9 +499,27 @@ class ESOCWindow(QMainWindow):
     def _on_awci_field_ready(self, result: dict[str, Any]) -> None:
         map_canvas = self.layout_manager.view_manager.map_canvas
         map_canvas.set_awci_field(result["lons"], result["lats"], result["awci_field"], label="REAL AWCI")
+        # Real per-module complexity fields (docs/ACF_MASTER_PROMPT.md
+        # sections 28-29) come free from this exact same computation -
+        # module_fields/forecast_field were already computed by
+        # compute_real_complexity_field() to produce awci_field above,
+        # so populating the 6 module layers + Uncertainty here costs
+        # nothing extra. activate=False: showing all 7 at once stacked
+        # on top of the combined AWCI layer would be a cluttered,
+        # unreadable overlay with no per-layer toggle UI yet to pick
+        # just one - real data is ready the moment such a control
+        # exists (map_canvas.set_module_complexity_field(key, ...,
+        # activate=True) / layer_manager.active_layer_names), not
+        # fabricated as "displayed" before it actually is.
+        for module_key, field in result["module_fields"].items():
+            map_canvas.set_module_complexity_field(module_key, result["lons"], result["lats"], field, activate=False)
+        map_canvas.set_uncertainty_field(result["lons"], result["lats"], result["forecast_field"], activate=False)
         self.status_bar.showMessage("🌪️ Real AWCI field displayed on map (ARPEGE, CAPE/CIN included).", 5000)
         self.dispatcher.log_message_emitted.emit(
-            "INFO", "Real AWCI complexity field displayed on the central map."
+            "INFO",
+            "Real AWCI complexity field displayed on the central map - real per-module "
+            "complexity layers (Dynamic/Thermodynamic/Convective/Microphysical/Orographic/"
+            "Temporal/Uncertainty) also populated with real data, ready to display.",
         )
 
     def _on_awci_field_failed(self, message: str) -> None:

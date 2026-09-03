@@ -138,6 +138,18 @@ def compute_real_complexity_field(
             AWCICalculator._renormalized_score()'s own None-not-0.0
             discipline) wherever forecast_score was undefined for that
             point's weights.
+        module_fields : dict[str, 2D numpy array], docs/
+            ACF_MASTER_PROMPT.md sections 28-29 ("Dynamic complexity,
+            Thermodynamic complexity, Convective complexity, ..." as
+            separate map layers) - one real 0-100 field per
+            AWCICalculator module (dynamic/thermodynamic/convective/
+            microphysical/topographic/temporal/confidence/
+            ensemble_spread/model_disagreement - see
+            AWCICalculator.PHYSICAL_MODULES/FORECAST_MODULES for the
+            exact real set), each entry field[i, j] equal to
+            `calculate(data_at_i_j)["module_scores"][name]` - the
+            SAME per-point calculate() call awci_field/physical_field
+            already come from, not a second pass.
         temperature_field, wind_speed_field, specific_humidity_field,
         pressure_field_hpa : the real per-point CoupledEarthSolver
             values actually fed to AWCICalculator to produce the above
@@ -187,6 +199,18 @@ def compute_real_complexity_field(
     awci_field = np.zeros((n_lat_actual, n_lon_actual))
     physical_field = np.zeros((n_lat_actual, n_lon_actual))
     forecast_field = np.full((n_lat_actual, n_lon_actual), np.nan)
+    # Real per-module 2D fields (docs/ACF_MASTER_PROMPT.md sections
+    # 28-29 - "Dynamic complexity, Thermodynamic complexity, Convective
+    # complexity, ..." as separate map layers, not just the combined
+    # AWCI score). Zero extra solver/AWCICalculator cost: calculate()
+    # already computes every module score at each point below - this
+    # only keeps what the loop previously discarded. Module name set
+    # comes from AWCICalculator's own PHYSICAL_MODULES/FORECAST_MODULES
+    # union (the same real partition a dedicated test already enforces
+    # covers every module calculate_module_scores() produces) - never
+    # hardcoded separately here.
+    module_names = sorted(calc.PHYSICAL_MODULES | calc.FORECAST_MODULES)
+    module_fields: dict[str, np.ndarray] = {name: np.zeros((n_lat_actual, n_lon_actual)) for name in module_names}
     # np.nan (not 0.0) wherever compute_real_cape_cin_at_point() itself
     # honestly reports "not computed" - see its own None-not-0.0
     # discipline, mirrored here rather than silently defaulted.
@@ -252,6 +276,8 @@ def compute_real_complexity_field(
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
             if result["forecast_score"] is not None:
                 forecast_field[i, j] = result["forecast_score"]
+            for name in module_names:
+                module_fields[name][i, j] = result["module_scores"][name]
 
     fields_used = _FIELDS_USED + _CONVECTIVE_FIELDS_USED if compute_convective_energy else _FIELDS_USED
 
@@ -264,6 +290,7 @@ def compute_real_complexity_field(
         "awci_field": awci_field,
         "physical_field": physical_field,
         "forecast_field": forecast_field,
+        "module_fields": module_fields,
         "temperature_field": temperature,
         "wind_speed_field": wind_speed,
         "specific_humidity_field": specific_humidity,
