@@ -3349,3 +3349,51 @@ défaut, pas les diagnostics optionnels déjà réels de cette session
 `method_comparison.py`/`forecaster_validation.py`/
 `scale_classification.py` eux-mêmes) — une extension possible si
 demandée, pas faite ici pour garder cette passe bien délimitée.
+
+## Mise à jour 2026-09-03 (suite) — rapport d'exécution AWCI réel (§75)
+
+Suite explicite ("continue selon ton jugement"), choix libre parmi les
+lignes ⚠️ restantes.
+
+**Pourquoi** : §75 exige que le pipeline produise "logs, metrics,
+warnings, errors, quality reports, runtime statistics", avec un
+exemple concret (`Input files: 48 / Valid: 46 / Rejected: 2 /
+Diagnostics: 123 / AWCI generated: YES / Quality: GOOD / Model spread:
+HIGH`). L'audit constatait qu'`acf.monitoring` était réel mais générique
+— rien ne produisait ce résumé précis pour une exécution AWCI donnée.
+
+**Décision honnête de périmètre, pour éviter d'inventer de nouveaux
+seuils** : le prompt utilise "Quality: GOOD" et "Model spread: HIGH"
+comme catégories illustratives. Introduire une vraie catégorisation à 3
+niveaux (GOOD/WARNING/FAIL) ou LOW/MODERATE/HIGH exigerait un vrai
+seuil de pourcentage ou de percentile — exactement le genre de coupure
+inventée que les §78-79 mettent en garde contre. À la place :
+`quality_status` reste **binaire et réel** (`PASS` seulement si chaque
+vrai résultat `VariableQualityStatus` fourni est `VALID`, `FAIL` sinon,
+`NOT_ASSESSED` si rien n'a été fourni) — vocabulaire réutilisé
+directement de `acf.core.contracts.quality.QualityInfo`, pas un
+nouveau mot "GOOD" inventé. `model_spread` reste la vraie valeur
+numérique (ex. `disagreement_spread` réel), jamais classée en
+LOW/MODERATE/HIGH sans seuil scientifiquement établi.
+
+**Construit** : nouveau
+[`acf.awci.run_report`](../src/acf/awci/run_report.py) —
+`AWCIRunReport` (dataclass réelle, gelée) et `build_run_report()`, un
+vrai assembleur — jamais un calcul, mêmes comptes fournis par
+l'appelant depuis sa propre vraie exécution. `format_text()` rend le
+texte exactement dans le format de l'exemple du §75.
+
+**Validation réelle** : 10 nouveaux tests
+(`tests/test_awci_run_report.py`) — rapport vide honnête par défaut,
+comptes réels transmis sans modification, `quality_status` correctement
+dérivé (`NOT_ASSESSED`/`PASS`/`FAIL`) à partir de vrais résultats
+`assess_variable_quality()` (y compris un vrai cas `OUT_OF_RANGE`
+réel), `model_spread` jamais fabriqué, `format_text()` correspond
+exactement au format de l'exemple du §75. Suite complète
+**3642/3642** (3632 + 10), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : `build_run_report()` n'est pas encore
+appelé automatiquement à la fin d'une vraie exécution AWCI en
+production (ex. dans `AWCIMessagesDialog`/ESOC) — même situation
+transitoire déjà acceptée pour plusieurs infrastructures réelles cette
+session avant leur branchement.
