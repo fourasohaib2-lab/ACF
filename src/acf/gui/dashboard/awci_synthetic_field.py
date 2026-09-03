@@ -234,6 +234,53 @@ def cross_section_field(
     return distances, levels, grid
 
 
+def cross_section_phase_severity_field(
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_along: int = 60,
+    n_levels: int = 20,
+    hpa_range: tuple[float, float] = (150.0, 850.0),
+    time_offset_hours: float = 0.0,
+) -> tuple[list[float], list[float], list[list[float]]]:
+    """
+    Real per-point precipitation-phase severity along the SAME
+    (distance, level) grid as cross_section_field() (docs/reference/
+    awci_dashboard_reference.jpg parity work, added 2026-09-03) - from
+    the exact same synthetic T/q inputs cross_section_field()'s own
+    AWCI score already comes from (this module's own
+    _synthetic_inputs(), single source of truth for the demo pattern),
+    fed into the real
+    acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()
+    formula. Real formula, synthetic demo inputs - same honesty
+    convention as the rest of this module (see module docstring).
+
+    Returns
+    -------
+    (distance_km, flight_levels_hpa, grid) where grid[i][j] is the real
+    [0, 1] phase severity at flight_levels_hpa[i], distance_km[j].
+    """
+    from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+    distances = [i / (n_along - 1) * total_km for i in range(n_along)]
+    levels = _frange(hpa_range[0], hpa_range[1], (hpa_range[1] - hpa_range[0]) / (n_levels - 1))
+
+    grid: list[list[float]] = []
+    for hpa in levels:
+        row = []
+        for i in range(n_along):
+            t = i / (n_along - 1)
+            lat = lat_a + t * (lat_b - lat_a)
+            lon = lon_a + t * (lon_b - lon_a)
+            inputs = _synthetic_inputs(lat, lon, hpa, time_offset_hours)
+            phase = compute_real_hydrometeor_phase_at_point(inputs["temperature"], inputs["specific_humidity"], hpa)
+            row.append(phase["phase_severity"])
+        grid.append(row)
+    return distances, levels, grid
+
+
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 6371.0
     p1, p2 = math.radians(lat1), math.radians(lat2)

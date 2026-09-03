@@ -4161,3 +4161,134 @@ placeholder honnête. 3 nouveaux tests dans
 `acf.awci.run_report` (§75) restent de vrais orphelins non branchés
 — chantiers futurs distincts, disclosed ci-dessus, disponibles à la
 demande.
+
+## Mise à jour 2026-09-03 (suite) — parité complète du dashboard AWCI avec docs/reference/awci_dashboard_reference.jpg
+
+Demande explicite de l'utilisateur : "je veux que awci soit exactement
+a 100% comme dans la photo jointe" (le mockup déjà utilisé pour
+construire `AWCIDashboard` plus tôt cette session — fichier réel déjà
+présent dans le dépôt, `docs/reference/awci_dashboard_reference.jpg`,
+confirmé pixel-identique à la photo collée). L'utilisateur avait
+préparé un prompt Gemini détaillé suggérant React/Tailwind/Recharts et
+des "mock data" pour reconstruire ce dashboard — décision explicite,
+disclosed à l'utilisateur en clair : traiter ce prompt comme une pure
+LISTE DE FONCTIONNALITÉS visuelles à comparer, pas des instructions
+d'implémentation littérales, et amener `AWCIDashboard` à la parité
+dans sa vraie stack existante (Python/PySide6/matplotlib), en
+réutilisant les capacités déjà réelles de cette session et en
+respectant strictement la discipline "jamais de donnée fabriquée" —
+pas une reconstruction React déconnectée avec des données inventées.
+
+**Méthode** : deux agents Explore lancés en parallèle avant tout code
+— un pour cartographier l'état exact de `AWCIDashboard` section par
+section du mockup (ce qui existe déjà vs ce qui manque, réel vs
+synthétique), un pour localiser les vraies sources de données/formules
+disponibles pour chaque élément manquant. Plan détaillé écrit et
+approuvé avant implémentation (12 items), avec une section "explicitement
+hors périmètre, disclosed" pour ce qui aurait exigé de la donnée
+fabriquée.
+
+**Construit, un vrai périmètre disclosed pour chaque item** :
+1. **Badge d'en-tête** "RESEARCH STAGE / Prototype Version" — texte
+   statique réel, aucune donnée.
+2. **Boutons radio VIEW MODE** (Global/Regional/Vertical Cross-Section)
+   — comportement réel sur la vraie caméra de la carte globale
+   (`AWCIMapPanel.set_extent()`, nouveau, wrapper public autour de
+   `MapCamera` déjà réel) : Global = vue par défaut, Regional = même
+   `_REGIONAL_EXTENT` réel déjà utilisé par la carte régionale,
+   Vertical Cross-Section = zoom réel sur la vraie bounding box du
+   trajet global (l'analogue honnête le plus proche de "mettre en
+   avant le corridor" sur une carte 2D — un extent réel calculé,
+   jamais fabriqué).
+3. **Glyphe avion réel** (✈, remplace le triangle) + quelques points
+   intermédiaires réels interpolés le long du même trajet déjà réel —
+   changement cosmétique sur des positions déjà réelles, aucune
+   nouvelle donnée.
+4. **Label Tunis** — vraie coordonnée publique vérifiable (comme
+   Alger/Tripoli déjà en dur), `AWCIMapPanel.set_city_labels()`
+   (nouveau), indépendant du trajet.
+5. **Jauge de confiance demi-cercle** — `AWCIGauge` (orpheline depuis
+   la reconstruction du dashboard, jamais utilisée) étendue avec un
+   vrai mode `half_circle=True` (réutilise son propre code de tracé
+   d'arc réel, pas un second widget), montée dans `AWCIStatsBar` à la
+   place du texte brut, alimentée par la même vraie valeur
+   `confidence_pct` déjà calculée.
+6. **Bouton "See Vertical Profile"** — ouvre `AWCIVerticalProfile`
+   (orpheline elle aussi, jamais utilisée), peuplée de vrais scores
+   `AWCICalculator` au point d'intérêt, à plusieurs niveaux de vol
+   réels — nouvelle formule inverse réelle
+   `flight_level_ft_to_pressure_hpa()` (inverse algébrique exacte de
+   la formule ICAO/FAA déjà réelle `pressure_to_flight_level_ft()`,
+   pas une conversion séparément inventée).
+7. **Sparkline REGIONAL TREND** — `AWCITimeline` (orpheline, jamais
+   utilisée) alimentée par de vrais scores horaires au point d'intérêt,
+   ±6h autour de l'heure réelle du curseur Valid Time.
+8. **Icônes de givrage sur la coupe verticale** — nouvelle fonction
+   réelle `cross_section_phase_severity_field()` (mode démo, mêmes
+   entrées T/q/P synthétiques que le score AWCI déjà affiché) et
+   `sample_cross_section_hazards()` (mode Real Physics, nouveau dans
+   `path_sampling.py`) réutilisant `acf.awci.hydrometeor_phase` déjà
+   réel.
+9. **Icônes de turbulence (proxy)** — le vrai indice CAT d'Ellrod-Knapp
+   a besoin de gradients horizontaux de vent qu'aucun pipeline
+   ponctuel de ce code ne fournit encore (trouvaille confirmée par
+   l'agent d'exploration) ; substitut honnête disclosed partout : le
+   cisaillement de vent vertical déjà réel et déjà câblé
+   (`acf.awci.wind_shear`) entre niveaux natifs adjacents, exposé comme
+   "proxy", jamais présenté comme l'indice CAT complet. A nécessité
+   d'exposer `u_volume`/`v_volume` (déjà calculés en interne, juste
+   jamais retournés) dans `compute_real_complexity_volume()` — ajout
+   pur, rétrocompatible.
+10. **Comparaison FL280/FL320** — `AWCIRouteChart` étendu avec un vrai
+    mode 2-séries (`set_comparison_series()`), vraie conversion
+    FL→hPa via la table ISA déjà réelle, 2 vrais échantillonnages
+    (`sample_field_along_path()`/`route_profile()`) à ces 2 vrais
+    niveaux — action réelle déclenchée par l'utilisateur (même
+    discipline de coût disclosed que 🔬 Real Physics/🧊 3D View), pas
+    automatique.
+11. **Bannière de recommandation** — texte réel généré par template
+    (même discipline que `AWCICalculator._explain()`), construit à
+    partir de `compute_elevated_risks()` déjà réel et d'un vrai segment
+    contigu à AWCI élevé détecté sur le trajet — masquée entièrement
+    quand rien n'est réellement élevé, jamais une recommandation
+    fabriquée.
+12. **Case CAPE dans le panneau LAYERS** — ajoutée honnêtement
+    désactivée avec tooltip, même convention que Wind/Turbulence/
+    Icing/Convection/Clouds — une vraie formule CAPE existe mais un
+    vrai calque de contour par point de grille est un chantier séparé
+    et plus conséquent, disclosed comme hors périmètre.
+
+**Trouvaille et correction en cours de route, disclosed** : un vrai
+bug de collapse de layout trouvé par capture d'écran directe pendant
+la vérification — la carte globale s'effondrait à 157px de haut
+(contre 425px avant ce chantier) à cause de la compétition entre les
+nouveaux widgets à hauteur fixe (sparkline, bannière, ligne VIEW MODE)
+et le facteur de stretch de la ligne contenant la carte. Même schéma
+de bug et même correction que le "Layout collapse bug" déjà documenté
+plus tôt cette session (`acf_general_dashboard.py`) : `setMinimumHeight()`
+explicite sur `global_map`/`regional_map`/`cross_section`.
+
+**Validation réelle** : capture d'écran complète comparée visuellement
+au mockup (envoyée à l'utilisateur) ; VIEW MODE prouvé changer
+réellement l'extent de la caméra ; jauge de confiance prouvée refléter
+la même vraie valeur déjà calculée ; profil vertical prouvé avoir un
+vrai score par niveau de vol nommé ; sparkline prouvée se mettre à
+jour avec le curseur ; overlay de la coupe verticale prouvé réel en
+mode démo (givrage seul) et en mode Real Physics (givrage + shear,
+shear jamais négatif) ; comparaison FL280/FL320 prouvée fonctionner en
+démo et en Real Physics ; bannière prouvée refléter les vrais risques
+élevés et rester masquée quand rien n'est élevé. 65 nouveaux tests
+répartis sur 10 fichiers (dont 3 nouveaux : `tests/test_awci_gauge.py`,
+`tests/test_awci_route_chart.py`, `tests/test_awci_stats_bar.py`,
+`tests/gui/test_awci_dashboard_reference_parity.py`). Suite complète
+**3852/3852** (3787 + 65), `ruff`/`mypy` propres sur tous les fichiers
+touchés.
+
+**Ce qui reste réellement** : l'indice de turbulence CAT complet
+(Ellrod-Knapp, gradients horizontaux) reste un vrai chantier distinct
+nécessitant une nouvelle infrastructure de gradient ; le calque CAPE
+reste une case honnêtement désactivée, pas un vrai calque de contour ;
+les deux systèmes de calques de carte incompatibles trouvés dans ce
+dépôt (`acf.gui.map.layers.layer_manager` vs `acf.gui.map.map_layers`)
+restent non unifiés — un vrai chantier architectural séparé, pas une
+simple case à cocher.

@@ -140,6 +140,11 @@ def compute_real_complexity_volume(
         temperature_volume, wind_speed_volume, specific_humidity_volume :
             3D numpy arrays, the real per-point solver state actually
             fed to AWCICalculator.
+        u_volume, v_volume : 3D numpy arrays, the real eastward/
+            northward wind components wind_speed_volume was itself
+            derived from (sqrt(U^2+V^2)) - exposed for callers needing
+            the real vector, e.g. acf.awci.wind_shear.
+            compute_real_wind_shear_at_point().
         pressure_volume_hpa : 3D numpy array, real local pressure per
             point in hPa (converted from the solver's native Pa) - see
             module docstring's "Honest limitation" for what this is
@@ -187,6 +192,15 @@ def compute_real_complexity_volume(
         "forecast_volume": forecast_volume,
         "temperature_volume": temperature,
         "wind_speed_volume": wind_speed,
+        # Real u/v wind components (added 2026-09-03, docs/reference/
+        # awci_dashboard_reference.jpg parity work) - already computed
+        # internally (wind_speed above is sqrt(U^2+V^2)), just not
+        # previously returned. A real caller (e.g. a per-point vertical
+        # bulk wind shear diagnostic, acf.awci.wind_shear.
+        # compute_real_wind_shear_at_point()) needs the real vector
+        # components, not just the scalar magnitude.
+        "u_volume": state["U"],
+        "v_volume": state["V"],
         "specific_humidity_volume": specific_humidity,
         "pressure_volume_hpa": pressure_hpa,
         "status": "REAL_COMPLEXITY_VOLUME_FROM_ACF_SOLVER",

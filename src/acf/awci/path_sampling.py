@@ -134,6 +134,101 @@ def sample_volume_cross_section(
     }
 
 
+def sample_cross_section_hazards(
+    lats: Any,
+    lons: Any,
+    pressure_hpa_volume: np.ndarray,
+    temperature_volume: np.ndarray,
+    specific_humidity_volume: np.ndarray,
+    u_volume: np.ndarray,
+    v_volume: np.ndarray,
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_along: int = 60,
+) -> dict[str, Any]:
+    """
+    Real per-cell precipitation-phase severity and bulk-wind-shear
+    turbulence-risk proxy, sampled along the same real cross-section
+    path as sample_volume_cross_section() (docs/reference/
+    awci_dashboard_reference.jpg parity work, added 2026-09-03) -
+    reuses that same real nearest-neighbour sampling 4 times (T, q, P,
+    plus u/v below) rather than reimplementing it.
+
+    Real, disclosed turbulence proxy, not the full CAT index
+    -------------------------------------------------------------
+    The mockup's own turbulence icons would classically come from the
+    Ellrod & Knapp (1992) CAT index (acf.science.wind_turbulence.
+    CATIndex) - that needs real HORIZONTAL wind gradients this codebase
+    has no per-point pipeline for anywhere. `wind_shear_grid` instead
+    reuses the already-real, already-wired
+    acf.awci.wind_shear.compute_real_wind_shear_at_point() - real
+    VERTICAL bulk shear between each pair of adjacent native levels at
+    each path point. A real signal genuinely correlated with
+    turbulence risk, but a coarser proxy than the full CAT index -
+    never presented as the Ellrod-Knapp index itself.
+
+    Parameters
+    ----------
+    lats, lons : the real volume's own coordinate arrays.
+    pressure_hpa_volume, temperature_volume, specific_humidity_volume,
+    u_volume, v_volume : 3D numpy arrays (n_levels, n_lat, n_lon) -
+        e.g. compute_real_complexity_volume()'s own real fields.
+    point_a, point_b, n_along : same real path convention as
+        sample_volume_cross_section().
+
+    Returns
+    -------
+    dict
+        distances_km : list[float], length n_along.
+        mean_pressure_hpa_by_level : 1D numpy array, length n_levels -
+            same as sample_volume_cross_section(), for the y-axis.
+        phase_severity_grid : 2D numpy array (n_levels, n_along), real
+            [0, 1] severity from acf.awci.hydrometeor_phase.
+            compute_real_hydrometeor_phase_at_point(), using each
+            cell's own real sampled T/q/P (not the level-averaged
+            mean pressure).
+        wind_shear_grid : 2D numpy array (n_levels - 1, n_along), real
+            m/s bulk wind shear between each pair of adjacent native
+            levels at each path point - see module/function docstring
+            for the honest "proxy, not the full CAT index" disclosure.
+    """
+    from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+    from acf.awci.wind_shear import compute_real_wind_shear_at_point
+
+    temperature_sample = sample_volume_cross_section(lats, lons, pressure_hpa_volume, temperature_volume, point_a, point_b, n_along)
+    humidity_sample = sample_volume_cross_section(lats, lons, pressure_hpa_volume, specific_humidity_volume, point_a, point_b, n_along)
+    pressure_sample = sample_volume_cross_section(lats, lons, pressure_hpa_volume, pressure_hpa_volume, point_a, point_b, n_along)
+    u_sample = sample_volume_cross_section(lats, lons, pressure_hpa_volume, u_volume, point_a, point_b, n_along)
+    v_sample = sample_volume_cross_section(lats, lons, pressure_hpa_volume, v_volume, point_a, point_b, n_along)
+
+    n_levels = temperature_volume.shape[0]
+    phase_severity_grid = np.zeros((n_levels, n_along))
+    for level in range(n_levels):
+        for i in range(n_along):
+            phase = compute_real_hydrometeor_phase_at_point(
+                temperature_k=float(temperature_sample["grid"][level, i]),
+                specific_humidity=float(humidity_sample["grid"][level, i]),
+                pressure_hpa=float(pressure_sample["grid"][level, i]),
+            )
+            phase_severity_grid[level, i] = phase["phase_severity"]
+
+    wind_shear_grid = np.zeros((max(0, n_levels - 1), n_along))
+    for level in range(n_levels - 1):
+        for i in range(n_along):
+            shear = compute_real_wind_shear_at_point(
+                u_profile=[u_sample["grid"][level, i], u_sample["grid"][level + 1, i]],
+                v_profile=[v_sample["grid"][level, i], v_sample["grid"][level + 1, i]],
+            )
+            wind_shear_grid[level, i] = shear["shear_m_s"]
+
+    return {
+        "distances_km": temperature_sample["distances_km"],
+        "mean_pressure_hpa_by_level": temperature_sample["mean_pressure_hpa_by_level"],
+        "phase_severity_grid": phase_severity_grid,
+        "wind_shear_grid": wind_shear_grid,
+    }
+
+
 def crop_field_to_extent(
     lats: Any, lons: Any, field: np.ndarray, extent: tuple[float, float, float, float]
 ) -> dict[str, Any]:

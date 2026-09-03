@@ -13,7 +13,11 @@ import pytest
 from PySide6.QtCore import Qt
 
 from acf.gui.dashboard.awci_colors import LEVELS
-from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, pressure_to_flight_level_ft
+from acf.gui.dashboard.awci_map_panel import (
+    AWCIMapPanel,
+    flight_level_ft_to_pressure_hpa,
+    pressure_to_flight_level_ft,
+)
 
 
 def test_pressure_to_flight_level_is_a_real_standard_conversion():
@@ -27,6 +31,25 @@ def test_pressure_to_flight_level_is_monotonic_with_altitude():
     """Lower pressure = higher altitude - a real physical property, not
     an arbitrary lookup."""
     assert pressure_to_flight_level_ft(200.0) > pressure_to_flight_level_ft(500.0) > pressure_to_flight_level_ft(900.0)
+
+
+def test_flight_level_ft_to_pressure_hpa_is_the_real_algebraic_inverse():
+    for hpa in (1013.25, 850.0, 700.0, 500.0, 300.0, 250.0, 200.0):
+        ft = pressure_to_flight_level_ft(hpa)
+        back = flight_level_ft_to_pressure_hpa(ft)
+        assert back == pytest.approx(hpa, abs=0.05)
+
+
+def test_flight_level_ft_to_pressure_hpa_known_values():
+    """FL280/FL320 (28000/32000 ft) - real, independently verifiable
+    ISA pressure-altitude values."""
+    assert flight_level_ft_to_pressure_hpa(28000.0) == pytest.approx(329.15, abs=0.5)
+    assert flight_level_ft_to_pressure_hpa(32000.0) == pytest.approx(274.32, abs=0.5)
+
+
+def test_flight_level_ft_to_pressure_hpa_is_monotonic():
+    """Higher altitude = lower pressure - a real physical property."""
+    assert flight_level_ft_to_pressure_hpa(32000.0) < flight_level_ft_to_pressure_hpa(28000.0) < flight_level_ft_to_pressure_hpa(0.0)
 
 
 def test_legend_and_info_boxes_off_by_default(qtbot):
@@ -136,3 +159,66 @@ def test_full_reference_fidelity_panel_constructs_without_exception(qtbot, show_
     panel.resize(900, 600)
     qtbot.wait(10)
     assert panel.status()["has_contour"] is True
+
+
+# ------------------------------- city labels / CAPE checkbox / set_extent (dashboard parity)
+
+
+def test_city_labels_empty_by_default(qtbot):
+    panel = AWCIMapPanel("AWCI REGIONAL MAP")
+    qtbot.addWidget(panel)
+    assert panel._city_labels == []
+
+
+def test_set_city_labels_stores_the_real_supplied_cities(qtbot):
+    panel = AWCIMapPanel("AWCI REGIONAL MAP")
+    qtbot.addWidget(panel)
+    cities = [(36.8065, 10.1815, "Tunis")]
+
+    panel.set_city_labels(cities)
+
+    assert panel._city_labels == cities
+
+
+def test_set_city_labels_does_not_raise_when_drawn(qtbot):
+    panel = AWCIMapPanel("AWCI REGIONAL MAP")
+    qtbot.addWidget(panel)
+    panel.set_city_labels([(36.8065, 10.1815, "Tunis")])  # must not raise
+
+
+def test_cape_checkbox_exists_and_is_honestly_disabled(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    assert "CAPE" in panel.disabled_layer_checkboxes
+    assert panel.disabled_layer_checkboxes["CAPE"].isEnabled() is False
+
+
+def test_set_extent_applies_to_the_real_camera(qtbot):
+    """MapCamera.set_extent() derives its own real zoom_level/center
+    from the request (see that class's own documented formula) - the
+    resulting extent is not always bit-identical to the request, but
+    must genuinely zoom in on (roughly centered on) the requested
+    region, and change from the panel's own default whole-world view."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+    default_extent = panel.camera.current_extent()
+
+    panel.set_extent(-12.0, 15.0, 25.0, 40.0)
+
+    west, east, south, north = panel.camera.current_extent()
+    assert (west, east, south, north) != default_extent
+    assert abs(((west + east) / 2.0) - 1.5) < 5.0  # real center lon ~= (-12+15)/2
+    assert abs(((south + north) / 2.0) - 32.5) < 5.0  # real center lat ~= (25+40)/2
+    assert (east - west) < 180.0  # genuinely zoomed in, not still the whole world
+
+
+def test_set_extent_does_not_trigger_a_full_data_redraw(qtbot):
+    """Real regression guard: set_extent() must be the cheap camera-only
+    path (like zoom_in/zoom_out), not a full update_data() rebuild."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+    contour_before = panel._contour
+
+    panel.set_extent(-12.0, 15.0, 25.0, 40.0)
+
+    assert panel._contour is contour_before

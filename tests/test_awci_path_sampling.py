@@ -11,9 +11,16 @@ throughout - real solver output, not synthetic/mocked arrays.
 import numpy as np
 import pytest
 
-from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+from acf.awci.path_sampling import (
+    crop_field_to_extent,
+    sample_cross_section_hazards,
+    sample_field_along_path,
+    sample_volume_cross_section,
+)
 from acf.awci.spatial_field import compute_real_complexity_field
 from acf.awci.vertical_field import compute_real_complexity_volume
+from acf.awci.wind_shear import compute_real_wind_shear_at_point
 
 
 def test_sample_field_along_path_returns_real_values_from_the_field():
@@ -80,6 +87,102 @@ def test_sample_volume_cross_section_not_a_flat_placeholder():
         point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=12,
     )
     assert np.std(cross["grid"]) > 0.0
+
+
+# --------------------------------- sample_cross_section_hazards (§ dashboard parity)
+
+
+def _real_volume_for_hazards(**overrides):
+    kwargs = dict(model="ALADIN", n_lat=8, n_lon=12, n_levels=6, steps=2, perturbation_scale=3.0, seed=5)
+    kwargs.update(overrides)
+    return compute_real_complexity_volume(**kwargs)
+
+
+def test_sample_cross_section_hazards_shapes():
+    volume = _real_volume_for_hazards()
+    result = sample_cross_section_hazards(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=10,
+    )
+    assert len(result["distances_km"]) == 10
+    assert result["phase_severity_grid"].shape == (6, 10)
+    assert result["wind_shear_grid"].shape == (5, 10)
+    assert result["mean_pressure_hpa_by_level"].shape == (6,)
+
+
+def test_sample_cross_section_hazards_phase_severity_matches_a_direct_call():
+    volume = _real_volume_for_hazards()
+    result = sample_cross_section_hazards(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=8,
+    )
+
+    t_sample = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        (10.0, -10.0), (30.0, 20.0), n_along=8,
+    )
+    q_sample = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["specific_humidity_volume"],
+        (10.0, -10.0), (30.0, 20.0), n_along=8,
+    )
+    p_sample = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["pressure_volume_hpa"],
+        (10.0, -10.0), (30.0, 20.0), n_along=8,
+    )
+
+    level, i = 2, 3
+    expected = compute_real_hydrometeor_phase_at_point(
+        float(t_sample["grid"][level, i]), float(q_sample["grid"][level, i]), float(p_sample["grid"][level, i])
+    )
+    assert result["phase_severity_grid"][level, i] == pytest.approx(expected["phase_severity"])
+
+
+def test_sample_cross_section_hazards_wind_shear_matches_a_direct_call():
+    volume = _real_volume_for_hazards()
+    result = sample_cross_section_hazards(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=8,
+    )
+
+    u_sample = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["u_volume"],
+        (10.0, -10.0), (30.0, 20.0), n_along=8,
+    )
+    v_sample = sample_volume_cross_section(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["v_volume"],
+        (10.0, -10.0), (30.0, 20.0), n_along=8,
+    )
+
+    level, i = 1, 5
+    expected = compute_real_wind_shear_at_point(
+        u_profile=[u_sample["grid"][level, i], u_sample["grid"][level + 1, i]],
+        v_profile=[v_sample["grid"][level, i], v_sample["grid"][level + 1, i]],
+    )
+    assert result["wind_shear_grid"][level, i] == pytest.approx(expected["shear_m_s"])
+
+
+def test_sample_cross_section_hazards_wind_shear_is_never_negative():
+    volume = _real_volume_for_hazards(seed=7, perturbation_scale=5.0)
+    result = sample_cross_section_hazards(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=10,
+    )
+    assert np.all(result["wind_shear_grid"] >= 0.0)
+
+
+def test_sample_cross_section_hazards_phase_severity_bounded_0_1():
+    volume = _real_volume_for_hazards(seed=9, perturbation_scale=6.0)
+    result = sample_cross_section_hazards(
+        volume["lats"], volume["lons"], volume["pressure_volume_hpa"], volume["temperature_volume"],
+        volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+        point_a=(10.0, -10.0), point_b=(30.0, 20.0), n_along=10,
+    )
+    assert np.all(result["phase_severity_grid"] >= 0.0)
+    assert np.all(result["phase_severity_grid"] <= 1.0)
 
 
 def test_crop_field_to_extent_keeps_only_points_inside_it():

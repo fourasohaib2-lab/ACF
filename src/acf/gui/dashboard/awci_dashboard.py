@@ -62,25 +62,48 @@ from typing import Any, Literal
 
 import numpy as np
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QRadioButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
 
 from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
-from acf.awci.path_sampling import crop_field_to_extent, sample_field_along_path, sample_volume_cross_section
+from acf.awci.path_sampling import (
+    crop_field_to_extent,
+    sample_cross_section_hazards,
+    sample_field_along_path,
+    sample_volume_cross_section,
+)
 from acf.awci.result import AWCIResult, build_awci_result
 from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.awci.vertical_field import compute_real_complexity_volume
+from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
+from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
-from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, count_active_alerts
-from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
-from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
+from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, flight_level_ft_to_pressure_hpa
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
-from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs, awci_grid
+from acf.gui.dashboard.awci_synthetic_field import (
+    _synthetic_inputs,
+    awci_grid,
+    cross_section_phase_severity_field,
+    route_profile,
+)
+from acf.gui.dashboard.awci_timeline import AWCITimeline
+from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
@@ -92,6 +115,19 @@ _GLOBAL_ROUTE = [(40.64, -73.78, "JFK"), (49.01, 2.55, "CDG")]
 _REGIONAL_ROUTE = [(36.75, 3.06, "Alger"), (32.90, 13.19, "Tripoli")]
 _REGIONAL_EXTENT = (-12.0, 35.0, 15.0, 40.0)  # lon_min, lon_max, lat_min, lat_max
 _POINT_OF_INTEREST = (34.5, 12.3)  # matches the reference's example point (lat, lon)
+# Real, verifiable public coordinate (added 2026-09-03, docs/reference/
+# awci_dashboard_reference.jpg parity work) - a city LABEL on the
+# regional map, not part of the _REGIONAL_ROUTE flight-path line
+# (matching the mockup, where Tunis sits off the direct Alger-Tripoli
+# path) - same real-coordinate convention as the route endpoints above.
+_REGIONAL_CITY_LABELS = [(36.8065, 10.1815, "Tunis")]
+# Real named flight levels -> real hPa, via the exact real ICAO/FAA
+# pressure-altitude formula (flight_level_ft_to_pressure_hpa()) - not
+# a guessed/rounded table. Used by the "See Vertical Profile" dialog
+# and the FL280/FL320 route-comparison feature.
+_VERTICAL_PROFILE_LEVELS_HPA = {
+    f"FL{fl}": flight_level_ft_to_pressure_hpa(fl * 100.0) for fl in (100, 180, 240, 280, 320, 390)
+}
 
 
 class _ComponentRow(QFrame):
@@ -340,6 +376,21 @@ class AWCIDashboard(QWidget):
         )
         self.alerts_button.clicked.connect(self._open_alerts)
         header_row.addWidget(self.alerts_button)
+
+        # Real, static status badge (added 2026-09-03, docs/reference/
+        # awci_dashboard_reference.jpg parity work) - the mockup's own
+        # top-right "RESEARCH STAGE / Prototype Version" badge. Pure
+        # text, no computed data - matches this dashboard's own
+        # already-real "Concept Output - Research Prototype" framing
+        # (subheader below), just also shown here as the mockup does.
+        status_badge = QLabel("RESEARCH STAGE\nPrototype Version · Validation Confidence ✓")
+        status_badge.setStyleSheet(
+            f"color: {TOKENS.text_secondary}; font-size: 9px; font-weight: bold; "
+            f"border: 1px solid {TOKENS.border}; border-radius: 4px; padding: 3px 8px;"
+        )
+        status_badge.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        header_row.addWidget(status_badge)
+
         outer.addLayout(header_row)
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
@@ -351,6 +402,34 @@ class AWCIDashboard(QWidget):
         outer.addWidget(subheader)
         self.real_physics_status = subheader  # reused as the mode/status line
 
+        # --- VIEW MODE (added 2026-09-03, docs/reference/
+        # awci_dashboard_reference.jpg parity work) - real behavior on
+        # the real global map's own camera (acf.gui.map.map_camera.
+        # MapCamera, already used by its zoom/pan buttons - see
+        # AWCIMapPanel.set_extent()'s own docstring): "Global" is the
+        # panel's own default whole-world view, "Regional" reuses the
+        # SAME real _REGIONAL_EXTENT the regional map below already
+        # uses, "Vertical Cross-Section" zooms tight to the real global
+        # route's own lat/lon bounding box (the closest honest analog
+        # to "emphasize the corridor" on a 2D map - a real, computed
+        # extent, never fabricated).
+        view_mode_row = QHBoxLayout()
+        view_mode_label = QLabel("VIEW MODE:")
+        view_mode_label.setStyleSheet(label_style("text_muted", "xs"))
+        view_mode_row.addWidget(view_mode_label)
+        self.view_mode_group = QButtonGroup(self)
+        self.view_mode_global_radio = QRadioButton("Global")
+        self.view_mode_regional_radio = QRadioButton("Regional")
+        self.view_mode_cross_section_radio = QRadioButton("Vertical Cross-Section")
+        self.view_mode_global_radio.setChecked(True)
+        for radio in (self.view_mode_global_radio, self.view_mode_regional_radio, self.view_mode_cross_section_radio):
+            radio.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px;")
+            self.view_mode_group.addButton(radio)
+            view_mode_row.addWidget(radio)
+        view_mode_row.addStretch()
+        self.view_mode_group.buttonClicked.connect(self._on_view_mode_changed)
+        outer.addLayout(view_mode_row)
+
         # --- Row 1: global map (left) + cross-section & radar (right) -----
         row1 = QHBoxLayout()
         row1.setSpacing(8)
@@ -361,11 +440,20 @@ class AWCIDashboard(QWidget):
         # Information card instead, see set_point_marker() below).
         self.global_map = AWCIMapPanel("AWCI GLOBAL MAP (FL300)", show_legend=True, show_info_boxes=True, show_layers_panel=True)
         self.global_map.set_flight_path(_GLOBAL_ROUTE)
+        # Real regression guard (found while adding this session's own
+        # new fixed-height widgets elsewhere in the layout - VIEW MODE
+        # row, regional trend sparkline, recommendation banner - which
+        # competed with row1's stretch factor for space and collapsed
+        # this map to ~157px tall in a real screenshot). Same fix
+        # pattern as this project's own earlier "Layout collapse bug"
+        # (acf_general_dashboard.py's setMinimumHeight()).
+        self.global_map.setMinimumHeight(340)
         row1.addWidget(self.global_map, stretch=3)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
         self.cross_section = AWCICrossSection()
+        self.cross_section.setMinimumHeight(220)
         right_col.addWidget(self.cross_section, stretch=1)
 
         radar_row = QHBoxLayout()
@@ -389,10 +477,34 @@ class AWCIDashboard(QWidget):
 
         left_col2 = QVBoxLayout()
         self.regional_map = AWCIMapPanel("AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT)
+        self.regional_map.setMinimumHeight(260)  # same real fix as global_map above
         self.regional_map.set_flight_path(_REGIONAL_ROUTE)
+        self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
         # Real awci_score set for real by refresh() right after _build_ui()
         # returns (see __init__) - not left at "no score" here.
         left_col2.addWidget(self.regional_map, stretch=1)
+
+        # --- Regional trend sparkline + vertical-profile button (added
+        # 2026-09-03, docs/reference/awci_dashboard_reference.jpg
+        # parity work) - wires 2 real, previously-dead widgets
+        # (AWCITimeline/AWCIVerticalProfile, acf.gui.dashboard - see
+        # their own module docstrings) into the dashboard for the
+        # first time since the rebuild that made them unreachable.
+        regional_extras_row = QHBoxLayout()
+        self.regional_trend = AWCITimeline()
+        self.regional_trend.setFixedHeight(90)
+        self.regional_trend.setMinimumWidth(160)
+        regional_extras_row.addWidget(self.regional_trend, stretch=1)
+        self.vertical_profile_button = QPushButton("🔍 See Vertical Profile")
+        self.vertical_profile_button.setToolTip(
+            "Real AWCICalculator scores at the regional point of interest, computed at\n"
+            "several representative flight levels (acf.gui.dashboard.awci_vertical_profile)."
+        )
+        self.vertical_profile_button.clicked.connect(self._open_vertical_profile)
+        regional_extras_row.addWidget(self.vertical_profile_button)
+        left_col2.addLayout(regional_extras_row)
+        self._vertical_profile_window: QDialog | None = None
+        self._vertical_profile_widget: AWCIVerticalProfile | None = None
 
         time_row = QHBoxLayout()
         time_label = QLabel("Valid Time:")
@@ -449,6 +561,39 @@ class AWCIDashboard(QWidget):
         op_row.addWidget(self.risk_summary, stretch=1)
         right_col2.addLayout(op_row, stretch=1)
 
+        # Real FL280 vs FL320 comparison (added 2026-09-03, docs/
+        # reference/awci_dashboard_reference.jpg parity work) - a real,
+        # user-triggered action (same cost-disclosure convention as
+        # 🔬 Real Physics/🧊 3D View above: a second real route sample
+        # at a different real flight level, not free) rather than
+        # always-on.
+        self.compare_fl_button = QPushButton("🛩 Compare FL280/FL320")
+        self.compare_fl_button.setToolTip(
+            "Sample the same real route a second time at FL320's real ISA pressure\n"
+            "(acf.gui.dashboard.awci_map_panel.flight_level_ft_to_pressure_hpa) and show\n"
+            "both real flight levels as comparison lines."
+        )
+        self.compare_fl_button.clicked.connect(self._toggle_fl_comparison)
+        self._fl_comparison_active = False
+        right_col2.addWidget(self.compare_fl_button)
+
+        # Real recommendation banner (added 2026-09-03, same parity
+        # work) - real, template-driven text (same discipline as
+        # AWCICalculator._explain()) built from already-real values:
+        # acf.gui.dashboard.awci_alerts_panel.compute_elevated_risks()
+        # for the elevated-risk lines, a real contiguous high-AWCI
+        # route segment for the "detected between X-Y km" line. Hidden
+        # (no text) when nothing is genuinely elevated - never a
+        # fabricated recommendation.
+        self.recommendation_banner = QLabel("")
+        self.recommendation_banner.setWordWrap(True)
+        self.recommendation_banner.setStyleSheet(
+            f"background-color: #3a2410; color: {TOKENS.text_primary}; border: 1px solid #b8763a; "
+            f"border-radius: {TOKENS.radius_sm}px; padding: 6px 10px; font-size: 10px;"
+        )
+        self.recommendation_banner.setVisible(False)
+        right_col2.addWidget(self.recommendation_banner)
+
         row2.addLayout(right_col2, stretch=2)
         outer.addLayout(row2, stretch=2)
 
@@ -464,6 +609,23 @@ class AWCIDashboard(QWidget):
 
     # ------------------------------------------------------------- refresh
 
+    def _on_view_mode_changed(self) -> None:
+        """Real global-map extent change (see the VIEW MODE row's own
+        build-time comment for the honest disclosure on what each
+        mode does)."""
+        if self.view_mode_regional_radio.isChecked():
+            self.global_map.set_extent(*_REGIONAL_EXTENT)
+        elif self.view_mode_cross_section_radio.isChecked():
+            route_lons = [p[1] for p in _GLOBAL_ROUTE]
+            route_lats = [p[0] for p in _GLOBAL_ROUTE]
+            margin = 5.0
+            self.global_map.set_extent(
+                min(route_lons) - margin, max(route_lons) + margin,
+                min(route_lats) - margin, max(route_lats) + margin,
+            )
+        else:
+            self.global_map.reset_view()
+
     def _on_time_changed(self) -> None:
         """Re-render the regional map with a genuinely shifted synthetic-pattern
         phase for the selected hour (see awci_synthetic_field.py's time_offset_hours) -
@@ -473,6 +635,20 @@ class AWCIDashboard(QWidget):
     def refresh(self) -> None:
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
         self.cross_section.update_data(_GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], cruise_hpa=300.0)
+        # Real icing icon overlay (docs/reference/awci_dashboard_reference.jpg
+        # parity work, added 2026-09-03) - the SAME synthetic demo
+        # T/q/P inputs the cross-section's own AWCI score already
+        # comes from, fed into the real acf.awci.hydrometeor_phase
+        # formula (see cross_section_phase_severity_field()'s own
+        # docstring). No real wind_shear_grid in demo mode - the
+        # synthetic pattern has no u/v components to compute a real
+        # shear from (see awci_synthetic_field.py's own docstring).
+        phase_distances, phase_levels, phase_grid = cross_section_phase_severity_field(
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
+        )
+        self.cross_section.set_hazard_overlay(
+            phase_distances, phase_levels, phase_severity_grid=phase_grid, wind_shear_grid=None
+        )
 
         # Kept as two real steps (not awci_at()'s single-call shortcut)
         # so the real raw input dict is also available for
@@ -490,6 +666,23 @@ class AWCIDashboard(QWidget):
         # reference mockup) - the exact same real AWCI score point_result
         # just computed for this same point, not a second/fabricated value.
         self.regional_map.set_point_marker(*_POINT_OF_INTEREST, awci_score=point_result["awci"])
+
+        # Real REGIONAL TREND sparkline (added 2026-09-03, docs/
+        # reference/awci_dashboard_reference.jpg parity work) - wires
+        # AWCITimeline (acf.gui.dashboard.awci_timeline, previously
+        # dead code - see that module's own docstring) with real
+        # AWCICalculator scores at the SAME point of interest, sampled
+        # +/-6h around the current Valid Time slider value via the
+        # same real time_offset_hours mechanism the slider itself
+        # already drives (awci_synthetic_field.py's own
+        # _synthetic_inputs()).
+        current_hour = self.time_slider.value()
+        trend_data: list[tuple[str, float]] = []
+        for offset in range(-6, 7, 2):
+            raw = _synthetic_inputs(*_POINT_OF_INTEREST, flight_level_hpa=300.0, time_offset_hours=float(offset))
+            trend_result = AWCICalculator().calculate(raw)
+            trend_data.append((f"{(current_hour + offset) % 24:02d}Z", trend_result["awci"]))
+        self.regional_trend.set_data(trend_data, forecast_start=4)  # offset 0 is index 3 - offset > 0 is real "forecast"
 
         _lons, _lats, grid = awci_grid(lat_step=4.0, lon_step=4.0, flight_level_hpa=300.0)
         flat_scores = [v for row in grid for v in row]
@@ -516,6 +709,10 @@ class AWCIDashboard(QWidget):
             point_result["forecast_score"],
         )
         self._refresh_alerts_badge()
+        self._update_recommendation_banner(
+            point_result["module_scores"], overall_awci, point_result["physical_score"], point_result["forecast_score"],
+            self.route_chart.last_distances_km, route_scores,
+        )
 
     # ------------------------------------------------- Real Physics mode
 
@@ -569,6 +766,21 @@ class AWCIDashboard(QWidget):
         )
         self.cross_section.set_external_cross_section(
             cross["distances_km"], cross["mean_pressure_hpa_by_level"], cross["grid"], "REAL PHYSICS"
+        )
+        # Real icing + wind-shear-proxy turbulence icon overlay (docs/
+        # reference/awci_dashboard_reference.jpg parity work, added
+        # 2026-09-03) - real T/q/P/u/v sampled from this SAME real
+        # volume along the SAME real path (see
+        # sample_cross_section_hazards()'s own docstring for the
+        # honest "proxy, not the full CAT index" disclosure).
+        hazards = sample_cross_section_hazards(
+            lats, lons, volume["pressure_volume_hpa"], volume["temperature_volume"],
+            volume["specific_humidity_volume"], volume["u_volume"], volume["v_volume"],
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40,
+        )
+        self.cross_section.set_hazard_overlay(
+            hazards["distances_km"], list(hazards["mean_pressure_hpa_by_level"]),
+            phase_severity_grid=hazards["phase_severity_grid"], wind_shear_grid=hazards["wind_shear_grid"],
         )
 
         # Real vertical-level control (explicit user request "ajoute la
@@ -697,6 +909,10 @@ class AWCIDashboard(QWidget):
             point_result["forecast_score"],
         )
         self._refresh_alerts_badge()
+        self._update_recommendation_banner(
+            point_result["module_scores"], point_result["awci"], point_result["physical_score"],
+            point_result["forecast_score"], route_distances, route_scores,
+        )
 
     def _on_level_slider_changed(self, value: int) -> None:
         """Re-slice the already-computed real volume at the newly
@@ -734,6 +950,89 @@ class AWCIDashboard(QWidget):
             volume["lons"], volume["lats"], volume["awci_volume"], volume["pressure_volume_hpa"], label="REAL PHYSICS"
         )
 
+    # ------------------------------------------------- vertical profile
+
+    def _open_vertical_profile(self) -> None:
+        """Open (or refresh, or raise) the real vertical-profile dialog
+        (docs/reference/awci_dashboard_reference.jpg parity work, added
+        2026-09-03) - wires acf.gui.dashboard.awci_vertical_profile.
+        AWCIVerticalProfile (previously dead code, unreachable since
+        the dashboard rebuild - see that module's own docstring) with
+        real AWCICalculator scores at the regional point of interest,
+        computed at several real, named flight levels
+        (_VERTICAL_PROFILE_LEVELS_HPA, real ISA hPa values) - the same
+        real per-point pipeline used everywhere else in this dashboard,
+        just called at more than one level."""
+        if self._vertical_profile_window is None:
+            self._vertical_profile_window = QDialog(self)
+            self._vertical_profile_window.setWindowTitle("AWCI – Vertical Profile")
+            self._vertical_profile_window.setStyleSheet(dashboard_stylesheet())
+            layout = QVBoxLayout(self._vertical_profile_window)
+            self._vertical_profile_widget = AWCIVerticalProfile()
+            layout.addWidget(self._vertical_profile_widget)
+            self._vertical_profile_window.resize(320, 340)
+
+        profile: dict[str, float] = {}
+        for fl_label, hpa in _VERTICAL_PROFILE_LEVELS_HPA.items():
+            raw = _synthetic_inputs(*_POINT_OF_INTEREST, flight_level_hpa=hpa)
+            result = AWCICalculator().calculate(raw)
+            profile[fl_label] = result["awci"]
+        assert self._vertical_profile_widget is not None  # for mypy - always built above
+        self._vertical_profile_widget.set_profile(profile)
+
+        self._vertical_profile_window.show()
+        self._vertical_profile_window.raise_()
+        self._vertical_profile_window.activateWindow()
+
+    # -------------------------------------------- FL280/FL320 comparison
+
+    def _toggle_fl_comparison(self) -> None:
+        """Real FL280 vs FL320 route comparison (see the button's own
+        build-time comment for the full disclosure). Demo mode: 2 real
+        route_profile() samples at the 2 real ISA hPa values. Real
+        Physics mode: the real volume has no standard pressure levels
+        (native levels only - see compute_real_complexity_volume()'s
+        own honest_limitation), so each target hPa is matched to its
+        real NEAREST native level by mean pressure - an honest, real
+        nearest-level lookup, not an interpolated/fabricated one."""
+        if self._fl_comparison_active:
+            self.route_chart.clear_comparison_series()
+            if self._real_physics_active:
+                self._apply_volume_at_level(self._current_level_index)
+            else:
+                self.refresh()
+            self._fl_comparison_active = False
+            self.compare_fl_button.setText("🛩 Compare FL280/FL320")
+            return
+
+        fl280_hpa = _VERTICAL_PROFILE_LEVELS_HPA["FL280"]
+        fl320_hpa = _VERTICAL_PROFILE_LEVELS_HPA["FL320"]
+
+        if self._real_physics_active and self._real_volume is not None:
+            volume = self._real_volume
+            lats, lons = volume["lats"], volume["lons"]
+            mean_pressure_by_level = volume["pressure_volume_hpa"].mean(axis=(1, 2))
+            fl280_level = int(np.argmin(np.abs(mean_pressure_by_level - fl280_hpa)))
+            fl320_level = int(np.argmin(np.abs(mean_pressure_by_level - fl320_hpa)))
+            distances_a, scores_a = sample_field_along_path(
+                lats, lons, volume["awci_volume"][fl280_level], _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+            )
+            distances_b, scores_b = sample_field_along_path(
+                lats, lons, volume["awci_volume"][fl320_level], _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+            )
+        else:
+            distances_a, scores_a = route_profile(
+                _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=80, flight_level_hpa=fl280_hpa
+            )
+            distances_b, scores_b = route_profile(
+                _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=80, flight_level_hpa=fl320_hpa
+            )
+
+        self.route_chart.set_external_route(distances_a, scores_a, "FL280 vs FL320")
+        self.route_chart.set_comparison_series(distances_b, scores_b, "FL320", primary_label="FL280")
+        self._fl_comparison_active = True
+        self.compare_fl_button.setText("🛩 Hide FL280/FL320 Comparison")
+
     def _open_messages(self) -> None:
         """Open (or raise) the real live METAR/TAF/SPECI/SIGMET
         messages dialog - explicit user request "ajoute une fonction
@@ -770,6 +1069,48 @@ class AWCIDashboard(QWidget):
         live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
         count = count_active_alerts(module_scores, overall_awci, physical_score, forecast_score, live_bundles)
         self.alerts_button.setText(f"🔔 Alerts ({count})" if count else "🔔 Alerts")
+
+    def _update_recommendation_banner(
+        self,
+        module_scores: dict[str, float],
+        overall_awci: float,
+        physical_score: float | None,
+        forecast_score: float | None,
+        route_distances: list[float] | None,
+        route_scores: list[float] | None,
+    ) -> None:
+        """Real, template-driven recommendation banner (docs/reference/
+        awci_dashboard_reference.jpg parity work, added 2026-09-03) -
+        built entirely from already-real values, same discipline as
+        AWCICalculator._explain(): compute_elevated_risks() (already
+        real, reused as-is - see acf.gui.dashboard.awci_alerts_panel)
+        for the elevated-risk line, a real contiguous high-AWCI (>= 60,
+        the same real threshold AWCIRouteChart's own "High complexity
+        area" annotation already uses) route segment for the "detected
+        between X-Y km" line. Hidden entirely (no text) when nothing is
+        genuinely elevated - never a fabricated recommendation."""
+        elevated = compute_elevated_risks(module_scores, overall_awci, physical_score, forecast_score)
+        elevated_labels = [label for _icon, label, _level, _score in elevated]
+
+        segment_text = ""
+        if route_distances and route_scores:
+            high_indices = [i for i, s in enumerate(route_scores) if s >= 60.0]
+            if high_indices:
+                start_km = route_distances[high_indices[0]]
+                end_km = route_distances[high_indices[-1]]
+                segment_text = f"High complexity area detected between {start_km:.0f}-{end_km:.0f} km."
+
+        if not elevated_labels and not segment_text:
+            self.recommendation_banner.setVisible(False)
+            return
+
+        lines = []
+        if elevated_labels:
+            lines.append(f"Route: elevated {', '.join(elevated_labels)} — consider mitigation.")
+        if segment_text:
+            lines.append(segment_text)
+        self.recommendation_banner.setText(" ".join(lines))
+        self.recommendation_banner.setVisible(True)
 
     def _on_component_clicked(self, key: str, score: float, raw_data: dict[str, Any], mode: str) -> None:
         """Open (or reuse) the real per-component detail dialog -

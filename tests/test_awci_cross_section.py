@@ -8,6 +8,7 @@ colorbar under this exact panel).
 from __future__ import annotations
 
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
+from acf.gui.dashboard.awci_synthetic_field import cross_section_phase_severity_field
 
 _POINT_A = (40.64, -73.78)
 _POINT_B = (49.01, 2.55)
@@ -64,3 +65,66 @@ def test_external_cross_section_also_gets_a_real_colorbar(qtbot):
 
     assert panel._colorbar is not None
     assert len(panel.figure.axes) == 2
+
+
+# ------------------------------------- hazard icon overlays (dashboard parity)
+
+
+def test_hazard_overlay_is_none_by_default(qtbot):
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+    assert panel._hazard_overlay is None
+
+
+def test_set_hazard_overlay_stores_the_real_supplied_grids(qtbot):
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+    panel.set_hazard_overlay(distances, levels, phase_severity_grid=phase_grid, wind_shear_grid=None)
+
+    assert panel._hazard_overlay is not None
+    stored_distances, stored_levels, stored_phase, stored_shear = panel._hazard_overlay
+    assert stored_distances == distances
+    assert stored_levels == levels
+    assert stored_phase == phase_grid
+    assert stored_shear is None
+
+
+def test_set_hazard_overlay_does_not_raise_when_drawn(qtbot):
+    """Real regression guard: drawing the icon overlay must not crash
+    the redraw pipeline (real proof, not just that state was stored)."""
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+    panel.set_hazard_overlay(distances, levels, phase_severity_grid=phase_grid, wind_shear_grid=None)  # must not raise
+
+
+def test_clear_hazard_overlay_removes_it(qtbot):
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+    panel.set_hazard_overlay(distances, levels, phase_severity_grid=phase_grid, wind_shear_grid=None)
+
+    panel.clear_hazard_overlay()
+
+    assert panel._hazard_overlay is None
+
+
+def test_hazard_overlay_survives_a_redraw_via_update_data(qtbot):
+    """A real subsequent update_data() call (e.g. a time-slider move)
+    must keep showing the overlay, not silently drop it."""
+    panel = AWCICrossSection()
+    qtbot.addWidget(panel)
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)
+    distances, levels, phase_grid = cross_section_phase_severity_field(_POINT_A, _POINT_B, n_along=10, n_levels=6)
+    panel.set_hazard_overlay(distances, levels, phase_severity_grid=phase_grid, wind_shear_grid=None)
+
+    panel.update_data(_POINT_A, _POINT_B, cruise_hpa=300.0)  # must not raise, must not clear the overlay
+
+    assert panel._hazard_overlay is not None

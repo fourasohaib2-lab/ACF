@@ -4,7 +4,17 @@ Focus on awci_grid_full() (added 2026-09-02 for the Physical/Forecast
 split), with light coverage of the pre-existing functions it builds on.
 """
 
-from acf.gui.dashboard.awci_synthetic_field import awci_at, awci_grid, awci_grid_full
+import pytest
+
+from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+from acf.gui.dashboard.awci_synthetic_field import (
+    _synthetic_inputs,
+    awci_at,
+    awci_grid,
+    awci_grid_full,
+    cross_section_field,
+    cross_section_phase_severity_field,
+)
 
 
 def test_awci_at_returns_a_real_calculator_result():
@@ -40,3 +50,39 @@ def test_awci_grid_full_physical_and_forecast_fields_are_populated():
         for value in row:
             assert value is not None
             assert 0.0 <= value <= 100.0
+
+
+# ------------------------------- cross_section_phase_severity_field (dashboard parity)
+
+
+def test_cross_section_phase_severity_field_shape_matches_cross_section_field():
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances_awci, levels_awci, _ = cross_section_field(point_a, point_b, n_along=10, n_levels=5)
+    distances, levels, grid = cross_section_phase_severity_field(point_a, point_b, n_along=10, n_levels=5)
+
+    assert distances == distances_awci
+    assert levels == levels_awci
+    assert len(grid) == 5
+    assert all(len(row) == 10 for row in grid)
+
+
+def test_cross_section_phase_severity_field_matches_a_direct_formula_call():
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances, levels, grid = cross_section_phase_severity_field(point_a, point_b, n_along=6, n_levels=4)
+
+    level_i, dist_i = 2, 3
+    hpa = levels[level_i]
+    t = dist_i / 5
+    lat = point_a[0] + t * (point_b[0] - point_a[0])
+    lon = point_a[1] + t * (point_b[1] - point_a[1])
+    inputs = _synthetic_inputs(lat, lon, hpa, 0.0)
+    expected = compute_real_hydrometeor_phase_at_point(inputs["temperature"], inputs["specific_humidity"], hpa)
+
+    assert grid[level_i][dist_i] == pytest.approx(expected["phase_severity"])
+
+
+def test_cross_section_phase_severity_field_is_bounded_0_1():
+    distances, levels, grid = cross_section_phase_severity_field((36.75, 3.06), (32.90, 13.19), n_along=10, n_levels=8)
+    for row in grid:
+        for value in row:
+            assert 0.0 <= value <= 1.0

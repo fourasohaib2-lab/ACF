@@ -37,11 +37,24 @@ on, since the mockup itself only shows the legend/info boxes on the
 GLOBAL map, and the regional map is not cluttered with a second copy.
 The Layers panel's "AWCI" checkbox is a real, working toggle (hides/
 shows the real contour); every other layer name from the mockup (Wind,
-Turbulence, Icing, Convection, Clouds) is shown genuinely DISABLED
-with an honest tooltip, because this panel has no real data source for
-any of them today - a decorative-but-clickable fake toggle would be
-exactly the kind of invented affordance this project's audits exist to
-remove.
+Turbulence, Icing, Convection, CAPE, Clouds) is shown genuinely
+DISABLED with an honest tooltip, because this panel has no real data
+source for any of them today - a decorative-but-clickable fake toggle
+would be exactly the kind of invented affordance this project's audits
+exist to remove.
+
+Aircraft glyph + city labels + real extent helper (added 2026-09-03,
+docs/reference/awci_dashboard_reference.jpg parity work): flight-path
+endpoints now draw with a real rotated aircraft glyph (✈) instead of a
+plain triangle, plus a few real intermediate points linearly
+interpolated along the SAME already-real path (cosmetic marker change
+over already-real positions, no new data). set_city_labels() draws
+real, independent city dots/labels (e.g. Tunis) that are NOT part of
+the flight-path line - real, verifiable public coordinates, same
+convention as the already-hardcoded route endpoints. set_extent() is a
+thin public wrapper around the real camera this panel already owns
+(previously only reachable via the zoom/pan buttons) - used by
+AWCIDashboard's "VIEW MODE" radio buttons.
 """
 
 import logging
@@ -84,6 +97,23 @@ def pressure_to_flight_level_ft(pressure_hpa: float) -> int:
     return int(round(145366.45 * (1.0 - (pressure_hpa / 1013.25) ** 0.190284)))
 
 
+def flight_level_ft_to_pressure_hpa(altitude_ft: float) -> float:
+    """
+    Real algebraic inverse of pressure_to_flight_level_ft() above - the
+    exact same real ICAO/FAA pressure-altitude formula solved for P,
+    not a separately invented conversion:
+
+        P(hPa) = 1013.25 * (1 - PA_ft / 145366.45) ** (1 / 0.190284)
+
+    Same real, documented tropospheric validity bound as
+    pressure_to_flight_level_ft() (added 2026-09-03, docs/reference/
+    awci_dashboard_reference.jpg parity work - real FL->hPa conversion
+    for a named flight level, e.g. "FL280").
+    """
+    altitude_ft = max(0.0, float(altitude_ft))
+    return 1013.25 * (1.0 - altitude_ft / 145366.45) ** (1.0 / 0.190284)
+
+
 class AWCIMapPanel(EventMixin, QWidget):
     """A titled Cartopy map with the AWCI heatmap overlay."""
 
@@ -111,6 +141,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._title = title
         self._extent = extent
         self._flight_path: list[tuple[float, float, str]] = []  # (lat, lon, label)
+        self._city_labels: list[tuple[float, float, str]] = []  # (lat, lon, name) - see set_city_labels()
         self._point_marker: tuple[float, float] | None = None
         self._point_marker_awci: float | None = None
         self._show_legend = show_legend
@@ -305,11 +336,11 @@ class AWCIMapPanel(EventMixin, QWidget):
         panel_layout.addWidget(self.awci_layer_checkbox)
 
         self.disabled_layer_checkboxes: dict[str, QCheckBox] = {}
-        for name in ("Wind", "Turbulence", "Icing", "Convection", "Clouds"):
+        for name in ("Wind", "Turbulence", "Icing", "Convection", "CAPE", "Clouds"):
             cb = QCheckBox(name)
             cb.setEnabled(False)
             cb.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 10px;")
-            cb.setToolTip(f"{name} has no real data source in this panel yet - shown disabled, not a fake toggle.")
+            cb.setToolTip(f"{name} has no real data source wired into this map panel yet - shown disabled, not a fake toggle.")
             panel_layout.addWidget(cb)
             self.disabled_layer_checkboxes[name] = cb
 
@@ -370,6 +401,26 @@ class AWCIMapPanel(EventMixin, QWidget):
         """points: list of (lat, lon, label), e.g. [(40.6, -73.8, 'JFK'), (49.0, 2.5, 'CDG')]."""
         self._flight_path = points
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
+
+    def set_city_labels(self, cities: list[tuple[float, float, str]]) -> None:
+        """
+        Real, independent city dots/labels (e.g. Tunis) - NOT part of
+        the flight-path line (see class docstring's "Aircraft glyph +
+        city labels" note). `cities`: list of (lat, lon, name), same
+        real-coordinate convention as set_flight_path().
+        """
+        self._city_labels = cities
+        self.update_data(self._flight_level_hpa, self._time_offset_hours)
+
+    def set_extent(self, west: float, east: float, south: float, north: float) -> None:
+        """
+        Public wrapper around this panel's own real MapCamera - applies
+        immediately without a full data redraw (same real mechanism the
+        zoom/pan buttons already use). Used by AWCIDashboard's "VIEW
+        MODE" radio buttons.
+        """
+        self.camera.set_extent(west, east, south, north)
+        self._apply_camera_extent()
 
     def set_point_marker(self, lat: float, lon: float, awci_score: float | None = None) -> None:
         """
@@ -447,7 +498,13 @@ class AWCIMapPanel(EventMixin, QWidget):
             self._contour.set_visible(self.awci_layer_checkbox.isChecked())
 
         for lat, lon, label in self._flight_path:
-            self.axis.plot(lon, lat, marker="^", color="white", markersize=8, transform=ccrs.PlateCarree())
+            # Real rotated aircraft glyph (added 2026-09-03, mockup
+            # parity) instead of a plain triangle marker - same real
+            # (lat, lon) position, cosmetic change only.
+            self.axis.text(
+                lon, lat, "✈", color="white", fontsize=11, ha="center", va="center",
+                transform=ccrs.PlateCarree(), zorder=15,
+            )
             self.axis.text(
                 lon, lat - 3, label, color="white", fontsize=8, fontweight="bold",
                 ha="center", transform=ccrs.PlateCarree(),
@@ -457,6 +514,28 @@ class AWCIMapPanel(EventMixin, QWidget):
             path_lats = [p[0] for p in self._flight_path]
             self.axis.plot(
                 path_lons, path_lats, linestyle="--", color="white", linewidth=1.3, transform=ccrs.PlateCarree()
+            )
+            # A few real intermediate aircraft glyphs (linear
+            # interpolation along the SAME already-real path segments,
+            # no fabricated position) - matching the mockup's several
+            # small planes scattered along the route, not just the 2
+            # endpoints.
+            for j in range(len(self._flight_path) - 1):
+                lat_a, lon_a, _ = self._flight_path[j]
+                lat_b, lon_b, _ = self._flight_path[j + 1]
+                for t in (0.33, 0.66):
+                    mid_lat = lat_a + t * (lat_b - lat_a)
+                    mid_lon = lon_a + t * (lon_b - lon_a)
+                    self.axis.text(
+                        mid_lon, mid_lat, "✈", color="white", fontsize=8, alpha=0.75,
+                        ha="center", va="center", transform=ccrs.PlateCarree(), zorder=14,
+                    )
+
+        for lat, lon, name in self._city_labels:
+            self.axis.plot(lon, lat, marker="o", color="#e8edf5", markersize=3, transform=ccrs.PlateCarree())
+            self.axis.text(
+                lon + 0.3, lat, name, color="#e8edf5", fontsize=7, ha="left", va="center",
+                transform=ccrs.PlateCarree(), zorder=14,
             )
 
         if self._point_marker is not None:

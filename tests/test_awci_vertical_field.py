@@ -24,6 +24,18 @@ def test_volume_shape_matches_the_real_grid():
     assert result["pressure_volume_hpa"].shape == (5, 6, 10)
 
 
+def test_u_v_volumes_match_wind_speed_volume():
+    """Real proof u_volume/v_volume (added 2026-09-03) are the SAME
+    real components wind_speed_volume was already derived from, not a
+    second/independent computation."""
+    result = compute_real_complexity_volume(model="ALADIN", n_lat=4, n_lon=6, n_levels=5, steps=2)
+
+    assert result["u_volume"].shape == result["wind_speed_volume"].shape
+    assert result["v_volume"].shape == result["wind_speed_volume"].shape
+    expected_speed = np.sqrt(result["u_volume"] ** 2 + result["v_volume"] ** 2)
+    assert np.allclose(result["wind_speed_volume"], expected_speed)
+
+
 def test_pressure_decreases_with_altitude_real_physics():
     """
     Real physical invariant, verified against actual solver output (not
