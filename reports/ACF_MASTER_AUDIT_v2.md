@@ -3736,3 +3736,112 @@ d'ascendance, un proxy honnêtement disclosed, pas la hauteur de sommet
 elle-même) étendus, chacun avec une seule variable. Microphysique/relief
 (§15-16) restent avec leurs entrées d'origine — même démarche
 disponible au cas par cas, à la demande.
+
+## Mise à jour 2026-09-03 (suite) — phase de précipitation réelle dans le module microphysique (§15)
+
+Suite de l'utilisateur ("continue") — quatrième fermeture ciblée du
+chantier §12-16, même méthodologie que le cisaillement de vent,
+theta-e et la vitesse d'ascendance. Contrairement aux trois
+précédentes, l'utilisateur n'a pas nommé de variable précise cette
+fois — sélection faite selon le même jugement qu'aux étapes
+"continue selon ton jugement" du reste de la session : §15
+(microphysique) est le prochain chantier ouvert et concret dans la
+même série §12-16.
+
+**Pourquoi** : §15 liste explicitement "pluie, neige, grêle, eau
+surfondue, contenu en glace, ..., hydrométéores" parmi les variables
+candidates du module microphysique — celui-ci ne combinait jusqu'ici
+que le TAUX de précipitation (`normalize_precipitation`), jamais la
+PHASE.
+
+**Trouvaille faite en inspectant avant de construire, avec un vrai
+constat de portée honnête** : aucune espèce microphysique réelle par
+colonne (eau nuageuse/glace/pluie/neige — qc/qi/qr/qs) n'existe dans
+l'état réel de `CoupledEarthSolver` — les vraies formules qui en ont
+besoin (`CloudMicrophysicsEngine`, autoconversion/riming/Bergeron-
+Findeisen réels) ne peuvent donc pas être alimentées par de vraies
+données ici sans fabriquer ces espèces. En revanche,
+`acf.science.precipitation.HydrometeorType.classify(surface_temperature_c,
+surface_wet_bulb_c)` — une vraie heuristique déjà existante,
+explicitement auto-disclosed dans son propre docstring ("a heuristic
+forecasting rule of thumb, NOT a single validated physical formula")
+— n'a besoin que de température de surface et de température du
+thermomètre mouillé, deux quantités déjà réelles et disponibles à
+chaque point de grille. Jamais câblée dans rien produisant une vraie
+sortie ACF.
+
+**Composition de 2 formules réelles déjà existantes, aucune nouvelle
+physique inventée** : `Thermodynamics.calculate_relative_humidity()`
+(même formule réelle déjà réutilisée par `acf.awci.theta_e`) →
+`Thermodynamics.calculate_wet_bulb_temperature()` (approximation
+publiée de Stull (2011), "Wet-Bulb Temperature from Relative Humidity
+and Air Temperature", Journal of Applied Meteorology and Climatology)
+→ `HydrometeorType.classify()`.
+
+**Décision de conception disclosed, un vrai choix ACF nouveau** :
+`classify()` renvoie une catégorie ("Rain"/"Snow"/"Wet Snow/Mix"/
+"Freezing Rain / Ice Pellets"), pas un score [0, 1] — la convertir en
+contribution numérique exige un vrai classement ordinal disclosed,
+même nature de choix ACF que `INTERACTION_WEIGHTS` ou le 70/30
+CAPE/CIN : `PHASE_SEVERITY` = {Rain: 0.2, Snow: 0.5, Wet Snow/Mix: 0.7,
+Freezing Rain / Ice Pellets: 1.0}, un ORDRE fondé sur un vrai fait
+opérationnel aéronautique bien documenté (la pluie verglaçante/le
+grésil sont universellement reconnus comme le risque de givrage le
+plus sévère pour un aéronef), les valeurs numériques exactes restant
+un choix ACF, pas un indice de sévérité publié. **Mélange** (comme le
+cisaillement), pas remplacement : la phase est un vrai signal
+indépendant du taux de précipitation (contrairement à la vitesse
+d'ascendance/CAPE). Comportement par défaut **bit-identique** sans
+`data["precipitation_phase_severity"]`.
+
+**Construit** :
+- Nouveau [`acf.awci.hydrometeor_phase`](../src/acf/awci/hydrometeor_phase.py) —
+  `compute_real_hydrometeor_phase_at_point()`, composition réelle des 2
+  formules ci-dessus plus `HydrometeorType.classify()`, jamais `None`/
+  `nan` (la chaîne de formules ne peut pas échouer, contrairement à
+  theta-e). `PHASE_SEVERITY` disclosed en haut de module.
+- `Normalizer.normalize_precipitation_phase_severity()` — clamp
+  identité réel [0, 1] (la valeur EST déjà dans la plage cible par
+  construction), plus `NORMALIZER_RANGE_STATUS["precipitation_phase_severity"]`
+  (`HYPOTHESIS` pour le classement ordinal — la formule de température
+  du thermomètre mouillé sous-jacente est publiée/établie).
+- `AWCICalculator.calculate_module_scores()` — le module
+  `microphysical` gère maintenant réellement
+  `data["precipitation_phase_severity"]` (mélange 50/50 avec le score
+  de taux, climatology-aware).
+- `acf.awci.spatial_field.compute_real_complexity_field(compute_precipitation_phase=True)` —
+  intégration de bout en bout réelle, calcul mono-niveau (même classe
+  de coût que theta-e), vrais `precipitation_phase_field` (catégorie)
+  et `precipitation_phase_severity_field` ([0, 1]), toujours réels
+  (jamais `nan`), désactivé par défaut.
+- `acf.awci.diagnostic_registry` — nouvelle entrée
+  `normalize_precipitation_phase_severity`, nouvelle entrée
+  `microphysical_module_combination` (n'existait pas encore — le
+  module n'avait qu'une seule entrée avant), et mise à jour de
+  `normalize_precipitation` pour disclosed la nouvelle limitation.
+
+**Validation réelle, y compris une propriété physique connue** : les 4
+vraies catégories toutes atteignables et confirmées par calcul direct
+avec des couples température/humidité réels et physiquement
+plausibles (ex. saturé à 0°C -> "Freezing Rain / Ice Pellets", saturé
+à 1°C -> "Wet Snow/Mix" - transitions réelles vérifiées à la main
+avant d'écrire les tests) ; `PHASE_SEVERITY["Freezing Rain / Ice
+Pellets"]` prouvé être le maximum réel des 4 valeurs (preuve
+indépendante du disclosure d'ordre aéronautique, pas seulement une
+cohérence interne). 23 nouveaux tests répartis sur 4 fichiers —
+`tests/test_awci_hydrometeor_phase.py` (+9), `tests/test_awci_calculator_precipitation_phase.py`
+(+8 : comportement par défaut bit-identique, mélange exact 50/50,
+preuve que ce n'est PAS un remplacement, climatology-aware),
+`tests/test_awci_spatial_field.py` (+4 : champs absents par défaut,
+réels et toujours valides une fois activés, correspondent à l'API
+ponctuelle), `tests/test_awci_diagnostic_registry.py` (+2). Suite
+complète **3739/3739** (3716 + 23), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du chantier §12-16** : dynamique
+(cisaillement), thermodynamique (theta-e), convectif (vitesse
+d'ascendance) et microphysique (phase de précipitation) étendus,
+chacun avec une seule variable. Relief/orographie (§16) reste avec son
+entrée d'origine (altitude statique) — même démarche disponible à la
+demande. Hail size/eau surfondue/contenu en glace (§15's autres
+candidates) restent un vrai gap disclosed, bloqué par l'absence
+d'espèces microphysiques réelles dans l'état du solveur.

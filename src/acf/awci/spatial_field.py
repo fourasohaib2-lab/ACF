@@ -54,6 +54,7 @@ import numpy as np
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
+from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.updraft import compute_real_max_updraft_velocity
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
@@ -78,6 +79,9 @@ _THETA_E_FIELDS_USED = ("theta_e",)
 #: Added when `compute_updraft_velocity=True` - see that parameter's
 #: own docstring and `acf.awci.updraft`.
 _UPDRAFT_VELOCITY_FIELDS_USED = ("updraft_velocity",)
+#: Added when `compute_precipitation_phase=True` - see that parameter's
+#: own docstring and `acf.awci.hydrometeor_phase`.
+_PRECIPITATION_PHASE_FIELDS_USED = ("precipitation_phase_severity",)
 
 
 def compute_real_complexity_field(
@@ -95,6 +99,7 @@ def compute_real_complexity_field(
     compute_wind_shear: bool = False,
     compute_theta_e: bool = False,
     compute_updraft_velocity: bool = False,
+    compute_precipitation_phase: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -190,6 +195,20 @@ def compute_real_complexity_field(
         `numpy.nan` (never a fabricated value) wherever the real
         per-point CAPE itself was not computed (too few real levels -
         see `acf.awci.convective_energy`'s own honest scope).
+    compute_precipitation_phase : bool
+        When True, genuinely computes real per-point surface
+        precipitation-phase severity (see `acf.awci.hydrometeor_phase.
+        compute_real_hydrometeor_phase_at_point()` - the real Stull
+        (2011) wet-bulb formula composed with the real, self-disclosed
+        `HydrometeorType.classify()` heuristic, then mapped to a real,
+        disclosed ACF ordinal severity) from each grid point's real
+        temperature/specific humidity/pressure at `level`, and feeds it
+        into AWCICalculator's microphysical module (docs/
+        ACF_MASTER_PROMPT.md section 15, candidate variable
+        "hydrométéores"). Off by default - the default output is
+        unchanged unless explicitly requested (a single-level
+        computation, real but not free - 3 real formula calls per grid
+        point, same cost class as `compute_theta_e`).
 
     Returns
     -------
@@ -249,6 +268,15 @@ def compute_real_complexity_field(
             `acf.awci.updraft`, derived from the SAME real per-point
             CAPE already in `cape_field`, `numpy.nan` (never a
             fabricated value) wherever that real CAPE was not computed.
+        precipitation_phase_field : 2D numpy array (str dtype), and
+            precipitation_phase_severity_field : 2D numpy array
+            (float, [0, 1]) - present only when
+            `compute_precipitation_phase=True` - real per-point surface
+            precipitation phase and its ACF-assigned severity from
+            `acf.awci.hydrometeor_phase` (see that module's own
+            PHASE_SEVERITY for the real, disclosed ranking). Always
+            real (never np.nan) - the underlying formula chain never
+            fails to produce a phase, unlike theta_e/CAPE above.
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
@@ -332,6 +360,17 @@ def compute_real_complexity_field(
     # wasteful).
     updraft_velocity_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_updraft_velocity else None
     cloud_dynamics_engine = CloudDynamicsEngine() if compute_updraft_velocity else None
+    # Real per-point surface precipitation phase and its ACF-assigned
+    # severity, only when compute_precipitation_phase=True (docs/
+    # ACF_MASTER_PROMPT.md section 15) - always real (never np.nan),
+    # the underlying formula chain (acf.awci.hydrometeor_phase) never
+    # fails to produce a phase.
+    precipitation_phase_field = (
+        np.empty((n_lat_actual, n_lon_actual), dtype=object) if compute_precipitation_phase else None
+    )
+    precipitation_phase_severity_field = (
+        np.zeros((n_lat_actual, n_lon_actual)) if compute_precipitation_phase else None
+    )
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -426,6 +465,21 @@ def compute_real_complexity_field(
                 # theta_e_field stays np.nan - never a fabricated value
                 # for a point with non-positive real relative humidity.
 
+            if compute_precipitation_phase:
+                # Real single-level T/q/P at this point - same already-
+                # available values as compute_theta_e above, no extra
+                # column slicing needed.
+                phase = compute_real_hydrometeor_phase_at_point(
+                    temperature_k=float(temperature[i, j]),
+                    specific_humidity=float(specific_humidity[i, j]),
+                    pressure_hpa=float(pressure_hpa[i, j]),
+                )
+                data["precipitation_phase_severity"] = phase["phase_severity"]
+                assert precipitation_phase_field is not None  # for mypy
+                assert precipitation_phase_severity_field is not None  # for mypy
+                precipitation_phase_field[i, j] = phase["phase"]
+                precipitation_phase_severity_field[i, j] = phase["phase_severity"]
+
             result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
@@ -443,6 +497,8 @@ def compute_real_complexity_field(
         fields_used = fields_used + _THETA_E_FIELDS_USED
     if compute_updraft_velocity:
         fields_used = fields_used + _UPDRAFT_VELOCITY_FIELDS_USED
+    if compute_precipitation_phase:
+        fields_used = fields_used + _PRECIPITATION_PHASE_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -498,5 +554,9 @@ def compute_real_complexity_field(
 
     if compute_updraft_velocity:
         output["updraft_velocity_field"] = updraft_velocity_field
+
+    if compute_precipitation_phase:
+        output["precipitation_phase_field"] = precipitation_phase_field
+        output["precipitation_phase_severity_field"] = precipitation_phase_severity_field
 
     return output

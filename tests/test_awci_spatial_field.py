@@ -518,3 +518,72 @@ def test_convective_module_field_matches_the_point_api_with_real_updraft_velocit
         data["updraft_velocity"] = float(result["updraft_velocity_field"][i, j])
     expected = AWCICalculator().calculate_module_scores(data)
     assert result["module_fields"]["convective"][i, j] == pytest.approx(round(expected["convective"] * 100, 1))
+
+
+# ----------------------------------------------- compute_precipitation_phase (§15)
+
+
+def test_precipitation_phase_fields_absent_by_default():
+    result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2)
+    assert "precipitation_phase_field" not in result
+    assert "precipitation_phase_severity_field" not in result
+    assert "precipitation_phase_severity" not in result["fields_used"]
+
+
+def test_precipitation_phase_fields_present_and_real_when_opted_in():
+    result = compute_real_complexity_field(
+        model="ALADIN",
+        n_lat=6,
+        n_lon=10,
+        n_levels=4,
+        steps=3,
+        seed=1,
+        perturbation_scale=3.0,
+        compute_precipitation_phase=True,
+    )
+    assert "precipitation_phase_field" in result
+    assert "precipitation_phase_severity_field" in result
+    assert result["precipitation_phase_field"].shape == (6, 10)
+    assert result["precipitation_phase_severity_field"].shape == (6, 10)
+    assert "precipitation_phase_severity" in result["fields_used"]
+    # Always real (never nan/None) - the underlying formula chain never
+    # fails to produce a phase.
+    valid_phases = {"Rain", "Snow", "Wet Snow/Mix", "Freezing Rain / Ice Pellets"}
+    for phase in result["precipitation_phase_field"].flatten():
+        assert phase in valid_phases
+    assert np.all(result["precipitation_phase_severity_field"] >= 0.0)
+    assert np.all(result["precipitation_phase_severity_field"] <= 1.0)
+
+
+def test_precipitation_phase_field_matches_a_direct_compute_real_hydrometeor_phase_at_point_call():
+    from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None, compute_precipitation_phase=True
+    )
+    i, j = 2, 3
+    expected = compute_real_hydrometeor_phase_at_point(
+        temperature_k=float(result["temperature_field"][i, j]),
+        specific_humidity=float(result["specific_humidity_field"][i, j]),
+        pressure_hpa=float(result["pressure_field_hpa"][i, j]),
+    )
+    assert result["precipitation_phase_field"][i, j] == expected["phase"]
+    assert result["precipitation_phase_severity_field"][i, j] == pytest.approx(expected["phase_severity"])
+
+
+def test_microphysical_module_field_matches_the_point_api_with_real_precipitation_phase():
+    """Same discipline as test_thermodynamic_module_field_matches_the_point_api_with_real_theta_e()
+    above - compares against calculate_module_scores() fed THIS run's
+    own real field values, never a second, separately non-reproducible
+    solver run."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None, compute_precipitation_phase=True
+    )
+    i, j = 1, 4
+    data: dict = {
+        "precipitation_phase_severity": float(result["precipitation_phase_severity_field"][i, j]),
+    }
+    expected = AWCICalculator().calculate_module_scores(data)
+    assert result["module_fields"]["microphysical"][i, j] == pytest.approx(round(expected["microphysical"] * 100, 1))

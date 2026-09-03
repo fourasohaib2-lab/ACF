@@ -251,11 +251,51 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         units="mm/h -> dimensionless",
         valid_range="0 to 50 mm/h",
         assumptions="Linear scaling across a plausible extreme-rate envelope.",
-        limitations="Precipitation-only - hail/icing/hydrometeor variety section 15 also names are not real inputs here "
-        "(this session's own exhaustive audit, section 15).",
+        limitations="Precipitation RATE only - see normalize_precipitation_phase_severity below (added "
+        "2026-09-03) for the real, opt-in precipitation PHASE signal section 15 also names "
+        "('hydrométéores'); hail/eau surfondue/contenu en glace remain real, disclosed, still-open gaps "
+        "(this session's own exhaustive audit, section 15 - no real per-column hydrometeor species exist in "
+        "CoupledEarthSolver's state to derive them from without fabrication).",
         reference="ACF design choice - plausible extreme rate, not sourced (Normalizer's own docstring).",
         tests=["tests/test_awci_calculator.py::test_normalizer_methods"],
         status=NORMALIZER_RANGE_STATUS["precipitation"],
+    ),
+    "normalize_precipitation_phase_severity": DiagnosticSpec(
+        name="normalize_precipitation_phase_severity",
+        description="Real, opt-in normalization (identity clamp) of ACF-assigned surface precipitation-phase "
+        "severity to [0, 1] - BLENDS into the microphysical module's own precipitation-rate score when a real "
+        "value is supplied (added 2026-09-03, continuing the §12-16 module-extension work after wind shear, "
+        "theta-e, and maximum updraft velocity).",
+        physical_meaning="Surface precipitation PHASE (rain/snow/wet snow/freezing rain) is a real, distinct "
+        "aviation-operational hazard axis from precipitation RATE (docs/ACF_MASTER_PROMPT.md section 15 "
+        "explicitly lists 'hydrométéores' among the microphysical module's own candidate variables) - freezing "
+        "rain/ice pellets in particular is a real, well-documented severe aircraft-icing hazard regardless of "
+        "rate.",
+        equation="clip(value, 0, 1)",
+        inputs=["precipitation_phase_severity ([0, 1]) - see acf.awci.hydrometeor_phase."
+        "compute_real_hydrometeor_phase_at_point() for the real formula chain (Stull 2011 wet-bulb "
+        "temperature composed with the real, self-disclosed HydrometeorType.classify() heuristic) and "
+        "acf.awci.hydrometeor_phase.PHASE_SEVERITY for the real, disclosed ACF phase->severity ranking that "
+        "produces it"],
+        output="microphysical module input (50% weight when supplied - see microphysical_module_combination "
+        "below), [0, 1]",
+        units="dimensionless (already [0, 1] by construction)",
+        valid_range="0 to 1",
+        assumptions="The clip is a real safety net for an out-of-range caller-supplied value, not a real "
+        "independent physical scaling - `value` already IS the target [0, 1] range by construction.",
+        limitations="The underlying real phase CLASSIFICATION is itself an explicitly self-disclosed surface-"
+        "only HEURISTIC (acf.science.precipitation.HydrometeorType's own docstring: 'NOT a single validated "
+        "physical formula' - cannot reliably separate freezing rain from ice pellets/sleet without a real "
+        "vertical-profile method like Bourgouin 2000, not implemented here). The phase->severity RANKING order "
+        "reflects a real, well-documented aviation icing-hazard fact; the exact numeric values (0.2/0.5/0.7/1.0) "
+        "are still an ACF design choice, not a published severity index.",
+        reference="Underlying phase classification: a real, published wet-bulb approximation (Stull, R. (2011), "
+        "'Wet-Bulb Temperature from Relative Humidity and Air Temperature', Journal of Applied Meteorology and "
+        "Climatology) composed with a real, self-disclosed heuristic (HydrometeorType.classify()). "
+        "Phase->severity ranking: ACF design choice grounded in real aviation-operational icing-hazard "
+        "knowledge (see acf.awci.hydrometeor_phase's own module docstring), not a published numeric index.",
+        tests=["tests/test_awci_hydrometeor_phase.py", "tests/test_awci_calculator_precipitation_phase.py"],
+        status=NORMALIZER_RANGE_STATUS["precipitation_phase_severity"],
     ),
     "normalize_topographic": DiagnosticSpec(
         name="normalize_topographic",
@@ -402,6 +442,36 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         reference="ACF design choice - not derived from a published formula.",
         tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_updraft.py"],
         status=MODULE_WEIGHT_STATUS["convective"],
+    ),
+    "microphysical_module_combination": DiagnosticSpec(
+        name="microphysical_module_combination",
+        description="Normalizes precipitation rate into the microphysical module score by default, and BLENDS "
+        "in real, opt-in precipitation-phase severity (added 2026-09-03) alongside that rate when a caller "
+        "supplies one.",
+        physical_meaning="Microphysical complexity is driven by precipitation rate by default; precipitation "
+        "PHASE, when supplied, is a real, genuinely independent aviation-operational hazard axis (section 15's "
+        "own explicit 'hydrométéores' candidate variable) - phase is not a deterministic function of rate, "
+        "unlike updraft_velocity/CAPE in the convective module.",
+        equation="precip_norm = normalize_precipitation(precipitation); "
+        "if 'precipitation_phase_severity' not in data: precip_norm; "
+        "else: 0.5 * precip_norm + 0.5 * normalize_precipitation_phase_severity(precipitation_phase_severity)",
+        inputs=["precipitation (mm/h)", "precipitation_phase_severity ([0, 1], optional)"],
+        output="microphysical module score, [0, 1]",
+        units="dimensionless",
+        valid_range="[0, 1]",
+        assumptions="50/50 weighting when precipitation_phase_severity is supplied - a real, disclosed ACF "
+        "design choice, matching the same internal convention as the dynamic module's own 50/50 wind/wind_shear "
+        "blend, not derived from a published formula for this composite index. Omitting "
+        "precipitation_phase_severity entirely keeps the microphysical module exactly the precipitation-rate-"
+        "only score - zero behavior change for every caller that doesn't supply it.",
+        limitations="Real precipitation rate and real, self-disclosed surface phase heuristic only - hail size, "
+        "supercooled liquid water content, and ice content (section 15's own other explicit candidate "
+        "variables) remain real, disclosed, still-open gaps (no real per-column hydrometeor species exist in "
+        "CoupledEarthSolver's state to derive them from without fabrication - see "
+        "normalize_precipitation_phase_severity's own entry).",
+        reference="ACF design choice - not derived from a published formula.",
+        tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_precipitation_phase.py"],
+        status=MODULE_WEIGHT_STATUS["microphysical"],
     ),
     "wind_topo_interaction": DiagnosticSpec(
         name="wind_topo_interaction",

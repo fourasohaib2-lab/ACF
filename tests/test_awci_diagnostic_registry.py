@@ -92,6 +92,7 @@ def test_normalizer_range_entries_cross_reference_the_real_status_registry():
         ("normalize_updraft_velocity", "updraft_velocity"),
         ("normalize_cin", "cin"),
         ("normalize_precipitation", "precipitation"),
+        ("normalize_precipitation_phase_severity", "precipitation_phase_severity"),
         ("normalize_topographic", "topographic"),
         ("normalize_confidence", "confidence"),
     ]:
@@ -101,6 +102,7 @@ def test_normalizer_range_entries_cross_reference_the_real_status_registry():
 def test_module_combination_entries_cross_reference_the_real_status_registry():
     assert DIAGNOSTIC_REGISTRY["thermodynamic_module_combination"].status is MODULE_WEIGHT_STATUS["thermodynamic"]
     assert DIAGNOSTIC_REGISTRY["convective_module_combination"].status is MODULE_WEIGHT_STATUS["convective"]
+    assert DIAGNOSTIC_REGISTRY["microphysical_module_combination"].status is MODULE_WEIGHT_STATUS["microphysical"]
 
 
 def test_interaction_entries_cross_reference_the_real_status_registry():
@@ -210,3 +212,23 @@ def test_documented_convective_module_combination_matches_the_real_calculator():
     )
     expected_updraft = 0.5 * expected_default + 0.5 * Normalizer.normalize_updraft_velocity(40.0)
     assert updraft_case["convective"] == pytest.approx(expected_updraft)
+
+
+def test_normalize_precipitation_phase_severity_entry_matches_the_real_live_normalizer():
+    assert Normalizer.normalize_precipitation_phase_severity(0.5) == pytest.approx(0.5)
+
+
+def test_documented_microphysical_module_combination_matches_the_real_calculator():
+    """Real proof the documented precipitation-rate default and its own
+    50/50 precipitation_phase_severity blend aren't stale - reconstructs
+    both real cases directly and compares to AWCICalculator's own real
+    output."""
+    default_case = AWCICalculator().calculate_module_scores({"precipitation": 8.0})
+    expected_default = Normalizer.normalize_precipitation(8.0)
+    assert default_case["microphysical"] == pytest.approx(expected_default)
+
+    phase_case = AWCICalculator().calculate_module_scores(
+        {"precipitation": 8.0, "precipitation_phase_severity": 1.0}
+    )
+    expected_phase = 0.5 * expected_default + 0.5 * Normalizer.normalize_precipitation_phase_severity(1.0)
+    assert phase_case["microphysical"] == pytest.approx(expected_phase)

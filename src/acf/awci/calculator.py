@@ -192,6 +192,35 @@ class AWCICalculator:
     zero behavior change - the convective module stays exactly the
     CAPE/CIN blend, bit-identical to before this capability existed.
 
+    Real surface precipitation phase in the microphysical module (NOTE,
+    added 2026-09-03, explicit user request "continue" following the
+    §12-16 pattern of the three NOTEs above)
+    -----------------------------------------------------------------
+    Section 15 lists "hydrométéores" (alongside pluie/neige/grêle)
+    among the microphysical module's own candidate variables. No real
+    per-column hydrometeor species (cloud water/ice/rain/snow mixing
+    ratios) exist in CoupledEarthSolver's real state, so the real
+    formulas that need them (CloudMicrophysicsEngine's real
+    autoconversion/riming rates) cannot be fed real data here without
+    fabricating those species - a real, disclosed, still-open gap.
+    Instead: `data["precipitation_phase_severity"]` (real [0, 1]) is
+    blended 50/50 into the microphysical module alongside the existing
+    precipitation-rate score - see `acf.awci.hydrometeor_phase.
+    compute_real_hydrometeor_phase_at_point()`, which composes the real
+    Stull (2011) wet-bulb formula with the real, self-disclosed
+    `HydrometeorType.classify()` heuristic (surface temperature +
+    surface wet-bulb temperature only - real limitation: cannot
+    reliably separate freezing rain from ice pellets/sleet, merged into
+    one real category), then maps the resulting phase to a real,
+    disclosed ACF ordinal severity (freezing rain/ice pellets > wet
+    snow/mix > snow > rain, grounded in real, well-documented aviation
+    icing-hazard severity - see that module's own docstring). A
+    genuinely independent real signal, unlike updraft_velocity above:
+    precipitation PHASE is not a deterministic function of precipitation
+    RATE. Omitted entirely (the default): zero behavior change - the
+    microphysical module stays exactly the precipitation-rate-only
+    score, bit-identical to before this capability existed.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -466,6 +495,20 @@ class AWCICalculator:
               (see calculate_module_scores()'s own inline comment for
               the full disclosure).
             - precipitation: Precipitation in mm/h
+            - precipitation_phase_severity: optional, real [0, 1]
+              ACF-assigned surface precipitation-phase severity
+              (docs/ACF_MASTER_PROMPT.md section 15) - see
+              acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()
+              for the real Stull (2011) wet-bulb formula and
+              HydrometeorType.classify() heuristic that produce it, and
+              acf.awci.hydrometeor_phase.PHASE_SEVERITY for the real,
+              disclosed ACF ordinal ranking behind this value. Omitted:
+              zero behavior change, the microphysical module stays the
+              naive precipitation-rate-only score. Supplied: blended
+              50/50 with normalize_precipitation(precipitation) - a
+              genuinely independent real signal (phase is not a
+              deterministic function of rate), unlike updraft_velocity
+              above.
             - pressure: Pressure in hPa
             - altitude: Altitude in meters
             - confidence: Forecast confidence in %
@@ -627,9 +670,17 @@ class AWCICalculator:
 
         # Microphysical module - based on precipitation
         precip = data.get("precipitation", 0.0)
-        scores["microphysical"] = self._normalize(
-            "precipitation", precip, self.normalizer.normalize_precipitation, climatology
-        )
+        precip_norm = self._normalize("precipitation", precip, self.normalizer.normalize_precipitation, climatology)
+        if "precipitation_phase_severity" in data:
+            phase_norm = self._normalize(
+                "precipitation_phase_severity",
+                data["precipitation_phase_severity"],
+                self.normalizer.normalize_precipitation_phase_severity,
+                climatology,
+            )
+            scores["microphysical"] = 0.5 * precip_norm + 0.5 * phase_norm
+        else:
+            scores["microphysical"] = precip_norm
 
         # Topographic module - based on altitude
         altitude = data.get("altitude", 0.0)

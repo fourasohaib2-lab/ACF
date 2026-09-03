@@ -160,6 +160,26 @@ class Normalizer:
         return value / 50.0
 
     @staticmethod
+    def normalize_precipitation_phase_severity(value: float) -> float:
+        """
+        Normalize real, opt-in surface-precipitation-phase severity to
+        [0, 1] - real, opt-in blend into the microphysical module
+        alongside precipitation rate (docs/ACF_MASTER_PROMPT.md section
+        15, candidate variable "hydrométéores"; see
+        acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()
+        for the real phase-classification formula and the real, disclosed
+        ACF severity ranking behind this value's own [0, 1] range).
+
+        Range: 0 to 1 - `value` already IS the [0, 1] severity assigned
+        by acf.awci.hydrometeor_phase.PHASE_SEVERITY (a real ACF design
+        choice, not a physical unit) - this clip is a real safety net
+        for a caller-supplied climatology/manual value outside that
+        range, not a real independent scaling.
+        """
+        value = max(0.0, min(1.0, value))
+        return value
+
+    @staticmethod
     def normalize_pressure(value: float) -> float:
         """
         Normalize pressure to [0, 1].
