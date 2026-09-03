@@ -1999,3 +1999,62 @@ concrète du lien entre explicabilité (§26) et discipline de statut
 `tests/test_awci_component_detail.py`), suite complète **3394/3394**
 (3379 + 15), `ruff`/`mypy` propres, aucune régression sur le calcul
 AWCI réel.
+
+## Mise à jour 2026-09-03 (suite) — AWCI = score ± incertitude réelle / P(classe) réelle (§64)
+
+Suite explicite ("oui vasy mais respecte moi le prompt"), méthodologie
+suivie dans l'ordre imposé par le prompt (§86) :
+
+**COMPRENDRE** : §64 du prompt — "il peut être plus scientifique de
+représenter AWCI = 72 ± uncertainty ou P(AWCI class) plutôt qu'un seul
+chiffre sans contexte. Étudier cette possibilité." Explicitement
+présenté comme "à étudier", pas une exigence ferme.
+
+**INSPECTER/AUDITER** : `AWCICalculator.calculate_module_scores()`
+consomme déjà de vraies données réelles par membre/par modèle
+(`ensemble_members`/`model_realizations`, des `dict[str, list[float]]`
+réels) pour les modules `ensemble_spread`/`model_disagreement` — mais
+rien ne combinait ces vraies réalisations en une vraie distribution du
+score AWCI lui-même. Confirmé, pas supposé.
+
+**Construit** : nouvelle méthode
+[`AWCICalculator.calculate_with_uncertainty()`](../src/acf/awci/calculator.py) —
+recalcule un vrai score AWCI **une fois par réalisation réelle**
+(substitue la vraie valeur de cette réalisation pour chaque variable
+fournie, le reste du scénario restant inchangé), produisant N vrais
+scores AWCI indépendants — pas des échantillons tirés d'une
+distribution paramétrique inventée (aucune hypothèse gaussienne nulle
+part). `awci_mean`/`awci_std`/`awci_min`/`awci_max` sont les vraies
+statistiques d'échantillon de ces N vrais scores ;
+`awci_class_probabilities` est la vraie fraction empirique de ces N
+scores dans chaque vraie bande de niveau — pas un modèle de
+probabilité paramétrique.
+
+**Repli honnête (§61 — "préférer UNKNOWN à FALSE CERTAINTY")** : sans
+vraies données d'ensemble/multi-modèle, la méthode retourne
+`uncertainty_available: False` avec une explication réelle, plutôt que
+d'inventer une bande à partir de la seule `confidence` (qui serait
+exactement le genre de formule non fondée que le §78 met en garde
+contre — sans notation/hypothèse/source/domaine de validité).
+
+**Statut scientifique honnête de la méthode elle-même** : ajouté à
+[`acf.awci.scientific_status`](../src/acf/awci/scientific_status.py)
+(`UNCERTAINTY_METHOD_STATUS`) — `HYPOTHESIS`, réel et assumé : la
+technique de substitution par réalisation est un vrai choix de
+conception ACF défendable, pas une technique de quantification
+d'incertitude externellement validée ou publiée pour cet indice
+composite. L'arithmétique elle-même (moyenne/écart-type/fractions
+empiriques) est exacte, réelle — seule la *méthode* qui transforme les
+réalisations réelles en recalcul AWCI par réalisation porte ce statut.
+
+**Validation réelle, pas supposée** : preuve empirique qu'un
+désaccord réel entre membres produit un écart-type réel plus large
+qu'un accord réel (`std` désaccord = 5.6 contre `std` accord = 0.1 sur
+un cas construit), que chaque score de membre correspond exactement à
+un appel indépendant de `calculate()` sur ce même scénario substitué,
+et que le score ponctuel retourné reste bit-identique à un appel
+`calculate()` classique. 13 nouveaux tests
+(`tests/test_awci_calculator_uncertainty.py`), suite complète
+**3407/3407** (3394 + 13), `ruff`/`mypy` propres, méthode purement
+additive (zéro changement de comportement pour tout appelant existant
+de `calculate()`).

@@ -173,6 +173,22 @@ SPREAD_REFERENCE_STATUS = ThresholdStatus(
     "for this composite index (Normalizer's own docstring).",
 )
 
+#: Status for AWCICalculator.calculate_with_uncertainty() itself
+#: (docs/ACF_MASTER_PROMPT.md section 64) - the real per-realization
+#: substitution method is a real, defensible design choice, not an
+#: externally validated or published technique for this composite
+#: index. The empirical statistics/class-probabilities it computes
+#: FROM real supplied realizations are exact real arithmetic, not
+#: themselves uncertain - it is the *method* of turning real ensemble/
+#: model data into a per-realization AWCI recomputation that carries
+#: this HYPOTHESIS status, not the arithmetic.
+UNCERTAINTY_METHOD_STATUS = ThresholdStatus(
+    ScientificStatus.HYPOTHESIS,
+    "Real per-realization AWCI recomputation (substituting each real ensemble/model value into an "
+    "otherwise-unchanged scenario) is a real, defensible ACF design choice - not an externally validated "
+    "or published uncertainty-quantification technique for this composite index.",
+)
+
 
 def get_normalizer_range_status(variable: str) -> ThresholdStatus:
     """Real status for one Normalizer range (by the variable name used in normalize_<variable>())."""

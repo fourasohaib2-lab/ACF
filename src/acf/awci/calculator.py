@@ -9,7 +9,12 @@ from collections.abc import Callable
 from typing import Any
 
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
-from acf.awci.scientific_status import WeightStatusEntry, get_interaction_weight_status
+from acf.awci.scientific_status import (
+    UNCERTAINTY_METHOD_STATUS,
+    ThresholdStatus,
+    WeightStatusEntry,
+    get_interaction_weight_status,
+)
 
 from .normalizer import Normalizer
 from .weights import WeightsManager
@@ -427,6 +432,109 @@ class AWCICalculator:
             "physical_level": self._get_level(physical_score) if physical_score is not None else None,
             "forecast_level": self._get_level(forecast_score) if forecast_score is not None else None,
         }
+
+    def calculate_with_uncertainty(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Real `AWCI = score ± uncertainty` / real empirical `P(class)`,
+        per docs/ACF_MASTER_PROMPT.md section 64 ("il peut être plus
+        scientifique de représenter AWCI = 72 ± uncertainty ou
+        P(AWCI class) plutôt qu'un seul chiffre sans contexte. Étudier
+        cette possibilité.") - explicitly flagged there as something to
+        study, not a firm requirement; this is that study, built as a
+        real, additive method (calculate() itself is untouched).
+
+        Real method, not a fabricated distribution: when `data` carries
+        real `ensemble_members`/`model_realizations` (the same real
+        per-variable, per-member/per-model value lists
+        `calculate_module_scores()`'s own ensemble_spread/
+        model_disagreement modules already consume - see that method's
+        docstring), this computes a genuine AWCICalculator.calculate()
+        score once per REAL realization - substituting that
+        realization's real value for each variable it supplies into an
+        otherwise-unchanged copy of `data`, holding every other field
+        at its already-supplied point value - producing N genuine AWCI
+        scores, not N samples drawn from an invented parametric
+        distribution (no Gaussian/Beta/etc. is assumed anywhere here).
+        `awci_mean`/`awci_std`/`awci_min`/`awci_max` are the real
+        sample statistics of those N real scores, and
+        `awci_class_probabilities` is the real empirical fraction of
+        those N real scores in each real `_get_level()` band - not a
+        parametric class-probability model.
+
+        If both `ensemble_members` and `model_realizations` are
+        supplied, they are combined per real realization index (up to
+        the smaller of the two real counts) - a real, disclosed, but
+        not the only possible combination choice.
+
+        Honest fallback (section 61 - "préférer UNKNOWN à FALSE
+        CERTAINTY"): without real ensemble/model data, there is no
+        honest basis for a real distribution here - this returns
+        `uncertainty_available: False` with a real explanation, rather
+        than inventing a band from `confidence` alone (which would be
+        exactly the kind of unfounded formula section 78 warns
+        against - no notation/hypothesis/source/domain-of-validity
+        would back it).
+
+        Real, disclosed scientific status of this method itself (see
+        acf.awci.scientific_status): the realization-substitution
+        technique is HYPOTHESIS-grade - a real, defensible design
+        choice, not externally validated or published for this
+        composite index.
+        """
+        result = self.calculate(data)
+
+        ensemble_members = data.get("ensemble_members") or {}
+        model_realizations = data.get("model_realizations") or {}
+        if not ensemble_members and not model_realizations:
+            result["uncertainty_available"] = False
+            result["uncertainty_note"] = (
+                "No real ensemble_members/model_realizations supplied - no honest basis "
+                "for a real AWCI distribution (see calculate_with_uncertainty()'s own docstring, "
+                "docs/ACF_MASTER_PROMPT.md section 61)."
+            )
+            return result
+
+        combined_realizations: dict[str, list[float]] = {**ensemble_members, **model_realizations}
+        n_members = min((len(values) for values in combined_realizations.values()), default=0)
+        if n_members < 2:
+            result["uncertainty_available"] = False
+            result["uncertainty_note"] = "Fewer than 2 real realizations supplied - no real spread to compute."
+            return result
+
+        member_scores: list[float] = []
+        for i in range(n_members):
+            member_data = dict(data)
+            member_data.pop("ensemble_members", None)
+            member_data.pop("model_realizations", None)
+            for variable, values in combined_realizations.items():
+                member_data[variable] = values[i]
+            member_scores.append(self.calculate(member_data)["awci"])
+
+        mean_score = sum(member_scores) / len(member_scores)
+        variance = sum((s - mean_score) ** 2 for s in member_scores) / len(member_scores)
+
+        class_counts: dict[str, int] = {}
+        for score in member_scores:
+            level = self._get_level(score)
+            class_counts[level] = class_counts.get(level, 0) + 1
+
+        result["uncertainty_available"] = True
+        result["n_realizations"] = n_members
+        result["awci_mean"] = round(mean_score, 1)
+        result["awci_std"] = round(variance**0.5, 1)
+        result["awci_min"] = round(min(member_scores), 1)
+        result["awci_max"] = round(max(member_scores), 1)
+        result["awci_member_scores"] = [round(s, 1) for s in member_scores]
+        result["awci_class_probabilities"] = {level: round(count / n_members, 3) for level, count in class_counts.items()}
+        result["uncertainty_method_status"] = UNCERTAINTY_METHOD_STATUS
+        return result
+
+    @staticmethod
+    def get_uncertainty_method_status() -> ThresholdStatus:
+        """Real scientific status of calculate_with_uncertainty()'s own
+        method (docs/ACF_MASTER_PROMPT.md section 64) - see
+        acf.awci.scientific_status for the real classification."""
+        return UNCERTAINTY_METHOD_STATUS
 
     def _renormalized_score(
         self, decomposition: dict[str, float], module_names: frozenset[str], include_interactions: bool
