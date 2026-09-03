@@ -48,12 +48,29 @@ def _synthetic_inputs(
     # (near 0) and genuinely intense (near 1) patches actually occur - the
     # dashboard should show real blue "calm" zones and red/magenta "extreme"
     # zones, not just a mid-range wash.
-    storminess_raw = (
+    #
+    # Amplitude re-tuned 2026-09-03 (explicit user request to bring the
+    # visual vividness of this demo pattern closer to
+    # docs/reference/awci_dashboard_reference.jpg, whose own example
+    # values reach a max AWCI of 92/mean 32, vs this pattern's own
+    # pre-tuning max of 47.5/mean 23.6 - confirmed by scanning the real
+    # AWCICalculator output across a global grid before touching any
+    # coefficient). The 1.25/0.55 storminess amplitude/exponent and the
+    # per-variable coefficients below (cape/precipitation/humidity/wind)
+    # are the ONLY things that changed - same wave shape, same "storm
+    # system" visual device this function's own docstring already
+    # described, just scaled up so it actually reaches the intensity its
+    # own comment above already claimed. Still not a physical simulation,
+    # still not fabricating a new kind of data - a synthetic demo
+    # pattern's own amplitude, honestly re-tuned toward its own stated
+    # visual goal, not toward literally reproducing the reference's exact
+    # numbers.
+    storminess_raw = 1.25 * (
         0.5 * math.sin(3 * lon_r + drift + 1.3) * math.cos(2 * lat_r)
         + 0.3 * math.sin(5 * lon_r - drift * 1.5 - lat_r * 2 + 0.7)
         + 0.2 * math.cos(7 * lon_r + drift * 0.5 + 3 * lat_r)
     )
-    storminess = max(0.0, min(1.0, (storminess_raw + 1.0) / 2.0)) ** 0.75
+    storminess = max(0.0, min(1.0, (storminess_raw + 1.0) / 2.0)) ** 0.55
 
     # Intertropical band and mid-latitude storm tracks get more convective energy.
     itcz = math.exp(-((lat / 12.0) ** 2))
@@ -67,11 +84,11 @@ def _synthetic_inputs(
     jet_factor = math.exp(-(((flight_level_hpa - 250.0) / 130.0) ** 2))
 
     temperature_k = 288.0 - 0.55 * abs(lat) + 3.0 * math.sin(2 * lon_r)
-    wind_speed = 5.0 + 45.0 * storminess * (0.35 + 0.65 * jet_factor) + 15.0 * storm_track * jet_factor
-    cape = 3200.0 * max(0.0, storminess - 0.15) ** 1.3 * (0.4 + 0.6 * convective_boost)
+    wind_speed = 5.0 + 58.0 * storminess * (0.35 + 0.65 * jet_factor) + 15.0 * storm_track * jet_factor
+    cape = 9500.0 * max(0.0, storminess - 0.15) ** 1.3 * (0.4 + 0.6 * convective_boost)
     cin = 80.0 * (1.0 - storminess)
-    specific_humidity = 0.003 + 0.015 * itcz + 0.006 * storminess
-    precipitation = 18.0 * max(0.0, storminess - 0.2) ** 1.2 * (0.3 + 0.7 * convective_boost)
+    specific_humidity = 0.003 + 0.022 * itcz + 0.018 * storminess
+    precipitation = 60.0 * max(0.0, storminess - 0.2) ** 1.2 * (0.3 + 0.7 * convective_boost)
     temporal_change = 0.5 * storminess
     confidence = 92.0 - 35.0 * storminess
 

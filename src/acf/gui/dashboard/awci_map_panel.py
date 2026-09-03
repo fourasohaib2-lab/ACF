@@ -572,8 +572,14 @@ class AWCIMapPanel(EventMixin, QWidget):
                 lon_range=lon_range,
                 time_offset_hours=time_offset_hours,
             )
+        # alpha raised from 0.75 to 0.88 (2026-09-03, visual-fidelity pass
+        # against docs/reference/awci_dashboard_reference.jpg) - the flat
+        # dark LAND/OCEAN facecolors above were desaturating the real
+        # AWCI_CMAP colors more than the reference's own more saturated
+        # heatmap; still low enough that coastline/border lines remain
+        # visible underneath, not a fully opaque overlay.
         self._contour = self.axis.contourf(
-            lons, lats, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100, alpha=0.75, transform=ccrs.PlateCarree()
+            lons, lats, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100, alpha=0.88, transform=ccrs.PlateCarree()
         )
         if self._show_layers_panel and hasattr(self, "awci_layer_checkbox"):
             self._contour.set_visible(self.awci_layer_checkbox.isChecked())
