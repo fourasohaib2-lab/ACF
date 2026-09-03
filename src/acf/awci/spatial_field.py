@@ -54,6 +54,7 @@ import numpy as np
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
+from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
@@ -69,6 +70,9 @@ _CONVECTIVE_FIELDS_USED = ("cape", "cin")
 #: Added when `compute_wind_shear=True` - see that parameter's own
 #: docstring and `acf.awci.wind_shear`.
 _WIND_SHEAR_FIELDS_USED = ("wind_shear",)
+#: Added when `compute_theta_e=True` - see that parameter's own
+#: docstring and `acf.awci.theta_e`.
+_THETA_E_FIELDS_USED = ("theta_e",)
 
 
 def compute_real_complexity_field(
@@ -84,6 +88,7 @@ def compute_real_complexity_field(
     weights: dict[str, float] | None = None,
     compute_convective_energy: bool = False,
     compute_wind_shear: bool = False,
+    compute_theta_e: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -143,6 +148,18 @@ def compute_real_complexity_field(
         `acf.awci.wind_shear`'s own module docstring for why this real
         shear spans the full native-level column, not a fixed physical
         layer like 0-6 km.
+    compute_theta_e : bool
+        When True, genuinely computes real per-point equivalent
+        potential temperature (theta-e, see
+        `acf.awci.theta_e.compute_real_theta_e_at_point()` - the real,
+        published Bolton (1980) formula) from each grid point's real
+        temperature/specific humidity/pressure at `level`, and feeds
+        it into AWCICalculator's thermodynamic module (docs/
+        ACF_MASTER_PROMPT.md section 13, explicit user request
+        "continue au module thermodynamique, avec theta-e"). Off by
+        default - the default output is unchanged unless explicitly
+        requested (a single-level computation, real but not free -
+        3 real formula calls per grid point).
 
     Returns
     -------
@@ -190,6 +207,12 @@ def compute_real_complexity_field(
             the solver's own real highest native level (see that
             parameter's own docstring for why this is not a fixed
             physical layer).
+        theta_e_field : 2D numpy array (K), present only when
+            `compute_theta_e=True` - real per-point equivalent
+            potential temperature from `acf.awci.theta_e`, `numpy.nan`
+            (never a fabricated value) wherever the real computed
+            relative humidity was non-positive at that point (see that
+            module's own honest_limitation).
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
@@ -249,6 +272,12 @@ def compute_real_complexity_field(
     # acf.awci.wind_shear's own module docstring for the real formula
     # and its honest scope).
     wind_shear_field = np.zeros((n_lat_actual, n_lon_actual)) if compute_wind_shear else None
+    # Real per-point equivalent potential temperature, only when
+    # compute_theta_e=True (docs/ACF_MASTER_PROMPT.md section 13) -
+    # np.nan (not a fabricated value) wherever
+    # compute_real_theta_e_at_point() itself honestly reports
+    # "not computed" (non-positive real relative humidity).
+    theta_e_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_theta_e else None
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -313,6 +342,24 @@ def compute_real_complexity_field(
                 assert wind_shear_field is not None  # for mypy - real whenever compute_wind_shear
                 wind_shear_field[i, j] = shear["shear_m_s"]
 
+            if compute_theta_e:
+                # Real single-level T/q/P at this point - already
+                # available (temperature/specific_humidity/pressure_hpa
+                # above), no extra column slicing needed.
+                theta_e = compute_real_theta_e_at_point(
+                    temperature_k=float(temperature[i, j]),
+                    specific_humidity=float(specific_humidity[i, j]),
+                    pressure_hpa=float(pressure_hpa[i, j]),
+                )
+                assert theta_e_field is not None  # for mypy - real whenever compute_theta_e
+                if theta_e["is_real_data"]:
+                    data["theta_e"] = theta_e["theta_e_k"]
+                    theta_e_field[i, j] = theta_e["theta_e_k"]
+                # else: honestly leave data["theta_e"] unset (AWCICalculator's
+                # own naive temperature/humidity blend applies) and
+                # theta_e_field stays np.nan - never a fabricated value
+                # for a point with non-positive real relative humidity.
+
             result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
@@ -326,6 +373,8 @@ def compute_real_complexity_field(
         fields_used = fields_used + _CONVECTIVE_FIELDS_USED
     if compute_wind_shear:
         fields_used = fields_used + _WIND_SHEAR_FIELDS_USED
+    if compute_theta_e:
+        fields_used = fields_used + _THETA_E_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -375,5 +424,8 @@ def compute_real_complexity_field(
 
     if compute_wind_shear:
         output["wind_shear_field"] = wind_shear_field
+
+    if compute_theta_e:
+        output["theta_e_field"] = theta_e_field
 
     return output

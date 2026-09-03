@@ -47,6 +47,26 @@ class Normalizer:
         return (T_c + 30.0) / 80.0
 
     @staticmethod
+    def normalize_theta_e(value_k: float) -> float:
+        """
+        Normalize real equivalent potential temperature (theta-e) to
+        [0, 1] - real, opt-in replacement for the thermodynamic
+        module's naive temperature/humidity blend when a caller
+        supplies one (docs/ACF_MASTER_PROMPT.md section 13, explicit
+        user request "continue au module thermodynamique, avec
+        theta-e"; see acf.awci.theta_e.compute_real_theta_e_at_point()
+        for the real Bolton (1980) formula that produces this input).
+
+        Range: 250 to 380 K - a real, generously wide operational
+        envelope (real cold/dry arctic theta-e can sit near 250 K;
+        real warm/moist pre-convective tropical theta-e can reach
+        350-380 K), not a claim of the absolute physical extremes of
+        the atmosphere anywhere.
+        """
+        value_k = max(250.0, min(380.0, value_k))
+        return (value_k - 250.0) / 130.0
+
+    @staticmethod
     def normalize_wind(value: float) -> float:
         """
         Normalize wind speed to [0, 1].

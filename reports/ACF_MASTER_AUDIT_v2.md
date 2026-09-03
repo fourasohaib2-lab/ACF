@@ -3552,3 +3552,85 @@ entrées simples d'origine — chacun nécessiterait la même démarche
 (vraie formule déjà existante trouvée, justification physique
 explicite, intégration opt-in, tests réels) répétée au cas par cas, à
 la demande de l'utilisateur.
+
+## Mise à jour 2026-09-03 (suite) — theta-e réel dans le module thermodynamique (§13)
+
+Suite explicite de l'utilisateur ("continue au module thermodynamique,
+avec theta-e") — deuxième fermeture ciblée du chantier §12-16, même
+méthodologie que le cisaillement de vent.
+
+**Pourquoi** : §13 liste explicitement "température potentielle
+équivalente" (theta-e) parmi les variables candidates du module
+thermodynamique — le module `thermodynamic` ne combinait jusqu'ici
+qu'une moyenne naïve température/humidité.
+
+**Trouvaille faite en inspectant avant de construire** :
+`acf.science.equivalent_potential_temperature.EquivalentPotentialTemperature.calculate_bolton_1980()` —
+la formule **canonique et publiée** de Bolton (1980), "The Computation
+of Equivalent Potential Temperature", Monthly Weather Review 108(7),
+1046-1053 (précise à ~0.3 K, la même forme opérationnelle que
+MetPy/SHARPpy) — existait déjà, réelle et correcte, mais n'était
+appelée par rien produisant une vraie sortie ACF. Exactement le même
+schéma que pour le cisaillement de vent et CAPE/CIN.
+
+**Composition de 3 formules réelles déjà existantes, aucune nouvelle
+physique inventée** : Bolton (1980) attend un point de rosée, pas
+l'humidité spécifique qu'utilise AWCI — plutôt que de re-dériver une
+forme approximative, la vraie chaîne existante est réutilisée telle
+quelle : `Thermodynamics.calculate_relative_humidity()` (humidité
+spécifique → humidité relative réelle) → `DewPoint.calculate()` (point
+de rosée réel, Magnus-Tetens/Alduchov & Eskridge 1996) →
+`calculate_bolton_1980()`.
+
+**Décision de conception disclosed, différente du cisaillement de
+vent** : le cisaillement (indépendant du vent) est **mélangé** 50/50 ;
+theta-e **remplace** (pas n'ajoute pas à) le mélange naïf
+température/humidité, parce que theta-e combine déjà réellement les
+deux — les additionner aurait compté deux fois la même information
+physique sous-jacente. Comportement par défaut **bit-identique** sans
+`data["theta_e"]`.
+
+**Construit** :
+- Nouveau [`acf.awci.theta_e`](../src/acf/awci/theta_e.py) —
+  `compute_real_theta_e_at_point()`, composition réelle des 3 formules
+  ci-dessus. `theta_e_k` reste honnêtement `None` (jamais fabriqué)
+  quand l'humidité relative réelle calculée est non-positive — un vrai
+  point sec n'a pas de vrai point de rosée significatif à en déduire.
+- `Normalizer.normalize_theta_e()` — enveloppe réelle 250-380 K
+  (couvre l'air arctique froid/sec réel jusqu'à l'air tropical
+  pré-convectif chaud/humide réel), plus
+  `NORMALIZER_RANGE_STATUS["theta_e"]` (`HYPOTHESIS` pour l'enveloppe
+  de normalisation — la formule Bolton elle-même est publiée/établie,
+  disclosed explicitement dans le texte de l'entrée).
+- `AWCICalculator.calculate_module_scores()` — le module `thermodynamic`
+  gère maintenant réellement `data["theta_e"]` (remplace, climatology-aware).
+- `acf.awci.spatial_field.compute_real_complexity_field(compute_theta_e=True)` —
+  intégration de bout en bout réelle, calcul mono-niveau (pas besoin de
+  colonne verticale complète, contrairement au cisaillement), vrai
+  `theta_e_field`, `np.nan` honnête là où le point est trop sec,
+  désactivé par défaut.
+- `acf.awci.diagnostic_registry` — nouvelle entrée `normalize_theta_e`
+  et mise à jour de `thermodynamic_module_combination` pour disclosed
+  le vrai comportement "remplace, ne mélange pas".
+
+**Validation réelle, y compris une propriété physique indépendante** :
+`test_higher_humidity_produces_a_real_higher_theta_e_all_else_equal`
+vérifie une vraie monotonicité physique (plus d'humidité à même
+température/pression augmente forcément theta-e) — une preuve
+indépendante de la composition elle-même, pas seulement une cohérence
+interne. 20 nouveaux tests répartis sur 4 fichiers —
+`tests/test_awci_theta_e.py` (+6 : correspond à la composition
+manuelle des 3 formules réelles, theta-e réel toujours supérieur à la
+température réelle pour l'air humide — propriété physique connue,
+humidité nulle honnêtement non calculée), `tests/test_awci_calculator_theta_e.py`
+(+8 : comportement par défaut bit-identique, remplacement exact avec
+theta-e, preuve que ce n'est PAS un mélange à 3 voies, climatology-aware),
+`tests/test_awci_spatial_field.py` (+4 : champ absent par défaut, réel
+et variant spatialement une fois activé, correspond à l'API ponctuelle),
+`tests/test_awci_diagnostic_registry.py` (+2). Suite complète
+**3691/3691** (3671 + 20), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du chantier §12-16** : dynamique (cisaillement)
+et thermodynamique (theta-e) étendus, chacun avec une seule variable.
+Convectif/microphysique/relief (§14-16) restent avec leurs entrées
+d'origine — même démarche disponible au cas par cas, à la demande.

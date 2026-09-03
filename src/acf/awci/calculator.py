@@ -143,6 +143,29 @@ class AWCICalculator:
     dynamic module stays exactly wind-speed-only, bit-identical to
     before this capability existed.
 
+    Real equivalent potential temperature (theta-e) in the
+    thermodynamic module (NOTE, added 2026-09-03, explicit user
+    request "continue au module thermodynamique, avec theta-e")
+    -----------------------------------------------------------------
+    Section 13 explicitly lists "température potentielle équivalente"
+    among the thermodynamic module's own candidate variables.
+    `calculate_module_scores()` now REPLACES (not blends into) the
+    naive temperature/humidity 50/50 combination with
+    `Normalizer.normalize_theta_e(data["theta_e"])` when a caller
+    supplies a real theta-e value in K - see `acf.awci.theta_e.
+    compute_real_theta_e_at_point()` for the real, published Bolton
+    (1980) formula that produces it (composed from 3 already-existing,
+    correct real formulas already in this codebase - relative
+    humidity, dewpoint, Bolton's own equation - none reimplemented).
+    Replace rather than blend, unlike wind shear above: theta-e is
+    itself already a real, physically complete combination of
+    temperature and moisture, so additively stacking it alongside the
+    naive temp/humidity blend would double-count the same underlying
+    physical information - a real, disclosed design choice. Omitted
+    entirely (the default): zero behavior change - the thermodynamic
+    module stays exactly the naive temperature/humidity blend,
+    bit-identical to before this capability existed.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -390,6 +413,16 @@ class AWCICalculator:
               50/50 with normalized wind speed (see
               calculate_module_scores()'s own inline comment for the
               real disclosure of that weight).
+            - theta_e: optional, real equivalent potential temperature
+              in K (docs/ACF_MASTER_PROMPT.md section 13) - see
+              acf.awci.theta_e.compute_real_theta_e_at_point() for the
+              real, published Bolton (1980) formula. Omitted: zero
+              behavior change, the thermodynamic module stays the
+              naive temperature/humidity blend. Supplied: REPLACES
+              (not blended with) that naive blend, since theta-e
+              already really combines temperature and moisture - see
+              calculate_module_scores()'s own inline comment for the
+              full disclosure of that design choice.
             - cape: CAPE in J/kg
             - cin: CIN in J/kg
             - precipitation: Precipitation in mm/h
@@ -480,14 +513,41 @@ class AWCICalculator:
         else:
             scores["dynamic"] = wind_norm
 
-        # Thermodynamic module - based on temperature and humidity
+        # Thermodynamic module - based on temperature and humidity, or
+        # real equivalent potential temperature (theta-e) when a
+        # caller supplies one (docs/ACF_MASTER_PROMPT.md section 13 -
+        # "température potentielle équivalente" is explicitly one of
+        # the thermodynamic module's own candidate variables; explicit
+        # user request "continue au module thermodynamique, avec
+        # theta-e"). data["theta_e"] is expected to be a real
+        # equivalent potential temperature in K - see
+        # acf.awci.theta_e.compute_real_theta_e_at_point() for the
+        # real, published Bolton (1980) formula that produces it.
+        # theta-e REPLACES (not adds to) the naive 50/50 temperature/
+        # humidity blend when supplied, rather than being blended in
+        # as a third term - theta-e is itself a real, physically
+        # complete combination of temperature AND moisture, so
+        # additively stacking it alongside temp_norm/hum_norm would
+        # double-count the same underlying physical information (a
+        # real, disclosed design choice, not the same
+        # blend-an-independent-signal-in convention used for wind
+        # shear above, which IS real independent information relative
+        # to wind speed). Omitted entirely (the default): zero
+        # behavior change - the thermodynamic module stays exactly the
+        # naive temperature/humidity blend, same as every existing
+        # caller has always gotten.
         temp = data.get("temperature", 273.15)
         hum = data.get("specific_humidity", 0.001)
 
-        # Combine temperature and humidity for thermodynamic complexity
-        temp_norm = self._normalize("temperature", temp, self.normalizer.normalize_temperature, climatology)
-        hum_norm = self._normalize("specific_humidity", hum, self.normalizer.normalize_humidity, climatology)
-        scores["thermodynamic"] = 0.5 * temp_norm + 0.5 * hum_norm
+        if "theta_e" in data:
+            scores["thermodynamic"] = self._normalize(
+                "theta_e", data["theta_e"], self.normalizer.normalize_theta_e, climatology
+            )
+        else:
+            # Combine temperature and humidity for thermodynamic complexity
+            temp_norm = self._normalize("temperature", temp, self.normalizer.normalize_temperature, climatology)
+            hum_norm = self._normalize("specific_humidity", hum, self.normalizer.normalize_humidity, climatology)
+            scores["thermodynamic"] = 0.5 * temp_norm + 0.5 * hum_norm
 
         # Convective module - based on CAPE and CIN
         cape = data.get("cape", 0.0)

@@ -341,3 +341,63 @@ def test_dynamic_module_field_matches_the_point_api_with_real_wind_shear():
     # [0, 100] and rounded to 1 decimal - the same real transform
     # applied here, not a second computation.
     assert result["module_fields"]["dynamic"][i, j] == pytest.approx(round(expected["dynamic"] * 100, 1))
+
+
+# ------------------------------------------------------ compute_theta_e (§13)
+
+
+def test_theta_e_field_absent_by_default():
+    result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2)
+    assert "theta_e_field" not in result
+    assert "theta_e" not in result["fields_used"]
+
+
+def test_theta_e_field_present_and_real_when_opted_in():
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=3, seed=1, perturbation_scale=3.0, compute_theta_e=True
+    )
+    assert "theta_e_field" in result
+    assert result["theta_e_field"].shape == (6, 10)
+    assert "theta_e" in result["fields_used"]
+    # A real perturbed run must show genuine spatial variation, not a
+    # single value broadcast everywhere.
+    assert np.nanstd(result["theta_e_field"]) > 0.0
+
+
+def test_theta_e_field_matches_a_direct_compute_real_theta_e_at_point_call():
+    from acf.awci.theta_e import compute_real_theta_e_at_point
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None, compute_theta_e=True
+    )
+    i, j = 2, 3
+    expected = compute_real_theta_e_at_point(
+        temperature_k=float(result["temperature_field"][i, j]),
+        specific_humidity=float(result["specific_humidity_field"][i, j]),
+        pressure_hpa=float(result["pressure_field_hpa"][i, j]),
+    )
+    if expected["is_real_data"]:
+        assert result["theta_e_field"][i, j] == pytest.approx(expected["theta_e_k"])
+    else:
+        assert np.isnan(result["theta_e_field"][i, j])
+
+
+def test_thermodynamic_module_field_matches_the_point_api_with_real_theta_e():
+    """Same discipline as test_dynamic_module_field_matches_the_point_api_with_real_wind_shear()
+    above - compares against calculate_module_scores() fed THIS run's
+    own real field values, never a second, separately non-reproducible
+    solver run."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None, compute_theta_e=True
+    )
+    i, j = 1, 4
+    data: dict = {
+        "temperature": float(result["temperature_field"][i, j]),
+        "specific_humidity": float(result["specific_humidity_field"][i, j]),
+    }
+    if not np.isnan(result["theta_e_field"][i, j]):
+        data["theta_e"] = float(result["theta_e_field"][i, j])
+    expected = AWCICalculator().calculate_module_scores(data)
+    assert result["module_fields"]["thermodynamic"][i, j] == pytest.approx(round(expected["thermodynamic"] * 100, 1))

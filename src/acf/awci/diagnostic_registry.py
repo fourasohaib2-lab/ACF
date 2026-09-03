@@ -155,6 +155,31 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         tests=["tests/test_awci_calculator.py::test_normalizer_methods"],
         status=NORMALIZER_RANGE_STATUS["humidity"],
     ),
+    "normalize_theta_e": DiagnosticSpec(
+        name="normalize_theta_e",
+        description="Real, opt-in normalization of equivalent potential temperature (theta-e) to [0, 1] - "
+        "REPLACES (not blends with) the naive temperature/humidity combination in the thermodynamic module "
+        "when a real value is supplied (added 2026-09-03, explicit user request 'continue au module "
+        "thermodynamique, avec theta-e').",
+        physical_meaning="Theta-e is a real, physically complete single measure of an air parcel's combined "
+        "thermal and moisture energy content (docs/ACF_MASTER_PROMPT.md section 13 explicitly lists "
+        "'température potentielle équivalente' among the thermodynamic module's own candidate variables).",
+        equation="clip(value_k, 250, 380) / 130  (after subtracting 250: (clip(value_k,250,380)-250)/130)",
+        inputs=["theta_e (K) - see acf.awci.theta_e.compute_real_theta_e_at_point() for the real Bolton (1980) formula that produces it"],
+        output="thermodynamic module score directly (see thermodynamic_module_combination below for the real replace-not-blend disclosure), [0, 1]",
+        units="K -> dimensionless",
+        valid_range="250 to 380 K",
+        assumptions="Linear scaling across a real, generously wide operational envelope, for internal "
+        "consistency with the other Normalizer ranges.",
+        limitations="The underlying real theta-e VALUE uses the CONFIRMED, published Bolton (1980) formula - "
+        "only this normalization RANGE's own bounds are HYPOTHESIS (not sourced from a specific climatology), "
+        "same as every other Normalizer range in this registry.",
+        reference="Normalization range: ACF design choice. Underlying theta-e formula: Bolton, D. (1980), "
+        "'The Computation of Equivalent Potential Temperature', Monthly Weather Review 108(7), 1046-1053 - a "
+        "real, published, operationally standard formula (also used by MetPy/SHARPpy), not invented here.",
+        tests=["tests/test_awci_calculator_theta_e.py", "tests/test_awci_theta_e.py"],
+        status=NORMALIZER_RANGE_STATUS["theta_e"],
+    ),
     "normalize_cape": DiagnosticSpec(
         name="normalize_cape",
         description="Normalizes CAPE to [0, 1] for the convective module.",
@@ -291,19 +316,29 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
     ),
     "thermodynamic_module_combination": DiagnosticSpec(
         name="thermodynamic_module_combination",
-        description="Combines normalized temperature and humidity into the thermodynamic module score.",
-        physical_meaning="Thermodynamic complexity depends on both temperature and moisture, weighted equally.",
-        equation="0.5 * normalize_temperature(temperature) + 0.5 * normalize_humidity(specific_humidity)",
-        inputs=["temperature (K)", "specific_humidity (kg/kg)"],
+        description="Combines normalized temperature and humidity into the thermodynamic module score by "
+        "default, or REPLACES that blend with real, opt-in equivalent potential temperature (theta-e, added "
+        "2026-09-03) when a caller supplies one.",
+        physical_meaning="Thermodynamic complexity depends on both temperature and moisture, weighted equally "
+        "by default; theta-e, when supplied, is a real, physically complete single quantity already combining "
+        "both (section 13's own explicit candidate variable).",
+        equation="if 'theta_e' not in data: 0.5 * normalize_temperature(temperature) + 0.5 * normalize_humidity(specific_humidity); "
+        "else: normalize_theta_e(theta_e)",
+        inputs=["temperature (K)", "specific_humidity (kg/kg)", "theta_e (K, optional)"],
         output="thermodynamic module score, [0, 1]",
         units="dimensionless",
         valid_range="[0, 1]",
-        assumptions="Equal 50/50 weighting between temperature and humidity - no real physical derivation "
-        "(e.g. equivalent potential temperature) combines them here.",
-        limitations="A simple linear blend, not a real thermodynamic diagnostic like theta-e/virtual temperature/"
-        "lapse rate (section 13's own real gap, part of this same audit's section 12-16 finding).",
-        reference="ACF design choice - equal weighting, not derived from a published formula.",
-        tests=["tests/test_awci_calculator.py::test_calculate_module_scores"],
+        assumptions="Equal 50/50 weighting between temperature and humidity in the default case - no real "
+        "physical derivation combines them that way. Theta-e REPLACES rather than blends with this default "
+        "combination when supplied - additively stacking it would double-count the same underlying "
+        "temperature/humidity information theta-e already incorporates (a real, disclosed design choice).",
+        limitations="Default case: a simple linear blend, not a real thermodynamic diagnostic. Opt-in theta-e "
+        "case: a real single-point value, not a real vertical theta-e gradient/advection diagnostic (section "
+        "12-16's own broader, still-open scope) - see normalize_theta_e's own entry for the real, published "
+        "Bolton (1980) reference behind the theta-e value itself.",
+        reference="Default combination: ACF design choice, not derived from a published formula. Theta-e "
+        "replacement: see normalize_theta_e's own reference.",
+        tests=["tests/test_awci_calculator.py::test_calculate_module_scores", "tests/test_awci_calculator_theta_e.py"],
         status=MODULE_WEIGHT_STATUS["thermodynamic"],
     ),
     "convective_module_combination": DiagnosticSpec(

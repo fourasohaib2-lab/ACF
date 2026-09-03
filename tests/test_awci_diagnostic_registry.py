@@ -172,3 +172,21 @@ def test_documented_dynamic_module_combination_matches_the_real_calculator():
     with_shear = AWCICalculator().calculate_module_scores({"wind_speed": 20.0, "wind_shear": 18.0})
     expected = 0.5 * Normalizer.normalize_wind(20.0) + 0.5 * Normalizer.normalize_wind_shear(18.0)
     assert with_shear["dynamic"] == pytest.approx(expected)
+
+
+def test_normalize_theta_e_entry_matches_the_real_live_normalizer():
+    assert Normalizer.normalize_theta_e(315.0) == pytest.approx(0.5)  # (315-250)/130
+
+
+def test_documented_thermodynamic_module_combination_matches_the_real_calculator():
+    """Real proof the documented default-blend/theta-e-replace
+    behavior isn't stale - reconstructs both real cases directly and
+    compares to AWCICalculator's own real output."""
+    default_case = AWCICalculator().calculate_module_scores({"temperature": 300.0, "specific_humidity": 0.01})
+    expected_default = 0.5 * Normalizer.normalize_temperature(300.0) + 0.5 * Normalizer.normalize_humidity(0.01)
+    assert default_case["thermodynamic"] == pytest.approx(expected_default)
+
+    theta_e_case = AWCICalculator().calculate_module_scores(
+        {"temperature": 300.0, "specific_humidity": 0.01, "theta_e": 330.0}
+    )
+    assert theta_e_case["thermodynamic"] == pytest.approx(Normalizer.normalize_theta_e(330.0))
