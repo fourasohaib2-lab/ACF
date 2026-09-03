@@ -5,6 +5,8 @@ AWCI Weights Manager
 Manages weights for each module contributing to AWCI.
 """
 
+from acf.awci.scientific_status import WeightStatusEntry, get_module_weight_status
+
 
 class WeightsManager:
     """
@@ -60,6 +62,18 @@ class WeightsManager:
     def get_weight(self, module: str) -> float:
         """Get weight for a specific module."""
         return self.weights.get(module, 0.0)
+
+    def get_weight_status(self, module: str) -> WeightStatusEntry:
+        """
+        Real scientific status of this weight (docs/ACF_MASTER_PROMPT.md
+        section 80 - "chaque poids doit avoir un statut : initial,
+        expert-based, calibrated, validated") - see
+        acf.awci.scientific_status for the real classification and its
+        rationale. Never CALIBRATED/VALIDATED today - honestly reflects
+        that no weight in this codebase has been through a real
+        calibration/validation pipeline yet.
+        """
+        return get_module_weight_status(module)
 
     def set_weight(self, module: str, value: float):
         """

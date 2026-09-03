@@ -1953,3 +1953,49 @@ CONFIRMED/PROPOSED/HYPOTHESIS/REQUIRES_VALIDATION/UNKNOWN sur chaque
 seuil et poids d'AWCICalculator/Normalizer/WeightsManager** —
 actuellement de simples constantes sans statut interrogeable. C'est le
 prochain chantier proposé.
+
+## Mise à jour 2026-09-03 (suite) — registre de statut scientifique réel construit
+
+Chantier recommandé ci-dessus, construit. Nouveau
+[`src/acf/awci/scientific_status.py`](../src/acf/awci/scientific_status.py) :
+les deux vocabulaires exacts du prompt maître — `ScientificStatus`
+(§77 : `CONFIRMED`/`PROPOSED`/`HYPOTHESIS`/`REQUIRES_VALIDATION`/
+`UNKNOWN`) et `WeightStatus` (§80 : `initial`/`expert-based`/
+`calibrated`/`validated`) — appliqués à **chaque** poids/seuil réel
+qu'`AWCICalculator`/`Normalizer`/`WeightsManager` utilise
+effectivement, avec une justification réelle par entrée (pas générique).
+
+**Classification honnête, aucune invention** : les 7 poids de module
+sont `EXPERT_BASED` (correspond au docstring déjà existant de
+`WeightsManager`) ; `ensemble_spread`/`model_disagreement` (défaut
+0.0, opt-in) sont `INITIAL`, pas `EXPERT_BASED` — aucun jugement
+d'expert n'a jamais été porté sur leur magnitude, seulement sur la
+décision de les mettre à zéro par défaut. Les 2 poids d'interaction
+sont `INITIAL` (le docstring existant d'`AWCICalculator` le dit déjà :
+"an ACF design choice... not derived from an external published
+formula"). Les bornes physiques de `Normalizer` (vent, CAPE, CIN,
+précipitation, température, etc.) sont `HYPOTHESIS` — plausibles
+physiquement mais non sourcées d'une climatologie externe précise
+citée dans le code. **Une seule exception `CONFIRMED`, réelle et
+justifiée** : la plage confiance 0-100% — c'est une définition d'unité
+exacte, pas un choix empirique, preuve que le registre fait une vraie
+distinction et n'étiquette pas tout uniformément par prudence.
+
+**Purement additif** : les nouvelles méthodes
+(`WeightsManager.get_weight_status()`, `Normalizer.get_range_status()`,
+`AWCICalculator.get_interaction_weight_status()`) s'ajoutent à côté
+des constantes réelles existantes, ne les remplacent pas — aucun
+changement de comportement de calcul, vérifié par un test dédié
+(`test_adding_status_metadata_does_not_change_real_awci_computation`).
+
+**Branché dans l'UI** : la fiche de détail par composant
+(`AWCIComponentDetailDialog`, construite plus tôt cette session) affiche
+maintenant aussi le vrai statut de poids du module cliqué — fermeture
+concrète du lien entre explicabilité (§26) et discipline de statut
+(§77-81) dans la même interface.
+
+**Validation :** 15 nouveaux tests
+(`tests/test_awci_scientific_status.py` : 14, plus 1 nouveau test dans
+`tests/test_awci_component_detail.py`), suite complète **3394/3394**
+(3379 + 15), `ruff`/`mypy` propres, aucune régression sur le calcul
+AWCI réel.

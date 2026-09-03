@@ -9,6 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 from acf.ai.ensemble.ensemble_manager import EnsembleManager
+from acf.awci.scientific_status import WeightStatusEntry, get_interaction_weight_status
 
 from .normalizer import Normalizer
 from .weights import WeightsManager
@@ -319,6 +320,15 @@ class AWCICalculator:
         if not normalized_spreads:
             return 0.0
         return sum(normalized_spreads) / len(normalized_spreads)
+
+    @staticmethod
+    def get_interaction_weight_status(term: str) -> WeightStatusEntry:
+        """
+        Real scientific status of one INTERACTION_WEIGHTS entry
+        (docs/ACF_MASTER_PROMPT.md section 80) - see
+        acf.awci.scientific_status for the real classification.
+        """
+        return get_interaction_weight_status(term)
 
     def calculate_interaction_scores(self, module_scores: dict[str, float]) -> dict[str, float]:
         """

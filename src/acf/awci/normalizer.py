@@ -5,6 +5,8 @@ AWCI Normalizer
 Normalizes variables to [0, 1] range for AWCI calculation.
 """
 
+from acf.awci.scientific_status import ThresholdStatus, get_normalizer_range_status
+
 
 class Normalizer:
     """
@@ -13,6 +15,18 @@ class Normalizer:
     Each variable has its own normalization function based on
     typical ranges.
     """
+
+    @staticmethod
+    def get_range_status(variable: str) -> ThresholdStatus:
+        """
+        Real scientific status of the range normalize_<variable>() uses
+        (docs/ACF_MASTER_PROMPT.md section 79 - a threshold "n'est pas
+        scientifiquement valide simplement parce qu'il est intuitif")
+        - see acf.awci.scientific_status for the real classification.
+        `variable` matches the normalize_*() method name's own suffix,
+        e.g. "wind" for normalize_wind(), "cape" for normalize_cape().
+        """
+        return get_normalizer_range_status(variable)
 
     @staticmethod
     def normalize_temperature(value: float, is_kelvin: bool = True) -> float:

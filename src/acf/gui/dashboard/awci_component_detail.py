@@ -32,6 +32,7 @@ from typing import Any, Literal
 
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
+from acf.awci.weights import WeightsManager
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 Mode = Literal["demo", "real_physics"]
@@ -166,6 +167,14 @@ class AWCIComponentDetailDialog(QDialog):
         self.formula_label.setWordWrap(True)
         outer.addWidget(self.formula_label)
 
+        self.weight_status_header = QLabel("Scientific status (docs/ACF_MASTER_PROMPT.md §80)")
+        self.weight_status_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        outer.addWidget(self.weight_status_header)
+        self.weight_status_label = QLabel("")
+        self.weight_status_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
+        self.weight_status_label.setWordWrap(True)
+        outer.addWidget(self.weight_status_label)
+
         outer.addStretch()
 
     def show_component(self, key: str, score: float, raw_data: dict[str, Any] | None, mode: Mode) -> None:
@@ -195,6 +204,11 @@ class AWCIComponentDetailDialog(QDialog):
                 input_lines.append(f"{field_name} = (not supplied - AWCICalculator's own default applies)")
         self.inputs_label.setText("\n".join(input_lines))
         self.formula_label.setText(info.formula)
+
+        weight_status = WeightsManager().get_weight_status(key)
+        self.weight_status_label.setText(
+            f"Weight status: {weight_status.status.value.upper()} — {weight_status.rationale}"
+        )
 
         self.show()
         self.raise_()

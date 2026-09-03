@@ -86,3 +86,16 @@ def test_dialog_shows_the_real_formula_text():
     dialog = AWCIComponentDetailDialog()
     dialog.show_component("dynamic", 50.0, {"wind_speed": 25.0}, "demo")
     assert "normalize_wind" in dialog.formula_label.text()
+
+
+def test_dialog_shows_the_real_weight_status(qtbot):
+    """Explicit user request: docs/ACF_MASTER_PROMPT.md section 80's
+    weight-status vocabulary (initial/expert-based/calibrated/
+    validated) surfaced in the same explainability dialog - the real
+    status from acf.awci.weights.WeightsManager.get_weight_status(),
+    not a second, independent guess."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("dynamic", 50.0, {"wind_speed": 25.0}, "demo")
+    assert "EXPERT-BASED" in dialog.weight_status_label.text()
+    assert "not recalibrated" in dialog.weight_status_label.text()
