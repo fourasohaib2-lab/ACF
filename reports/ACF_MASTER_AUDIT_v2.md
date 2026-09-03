@@ -1870,3 +1870,38 @@ Physics, badge honnête "DEFAULT" affiché correctement).
 **Bilan des 3 parties (boutons Message/Alerts/composants) :** suite
 complète passée de 3325/3325 à **3379/3379** (54 nouveaux tests au
 total), 3 commits indépendants poussés sur `develop`.
+
+## Mise à jour 2026-09-03 (suite) — prompt maître ACF/AWCI et maquettes de référence ajoutés
+
+L'utilisateur a fourni le document conceptuel d'origine du projet
+(rédigé avec l'aide de ChatGPT au tout début du projet, avant cette
+session) : la définition scientifique complète de l'ACF/AWCI, la
+philosophie de travail (statuts CONFIRMED/PROPOSED/HYPOTHESIS/
+REQUIRES VALIDATION/UNKNOWN, discipline "jamais de seuil/poids inventé
+présenté comme validé", ACF ≠ AWCI, complexité ≠ danger, physics-first
+avant ML, ordre de travail UNDERSTAND→INSPECT→AUDIT→PLAN→IMPLEMENT→
+TEST→VALIDATE→DOCUMENT→REPORT), ainsi que deux maquettes de référence
+visuelles (un dashboard ACF général multi-échéances/multi-modèles, et
+le dashboard AWCI déjà utilisé comme référence pour
+`acf.gui.dashboard.awci_dashboard` — confirmé être la même maquette).
+
+**Conservé tel que fourni** dans
+[`docs/ACF_MASTER_PROMPT.md`](../docs/ACF_MASTER_PROMPT.md) (les 90
+sections, verbatim — ce n'est pas un audit du dépôt, c'est la
+spécification conceptuelle et méthodologique que ce projet doit
+respecter) et les deux images dans
+[`docs/reference/`](../docs/reference/) (`acf_dashboard_reference.jpg`,
+`awci_dashboard_reference.jpg`, avec un `README.md` expliquant ce que
+chacune représente et son statut réel — la maquette ACF générale n'a
+**aucun widget correspondant construit dans `src/acf/gui` à ce jour**,
+contrairement à la maquette AWCI déjà implémentée).
+
+**Ce que cette mise à jour n'est PAS** : ce n'est pas une prétention
+que le code existant respecte déjà intégralement ce prompt maître (il
+ne le fait pas partout — par exemple, la discipline stricte de statut
+`CONFIRMED`/`HYPOTHESIS` par seuil/poids n'est pas systématiquement
+appliquée dans `acf.awci.calculator`/`normalizer` aujourd'hui, et
+aucun dashboard ACF général multi-échéances n'existe). C'est
+l'enregistrement durable de la référence conceptuelle à respecter pour
+tout travail futur — un vrai audit de conformité point-par-point à ce
+prompt serait un travail séparé, non fait ici.
