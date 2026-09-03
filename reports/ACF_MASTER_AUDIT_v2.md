@@ -2058,3 +2058,101 @@ et que le score ponctuel retourné reste bit-identique à un appel
 **3407/3407** (3394 + 13), `ruff`/`mypy` propres, méthode purement
 additive (zéro changement de comportement pour tout appelant existant
 de `calculate()`).
+
+## Mise à jour 2026-09-03 (suite) — Dashboard ACF général (§27-29)
+
+Suite explicite ("oui vasy mais respecte moi le prompt envoyé"),
+troisième priorité choisie dans les manques identifiés par cet audit
+lui-même, méthodologie suivie dans l'ordre imposé par le prompt (§86).
+
+**Pourquoi** : §27-29 du prompt décrivent une architecture de dashboard
+multi-vues, et l'utilisateur a fourni sa propre maquette de référence
+réelle, `docs/reference/acf_dashboard_reference.jpg` ("ATMOSPHERIC
+COMPLEXITY FRAMEWORK (ACF) — AWCI RESEARCH SUITE") — distincte de la
+maquette qui a servi à `acf.gui.dashboard.awci_dashboard` (déjà
+construit plus tôt cette session). L'audit initial de cette session
+avait déjà confirmé, par lecture directe de `src/acf/gui`, qu'aucun
+dashboard général multi-échéance n'existait — ce travail ferme cette
+lacune.
+
+**Architecture / Code** : nouveau
+[`acf.gui.dashboard.acf_general_dashboard.ACFGeneralDashboard`](../src/acf/gui/dashboard/acf_general_dashboard.py) —
+réutilise, sans les réimplémenter, les moteurs réels déjà construits
+cette session ou avant : `compute_real_complexity_evolution()` (UNE
+seule trajectoire réelle `CoupledEarthSolver` alimente à la fois les
+onglets d'échéance et le graphique d'évolution — reslicing, jamais
+recalcul), `sample_volume_cross_section()`, `AWCICalculator.calculate()`
+(score ponctuel + décomposition + couplages dominants),
+`ModelConsensusEngine.compute_real_multi_model_disagreement()` (spread
+multi-modèle, à la demande, pas automatique — c'est le calcul le plus
+coûteux du dashboard), et les widgets déjà existants `AWCIMapPanel`,
+`AWCICrossSection`, `AWCIRadar`. `AWCIGauge` — un widget réel,
+correct, mais **orphelin documenté** depuis que le dashboard AWCI est
+passé à `AWCIRadar` — retrouve ici son premier usage réel en
+production, fermant cette trouvaille d'audit comme effet de bord.
+Deux nouveaux widgets graphiques réutilisables :
+[`AWCIEvolutionChart`](../src/acf/gui/dashboard/awci_evolution_chart.py)
+(courbe AWCI(t) réelle) et
+[`AWCIModelSpreadChart`](../src/acf/gui/dashboard/awci_model_spread_chart.py)
+(barres par modèle réel + bande de désaccord). Pattern worker
+off-thread `QRunnable`+`Signal` avec méthodes liées (jamais de lambda —
+la classe de bug déjà trouvée deux fois cette session : PySide6 ne
+peut pas déterminer de file d'attente cross-thread sûre pour une
+lambda nue). Ouverture via une nouvelle action toolbar ESOC
+"🌐 ACF Dashboard" → `ACFGeneralDashboardWindow`.
+
+**Décisions de périmètre honnêtes, explicitement déclarées** :
+- Les 5 "onglets d'échéance" sont de vraies trames d'UNE seule
+  évolution réelle (reslicing, pas 5 runs solveur indépendants).
+- Le panneau de spread multi-modèle est réel mais à la demande — pas
+  recalculé automatiquement à chaque clic d'onglet.
+- Aucune annotation "JET STREAM SHEAR"/"CONVECTIVE PENETRATION" sur la
+  coupe verticale — aucun algorithme réel de détection de jet-stream/
+  cellule convective n'existe dans ce code ; en inventer un ici aurait
+  été exactement le type de diagnostic fabriqué que le prompt maître
+  interdit.
+- Le point d'intérêt pour le score ponctuel/couplages est un point réel
+  fixe et déclaré (Alger, 36.75N 3.06E — déjà utilisé ailleurs dans ce
+  code, `awci_dashboard.py`), pas encore une interaction clic-n'importe
+  où sur la carte (éviterait de démêler un vrai clic d'un vrai
+  drag-pan, hors périmètre de cette passe).
+- **Correction trouvée pendant la vérification manuelle, pas supposée** :
+  la première version affichait des libellés d'onglet fixes
+  "T+0h/T+3h/T+6h/T+12h/T+24h" — or `compute_real_complexity_evolution()`
+  espace ses trames de façon **uniforme**, donc ce jeu de libellés à
+  espacement inégal ne pouvait jamais correspondre à ce qui est
+  réellement calculé. Corrigé : chaque bouton affiche désormais le vrai
+  `valid_time_seconds` de sa trame réelle (`T+0.07h`, `T+0.13h`, …),
+  jamais un texte fixe — exactement le genre d'écart entre affichage et
+  donnée réelle que le §69 ("ne jamais inventer l'état du projet")
+  interdit. Le titre du graphique d'évolution a de même perdu son
+  "(24h)" fixe (le vrai intervalle dépend de `n_frames`/`steps_per_frame`/
+  `dt_seconds`), l'axe des x réel restant la seule source de vérité sur
+  la durée couverte.
+- **Correction de mise en page trouvée par vérification réelle** (capture
+  d'écran manuelle, pas supposition) : sans hauteur minimale explicite,
+  la ligne carte+coupe verticale se retrouvait compressée à ~200px par
+  la compétition avec les autres lignes (dont deux `AWCIGauge` avec leur
+  propre `setMinimumSize(180, 180)` réel) — corrigé par
+  `setMinimumHeight(380)` sur les deux et un poids de stretch relevé.
+
+**Tests / Validation réelle** : 26 nouveaux tests, tous réels — pas de
+mock du calcul lui-même :
+`tests/gui/test_awci_evolution_chart.py` (6),
+`tests/gui/test_awci_model_spread_chart.py` (5),
+`tests/gui/test_acf_general_dashboard.py` (12, dont deux tests de
+régression dédiés au bug de libellés fixes ci-dessus, et deux tests
+`qtbot.waitUntil()` qui font vraiment tourner le worker `QThreadPool`
+de bout en bout — pas d'appel direct à `run()` — même discipline que
+`tests/test_esoc_awci_field.py`, qui avait déjà trouvé une fois cette
+session le bug de signal connecté à une lambda nue),
+`tests/test_esoc_acf_general_dashboard_action.py` (4, action toolbar +
+ouverture/réutilisation de fenêtre). Un test compare le gauge/radar du
+dashboard à un appel indépendant `AWCICalculator.calculate()` sur le
+même point réel, et un test confirme qu'un clic d'onglet ne recalcule
+jamais (`dashboard._evolution is evolution`, même objet). Suite
+complète **3433/3433** (3407 + 26), `ruff`/`mypy` propres sur tous les
+fichiers neufs/modifiés. Vérification visuelle manuelle (capture
+d'écran réelle du dashboard avec évolution + consensus multi-modèle
+calculés) envoyée à l'utilisateur pour comparaison avec
+`docs/reference/acf_dashboard_reference.jpg`.

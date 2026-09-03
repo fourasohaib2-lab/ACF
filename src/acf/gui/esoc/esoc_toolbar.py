@@ -48,6 +48,11 @@ class ESOCToolbar(QToolBar):
             # reach: the 28th (last) tab of the bottom dock, and a button inside
             # the Classic View window. This opens AWCIDashboardWindow directly.
             ("✈️ AWCI", "open_awci_dashboard"),
+            # The general, multi-lead-time ACF research dashboard
+            # (docs/ACF_MASTER_PROMPT.md sections 27-29, docs/reference/
+            # acf_dashboard_reference.jpg) - distinct from the AWCI-only
+            # dashboard above. Opens ACFGeneralDashboardWindow.
+            ("🌐 ACF Dashboard", "open_acf_general_dashboard"),
             # Real acf.awci.spatial_field.compute_real_complexity_field()
             # overlay on THIS window's central map (explicit user
             # request "ajoute la 4eme dimension au niveau d'affichage

@@ -25,6 +25,7 @@ from acf.gui.esoc.settings_dialog import SettingsDialog
 
 if TYPE_CHECKING:
     from acf.dashboard.window import ClassicDashboardWindow
+    from acf.gui.dashboard.acf_general_dashboard_window import ACFGeneralDashboardWindow
     from acf.gui.dashboard.awci_window import AWCIDashboardWindow
 
 logger = logging.getLogger("acf.gui.esoc.esoc_window")
@@ -103,6 +104,7 @@ class ESOCWindow(QMainWindow):
         self._log_viewer: LogViewerDialog | None = None
         self._classic_dashboard_window: ClassicDashboardWindow | None = None
         self._awci_dashboard_window: AWCIDashboardWindow | None = None
+        self._acf_general_dashboard_window: ACFGeneralDashboardWindow | None = None
 
         # 4. Connect Signals & Select Default Profile
         self._setup_connections()
@@ -195,6 +197,8 @@ class ESOCWindow(QMainWindow):
             self._open_classic_dashboard()
         elif cmd == "open_awci_dashboard":
             self._open_awci_dashboard()
+        elif cmd == "open_acf_general_dashboard":
+            self._open_acf_general_dashboard()
         elif cmd == "show_awci_field_on_map":
             self._show_awci_field_on_map()
         elif cmd == "open_help":
@@ -432,6 +436,27 @@ class ESOCWindow(QMainWindow):
             "AWCI dashboard opened. Meteorological INPUT fields are synthetic "
             "(see acf.gui.dashboard.awci_synthetic_field); the AWCI scores themselves "
             "are real AWCICalculator output over those inputs.",
+        )
+
+    def _open_acf_general_dashboard(self) -> None:
+        """Open (or raise) the general ACF research dashboard as its own
+        top-level window - docs/ACF_MASTER_PROMPT.md sections 27-29,
+        docs/reference/acf_dashboard_reference.jpg. Distinct from the
+        AWCI-only dashboard above (_open_awci_dashboard); same
+        open-or-raise pattern, same reason for a local import (circular
+        via acf.gui.dashboard -> acf.gui.__init__ -> this module).
+        """
+        from acf.gui.dashboard.acf_general_dashboard_window import ACFGeneralDashboardWindow
+
+        if self._acf_general_dashboard_window is None:
+            self._acf_general_dashboard_window = ACFGeneralDashboardWindow(self)
+        self._acf_general_dashboard_window.show()
+        self._acf_general_dashboard_window.raise_()
+        self._acf_general_dashboard_window.activateWindow()
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            "ACF general dashboard opened - computing real CoupledEarthSolver "
+            "evolution off-thread (acf.awci.temporal_field.compute_real_complexity_evolution).",
         )
 
     def _show_awci_field_on_map(self) -> None:
