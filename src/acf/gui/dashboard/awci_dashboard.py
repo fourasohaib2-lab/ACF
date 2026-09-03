@@ -72,6 +72,7 @@ from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
+from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
@@ -244,8 +245,20 @@ class AWCIDashboard(QWidget):
         self.view_3d_button.clicked.connect(self._open_3d_view)
         self.view_3d_button.setEnabled(False)
         header_row.addWidget(self.view_3d_button)
+
+        self.messages_button = QPushButton("📨 Message")
+        self.messages_button.setToolTip(
+            "Open real, LIVE METAR/TAF/SPECI/SIGMET messages (acf.gui.dashboard.\n"
+            "awci_messages_panel) - fetched from the public NOAA Aviation Weather\n"
+            "Center API for real stations (KJFK/LFPG/EGLL/DAAG), decoded with this\n"
+            "project's own real ICAO decoders. A real network dependency - shows an\n"
+            "honest error per station/report if unreachable, never a fabricated one."
+        )
+        self.messages_button.clicked.connect(self._open_messages)
+        header_row.addWidget(self.messages_button)
         outer.addLayout(header_row)
         self._volume_3d_window: AWCIVolume3DView | None = None
+        self._messages_window: AWCIMessagesDialog | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -603,6 +616,19 @@ class AWCIDashboard(QWidget):
         self._volume_3d_window.set_volume(
             volume["lons"], volume["lats"], volume["awci_volume"], volume["pressure_volume_hpa"], label="REAL PHYSICS"
         )
+
+    def _open_messages(self) -> None:
+        """Open (or raise) the real live METAR/TAF/SPECI/SIGMET
+        messages dialog - explicit user request "ajoute une fonction
+        en bas pour donner les informations du metar et du taff et les
+        speci et les spetial... dans un seul bouton Message". Always
+        available (not gated behind Real Physics mode) - it fetches
+        real external station data independently of ACF's own solver."""
+        if self._messages_window is None:
+            self._messages_window = AWCIMessagesDialog(parent=self)
+        self._messages_window.show()
+        self._messages_window.raise_()
+        self._messages_window.activateWindow()
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()

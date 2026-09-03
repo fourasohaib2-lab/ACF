@@ -1729,3 +1729,68 @@ fidélité de thème, donc non construit dans cette passe.
 (3308 + 17), `ruff`/`mypy` propres. Vérifié visuellement par une vraie
 capture d'écran de l'app lancée (rendu Qt offscreen réel, pas une
 maquette) avant et après.
+
+## Mise à jour 2026-09-03 (suite) — messages METAR/TAF/SPECI/SIGMET réellement en direct (Partie 1/3)
+
+Demande explicite : bouton "Message" unique donnant METAR/TAF/SPECI/
+SPECIAL et tous les messages liés. Interrogé sur le cadrage honnête
+(aucun encodeur n'existe, pas de vrai réseau de stations, pas de
+calcul de visibilité), l'utilisateur a précisé l'objectif réel du
+projet : **"le but est de brancher acf et awci avec des vrais
+station pour nous rendre des vrai reponse instantanément"** — brancher
+sur de vraies stations, pas encoder les données synthétiques d'ACF.
+
+**Vérifié avant de construire, pas supposé** : `acf.aviation.icao.
+metar_decoder.METARDecoder` et `taf_decoder.TAFDecoder` sont de vrais
+décodeurs réels et testés (`tests/test_metar_decoder.py`,
+`tests/test_taf_decoder.py`) mais avaient **zéro appelant nulle part**
+dans l'app réelle — jamais branchés à quoi que ce soit. Un vrai
+`curl` vers l'API publique et gratuite (sans clé) du NOAA Aviation
+Weather Center (`aviationweather.gov/api/data/{metar,taf,airsigmet}`)
+a confirmé des données réelles et actuelles pour KJFK/LFPG/EGLL, plus
+DAAG (Alger, confirmé indépendamment). Un code OACI deviné pour
+"Tripoli" (HLLT/HLLB) n'a renvoyé aucune donnée — délibérément non
+ajouté plutôt que de risquer un code faux.
+
+**Construit, réel de bout en bout :**
+- [`src/acf/aviation/icao/live_source.py`](../src/acf/aviation/icao/live_source.py) —
+  `fetch_raw_report()` (un vrai GET `urllib.request` — aucune nouvelle
+  dépendance, `requests`/`httpx` n'existaient nulle part dans ce dépôt),
+  `fetch_and_decode_station()`, `fetch_active_sigmets()`. Toute panne
+  réseau/HTTP/réponse vide lève `LiveReportUnavailable` — jamais de
+  repli fabriqué. **Vrai bug trouvé en vérifiant le flux réel des
+  SIGMET** : le vrai flux sépare ses bulletins par une ligne de tirets
+  (`----------------------`), pas par des lignes vides — un seul
+  bulletin réel contient lui-même des lignes vides internes (avant sa
+  section OUTLOOK) ; découper sur les lignes vides aurait fragmenté un
+  seul bulletin réel en plusieurs morceaux incohérents. Corrigé avant
+  d'écrire le moindre test, en inspectant le flux réel (`cat -A`).
+- [`src/acf/gui/dashboard/awci_messages_panel.py`](../src/acf/gui/dashboard/awci_messages_panel.py) —
+  `AWCIMessagesDialog`, un onglet par station réelle + un onglet
+  SIGMET, récupération hors thread GUI (même pattern `QRunnable` +
+  `Signal` déjà éprouvé cette session), connecté à une vraie méthode
+  liée (pas une lambda — la session a déjà trouvé ce bug exact plus
+  tôt). Chaque station/message affiche le texte brut réel ET un
+  résumé décodé réel ; un échec réseau ou de décodage affiche un état
+  honnête ("⚠ Live data unavailable: ...") plutôt qu'un blanc ou une
+  valeur inventée.
+- Nouveau bouton "📨 Message" dans l'en-tête du dashboard AWCI,
+  toujours disponible (pas conditionné au mode Real Physics — les
+  données viennent d'une vraie source externe, indépendante du
+  solveur ACF).
+
+**SPECI/SPECIAL** : pas un chemin de code séparé — c'est exactement la
+même grammaire TAC ICAO réelle qu'un METAR de routine (une station
+émet un SPECI au lieu d'un METAR seulement lors d'un changement
+significatif) ; `METARDecoder.decode()` reconnaît déjà les deux
+mots-clés, donc quel que soit celui que le vrai flux contient
+actuellement, il est affiché tel quel — rien n'est fabriqué ni
+distingué artificiellement.
+
+**Validation :** 21 nouveaux tests
+(`tests/test_aviation_live_source.py` : 14, mockant `urllib.request.
+urlopen`, aucune dépendance réseau réelle en CI ; `tests/
+test_awci_messages_panel.py` : 7, mockant les fonctions de fetch),
+suite complète **3346/3346** (3325 + 21), `ruff`/`mypy` propres.
+Vérifié de bout en bout avec de vraies données live (capture d'écran
+réelle envoyée à l'utilisateur) avant d'écrire les tests automatisés.
