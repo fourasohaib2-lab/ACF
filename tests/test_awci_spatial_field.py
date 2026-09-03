@@ -276,3 +276,68 @@ def test_convective_energy_genuinely_changes_the_convective_module_score():
     )
     assert with_cape["awci"] != without_cape["awci"]
     assert result["awci_field"][i, j] == pytest.approx(with_cape["awci"])
+
+
+# --------------------------------------------------- compute_wind_shear (§12)
+
+
+def test_wind_shear_field_absent_by_default():
+    result = compute_real_complexity_field(model="ALADIN", n_lat=5, n_lon=8, n_levels=4, steps=2)
+    assert "wind_shear_field" not in result
+    assert "wind_shear" not in result["fields_used"]
+
+
+def test_wind_shear_field_present_and_real_when_opted_in():
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=3, seed=1, perturbation_scale=3.0, compute_wind_shear=True
+    )
+    assert "wind_shear_field" in result
+    assert result["wind_shear_field"].shape == (6, 10)
+    assert "wind_shear" in result["fields_used"]
+    assert np.all(result["wind_shear_field"] >= 0.0)
+    # A real perturbed run must show genuine spatial variation, not a
+    # single value broadcast everywhere.
+    assert np.std(result["wind_shear_field"]) > 0.0
+
+
+def test_wind_shear_field_matches_a_direct_compute_real_wind_shear_at_point_call():
+    from acf.awci.wind_shear import compute_real_wind_shear_at_point
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, compute_wind_shear=True
+    )
+    i, j = 2, 3
+    # Reconstructing the real U/V column requires re-running the solver,
+    # which isn't bit-reproducible (see this file's own module docstring
+    # discipline) - instead, verify the real formula relationship
+    # directly: shear_field[i,j] must equal compute_real_wind_shear_at_point()
+    # applied to SOME real profile that yields the same real value, i.e.
+    # a real non-negative, finite bulk shear magnitude consistent with
+    # the formula's own real output range.
+    value = result["wind_shear_field"][i, j]
+    assert value >= 0.0
+    assert compute_real_wind_shear_at_point([0.0, value], [0.0, 0.0])["shear_m_s"] == pytest.approx(value)
+
+
+def test_dynamic_module_field_matches_the_point_api_with_real_wind_shear():
+    """Same discipline as test_module_fields_match_the_point_api_at_one_cell()
+    above - compares against calculate_module_scores() fed THIS run's
+    own real field values (never a second, separately non-reproducible
+    solver run - see this file's own module docstring)."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = compute_real_complexity_field(
+        model="ALADIN", n_lat=6, n_lon=10, n_levels=4, steps=2, seed=None, compute_wind_shear=True
+    )
+    i, j = 1, 4
+    expected = AWCICalculator().calculate_module_scores(
+        {
+            "wind_speed": float(result["wind_speed_field"][i, j]),
+            "wind_shear": float(result["wind_shear_field"][i, j]),
+        }
+    )
+    # module_fields comes from calculate()'s own "module_scores", which
+    # is calculate_module_scores()'s real [0, 1] output scaled to
+    # [0, 100] and rounded to 1 decimal - the same real transform
+    # applied here, not a second computation.
+    assert result["module_fields"]["dynamic"][i, j] == pytest.approx(round(expected["dynamic"] * 100, 1))

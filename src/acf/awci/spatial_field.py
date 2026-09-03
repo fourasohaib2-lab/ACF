@@ -54,6 +54,7 @@ import numpy as np
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
+from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
@@ -65,6 +66,9 @@ _FIELDS_USED = ("temperature", "wind_speed", "specific_humidity", "pressure")
 #: Added when `compute_convective_energy=True` - see that parameter's
 #: own docstring and `acf.awci.convective_energy`.
 _CONVECTIVE_FIELDS_USED = ("cape", "cin")
+#: Added when `compute_wind_shear=True` - see that parameter's own
+#: docstring and `acf.awci.wind_shear`.
+_WIND_SHEAR_FIELDS_USED = ("wind_shear",)
 
 
 def compute_real_complexity_field(
@@ -79,6 +83,7 @@ def compute_real_complexity_field(
     n_levels: int | None = None,
     weights: dict[str, float] | None = None,
     compute_convective_energy: bool = False,
+    compute_wind_shear: bool = False,
 ) -> dict[str, Any]:
     """
     Compute a real Complexity(x, y) field: run CoupledEarthSolver once
@@ -124,6 +129,20 @@ def compute_real_complexity_field(
         ascent per grid cell is genuine extra per-point cost this
         function's existing callers did not opt into, so the default
         output is unchanged unless explicitly requested.
+    compute_wind_shear : bool
+        When True, genuinely computes real per-point bulk wind shear
+        (see `acf.awci.wind_shear.compute_real_wind_shear_at_point()`)
+        between the surface (level 0) and the solver's own real
+        highest native level, from each grid point's real full
+        vertical U/V column, and feeds it into AWCICalculator's
+        dynamic module (docs/ACF_MASTER_PROMPT.md section 12, explicit
+        user request "commence par le module dynamique, avec le
+        cisaillement de vent"). Off by default, same real-cost
+        reasoning as `compute_convective_energy` - the default output
+        is unchanged unless explicitly requested. See
+        `acf.awci.wind_shear`'s own module docstring for why this real
+        shear spans the full native-level column, not a fixed physical
+        layer like 0-6 km.
 
     Returns
     -------
@@ -165,6 +184,12 @@ def compute_real_complexity_field(
             values from `acf.awci.convective_energy`, `numpy.nan`
             (never a fabricated 0.0) wherever fewer than 2 real levels
             remained above that module's own real pressure cutoff.
+        wind_shear_field : 2D numpy array (m/s), present only when
+            `compute_wind_shear=True` - real per-point bulk shear
+            values from `acf.awci.wind_shear`, between the surface and
+            the solver's own real highest native level (see that
+            parameter's own docstring for why this is not a fixed
+            physical layer).
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
@@ -219,6 +244,11 @@ def compute_real_complexity_field(
     # Pa -> hPa for the full column, computed once outside the loop
     # (not per point) - only actually used when compute_convective_energy=True.
     pressure_hpa_column = state["P"] / 100.0
+    # Real per-point bulk wind shear, only when compute_wind_shear=True
+    # (docs/ACF_MASTER_PROMPT.md section 12 - see
+    # acf.awci.wind_shear's own module docstring for the real formula
+    # and its honest scope).
+    wind_shear_field = np.zeros((n_lat_actual, n_lon_actual)) if compute_wind_shear else None
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -271,6 +301,18 @@ def compute_real_complexity_field(
                 # own real defaults apply) and cape_field/cin_field stay np.nan -
                 # never a fabricated 0.0 for a column with too few real levels.
 
+            if compute_wind_shear:
+                # Real full vertical U/V column at this one (i, j)
+                # point - same already-computed real state, sliced
+                # differently, same discipline as compute_convective_energy above.
+                shear = compute_real_wind_shear_at_point(
+                    u_profile=state["U"][:, i, j],
+                    v_profile=state["V"][:, i, j],
+                )
+                data["wind_shear"] = shear["shear_m_s"]
+                assert wind_shear_field is not None  # for mypy - real whenever compute_wind_shear
+                wind_shear_field[i, j] = shear["shear_m_s"]
+
             result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
@@ -279,7 +321,11 @@ def compute_real_complexity_field(
             for name in module_names:
                 module_fields[name][i, j] = result["module_scores"][name]
 
-    fields_used = _FIELDS_USED + _CONVECTIVE_FIELDS_USED if compute_convective_energy else _FIELDS_USED
+    fields_used: tuple[str, ...] = _FIELDS_USED
+    if compute_convective_energy:
+        fields_used = fields_used + _CONVECTIVE_FIELDS_USED
+    if compute_wind_shear:
+        fields_used = fields_used + _WIND_SHEAR_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -326,5 +372,8 @@ def compute_real_complexity_field(
     if compute_convective_energy:
         output["cape_field"] = cape_field
         output["cin_field"] = cin_field
+
+    if compute_wind_shear:
+        output["wind_shear_field"] = wind_shear_field
 
     return output

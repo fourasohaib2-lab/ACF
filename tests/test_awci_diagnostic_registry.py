@@ -155,3 +155,20 @@ def test_documented_default_interaction_terms_match_the_real_calculator():
 
     assert interactions["wind_topo_interaction"] == pytest.approx(0.6 * 0.3)
     assert interactions["conv_thermo_interaction"] == pytest.approx(0.8 * 0.4)
+
+
+def test_normalize_wind_shear_entry_matches_the_real_live_normalizer():
+    assert Normalizer.normalize_wind_shear(25.0) == pytest.approx(0.5)  # clip(25,0,50)/50
+
+
+def test_documented_dynamic_module_combination_matches_the_real_calculator():
+    """Real proof the documented 50/50 wind/wind_shear blend isn't
+    stale - reconstructs the real module score from Normalizer calls
+    directly and compares to AWCICalculator's own real output, for
+    both the opted-out and opted-in cases."""
+    without_shear = AWCICalculator().calculate_module_scores({"wind_speed": 20.0})
+    assert without_shear["dynamic"] == pytest.approx(Normalizer.normalize_wind(20.0))
+
+    with_shear = AWCICalculator().calculate_module_scores({"wind_speed": 20.0, "wind_shear": 18.0})
+    expected = 0.5 * Normalizer.normalize_wind(20.0) + 0.5 * Normalizer.normalize_wind_shear(18.0)
+    assert with_shear["dynamic"] == pytest.approx(expected)

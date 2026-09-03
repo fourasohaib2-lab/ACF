@@ -105,6 +105,25 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
         tests=["tests/test_awci_calculator.py::test_normalizer_methods"],
         status=NORMALIZER_RANGE_STATUS["wind"],
     ),
+    "normalize_wind_shear": DiagnosticSpec(
+        name="normalize_wind_shear",
+        description="Real, opt-in normalization of bulk wind shear magnitude to [0, 1] - feeds the dynamic "
+        "module alongside wind speed when a real value is supplied (added 2026-09-03, explicit user request "
+        "'commence par le module dynamique, avec le cisaillement de vent').",
+        physical_meaning="Higher vertical wind shear contributes to dynamic complexity (docs/ACF_MASTER_PROMPT.md "
+        "section 12 explicitly lists 'cisaillement vertical' among the dynamic module's own candidate variables).",
+        equation="clip(value, 0, 50) / 50",
+        inputs=["wind_shear (m/s) - see acf.awci.wind_shear.compute_real_wind_shear_at_point() for the real formula that produces it"],
+        output="dynamic module input (50% weight when supplied - see dynamic_module_combination below), [0, 1]",
+        units="m/s -> dimensionless",
+        valid_range="0 to 50 m/s",
+        assumptions="Same envelope as normalize_wind, for internal consistency - linear scaling, no physical saturation curve.",
+        limitations="Real bulk shear across whatever native model levels were supplied, not a fixed physical "
+        "layer (e.g. 0-6 km) - see acf.awci.wind_shear's own module docstring.",
+        reference="ACF design choice - same envelope as normalize_wind, not sourced from a specific climatology.",
+        tests=["tests/test_awci_calculator_wind_shear.py", "tests/test_awci_wind_shear.py"],
+        status=NORMALIZER_RANGE_STATUS["wind_shear"],
+    ),
     "normalize_temperature": DiagnosticSpec(
         name="normalize_temperature",
         description="Normalizes air temperature to [0, 1] for the thermodynamic module.",
@@ -243,6 +262,32 @@ DIAGNOSTIC_REGISTRY: dict[str, DiagnosticSpec] = {
             "tests/test_awci_calculator_climatology_normalization.py",
         ],
         status=CLIMATOLOGY_NORMALIZATION_METHOD_STATUS,
+    ),
+    "dynamic_module_combination": DiagnosticSpec(
+        name="dynamic_module_combination",
+        description="Combines normalized wind speed with normalized wind shear (when supplied) into the "
+        "dynamic module score - added 2026-09-03, explicit user request 'commence par le module dynamique, "
+        "avec le cisaillement de vent'.",
+        physical_meaning="Dynamic complexity is driven by wind speed alone by default; when a real bulk wind "
+        "shear value is supplied, it is weighted equally alongside wind speed (section 12's own explicit "
+        "'cisaillement vertical' candidate variable).",
+        equation="normalize_wind(wind_speed) if 'wind_shear' not in data else "
+        "0.5 * normalize_wind(wind_speed) + 0.5 * normalize_wind_shear(wind_shear)",
+        inputs=["wind_speed (m/s)", "wind_shear (m/s, optional)"],
+        output="dynamic module score, [0, 1]",
+        units="dimensionless",
+        valid_range="[0, 1]",
+        assumptions="Equal 50/50 weighting when wind_shear is supplied - a real, disclosed ACF design choice, "
+        "matching the same internal convention as the thermodynamic module's own 50/50 temperature/humidity "
+        "blend, not derived from a published formula for this composite index. Omitting wind_shear entirely "
+        "keeps the dynamic module wind-speed-only - zero behavior change for every caller that doesn't supply it.",
+        limitations="Real bulk shear only (magnitude between two levels) - not gradients/variability/vertical "
+        "structure/temporal evolution/relief-convection-stability interactions section 12 also names as real "
+        "candidate dynamic-module study directions (this session's own audit, sections 12-16 - a real, disclosed "
+        "gap, not claimed closed by this one addition).",
+        reference="ACF design choice - not derived from a published formula.",
+        tests=["tests/test_awci_calculator_wind_shear.py"],
+        status=MODULE_WEIGHT_STATUS["dynamic"],
     ),
     "thermodynamic_module_combination": DiagnosticSpec(
         name="thermodynamic_module_combination",

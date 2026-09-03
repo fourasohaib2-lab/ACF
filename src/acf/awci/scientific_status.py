@@ -155,6 +155,7 @@ def get_interaction_weight_status(term: str) -> WeightStatusEntry:
 NORMALIZER_RANGE_STATUS: dict[str, ThresholdStatus] = {
     "temperature": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range -30..50 degC - plausible global extremes, not climatologically sourced per region/season."),
     "wind": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..50 m/s - plausible extreme surface wind, not sourced from a specific climatology."),
+    "wind_shear": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..50 m/s - same envelope as 'wind' for internal consistency; not sourced from a specific climatology, and the real shear itself spans whatever native model levels acf.awci.wind_shear.compute_real_wind_shear_at_point() was given, not a fixed physical layer (e.g. 0-6 km)."),
     "humidity": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..0.03 kg/kg specific humidity - plausible but not sourced."),
     "cape": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..5000 J/kg - plausible extreme CAPE, not sourced from a specific climatology."),
     "cin": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..500 J/kg (abs) - plausible, not sourced."),

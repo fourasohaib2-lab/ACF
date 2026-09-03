@@ -118,6 +118,31 @@ class AWCICalculator:
     independently-computed score through the exact same generic
     mechanism - not a hypothetical claim, an executed test.
 
+    Real bulk wind shear in the dynamic module (NOTE, added 2026-09-03,
+    explicit user request "commence par le module dynamique, avec le
+    cisaillement de vent")
+    -----------------------------------------------------------------
+    This session's own exhaustive 90-section conformance audit
+    (reports/ACF_MASTER_AUDIT_v2.md) found the "dynamic" module used
+    only a single scalar wind speed, while docs/ACF_MASTER_PROMPT.md
+    section 12 explicitly lists "cisaillement vertical" among the
+    module's own candidate variables - and a real, correct
+    `acf.science.bulk_wind_shear.BulkWindShear` formula already existed
+    in this codebase but was never wired into anything that computes
+    ACF's real outputs. `calculate_module_scores()` now blends
+    `data["wind_shear"]` (a real bulk shear magnitude, m/s - see
+    `acf.awci.wind_shear.compute_real_wind_shear_at_point()` for the
+    real per-point formula, and `acf.awci.spatial_field.
+    compute_real_complexity_field()`'s own `compute_wind_shear=True`
+    for the real end-to-end field integration) into the dynamic module
+    when supplied, 50/50 with normalized wind speed (a real, disclosed
+    ACF design choice, matching the same internal convention already
+    used for the thermodynamic module's own temperature/humidity
+    blend - not derived from a published formula for this composite
+    index). Omitted entirely (the default): zero behavior change - the
+    dynamic module stays exactly wind-speed-only, bit-identical to
+    before this capability existed.
+
     Physical vs. Forecast complexity (NOTE, added 2026-09-02)
     -----------------------------------------------------------------
     The target architecture's own science section is explicit: model
@@ -357,6 +382,14 @@ class AWCICalculator:
             - temperature: Temperature in Kelvin
             - specific_humidity: Specific humidity in kg/kg
             - wind_speed: Wind speed in m/s
+            - wind_shear: optional, real bulk wind shear magnitude in
+              m/s (docs/ACF_MASTER_PROMPT.md section 12) - see
+              acf.awci.wind_shear.compute_real_wind_shear_at_point()
+              for the real formula. Omitted: zero behavior change, the
+              dynamic module stays wind-speed-only. Supplied: blended
+              50/50 with normalized wind speed (see
+              calculate_module_scores()'s own inline comment for the
+              real disclosure of that weight).
             - cape: CAPE in J/kg
             - cin: CIN in J/kg
             - precipitation: Precipitation in mm/h
@@ -418,9 +451,34 @@ class AWCICalculator:
         # normalization it always got.
         climatology = data.get("climatology")
 
-        # Dynamic module - based on wind
+        # Dynamic module - based on wind speed, plus real bulk wind
+        # shear when a caller supplies one (docs/ACF_MASTER_PROMPT.md
+        # section 12 - "cisaillement vertical" is explicitly one of
+        # the dynamic module's own candidate variables; explicit user
+        # request "commence par le module dynamique, avec le
+        # cisaillement de vent"). data["wind_shear"] is expected to be
+        # a real bulk shear magnitude in m/s - see
+        # acf.awci.wind_shear.compute_real_wind_shear_at_point() for
+        # the real formula that produces it (a thin wrapper around the
+        # already-existing, already-correct
+        # acf.science.bulk_wind_shear.BulkWindShear.calculate()).
+        # Omitted entirely (the default): zero behavior change - the
+        # dynamic module stays exactly wind-speed-only, same as every
+        # existing caller has always gotten. The 50/50 blend weight
+        # when wind_shear IS supplied is a real, disclosed ACF design
+        # choice - the same internal convention already used for the
+        # thermodynamic module's own temperature/humidity blend below,
+        # not derived from a published formula for this composite
+        # index.
         wind = data.get("wind_speed", 0.0)
-        scores["dynamic"] = self._normalize("wind_speed", wind, self.normalizer.normalize_wind, climatology)
+        wind_norm = self._normalize("wind_speed", wind, self.normalizer.normalize_wind, climatology)
+        if "wind_shear" in data:
+            shear_norm = self._normalize(
+                "wind_shear", data["wind_shear"], self.normalizer.normalize_wind_shear, climatology
+            )
+            scores["dynamic"] = 0.5 * wind_norm + 0.5 * shear_norm
+        else:
+            scores["dynamic"] = wind_norm
 
         # Thermodynamic module - based on temperature and humidity
         temp = data.get("temperature", 273.15)

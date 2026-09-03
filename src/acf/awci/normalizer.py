@@ -57,6 +57,27 @@ class Normalizer:
         return value / 50.0
 
     @staticmethod
+    def normalize_wind_shear(value: float) -> float:
+        """
+        Normalize real bulk wind shear magnitude to [0, 1] - feeds the
+        dynamic module alongside wind speed, when a caller supplies a
+        real value (docs/ACF_MASTER_PROMPT.md section 12, explicit
+        user request "commence par le module dynamique, avec le
+        cisaillement de vent"; see
+        acf.awci.wind_shear.compute_real_wind_shear_at_point() for the
+        real formula that produces this input).
+
+        Range: 0 to 50 m/s - the same envelope as normalize_wind()
+        above, for internal consistency, generously wide relative to
+        real operational significant-shear thresholds (e.g. ~20 m/s
+        bulk shear is a commonly cited real operational threshold for
+        organized severe convection potential) - not itself a
+        classification boundary this function applies.
+        """
+        value = max(0.0, min(50.0, value))
+        return value / 50.0
+
+    @staticmethod
     def normalize_humidity(value: float) -> float:
         """
         Normalize specific humidity to [0, 1].

@@ -3461,3 +3461,94 @@ entrepris sans confirmation explicite de l'utilisateur sur le
 périmètre) et §48/§51 (niveaux de produits/profils de vol exacts —
 largement recoupés par le travail déjà fait au §26/§53/§81 cette
 session).
+
+## Mise à jour 2026-09-03 (suite) — cisaillement de vent réel dans le module dynamique (§12)
+
+Suite explicite de l'utilisateur ("commence par le module dynamique,
+avec le cisaillement de vent") — première fermeture réelle et ciblée
+du chantier §12-16, avec un périmètre choisi par l'utilisateur
+lui-même plutôt que deviné.
+
+**Pourquoi** : §12 liste explicitement "cisaillement vertical" parmi
+les variables candidates du module dynamique — le module `dynamic`
+n'utilisait jusqu'ici qu'un seul scalaire, la vitesse du vent.
+
+**Trouvaille faite en inspectant avant de construire** :
+`acf.science.bulk_wind_shear.BulkWindShear` — une formule réelle et
+correcte (magnitude du cisaillement en vecteur : `sqrt(du² + dv²)`
+entre deux niveaux) — existait déjà dans ce dépôt mais n'était appelée
+par aucun code produisant une vraie sortie ACF. Exactement le même
+schéma déjà trouvé et fermé pour CAPE/CIN (`acf.awci.convective_energy`).
+
+**Décision de ne rien casser, comme à chaque fois cette session** :
+le module `dynamic` reste **exactement** vitesse-du-vent-seule par
+défaut — comportement bit-identique pour tout appelant existant.
+Le cisaillement n'est incorporé que si l'appelant fournit réellement
+`data["wind_shear"]`, combiné 50/50 avec le vent normalisé — le même
+poids de convention interne déjà utilisé pour le module thermodynamique
+(température/humidité), un choix de conception ACF disclosed, pas une
+formule publiée.
+
+**Construit** :
+- Nouveau [`acf.awci.wind_shear`](../src/acf/awci/wind_shear.py) —
+  `compute_real_wind_shear_at_point()`, enveloppe réelle et fine autour
+  de `BulkWindShear.calculate()` (aucune nouvelle physique inventée).
+  Périmètre honnête disclosed : le cisaillement calculé s'étend sur
+  toute l'extension verticale des niveaux natifs du modèle fournis, pas
+  une vraie couche physique fixe (0-6 km, 850-500 hPa) — ACF n'a pas
+  encore de moteur `VerticalCoordinate` reliant niveaux natifs et
+  pression/altitude réelle (limite déjà documentée dans cet audit,
+  §14-21).
+- `Normalizer.normalize_wind_shear()` — même enveloppe réelle 0-50 m/s
+  que `normalize_wind`, plus une entrée `NORMALIZER_RANGE_STATUS["wind_shear"]`
+  réelle (`HYPOTHESIS`).
+- `AWCICalculator.calculate_module_scores()` — le module `dynamic` gère
+  maintenant réellement `data["wind_shear"]` (optionnel, climatology-aware
+  via le même dispatch `_normalize()` que toutes les autres variables).
+- `acf.awci.spatial_field.compute_real_complexity_field(compute_wind_shear=True)` —
+  intégration de bout en bout réelle : calcule le vrai cisaillement par
+  point de grille depuis la vraie colonne U/V du solveur (même
+  discipline que `compute_convective_energy`), retourne un vrai
+  `wind_shear_field`, désactivé par défaut (même coût réel
+  supplémentaire non imposé aux appelants existants).
+- `acf.awci.diagnostic_registry` — 2 nouvelles entrées réelles
+  (`normalize_wind_shear`, `dynamic_module_combination`), cohérentes
+  avec le registre déjà construit au §55.
+
+**Validation réelle end-to-end, vérifiée manuellement avant les tests
+formels** : un script manuel confirme que `wind_shear_field` varie
+réellement dans l'espace (écart-type non nul) et que le champ
+`module_fields["dynamic"]` diffère réellement selon que
+`compute_wind_shear` est activé ou non, sur le même point. **Trouvaille
+méthodologique pendant l'écriture des tests** : comparer deux
+exécutions séparées du solveur (même graine) pour vérifier qu'"aucun
+autre module n'est affecté" se serait révélé non fiable — deux runs
+séparés du solveur ne sont PAS bit-reproductibles (limite déjà connue
+et documentée ailleurs dans ce dépôt), donc un tel test aurait pu
+échouer un jour pour une raison totalement étrangère à ce changement.
+Corrigé en comparant plutôt contre un appel indépendant de
+`calculate_module_scores()` nourri des propres valeurs réelles de
+CETTE exécution, jamais une seconde exécution séparée.
+
+**Validation réelle** : 21 nouveaux tests répartis sur 4 fichiers —
+`tests/test_awci_wind_shear.py` (+8 : correspond à un appel direct
+`BulkWindShear.calculate()`, cisaillement nul si vent identique aux
+deux niveaux, triangle 3-4-5 vérifié à la main, cisaillement jamais
+négatif sur des vecteurs aléatoires réels), `tests/test_awci_calculator_wind_shear.py`
+(+7 : comportement par défaut bit-identique sans cisaillement, mélange
+50/50 exact avec cisaillement, seuls les autres modules restent
+inchangés, climatology-aware), `tests/test_awci_spatial_field.py`
+(+4 : champ absent par défaut, réel et variant spatialement une fois
+activé, correspond à l'API ponctuelle), `tests/test_awci_diagnostic_registry.py`
+(+2 : les deux nouvelles entrées correspondent au vrai code). Suite
+complète **3671/3671** (3650 + 21), `ruff`/`mypy` propres.
+
+**Ce qui reste réellement, du chantier §12-16** : seul le module
+dynamique a été étendu, avec une seule variable (cisaillement). Les
+autres variables candidates du §12 (vorticité, omega, divergence,
+vent à plusieurs niveaux, rafales) et les modules §13-16
+(thermodynamique/convectif/microphysique/relief) restent avec leurs
+entrées simples d'origine — chacun nécessiterait la même démarche
+(vraie formule déjà existante trouvée, justification physique
+explicite, intégration opt-in, tests réels) répétée au cas par cas, à
+la demande de l'utilisateur.
