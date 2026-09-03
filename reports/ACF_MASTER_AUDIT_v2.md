@@ -4756,3 +4756,34 @@ graduations restent les vrais coûts matplotlib incompressibles pour un
 contour redessiné à chaque interaction — un chantier de blitting ou de
 mise en cache d'artistes resterait possible mais plus risqué, hors
 périmètre de cette passe.
+
+## Mise à jour 2026-09-03 (suite) — quatrième passe : dernier vrai calcul non caché, puis retour de rendement décroissant
+
+Suite explicite ("continue"), même méthode. Reprofilage : le dernier
+vrai calcul scientifique encore non caché est apparu —
+`cross_section_phase_severity_field()` (icônes de givrage de la coupe
+verticale), même schéma exact que les deux fonctions déjà mises en
+cache (fonction pure, mêmes arguments réels `_GLOBAL_ROUTE` à chaque
+refresh). `@lru_cache` appliqué, même vérification préalable (aucune
+mutation en place du grid retourné).
+
+**Mesuré** : `refresh()` **40.9 ms → 36.7 ms** (-10 %, **-84 % cumulés**
+depuis 227 ms). Validé par 2 nouveaux tests (cache hit réel,
+invalidation correcte sur un `time_offset_hours` différent — un test
+initial supposait à tort que 2 offsets différents donneraient
+toujours 2 résultats visuellement différents ; la sévérité de phase
+est une valeur catégorielle grossière [0,1] et peut honnêtement
+coïncider — corrigé pour vérifier le vrai compteur de cache miss, pas
+une différence de valeur non garantie). Suite complète **3951 → 3953**,
+`ruff`/`mypy` propres. Capture d'écran envoyée — aucune régression.
+
+**Bilan des 4 passes de performance** : `refresh()` complet
+**227 ms → 36.7 ms (-84 %)**. Ce qui reste (`clear()`/tick generation/
+génération des ticks d'axes matplotlib) est désormais le vrai coût
+incompressible du modèle de rendu actuel (clear+redraw complet par
+interaction) — tout gain supplémentaire demanderait une vraie
+réécriture du moteur de rendu (blitting, artistes persistants mis à
+jour en place) : un chantier bien plus large et risqué, pas une
+suite naturelle de cette série de passes ciblées. Cette série de
+performance s'arrête ici, rendement décroissant confirmé par mesure
+réelle, pas par supposition.

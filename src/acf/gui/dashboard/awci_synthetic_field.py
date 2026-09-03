@@ -398,6 +398,7 @@ def cross_section_field(
     return distances, levels, grid
 
 
+@lru_cache(maxsize=64)
 def cross_section_phase_severity_field(
     point_a: tuple[float, float],
     point_b: tuple[float, float],
@@ -422,6 +423,16 @@ def cross_section_phase_severity_field(
     -------
     (distance_km, flight_levels_hpa, grid) where grid[i][j] is the real
     [0, 1] phase severity at flight_levels_hpa[i], distance_km[j].
+
+    `@lru_cache` (added 2026-09-03) - same real, profiled rationale as
+    awci_grid()/cross_section_field()'s own cache comments: a pure,
+    deterministic function of its own arguments, called with the exact
+    same real (_GLOBAL_ROUTE-derived) arguments on every single real
+    demo-mode refresh() today. Same caller discipline this cache
+    depends on: nothing mutates the returned grid in place (verified
+    by real grep - its one real caller only reads it, passing it
+    straight into AWCICrossSection.update_data()'s own hazard_overlay=
+    parameter for drawing).
     """
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
 

@@ -143,3 +143,28 @@ def test_cross_section_field_cache_correctly_misses_on_a_real_different_route():
 
     assert cross_section_field.cache_info().misses == 2
     assert a != b
+
+
+def test_cross_section_phase_severity_field_is_cached_a_repeated_call_is_a_real_cache_hit():
+    cross_section_phase_severity_field.cache_clear()
+    point_a, point_b = (40.64, -73.78), (49.01, 2.55)
+    first = cross_section_phase_severity_field(point_a, point_b, n_along=6, n_levels=4)
+    second = cross_section_phase_severity_field(point_a, point_b, n_along=6, n_levels=4)
+
+    assert cross_section_phase_severity_field.cache_info().hits == 1
+    assert second == first
+
+
+def test_cross_section_phase_severity_field_cache_correctly_misses_on_a_real_different_time_offset():
+    """A different real time_offset_hours must be its own real cache
+    entry - a stale hit here would silently reuse the wrong time's
+    grid. (Not asserting the two real results differ: phase severity
+    is a coarse [0, 1] categorical value - a genuine, honest
+    coincidence where both real time offsets land in the same real
+    category is possible and not itself a cache bug.)"""
+    cross_section_phase_severity_field.cache_clear()
+    point_a, point_b = (40.64, -73.78), (49.01, 2.55)
+    cross_section_phase_severity_field(point_a, point_b, n_along=6, n_levels=4, time_offset_hours=0.0)
+    cross_section_phase_severity_field(point_a, point_b, n_along=6, n_levels=4, time_offset_hours=6.0)
+
+    assert cross_section_phase_severity_field.cache_info().misses == 2
