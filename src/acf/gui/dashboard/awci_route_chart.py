@@ -28,6 +28,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.collections import PolyCollection
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP
@@ -148,8 +149,21 @@ class AWCIRouteChart(QWidget):
                 text.set_color("#e8edf5")
         else:
             colors = AWCI_CMAP(np.array(scores) / 100.0)
-            for i in range(len(distances) - 1):
-                self.axis.fill_between(distances[i : i + 2], [0, 0], scores[i : i + 2], color=colors[i], linewidth=0)
+            # A real PolyCollection (added 2026-09-03, profiled
+            # AWCIDashboard.refresh() - this per-segment fill was ~79
+            # separate real Axes.fill_between() calls, each with its
+            # own real state/clip-path bookkeeping overhead, measured
+            # as this panel's own single largest real cost). Every
+            # segment's own quad (bottom-left, bottom-right, top-right,
+            # top-left - the exact same 4 real corners
+            # fill_between([x0,x1],[0,0],[y0,y1]) itself would draw)
+            # is built once and added as ONE real collection - bit-
+            # identical real pixels, far fewer real matplotlib calls.
+            quads = [
+                [(distances[i], 0), (distances[i + 1], 0), (distances[i + 1], scores[i + 1]), (distances[i], scores[i])]
+                for i in range(len(distances) - 1)
+            ]
+            self.axis.add_collection(PolyCollection(quads, facecolors=colors[:-1], edgecolors="none"))
             self.axis.plot(distances, scores, color="#e8edf5", linewidth=1.0)
 
             max_i = int(np.argmax(scores))

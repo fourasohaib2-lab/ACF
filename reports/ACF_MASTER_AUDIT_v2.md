@@ -4675,3 +4675,45 @@ d'autres fonctions coûteuses plus loin dans la chaîne (rendu
 matplotlib lui-même, `AWCICalculator.calculate()` par point individuel)
 n'ont pas été touchées — seul le vrai goulot d'étranglement mesuré l'a
 été, pas une optimisation générale spéculative.
+
+## Mise à jour 2026-09-03 (suite) — deuxième passe de performance : le graphique ROUTE PLANNING, -86%
+
+Suite explicite ("on continue"), même méthode (profiler avant
+d'optimiser) réappliquée après la première passe : un nouveau
+`cProfile` sur `AWCIDashboard.refresh()` (le cache de la mise à jour
+précédente désormais chaud) a montré un nouveau goulot dominant :
+`AWCIRouteChart._draw()` → `Axes.fill_between()`, appelée **une fois
+par segment** (79 fois, `n_points=80`) pour colorer chaque tronçon du
+graphique selon l'échelle AWCI — 0.4s cumulés sur 5 rafraîchissements
+rien que pour cette boucle.
+
+**Corrigé** : remplacé la boucle de 79 vrais appels `fill_between()`
+individuels par un seul vrai `matplotlib.collections.PolyCollection`
+— les mêmes 79 vrais quadrilatères (les 4 mêmes coins exacts qu'un
+`fill_between([x0,x1],[0,0],[y0,y1])` dessinerait), les mêmes vraies
+couleurs `AWCI_CMAP` par segment, ajoutés en UN seul vrai appel
+`axis.add_collection()` au lieu de 79. Vérifié par comparaison de
+rendu pixel par pixel (avant/après) — différence négligeable et
+localisée à l'anti-aliasing des coutures entre segments (déjà présentes
+dans les deux versions), pas de régression visuelle réelle.
+
+**Mesuré** : `route_chart.update_data()` **45 ms → 6 ms** (-86 %) ;
+`refresh()` complet **100 ms → 55.6 ms** (-44 % supplémentaires,
+-75 % cumulés depuis le tout premier profilage à 227 ms). Suite de
+tests **3945 → 3948**, elle-même encore plus rapide (~136 s).
+
+**Validation réelle** : 3 nouveaux tests — un seul vrai
+`PolyCollection` (pas de retour à la boucle), les vrais 4 coins et la
+vraie couleur de chaque segment recoupés directement avec la
+convention de l'ancien code, le mode comparaison FL280/FL320 (2 vraies
+lignes, pas de remplissage) vérifié pour ne jamais laisser un vieux
+`PolyCollection` traîner. `ruff`/`mypy` propres sur les 1435 fichiers.
+Capture d'écran finale envoyée — aucune régression visuelle.
+
+**Ce qui reste réellement** : le rendu matplotlib des autres panneaux
+(carte globale/régionale, coupe verticale) reste dominé par le vrai
+travail de rendu de contour lui-même (`contourf`/`clear`/tick
+generation) — un chantier d'optimisation plus profond (ex. blitting,
+mise en cache d'artistes matplotlib entre redraws) resterait possible
+mais plus risqué et hors du périmètre de cette passe ciblée sur les
+vrais goulots mesurés.
