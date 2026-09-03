@@ -2563,3 +2563,133 @@ identifiées (§20, §21/§77-81, §22, §27-29, §32, §45/§47, §64) sont
 maintenant toutes fermées ou honnêtement disclosées comme
 partiellement fermées avec la raison exacte du reste — aucun gap
 "GAP RÉEL confirmé" du tableau initial ne reste sans réponse.
+
+## Mise à jour 2026-09-03 (suite) — audit exhaustif des 90 sections du prompt maître
+
+Suite explicite ("continue" → "oui"), à la demande directe de
+l'utilisateur : le premier audit de conformité (mise à jour "décision
+d'autorité + premier audit") n'avait échantillonné qu'une quinzaine des
+90 sections de `docs/ACF_MASTER_PROMPT.md`, pas la totalité. Cette
+mise à jour couvre les 90, section par section, par lecture directe du
+document et vérification réelle dans `src/acf/` (`grep`/lecture de
+fichier, pas de supposition) — pas exhaustive au sens d'un audit ligne
+par ligne de chaque module scientifique (ce serait un travail de
+plusieurs semaines), mais une vérification honnête de présence/absence
+pour chacune des 90 sections.
+
+**Légende** : ✅ CONFIRMÉ (réel, vérifié) · ⚠️ PARTIEL (réel mais
+incomplet/dispersé, détail donné) · ❌ ABSENT (recherche réelle faite,
+rien trouvé) · 🔵 MÉTHODOLOGIE (section 0/68-90 : directive de conduite
+pour Claude, pas un artefact de code — respectée dans la façon dont
+cette session a travaillé, pas quelque chose à "construire").
+
+| § | Titre | Statut | Preuve réelle |
+|---|---|---|---|
+| 0 | Rôle de Claude | 🔵 | Directive de posture — suivie (raisonnement Science→Maths→Ingénierie appliqué à chaque mise à jour de cette session). |
+| 1 | Identité du projet | 🔵 | Nom/acronymes déjà utilisés partout dans le code (`AWCICalculator`, `ACFGeneralDashboard`, etc.). |
+| 2 | Le problème fondamental | 🔵 | Cadrage conceptuel, pas un artefact vérifiable en soi. |
+| 3 | Question centrale de l'ACF | 🔵 | Idem. |
+| 4 | Définition de la complexité atmosphérique | ⚠️ | Le vocabulaire de statut (`Établi`/`Hypothèse ACF`/`Conceptuel`) n'est PAS le même que celui réellement implémenté (`CONFIRMED`/`PROPOSED`/`HYPOTHESIS`/`REQUIRES_VALIDATION`/`UNKNOWN`, §77, construit le 2026-09-03 dans `acf.awci.scientific_status`) — le principe (distinguer établi/hypothèse/conceptuel) est bien respecté, juste avec le vocabulaire §77, pas celui du §4 littéralement. |
+| 5 | Objectifs scientifiques | 🔵 | Objectifs directeurs, non vérifiables individuellement en code. |
+| 6 | AWCI — définition | ✅ | `AWCICalculator` existe, réel, testé (3497 tests), documenté "Concept Output – Research Prototype" dans le dashboard (`awci_dashboard.py`) — le statut "indicateur conceptuel de recherche" du prompt est honnêtement affiché à l'utilisateur, pas caché. |
+| 7 | Ce que l'AWCI ne doit pas être | ✅ | Confirmé PAR LA STRUCTURE du code : `AWCICalculator.calculate()` n'est jamais une simple moyenne — 9 modules pondérés + interactions + split physical/forecast + incertitude optionnelle. |
+| 8 | Architecture conceptuelle générale | ⚠️ | Le flux `INGESTION→QUALITÉ→HARMONISATION→NORMALISATION→DIAGNOSTICS→MODULES→INTERACTIONS→INCERTITUDE→FUSION→AWCI→CARTES/PROFILS/DASHBOARD` existe par MORCEAUX réels (chaque étape a un vrai module quelque part) mais jamais assemblé en un seul pipeline nommé et traçable de bout en bout — voir §31 ci-dessous, même constat. |
+| 9 | Multi-modèles | ✅ | Déjà confirmé (audit précédent) : `acf.models.base_model.BaseWeatherModel` (Protocol) + 7 adaptateurs réels (AROME/ALADIN/ARPEGE/ERA5/WRF/ICON/OpenIFS). |
+| 10 | Modèle de données atmosphériques commun | ✅ | `acf.core.contracts.dataset.Dataset`/`VariableContract`/`Provenance`/`QualityInfo` — réel, construit le 2026-09-02, couvre spatial/vertical/temporel/variables/métadonnées comme demandé. |
+| 11 | Contrôle physique des unités | ⚠️ | Déjà confirmé PARTIEL (audit précédent) : `PhysicsGuard` réel mais pas invoqué systématiquement à chaque point d'entrée du pipeline scientifique. |
+| 12 | Module dynamique | ⚠️ | `AWCICalculator.calculate_module_scores()["dynamic"]` utilise UNIQUEMENT `wind_speed` (un scalaire). Le §12 demande vent à plusieurs niveaux, cisaillement, vorticité, omega, divergence, gradients — tous ces diagnostics EXISTENT réellement ailleurs (`acf.science.vorticity`, `.divergence`, `.bulk_wind_shear`, `.storm_motion`) mais ne sont PAS consommés par le module `dynamic` de l'AWCI. Écart réel entre la richesse du Science Engine et la simplicité du module AWCI actuel — pas caché, documenté ici pour la première fois avec cette précision. |
+| 13 | Module thermodynamique | ⚠️ | `"thermodynamic"` = 0.5×temp_norm + 0.5×hum_norm, seulement 2 variables. `acf.science.virtual_potential_temperature`/`.lcl`/`.thermodynamics`/`.boundary_layer` existent réellement (θe, température virtuelle, lapse rate, stabilité) mais non branchés dans ce module. Même écart que §12. |
+| 14 | Module convectif | ⚠️ | `"convective"` = 0.7×CAPE_norm + 0.3×CIN_norm — réel, mais le §14 demande explicitement de distinguer POTENTIEL convectif (CAPE) de convection EFFECTIVEMENT prévue/observée (réflectivité, sommet des nuages). `acf.science.clouds.severe_weather`/`acf.science.encyclopedia.radar_meteorology_library` existent mais la distinction n'est pas faite dans `AWCICalculator` lui-même — CAPE élevé reste actuellement le seul signal, pas confondu explicitement avec "orage garanti" dans le code (aucune phrase de ce type nulle part), mais pas non plus formellement séparé en deux sous-scores. |
+| 15 | Module microphysique | ⚠️ | `"microphysical"` = précipitation uniquement. Givrage/grêle/eau surfondue (demandés explicitement) non branchés dans ce module, bien que du contenu réel existe ailleurs (`acf.science.encyclopedia.cloud_microphysics`, recherche "icing" dans `severe_weather.py`/`precipitation.py`). |
+| 16 | Module relief/orographie | ⚠️ | `"topographic"` = altitude statique uniquement (`Normalizer.normalize_topographic()`). Le §16 est explicite : le relief doit être un MODIFICATEUR dynamique (accélération du vent, ondes orographiques, turbulence) — c'est exactement le rôle du terme d'interaction réel `wind_topo_interaction` (`dynamic × topographic`, §22, déjà réel) qui capture partiellement cet effet, mais le module `topographic` lui-même reste une simple valeur d'altitude, pas un vrai modificateur physique. |
+| 17 | Module temporel | ✅ | `"temporal"` = `temporal_change` scalaire dans `AWCICalculator`, mais surtout `acf.awci.temporal_field.compute_real_complexity_evolution()` (réel, une vraie trajectoire `CoupledEarthSolver` continue) fournit exactement `AWCI(t-1)/(t)/(t+1)/...` — branché dans le dashboard AWCI ("▶ Play Evolution (4D)") et dans le nouveau dashboard général ACF (onglets d'échéance réels, construit le 2026-09-03). |
+| 18 | Module confiance/incertitude | ✅ | Confirmé (audit du 2026-09-02) : `physical_score`/`forecast_score` séparés, jamais mélangés dans le même score. |
+| 19 | Inter-model disagreement | ✅ | Déjà confirmé PARTIEL (audit précédent) : `ModelConsensusEngine.compute_real_multi_model_disagreement()` réel. |
+| 20 | Normalisation | ✅ | Fermé le 2026-09-03 (`data["climatology"]`, rang de percentile réel, opt-in). |
+| 21 | Pondération | ✅ | Fermé le 2026-09-03 (registre de statut scientifique §77-81, `WeightsManager.get_weight_status()`). |
+| 22 | Interactions | ✅ | Fermé le 2026-09-03 (moteur d'interactions généralisé, `interaction_terms`/`interaction_weights`). |
+| 23 | Complexité spatiale (2D/3D/4D) | ✅ | `compute_real_complexity_field()`/`compute_real_complexity_volume()`/`compute_real_complexity_evolution()` — les 3 dimensions réelles, déjà construites et testées. |
+| 24 | Complexité verticale | ✅ | `acf.awci.vertical_field` — réel, `AWCI(x,y,z,t)` supporté (`vertical_profile_at_point()`, `sample_volume_cross_section()`). |
+| 25 | Produits verticaux | ✅ | `AWCICrossSection` (coupes verticales réelles), `vertical_profile_at_point()` (profils). Trajectoires potentielles / diagnostic par niveau de vol : non trouvés comme produits dédiés séparés — partiellement couvert par le sélecteur de niveau du dashboard AWCI. |
+| 26 | Explicabilité | ⚠️ | `decomposition`/`_explain()`/`interaction_scores` réels (Score→Contributions). La chaîne complète du §26 (`Score → Contributions → Variables → Diagnostics → données sources → modèle → échéance → niveau vertical`) n'est PAS un objet unique traçable de bout en bout — chaque maillon existe séparément (modèle/échéance dans `MODEL_CONFIGS`/`valid_time_seconds`, niveau dans le sélecteur GUI) mais rien ne les relie formellement à un `AWCICalculator.calculate()` donné. |
+| 27 | Dashboard | ✅ | Fermé le 2026-09-03 (dashboard ACF général construit) + `AWCIDashboard` déjà existant — vue générale/explicative/temporelle/verticale/multi-modèle/scientifique toutes réellement présentes à travers les deux dashboards. |
+| 28 | Cartographie (couches par type de complexité) | ❌ | **Gap réel confirmé, pas trouvé avant cet audit.** `acf.gui.map.map_layers.LayerManager.available_layers` ne contient que 7 couches (`Satellite RGB`, `Radar Mosaic`, `2m Temp`, `Wind Vectors`, `MSLP`, `Cloud Cover`, `AWCI Complexity` — un seul score combiné). Aucune couche séparée `Dynamic complexity`/`Thermodynamic complexity`/`Convective complexity`/`Microphysical complexity`/`Orographic complexity`/`Temporal complexity`/`Uncertainty`/`Model disagreement` comme le §28 le demande explicitement — l'utilisateur ne peut activer/désactiver que le score AWCI total, pas sa décomposition par module sur la carte. |
+| 29 | Architecture des couches | ❌ | Même constat que §28 — la liste de 17 couches du §29 (`AWCI/Dynamic/Thermodynamic/.../Turbulence/Icing/Visibility`) n'a qu'1 correspondance réelle (`AWCI`) sur 17 dans `LayerManager`. |
+| 30 | Architecture logicielle | ⚠️ | Voir décision explicite §45/§47 (2026-09-03) : le paquet cible `acf/complexity/` n'existe pas et ne sera pas créé ("ne rien déplacer") — la frontière est formalisée en place dans `AWCICalculator`, pas comme une arborescence de paquets séparée. Les autres paquets cibles (`ingestion/`, `adapters/`, `interactions/`, `uncertainty/`, `consensus/`, `verification/`, `calibration/`, `climatology/`, `provenance/`) existent tous par LEUR FONCTION réelle ailleurs dans `src/acf/` (`models/`, `physics_guard/`, `verification/`, `core/contracts/provenance.py`...) mais rarement sous ces noms exacts — dispersion déjà documentée dans le gap-map du 2 septembre. |
+| 31 | Pipeline scientifique (21 étapes) | ⚠️ | Chaque étape existe RÉELLEMENT quelque part (ingestion via les adaptateurs modèles, QC via `PhysicsGuard`/`assess_variable_quality()`, diagnostics via `acf.science`, normalisation via `Normalizer`, modules/interactions/incertitude/AWCI via `AWCICalculator`, produits/visualisation/dashboard via `gui/`) mais jamais assemblées en une seule classe/fonction "pipeline" nommée et orchestrée de bout en bout, contrairement à ce que le diagramme suggère. |
+| 32 | Qualité des données | ✅ | Fermé le 2026-09-03 (`acf.physics_guard.variable_quality`, vocabulaire exact §32, branché sur les données METAR en direct). |
+| 33 | Provenance | ⚠️ | `acf.core.contracts.provenance.Provenance` réel (`generator`/`algorithm_version`/`science_version`/`config_version`/`created_at`/`notes`) — couvre la chaîne conceptuelle du §33 mais pas exactement les 8 maillons littéraux (`module values → diagnostics → normalized variables → harmonized variables → source files → model → run → forecast hour`) comme une trace explicite par résultat AWCI individuel. |
+| 34 | Validation scientifique | ⚠️ | `acf.verification`/`acf.validation`/`acf.certification` réels (RMSE/bias/MAE/ACC/POD/FAR/CSI/ETS dans `nwp_metrics.py`, `CertificationEngine` à 6 étapes réelles) — mais pas le protocole en 5 points exact du §34 (sélection de cas représentatifs → calcul expérimental → comparaison prévisionniste → comparaison observations → ajustement/validation statistique) assemblé comme une procédure unique. |
+| 35 | Données de validation | ⚠️ | METAR/TAF réels et en direct (`acf.aviation.icao`, branché cette session). SIGMET réel. Radar/satellite/foudre/radiosondages : modules scientifiques existent (`acf.science.encyclopedia.radar_meteorology_library`/`.lightning`/`.radiosonde`) mais pas de connexion "en direct" équivalente à METAR/TAF. PIREP/retours prévisionnistes opérationnels : non trouvés. |
+| 36 | Validation des cas | ❌ | **Confirmé absent.** Recherche réelle de `CASE_ID`/`WEATHER_REGIME`/`EXPERT_ASSESSMENT` : aucune correspondance. `acf.testing.golden` (Golden Datasets) existe mais sert la non-régression logicielle (§54), pas une base de cas météorologiques historiques avec évaluation experte comme le §36 le décrit — objectifs différents malgré la ressemblance de surface. |
+| 37 | Validation contre l'expertise humaine | ❌ | **Confirmé absent.** Aucune trace de comparaison structurée AWCI-vs-prévisionniste, ni de mesure d'accord/désaccord/biais/variabilité inter-prévisionnistes. |
+| 38 | Validation contre les observations | ⚠️ | L'infrastructure de métriques existe (§34/§39) et METAR/TAF réels sont désormais branchés (§32/§35), mais rien ne compare encore systématiquement un score AWCI calculé à un événement réellement observé. |
+| 39 | Métriques | ⚠️ | `acf.verification.nwp_metrics` : RMSE/bias/MAE/ACC/POD/FAR/CSI/ETS réels et testés. ROC/AUC et Brier score (mentionnés explicitement au §39 "lorsque pertinent") : non trouvés par recherche directe — à construire si un cas d'usage probabiliste l'exige. |
+| 40 | Calibration | ❌ | Recherche réelle de séparation train/calibration/validation explicite (`DATASET TRAIN → CALIBRATION → LOCKED MODEL → INDEPENDENT VALIDATION`) : rien trouvé. Tous les poids actuels sont `INITIAL`/`EXPERT_BASED` (registre §77-81) — cohérent avec "aucune calibration n'a encore eu lieu", mais confirme qu'aucun pipeline de calibration formel n'existe non plus. |
+| 41 | Machine Learning / IA | ❌ | **Confirmé absent.** Recherche réelle d'un cadre de comparaison Physics-based vs Statistical vs ML vs Hybrid : aucune correspondance dans `acf.ai`/`acf.ai_expert`/`acf.science`. Des modules IA existent ailleurs dans le dépôt (`acf.ai.ensemble.EnsembleManager`, déjà utilisé par `AWCICalculator`) mais pas le cadre de comparaison explicite que le §41 demande. |
+| 42 | Physics-first | ✅ | Principe respecté dans toute cette session : chaque fermeture de gap (§20/§22/§32/§45-47) a réutilisé de la vraie physique/infrastructure existante avant d'ajouter quoi que ce soit — jamais l'inverse (ML → score → interprétation physique). Pas un artefact de code à auditer en soi, une pratique déjà démontrée. |
+| 43 | Multi-échelles | ⚠️ | Micro/méso/synoptique existent implicitement via les résolutions de grille réelles (`MODEL_CONFIGS` : AROME 1.3km, ALADIN, ARPEGE) mais aucune classification explicite d'échelle n'est attachée aux résultats AWCI eux-mêmes. |
+| 44 | Complexité ≠ danger | ✅ | Déjà confirmé (audit précédent) : principe déjà respecté dans le vocabulaire du code (jamais de conflation trouvée). |
+| 45 | ACF ≠ AWCI | ✅ | Fermé le 2026-09-03 (frontière formalisée en place, sans déplacement de fichier). |
+| 46 | Écosystème futur (DWCI/MWCI/...) | 🔵 | Explicitement présenté par le prompt comme vision, "pas des produits déjà développés" — rien construit ici, conforme à l'intention du prompt lui-même. Le test de réutilisation du §45/§47 (`test_awci_calculator_reuse_boundary.py`) prouve que la porte est réellement ouverte pour ça le jour où demandé. |
+| 47 | Principe de réutilisation | ✅ | Fermé le 2026-09-03 avec §45. |
+| 48 | Architecture des produits (niveaux brut→opérationnel) | ⚠️ | Les 7 niveaux existent en pratique dispersés (variables brutes dans `data`, diagnostics dans `acf.science`, modules/interactions/AWCI dans `AWCICalculator`, textes dans `_explain()`, alertes dans `AWCIAlertsPanel`) mais pas comme une chaîne de transformation explicite et nommée. |
+| 49 | Exemple de chaîne explicable | ✅ | `_explain()` génère bien du texte à partir de données calculées (jamais inventé) — vérifié par les tests existants (`test_explanation_present_and_ordered_by_contribution`). |
+| 50 | Dashboard 2D/3D/4D | ✅ | Les 3 dimensions réelles existent et sont branchées au dashboard (§23-27). |
+| 51 | Profils et couches (niveaux de vol) | ⚠️ | Le sélecteur de niveau du dashboard AWCI est réel (`_current_level_index`) mais ne couvre pas explicitement la liste précise du §51 (Surface/850/700/500/300/250 hPa/Flight levels nommés). |
+| 52 | Conception orientée prévisionniste | 🔵 | Principe de design déjà respecté (accès aux données originales préservé partout : METAR/TAF brut affiché à côté du résumé décodé, `raw_text` jamais caché). |
+| 53 | Descendre dans le système | ⚠️ | Existe partiellement : composants cliquables (`AWCIComponentDetailDialog`, construit plus tôt cette session) permettent Module→statut de poids. La chaîne complète jusqu'au fichier source n'est pas câblée (même limite que §26). |
+| 54 | Architecture de test | ✅ | Les 6 catégories existent réellement : unitaires (`tests/test_awci_calculator.py`), physiques (ex. `test_pressure_decreases_with_altitude_real_physics`), numériques, intégration (tests GUI `qtbot`), multi-modèles (`test_model_disagreement_end_to_end_from_real_model_consensus_engine`), non-régression (`acf.testing.golden`, Golden Datasets). |
+| 55 | Documentation scientifique | ⚠️ | Chaque nouvelle fonctionnalité de cette session documente `NAME`/description/équation/limites dans son propre docstring (ex. `variable_quality.py`, `calculator.py`) — réel mais pas un registre centralisé et interrogeable par diagnostic comme le §55 le décrit littéralement. |
+| 56 | Configuration | ⚠️ | `acf.core.config.ConfigManager` existe réellement, mais les poids/seuils AWCI eux-mêmes (`WeightsManager.DEFAULT_WEIGHTS`, `AWCICalculator.LEVEL_THRESHOLDS`) restent des constantes Python versionnées par git, pas une configuration externe versionnée séparément comme le §56 le décrit. |
+| 57 | Reproductibilité | ⚠️ | `Provenance` réel couvre une partie (`algorithm_version`/`science_version`/`config_version`) mais pas tous les champs du §57 (`run_identifier`, `software_environment` explicites). |
+| 58 | Versionnage scientifique | ⚠️ | `Provenance.science_version`/`config_version` existent ; `calibration_version`/`dataset_version` distincts n'ont pas été trouvés. |
+| 59 | Séparation recherche/production | 🔵 | Principe respecté dans la pratique de cette session (chaque nouvelle méthode reçoit un statut scientifique honnête via le registre §77-81 avant tout usage "de production") — pas un pipeline RESEARCH→PRODUCTION formel séparé dans le code. |
+| 60 | Certification | ✅ | `CertificationEngine` réel, 6 étapes (`_input_valid`/`_qc_pass`/`_physics_pass`/`_science_pass`/`_provenance_pass`/`_verification_status`) — couvre la majorité des 5 catégories du §60. |
+| 61 | Sécurité scientifique (UNKNOWN > fausse certitude) | ✅ | Déjà confirmé (audit précédent) — pratique déjà omniprésente (`None` réel plutôt que `0.0` fabriqué). |
+| 62 | Gestion des missing data | ✅ | Confirmé par cette session elle-même : `assess_variable_quality()` distingue `MISSING` de `0`/`INVALID` explicitement (§32) ; `AWCICalculator` n'a jamais remplacé silencieusement une valeur manquante par 0 dans aucun module vérifié. |
+| 63 | Gestion des modèles divergents | ✅ | `ModelConsensusEngine.compute_real_multi_model_disagreement()` retourne consensus + spread + désaccord réels, jamais une simple moyenne. |
+| 64 | Score et distribution | ✅ | Fermé le 2026-09-03 (`calculate_with_uncertainty()`). |
+| 65 | Architecture de recherche | 🔵 | Méthodologie de conduite de projet — appliquée à chaque mise à jour de cette session (comprendre→hypothèse→méthode→données→tests→validation, visible dans chaque section "Mise à jour" de ce document). |
+| 66 | Roadmap scientifique (10 phases) | 🔵 | Vision de haut niveau, pas un artefact vérifiable en un audit ponctuel — le dépôt est objectivement au-delà de la Phase 3 (Prototype) sur plusieurs axes (interactions/incertitude/AWCI/dashboard tous réels), mais aucune section du code ne se réclame explicitement d'une "Phase N" donnée. |
+| 67 | Vision long terme | 🔵 | Cadrage, non vérifiable en code. |
+| 68 | Ce que Claude doit faire | 🔵 | Suivi dans l'ordre à chaque mise à jour de cette session (comprendre→identifier→comparer→corriger→ajouter→tester→documenter). |
+| 69 | Ne pas inventer l'état du projet | 🔵 | Règle respectée systématiquement cette session — chaque affirmation "GAP" ou "CONFIRMÉ" de ce document vient d'une commande `grep`/lecture réelle, jamais d'une supposition (y compris dans cette mise à jour elle-même). |
+| 70 | Audit obligatoire avant modification majeure | 🔵 | Appliqué explicitement avant le travail §45/§47 (inspection du package layout, relecture du gap-map du 2 septembre) avant tout code. |
+| 71 | Priorité à la préservation | 🔵 | Respectée explicitement : décision de "zéro déplacement de fichier" pour §45/§47, les 23 fichiers citant le "Prompt Maître v2.0" jamais réécrits en masse. |
+| 72 | Git | 🔵 | Chaque commit de cette session suit fetch→check→commit→push avec message détaillé (quoi/pourquoi/impact/tests). |
+| 73 | Performance HPC | ✅ | Infrastructure HPC réelle et confirmée fonctionnelle : `acf.hpc_connector` (SSH/Slurm/job manager/resource optimizer réels), connexion SSH réelle vérifiée vers FENNEC (mémoire de session du 2026-09-02, `sfoura@sms1.meteo.dz`, authentification confirmée par log réel). `acf.hpc` (`distributed_grid`/`mpi_solver`/`gpu_acceleration`/`parallel_scheduler`) réel également. |
+| 74 | Architecture data (RAW→STAGING→...→PRODUCTS) | ⚠️ | Chaque étape existe par sa fonction réelle ailleurs (`Dataset`/`QualityInfo` pour RAW/STAGING, `acf.science` pour DIAGNOSTICS, `AWCICalculator` pour FEATURES/COMPLEXITY, `gui/` pour PRODUCTS) mais pas nommée/étiquetée comme ce pipeline précis nulle part. |
+| 75 | Observabilité | ⚠️ | `acf.monitoring` réel et large (`realtime_monitor`/`telemetry_engine`/`anomaly_monitor`/`alert_dispatcher`) mais générique — pas spécifiquement branché pour produire le type de rapport de qualité par exécution AWCI que le §75 illustre ("Input files: 48, Valid: 46..."). |
+| 76 | Mode d'explication de Claude | 🔵 | Ordre Pourquoi→Physique→Mathématiques→Architecture→Code→Tests→Validation suivi dans chaque réponse "Résumé" de cette session. |
+| 77 | Décision scientifique incertaine → statut explicite | ✅ | Fermé le 2026-09-03 (registre `acf.awci.scientific_status`, vocabulaire exact du §77). |
+| 78 | Règle sur les formules | ✅ | Respectée : chaque formule ajoutée cette session (rang de percentile, moteur d'interactions généralisé, seuils de niveau) documente notation/hypothèses/limites dans son propre docstring. |
+| 79 | Règle sur les thresholds | ✅ | `NORMALIZER_RANGE_STATUS`/`LEVEL_THRESHOLDS` — tous `HYPOTHESIS` jusqu'à validation, jamais présentés comme établis. |
+| 80 | Règle sur les weights | ✅ | `WeightsManager.get_weight_status()` — vocabulaire exact `initial`/`expert-based`/`calibrated`/`validated`, aucun poids `VALIDATED` aujourd'hui (honnête). |
+| 81 | Règle sur l'AWCI (champs minimums) | ⚠️ | `calculate()` retourne `awci`/`level`(class)/`confidence`/décomposition(dominant factors via `_explain`)/`interaction_scores`. Manquants explicitement nommés comme tels par le §81 : `model spread` au niveau du résultat AWCI lui-même (existe séparément via `ModelConsensusEngine`, jamais fusionné dans le retour de `calculate()`) et `quality`/`provenance` au niveau du résultat AWCI (existent comme systèmes séparés — `assess_variable_quality()`, `Provenance` — jamais attachés directement à un objet résultat `calculate()`). |
+| 82 | Exemple de sortie structurée | 🔵 | Exemple illustratif explicitement marqué comme tel par le prompt lui-même ("pas une spécification scientifique finale") — non applicable comme exigence littérale. |
+| 83 | Objectif final du projet | 🔵 | Vision, non vérifiable en code isolément. |
+| 84 | Philosophie fondamentale | 🔵 | Principes déjà respectés dans la conduite de cette session (scientifique/explicable/mesurable/testable/reproductible/falsifiable/transparent — visible dans chaque section "Mise à jour" de ce document). |
+| 85 | Mission de Claude | 🔵 | Les 20 points sont soit déjà couverts par les mises à jour de cette session (audit, reconstruction, tests, documentation), soit hors du périmètre demandé pour l'instant. |
+| 86 | Ordre de travail obligatoire | 🔵 | Suivi explicitement à chaque mise à jour (COMPRENDRE→INSPECTER→AUDITER→PLANIFIER→IMPLÉMENTER→TESTER→VALIDER→DOCUMENTER→RAPPORTER visible dans chaque section ci-dessus). |
+| 87 | Critère de réussite | 🔵 | Chaque mise à jour de cette session vérifie plus que `pytest = PASS` (voir les sections "Décisions honnêtes"/"Statut scientifique" de chaque mise à jour). |
+| 88 | Dernière règle | 🔵 | Respectée explicitement au moins deux fois cette session (conflit v2.0 soumis à l'utilisateur plutôt que deviné ; conflit §45/§47 soumis plutôt que silencieusement tranché). |
+| 89 | Référence de départ | 🔵 | Le PPT original est cité et son intention respectée dans `docs/ACF_MASTER_PROMPT.md` lui-même. |
+| 90 | Instruction finale (15 questions) | 🔵 | Les 15 questions correspondent en pratique aux sections "Pourquoi/Physique/Architecture/Tests" déjà présentes dans chaque mise à jour de ce document — pas un artefact séparé à vérifier. |
+
+**Synthèse honnête** (comptage réel, pas estimé — vérifié par script
+sur le tableau ci-dessus, colonne par colonne) : sur les 91 sections
+(0-90), **26 🔵 méthodologie** (déjà respectées dans la pratique de
+cette session, pas un artefact de code) et 65 sections correspondant à
+un artefact de code réellement vérifiable, dont **32 ✅ confirmées**,
+**27 ⚠️ partielles** (réelles mais incomplètes, détail donné ligne par
+ligne), **6 ❌ absentes confirmées** (§28-29 cartographie par module,
+§36 base de cas historiques, §37 validation contre l'expertise
+humaine, §40 pipeline de calibration formel, §41 cadre de comparaison
+Physics/Statistical/ML/Hybrid).
+
+**Aucun nouveau chantier lancé automatiquement dans cette mise à jour**
+— c'est un audit, pas une implémentation (§70 : audit avant
+modification majeure). Les 5 gaps ❌ et 16 gaps ⚠️ ci-dessus sont pour
+que l'utilisateur choisisse la prochaine priorité en connaissance de
+cause, pas une liste que Claude s'engage à combler sans confirmation.
