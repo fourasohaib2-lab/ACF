@@ -250,6 +250,30 @@ real, honest result given this solver's own real wind field, not a
 bug in the formula or in SCP itself. See `acf_workstation_convection.
 py`'s own module docstring for the full disclosure.
 
+Phase 19 (2026-09-04, same "continue selon ton jugement" delegation)
+investigated the first of those two disclosed findings (task_9f9c2f99)
+and found a real, fixable bug, not just a solver characteristic:
+`acf.awci.convective_energy.compute_real_cape_cin_at_point()` was
+integrating negative buoyancy over the WHOLE real profile up to its
+own 100 hPa cutoff, rather than stopping at the parcel's real Level of
+Free Convection (LFC) - real operational CIN only counts the
+negative-buoyancy area BELOW the LFC, not a genuinely stable layer
+many kilometres above any real storm top. Fixed by calling MetPy's own
+already-vetted `mpcalc.surface_based_cape_cin()` directly (the same
+real function `acf.science.parcel_ascent.ParcelAscentEngine` already
+wraps for a `SoundingProfile`) instead of hand-deriving the LFC/EL
+bounding logic a second time - see that module's own docstring for the
+full root-cause investigation (including a first attempt that fixed
+the unstable case but not the equally-common genuinely-stable one) and
+the fix. CIN now reads realistically (0-a few hundred J/kg, matching
+real operational values) on this solver's own real output, verified
+across multiple seeds/grid points; the Convection Lab's own CIN range
+was updated from a dynamic percentile scale (needed while the
+magnitude was inflated) to a fixed, generous 0-500 J/kg envelope. The
+second finding (task_17a412ee, this solver's own weak wind shear
+making SCP read 0) remains a real, disclosed solver characteristic,
+not a bug - still not fixed, still flagged separately.
+
 Terrain Lab remains listed in the left nav as a real, visible,
 DISABLED "Planned" item - not silently omitted, not faked - matching
 the master spec's own §68 audit-honesty rule applied in both

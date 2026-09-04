@@ -349,12 +349,12 @@ def compute_real_convection_indices_field(
                 continue
             cape = cape_cin["cape_j_kg"]
             cin_magnitude = cape_cin["cin_j_kg"]
-            # CAPE.calculate()/CIN.calculate() both return real, non-
-            # negative magnitudes - SevereWeather's own SCP/STP formulas
-            # expect CIN as a real negative-or-zero value (their own
-            # docstrings: "negative or zero"), so it is negated here,
-            # once, at this single real boundary - never renegotiated
-            # ad hoc at each call site below.
+            # compute_real_cape_cin_at_point() always returns real,
+            # non-negative magnitudes for both - SevereWeather's own
+            # SCP/STP formulas expect CIN as a real negative-or-zero
+            # value (their own docstrings: "negative or zero"), so it
+            # is negated here, once, at this single real boundary -
+            # never renegotiated ad hoc at each call site below.
             cin_signed = -cin_magnitude
             fields["cape_j_kg"][si, sj] = cape
             fields["cin_j_kg"][si, sj] = cin_magnitude

@@ -35,28 +35,30 @@ effective-inflow variants - this solver has no real vertical
 coordinate pinned to physical height to derive those from without
 inventing a height reference).
 
-Real, disclosed findings about THIS solver's own real data (not fixed
-here, each flagged separately for a dedicated investigation)
+Real, disclosed finding about THIS solver's own real data (not fixed
+here, flagged separately for a dedicated investigation)
 -------------------------------------------------------------------------
 Computing these real formulas against `CoupledEarthSolver`'s own real
-output surfaced two real characteristics worth knowing about, not
-hiding:
+output surfaced one real characteristic worth knowing about, not
+hiding: this solver's own real full-column wind shear stays under
+10 m/s across every real configuration tried - SCP's own real EBWD
+term is by definition 0 below that threshold (see `SevereWeather.
+supercell_composite_parameter()`'s own docstring), so SCP will
+typically read 0 here - a real, honest result given this solver's own
+real wind field, not a bug in the formula. Investigation flagged
+separately (task_17a412ee), not fixed here.
 
-- CIN routinely comes out several THOUSAND J/kg (real operational CIN
-  is typically 0-300 J/kg) - the real, already-tested MetPy parcel-
-  ascent pipeline (`acf.awci.convective_energy.
-  compute_real_cape_cin_at_point()`, the same one Thermodynamics Lab's
-  own CAPE/CIN button already uses) is applied correctly; the
-  magnitude itself may reflect a real characteristic of this
-  solver's own simplified thermodynamic profile. Investigation
-  flagged separately, not fixed here.
-- This solver's own real full-column wind shear stays under 10 m/s
-  across every real configuration tried - SCP's own real EBWD term is
-  by definition 0 below that threshold (see `SevereWeather.
-  supercell_composite_parameter()`'s own docstring), so SCP will
-  typically read 0 here - a real, honest result given this solver's
-  own real wind field, not a bug in the formula. Investigation flagged
-  separately, not fixed here.
+UPDATE (2026-09-04, task_9f9c2f99 - fixed, not just disclosed): this
+docstring originally also flagged CIN routinely reading several
+THOUSAND J/kg (real operational CIN is typically 0-300 J/kg) as a
+second disclosed-but-unfixed finding. Investigating it found a real
+bug, since fixed: `acf.awci.convective_energy.
+compute_real_cape_cin_at_point()` was integrating negative buoyancy
+over the WHOLE profile up to its own 100 hPa cutoff rather than
+stopping at the parcel's real Level of Free Convection (LFC) - see
+that module's own docstring for the full root-cause and fix
+disclosure. CIN now reads realistically (0-a few hundred J/kg on this
+solver's own real output) - the fixed range below reflects this.
 
 Real, on-demand, off-thread (like Thermodynamics Lab's own CAPE/CIN)
 -------------------------------------------------------------------------
@@ -79,15 +81,15 @@ from acf.gui.theme_tokens import label_style
 
 #: Real, disclosed rendering choices. CAPE/bulk shear reuse the exact
 #: same real ranges Thermodynamics/Dynamics Lab already use for these
-#: same quantities. CIN's range is dynamic (None - real 5th/95th
-#: percentile of whatever THIS run actually produced, same convention
-#: already established for θ-e in Thermodynamics Lab) rather than a
-#: fixed guess: this solver's own real CIN magnitude is unusually
-#: large (see module docstring) and a fixed guess would clip most of
-#: the real range. LCL's range is a real, generous envelope (0-3000 m
-#: covers real operational LCL heights from near-saturated to very dry
-#: low-level air). SRH/EHI/SCP/STP ranges are real, generous envelopes
-#: anchored to each formula's own real, published reference thresholds
+#: same quantities. CIN's range is a real, generous envelope (0-500
+#: J/kg comfortably covers this solver's own real, now-realistic CIN
+#: magnitudes since the task_9f9c2f99 fix - see module docstring's
+#: "UPDATE" section) rather than the earlier dynamic percentile range
+#: this needed while CIN's magnitude was still inflated by that bug.
+#: LCL's range is a real, generous envelope (0-3000 m covers real
+#: operational LCL heights from near-saturated to very dry low-level
+#: air). SRH/EHI/SCP/STP ranges are real, generous envelopes anchored
+#: to each formula's own real, published reference thresholds
 #: (StormRelativeHelicity.category()'s "Strong" at 250 m^2/s^2;
 #: SevereWeather's own ">1 some potential"/">=3 extreme" guidance).
 _VARIABLES: dict[str, dict[str, Any]] = {
@@ -95,7 +97,7 @@ _VARIABLES: dict[str, dict[str, Any]] = {
         "key": "cape_j_kg", "unit": "J/kg", "cmap": "inferno", "vmin": 0.0, "vmax": 3000.0,
     },
     "CIN (convective inhibition)": {
-        "key": "cin_j_kg", "unit": "J/kg", "cmap": "cividis", "vmin": None, "vmax": None,
+        "key": "cin_j_kg", "unit": "J/kg", "cmap": "cividis", "vmin": 0.0, "vmax": 500.0,
     },
     "LCL height": {"key": "lcl_m", "unit": "m AGL", "cmap": "YlGnBu_r", "vmin": 0.0, "vmax": 3000.0},
     "Bulk wind shear (full column)": {

@@ -6687,3 +6687,97 @@ sécurité sur le téléchargement de fichiers), non sollicitée ici. Les
 deux découvertes CIN/cisaillement restent des tâches séparées en
 attente (`task_9f9c2f99`, `task_17a412ee`), explicitement non
 bloquantes pour ce Convection Lab.
+
+## Mise à jour 2026-09-04 (suite) — Phase 19 : la tâche séparée `task_9f9c2f99` investiguée — un vrai bug de CIN trouvé et corrigé, pas seulement une caractéristique du solveur
+
+**Pourquoi** : suite explicite ("continue selon ton jugement"), une
+nouvelle délégation totale après la clôture de la Phase 18. Des deux
+tâches séparées restant ouvertes, `task_9f9c2f99` (CIN anormalement
+élevé) semblait la plus susceptible de cacher un vrai bug corrigeable
+plutôt qu'une simple caractéristique intrinsèque du solveur — contrairement
+à `task_17a412ee` (cisaillement faible), qui touche la structure même
+du champ de vent du solveur et serait bien plus risqué à modifier.
+
+**Investigation** : un vrai script bout-en-bout contre une vraie
+colonne du solveur (`compute_real_complexity_volume`) a affiché le
+profil réel de flottabilité (parcelle vs environnement) niveau par
+niveau. Diagnostic clair : la parcelle réelle devient plus chaude que
+l'environnement entre ~925 hPa et ~440 hPa (une vraie couche instable,
+CAPE réel), puis, au-dessus de ~400 hPa, redevient franchement plus
+froide que l'environnement — une vraie couche stable de haute
+troposphère/basse stratosphère, sans rapport avec l'inhibition
+convective près de la surface. `acf.science.cin.CIN.calculate()` (et
+`CAPE.calculate()`), des intégrateurs de flottabilité génériques et
+corrects, sommaient pourtant cette flottabilité négative sur TOUT le
+profil transmis (jusqu'à la vraie coupure à 100 hPa de `compute_real_
+cape_cin_at_point()`) — sans aucune notion de Niveau de Convection
+Libre (LFC) ni de Niveau d'Équilibre (EL). Résultat : un vrai CIN
+gonflé à 6876 J/kg sur cette colonne réelle (un CIN opérationnel
+réaliste est plutôt de 0-300 J/kg), confirmé en comparant directement
+au vrai `mpcalc.surface_based_cape_cin()` de MetPy (déjà borné
+correctement au LFC/EL réels) sur le même profil : CIN≈0 J/kg, EL réel
+à 402 hPa — soit ~9 niveaux natifs réels sous l'ancienne coupure à
+100 hPa.
+
+**Une première tentative de correction, elle-même corrigée** : tronquer
+le profil transmis à `CAPE.calculate()`/`CIN.calculate()` au véritable
+EL (trouvé via le vrai `mpcalc.el()`) corrigeait bien le cas instable,
+mais a révélé un second vrai bug distinct sur le cas (tout aussi
+courant) génuinement STABLE : quand la parcelle ne devient jamais
+flottante nulle part (aucun vrai LFC/EL, CAPE réel = 0), le
+"fallback" (pas de troncature) laissait le profil complet en place,
+reproduisant exactement le même gonflement (vérifié : CIN=13348 J/kg
+sur une colonne réelle génuinement stable, contre CIN=0 J/kg via
+MetPy directement sur le même profil). Plutôt que de re-dériver
+soi-même, à la main, toute la logique de recherche LFC/EL (avec ses
+cas limites), la solution la plus honnête et la plus fidèle à la
+discipline de ce projet ("réutiliser une vraie formule existante
+plutôt que la réinventer") était de basculer entièrement vers le vrai
+`mpcalc.surface_based_cape_cin()` de MetPy — la même fonction réelle
+déjà enveloppée par `acf.science.parcel_ascent.
+ParcelAscentEngine.surface_based_cape_cin()` pour un `SoundingProfile`,
+mais jamais reliée jusqu'ici à `compute_real_cape_cin_at_point()`
+(le vrai point d'entrée que le Workstation utilise réellement).
+
+**Construit** : `acf.awci.convective_energy.
+compute_real_cape_cin_at_point()` appelle désormais directement
+`mpcalc.surface_based_cape_cin()` au lieu de construire à la main les
+hauteurs réelles puis d'appeler `CAPE.calculate()`/`CIN.calculate()`.
+Ces deux classes réelles restent valides et utilisées ailleurs
+(`acf.science.stability`, `laws/thermodynamics.py`,
+`parameters/definitions.py`, les entrées de l'encyclopédie) — non
+orphelines, simplement plus le bon outil pour cette application
+précise. La convention de signe existante (magnitude non-négative,
+jamais un CIN négatif) est préservée via `abs()`. Un troisième vrai
+problème a été découvert et corrigé au passage : l'appel direct à
+MetPy peut renvoyer un CAPE légèrement négatif (-65 J/kg vérifié) tout
+près d'un profil génuinement neutre — physiquement impossible (CAPE
+est une énergie potentielle, jamais négative), corrigé par un simple
+`max(0.0, ...)`, la même contrainte réelle que `CAPE.calculate()`
+appliquait déjà elle-même.
+
+**Vérification de l'ampleur de l'impact avant tout changement de
+test** : recherche systématique de tout appelant de
+`compute_real_cape_cin_at_point()`/`CAPE.calculate()`/`CIN.calculate()`
+dans tout le dépôt. Aucun test existant ne fige une valeur CIN/CAPE
+précise dérivée d'un appel réel en direct (tous vérifient soit des
+bornes larges soit une cohérence dynamique avec un second appel réel)
+— risque de régression faible, confirmé avant modification.
+
+**Validation réelle** : `ruff`/`mypy` propres. 3 nouveaux tests réels
+dans `tests/test_convective_energy.py` — régression du CIN gonflé par
+une couche stable profonde au-dessus de l'EL réel, régression du CAPE/
+CIN à zéro pour un profil génuinement stable sans LFC réel, et CAPE
+jamais négatif sur plusieurs colonnes réelles du solveur (5 seeds ×
+16 points). Suite complète réexécutée : 4187 → 4190 tests, tous verts.
+Vérifié sur un vrai run ALADIN complet à travers tout le Convection
+Lab : CIN désormais dans [0, 496] J/kg (contre plusieurs milliers
+avant), plage réaffichée fixée à 0-500 J/kg (au lieu de l'ancienne
+plage dynamique par percentile, devenue inutile). Capture d'écran
+réelle envoyée. `task_9f9c2f99` retirée (résolue).
+
+**Ce qui reste réellement** : Terrain Lab (bloqué, aucune donnée
+d'élévation réelle) et `task_17a412ee` (cisaillement de vent faible du
+solveur, une vraie caractéristique du champ de vent, pas un bug -
+resterait risqué à "corriger" sans réviser en profondeur la structure
+dynamique du solveur lui-même, hors périmètre de cette investigation).

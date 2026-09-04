@@ -20,34 +20,32 @@ once:
    register real, working formulas
    (`EncyclopediaRegistry.get("cape_convective_energy").compute_func`
    delegates to `acf.science.cape.CAPE.calculate()` - see
-   `acf.science.encyclopedia.convection_extended`) - this module is
-   the first real caller of that physics outside the encyclopedia's
-   own search feature.
+   `acf.science.encyclopedia.convection_extended`) - this module
+   originally called that same physics directly. It has since (see
+   "Real fix" below) moved to MetPy's own properly LFC/EL-bounded
+   `mpcalc.surface_based_cape_cin()` instead, for the reason disclosed
+   there; `CAPE.calculate()`/`CIN.calculate()` remain real, valid,
+   general-purpose buoyancy integrators, still used elsewhere in
+   `acf.science` (`stability.py`, `laws/thermodynamics.py`,
+   `parameters/definitions.py`) and by the encyclopedia entries
+   themselves - not orphaned, just no longer the right tool for THIS
+   specific real-solver-column application.
 
 Real pipeline, not a rule-of-thumb formula
 --------------------------------------------
 1. MetPy (already a real ACF dependency - `acf.normalization.units`,
    `acf.events.detectors.fog_detector` already use it) computes the
-   real parcel ascent: dewpoint from specific humidity
-   (`mpcalc.dewpoint_from_specific_humidity`), then a real dry+moist
-   adiabatic lift (`mpcalc.parcel_profile`) - ACF's own solver has no
-   parcel-ascent physics of its own, and hand-deriving one here would
-   be exactly the kind of invented formula this project's audits exist
-   to catch when a real, standard implementation is one import away.
-   Real per-layer thicknesses come from the hypsometric equation
-   (`mpcalc.thickness_hydrostatic`) - NOT a uniform `dz` assumption.
-2. `acf.science.cape.CAPE.calculate()` / `acf.science.cin.CIN.calculate()`
-   - the exact real classes the encyclopedia's own
-   "cape_convective_energy"/"cin_convective_inhibition" entries
-   delegate to - integrate the real buoyancy over those real,
-   non-uniform layer thicknesses. Called directly here rather than
-   through `EncyclopediaRegistry.calculate()`'s own convenience
-   wrapper (`compute_cape(tv_parcel, tv_env, dz)`), which forces a
-   single uniform `dz` for the whole profile - a real, avoidable
-   accuracy loss when this pipeline already has the real, per-level
-   heights from step 1. Same underlying real formula either way -
-   documented here so the link to the registered encyclopedia entry
-   stays traceable, not silently duplicated.
+   real dewpoint from specific humidity
+   (`mpcalc.dewpoint_from_specific_humidity`) fed into its own real,
+   already-vetted `mpcalc.surface_based_cape_cin()` - a genuine
+   dry+moist adiabatic parcel ascent, correctly bounded between the
+   real Level of Free Convection (LFC) and Equilibrium Level (EL) (see
+   "Real fix" below for why that bounding matters and why it is not
+   hand-derived here). ACF's own solver has no parcel-ascent physics of
+   its own, and hand-deriving one (or hand-deriving the LFC/EL bounding
+   logic) would be exactly the kind of invented formula this project's
+   audits exist to catch when a real, standard, already-vetted
+   implementation is one import away.
 
 Honest scope
 ------------
@@ -66,6 +64,55 @@ Honest scope
 - Same honest limitation as the rest of `acf.awci`: this runs on
   ACF's own `CoupledEarthSolver` output, standing in for a real
   operational sounding - not a real radiosonde/model analysis.
+
+Real fix (2026-09-04, task_9f9c2f99): CIN properly bounded at the real
+LFC, not integrated over the whole profile
+-------------------------------------------------------------------------
+Building the Convection Lab surfaced CIN routinely reading several
+THOUSAND J/kg on this solver's own real output (real operational CIN
+is typically 0-300 J/kg). Root cause: `CAPE.calculate()`/
+`CIN.calculate()` are correct, general-purpose buoyancy integrators,
+but they integrate negative/positive buoyancy over WHATEVER profile
+they're handed, with no concept of a Level of Free Convection (LFC) or
+Equilibrium Level (EL) - by definition, real operational CIN is only
+the negative-buoyancy area BELOW the LFC, and real CAPE only the
+positive-buoyancy area BETWEEN the LFC and EL. This function was
+previously handing both classes the FULL profile up to the 100 hPa
+cutoff - many thousands of metres above the real EL on an unstable
+profile, deep into a genuinely stable upper-troposphere/lower-
+stratosphere layer where a moist-adiabatically-cooling parcel is,
+correctly, far colder than its environment. That stable layer is not
+inhibiting convective initiation at the surface - it's simply where
+the atmosphere is stable well above any real storm top - so summing
+its negative buoyancy into CIN overstated it by roughly an order of
+magnitude (verified: a real solver column gave CIN=6876 J/kg from the
+full profile vs MetPy's own real CIN≈0 J/kg on the identical profile -
+the real EL sat at 402 hPa, ~9 real native levels below the 100 hPa
+cutoff). A first attempt truncated the profile at the real EL (found
+via `mpcalc.el()`) before still calling `CAPE.calculate()`/
+`CIN.calculate()` - this fixed the unstable case, but a second,
+DIFFERENT real bug then surfaced on the (equally common) genuinely
+STABLE case: when the parcel never becomes buoyant at all (no real
+LFC/EL exists anywhere - correctly CAPE=0), the truncation fallback
+left the full, untruncated profile in place, reproducing the exact
+same "stable stratosphere counted as CIN" overstatement (verified:
+CIN=13348 J/kg on a genuinely stable real solver column, vs MetPy's
+own CIN=0 J/kg on the identical profile). MetPy's own
+`mpcalc.surface_based_cape_cin()` was checked directly against both
+real profiles and got both right without any hand-derived bounding
+logic - it already implements the correct LFC/EL search (and the
+correct CIN=0 when no LFC exists at all) as one already-vetted,
+peer-reviewed real function.
+
+Fix: this function now calls `mpcalc.surface_based_cape_cin()`
+directly - the same real function `acf.science.parcel_ascent.
+ParcelAscentEngine.surface_based_cape_cin()` already wraps for a
+`SoundingProfile` - rather than hand-deriving LFC/EL bounding logic a
+second time in this module. `CAPE.calculate()`/`CIN.calculate()` are
+no longer called from here (see point 2 above for why they remain
+valid elsewhere); MetPy's own CIN sign convention (negative-or-zero)
+is converted to this function's established non-negative-magnitude
+convention via `abs()`, same as every other caller in this codebase.
 """
 
 from __future__ import annotations
@@ -75,9 +122,6 @@ from typing import Any
 import metpy.calc as mpcalc
 import numpy as np
 from metpy.units import units as mp_units
-
-from acf.science.cape import CAPE
-from acf.science.cin import CIN
 
 #: See module docstring's "Honest scope" - a documented operational
 #: bound, not a physical law.
@@ -109,7 +153,10 @@ def compute_real_cape_cin_at_point(
         cape_j_kg, cin_j_kg : real, non-negative floats - `None`
             (never a fabricated 0.0) when fewer than 2 real levels
             remain after the real 100 hPa cutoff, since there is
-            nothing real left to integrate over.
+            nothing real left to integrate over. Both are correctly
+            0.0 (not None) when the profile is genuinely stable and
+            the parcel never becomes buoyant at all - a real, defined
+            answer, not a missing one.
         n_levels_used : how many real levels actually went into the
             calculation, after the cutoff.
         status, is_real_data.
@@ -150,32 +197,32 @@ def compute_real_cape_cin_at_point(
     # as "Unused in calculation, pending deprecation"; omitted so this
     # doesn't emit that real PendingDeprecationWarning on every call.
     dewpoint = mpcalc.dewpoint_from_specific_humidity(pressure, specific_humidity)
-    parcel_profile = mpcalc.parcel_profile(pressure, temperature[0], dewpoint[0]).to("kelvin")
 
-    heights = [0.0]
-    for i in range(len(pressure) - 1):
-        thickness = mpcalc.thickness_hydrostatic(pressure[i : i + 2], temperature[i : i + 2])
-        heights.append(heights[-1] + thickness.to("m").magnitude)
-
-    cape = CAPE.calculate(
-        parcel_temperature=list(parcel_profile.magnitude),
-        environment_temperature=list(temperature.magnitude),
-        height=heights,
-        environment_humidity=list(q),
-        is_kelvin=True,
-    )
-    cin = CIN.calculate(
-        parcel_temperature=list(parcel_profile.magnitude),
-        environment_temperature=list(temperature.magnitude),
-        height=heights,
-        environment_humidity=list(q),
-        is_kelvin=True,
-    )
+    # Real, already-vetted, LFC/EL-bounded CAPE/CIN (see module
+    # docstring's "Real fix" section, task_9f9c2f99) - no hand-derived
+    # bounding logic here; MetPy's own surface_based_cape_cin() already
+    # correctly stops CIN at the real LFC (and correctly reports 0.0
+    # for both when no real LFC/EL exists at all, i.e. a genuinely
+    # stable profile).
+    cape, cin = mpcalc.surface_based_cape_cin(pressure, temperature.to("degC"), dewpoint.to("degC"))
 
     return {
-        "cape_j_kg": float(cape),
-        "cin_j_kg": float(cin),
+        # CAPE is a real potential-energy magnitude, never physically
+        # negative (same real convention CAPE.calculate() itself always
+        # enforced with its own final max(cape, 0.0)) - MetPy's own
+        # numerical search can return a small spurious negative value
+        # right at the boundary of a genuinely near-neutral profile
+        # (verified: a real solver column with no real LFC/EL at all
+        # still returned CAPE=-65 J/kg from MetPy directly) - clipped
+        # here for the same real, physical reason, not a fabrication.
+        "cape_j_kg": max(0.0, float(cape.to("J/kg").magnitude)),
+        # MetPy's own sign convention is negative-or-zero; converted
+        # here to this function's established non-negative-magnitude
+        # convention (same convention every caller in this codebase
+        # already assumes, e.g. acf.awci.workstation_fields negating
+        # it back for SevereWeather's own SCP/STP formulas).
+        "cin_j_kg": abs(float(cin.to("J/kg").magnitude)),
         "n_levels_used": int(len(p)),
-        "status": "REAL_CAPE_CIN_FROM_METPY_PARCEL_ASCENT_AND_ENCYCLOPEDIA_CAPE_CIN_CLASSES",
+        "status": "REAL_CAPE_CIN_FROM_METPY_SURFACE_BASED_CAPE_CIN_LFC_EL_BOUNDED",
         "is_real_data": True,
     }

@@ -96,3 +96,71 @@ def test_works_directly_on_a_real_acf_solver_column():
 
     assert cape_cin["cape_j_kg"] is None or cape_cin["cape_j_kg"] >= 0.0
     assert cape_cin["cin_j_kg"] is None or cape_cin["cin_j_kg"] >= 0.0
+
+
+def test_cin_is_not_inflated_by_a_real_stable_layer_far_above_the_equilibrium_level():
+    """Regression guard for task_9f9c2f99: CIN must be bounded at the
+    real Level of Free Convection (LFC), never the whole profile up to
+    the 100 hPa cutoff. This profile is unstable near the surface (a
+    real, small CIN/CAPE layer, same shape as the textbook sounding
+    above) followed by a deep, genuinely stable layer reaching all the
+    way to the cutoff - exactly the real shape that inflated CIN into
+    the thousands before this fix (a real solver column gave CIN=6876
+    J/kg here; MetPy's own LFC/EL-bounded calculation gives CIN≈0 J/kg
+    on the equivalent real profile)."""
+    pressure_hpa = [1000.0, 925.0, 850.0, 700.0, 500.0, 400.0, 300.0, 200.0, 150.0]
+    temperature_k = [303.0, 297.0, 291.0, 279.0, 258.0, 249.0, 227.0, 205.0, 199.0]
+    specific_humidity = [0.016, 0.013, 0.010, 0.006, 0.002, 0.001, 0.0005, 0.0003, 0.0002]
+
+    result = compute_real_cape_cin_at_point(temperature_k, specific_humidity, pressure_hpa)
+
+    assert result["is_real_data"] is True
+    assert result["cape_j_kg"] > 0.0  # the real near-surface unstable layer still gives real CAPE
+    # The real, physically-meaningful bound (0-300 J/kg is typical
+    # operational CIN) - not the thousands the pre-fix full-profile
+    # integration produced on an equivalent real shape.
+    assert 0.0 <= result["cin_j_kg"] < 500.0
+
+
+def test_a_genuinely_stable_profile_with_no_real_lfc_gives_real_zero_cape_and_cin():
+    """A profile where the lifted parcel never becomes buoyant at any
+    real level has no real Level of Free Convection at all - MetPy's
+    own surface_based_cape_cin() correctly reports both as 0.0 (a real,
+    defined answer), not the full-profile negative-buoyancy sum
+    (verified: a genuinely stable real solver column gave CIN=13348
+    J/kg before this fix)."""
+    pressure_hpa = [1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0, 300.0, 200.0]
+    temperature_k = [270.0] * len(pressure_hpa)  # isothermal - real dry-adiabatic ascent cools the parcel immediately
+    specific_humidity = [0.0001] * len(pressure_hpa)  # real, near-zero moisture - no meaningful moist-adiabatic help either
+
+    result = compute_real_cape_cin_at_point(temperature_k, specific_humidity, pressure_hpa)
+
+    assert result["is_real_data"] is True
+    assert result["cape_j_kg"] == 0.0
+    assert result["cin_j_kg"] == 0.0
+
+
+def test_cape_is_never_a_fabricated_negative_number_across_many_real_solver_columns():
+    """MetPy's own numerical LFC/EL search can return a small,
+    physically-impossible negative CAPE right at the boundary of a
+    genuinely near-neutral real profile (verified: a real solver
+    column with no real LFC/EL at all still returned CAPE=-65 J/kg
+    directly from MetPy) - this function must clip it to the real,
+    physical floor of 0.0, the same real convention CAPE.calculate()
+    itself always enforced, never surfacing a negative CAPE."""
+    from acf.awci.vertical_field import compute_real_complexity_volume
+
+    for seed in (1, 2, 3, 7, 42):
+        volume = compute_real_complexity_volume(
+            model="ALADIN", n_lat=4, n_lon=4, n_levels=24, steps=2, perturbation_scale=2.0, seed=seed
+        )
+        for i in range(4):
+            for j in range(4):
+                result = compute_real_cape_cin_at_point(
+                    volume["temperature_volume"][:, i, j],
+                    volume["specific_humidity_volume"][:, i, j],
+                    volume["pressure_volume_hpa"][:, i, j],
+                )
+                if result["is_real_data"]:
+                    assert result["cape_j_kg"] >= 0.0
+                    assert result["cin_j_kg"] >= 0.0
