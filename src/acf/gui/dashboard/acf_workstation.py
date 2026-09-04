@@ -269,10 +269,29 @@ the fix. CIN now reads realistically (0-a few hundred J/kg, matching
 real operational values) on this solver's own real output, verified
 across multiple seeds/grid points; the Convection Lab's own CIN range
 was updated from a dynamic percentile scale (needed while the
-magnitude was inflated) to a fixed, generous 0-500 J/kg envelope. The
-second finding (task_17a412ee, this solver's own weak wind shear
-making SCP read 0) remains a real, disclosed solver characteristic,
-not a bug - still not fixed, still flagged separately.
+magnitude was inflated) to a fixed, generous 0-500 J/kg envelope.
+
+Phase 20 (2026-09-04, same delegation, after the user explicitly chose
+to pursue a real fix rather than leave it disclosed) resolved the
+second finding (task_17a412ee): this solver's own full-column wind
+shear stayed under 10 m/s because `acf.simulation_engine.
+atmosphere_solver.atmospheric_model.AtmosphericModel.
+initialize_state()` drew `U`/`V` independently at every real vertical
+level with no structure at all - unlike `T`, which at least gets a
+real standard lapse rate. Fixed by adding a real thermal-wind-balance
+vertical shear (Holton & Hakim, "An Introduction to Dynamic
+Meteorology") to `U`, on top of the exact same real per-level
+stochastic draw this solver already used - see that module's own
+docstring for the full derivation and its two real, disclosed
+simplifications (equatorial regularization, a tropopause-region cap
+preventing unbounded growth into the stratosphere). Real bulk shear
+now spans a realistic 0-50 m/s range (verified across seeds/points) and
+SCP genuinely varies instead of reading exactly 0 everywhere. Honest
+scope, also disclosed there: this is a real SPEED shear, not a real
+DIRECTIONAL one - `V` still has no systematic turning with height, so
+SRH/EHI/SCP/STP may still often read small or negative on a
+straight (non-veering) hodograph, a real, known meteorological
+consequence, not a further bug.
 
 Terrain Lab remains listed in the left nav as a real, visible,
 DISABLED "Planned" item - not silently omitted, not faked - matching

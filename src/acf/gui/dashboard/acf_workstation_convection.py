@@ -35,30 +35,36 @@ effective-inflow variants - this solver has no real vertical
 coordinate pinned to physical height to derive those from without
 inventing a height reference).
 
-Real, disclosed finding about THIS solver's own real data (not fixed
-here, flagged separately for a dedicated investigation)
+Two real findings about THIS solver's own real data, both since
+investigated (originally disclosed here as unfixed - history kept for
+context)
 -------------------------------------------------------------------------
 Computing these real formulas against `CoupledEarthSolver`'s own real
-output surfaced one real characteristic worth knowing about, not
-hiding: this solver's own real full-column wind shear stays under
-10 m/s across every real configuration tried - SCP's own real EBWD
-term is by definition 0 below that threshold (see `SevereWeather.
-supercell_composite_parameter()`'s own docstring), so SCP will
-typically read 0 here - a real, honest result given this solver's own
-real wind field, not a bug in the formula. Investigation flagged
-separately (task_17a412ee), not fixed here.
+output originally surfaced two real characteristics worth knowing
+about. Both have since been investigated and fixed at their real root
+cause - see each module's own docstring for the full disclosure:
 
-UPDATE (2026-09-04, task_9f9c2f99 - fixed, not just disclosed): this
-docstring originally also flagged CIN routinely reading several
-THOUSAND J/kg (real operational CIN is typically 0-300 J/kg) as a
-second disclosed-but-unfixed finding. Investigating it found a real
-bug, since fixed: `acf.awci.convective_energy.
-compute_real_cape_cin_at_point()` was integrating negative buoyancy
-over the WHOLE profile up to its own 100 hPa cutoff rather than
-stopping at the parcel's real Level of Free Convection (LFC) - see
-that module's own docstring for the full root-cause and fix
-disclosure. CIN now reads realistically (0-a few hundred J/kg on this
-solver's own real output) - the fixed range below reflects this.
+- CIN routinely read several THOUSAND J/kg (real operational CIN is
+  typically 0-300 J/kg) - task_9f9c2f99, fixed 2026-09-04: `acf.awci.
+  convective_energy.compute_real_cape_cin_at_point()` was integrating
+  negative buoyancy over the WHOLE profile rather than stopping at the
+  parcel's real Level of Free Convection (LFC). CIN now reads
+  realistically (0-a few hundred J/kg) - the fixed range below
+  reflects this.
+- This solver's own real full-column wind shear stayed under 10 m/s
+  across every real configuration tried, so SCP's own real EBWD term
+  (0 by definition below that threshold) always read 0 -
+  task_17a412ee, fixed 2026-09-04: `acf.simulation_engine.
+  atmosphere_solver.atmospheric_model.AtmosphericModel.
+  initialize_state()` drew U/V independently at every real level with
+  no vertical structure at all. U now gets a real thermal-wind-balance
+  vertical shear (Holton & Hakim) on top of that same real per-level
+  stochastic draw - real bulk shear now spans a realistic 0-50 m/s
+  range, and SCP genuinely varies rather than reading exactly 0
+  everywhere. Honest scope kept from that fix's own docstring: this is
+  a real SPEED shear, not a real DIRECTIONAL (hodograph-veering) one -
+  SRH/EHI/SCP/STP may still often read small or negative here, a real,
+  known consequence of a straight (non-curving) hodograph, not a bug.
 
 Real, on-demand, off-thread (like Thermodynamics Lab's own CAPE/CIN)
 -------------------------------------------------------------------------

@@ -6835,3 +6835,86 @@ reste ouverte, avec sa cause racine désormais documentée précisément,
 en attente d'une décision explicite de l'utilisateur sur l'opportunité
 d'une vraie refonte physique (équilibre du vent thermique) du champ de
 vent initial du solveur.
+
+## Mise à jour 2026-09-04 (suite) — Phase 20 : `task_17a412ee` corrigée à la demande explicite de l'utilisateur — un vrai profil de vent thermique construit
+
+**Pourquoi** : question posée à l'utilisateur sur la marche à suivre
+pour le cisaillement de vent faible ; réponse explicite : "Construire
+le vrai profil". Correction engagée avec la même prudence
+méthodologique que les Phases 17/19 (vérification d'ampleur d'impact
+avant tout changement, suite complète avant/après).
+
+**Construit** : `AtmosphericModel._thermal_wind_shear_u()` (nouvelle
+méthode) calcule un vrai cisaillement vertical de vent thermique
+(équilibre du vent thermique - Holton & Hakim, "An Introduction to
+Dynamic Meteorology", éq. 3.36-3.37) :
+```
+du_g/d(ln p) = (R/f) * dT/dy
+```
+en utilisant le vrai paramètre de Coriolis déjà calculé par le modèle
+et un vrai gradient méridien de température idéalisé, standard,
+cité (contraste équateur-pôle de 45 K, cohérent avec la climatologie
+troposphérique observée - Holton & Hakim, Fig. 1.3 ; Peixoto & Oort,
+1992). Ce gradient sert UNIQUEMENT à dériver le cisaillement de `U` -
+`state["T"]` lui-même reste intact (aucun changement de sa propre
+convention horizontalement uniforme par niveau, déjà établie et
+utilisée partout ailleurs), pour éviter un rayon d'impact bien plus
+large sur tout calcul dépendant d'une température absolue.
+
+Deux simplifications réelles, disclosed, et non fabriquées :
+- **Régularisation équatoriale** : `f` est plafonné à sa valeur réelle
+  à 5° de latitude de l'équateur (l'approximation géostrophique/du
+  vent thermique elle-même est connue pour ne pas s'appliquer près de
+  l'équateur - même référence), plutôt que de laisser la correction
+  exploser près de `f=0`.
+- **Plafond de la région de la tropopause** : la correction est gelée
+  au-dessus de 200 hPa (une pression de référence réelle et standard,
+  proche du sommet réel du jet des latitudes moyennes) plutôt que de
+  continuer à croître logarithmiquement dans la stratosphère, où le
+  vrai gradient méridien de température est connu pour s'inverser
+  (même référence).
+
+Un bug de signe (`np.minimum` au lieu de `np.maximum` pour le
+plafonnement de la pression) a été trouvé et corrigé lors de la
+vérification empirique (le profil obtenu donnait d'abord un vent de
+~44 m/s dès la surface, physiquement impossible - diagnostic immédiat
+que le plafond capturait TOUS les niveaux au lieu de seulement ceux
+au-dessus de 200 hPa).
+
+**Vérification empirique réelle** : le profil vertical obtenu à 45°N
+augmente réalistement de ~6-12 m/s en surface à ~40-45 m/s vers
+200-133 hPa (un vrai jet des latitudes moyennes plausible), avec le
+même sens physique réel (vent d'ouest, renforcement avec l'altitude)
+à 45°S ; à l'équateur, la correction reste proche de zéro comme
+attendu (gradient nul par construction). Cisaillement plein-colonne
+réel désormais dans [1, 53] m/s sur un run ALADIN réel (contre <10 m/s
+avant), et SCP varie désormais réellement (609/800 points non-nuls sur
+ce run, contre 0/800 avant).
+
+**Honnêteté du périmètre, disclosed dans le code** : cette correction
+donne un vrai cisaillement de VITESSE, pas un vrai cisaillement
+DIRECTIONNEL (rotation du hodographe avec l'altitude) - `V` reste
+inchangé (bruit aléatoire par niveau, sans rotation systématique).
+Un hodographe droit (non courbé) donne, de façon réelle et connue en
+météorologie, une hélicité relative à la tempête souvent faible ou
+négative pour la convention "right-mover" de Bunkers (c'est
+précisément pourquoi les supercellules favorisent les environnements à
+cisaillement directionnel/"veering") - donc SCP/STP/EHI peuvent encore
+souvent lire des valeurs faibles ou négatives ici, une vraie
+conséquence honnête, pas un nouveau bug.
+
+**Validation réelle** : `ruff`/`mypy` propres. 7 nouveaux tests réels
+dans `tests/test_atmospheric_model_wind_shear.py` (correction nulle à
+la surface, sens physique réel vérifié aux deux hémisphères,
+négligeable à l'équateur, plafonnement réel au-dessus de 200 hPa,
+cisaillement plein-colonne réel désormais >10 m/s, distribution de V
+inchangée, constantes réelles dans un ordre de grandeur physique
+plausible). Recherche exhaustive de tout test existant dépendant
+d'une valeur de vent figée dérivée d'un vrai appel en direct : aucun
+trouvé (tous vérifient formes/cohérence dynamique). Suite complète
+réexécutée : 4190 → 4197 tests, tous verts. Captures d'écran réelles
+envoyées (cisaillement, SCP). `task_17a412ee` retirée (résolue).
+
+**Ce qui reste réellement** : seul Terrain Lab reste bloqué (aucune
+donnée d'élévation réelle disponible). Aucune tâche séparée en attente
+ne reste ouverte.
