@@ -1,4 +1,40 @@
-"""Module registry dynamically discovering, building tree hierarchy, and indexing universal global search for all ACF scientific subsystems (ACF-UI-013)."""
+"""Module registry dynamically discovering, building tree hierarchy, and indexing universal global search for all ACF scientific subsystems (ACF-UI-013).
+
+NOTE (correction, 2026-09-04 — the same "presented as connected when
+it isn't" pattern already found and fixed across ESOC's own panels):
+of this registry's 25 `_safe_import_register()` calls, 19 named a
+`class_name` that genuinely does not exist at the given `module_path`
+(verified by direct import + `getattr` for every single one - not a
+sample). `_safe_import_register()`'s own old fallback for exactly this
+case silently substituted the bare, empty PACKAGE `__init__` module
+object for `self.modules[key]` instead of `None` - `is_connected()`
+and `get_system_status_summary()` (both `is not None` checks) then
+honestly reported these 19 modules as "connected", when in truth
+nothing real had ever been instantiated for them. No real GUI code
+currently reads `is_connected()`/`get_system_status_summary()`/
+`global_search()`/`search_index` (verified by a repo-wide grep - this
+registry's own search/status API has no wired caller yet), so this had
+no visible symptom - but it was still a real, live lie waiting for the
+day someone did wire a status panel to it.
+
+Fixed two ways:
+1. `_safe_import_register()` no longer falls back to the bare module -
+   a missing class now honestly sets `self.modules[key] = None` (with
+   a real WARNING, not a swallowed DEBUG line), the same "not connected"
+   outcome an actual import failure already produced.
+2. For the 15 of 19 where a real, correctly-named class demonstrably
+   exists elsewhere in this codebase (verified: imports cleanly,
+   instantiates with zero arguments, and is a genuine thematic match -
+   e.g. `catalog`'s wanted `CatalogManager` turned out to be real, just
+   at `acf.catalog.manager` instead of bare `acf.catalog`), the
+   `(module_path, class_name)` below was corrected to point at it.
+   The remaining 4 (`earth_physics`, `space_weather`, and the bare
+   `acf.geology`/`acf.geoengineering` entries in target_domains) have
+   no single real class anywhere that unambiguously represents "the"
+   engine for that whole domain (each is a real, populated package of
+   many independent formula/engine classes, not one orchestrator) -
+   left honestly unregistered (`None`) rather than guessing.
+"""
 
 import importlib
 import logging
@@ -43,28 +79,56 @@ class ModuleRegistry:
         self._build_search_index()
 
     def _safe_import_register(self, key: str, module_path: str, class_name: str) -> None:
-        """Safely import and instantiate a subsystem class with fallback error handling."""
+        """Safely import and instantiate a subsystem class - real success
+        or real, honestly-reported failure, never a look-alike stand-in.
+
+        NOTE (correction, 2026-09-04): this used to fall back to
+        `self.modules[key] = mod` (the bare, empty PACKAGE module
+        object) whenever `class_name` didn't exist on it - `is_connected()`
+        then reported that module as genuinely connected (its own
+        `is not None` check), which was never true: nothing real had
+        been instantiated. See this file's own module docstring for the
+        full disclosure. A missing class is now the exact same real
+        "not connected" outcome as an import failure - self.modules[key]
+        = None, with a real WARNING (was silently swallowed at DEBUG)."""
         try:
             mod = importlib.import_module(module_path)
-            cls = getattr(mod, class_name, None)
-            if cls:
-                self.modules[key] = cls()
-            else:
-                self.modules[key] = mod
         except Exception as e:
-            logger.debug(f"Optional module {key} ({module_path}.{class_name}) init fallback: {e}")
+            logger.warning(f"Module {key} ({module_path}.{class_name}) unavailable - import failed: {e}")
+            self.modules[key] = None
+            return
+
+        cls = getattr(mod, class_name, None)
+        if cls is None:
+            logger.warning(f"Module {key}: {module_path}.{class_name} does not exist - registering as not connected")
+            self.modules[key] = None
+            return
+
+        try:
+            self.modules[key] = cls()
+        except Exception as e:
+            logger.warning(f"Module {key} ({module_path}.{class_name}) unavailable - construction failed: {e}")
             self.modules[key] = None
 
     def _auto_discover_packages(self) -> None:
         """Dynamically scan acf subpackages and register any unregistered operational modules."""
         target_domains = [
-            ("planetary_limits", "acf.digital_twin.planetary_limits", "PlanetaryBoundaries"),
+            # NOTE (correction, 2026-09-04): the 4 corrected below each
+            # named a class that did not exist at the given path (see
+            # this file's own module docstring) - fixed to the real
+            # class that does. geoengineering_lab/ai_emergency/
+            # ai_digital_twin were already genuinely correct.
+            (
+                "planetary_limits",
+                "acf.digital_twin.planetary_limits.planetary_boundaries",
+                "PlanetaryBoundariesSimulator",
+            ),
             ("geoengineering_lab", "acf.digital_twin.geoengineering_lab", "GeoengineeringLab"),
             ("ai_emergency", "acf.ai.emergency_assistant", "AIEmergencyAssistant"),
             ("ai_digital_twin", "acf.ai.digital_twin", "AIDigitalTwinAssistant"),
-            ("aerosols_dust", "acf.earth_physics.atmospheric_dynamics", "AtmosphericAerosolEngine"),
-            ("volcanoes", "acf.geology", "VolcanoSimulator"),
-            ("reports_generator", "acf.reports", "ReportGenerator"),
+            ("aerosols_dust", "acf.science.clouds.aerosols", "CloudAerosolEngine"),
+            ("volcanoes", "acf.geology.volcanic_physics", "VolcanicPhysicsEngine"),
+            ("reports_generator", "acf.reports.briefings.briefing_generator", "BriefingGenerator"),
         ]
         for key, path, cls_name in target_domains:
             if key not in self.modules or self.modules[key] is None:
@@ -115,24 +179,36 @@ class ModuleRegistry:
         self.modules["cuda_kernels"] = CUDAKernelManager()
         self.modules["checkpoint_manager"] = CheckpointManager()
 
+        # NOTE (correction, 2026-09-04): see this file's own module
+        # docstring. earth_physics/space_weather/geoengineering/geology
+        # (this exact bare-package registration - "volcanoes" above is
+        # a real, separate, now-fixed entry) are left as-is: each
+        # named class never existed, and unlike the others below, no
+        # single real class anywhere in this codebase unambiguously
+        # represents "the" engine for that whole domain - each is a
+        # real, populated package of many independent engines, not one
+        # orchestrator. Now honestly resolves to None (not connected)
+        # via _safe_import_register()'s own fixed fallback, instead of
+        # the bare, inert package module silently reporting as
+        # "connected" before this fix.
         self._safe_import_register("earth_physics", "acf.earth_physics", "AtmosphericDynamicsEngine")
-        self._safe_import_register("data_assimilation", "acf.data_assimilation", "AnalysisState")
-        self._safe_import_register("digital_twin", "acf.digital_twin", "EarthDigitalTwinPlatform")
+        self._safe_import_register("data_assimilation", "acf.data_assimilation.analysis_state", "EarthAnalysisStateVector")
+        self._safe_import_register("digital_twin", "acf.digital_twin.digital_twin_engine", "DigitalTwinEngine")
         self._safe_import_register("planetary_dashboard", "acf.digital_twin.planetary_dashboard", "PlanetaryDashboard")
-        self._safe_import_register("ai_expert", "acf.ai_expert", "AIExpertEngine")
+        self._safe_import_register("ai_expert", "acf.ai_expert.earth_system_expert", "EarthSystemExpert")
         self._safe_import_register("geoengineering", "acf.geoengineering", "GeoengineeringPlatform")
         self._safe_import_register("space_weather", "acf.space_weather", "SpaceWeatherPlatform")
         self._safe_import_register("geology", "acf.geology", "GeologyPlatform")
-        self._safe_import_register("monitoring", "acf.monitoring", "MonitoringPlatform")
+        self._safe_import_register("monitoring", "acf.monitoring.monitoring_registry", "MonitoringRegistry")
         self._safe_import_register("verification", "acf.verification", "ForecastVerificationEngine")
-        self._safe_import_register("catalog", "acf.catalog", "CatalogManager")
-        self._safe_import_register("plugins", "acf.plugins", "PluginManager")
-        self._safe_import_register("forecast", "acf.forecast", "ForecastEngine")
-        self._safe_import_register("hydrology", "acf.hydrology", "HydrologyEngine")
-        self._safe_import_register("air_quality", "acf.science.encyclopedia.chemistry", "ChemistryEngine")
-        self._safe_import_register("production_dashboard", "acf.gui.dashboard", "DashboardManager")
+        self._safe_import_register("catalog", "acf.catalog.manager", "CatalogManager")
+        self._safe_import_register("plugins", "acf.core.plugin_manager", "PluginManager")
+        self._safe_import_register("forecast", "acf.forecast.forecast_engine", "ForecastEngine")
+        self._safe_import_register("hydrology", "acf.ai_expert.hydrology_reasoning", "HydrologyReasoningEngine")
+        self._safe_import_register("air_quality", "acf.ai_expert.air_quality_reasoning", "AirQualityReasoningEngine")
+        self._safe_import_register("production_dashboard", "acf.dashboard.manager", "DashboardManager")
         self._safe_import_register(
-            "visualization", "acf.visualization.ai_forecast_center", "AIForecastIntelligenceVisualizationCenter"
+            "visualization", "acf.visualization.ai_forecast_center.forecast_dashboard", "AIForecastDashboard"
         )
         self._safe_import_register("hpc_connector", "acf.hpc_connector", "HPCConnectionManager")
 

@@ -5154,3 +5154,78 @@ reste plus fort en évolution temporelle réelle (17 échéances
 archivées, pas un seul instantané de solveur) — les deux modes ont
 maintenant chacun leur propre vraie valeur ajoutée distincte plutôt
 que l'un dupliquant l'autre en moins bien.
+
+## Mise à jour 2026-09-04 (suite) — premier chantier hors AWCI cette session : le ModuleRegistry d'ESOC mentait sur 19 de ses 25 modules
+
+Suite explicite ("continue"). Après une nouvelle question sur la
+direction ("suit ton jugement" à nouveau), et une recherche large déjà
+infructueuse dans le reste d'ACF pour des gaps évidents, un agent
+Explore a été chargé d'auditer spécifiquement des packages peu
+fréquentés par l'historique git (`fire_weather`, `certification`,
+`plugins`, `storage`, `testing`). Résultat : ces packages sont
+majoritairement déjà disciplinés et bien câblés, mais une piste
+sérieuse est apparue — `acf.gui.esoc.module_registry.ModuleRegistry`
+enregistre dynamiquement 25 sous-systèmes ACF via
+`_safe_import_register(key, module_path, class_name)`. Vérification
+directe et exhaustive (import réel + `getattr` pour les 25, pas un
+échantillon) : **19 des 25 `class_name` demandés n'existaient tout
+simplement pas** au chemin donné.
+
+**Le vrai bug racine** : `_safe_import_register()` ne se contentait pas
+d'échouer proprement quand la classe manquait — elle substituait
+silencieusement le module PACKAGE brut (vide) comme "instance", et
+`is_connected()`/`get_system_status_summary()` (tous deux un simple
+test `is not None`) rapportaient alors honnêtement... un mensonge :
+ces 19 modules apparaissaient "connectés" alors que rien de réel
+n'avait jamais été instancié. Exactement le même schéma
+"présenté comme connecté/réel alors que ça ne l'est pas" déjà traqué
+et corrigé dans ce code (readers EPyGrAM, panneaux ESOC, etc.) — sauf
+qu'ici, vérification faite par grep exhaustif, **aucun vrai code GUI
+ne lit `is_connected()`/`get_system_status_summary()`/`global_search()`/
+`search_index` nulle part aujourd'hui** — la barre de recherche
+universelle d'ESOC (`esoc_sidebar.py`) filtre sa propre liste statique
+de labels, complètement indépendante de `ModuleRegistry`. Donc aucun
+symptôme visible actuellement — mais un vrai mensonge en attente du
+jour où un panneau de statut y serait enfin branché.
+
+**Construit** : `_safe_import_register()` corrigée — une classe
+manquante résout maintenant honnêtement `self.modules[key] = None`
+(avec un vrai WARNING, plus un DEBUG silencieux), exactement le même
+résultat "non connecté" qu'un échec d'import réel. Un échec de
+CONSTRUCTION (`cls()` qui lève) est maintenant aussi capturé et
+disclosed séparément. Puis, pour 15 des 19 entrées où une vraie classe
+correctement nommée existe ailleurs dans ce code (vérifié une par une :
+import propre, instanciation à zéro argument, correspondance
+thématique réelle — ex. `catalog` voulait `CatalogManager`, qui existe
+réellement, juste à `acf.catalog.manager` et non `acf.catalog` nu),
+le `(module_path, class_name)` a été corrigé pour pointer dessus. Les
+4 restantes (`earth_physics`, `space_weather`, et les entrées nues
+`acf.geology`/`acf.geoengineering`) n'ont aucune classe unique réelle
+représentant sans ambiguïté "le" moteur de tout le domaine (chacune
+est un vrai package peuplé de nombreux moteurs indépendants, pas un
+orchestrateur unique) — laissées honnêtement non connectées plutôt que
+de deviner un mapping approximatif.
+
+**Résultat mesuré** : `get_system_status_summary()` passe de 6/25
+sous-systèmes réellement connectés (avant, une fois le mensonge de la
+substitution retiré) à **21/25** réellement connectés, les 4 restants
+honnêtement `None` avec un vrai WARNING loggé expliquant pourquoi.
+
+**Validation réelle** : nouveau fichier `tests/test_module_registry_wiring.py`
+— vérifie que les 15 entrées corrigées résolvent bien vers le nom de
+classe réel attendu, que les 4 entrées non résolvables restent
+honnêtement `None`, qu'aucune entrée du registre n'est jamais un objet
+module brut (garde-fou direct contre une régression du bug racine),
+que `connected_count` reste cohérent avec `is_connected()`, et que le
+chemin WARNING (classe manquante) et le chemin échec-de-construction
+sont bien tous deux honnêtement loggés et jamais silencieusement
+avalés. Suite complète **4007 → 4013**, `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : aucun vrai code GUI ne consomme encore
+`is_connected()`/`get_system_status_summary()`/`global_search()` —
+cette fermeture rend le registre honnête, elle ne lui donne pas
+(encore) de vitrine visible. Câbler un vrai panneau de statut ESOC ou
+brancher la barre de recherche universelle sur `global_search()` reste
+un vrai chantier séparé, non entamé ici pour éviter tout risque de
+collision avec le travail très récent d'une session parallèle sur
+`esoc_statusbar.py` (largeur de fenêtre, voir historique git).
