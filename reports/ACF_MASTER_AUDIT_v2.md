@@ -6032,3 +6032,50 @@ du spec maître (Multi-Model Lab en page propre, 3D/4D, Case Study Lab,
 Research Mode, Configuration Management, palette de commandes,
 raccourcis, export, extension API) listés "(planned)", pour les mêmes
 raisons honnêtes déjà disclosed.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 8 : le Multi-Model Lab, zéro nouvelle science
+
+Suite explicite ("continue"), même discipline progressive. Cette passe
+est la plus légère jusqu'ici : **aucune nouvelle science construite**
+— uniquement l'exposition d'une donnée déjà réellement calculée par
+Confidence Lab (Phase 5) mais jusque-là jetée après usage.
+
+**Constat** : `ModelConsensusEngine.
+compute_real_multi_model_disagreement_field()` calcule déjà, pour
+chaque modèle comparé, son propre champ réel regrillé
+(`per_model_field`) — mais le panneau Confidence Lab ne lisait jamais
+que `disagreement_mean_field`/`disagreement_spread_field` (l'agrégat
+statistique), jetant silencieusement les champs bruts par modèle après
+usage.
+
+**Construit** : **Multi-Model Lab**
+(`acf_workstation_multimodel.ACFMultiModelLabPanel`) — un vrai
+sélecteur Model A / Model B (parmi les 3 vrais AROME/ALADIN/ARPEGE, pas
+seulement la paire fixe de Confidence Lab), un bouton à la demande
+"🔄 Compare Models" appelant EXACTEMENT la même méthode réelle que
+Confidence Lab, puis affiche soit le champ brut de chaque modèle
+individuellement, soit une vraie différence ponctuelle
+(`field_a - field_b`, en unités physiques réelles — ex. Kelvin, pas
+une statistique standardisée) — une vraie question distincte de
+l'agrégat de Confidence Lab : "où ces deux modèles précis
+divergent-ils, et de combien concrètement ?" plutôt que "quel est le
+désaccord général ?".
+
+**Validation réelle** : `ruff`/`mypy` propres. 6 nouveaux tests GUI
+(`tests/gui/test_acf_workstation_multimodel.py` — dont un vrai test de
+bout en bout du worker hors thread via `qtbot.waitUntil`, et un
+cross-check direct prouvant que la différence affichée est
+exactement `field_a - field_b`, jamais une statistique re-dérivée) +
+mise à jour des tests d'intégration du chrome (nouvelle position dans
+la nav/le stack à 10 modules désormais). Aucun nouveau test unitaire
+séparé n'était nécessaire — la méthode sous-jacente était déjà testée
+en Phase 5. Suite complète **4101 → 4107**, toujours verte. Capture
+d'écran réelle envoyée : différence ALADIN − ARPEGE réelle (moyenne
+|Δ| 2.260 K, max |Δ| 13.934 K).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
+Lab, Research Mode, Configuration Management, palette de commandes,
+raccourcis, export, extension API) listés "(planned)", pour les mêmes
+raisons honnêtes déjà disclosed.

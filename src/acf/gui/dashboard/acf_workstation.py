@@ -92,11 +92,22 @@ Phase 7 (2026-09-04, same "continue" progressive discipline) added:
   demonstration this real infrastructure catches a real problem, not a
   panel bug.
 
-The remaining 2 spec modules (Convection/Terrain Labs - Multi-Model
-Lab, 3D/4D, Case Study Lab, Research Mode, Configuration Management
-etc. are larger, separate pieces of the master spec beyond the
-original "Labs" list) are listed in the left nav as real, visible,
-DISABLED "Planned" items - not silently omitted, not faked - matching
+Phase 8 (2026-09-04, same "continue" progressive discipline) added:
+- **Multi-Model Lab** (`acf_workstation_multimodel.
+  ACFMultiModelLabPanel`): zero new science - calls the exact same
+  `ModelConsensusEngine.compute_real_multi_model_disagreement_field()`
+  Confidence Lab already uses, but exposes its previously-unread
+  `per_model_field` data: each real model's own RAW field individually,
+  plus a real, literal pairwise difference map (`field_a - field_b`,
+  real physical units) - a distinct real question from Confidence
+  Lab's own aggregate spread/mean ("where do these two SPECIFIC models
+  actually disagree, and by how much?").
+
+The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
+Study Lab, Research Mode, Configuration Management etc. are larger,
+separate pieces of the master spec beyond the original "Labs" list)
+are listed in the left nav as real, visible, DISABLED "Planned" items
+- not silently omitted, not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
@@ -164,6 +175,7 @@ from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
+from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
@@ -178,8 +190,8 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
-    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Interactions", "Quality",
-    "Complexity",
+    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
+    "Interactions", "Quality", "Complexity",
 ]
 _PLANNED_MODULES = [
     "Convection", "Terrain",
@@ -317,6 +329,7 @@ class ACFWorkstation(QWidget):
         self.microphysics_panel = ACFMicrophysicsLabPanel()
         self.temporal_panel = ACFTemporalLabPanel()
         self.confidence_panel = ACFConfidenceLabPanel()
+        self.multimodel_panel = ACFMultiModelLabPanel()
         self.interactions_panel = ACFInteractionEnginePanel()
         self.quality_panel = ACFDataQualityLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
@@ -326,6 +339,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.microphysics_panel)
         self.stack.addWidget(self.temporal_panel)
         self.stack.addWidget(self.confidence_panel)
+        self.stack.addWidget(self.multimodel_panel)
         self.stack.addWidget(self.interactions_panel)
         self.stack.addWidget(self.quality_panel)
         self.stack.addWidget(self.complexity_panel)
@@ -404,6 +418,7 @@ class ACFWorkstation(QWidget):
         self.microphysics_panel.update_from_volume(self._volume, self._level_index)
         self.temporal_panel.update_from_volume(self._volume, self._level_index)
         self.confidence_panel.update_from_volume(self._volume, self._level_index)
+        self.multimodel_panel.update_from_volume(self._volume, self._level_index)
         self.interactions_panel.update_from_volume(self._volume, self._level_index)
         self.quality_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
