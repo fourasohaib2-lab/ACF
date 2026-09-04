@@ -123,13 +123,17 @@ own "§51" closure entries for the full history.
 
 ## 9. Real Physics mode's own standard-pressure-level profile
 
-Also from the §51 closure above: `_ALL_VERTICAL_PROFILE_LEVELS_HPA`
-(Surface/850/700/500/300/250 hPa) is demo mode only, deliberately.
-`acf.awci.vertical_field.compute_real_complexity_volume()`'s own real
-volume has no vertical interpolation (native solver levels only, see
-that module's own `honest_limitation` string) - it cannot honestly
-answer "what is the real value at exactly 500 hPa" the way the demo
-pattern's continuous analytic function can. Building real vertical
-interpolation into `acf.awci.vertical_field` would be a genuine,
-separate physics task (not a UI gap) before this could be closed for
-Real Physics mode too.
+**Closed 2026-09-04** (priority freely chosen, "continue"/"suit ton
+jugement"): `acf.awci.vertical_field.interpolated_state_at_pressure()`/
+`vertical_profile_at_standard_levels()` now perform real log-pressure
+linear interpolation of temperature/wind_speed/specific_humidity
+between the 2 real native solver levels that bracket a target standard
+pressure at a given column - standard operational-meteorology
+practice, not a synthetic pattern, and explicitly NOT extrapolation: a
+target pressure outside a given real column's own native range is
+honestly omitted from the returned profile rather than filled with a
+guessed value. `AWCIDashboard._open_vertical_profile()` now uses this
+in Real Physics mode instead of refusing to offer §51's own standard-
+level/flight-level list there. Demo mode is unaffected (bit-identical -
+its own continuous analytic pattern never needed this in the first
+place).

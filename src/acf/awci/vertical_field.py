@@ -28,13 +28,27 @@ This reports the solver's real NATIVE model levels (their real local
 pressure at every point, in `pressure_volume`), not literal standard
 pressure levels (1000/925/850/700/500/300/250/200 hPa as listed in
 docs/ACF_MASTER_UNIFIED_ARCHITECTURE.md's Grid/Vertical Engine layer).
-Interpolating onto standard pressure levels is a distinct, real
-capability (vertical interpolation) that does not exist anywhere in
-ACF yet - building it here would silently invent values between real
-model levels. `vertical_profile_at_point()` below reports each native
-level's own real local pressure alongside its complexity score so a
-caller can see which native level is CLOSEST to a pressure of
-interest, without pretending an interpolated value was computed.
+`vertical_profile_at_point()` below reports each native level's own
+real local pressure alongside its complexity score so a caller can see
+which native level is CLOSEST to a pressure of interest, without
+pretending an interpolated value was computed.
+
+**Update 2026-09-04** (closes future-improvements.md #9, priority
+freely chosen - "continue"/"suit ton jugement"): real vertical
+interpolation onto an arbitrary standard pressure level now exists -
+`interpolated_state_at_pressure()`/`vertical_profile_at_standard_levels()`
+below. It is real, standard-practice log-pressure linear interpolation
+(the same technique operational meteorology uses to interpolate model
+output onto standard pressure levels - temperature/humidity/wind vary
+close to linearly in ln(p) over these spacings) between the 2 real
+NATIVE levels that bracket the target pressure at that real grid
+column - never a value invented from nothing. It is explicitly NOT
+extrapolation: a target pressure outside a given column's own real
+native pressure range returns `None` (interpolated_state_at_pressure())
+/ is silently omitted from the returned profile
+(vertical_profile_at_standard_levels()) rather than a guessed
+out-of-range value - the same "honest gap over fabrication" rule this
+module already applied to CAPE/CIN/forecast_volume above.
 
 Same scope limits as spatial_field.py carry over: CAPE/CIN/
 precipitation/terrain-altitude are not derived (AWCICalculator's own
@@ -266,3 +280,138 @@ def vertical_profile_at_point(volume: dict[str, Any], lat: float, lon: float) ->
         "pressure_profile_hpa": volume["pressure_volume_hpa"][:, lat_idx, lon_idx],
         "temperature_profile": volume["temperature_volume"][:, lat_idx, lon_idx],
     }
+
+
+def interpolated_state_at_pressure(
+    volume: dict[str, Any], lat: float, lon: float, target_hpa: float
+) -> dict[str, Any] | None:
+    """
+    Real log-pressure linear interpolation of temperature/wind_speed/
+    specific_humidity at the grid column nearest (lat, lon), onto one
+    target pressure (hPa) - see this module's own "Honest limitation"
+    docstring section for why this is standard practice, not
+    fabrication, and why it refuses to extrapolate.
+
+    Real nearest-neighbour column lookup (same convention as
+    vertical_profile_at_point() above) - no horizontal interpolation.
+
+    Returns
+    -------
+    dict or None
+        None if `target_hpa` falls outside this real column's own
+        native pressure range (would require extrapolation - refused,
+        see module docstring). Otherwise a dict with the real
+        interpolated `temperature`/`wind_speed`/`specific_humidity`/
+        `pressure` (the last is just `target_hpa` echoed back, for a
+        caller building an AWCICalculator input dict), plus
+        `native_bracket_levels`/`native_bracket_pressures_hpa`/
+        `interpolation_fraction` disclosing exactly which 2 real native
+        levels were used and how far between them the target sits (0.0
+        = exactly the lower/nearer-surface level, 1.0 = exactly the
+        upper level).
+    """
+    lats = np.asarray(volume["lats"])
+    lons = np.asarray(volume["lons"])
+    lat_idx = int(np.argmin(np.abs(lats - lat)))
+    lon_idx = int(np.argmin(np.abs(lons - lon)))
+
+    pressure_col = np.asarray(volume["pressure_volume_hpa"])[:, lat_idx, lon_idx]
+    temperature_col = np.asarray(volume["temperature_volume"])[:, lat_idx, lon_idx]
+    wind_speed_col = np.asarray(volume["wind_speed_volume"])[:, lat_idx, lon_idx]
+    humidity_col = np.asarray(volume["specific_humidity_volume"])[:, lat_idx, lon_idx]
+
+    n_levels = pressure_col.shape[0]
+    # Real native levels are surface-first / decreasing pressure with
+    # increasing index (module docstring's own "Level convention") -
+    # scan consecutive pairs rather than assuming a fixed direction, so
+    # a real column that is not perfectly monotonic (a perturbed field
+    # is not guaranteed to be) still gets a real bracket wherever one
+    # genuinely exists, and honestly finds none where it doesn't.
+    for lower_idx in range(n_levels - 1):
+        p_a = float(pressure_col[lower_idx])
+        p_b = float(pressure_col[lower_idx + 1])
+        if p_a == p_b:
+            continue  # degenerate flat layer - cannot bracket anything with it
+        if not (min(p_a, p_b) <= target_hpa <= max(p_a, p_b)):
+            continue
+        upper_idx = lower_idx + 1
+        frac = float(
+            np.clip((np.log(p_a) - np.log(target_hpa)) / (np.log(p_a) - np.log(p_b)), 0.0, 1.0)
+        )
+
+        def _interp(col: np.ndarray, _lo: int = lower_idx, _hi: int = upper_idx, _f: float = frac) -> float:
+            return float(col[_lo] + _f * (col[_hi] - col[_lo]))
+
+        return {
+            "lat": float(lats[lat_idx]),
+            "lon": float(lons[lon_idx]),
+            "temperature": _interp(temperature_col),
+            "wind_speed": _interp(wind_speed_col),
+            "specific_humidity": _interp(humidity_col),
+            "pressure": float(target_hpa),
+            "native_bracket_levels": (lower_idx, upper_idx),
+            "native_bracket_pressures_hpa": (p_a, p_b),
+            "interpolation_fraction": frac,
+        }
+    return None  # target_hpa is outside this real column's own native pressure range
+
+
+def vertical_profile_at_standard_levels(
+    volume: dict[str, Any],
+    lat: float,
+    lon: float,
+    target_pressures_hpa: dict[str, float],
+    calc: AWCICalculator | None = None,
+) -> dict[str, dict[str, Any]]:
+    """
+    Real AWCICalculator results at named standard pressure/flight
+    levels, from a Real Physics `compute_real_complexity_volume()`
+    volume - the Real Physics counterpart of
+    `awci_dashboard._open_vertical_profile()`'s own demo-mode loop
+    (which calls `_synthetic_inputs()` + `AWCICalculator().calculate()`
+    directly at each named level, since the demo pattern is a
+    continuous analytic function with no native-level restriction).
+
+    Each level's real interpolated temperature/wind_speed/
+    specific_humidity (`interpolated_state_at_pressure()` above) is fed
+    into a real `AWCICalculator.calculate()` call - the returned
+    `module_scores`/`physical_score`/`forecast_score` are therefore
+    real outputs of a real formula applied to real (interpolated, not
+    fabricated) inputs, the same as every other per-point score in this
+    dashboard.
+
+    Parameters
+    ----------
+    target_pressures_hpa : dict
+        {level_label: hpa}, e.g. `awci_dashboard._ALL_VERTICAL_PROFILE_LEVELS_HPA`.
+    calc : AWCICalculator, optional
+        Reused across all levels if given (avoids rebuilding
+        WeightsManager state per level); a fresh default instance is
+        built otherwise.
+
+    Returns
+    -------
+    dict
+        {level_label: {"hpa", "result", "interpolation"}} - only for
+        labels whose target pressure was actually bracketed by this
+        real column's native levels. A label whose target lies outside
+        that range (this column's real vertical extent does not reach
+        it) is honestly OMITTED, never filled with an extrapolated or
+        fabricated value.
+    """
+    calc = calc if calc is not None else AWCICalculator()
+    profile: dict[str, dict[str, Any]] = {}
+    for label, hpa in target_pressures_hpa.items():
+        state = interpolated_state_at_pressure(volume, lat, lon, hpa)
+        if state is None:
+            continue
+        result = calc.calculate(
+            {
+                "temperature": state["temperature"],
+                "wind_speed": state["wind_speed"],
+                "specific_humidity": state["specific_humidity"],
+                "pressure": state["pressure"],
+            }
+        )
+        profile[label] = {"hpa": hpa, "result": result, "interpolation": state}
+    return profile

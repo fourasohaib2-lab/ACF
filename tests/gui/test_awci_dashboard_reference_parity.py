@@ -144,6 +144,76 @@ def test_vertical_profile_now_also_covers_the_real_standard_pressure_levels(qapp
         assert 0.0 <= profile[label] <= 100.0
 
 
+def test_vertical_profile_in_real_physics_mode_uses_real_interpolation(qapp):
+    """future-improvements.md #9, closed 2026-09-04 - priority freely
+    chosen ("continue"). Real Physics mode must now also populate the
+    same standard-level/flight-level bars, via real log-pressure
+    interpolation (acf.awci.vertical_field.
+    vertical_profile_at_standard_levels()) between the real volume's
+    own native solver levels - not the demo mode's own
+    _synthetic_inputs() path."""
+    dashboard = AWCIDashboard()
+    dashboard._on_real_physics_ready(_real_volume())
+
+    dashboard._open_vertical_profile()
+
+    profile = dashboard._vertical_profile_widget._profile
+    assert profile  # at least the real point's own native-range levels got a real bar
+    for level_label, score in profile.items():
+        assert 0.0 <= score <= 100.0
+        # Same real value the click-to-detail dialog itself reads back -
+        # one real computation, not two that could silently drift apart.
+        assert dashboard._vertical_profile_data[level_label]["result"]["awci"] == pytest.approx(score)
+
+
+def test_vertical_profile_in_real_physics_mode_never_shows_a_level_it_did_not_really_bracket(qapp):
+    """Real, deliberate refusal to extrapolate - the dialog must only
+    ever show labels vertical_profile_at_standard_levels() actually
+    returned (see interpolated_state_at_pressure()'s own docstring for
+    when it refuses: a target pressure outside this point's real native
+    column). EarthGrid's fixed real levels currently always span
+    ~2013->1 hPa regardless of n_levels, so every §51 standard/flight
+    level happens to fall inside that range for THIS solver
+    configuration - this test locks in the real subset/no-crash
+    contract itself (via a real function-level cross-check), not a
+    specific omission, since the omission path already has its own
+    direct unit tests in test_awci_vertical_field.py."""
+    from acf.awci.vertical_field import vertical_profile_at_standard_levels
+    from acf.gui.dashboard.awci_dashboard import _ALL_VERTICAL_PROFILE_LEVELS_HPA
+
+    dashboard = AWCIDashboard()
+    volume = _real_volume(n_levels=3, steps=1)
+    dashboard._on_real_physics_ready(volume)
+
+    dashboard._open_vertical_profile()
+
+    profile = dashboard._vertical_profile_widget._profile
+    lat, lon = dashboard._point_of_interest
+    expected_labels = set(
+        vertical_profile_at_standard_levels(volume, lat, lon, _ALL_VERTICAL_PROFILE_LEVELS_HPA).keys()
+    )
+    assert set(profile.keys()) == expected_labels
+    for score in profile.values():
+        assert 0.0 <= score <= 100.0
+
+
+def test_vertical_profile_switching_from_real_physics_back_to_demo_recomputes(qapp):
+    """Real regression guard: toggling Real Physics off must not leave
+    the vertical-profile dialog showing stale interpolated data - the
+    next _open_vertical_profile() call while back in demo mode must use
+    _synthetic_inputs() again."""
+    dashboard = AWCIDashboard()
+    dashboard._on_real_physics_ready(_real_volume())
+    dashboard._open_vertical_profile()
+    assert dashboard._real_physics_active is True
+
+    dashboard._real_physics_active = False  # same real flag refresh()/_open_vertical_profile() itself reads
+    dashboard._open_vertical_profile()
+
+    profile = dashboard._vertical_profile_widget._profile
+    assert "FL100" in profile and "FL320" in profile  # demo mode's own full level list, unconstrained by any real column
+
+
 def test_vertical_profile_levels_are_in_real_altitude_order(qapp):
     """Real regression guard for the widget's own ordering fix: labels
     must appear in real descending-pressure (ascending-altitude) order,

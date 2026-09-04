@@ -4897,3 +4897,62 @@ lors de cette relecture — cette 3e passe de polish clôt le point
 pour les seuls contrôles réellement interactifs (pas un balayage ARIA
 complet du dépôt, toujours hors périmètre — voir
 `future-improvements.md`).
+
+## Mise à jour 2026-09-04 — §51 fermé aussi en mode Real Physics : vraie interpolation log-pression
+
+Suite explicite ("continue"). `future-improvements.md` listait 9 items
+volontairement non construits ; 8 restent des choix architecturaux
+réels et disclosed (moteur de recommandation, calendrier, WebGL,
+balayage ARIA complet, Ellrod-Knapp, etc.). Le point #9 — le profil
+vertical par niveaux standards (§51) restait démo uniquement, le mode
+Real Physics ne l'offrait pas — était le seul des 9 réellement
+constructible sans nouveau travail de physique lourd : il ne manquait
+qu'une vraie interpolation verticale entre les niveaux natifs réels du
+solveur, jamais construite ailleurs dans ACF.
+
+**Construit** : `acf.awci.vertical_field.interpolated_state_at_pressure()`
+— une vraie interpolation linéaire en log-pression (pratique standard
+de la météorologie opérationnelle, pas une donnée inventée) de
+température/vent/humidité entre les 2 vrais niveaux natifs du solveur
+qui encadrent réellement la pression cible, à la colonne réelle la
+plus proche du point demandé. Refus explicite d'extrapoler : une
+pression cible hors de l'étendue verticale réelle de cette colonne
+renvoie `None` plutôt qu'une valeur devinée. `vertical_profile_at_
+standard_levels()` applique ceci à chaque niveau nommé de §51
+(Surface/850/700/500/300/250 hPa + niveaux de vol réels) et fait
+passer chaque état interpolé par un vrai appel
+`AWCICalculator.calculate()` — les `module_scores`/`physical_score`/
+`forecast_score` retournés sont donc une vraie sortie d'une vraie
+formule appliquée à une entrée réelle (interpolée, jamais fabriquée),
+exactement comme tous les autres scores per-point de ce dashboard.
+`AWCIDashboard._open_vertical_profile()` bascule maintenant sur cette
+fonction en mode Real Physics au lieu de refuser d'offrir la liste de
+niveaux standards ; le mode démo reste bit-identique (son propre motif
+analytique continu n'a jamais eu besoin de cette restriction).
+
+**Validation réelle** : 9 nouveaux tests — 6 sur
+`acf.awci.vertical_field` (valeur interpolée égale exactement au
+niveau natif réel quand la cible tombe pile dessus ; valeur interpolée
+réellement comprise entre ses 2 vrais niveaux natifs encadrants ;
+refus réel d'extrapoler hors de la vraie colonne ; recalcul croisé
+`AWCICalculator.calculate()` sur les mêmes entrées interpolées
+retournées, confirmant que ce n'est pas un second calcul indépendant ;
+omission honnête d'un niveau hors de portée réelle) et 3
+d'intégration dashboard (le dialogue Real Physics utilise bien cette
+vraie interpolation et pas le chemin démo ; les seuls labels affichés
+sont exactement ceux réellement retournés par la fonction — aucun des
+12 forcé artificiellement ; retour au mode démo après désactivation de
+Real Physics recalcule bien tout, sans donnée interpolée périmée).
+Suite complète **3968 → 3976**, `ruff`/`mypy` propres sur les 1435
+fichiers. Capture d'écran
+réelle envoyée : profil vertical à 12 barres réelles en mode Real
+Physics (grille ALADIN 10×18×6, seed=2), valeurs variant réellement
+entre niveaux (9.0/8.3/8.3/8.6/8.8/8.8/8.7/8.7/8.7/8.6 — jamais une
+valeur plate répétée).
+
+**Ce qui reste réellement** : les 8 autres items de
+`future-improvements.md` restent hors périmètre pour les mêmes
+raisons déjà disclosed (travail de physique séparé, ou décision
+architecturale délibérée). L'interpolation reste horizontalement au
+plus proche voisin (pas d'interpolation spatiale lat/lon) — même
+convention que `vertical_profile_at_point()` et le reste du dashboard.

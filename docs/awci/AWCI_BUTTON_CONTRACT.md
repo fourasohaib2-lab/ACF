@@ -19,7 +19,7 @@ is needed beyond that.
 | `alerts_button` | 🔔 Alerts (`<n>`) | explains the real elevated-risk + live-METAR-flag source | never | none | opens/raises `AWCIAlertsDialog` | none (reads already-computed real state) |
 | `execution_report_button` (built 2026-09-03, §75) | 📊 Report | explains the real §75 per-execution report | never | none | opens/raises `AWCIExecutionReportDialog`, `.refresh(self._last_awci_result)` | none (reads already-computed real state — `AWCIResult.quality`, real since this same closure) |
 | `view_mode_global_radio` / `_regional_radio` / `_cross_section_radio` | Global / Regional / Vertical Cross-Section | — | never | none | `AWCIMapPanel.set_extent()` | none |
-| `vertical_profile_button` | 🔍 See Vertical Profile | explains the real per-FL scores | never | none | opens/refreshes `AWCIVerticalProfile` dialog | none |
+| `vertical_profile_button` | 🔍 See Vertical Profile | explains the real per-FL scores | never | none | opens/refreshes `AWCIVerticalProfile` dialog — demo mode: real per-level `_synthetic_inputs()`; Real Physics mode (added 2026-09-04, closes `future-improvements.md` #9): real log-pressure interpolation between the volume's own native levels, a level outside that real column's native range honestly omitted | none |
 | `compare_fl_button` | 🛩 Compare FL280/FL320 / 🛩 Hide FL280/FL320 Comparison | explains the real second sample and its cost | never | none | `AWCIRouteChart.set_comparison_series()`/`clear_comparison_series()` | none |
 | Zoom in/out (`+`/`−`) | — | "Zoom in"/"Zoom out" | never | none | `MapCamera.zoom_in/out()` | none |
 | Reset view (`⤢`) | — | "Reset view" | never | none | `MapCamera.reset()`/panel's own default extent | none |

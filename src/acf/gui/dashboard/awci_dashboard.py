@@ -88,7 +88,7 @@ from acf.awci.path_sampling import (
 from acf.awci.pipeline import quality_for_awci_point_data
 from acf.awci.result import AWCIResult, build_awci_result
 from acf.awci.temporal_field import compute_real_complexity_evolution
-from acf.awci.vertical_field import compute_real_complexity_volume
+from acf.awci.vertical_field import compute_real_complexity_volume, vertical_profile_at_standard_levels
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
 from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDialog
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
@@ -138,11 +138,14 @@ _VERTICAL_PROFILE_LEVELS_HPA = {
 # freely chosen from the 90-section exhaustive audit's own remaining ⚠️
 # gaps. "Surface" is the real ICAO/ISA standard sea-level pressure
 # (1013.25 hPa) - a real, disclosed meteorological convention, not a
-# guessed round number. Real Physics mode cannot honestly offer these
-# (see acf.awci.vertical_field's own docstring: no vertical
-# interpolation exists anywhere in ACF today, only native solver
-# levels) - this list is demo mode only, see _open_vertical_profile()'s
-# own comment.
+# guessed round number. Real Physics mode now also offers these (added
+# 2026-09-04, closes future-improvements.md #9) via real log-pressure
+# interpolation between the real volume's own native solver levels -
+# see acf.awci.vertical_field.vertical_profile_at_standard_levels()'s
+# own docstring and _open_vertical_profile()'s own comment; a level
+# outside the real volume's own native vertical extent at the current
+# point is honestly omitted from that dialog rather than shown with a
+# guessed value.
 _STANDARD_PRESSURE_LEVELS_HPA: dict[str, float] = {
     "Surface": 1013.25,
     "850 hPa": 850.0,
@@ -1185,14 +1188,18 @@ class AWCIDashboard(QWidget):
         everywhere else in this dashboard, just called at more than one
         level.
 
-        Demo mode only, always - even while Real Physics mode is
-        active. acf.awci.vertical_field's own real volume has no
-        vertical interpolation (native solver levels only, see that
-        module's own docstring) - it cannot honestly answer "what is
-        the real value at exactly 500 hPa", so §51's own standard-
-        pressure-level list is not offered for that mode here; the
-        real Level slider (native solver levels) already covers Real
-        Physics mode's own vertical axis."""
+        Real Physics mode (added 2026-09-04, closes
+        future-improvements.md #9): now ALSO offers this same standard-
+        level/flight-level list, via real log-pressure linear
+        interpolation between the real volume's own native solver
+        levels (acf.awci.vertical_field.vertical_profile_at_standard_levels()
+        - see that function's own docstring for why this is real
+        interpolation, not fabrication, and why a level outside the
+        real volume's own native vertical extent at this point is
+        honestly omitted rather than shown with a guessed value). Demo
+        mode keeps its own original bit-identical path (the continuous
+        analytic pattern has no native-level restriction to interpolate
+        around in the first place)."""
         if self._vertical_profile_window is None:
             self._vertical_profile_window = QDialog(self)
             self._vertical_profile_window.setWindowTitle("AWCI – Vertical Profile")
@@ -1215,11 +1222,19 @@ class AWCIDashboard(QWidget):
         # already makes for the composite score - never a second/
         # recomputed value.
         self._vertical_profile_data = {}
-        for level_label, hpa in _ALL_VERTICAL_PROFILE_LEVELS_HPA.items():
-            raw = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=hpa)
-            result = AWCICalculator().calculate(raw)
-            profile[level_label] = result["awci"]
-            self._vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
+        if self._real_physics_active and self._real_volume is not None:
+            lat, lon = self._point_of_interest
+            for level_label, entry in vertical_profile_at_standard_levels(
+                self._real_volume, lat, lon, _ALL_VERTICAL_PROFILE_LEVELS_HPA
+            ).items():
+                profile[level_label] = entry["result"]["awci"]
+                self._vertical_profile_data[level_label] = {"hpa": entry["hpa"], "result": entry["result"]}
+        else:
+            for level_label, hpa in _ALL_VERTICAL_PROFILE_LEVELS_HPA.items():
+                raw = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=hpa)
+                result = AWCICalculator().calculate(raw)
+                profile[level_label] = result["awci"]
+                self._vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
         assert self._vertical_profile_widget is not None  # for mypy - always built above
         self._vertical_profile_widget.set_profile(profile)
 
