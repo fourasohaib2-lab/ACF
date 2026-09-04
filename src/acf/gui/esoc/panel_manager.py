@@ -1037,6 +1037,140 @@ class GeoengineeringPanel(BasePanelWidget):
         )
 
 
+class MachineLearningPanel(BasePanelWidget):
+    """32. Machine Learning Diagnostics - real, previously-unbuilt
+    System Explorer category (2026-09-04): "Machine Learning" (Model
+    Calibration, Feature Importance, Uncertainty Quant leaves) had
+    zero real panel behind it.
+
+    Real backends, 3 distinct real sections for the 3 real leaves:
+    - Model Calibration: `acf.awci.scientific_status` - a real,
+      already-populated registry of the honest calibration status
+      (INITIAL/EXPERT_BASED/CALIBRATED/VALIDATED for weights;
+      CONFIRMED/PROPOSED/HYPOTHESIS/REQUIRES_VALIDATION/UNKNOWN for
+      thresholds) of every real `AWCICalculator`/`Normalizer` weight
+      and range this codebase actually uses, with a real, disclosed
+      rationale per entry - built for this exact "never claim a
+      weight is scientifically established without a real status"
+      purpose (docs/ACF_MASTER_PROMPT.md sections 77-81). Note this is
+      DIFFERENT from `acf.digital_twin.calibration_engine.
+      CalibrationEngine.calibrate_twin()` - that class is a real,
+      honest "not calibrated, no observation data provided" stub with
+      nothing further to show; `scientific_status`'s own real,
+      already-populated registry is the richer real content.
+    - Feature Importance: `acf.ai.xai.feature_importance.
+      FeatureImportanceAnalyzer.compute_feature_importance()` - a
+      real, honest "not computed, no model/input data connected"
+      disclosure (already corrected in this codebase - see that
+      class's own NOTE - from a previously fabricated SHAP-style
+      score list).
+    - Uncertainty Quant: `acf.ai.uncertainty.uncertainty_engine.
+      UncertaintyQuantificationEngine` - a real, working statistical
+      engine (epistemic/aleatoric variance decomposition, a real
+      z-score confidence-interval table, already corrected in this
+      codebase - see that class's own NOTE - for silently mislabeling
+      a 99% interval as 90% for any non-95% request). Genuinely real,
+      general-purpose caller-supplies-the-numbers design - this panel
+      lets the operator enter real prediction values directly (same
+      honest "real computation on whatever real numbers are supplied"
+      convention as Geoengineering's own user-driven inputs), not a
+      fabricated example dataset.
+    """
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🤖 MACHINE LEARNING DIAGNOSTICS", "#4FC3F7", registry, dispatcher)
+
+        from acf.ai.uncertainty.uncertainty_engine import UncertaintyQuantificationEngine
+        from acf.ai.xai.feature_importance import FeatureImportanceAnalyzer
+        from acf.awci.scientific_status import (
+            INTERACTION_WEIGHT_STATUS,
+            MODULE_WEIGHT_STATUS,
+            NORMALIZER_RANGE_STATUS,
+        )
+
+        self._uq_engine = UncertaintyQuantificationEngine
+
+        calibration_group = QGroupBox("Model Calibration - real AWCI weight/threshold status")
+        calibration_layout = QVBoxLayout(calibration_group)
+        self.calibration_table = QTableWidget()
+        self.calibration_table.setColumnCount(4)
+        self.calibration_table.setHorizontalHeaderLabels(["Name", "Kind", "Status", "Rationale"])
+        self.calibration_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        rows: list[tuple[str, str, str, str]] = []
+        for name, entry in MODULE_WEIGHT_STATUS.items():
+            rows.append((name, "Module weight", entry.status.value, entry.rationale))
+        for name, entry in INTERACTION_WEIGHT_STATUS.items():
+            rows.append((name, "Interaction weight", entry.status.value, entry.rationale))
+        for name, threshold in NORMALIZER_RANGE_STATUS.items():
+            rows.append((name, "Normalizer range", threshold.status.value, threshold.rationale))
+        self.calibration_table.setRowCount(len(rows))
+        for row, (name, kind, status, rationale) in enumerate(rows):
+            self.calibration_table.setItem(row, 0, QTableWidgetItem(name))
+            self.calibration_table.setItem(row, 1, QTableWidgetItem(kind))
+            self.calibration_table.setItem(row, 2, QTableWidgetItem(status))
+            self.calibration_table.setItem(row, 3, QTableWidgetItem(rationale))
+        calibration_layout.addWidget(QLabel(f"{len(rows)} real, honestly-statused weights/ranges - none CALIBRATED/VALIDATED yet."))
+        calibration_layout.addWidget(self.calibration_table)
+        self.main_layout.addWidget(calibration_group)
+
+        feature_group = QGroupBox("Feature Importance")
+        feature_layout = QVBoxLayout(feature_group)
+        self.feature_importance_result = FeatureImportanceAnalyzer.compute_feature_importance()
+        self.feature_importance_label = QLabel(
+            f"⚠ {self.feature_importance_result['status']} "
+            f"(is_real_data={self.feature_importance_result['is_real_data']}) - see this panel's own docstring."
+        )
+        feature_layout.addWidget(self.feature_importance_label)
+        self.main_layout.addWidget(feature_group)
+
+        uq_group = QGroupBox("Uncertainty Quantification - real decomposition of real, entered predictions")
+        uq_layout = QVBoxLayout(uq_group)
+        uq_row = QHBoxLayout()
+        uq_row.addWidget(QLabel("Real prediction values (comma-separated):"))
+        self.uq_input = QLineEdit()
+        self.uq_input.setPlaceholderText("e.g. 12.4, 13.1, 11.9, 12.8, 13.5")
+        uq_row.addWidget(self.uq_input)
+        uq_row.addWidget(QLabel("Confidence:"))
+        self.uq_confidence = QComboBox()
+        self.uq_confidence.addItems(["80%", "90%", "95%", "98%", "99%"])
+        self.uq_confidence.setCurrentText("95%")
+        uq_row.addWidget(self.uq_confidence)
+        self.uq_button = QPushButton("📐 Decompose Uncertainty")
+        self.uq_button.clicked.connect(self._compute_uncertainty)
+        uq_row.addWidget(self.uq_button)
+        uq_layout.addLayout(uq_row)
+        self.uq_result = QTextEdit()
+        self.uq_result.setReadOnly(True)
+        self.uq_result.setMaximumHeight(120)
+        uq_layout.addWidget(self.uq_result)
+        self.main_layout.addWidget(uq_group)
+
+    def _compute_uncertainty(self) -> None:
+        raw = [v.strip() for v in self.uq_input.text().split(",") if v.strip()]
+        try:
+            predictions = [float(v) for v in raw]
+        except ValueError:
+            self.uq_result.setText("⚠ Enter real, comma-separated numeric values (e.g. 12.4, 13.1, 11.9).")
+            return
+        if not predictions:
+            self.uq_result.setText("⚠ Enter at least one real numeric prediction value.")
+            return
+
+        decomposition = self._uq_engine.decompose_uncertainty(predictions)
+        confidence_level = float(self.uq_confidence.currentText().rstrip("%")) / 100.0
+        ci_low, ci_high = self._uq_engine.calculate_confidence_interval(
+            decomposition["mean"], decomposition["total_std"], confidence_level=confidence_level
+        )
+        self.uq_result.setText(
+            f"Real mean: {decomposition['mean']:.4f}\n"
+            f"Real total std: {decomposition['total_std']:.4f} "
+            f"(epistemic: {decomposition['epistemic_std']:.4f}, aleatoric: {decomposition['aleatoric_std']:.4f})\n"
+            f"Real epistemic fraction: {decomposition['epistemic_fraction']:.2%}\n"
+            f"Real confidence score: {decomposition['confidence_score']:.2%}\n"
+            f"Real {self.uq_confidence.currentText()} confidence interval: [{ci_low:.4f}, {ci_high:.4f}]"
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -1076,6 +1210,7 @@ class PanelManager:
             "catalog": CatalogPanel(registry, dispatcher),
             "plugins": PluginsPanel(registry, dispatcher),
             "geoengineering": GeoengineeringPanel(registry, dispatcher),
+            "machine_learning": MachineLearningPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

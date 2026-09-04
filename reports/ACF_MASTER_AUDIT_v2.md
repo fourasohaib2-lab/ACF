@@ -7253,3 +7253,47 @@ catégorie/feuille "Geoengineering"). Suite complète réexécutée :
 
 **Ce qui reste réellement** : Products, Reports, Output, Machine
 Learning restent à construire.
+
+## Mise à jour 2026-09-04 (suite) — Phase 28 (Machine Learning) : 3 vraies sections pour 3 vraies feuilles
+
+**Investigation** : `acf.digital_twin.calibration_engine.
+CalibrationEngine.calibrate_twin()` est le même genre de stub honnête
+("pas calibré, aucune donnée d'observation fournie") - pas assez riche.
+Trouvé bien mieux : `acf.awci.scientific_status` - un vrai registre déjà
+peuplé du statut honnête de calibration (INITIAL/EXPERT_BASED/
+CALIBRATED/VALIDATED pour les poids ; CONFIRMED/PROPOSED/HYPOTHESIS/
+REQUIRES_VALIDATION/UNKNOWN pour les seuils) de CHAQUE poids/plage réel
+qu'`AWCICalculator`/`Normalizer` utilise réellement, avec une vraie
+justification disclosed par entrée (26 entrées réelles au total) -
+construit précisément pour cet usage (docs/ACF_MASTER_PROMPT.md
+sections 77-81). `acf.ai.xai.feature_importance.
+FeatureImportanceAnalyzer` est un vrai stub honnête ("pas calculé,
+aucun modèle/donnée connecté", déjà corrigé d'une fabrication SHAP
+antérieure). `acf.ai.uncertainty.uncertainty_engine.
+UncertaintyQuantificationEngine` est un vrai moteur statistique
+fonctionnel (décomposition épistémique/aléatoire, intervalle de
+confiance avec une vraie table de z-scores, déjà corrigée d'un vrai
+bug où toute confiance ≠ 95% recevait silencieusement le mauvais
+z-score).
+
+**Construit** : `MachineLearningPanel` (`panel_manager.py`) - 3
+sections réelles et distinctes : un vrai tableau des 26 statuts de
+calibration réels (Model Calibration), la vraie disclosure honnête
+"non calculé" (Feature Importance), et un vrai calculateur interactif
+d'incertitude - l'opérateur saisit de vraies valeurs de prédiction
+réelles, calcul réel de la décomposition + intervalle de confiance
+(Uncertainty Quant). Wiré dans `_CATEGORY_LABEL_TO_PANEL_NAME` et
+`PanelManager.panels` (32e panneau).
+
+**Validation réelle** : `ruff`/`mypy` propres. 8 nouveaux tests dédiés
+(`tests/test_esoc_machine_learning_panel.py` - tableau de calibration
+complet et cross-vérifié ligne par ligne, disclosure honnête qu'aucun
+poids n'est calibré/validé, disclosure Feature Importance vérifiée,
+décomposition d'incertitude cross-vérifiée contre le vrai moteur,
+résultat qui varie authentiquement avec l'entrée réelle, rejet honnête
+d'une entrée non-numérique/vide) + 1 test de routage dans
+`tests/test_esoc.py` (31→32 panneaux). Suite complète réexécutée :
+4245 → 4254 tests, tous verts.
+
+**Ce qui reste réellement** : Products, Reports, Output restent à
+construire.
