@@ -7619,3 +7619,52 @@ plausible).
 bandeaux de vignettes Dynamics/Thermodynamics Lab ; le sélecteur
 "Domain" ; la petite grille colorée d'indices de stabilité de la
 maquette.
+
+## Mise à jour 2026-09-05 (suite) — Phase 35 : le 3e et dernier panneau latéral permanent, "Forecast Consistency"
+
+**Pourquoi / décision déléguée** : avant de construire ce panneau,
+une question a été posée à l'utilisateur car la maquette admet 2
+lectures réelles différentes (cohérence multi-modèles vs cohérence
+temporelle entre runs successifs "Sun N, N-1, N-2") - l'utilisateur a
+répondu "à toi de voir l'idéal et efficace et rentable", déléguant le
+choix. Retenu : la cohérence multi-modèles, car elle réutilise
+directement un vrai moteur déjà construit et testé (`ModelConsensus
+Engine.compute_real_multi_model_disagreement_field()`, déjà utilisé
+par Confidence Lab), alors que la cohérence temporelle aurait exigé de
+construire un vrai historique de runs entièrement nouveau, non testé
+ailleurs, et resterait vide tant que l'utilisateur n'a pas cliqué
+"Run" plusieurs fois.
+
+**Construit** : `acf_workstation_forecast_consistency_panel.
+ACFForecastConsistencyWidget` - un vrai bouton "▶ Compare AROME/
+ALADIN/ARPEGE" à la demande (jamais automatique - coût réel de 3 vrais
+runs solveur indépendants), affichant un vrai diagramme en barres de
+la vraie valeur moyenne du champ de chaque modèle réel, plus le vrai
+spread d'ensemble en texte. Reste "Not yet computed" tant qu'il n'a
+pas été cliqué - indépendant du volume principal du Workstation, même
+convention que Confidence Lab/CAPE-CIN.
+
+**Divulgation honnête** : l'axe de la maquette porte littéralement
+"Sun N, N-1, N-2" (runs de prévision successifs dans le temps) ; ce
+Workstation n'a aucun vrai historique de runs archivés pour comparer
+(chaque champ vient d'un run solveur en direct, jamais d'un produit
+NWP archivé) - la cohérence MODÈLE-à-modèle construite ici est une
+vraie mesure déjà existante, sur un axe réel différent de celui
+littéralement affiché par la maquette, explicitement disclosed plutôt
+que de fabriquer un historique.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 4
+nouveaux tests sur le widget
+(`tests/gui/test_acf_workstation_forecast_consistency_panel.py`,
+incluant un test de vrai run hors-thread via `qtbot.waitUntil`), 1
+nouveau test d'intégration confirmant qu'il reste indépendant du
+volume principal (`tests/gui/test_acf_workstation.py`). Capture
+d'écran réelle confirmant les 3 panneaux latéraux ensemble, avec un
+vrai diagramme en barres après un vrai clic sur "Compare".
+
+**Ce qui reste réellement** : les 3 panneaux latéraux permanents de la
+maquette sont maintenant tous réels et présents. Restent : le Global
+Timeline avec vignettes ; les bandeaux de vignettes Dynamics/
+Thermodynamics Lab ; le sélecteur "Domain" ; la petite grille colorée
+d'indices de stabilité de la maquette ; le "Map Inspector" au clic sur
+la carte ; le panneau "Layers/Domains" (couches raster/vecteur).

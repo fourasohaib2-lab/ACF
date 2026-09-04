@@ -254,6 +254,20 @@ def test_on_volume_ready_populates_the_real_interaction_graph(qapp):
     assert ws.interaction_graph_panel.status()["has_edges"] is True
 
 
+def test_forecast_consistency_panel_is_present_and_starts_uncomputed(qapp):
+    """Real Phase 35 regression guard (2026-09-05): the third
+    always-visible-slot side panel exists and stays honestly
+    "Not yet computed" until its own real on-demand run - it is NOT
+    tied to the main "🔄 Run" volume."""
+    ws = ACFWorkstation()
+
+    assert ws.forecast_consistency_panel.status() == {"has_result": False}
+
+    ws._on_volume_ready(_real_volume())
+
+    assert ws.forecast_consistency_panel.status() == {"has_result": False}
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

@@ -459,6 +459,30 @@ fabricated convection proxy. Re-sliced in `_on_volume_ready()`/
 `_on_level_changed()` alongside the sounding panel (measured ~50ms at
 AROME's own full 90x180 grid - cheap, no new solver run).
 
+Phase 35 (2026-09-05, user delegated the design choice - "à toi de
+voir l'idéal et efficace et rentable" - after being asked whether this
+panel should compare models or successive forecast runs) built the
+third and last always-visible-slot side panel: **Forecast
+Consistency** (`acf_workstation_forecast_consistency_panel.
+ACFForecastConsistencyWidget`) - reuses `ModelConsensusEngine.
+compute_real_multi_model_disagreement_field()` exactly as Confidence
+Lab's own on-demand button already does (one real solver run per real
+model, regridded, real ensemble spread/mean), drawn here as a compact
+real bar chart of each real model's own mean field value plus the real
+ensemble spread as text. Stays on-demand (its own "▶ Compare" button,
+not automatic) - same real-cost discipline as every other genuinely
+expensive computation in this Workstation, and NOT tied to the main
+"🔄 Run" volume (same "stays whatever it was" convention as Confidence
+Lab / CAPE/CIN). Honest disclosure: the mockup's own literal x-axis
+label reads "Sun N, N-1, N-2" (successive forecast RUNS over time) -
+this Workstation has no real archived forecast-run history to compare
+against (every field is a live solver run, never an archived NWP
+product) - built as real MODEL-to-model consistency instead, a
+genuine, already-built measure along a different real axis, disclosed
+rather than faking a run history. All 3 mockup side panels are now
+real and present; only the mockup's own small stability-index color
+grid stays deferred (see Phase 33's own disclosure above).
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -515,6 +539,7 @@ from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPa
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
+from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
 from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
@@ -864,6 +889,15 @@ class ACFWorkstation(QWidget):
         self.interaction_graph_panel.setMinimumWidth(260)
         self.interaction_graph_panel.setMaximumWidth(340)
         right_col.addWidget(self.interaction_graph_panel, stretch=1)
+        # Real Forecast Consistency (added Phase 35, 2026-09-05) - see
+        # acf_workstation_forecast_consistency_panel.py's own module
+        # docstring for exactly what it shows (real multi-model
+        # consistency, on demand - not automatic, and not a run-to-run
+        # history this Workstation has no real archive to back).
+        self.forecast_consistency_panel = ACFForecastConsistencyWidget()
+        self.forecast_consistency_panel.setMinimumWidth(260)
+        self.forecast_consistency_panel.setMaximumWidth(340)
+        right_col.addWidget(self.forecast_consistency_panel, stretch=1)
         body.addLayout(right_col)
 
         for panel in self._panel_by_name.values():
