@@ -354,7 +354,17 @@ class EarthMonitoringPanel(BasePanelWidget):
 
 
 class EarthPhysicsPanel(BasePanelWidget):
-    """10. Earth System Physics Panel."""
+    """10. Earth System Physics Panel.
+
+    Extended 2026-09-05 with a real, searchable Scientific Encyclopedia
+    browser (`acf.science.encyclopedia.registry.EncyclopediaRegistry`,
+    a real, populated 299-entry formula database) - a real,
+    previously-missing capability: this real 299-entry database had no
+    ESOC-side browser anywhere before this (only reachable via the ACF
+    Scientific Workstation's own small "Scientific Explorer" dialog,
+    which this reuses the exact same real `search()`/`list_entries()`
+    calls as). The original 4 hardcoded equations above are kept
+    unchanged - a genuine addition, never a replacement."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("⚛️ EARTH SYSTEM PHYSICS & CONTINUUM MECHANICS", "#81C784", registry, dispatcher)
@@ -368,6 +378,43 @@ class EarthPhysicsPanel(BasePanelWidget):
             "• Ocean Seawater EOS: rho = rho0 * [1 - alpha*(T-T0) + beta*(S-S0)]"
         )
         self.main_layout.addWidget(self.info)
+
+        from acf.science.encyclopedia.registry import EncyclopediaRegistry
+
+        self._encyclopedia = EncyclopediaRegistry
+
+        header = QLabel(f"📖 Scientific Encyclopedia — {self._encyclopedia.count()} real entries")
+        header.setStyleSheet("font-weight: bold; font-size: 12px; color: #81C784;")
+        self.main_layout.addWidget(header)
+
+        self.encyclopedia_search = QLineEdit()
+        self.encyclopedia_search.setPlaceholderText("Search real entries (name, domain, equation)…")
+        self.encyclopedia_search.textChanged.connect(self._search_encyclopedia)
+        self.main_layout.addWidget(self.encyclopedia_search)
+
+        self.encyclopedia_results = QTextEdit()
+        self.encyclopedia_results.setReadOnly(True)
+        self.main_layout.addWidget(self.encyclopedia_results, stretch=1)
+
+        self._render_encyclopedia_entries(self._encyclopedia.list_entries())
+
+    def _search_encyclopedia(self, text: str) -> None:
+        entries = self._encyclopedia.search(text) if text.strip() else self._encyclopedia.list_entries()
+        self._render_encyclopedia_entries(entries)
+
+    def _render_encyclopedia_entries(self, entries: list[Any]) -> None:
+        if not entries:
+            self.encyclopedia_results.setPlainText("No matching real entries.")
+            return
+        blocks = []
+        for entry in entries[:50]:
+            blocks.append(
+                f"{entry.name} ({entry.domain}/{entry.subdomain})\n"
+                f"  {entry.equation}\n"
+                f"  {entry.description}\n"
+                f"  References: {', '.join(entry.references) if entry.references else 'n/a'}"
+            )
+        self.encyclopedia_results.setPlainText("\n\n".join(blocks))
 
 
 class ForecastPanel(BasePanelWidget):

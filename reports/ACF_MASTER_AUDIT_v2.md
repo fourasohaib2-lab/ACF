@@ -8146,3 +8146,40 @@ restent non mappées - "Atmosphere"/"Biosphere"/"Land Surface"/
 Preferences"/"API Keys" (aucun backend réel). Le fichier Encyclopédie
 et `acf.model4d` restent les 2 chantiers d'investigation les plus
 substantiels.
+
+## Mise à jour 2026-09-05 (suite) — Phase 47 : navigateur réel de l'Encyclopédie Scientifique dans ESOC
+
+**Pourquoi** : ferme le premier des 2 chantiers d'investigation
+identifiés en fin de Phase 46. Le fichier Encyclopédie (299 entrées
+réelles) n'avait aucun point d'accès côté ESOC - seul le petit
+dialogue "Scientific Explorer" du Workstation ACF y donnait accès.
+Aucune feuille de l'arbre System Explorer ne correspond
+thématiquement à "Encyclopédie" - plutôt que d'inventer une nouvelle
+feuille dans l'arbre, extension du panneau existant le plus proche
+conceptuellement : `EarthPhysicsPanel` ("⚛️ EARTH SYSTEM PHYSICS &
+CONTINUUM MECHANICS", déjà réel, déjà routé depuis la catégorie
+"Earth Physics").
+
+**Construit** : `EarthPhysicsPanel` étendu avec un vrai navigateur de
+recherche (`EncyclopediaRegistry.search()`/`list_entries()`, mêmes
+appels réels que le dialogue "Scientific Explorer" du Workstation) -
+champ de recherche réel + affichage des entrées réelles correspondantes
+(nom, domaine/sous-domaine, équation, description, références). Les 4
+équations codées en dur d'origine du panneau sont conservées
+inchangées - un vrai ajout, jamais un remplacement.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 5
+nouveaux tests (`tests/test_esoc_earth_physics_panel.py`), incluant
+une vérification explicite que le contenu d'origine reste intact, une
+contre-vérification directe contre `EncyclopediaRegistry`, et un cas
+de recherche sans résultat honnêtement affiché (jamais fabriqué).
+Note réelle et honnête découverte en testant : une recherche du terme
+anglais "vorticity" ne trouve rien (la base est en grande partie en
+français, "vorticité"/"tourbillon") - comportement réel et attendu du
+moteur de recherche existant, pas un bug introduit ici.
+
+**Ce qui reste réellement** : `acf.model4d` (19 385 lignes réelles
+totalement déconnectées) reste le dernier chantier d'investigation
+substantiel identifié. Les 6 feuilles ESOC mortes restantes (Earth
+System x4, Settings x2) nécessitent soit un gros chantier solveur,
+soit n'ont aucun backend réel.
