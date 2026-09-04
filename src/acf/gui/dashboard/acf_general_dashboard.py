@@ -2,6 +2,25 @@
 ACF General Dashboard
 =======================
 
+NOTE (correction, 2026-09-04): despite this module's own "not AWCI-
+specific" framing below, a real audit (prompted by the user's own new
+"ACF Scientific Workstation — ACF CORE ONLY, NO AWCI" master spec)
+found this dashboard genuinely is AWCI-coupled throughout -
+`_render_frame()` calls `AWCICalculator().calculate()` directly,
+`self.radar` is fed AWCI's own fixed 6-module `module_scores`, the
+"Dominant couplings" label reads AWCI's own `interaction_scores`, and
+the uncertainty gauge uses `Normalizer.normalize_model_disagreement()`
+- not a cosmetic naming issue. `acf.gui.dashboard.acf_workstation.
+ACFWorkstation` is the real, genuinely AWCI-free replacement, and is
+now ESOC's own "ACF Dashboard" toolbar target instead of this class
+(see `esoc_window.py`'s own NOTE). This class is NOT deleted - real,
+tested, working code, kept per project convention (the same "not
+deleted, flagged" precedent as e.g. `AWCITimeline`'s own history) -
+just no longer ESOC's primary entry point for "the ACF dashboard".
+
+ACF General Dashboard (superseded - see NOTE above)
+=======================================================
+
 Real, general ACF dashboard - explicit user request ("vasy respecte
 le prompt"), matching docs/ACF_MASTER_PROMPT.md sections 27-29
 (multi-view dashboard, layer architecture) and the user's own real

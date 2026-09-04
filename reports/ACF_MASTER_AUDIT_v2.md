@@ -5441,3 +5441,173 @@ déjà construite, testée et montrée à l'utilisateur à de nombreuses
 reprises sans objection — une refonte rétroactive de cette ampleur
 reste une vraie décision séparée à confirmer explicitement avant
 d'être entreprise, pas à deviner.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 1 : un dashboard ACF Core réellement sans AWCI
+
+L'utilisateur a fourni un mockup photoréaliste ("ACF SCIENTIFIC
+WORKSTATION") et sa propre spécification en 70 sections
+("ACF — ATMOSPHERIC COMPLEXITY FRAMEWORK — MASTER SCIENTIFIC
+DASHBOARD — ACF CORE ONLY — NO AWCI"), demandant un dashboard
+entièrement nouveau exposant la science propre d'ACF (Dynamics,
+Thermodynamics, Convection, Microphysics, Terrain, Temporal Evolution,
+Forecast Confidence, un Interaction Engine, un Complexity Explorer
+multidimensionnel) — avec une règle répétée explicitement (§21, §67) :
+**aucun score composite unique de type AWCI nulle part**. La spec
+demandait elle-même (§70) d'inspecter intégralement le repository
+avant de construire, progressivement, sans rien détruire ni fabriquer.
+
+**Pourquoi** : 3 agents Explore lancés en parallèle avant tout plan
+(même discipline que §70) ont établi un constat déterminant :
+`ACFGeneralDashboard` — malgré son nom "général" — n'est en réalité
+**pas** sans AWCI : son score par point, son radar 6 axes, son
+étiquette "dominant couplings" et sa jauge d'incertitude sont
+littéralement la sortie de `AWCICalculator.calculate()`
+(`module_scores`, `interaction_scores`,
+`Normalizer.normalize_model_disagreement`) — du vrai code fonctionnel,
+mais couplé à AWCI de bout en bout, pas un problème cosmétique de
+nommage. Impossible donc de simplement "nettoyer" ce dashboard
+existant pour en faire un ACF Core réel : une construction neuve était
+nécessaire. Deux questions de clarification ont confirmé auprès de
+l'utilisateur : (1) le nouveau Workstation **remplace**
+`ACFGeneralDashboard` comme point d'entrée "🌐 ACF Dashboard" de
+l'ESOC (`ACFGeneralDashboard`/`ACFGeneralDashboardWindow` ne sont pas
+supprimés — conservés et documentés comme supersédés, même convention
+que le reste du projet) ; (2) une approche progressive a été retenue
+vu l'ampleur de la spec — chrome + Overview + Dynamics Lab +
+Complexity Explorer pour cette passe, le reste listé dans la nav comme
+"(planned)" plutôt que silencieusement omis.
+
+**Construit** :
+- **`ACFWorkstation`** (`acf_workstation.py`) — le chrome réel :
+  sélecteur de **Model** réel (AROME/ALADIN/ARPEGE, les vraies clés de
+  `MODEL_CONFIGS`, correspondant exactement au mockup), bouton "🔄 Run"
+  déclenchant un vrai `QRunnable`/`QThreadPool` qui appelle
+  `compute_real_complexity_volume()` (un vrai `CoupledEarthSolver`,
+  jamais un calcul fabriqué), un vrai slider de niveau (les niveaux
+  natifs réels du volume calculé), un bouton ⛶ plein écran réel, un
+  bouton ⚙ Settings honnêtement désactivé ("not yet implemented").
+  Nav "ACF CORE" listant Overview/Dynamics/Complexity comme réels et
+  activés, et 7 modules (Thermodynamics, Convection, Microphysics,
+  Terrain, Temporal, Confidence, Interactions) visiblement présents
+  mais désactivés avec l'étiquette "(planned)" — la vraie feuille de
+  route disclosed, ni cachée ni fabriquée. Discipline "calculer une
+  fois, re-découper à chaque interaction" : changer de niveau ne
+  relance jamais le solveur (vérifié par un test qui fait échouer
+  volontairement tout second appel).
+- **`ACFOverviewPanel`** — Température / Vitesse du vent / Humidité
+  spécifique / Pression réelles au niveau sélectionné, sur la carte
+  partagée `AWCIMapPanel` reconfigurée (légende retitrée, aucune
+  jauge/score).
+- **`ACFDynamicsLabPanel`** — vitesse du vent réelle, **vorticité
+  relative** et **divergence** réelles, calculées en vectorisant sur
+  la vraie grille lat/lon via `np.gradient` (espacement métrique
+  standard `dx = R·cos(lat)·dλ`, `dy = R·dφ`) puis en appelant
+  **verbatim** `VorticityCalculator.compute_relative_vorticity()` et
+  `Divergence.calculate()` (les mêmes classes déjà testées ailleurs
+  dans le projet, jamais réimplémentées).
+- **`ACFComplexityExplorerPanel`** — la règle "pas de score unique"
+  appliquée littéralement : trois dimensions réelles, séparées, jamais
+  combinées — **complexité spatiale** (magnitude du gradient de
+  température, proxy structurel disclosed comme défini par ACF, pas
+  publié), **complexité temporelle** (taux de variation réel via
+  `compute_real_complexity_evolution()`, jamais son champ
+  `awci_evolution`), et **désaccord multi-modèle**
+  (`ModelConsensusEngine.compute_real_multi_model_disagreement()`,
+  réutilisé tel quel). Les deux dernières sont calculées à la demande
+  (boutons "🔄 Run Temporal Analysis" / "🔄 Compute Model Disagreement"),
+  hors thread principal.
+- **`esoc_toolbar.py`/`esoc_window.py`** — l'action "🌐 ACF Dashboard"
+  devient "🔬 ACF Scientific Workstation", ouvrant désormais
+  `ACFWorkstationWindow`. `ACFGeneralDashboard`/
+  `ACFGeneralDashboardWindow` conservés avec une note de correction
+  disclosant leur supersession, comportement inchangé, suite de tests
+  existante intacte.
+
+**3 vrais bugs trouvés et corrigés**, aucun par simple lecture de
+tests qui passaient déjà mais par vérification active (captures
+d'écran réelles, tests de stress) :
+1. **Cycle de vie du colorbar matplotlib** : `Colorbar.remove()`
+   plantait au second redraw (`self.axis.clear()` invalide sa propre
+   référence à l'axe d'origine, `ax=` comme `cax=` ne changent rien —
+   `fig.colorbar()` enregistre en interne la même méthode fragile).
+   Corrigé via `self.figure.delaxes(self._colorbar.ax)`, qui contourne
+   entièrement le nettoyage interne de `Colorbar`. Vérifié par un test
+   de stress de 40 redraws (10 cycles × 4 variables), zéro fuite
+   d'axes.
+2. **Singularité aux pôles** : une vraie grille solveur couvre
+   réellement -90° à 90°. `cos(lat)=0` aux pôles rend `dx_per_row`
+   exactement nul — `nonzéro/0 = inf` en numpy (pas `NaN`), ce qui
+   produisait une "vorticité" réelle mais absurde (~1e10 s⁻¹),
+   visuellement confirmé par une échelle de colorbar totalement
+   faussée (tout le globe reteinté par cette valeur aberrante, à cause
+   aussi d'un second bug : `contourf(levels=20, vmin=, vmax=)` ne
+   fait pas ce qu'on croit — `levels` en entier laisse matplotlib
+   dériver les bornes des niveaux depuis les extrêmes réels des
+   données, `vmin`/`vmax` ne renormalisent que la couleur, sans
+   jamais borner les niveaux tracés). Corrigé en deux temps : un
+   masquage explicite `dx_per_row < 1m → NaN` (seuil physique réel :
+   le pôle lui-même) dans `acf_workstation_dynamics.py`, et le passage
+   d'un tableau explicite `levels=np.linspace(vmin, vmax, 21)` (au
+   lieu d'un entier) dans `awci_map_panel.py` dès qu'un appelant
+   fournit un vrai `vmin`/`vmax`, avec `extend="both"` pour écrêter
+   visuellement les valeurs hors bornes sans jamais fausser l'échelle.
+   Nouveau test de régression
+   `test_pole_rows_are_honestly_nan_not_a_huge_finite_blowup`.
+   Re-vérifié par capture d'écran : colorbar correcte à ±0.00018 s⁻¹,
+   un ordre de grandeur synoptique réel et plausible.
+3. **Fuite du motif de démonstration synthétique d'AWCI** : découvert
+   en relisant une capture d'écran du Complexity Explorer — la carte
+   "TEMPORAL COMPLEXITY" affichait un vrai contour coloré et texturé
+   alors même que son propre statut affichait encore "Not yet
+   computed" et que le bouton "🔄 Run Temporal Analysis" n'avait
+   jamais été cliqué dans le script de rendu. Cause réelle :
+   `AWCIMapPanel.update_data()` retombe automatiquement sur
+   `awci_grid()` (le motif synthétique propre à AWCI) dès que
+   `self._external_field` vaut `None` — un comportement correct et
+   disclosed pour le dashboard AWCI lui-même, mais une vraie violation
+   du principe central "aucun contenu AWCI nulle part" pour un panneau
+   du Workstation pas encore alimenté en données réelles : l'utilisateur
+   aurait vu un motif fabriqué, habillé en donnée réelle. Corrigé par
+   un nouveau paramètre additif `show_demo_fallback: bool = True` au
+   constructeur d'`AWCIMapPanel` (défaut `True`, comportement inchangé
+   pour tous les appelants AWCI existants, vérifié un par un) ; les 4
+   panneaux-cartes du Workstation (`ACFOverviewPanel.map_panel`,
+   `ACFDynamicsLabPanel.map_panel`,
+   `ACFComplexityExplorerPanel.spatial_map`/`temporal_map`) passent
+   désormais `show_demo_fallback=False`, ce qui fait retomber
+   `update_data()` sur une grille entièrement `NaN` (même géométrie,
+   même chemin de rendu `contourf`/colorbar — matplotlib affiche
+   nativement un `NaN` comme un trou transparent, jamais un plantage)
+   plutôt que sur le motif fabriqué. 4 nouveaux tests de régression
+   (`tests/test_awci_map_panel_demo_fallback.py`) : comportement AWCI
+   par défaut inchangé, carte réellement vierge quand désactivé, un
+   vrai champ externe s'affiche toujours correctement une fois fourni.
+   Re-vérifié par capture d'écran avant/après clic sur
+   "Run Temporal Analysis" : carte vierge honnête d'abord, vraies
+   données réelles ensuite.
+
+**Validation réelle** : `ruff check`/`.venv/bin/mypy` propres sur
+chaque fichier neuf/modifié. Suite complète de la carte partagée
+(`AWCIMapPanel`) : 89 → 93 tests, tous verts, aucune régression pour
+les appelants AWCI existants. 4 nouveaux fichiers de tests pour le
+Workstation (helpers vorticité/divergence contre un cas analytique
+connu et contre les vraies classes `VorticityCalculator`/`Divergence`
+directement ; helpers de complexité spatiale/temporelle ; chrome GUI —
+sélecteurs, nav activé/désactivé, worker réel hors thread, discipline
+"calcul unique" ; action toolbar ESOC de bout en bout). Captures
+d'écran réelles envoyées : Overview, Dynamics Lab (vorticité), et
+Complexity Explorer avant/après calcul de la complexité temporelle,
+confirmant visuellement l'état honnête "Not yet computed" puis les
+vraies données.
+
+**Ce qui reste réellement** : conformément à la liste "explicitement
+différé" du plan approuvé — Thermodynamics/Convection/Microphysics/
+Terrain/Temporal/Confidence Labs, Interaction Engine + graphe
+d'interaction, Multi-Model Lab en page propre, Data Quality Center, vue
+3D/4D, Case Study Lab, Research Mode, Configuration Management, palette
+de commandes (Ctrl+K), raccourcis clavier, export (PNG/SVG/CSV/JSON),
+extension de l'API `/api/v1/*` pour ces nouveaux modules, et le
+programme complet de tests visuels/accessibilité en 6 types — aucun
+n'est construit dans cette passe, chacun a sa propre raison honnête de
+ne pas l'être (backend réel manquant, ou simplement hors du périmètre
+borné de cette étape), aucun n'est silencieusement abandonné.

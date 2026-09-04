@@ -48,11 +48,15 @@ class ESOCToolbar(QToolBar):
             # reach: the 28th (last) tab of the bottom dock, and a button inside
             # the Classic View window. This opens AWCIDashboardWindow directly.
             ("✈️ AWCI", "open_awci_dashboard"),
-            # The general, multi-lead-time ACF research dashboard
-            # (docs/ACF_MASTER_PROMPT.md sections 27-29, docs/reference/
-            # acf_dashboard_reference.jpg) - distinct from the AWCI-only
-            # dashboard above. Opens ACFGeneralDashboardWindow.
-            ("🌐 ACF Dashboard", "open_acf_general_dashboard"),
+            # The real, AWCI-free "ACF Scientific Workstation"
+            # (docs/reference/acf_dashboard_reference.jpg) - distinct
+            # from the AWCI-only dashboard above. Opens
+            # ACFWorkstationWindow. NOTE (correction, 2026-09-04): this
+            # used to open ACFGeneralDashboardWindow - a real audit
+            # found that dashboard genuinely AWCI-coupled despite its
+            # "general ACF" name (see acf_general_dashboard.py's own
+            # NOTE) - repointed to the real AWCI-free replacement.
+            ("🔬 ACF Scientific Workstation", "open_acf_workstation"),
             # Real acf.awci.spatial_field.compute_real_complexity_field()
             # overlay on THIS window's central map (explicit user
             # request "ajoute la 4eme dimension au niveau d'affichage

@@ -2,8 +2,14 @@
 ACF General Dashboard Window
 ==============================
 
-Standalone QMainWindow hosting the ACFGeneralDashboard widget, so it can
-be opened/raised from ESOC's "🌐 ACF Dashboard" toolbar action - same
+NOTE (correction, 2026-09-04): no longer ESOC's "ACF Dashboard"
+toolbar target - see acf_general_dashboard.py's own NOTE (the
+dashboard it hosts turned out to be AWCI-coupled despite its name;
+acf_workstation_window.ACFWorkstationWindow is the real, genuinely
+AWCI-free replacement now wired there). Kept, not deleted, per project
+convention - real, tested, working code.
+
+Standalone QMainWindow hosting the ACFGeneralDashboard widget - same
 open-or-raise pattern already used for AWCIDashboardWindow
 (acf.gui.dashboard.awci_window).
 """

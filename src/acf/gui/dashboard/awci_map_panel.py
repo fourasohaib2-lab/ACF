@@ -64,6 +64,7 @@ from typing import Any
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.patches import Rectangle
 from PySide6.QtCore import QEvent, Qt, Signal
@@ -134,6 +135,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         show_legend: bool = False,
         show_info_boxes: bool = False,
         show_layers_panel: bool = False,
+        show_demo_fallback: bool = True,
     ) -> None:
         """
         Parameters
@@ -145,10 +147,21 @@ class AWCIMapPanel(EventMixin, QWidget):
             fabricated forecast valid-time) and "FLIGHT LEVEL" boxes.
         show_layers_panel : add the floating Layers checkbox panel
             (only "AWCI" is a real toggle - see class/module docstring).
+        show_demo_fallback : whether update_data() may fall back to
+            AWCI's own synthetic demo pattern (awci_grid()) when no
+            real external field has been set via set_external_field()
+            yet. Defaults to True, preserving every existing AWCI
+            caller's real behaviour exactly. Added 2026-09-04 for the
+            AWCI-free ACF Scientific Workstation
+            (acf.gui.dashboard.acf_workstation*), whose panels must
+            never silently display AWCI's fabricated demo content
+            before their own real data exists - those callers pass
+            False and get an honest all-NaN (blank) map instead.
         """
         super().__init__(parent)
         self._title = title
         self._extent = extent
+        self._show_demo_fallback = show_demo_fallback
         self._flight_path: list[tuple[float, float, str]] = []  # (lat, lon, label)
         self._city_labels: list[tuple[float, float, str]] = []  # (lat, lon, name) - see set_city_labels()
         self._point_marker: tuple[float, float] | None = None
@@ -253,6 +266,17 @@ class AWCIMapPanel(EventMixin, QWidget):
         #: counterpart there).
         self._external_layer_grids: dict[str, Any] | None = None
         self._base_title = title
+        #: Real, optional non-AWCI rendering overrides for
+        #: set_external_field() (added 2026-09-04 for the AWCI-free ACF
+        #: Scientific Workstation - see that method's own docstring).
+        #: None means "keep this panel's own established real AWCI 0-100
+        #: AWCI_CMAP behavior" - zero change for every existing AWCI
+        #: caller, which never sets these.
+        self._external_field_cmap: Any = None
+        self._external_field_vmin: float | None = None
+        self._external_field_vmax: float | None = None
+        self._external_field_colorbar_label: str | None = None
+        self._colorbar: Any = None
 
         if show_layers_panel:
             self._build_layers_panel()
@@ -622,21 +646,51 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._point_marker_awci = awci_score
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
-    def set_external_field(self, lons: list[float], lats: list[float], grid: Any, label: str) -> None:
+    def set_external_field(
+        self,
+        lons: list[float],
+        lats: list[float],
+        grid: Any,
+        label: str,
+        cmap: Any = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
+        colorbar_label: str | None = None,
+    ) -> None:
         """
         Show a field this panel did not compute itself - e.g. a real
         acf.awci.spatial_field.compute_real_complexity_field() result -
         instead of the synthetic demo pattern. `label` is shown in the
         panel title (e.g. "REAL PHYSICS") so it's never ambiguous which
         kind of field is on screen. Redraws immediately.
+
+        cmap/vmin/vmax/colorbar_label (added 2026-09-04 for the
+        AWCI-free ACF Scientific Workstation, `acf_workstation_*.py`):
+        real, opt-in overrides for a real physical field whose own
+        range is not the fixed 0-100 AWCI score scale (e.g. temperature
+        in K, wind speed in m/s) - every existing AWCI caller leaves
+        these None and keeps this panel's own real AWCI_CMAP/0-100
+        behavior unchanged. `colorbar_label` additionally draws a real
+        matplotlib colorbar (with that real variable name+unit) instead
+        of this panel's own "AWCI SCALE" legend - construct with
+        `show_legend=False` alongside it, since the two legends serve
+        the same purpose and drawing both would be redundant/confusing.
         """
         self._external_field = (lons, lats, grid)
+        self._external_field_cmap = cmap
+        self._external_field_vmin = vmin
+        self._external_field_vmax = vmax
+        self._external_field_colorbar_label = colorbar_label
         self._title = f"{self._base_title} — {label}"
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def clear_external_field(self) -> None:
         """Revert to the synthetic demo pattern (awci_grid())."""
         self._external_field = None
+        self._external_field_cmap = None
+        self._external_field_vmin = None
+        self._external_field_vmax = None
+        self._external_field_colorbar_label = None
         self._title = self._base_title
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
@@ -687,7 +741,7 @@ class AWCIMapPanel(EventMixin, QWidget):
 
         if self._external_field is not None:
             lons, lats, grid = self._external_field
-        else:
+        elif self._show_demo_fallback:
             lons, lats, grid = awci_grid(
                 lat_step=step,
                 lon_step=step,
@@ -696,17 +750,84 @@ class AWCIMapPanel(EventMixin, QWidget):
                 lon_range=lon_range,
                 time_offset_hours=time_offset_hours,
             )
+        else:
+            # Real, honest "nothing computed yet" state (added
+            # 2026-09-04 for the AWCI-free ACF Scientific Workstation -
+            # show_demo_fallback=False) - AWCIMapPanel's own default
+            # synthetic-demo-pattern fallback is correct/disclosed for
+            # AWCI's own dashboard, but would otherwise silently show
+            # fabricated AWCI-flavoured content on a Workstation panel
+            # before its own real data has ever been set. An all-NaN
+            # grid reuses the exact same real contourf/colorbar code
+            # path below (never a second render path to maintain) and
+            # matplotlib already renders NaN as a transparent gap - a
+            # genuinely blank map, not a fabricated one.
+            demo_lons, demo_lats, demo_grid = awci_grid(
+                lat_step=step, lon_step=step, flight_level_hpa=flight_level_hpa,
+                lat_range=lat_range, lon_range=lon_range, time_offset_hours=time_offset_hours,
+            )
+            lons, lats, grid = demo_lons, demo_lats, np.full_like(demo_grid, np.nan)
         # alpha raised from 0.75 to 0.88 (2026-09-03, visual-fidelity pass
         # against docs/reference/awci_dashboard_reference.jpg) - the flat
         # dark LAND/OCEAN facecolors above were desaturating the real
         # AWCI_CMAP colors more than the reference's own more saturated
         # heatmap; still low enough that coastline/border lines remain
         # visible underneath, not a fully opaque overlay.
+        field_cmap = self._external_field_cmap if self._external_field_cmap is not None else AWCI_CMAP
+        field_vmin = self._external_field_vmin if self._external_field_vmin is not None else 0
+        field_vmax = self._external_field_vmax if self._external_field_vmax is not None else 100
+        # NOTE (correction, found while smoke-testing the ACF
+        # Scientific Workstation): `levels=20` (a plain int) makes
+        # matplotlib auto-compute contour level BOUNDARIES from the
+        # real DATA's own min/max - vmin/vmax only rescale the colour
+        # NORMALIZATION, they do NOT clip which levels get drawn. A
+        # real field with a genuine outlier (even a single real
+        # non-finite/extreme cell, e.g. a pole-adjacent numerical
+        # singularity) then stretched the whole real colour scale to
+        # match it. Passing explicit level BOUNDARIES (real
+        # np.linspace(vmin, vmax, 21)) whenever a caller supplied a
+        # real vmin/vmax makes the rendered range always match the
+        # real physical range that was actually intended - existing
+        # AWCI callers (vmin/vmax always None here) are unaffected,
+        # still get the original plain `levels=20` behaviour.
+        has_explicit_range = self._external_field_vmin is not None or self._external_field_vmax is not None
+        levels: Any = np.linspace(field_vmin, field_vmax, 21) if has_explicit_range else 20
+        # extend="both" (real out-of-range values clip to the end
+        # colour instead of leaving a gap) only for callers that
+        # opted into an explicit real vmin/vmax - the original
+        # extend="neither" (matplotlib's own default) is unchanged for
+        # every existing AWCI caller.
         self._contour = self.axis.contourf(
-            lons, lats, grid, levels=20, cmap=AWCI_CMAP, vmin=0, vmax=100, alpha=0.88, transform=ccrs.PlateCarree()
+            lons, lats, grid, levels=levels, cmap=field_cmap, vmin=field_vmin, vmax=field_vmax,
+            extend="both" if has_explicit_range else "neither", alpha=0.88, transform=ccrs.PlateCarree(),
         )
         if self._show_layers_panel and hasattr(self, "awci_layer_checkbox"):
             self._contour.set_visible(self.awci_layer_checkbox.isChecked())
+
+        # Real, opt-in colorbar for a non-AWCI physical field (added
+        # 2026-09-04 - see set_external_field()'s own docstring).
+        # NOTE (correction, found while smoke-testing the ACF
+        # Scientific Workstation): both fig.colorbar(..., ax=self.axis)
+        # AND fig.colorbar(..., cax=<independent axes>) register a real
+        # matplotlib-internal "_remove_method" on the colorbar's own
+        # axes that still calls Colorbar.remove() under the hood -
+        # which itself calls `self.ax.get_subplotspec()` on the
+        # ORIGINAL mappable's axes (self.axis) to restore its "stolen"
+        # layout space. self.axis.clear() above invalidates that
+        # reference before the NEXT redraw's cleanup runs, so both a
+        # plain `colorbar.remove()` and an `Axes.remove()` on its own
+        # axes raised a real AttributeError two real redraws in. Fixed
+        # by bypassing Colorbar's own cleanup entirely -
+        # `figure.delaxes()` just removes the axes from the figure's
+        # own list, no stolen-space bookkeeping to (fail to) restore.
+        if self._colorbar is not None:
+            self.figure.delaxes(self._colorbar.ax)
+            self._colorbar = None
+        if self._external_field_colorbar_label:
+            cax = self.figure.add_axes((0.92, 0.15, 0.02, 0.7))
+            self._colorbar = self.figure.colorbar(self._contour, cax=cax)
+            self._colorbar.set_label(self._external_field_colorbar_label, color="#c9d6e8", fontsize=8)
+            self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=7)
 
         # Real extra layers (Wind/Turbulence/Icing/Convection/CAPE/
         # Clouds) - see _EXTRA_LAYER_SPECS' own docstring. Demo mode:
