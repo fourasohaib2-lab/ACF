@@ -8,13 +8,20 @@ the same class of "dead button" this project has repeatedly found and
 fixed elsewhere in ESOC. Fixed here by wiring a real
 `_on_sidebar_item_selected()` that switches `self.bottom_tabs` to the
 matching real `panel_manager.py` panel - but ONLY for labels verified
-below to correspond to one. Many tree labels (an entire "Catalog"/
-"Products"/"Reports"/"Output"/"Plugins" category's worth, plus several
-individual leaves under categories that do have a panel) have no real
-operational panel behind them at all - clicking those stays an honest
-no-op rather than a guessed/wrong navigation. See the two mapping
-tables' own docstring for exactly which labels were verified real and
-which were deliberately left unmapped.
+below to correspond to one. Many tree labels (originally an entire
+"Catalog"/"Products"/"Reports"/"Output"/"Plugins" category's worth,
+plus several individual leaves under categories that do have a panel)
+had no real operational panel behind them at all - clicking those
+stayed an honest no-op rather than a guessed/wrong navigation. See the
+two mapping tables' own docstring for exactly which labels were
+verified real and which were deliberately left unmapped.
+
+UPDATE (2026-09-04, same day): "Catalog" is real and wired now - see
+`CatalogPanel`'s own docstring in `panel_manager.py`. The other 4
+categories named above (Products/Reports/Output/Plugins) plus
+Geoengineering/Machine Learning (not originally named here) remain
+real, disclosed, in-progress work - each will be updated here as it
+gets a real panel, not silently left stale.
 """
 
 from typing import Any
@@ -74,6 +81,7 @@ _CATEGORY_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Earth Physics": "earth_physics",
     "Monitoring": "earth_monitoring",
     "Verification": "verification",
+    "Catalog": "catalog",
 }
 
 

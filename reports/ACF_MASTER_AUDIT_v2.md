@@ -7116,3 +7116,57 @@ réexécutée : 4224 → 4225 tests, tous verts.
 **Ce qui reste réellement** : plus aucun module de spec planifié, plus
 aucun bug connu, aucune tâche séparée en attente. Le Workstation est
 considéré fonctionnellement clos.
+
+## Mise à jour 2026-09-04 (suite) — Nouveau chantier : les 7 catégories ESOC sans panneau réel, Phase 25 (Catalog)
+
+**Pourquoi** : le Workstation étant clos, j'ai retrouvé un vrai gap
+disclosed dans une autre partie de l'app — mémoire
+`module-registry-wiring-fixed.md` : 7 catégories entières de l'arbre
+System Explorer d'ESOC (Catalog, Products, Reports, Output, Plugins,
+Geoengineering, Machine Learning) n'ont aucun panneau réel derrière
+elles — un clic mort sur chacune de leurs ~20 feuilles. Question posée
+à l'utilisateur (nouveau chantier, ampleur comparable au Workstation) ;
+réponse explicite : "Construire les panneaux ESOC". Même discipline que
+le Workstation : investiguer le vrai backend disponible avant de
+construire, jamais fabriquer, tenir l'utilisateur informé.
+
+**Investigation** : `ModuleRegistry` (déjà corrigé en amont de cette
+session) enregistre déjà plusieurs vrais backends pour ces catégories -
+`catalog` → `acf.catalog.manager.CatalogManager` (réel, vérifié),
+`plugins` → `acf.core.plugin_manager.PluginManager`, `geoengineering_
+lab` → `acf.digital_twin.geoengineering_lab.GeoengineeringLab`,
+`reports_generator` → `acf.reports.briefings.briefing_generator.
+BriefingGenerator`. Pour "Catalog" spécifiquement : `acf.standards.*`
+(wmo_tables.py, ecmwf_parameters.py, grib2_tables.py) sont de purs
+stubs de documentation SANS AUCUN CODE réel au-delà du docstring de
+module — un vrai piège à éviter. En revanche, `CatalogManager.
+scientific` (`acf.catalog.default_catalog.create_catalog()`) est un
+vrai catalogue populé de **64 vraies entrées** `CatalogEntry`
+(surface/atmosphère/océan/satellite/climat), chacune avec un vrai nom
+standard CF (Climate and Forecast conventions) et de vraies unités
+physiques.
+
+**Construit** : `CatalogPanel` (`panel_manager.py`) - un vrai tableau
+Qt réel des 64 entrées réelles, avec un vrai filtre de recherche en
+direct (parameter id / nom standard CF / catégorie). Disclosed
+honnêtement : les champs `grib_code`/`cf_name` existent dans le schéma
+mais sont réellement vides pour les 64 entrées de ce dépôt - affichés
+vides, jamais un code WMO/ECMWF inventé. Un seul panneau réel couvre
+les 3 feuilles (WMO Standards/CF-1.8 Conventions/ECMWF Parameters),
+même convention que Simulation/Forecast (pas de backend distinct par
+feuille). Wiré dans `_CATEGORY_LABEL_TO_PANEL_NAME` (`esoc_layout.py`)
+et `PanelManager.panels`. Nouveau `_not_connected_label()` réel et
+honnête pour le cas où le backend échoue réellement à se connecter.
+
+**Validation réelle** : `ruff`/`mypy` propres. 6 nouveaux tests dédiés
+(`tests/test_esoc_catalog_panel.py` - population réelle, cross-check
+ligne par ligne contre le vrai `CatalogManager`, filtre réel qui
+réduit puis restaure, disclosure honnête si déconnecté) + 2 tests dans
+`tests/test_esoc.py` (comptage de panneaux mis à jour 28→29, routage
+réel du clic sur la catégorie "Catalog" et sur une feuille spécifique).
+Suite complète réexécutée : 4225 → 4232 tests, tous verts.
+
+**Ce qui reste réellement** : Products, Reports, Output, Plugins,
+Geoengineering, Machine Learning restent à construire - chantier en
+cours, prochaine étape Plugins (backend simple et déjà réel,
+`PluginManager`).
