@@ -1919,6 +1919,75 @@ class MPIDomainTopologyPanel(BasePanelWidget):
         self.table.resizeColumnsToContents()
 
 
+class WorkspaceModesPanel(BasePanelWidget):
+    """40. Workspace Modes Catalog - real, previously-unbuilt System
+    Explorer leaf (2026-09-05): "Settings / Workspace Modes" had no
+    real panel behind it, even though the underlying feature
+    (`acf.gui.esoc.esoc_workspace.WorkspaceManager`) is real and
+    already fully wired elsewhere (`ESOCToolbar`'s own real "Workspace
+    Mode" combo box, `ESOCWindow._apply_mode()`). This panel is a
+    real, read-only reference browser over that SAME real class's own
+    10 real mode profiles (`primary_panel`/`visible_panels`/
+    `active_map_layers`/`description`) - not a second, independent
+    mode switcher.
+
+    Honest scope: actually switching the ACTIVE workspace mode only
+    happens via the toolbar's own real combo box
+    (`ESOCWindow._apply_mode()`). Every panel in this file is
+    constructed with `(registry, dispatcher)` only, with no real path
+    back to `ESOCWindow`'s own mode-application logic - wiring a
+    second, panel-level "Apply" button here would need new
+    `ESOCController`/`ESOCWindow` plumbing, a separate, larger change
+    not attempted in this pass to avoid touching that already-
+    sensitive file for this bounded improvement. "Layer Preferences"/
+    "API Keys" (this leaf's own siblings) stay unmapped - no real
+    settings-persistence backend exists anywhere in this codebase for
+    either, confirmed via search."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🗂️ WORKSPACE MODES CATALOG", "#26A69A", registry, dispatcher)
+
+        from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
+
+        self._workspace_mode_cls = WorkspaceMode
+        self._manager = WorkspaceManager()
+
+        note = QLabel(
+            "ℹ Read-only reference - use the toolbar's own \"Workspace Mode\" selector "
+            "to actually switch the active mode."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #90A4AE; font-size: 10px; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Mode:"))
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItems(self._manager.list_modes())
+        self.mode_selector.currentTextChanged.connect(self._show_profile)
+        row.addWidget(self.mode_selector)
+        self.main_layout.addLayout(row)
+
+        self.profile_text = QTextEdit()
+        self.profile_text.setReadOnly(True)
+        self.main_layout.addWidget(self.profile_text)
+
+        self._show_profile(self.mode_selector.currentText())
+
+    def _show_profile(self, mode_str: str) -> None:
+        for mode in self._workspace_mode_cls:
+            if mode.value == mode_str:
+                self._manager.current_mode = mode
+                break
+        profile = self._manager.get_current_profile()
+        self.profile_text.setText(
+            f"Real primary panel: {profile['primary_panel']}\n"
+            f"Real visible panels: {', '.join(profile['visible_panels'])}\n"
+            f"Real active map layers: {', '.join(profile['active_map_layers'])}\n\n"
+            f"{profile['description']}"
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -1966,6 +2035,7 @@ class PanelManager:
             "wildfires_panel": WildfiresPanel(registry, dispatcher),
             "aerosols_panel": AerosolsPanel(registry, dispatcher),
             "mpi_domain_topology": MPIDomainTopologyPanel(registry, dispatcher),
+            "workspace_modes": WorkspaceModesPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

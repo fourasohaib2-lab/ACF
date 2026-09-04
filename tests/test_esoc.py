@@ -78,7 +78,7 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 39
+    assert len(pm.list_panel_names()) == 40
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
@@ -86,6 +86,7 @@ def test_panel_manager(qapp):
     assert pm.get_panel("wildfires_panel") is not None
     assert pm.get_panel("aerosols_panel") is not None
     assert pm.get_panel("mpi_domain_topology") is not None
+    assert pm.get_panel("workspace_modes") is not None
     assert pm.get_panel("catalog") is not None
     assert pm.get_panel("plugins") is not None
     assert pm.get_panel("geoengineering") is not None
@@ -373,6 +374,17 @@ def test_clicking_mpi_domain_topology_switches_to_its_real_panel(qapp):
     layout._on_sidebar_item_selected("MPI Domain Topology", "HPC")
 
     assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("mpi_domain_topology")
+
+
+def test_clicking_workspace_modes_switches_to_its_real_panel(qapp):
+    """Real Phase 45 regression guard (2026-09-05): "Settings /
+    Workspace Modes" used to be a genuine dead click."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Workspace Modes", "Settings")
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("workspace_modes")
 
 
 def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):

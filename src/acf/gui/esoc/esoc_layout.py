@@ -37,6 +37,12 @@ UPDATE (2026-09-05, same day): "HPC / MPI Domain Topology" is real and
 wired now too - see `MPIDomainTopologyPanel`'s own docstring in
 `panel_manager.py` (real domain-splitting arithmetic only; real halo
 exchange is honestly unavailable, no MPI library is connected).
+
+UPDATE (2026-09-05, same day): "Settings / Workspace Modes" is real
+and wired now too - see `WorkspaceModesPanel`'s own docstring in
+`panel_manager.py` (a real, read-only reference browser; actually
+switching the active mode still only happens via `ESOCToolbar`'s own
+combo box - deliberately not duplicated here).
 """
 
 from typing import Any
@@ -91,6 +97,15 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     # (no real halo exchange - no MPI library is connected anywhere in
     # this codebase).
     "MPI Domain Topology": "mpi_domain_topology",
+    # Added 2026-09-05 (same investigation, Settings category): real,
+    # already-fully-functional feature elsewhere (ESOCToolbar's own
+    # "Workspace Mode" combo box) - this leaf gets a real, read-only
+    # reference browser instead (see WorkspaceModesPanel's own honest-
+    # scope docstring for why it doesn't also switch the active mode).
+    # "Layer Preferences"/"API Keys" (this leaf's own siblings) stay
+    # unmapped - no real settings-persistence backend exists for
+    # either anywhere in this codebase.
+    "Workspace Modes": "workspace_modes",
 }
 
 #: Real System Explorer top-level CATEGORY label -> real

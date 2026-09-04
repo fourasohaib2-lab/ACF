@@ -8074,3 +8074,40 @@ aucun navigateur ESOC dédié) et le paquet `acf.model4d` (19 385
 lignes réelles, totalement déconnecté du reste du code - zéro import
 externe confirmé) restent à investiguer plus en profondeur avant
 toute décision de construction.
+
+## Mise à jour 2026-09-05 (suite) — Phase 45 : "Workspace Modes" (Settings)
+
+**Pourquoi** : investigation de "Settings / Workspace Modes" a trouvé
+une fonctionnalité réelle et déjà pleinement fonctionnelle ailleurs
+(`acf.gui.esoc.esoc_workspace.WorkspaceManager`, déjà câblée dans le
+vrai sélecteur "Workspace Mode" de `ESOCToolbar`) - mais cette feuille
+précise de l'arbre n'y menait jamais.
+
+**Construit** : `WorkspaceModesPanel` (40e panneau) - un vrai
+navigateur en LECTURE SEULE sur les 10 vrais profils de mode déjà
+définis dans `WorkspaceManager` (panneau principal, panneaux visibles,
+couches de carte actives, description) - sélection réelle du mode à
+inspecter, jamais une seconde logique de bascule indépendante.
+
+**Divulgation honnête** : basculer le mode ACTIF ne se fait toujours
+que via le vrai sélecteur de `ESOCToolbar` - chaque panneau de ce
+fichier est construit avec seulement `(registry, dispatcher)`, sans
+chemin réel vers la logique de bascule de `ESOCWindow`. Câbler un
+second bouton "Appliquer" ici nécessiterait une nouvelle plomberie
+dans `ESOCController`/`ESOCWindow`, un changement séparé et plus large,
+non entrepris dans cette passe pour éviter de toucher ce fichier déjà
+sensible pour une amélioration bornée. "Layer Preferences"/"API Keys"
+(les feuilles sœurs) restent non mappées - aucun vrai backend de
+persistance de préférences n'existe nulle part dans ce code pour l'un
+ou l'autre, confirmé par recherche.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 4
+nouveaux tests (`tests/test_esoc_workspace_modes_panel.py`), incluant
+une vérification que les 10 vrais modes produisent chacun un vrai
+profil non vide. 1 nouveau test de routage. Compteur de panneaux ESOC
+mis à jour (39 → 40).
+
+**Ce qui reste réellement** : 10 des 15 feuilles mortes originales
+restent non mappées. Le fichier Encyclopédie et le paquet
+`acf.model4d` restent les 2 chantiers d'investigation les plus
+substantiels identifiés à ce jour.
