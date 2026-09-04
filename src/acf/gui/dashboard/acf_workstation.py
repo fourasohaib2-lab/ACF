@@ -176,10 +176,25 @@ Phase 14 (2026-09-04, same "continue" progressive discipline) added:
   isosurface. No geographic basemap (disclosed in its own title) -
   real longitude/latitude/pressure axes only.
 
-The remaining 2 spec modules (Convection/Terrain Labs - Case Study
-Lab, Research Mode etc. are larger, separate pieces of the master spec
-beyond the original "Labs" list) are listed in the left nav as real,
-visible, DISABLED "Planned" items - not silently omitted,
+Phase 15 (2026-09-04, same "continue" progressive discipline) added:
+- **Case Study Lab** (`acf_workstation_case_study.
+  ACFCaseStudyLabPanel`) - honest reinterpretation, not fabricated
+  data: this codebase has no real archived historical weather events
+  anywhere (`CoupledEarthSolver` always stands in for a real
+  operational model), so a "case" here is a real, named, reproducible
+  Workstation CONFIGURATION (reusing Phase 12's own `_export_
+  configuration()`/`_apply_configuration()`) the user bookmarks -
+  never a claim that a real historical event is being replayed. Same
+  "settings, never data" rule as Configuration Management: loading a
+  case still requires pressing "🔄 Run" for fresh real data. Saved
+  durably as real JSON under `<repo_root>/data/workstation/
+  case_studies.json` (same real `data/*` convention as
+  `events_router`/`datasets_router`'s own storage).
+
+The remaining 2 spec modules (Convection/Terrain Labs - Research Mode
+etc. is a larger, separate piece of the master spec beyond the
+original "Labs" list) are listed in the left nav as real, visible,
+DISABLED "Planned" items - not silently omitted,
 not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
@@ -250,6 +265,7 @@ from PySide6.QtWidgets import (
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_3d import ACF3DAtmospherePanel
+from acf.gui.dashboard.acf_workstation_case_study import ACFCaseStudyLabPanel
 from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
@@ -272,7 +288,7 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
     "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
-    "Interactions", "Quality", "Complexity", "3D View",
+    "Interactions", "Quality", "Complexity", "3D View", "Case Study",
 ]
 _PLANNED_MODULES = [
     "Convection", "Terrain",
@@ -436,6 +452,9 @@ class ACFWorkstation(QWidget):
         self.quality_panel = ACFDataQualityLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.atmosphere_3d_panel = ACF3DAtmospherePanel()
+        self.case_study_panel = ACFCaseStudyLabPanel(
+            export_configuration=self._export_configuration, apply_configuration=self._apply_configuration
+        )
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
@@ -447,6 +466,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.quality_panel)
         self.stack.addWidget(self.complexity_panel)
         self.stack.addWidget(self.atmosphere_3d_panel)
+        self.stack.addWidget(self.case_study_panel)
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
@@ -518,6 +538,7 @@ class ACFWorkstation(QWidget):
                 ("Compare Models (Multi-Model Lab)", self.multimodel_panel.run_button.click),
                 ("Save Configuration…", self._save_configuration),
                 ("Load Configuration…", self._load_configuration),
+                ("Save Current Configuration as Case…", self.case_study_panel.save_button.click),
             ]
         )
         return commands
@@ -719,6 +740,7 @@ class ACFWorkstation(QWidget):
         self.quality_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
         self.atmosphere_3d_panel.update_from_volume(self._volume, self._level_index)
+        self.case_study_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
 

@@ -6386,3 +6386,58 @@ restants (Convection, Terrain) ; Case Study Lab, Research Mode listés
 "(planned)" — "3D/4D" retirée de cette liste (la partie "4D" —
 évolution temporelle — était déjà couverte par le Temporal Evolution
 Lab de la Phase 4 ; cette passe ferme la partie "3D" restante).
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 15 : le Case Study Lab, une réinterprétation honnête
+
+Suite explicite ("continue"), même discipline progressive.
+
+**Pourquoi une "réinterprétation"** : le nom "Case Study Lab" du spec
+maître pourrait suggérer une bibliothèque d'événements météo
+HISTORIQUES réels (ex. "Tempête X, 12 mars 2024"). Ce codebase n'a
+aucune vraie donnée archivée opérationnelle nulle part —
+`CoupledEarthSolver` tient toujours lieu d'un modèle opérationnel réel,
+jamais d'une vraie archive (déjà disclosed à plusieurs reprises,
+notamment dans `ModelConsensusEngine.
+compute_real_multi_model_disagreement()`'s own honest_limitation).
+Construire une bibliothèque de "cas historiques" à partir de ça
+aurait signifié soit fabriquer des événements qui n'ont jamais eu
+lieu, soit faire passer une sortie de solveur en direct pour une
+archive réelle — exactement le genre d'erreur que les audits de ce
+projet existent pour attraper.
+
+**Construit** : **Case Study Lab**
+(`acf_workstation_case_study.ACFCaseStudyLabPanel`) — une vraie
+bibliothèque nommée de CONFIGURATIONS Workstation réelles et
+reproductibles (réutilise `_export_configuration()`/
+`_apply_configuration()` de la Phase 12), jamais une prétention qu'un
+véritable événement historique est rejoué. Un utilisateur peut
+sauvegarder la configuration courante sous un nom réel ("Vue fort
+cisaillement de vent"), la recharger, ou la supprimer — même règle
+"réglages, jamais données" que Configuration Management : charger un
+cas nécessite toujours de cliquer "🔄 Run" pour une vraie donnée
+fraîche. Persisté durablement en JSON réel sous
+`<repo_root>/data/workstation/case_studies.json` (même convention
+`data/*` réelle déjà établie par `events_router`/`datasets_router`).
+Chargement défensif réel : un fichier manquant ou corrompu redevient
+honnêtement une bibliothèque vide, jamais un crash. Ajouté à la nav
+(12ᵉ module) et à la Command Palette ("Save Current Configuration as
+Case…").
+
+**Validation réelle** : `ruff`/`mypy` propres. 10 nouveaux tests
+(`tests/gui/test_acf_workstation_case_study.py` — persistance
+JSON réelle testée directement, aller-retour complet sauvegarde→
+disque→lecture, dialogue annulé = aucun effet, sélection vide = erreur
+honnête) + mise à jour des tests d'intégration du chrome (nouvelle
+position dans la nav/le stack à 12 modules désormais). Vérifié aussi
+par un vrai script bout-en-bout (fichier JSON réel écrit sur disque,
+sélection réelle dans la liste, chargement réel qui change bien le
+modèle ARPEGE→ALADIN et restaure la vraie variable Dynamics
+sélectionnée). Suite complète **4157 → 4167**, toujours verte. Capture
+d'écran réelle envoyée : la liste avec un vrai cas sauvegardé, les 3
+boutons réels (Save/Load/Delete).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain — génuinement bloqués, aucune donnée réelle sans fabrication) ;
+Research Mode listé "(planned)", pièce plus large du spec maître hors
+de la liste originelle des "Labs".
