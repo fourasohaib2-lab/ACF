@@ -47,15 +47,19 @@ class ESOCLeftSidebar(QWidget):
     caller, `esoc_layout.py`) constructed it with zero arguments, so
     `_on_search_text_changed()` could only ever filter this widget's
     own static `self.categories` label tree. `ModuleRegistry.
-    global_search()`/`is_connected()` (fixed the same day this note was
-    written - see that module's own docstring) had, verified by a
-    repo-wide grep, ZERO real callers anywhere in the app. New optional
-    `registry` parameter closes that gap: when supplied, a real search
-    now also queries `registry.global_search()` and reports the real
-    match count/names beneath the search box - the tree's own static
-    filter is unchanged (still real, still useful for pure category
-    browsing), this is a real, additive second result, not a
-    replacement."""
+    global_search()`/`is_connected()`/`get_system_status_summary()`
+    (fixed the same day this note was written - see that module's own
+    docstring) had, verified by a repo-wide grep, ZERO real callers
+    anywhere in the app. New optional `registry` parameter closes that
+    gap two ways: a real search now also queries
+    `registry.global_search()` and reports the real match count/names
+    beneath the search box (the tree's own static filter is unchanged,
+    still real, still useful for pure category browsing - this is a
+    real, additive second result, not a replacement); and a real,
+    always-visible status line reports `registry.
+    get_system_status_summary()`'s own real connected-subsystem count
+    - this and global_search() were the last 2 pieces of ModuleRegistry
+    with no real GUI consumer anywhere; both now have one."""
 
     def __init__(
         self,
@@ -72,6 +76,32 @@ class ESOCLeftSidebar(QWidget):
         header = QLabel("📁 SYSTEM EXPLORER")
         header.setStyleSheet("font-weight: bold; font-size: 12px; color: #4FC3F7;")
         layout.addWidget(header)
+
+        # Real registry.get_system_status_summary() readout (added
+        # 2026-09-04) - this and global_search() below were, before
+        # this same day's closures, the last 2 pieces of ModuleRegistry
+        # API with zero real GUI consumers anywhere in the app (see
+        # module_registry.py's own docstring). A static snapshot taken
+        # once at construction time - ModuleRegistry itself has no
+        # "reconnect" concept, every registration already ran by the
+        # time this widget exists, so there is nothing real to refresh
+        # later. Hidden (not "0/0") when no registry was supplied.
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("color: #9fb0c9; font-size: 10px;")
+        self.status_label.setVisible(False)
+        layout.addWidget(self.status_label)
+        if self.registry is not None:
+            summary = self.registry.get_system_status_summary()
+            connected, total = summary["connected_count"], summary["total_modules"]
+            dot = "🟢" if connected == total else "🟡"
+            self.status_label.setText(f"{dot} {connected}/{total} real subsystems connected")
+            self.status_label.setToolTip(
+                "From ModuleRegistry.get_system_status_summary() - a real subsystem is "
+                "'connected' only when its actual class was found and instantiated; a "
+                "missing/renamed class honestly counts as not connected, never silently "
+                "hidden."
+            )
+            self.status_label.setVisible(True)
 
         search_box = QHBoxLayout()
         self.search_input = QLineEdit()

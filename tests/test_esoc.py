@@ -116,6 +116,23 @@ def test_esoc_left_sidebar_without_a_registry_has_no_fabricated_search_results(q
     assert sidebar.search_results_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
 
 
+def test_esoc_left_sidebar_without_a_registry_has_no_fabricated_status_line(qapp):
+    sidebar = ESOCLeftSidebar()
+    assert sidebar.status_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+
+def test_esoc_left_sidebar_shows_the_real_connectivity_status(qapp):
+    """Closes the last gap disclosed in ESOCLeftSidebar's own NOTE
+    (correction, 2026-09-04): get_system_status_summary() also had no
+    real GUI consumer anywhere before this."""
+    registry = ModuleRegistry()
+    sidebar = ESOCLeftSidebar(registry=registry)
+
+    assert not sidebar.status_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+    expected = registry.get_system_status_summary()
+    assert f"{expected['connected_count']}/{expected['total_modules']}" in sidebar.status_label.text()
+
+
 def test_esoc_left_sidebar_search_uses_the_real_module_registry(qapp):
     """Closes the gap disclosed in ESOCLeftSidebar's own NOTE
     (correction, 2026-09-04): the "🔍 Universal Search" placeholder

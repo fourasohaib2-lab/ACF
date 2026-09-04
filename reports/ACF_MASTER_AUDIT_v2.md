@@ -5286,3 +5286,40 @@ sur 20 différent réellement, HPC et Forecast) — non unifiées ici par
 prudence (le contenu HPC de la sidebar semble décrire des panneaux UI
 réels distincts des concepts infra du registre, une vraie nuance à
 vérifier avant de fusionner plutôt qu'à écraser).
+
+## Mise à jour 2026-09-04 (suite) — dernier gap fermé : un vrai indicateur de connectivité dans la sidebar ESOC
+
+Suite explicite ("continue"), fermeture du dernier point du "Ce qui
+reste réellement" ci-dessus : `get_system_status_summary()` restait
+sans consommateur GUI réel.
+
+**Construit** : une nouvelle ligne de statut toujours visible en haut
+de `ESOCLeftSidebar` (sous "📁 SYSTEM EXPLORER"), calculée une seule
+fois à la construction depuis `registry.get_system_status_summary()`
+— vrai décompte "🟢/🟡 X/Y real subsystems connected" (🟢 si tout est
+connecté, 🟡 sinon), avec un vrai tooltip expliquant honnêtement ce
+que "connecté" veut dire (une classe réellement trouvée et instanciée,
+jamais un simulacre). Snapshot statique et non rafraîchi
+délibérément : `ModuleRegistry` n'a aucune notion de "reconnexion",
+chaque enregistrement a déjà tourné au moment où ce widget existe — il
+n'y a rien de réel à rafraîchir plus tard. Honnêtement masquée quand
+aucun `registry` n'est fourni (même discipline que la ligne de
+recherche ajoutée juste avant).
+
+**Validation réelle** : vérifié à la main — `🟡 44/48 real subsystems
+connected` (48 = tous les modules enregistrés, y compris les ~23
+instanciés directement dans `_initialize_all_subsystems` en plus des
+25 `_safe_import_register()` ; 4 non connectés = exactement les 4
+domaines honnêtement non résolvables de la fermeture précédente). 2
+nouveaux tests (pas de ligne fabriquée sans registre, ligne réelle
+visible avec registre et décompte cohérent avec
+`get_system_status_summary()`). Suite complète **4018 → 4020**,
+`ruff`/`mypy` propres. Capture d'écran envoyée.
+
+**Ce qui reste réellement** : les 4 pièces de l'API `ModuleRegistry`
+identifiées comme sans consommateur GUI réel (`is_connected()`,
+`get_system_status_summary()`, `global_search()`, `search_index`) ont
+maintenant toutes un vrai appelant. Il ne reste que l'unification
+prudente des deux arbres de catégories (sidebar vs registre),
+volontairement non entamée pour la même raison que la fermeture
+précédente.
