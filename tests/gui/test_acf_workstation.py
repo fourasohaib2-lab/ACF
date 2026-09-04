@@ -199,6 +199,50 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     assert ws.terrain_panel._volume is volume
 
 
+def test_on_volume_ready_updates_the_real_pipeline_monitor(qapp):
+    """Real Phase 32 regression guard (2026-09-05): the ACF Pipeline
+    Monitor's own QC/Normalization/Interactions/Analysis/Visualization
+    stages must reflect this real run, never stay pending."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+
+    ws._on_volume_ready(volume)
+
+    snapshot = ws.pipeline_monitor.status_snapshot()
+    assert snapshot["Modules"] == "OK"
+    assert snapshot["QC"] in ("OK", "WARN")  # a real, honest QC verdict either way
+    assert snapshot["Normalization"] == "OK"
+    assert snapshot["Interactions"] == "OK"
+    assert snapshot["Analysis"] == "OK"
+    assert snapshot["Visualization"] == "OK"
+
+
+def test_on_volume_ready_defaults_the_sounding_to_the_real_grid_center(qapp):
+    """Real Phase 33 regression guard (2026-09-05): before any real map
+    click has happened, the always-visible sounding panel must still
+    show a real point (the volume's own grid center), never stay empty."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+
+    ws._on_volume_ready(volume)
+
+    assert ws.sounding_panel.status()["has_point"] is True
+
+
+def test_clicking_any_real_map_updates_the_shared_sounding_panel(qapp):
+    """Real Phase 33 regression guard: every Lab panel's own real map
+    is wired to the SAME sounding panel, never an independent copy."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+    ws._on_volume_ready(volume)
+
+    lat, lon = float(volume["lats"][1]), float(volume["lons"][2])
+    ws.dynamics_panel.map_panel.pointClicked.emit(lat, lon)
+
+    assert ws._last_clicked_point == (lat, lon)
+    assert ws.sounding_panel.status()["point"] == (lat, lon)
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""
@@ -227,6 +271,31 @@ def test_volume_failure_reports_error_and_reenables_run(qapp):
 
     assert ws.run_button.isEnabled() is True
     assert "failed" in ws.status_label.text().lower()
+    assert ws.pipeline_monitor.status_snapshot()["Modules"] == "FAIL"
+
+
+def test_refresh_marks_the_real_ingestion_stage_before_the_solver_run_starts(qapp, monkeypatch):
+    """Real Phase 32 regression guard: Ingestion (real model/grid
+    validation) completes synchronously and Modules starts RUNNING
+    before the real off-thread solver run is even dispatched."""
+    ws = ACFWorkstation()
+    monkeypatch.setattr("acf.gui.dashboard.acf_workstation.QThreadPool.globalInstance", lambda: _NullThreadPool())
+
+    ws.refresh()
+
+    snapshot = ws.pipeline_monitor.status_snapshot()
+    assert snapshot["Ingestion"] == "OK"
+    assert snapshot["Modules"] == "RUNNING"
+
+
+class _NullThreadPool:
+    """A real, minimal QThreadPool stand-in that never actually starts
+    the worker - keeps this test focused on refresh()'s own synchronous
+    pipeline-monitor updates, not the real off-thread run itself
+    (already covered by test_refresh_genuinely_runs_a_real_off_thread_volume_run)."""
+
+    def start(self, _worker):
+        return None
 
 
 def test_refresh_genuinely_runs_a_real_off_thread_volume_run(qtbot):

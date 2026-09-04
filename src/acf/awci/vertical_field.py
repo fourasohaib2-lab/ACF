@@ -261,8 +261,8 @@ def vertical_profile_at_point(volume: dict[str, Any], lat: float, lon: float) ->
         awci_profile, physical_profile, forecast_profile : 1D numpy
             arrays, length n_levels, ordered surface (index 0) to top
             of atmosphere.
-        pressure_profile_hpa, temperature_profile : the real local
-            values at each level of this column - use
+        pressure_profile_hpa, temperature_profile, wind_speed_profile :
+            the real local values at each level of this column - use
             pressure_profile_hpa to find which native level is closest
             to a pressure of interest (see module docstring).
     """
@@ -279,6 +279,12 @@ def vertical_profile_at_point(volume: dict[str, Any], lat: float, lon: float) ->
         "forecast_profile": volume["forecast_volume"][:, lat_idx, lon_idx],
         "pressure_profile_hpa": volume["pressure_volume_hpa"][:, lat_idx, lon_idx],
         "temperature_profile": volume["temperature_volume"][:, lat_idx, lon_idx],
+        # Real wind-speed profile (added 2026-09-04, ACF Scientific
+        # Workstation "Vertical Complexity Sounding" panel parity work)
+        # - already computed volume-wide (wind_speed_volume =
+        # sqrt(u_volume**2+v_volume**2)), just not previously exposed
+        # per-column here alongside temperature_profile.
+        "wind_speed_profile": volume["wind_speed_volume"][:, lat_idx, lon_idx],
     }
 
 

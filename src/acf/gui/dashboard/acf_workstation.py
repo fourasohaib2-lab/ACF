@@ -392,6 +392,55 @@ scrubber with forecast-hour thumbnails, the Dynamics/Thermodynamics Lab
 bottom thumbnail strips, and full Domain-selector-driven geographic
 cropping across every panel.
 
+Phase 32 (2026-09-04, continuing the same "pixel-perfect" goal,
+picking the next item off Phase 31's own disclosed deferred list) built
+the real "ACF Pipeline Monitor" status box, matching the mockup's own
+left-column INGESTION/QC/NORMALIZATION/MODULES/INTERACTIONS/ANALYSIS/
+VISUALIZATION stages exactly. `ACFPipelineMonitorWidget`
+(`acf_workstation_pipeline_monitor.py`) is a pure display widget; every
+status it shows is set from a real, verifiable place in this class's
+own `refresh()`/`_on_volume_ready()`/`_on_volume_failed()` - Ingestion
+once the real model/grid config is validated, Modules once the real
+off-thread `compute_real_complexity_volume()` run completes, QC/
+Normalization from two new real, Qt-free checks
+(`acf_workstation_pipeline_checks.py`: `run_real_range_qc()` against
+`acf.physics_guard.range_check.OPERATIONAL_RANGES`, and
+`run_real_derivation_consistency_check()` re-verifying
+`wind_speed_volume == sqrt(u_volume**2+v_volume**2)` and
+`pressure_volume_hpa`'s strict positivity), Interactions/Analysis/
+Visualization by directly inspecting whether each real panel's own
+`_volume` attribute now points at this run's volume - never a
+fabricated or cosmetic tick. Honest, real finding surfaced by this:
+every real MODEL_CONFIGS grid's own top model level reaches ~1 hPa,
+below OPERATIONAL_RANGES's own documented tropospheric-only 10 hPa
+floor - QC genuinely reports "WARN" on every real run for this reason,
+disclosed rather than hidden or worked around.
+
+Phase 33 (2026-09-05, next item off the same disclosed deferred list)
+built the first of the mockup's own 3 always-visible right-side
+panels: the **Vertical Complexity Sounding**
+(`acf_workstation_sounding_panel.ACFVerticalSoundingWidget`) - a real
+temperature/wind-speed profile at a real (lat, lon) point, pressure-
+inverted, fed by `acf.awci.vertical_field.vertical_profile_at_point()`
+(a real nearest-neighbour column lookup already used by
+`acf.awci.temporal_field`/`acf.awci.archive_field` - extended here to
+also return `wind_speed_profile`, additive, no existing caller
+affected). Every real Lab panel with its own map exposes
+`AWCIMapPanel.pointClicked`; this class connects every one of them
+(discovered via `hasattr(panel, "map_panel")`, not a hardcoded list)
+to one shared `_on_map_point_clicked()` handler, so clicking ANY of
+this Workstation's own maps updates the SAME persistent sounding
+panel - matching the mockup's own single, shared right-column
+position. Before any real click, `_on_volume_ready()` defaults it to
+the real volume's own grid-center point rather than leaving it empty.
+Deferred, disclosed: the mockup's own small colored stability-index
+grid beside its sounding plot (High Shear/Stability/CIN/CAPE/Wind
+Shear) - no real per-point stability summary exists at every column
+today (only Thermodynamics Lab's own Research Mode click computes
+real CAPE/CIN, and only for its own single point) - and the other 2
+always-visible side panels (Atmospheric Interaction Graph, Forecast
+Consistency).
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -453,7 +502,13 @@ from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPan
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
+from acf.gui.dashboard.acf_workstation_pipeline_checks import (
+    run_real_derivation_consistency_check,
+    run_real_range_qc,
+)
+from acf.gui.dashboard.acf_workstation_pipeline_monitor import ACFPipelineMonitorWidget
 from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
+from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
@@ -538,6 +593,16 @@ class ACFWorkstation(QWidget):
         #: clamp it against - applied in _on_volume_ready() once a
         #: real volume's own real level count is known.
         self._pending_level_index: int | None = None
+        #: Real step count of the most recently started run - set in
+        #: refresh(), read back in _on_volume_ready() for the real
+        #: "Modules" pipeline-stage detail text.
+        self._last_steps: int = 0
+        #: Real (lat, lon) last clicked on any of this Workstation's
+        #: own maps (added Phase 33, 2026-09-05) - drives the
+        #: always-visible Vertical Complexity Sounding panel; None
+        #: until a real click happens, in which case _on_volume_ready()
+        #: falls back to the real volume's own grid-center point.
+        self._last_clicked_point: tuple[float, float] | None = None
         self._build_ui()
         self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
@@ -701,6 +766,15 @@ class ACFWorkstation(QWidget):
         self.research_mode_button.toggled.connect(self._on_research_mode_toggled)
         nav_col.addWidget(self.research_mode_button)
 
+        # Real "ACF Pipeline Monitor" (added Phase 32, 2026-09-05,
+        # matching the mockup's own left-column status box exactly) -
+        # see acf_workstation_pipeline_checks.py's own module docstring
+        # for exactly what each stage genuinely verifies; this widget
+        # only displays statuses this Workstation sets from real places
+        # in refresh()/_on_volume_ready()/_on_volume_failed() below.
+        self.pipeline_monitor = ACFPipelineMonitorWidget()
+        nav_col.addWidget(self.pipeline_monitor)
+
         body.addLayout(nav_col)
 
         self.stack = QStackedWidget()
@@ -749,6 +823,25 @@ class ACFWorkstation(QWidget):
         for panel in self._panel_by_name.values():
             self.stack.addWidget(panel)
         body.addWidget(self.stack, stretch=1)
+
+        # Real, always-visible right column (added Phase 33,
+        # 2026-09-05, matching the mockup's own persistent top-right
+        # "VERTICAL COMPLEXITY SOUNDING" box) - every real Lab panel
+        # with its own map (checked via hasattr, not a hardcoded list -
+        # stays correct as panels are added/removed) has its real
+        # AWCIMapPanel.pointClicked connected here, so clicking ANY of
+        # this Workstation's own maps updates the same real sounding.
+        right_col = QVBoxLayout()
+        self.sounding_panel = ACFVerticalSoundingWidget()
+        self.sounding_panel.setMinimumWidth(260)
+        self.sounding_panel.setMaximumWidth(340)
+        right_col.addWidget(self.sounding_panel, stretch=1)
+        body.addLayout(right_col)
+
+        for panel in self._panel_by_name.values():
+            map_panel = getattr(panel, "map_panel", None)
+            if map_panel is not None:
+                map_panel.pointClicked.connect(self._on_map_point_clicked)
 
         outer.addLayout(body, stretch=1)
 
@@ -978,9 +1071,20 @@ class ACFWorkstation(QWidget):
         self._set_status(f"⏳ Computing real ACF volume ({model} grid, CoupledEarthSolver)…")
         self._compute_started_at = time.monotonic()
         config = MODEL_CONFIGS[model]
+        steps = 6
+        self._last_steps = steps
+
+        self.pipeline_monitor.reset()
+        self.pipeline_monitor.set_stage(
+            "Ingestion", "OK",
+            f"Real model config validated: {model}, native grid "
+            f"{config['n_lat']}×{config['n_lon']}×{config['n_levels']}.",
+        )
+        self.pipeline_monitor.set_stage("Modules", "RUNNING", f"{steps} real CoupledEarthSolver.step() calls in progress…")
+
         worker = _VolumeWorker(
             model=model, n_lat=config["n_lat"], n_lon=config["n_lon"], n_levels=config["n_levels"],
-            steps=6, dt_seconds=90.0, perturbation_scale=3.0, seed=1,
+            steps=steps, dt_seconds=90.0, perturbation_scale=3.0, seed=1,
         )
         worker.signals.finished.connect(self._on_volume_ready)
         worker.signals.failed.connect(self._on_volume_failed)
@@ -1013,17 +1117,69 @@ class ACFWorkstation(QWidget):
         self.level_slider.blockSignals(False)
         self._level_index = initial_level
         self._update_level_label()
+
+        self.pipeline_monitor.set_stage(
+            "Modules", "OK",
+            f"{self._last_steps} real CoupledEarthSolver.step() calls completed, "
+            f"{n_levels} native levels, state components T/U/V/q/P.",
+        )
+        qc_status, qc_detail = run_real_range_qc(volume)
+        self.pipeline_monitor.set_stage("QC", qc_status, qc_detail)
+        norm_status, norm_detail = run_real_derivation_consistency_check(volume)
+        self.pipeline_monitor.set_stage("Normalization", norm_status, norm_detail)
+
         self._render_all_panels()
+
+        interactions_ok = self.interactions_panel._volume is volume
+        self.pipeline_monitor.set_stage(
+            "Interactions", "OK" if interactions_ok else "FAIL",
+            "Atmospheric Interaction Engine re-sliced this real volume."
+            if interactions_ok else "Interaction Engine panel did not pick up this real volume.",
+        )
+        analysis_ok = self.complexity_panel._volume is volume
+        self.pipeline_monitor.set_stage(
+            "Analysis", "OK" if analysis_ok else "FAIL",
+            "Complexity Explorer re-sliced this real volume."
+            if analysis_ok else "Complexity Explorer panel did not pick up this real volume.",
+        )
+        rendered_panels = [name for name, panel in self._panel_by_name.items() if getattr(panel, "_volume", None) is volume]
+        total_volume_panels = [name for name, panel in self._panel_by_name.items() if hasattr(panel, "_volume")]
+        self.pipeline_monitor.set_stage(
+            "Visualization",
+            "OK" if len(rendered_panels) == len(total_volume_panels) else "WARN",
+            f"{len(rendered_panels)}/{len(total_volume_panels)} real panels re-sliced from this run.",
+        )
+
+        # Real Vertical Complexity Sounding update (added Phase 33,
+        # 2026-09-05) - reuses the real last-clicked point if there is
+        # one (persists across runs, still a valid real lookup into the
+        # NEW volume - vertical_profile_at_point() is a fresh nearest-
+        # neighbour lookup every call), otherwise the real grid center.
+        lat, lon = self._last_clicked_point or (float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2]))
+        self.sounding_panel.update_from_volume_and_point(volume, lat, lon, level_index=self._level_index)
 
     def _on_volume_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)
         self._set_status(f"⚠ Real volume computation failed: {message}")
+        self.pipeline_monitor.set_stage("Modules", "FAIL", message)
         logger.error("ACF Scientific Workstation: volume computation failed: %s", message)
+
+    def _on_map_point_clicked(self, lat: float, lon: float) -> None:
+        """Real, shared handler for every map panel's own real
+        `pointClicked` signal (added Phase 33, 2026-09-05) - updates
+        the always-visible Vertical Complexity Sounding from whichever
+        real map the user actually clicked."""
+        self._last_clicked_point = (lat, lon)
+        if self._volume is not None:
+            self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
 
     def _on_level_changed(self, value: int) -> None:
         self._level_index = value
         self._update_level_label()
         self._render_all_panels()
+        if self._volume is not None and self._last_clicked_point is not None:
+            lat, lon = self._last_clicked_point
+            self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
 
     def _update_level_label(self) -> None:
         if self._volume is None:

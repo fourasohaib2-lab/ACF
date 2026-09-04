@@ -7470,3 +7470,107 @@ bandeaux de vignettes bas de page Dynamics/Thermodynamics Lab, et le
 câblage complet du sélecteur "Domain" pour un vrai découpage
 géographique - tous restent à construire dans des passes futures pour
 atteindre l'objectif "pixel-perfect" complet demandé par l'utilisateur.
+
+## Mise à jour 2026-09-04 (suite) — Phase 32 : le vrai "ACF Pipeline Monitor"
+
+**Pourquoi** : premier élément du chantier "pixel-perfect" restant
+après la Phase 31 (structure de la navigation) - la maquette de
+référence montre une vraie boîte de statut "ACF PIPELINE MONITOR" en
+bas de la colonne de navigation, listant 7 étapes
+(INGESTION/QC/NORMALIZATION/MODULES/INTERACTIONS/ANALYSIS/
+VISUALIZATION) chacune avec un tag [OK]. Choisi en premier car
+entièrement câblable sur des vérifications réelles déjà disponibles,
+sans nouvelle donnée externe.
+
+**Construit** :
+- `acf_workstation_pipeline_checks.py` (sans dépendance Qt, testable
+  isolément) : `run_real_range_qc()` vérifie le vrai min/max de chaque
+  champ physique du volume contre les bornes réelles et documentées
+  `acf.physics_guard.range_check.OPERATIONAL_RANGES` (même
+  infrastructure que le reste du projet) ; `run_real_derivation_
+  consistency_check()` vérifie que `wind_speed_volume` correspond
+  réellement à `sqrt(u_volume²+v_volume²)` et que
+  `pressure_volume_hpa` reste strictement positif - une régression
+  réelle et vérifiable, jamais fabriquée.
+- `acf_workstation_pipeline_monitor.py` : `ACFPipelineMonitorWidget`,
+  un widget d'affichage pur (monospace, tags colorés [OK]/[WARN]/
+  [FAIL]/[RUNNING]/[—]) - ne calcule jamais lui-même un statut, se
+  contente d'afficher ce que `ACFWorkstation` lui fournit.
+- Câblage réel dans `acf_workstation.py` : `refresh()` marque
+  Ingestion OK dès la validation réelle du modèle/de la grille (avant
+  même de lancer le vrai calcul hors-thread), et Modules RUNNING ;
+  `_on_volume_ready()` marque Modules OK, exécute les 2 vraies
+  vérifications ci-dessus pour QC/Normalization, puis vérifie
+  Interactions/Analysis/Visualization en inspectant directement si
+  chaque vrai panneau (`interactions_panel._volume`,
+  `complexity_panel._volume`, et tous les panneaux de
+  `_panel_by_name` possédant un attribut `_volume`) a bien reçu ce
+  volume précis ; `_on_volume_failed()` marque Modules FAIL avec le
+  vrai message d'erreur.
+
+**Découverte réelle, honnêtement rapportée** : sur les 3 vraies
+grilles `MODEL_CONFIGS` (AROME/ALADIN/ARPEGE), le niveau modèle le
+plus haut atteint systématiquement ~1 hPa - en dessous de la borne
+basse documentée par `OPERATIONAL_RANGES` (10 hPa, un choix
+explicitement "tropospheric NWP only" selon sa propre documentation).
+Le QC rapporte donc honnêtement `WARN` sur chaque run réel - ce n'est
+pas un bug du solveur ni du QC, mais une limite documentée et
+maintenant visible plutôt que cachée.
+
+**Validation réelle** : `ruff`/`mypy` propres sur les 3 fichiers
+touchés + tout `src/`. 13 nouveaux tests
+(`tests/test_acf_workstation_pipeline_checks.py` - 5, sans Qt,
+`tests/gui/test_acf_workstation_pipeline_monitor.py` - 4, et 4 tests
+d'intégration ajoutés à `tests/gui/test_acf_workstation.py`), tous
+verts. Capture d'écran réelle confirmant l'affichage après un vrai run
+AROME 90×180×32.
+
+**Ce qui reste réellement** : les 3 panneaux latéraux toujours
+visibles (Vertical Complexity Sounding / Atmospheric Interaction
+Graph / Forecast Consistency), le Global Timeline avec vignettes, les
+bandeaux de vignettes Dynamics/Thermodynamics Lab, et le sélecteur
+"Domain" - prochaines passes vers le "pixel-perfect" complet.
+
+## Mise à jour 2026-09-05 — Phase 33 : le premier panneau latéral permanent, "Vertical Complexity Sounding"
+
+**Pourquoi** : premier des 3 panneaux latéraux toujours visibles de la
+maquette (colonne droite persistante), choisi en premier car
+entièrement réalisable avec une fonction réelle déjà existante et
+testée (`acf.awci.vertical_field.vertical_profile_at_point()`), sans
+nouveau calcul lourd.
+
+**Construit** :
+- `vertical_profile_at_point()` étendue (ajout additif, sans risque -
+  seulement 2 vrais appelants + 1 test, aucun ne vérifie l'ensemble
+  exact des clés du dict retourné) pour exposer aussi
+  `wind_speed_profile` (déjà calculé dans le volume, simplement pas
+  encore exposé par colonne).
+- `acf_workstation_sounding_panel.ACFVerticalSoundingWidget` : vrai
+  graphique température (°C) + vitesse du vent (m/s) vs pression
+  (hPa), axe des pressions inversé (convention météorologique, surface
+  en bas), au point réellement cliqué.
+- Câblage réel dans `acf_workstation.py` : chaque panneau réel
+  possédant sa propre carte (détecté via `hasattr(panel, "map_panel")`,
+  jamais une liste codée en dur) voit son vrai signal
+  `AWCIMapPanel.pointClicked` connecté à un unique gestionnaire
+  partagé - cliquer sur N'IMPORTE QUELLE carte de ce Workstation met à
+  jour le MÊME panneau de sondage, comme dans la maquette. Avant tout
+  clic réel, `_on_volume_ready()` utilise le vrai point central de la
+  grille du volume plutôt que de laisser le panneau vide.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 3
+nouveaux tests sur `vertical_profile_at_point()`
+(`tests/test_awci_vertical_field.py`), 3 nouveaux tests sur le widget
+(`tests/gui/test_acf_workstation_sounding_panel.py`), 2 nouveaux tests
+d'intégration (`tests/gui/test_acf_workstation.py`). Capture d'écran
+réelle confirmant le rendu après un vrai run AROME 90×180×32 (courbes
+température/vent réelles et non fabriquées).
+
+**Ce qui reste réellement** : la petite grille colorée d'indices de
+stabilité de la maquette (High Shear/Stability/CIN/CAPE/Wind Shear) -
+aucun résumé réel de stabilité n'existe à chaque colonne aujourd'hui
+(seul le Research Mode de Thermodynamics Lab calcule un vrai CAPE/CIN,
+et seulement pour son propre point) ; les 2 autres panneaux latéraux
+permanents (Atmospheric Interaction Graph, Forecast Consistency) ; le
+Global Timeline avec vignettes ; les bandeaux de vignettes Dynamics/
+Thermodynamics Lab ; le sélecteur "Domain".

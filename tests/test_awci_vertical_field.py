@@ -107,9 +107,19 @@ def test_vertical_profile_at_point_returns_one_value_per_level():
     assert profile["awci_profile"].shape == (5,)
     assert profile["physical_profile"].shape == (5,)
     assert profile["pressure_profile_hpa"].shape == (5,)
+    assert profile["wind_speed_profile"].shape == (5,)
     # Nearest-neighbour lookup must land on one of the volume's real coordinates.
     assert profile["lat"] in list(volume["lats"])
     assert profile["lon"] in list(volume["lons"])
+
+
+def test_vertical_profile_wind_speed_matches_the_volume_at_the_same_point():
+    volume = compute_real_complexity_volume(model="ALADIN", n_lat=6, n_lon=10, n_levels=5, steps=2)
+    profile = vertical_profile_at_point(volume, lat=10.0, lon=20.0)
+
+    lat_idx = list(volume["lats"]).index(profile["lat"])
+    lon_idx = list(volume["lons"]).index(profile["lon"])
+    np.testing.assert_array_equal(profile["wind_speed_profile"], volume["wind_speed_volume"][:, lat_idx, lon_idx])
 
 
 def test_vertical_profile_matches_the_volume_at_the_same_point():
