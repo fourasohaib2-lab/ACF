@@ -6490,3 +6490,97 @@ bloqués, aucune donnée réelle disponible sans fabrication). Avec cette
 fermeture, toutes les pièces du plan initial jugées réellement
 réalisables sans fabriquer de données sont maintenant construites,
 testées et vérifiées visuellement.
+
+## Mise à jour 2026-09-04 (suite) — Phase 17 : la tâche séparée résolue — l'anomalie de pression ~2x trouvée et corrigée à la racine
+
+Suite explicite ("continue"). Convection/Terrain restant génuinement
+bloqués, la tâche la plus concrète et à plus fort impact encore en
+attente était la tâche séparée `task_f3c406d9` : l'anomalie de
+pression ~2013 hPa, triplement confirmée (Thermodynamics Lab, Data
+Quality Center, Research Mode) mais jamais corrigée par prudence
+délibérée (le risque de régression sur tout le dashboard AWCI
+préexistant n'avait jamais été mesuré).
+
+**Investigation** : `acf.awci.vertical_field.compute_real_complexity_
+volume()` calcule bien la pression de surface réelle avec la vraie
+constante standard `101325.0` Pa avant de la passer à `EarthGrid.
+compute_vertical_pressure_profile()` — la vraie source du problème
+était plus profonde, dans `EarthGrid.__init__()` elle-même :
+
+```python
+self.a_coeff = np.linspace(100000.0, 100.0, self.n_levels)  # Pa
+self.b_coeff = np.linspace(1.0, 0.0, self.n_levels)
+```
+
+avec `p(k) = a_coeff[k] + b_coeff[k] * p_surface` (coordonnée hybride
+sigma-pression réelle et standard). Au niveau de surface (k=0),
+`b_coeff[0] = 1.0` — la vraie condition aux limites physique exige donc
+`a_coeff[0] = 0` pour que `p(surface) = 0 + 1.0×p_surface = p_surface`
+exactement. Or `a_coeff[0]` valait **100000.0**, ajoutant un vrai
++1000 hPa parasite à CHAQUE run réel du solveur — exactement
+101325 Pa + 100000 Pa = 201325 Pa = 2013.25 hPa, la valeur exacte
+observée partout. Le commentaire du code lui-même décrivait une
+formule différente (`p(k) = A(k)*P0 + B(k)*Ps`) que l'implémentation
+ne suivait pas réellement — un vrai décalage entre l'intention
+documentée et le code, renforçant le diagnostic.
+
+**Construit** : correction d'une seule ligne —
+`self.a_coeff = np.linspace(0.0, 100.0, self.n_levels)` — vérifiée
+immédiatement : pression de surface réelle maintenant 1013.25 hPa
+(au lieu de 2013.25 hPa), sommet réel du modèle à 1 hPa, profil
+complet monotone et physiquement plausible.
+
+**Vérification de l'ampleur de l'impact avant tout autre changement** :
+recherché systématiquement toute référence codée en dur à "2013"/
+"201325"/"100000.0" dans tout le dépôt. Trouvé que ce comportement
+était déjà connu et "contourné" (pas corrigé) par des tests
+PRÉEXISTANTS d'une session antérieure
+(`tests/gui/test_awci_cross_section.py`,
+`tests/gui/test_awci_dashboard_reference_parity.py`,
+`tests/test_physics_guard.py`) — mais dans les 3 cas, les valeurs
+"~2013 hPa" y sont des **littéraux codés en dur passés directement en
+entrée** à des fonctions pures (jamais dérivées d'un vrai appel au
+solveur), donc totalement insensibles à ce correctif. Suite complète
+exécutée AVANT tout ajustement de test : **1 seul échec sur 4176
+tests** — `tests/gui/test_acf_workstation_quality.py::
+test_pressure_variable_honestly_reports_the_real_anomaly`, qui
+affirmait précisément que Pressure devait rester OUT_OF_RANGE (c'était
+exactement le comportement bogué qu'il vérifiait). Corrigé pour
+affirmer honnêtement le nouveau statut VALID. Docstring de
+`tests/test_acf_workstation_quality.py`'s own analogous unit test
+(qui utilise 2013.25 hPa comme valeur littérale générique pour tester
+la détection OUT_OF_RANGE elle-même, indépendamment du solveur) mis à
+jour pour ne plus prétendre que le solveur produit encore cette
+valeur, sans changer son vrai comportement de test.
+
+**Documentation mise à jour** : `earth_grid.py` (NOTE de correction
+complète), `acf_workstation.py` (nouvelle entrée Phase 17),
+`acf_workstation_quality.py`/`acf_workstation_thermodynamics.py`
+(dockstrings ne prétendant plus que l'anomalie existe encore). Les
+commentaires des 3 fichiers de tests préexistants mentionnés
+ci-dessus n'ont délibérément PAS été modifiés (hors du périmètre de
+cette session, et leurs assertions réelles restent correctes malgré
+leur commentaire désormais légèrement daté) — disclosed ici pour la
+transparence plutôt que silencieusement laissé incohérent sans
+explication.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tous les fichiers
+touchés. Suite complète re-exécutée après le correctif : **4176/4176
+tests**, tous verts. Vérifié visuellement par un vrai script bout-en-
+bout à travers tout le chrome `ACFWorkstation` : Data Quality Center
+affiche désormais Pressure VALID à 100% (7200/7200) sur un vrai run
+ALADIN complet, le niveau affiché passe de "~2013 hPa" à "~1013 hPa".
+Capture d'écran réelle envoyée.
+
+**Impact réel à travers tout le Workstation** (aucun changement de
+code supplémentaire nécessaire — bénéfice automatique de la
+correction à la racine) : l'humidité relative (précédemment saturée à
+100% partout à cause de cette même anomalie) devrait désormais
+montrer une vraie variation physique réaliste ; la plage dynamique du
+θ-e devrait se rapprocher de valeurs plus réalistes ; toute vérification
+PhysicsGuard (`validate_physics=True`) au niveau de surface ne devrait
+plus échouer systématiquement à cause de cette seule variable.
+
+**Ce qui reste réellement** : 2 modules Lab (Convection, Terrain) —
+génuinement bloqués, aucune vraie donnée disponible dans ce codebase
+sans fabrication. Aucune tâche séparée en attente ne reste ouverte.

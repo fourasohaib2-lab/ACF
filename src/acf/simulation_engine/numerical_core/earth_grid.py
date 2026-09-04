@@ -52,9 +52,26 @@ class EarthGrid:
         # 2D Meshgrids (lat, lon)
         self.lon_mesh, self.lat_mesh = np.meshgrid(self.lons, self.lats)
 
-        # Hybrid vertical coordinate coefficients (A: pressure, B: surface pressure fraction)
-        # p(k) = A(k)*P0 + B(k)*Ps
-        self.a_coeff = np.linspace(100000.0, 100.0, self.n_levels)  # Pa
+        # Hybrid vertical coordinate coefficients (A: pressure offset in Pa,
+        # B: surface pressure fraction) - real formula actually used by
+        # compute_vertical_pressure_profile() below: p(k) = A(k) + B(k)*Ps
+        # (A(k) already in Pa, NOT multiplied by a separate P0 - the
+        # previous comment here described a different, P0-scaled
+        # convention that did not match this implementation).
+        #
+        # NOTE (correction, 2026-09-04): A(k) at the surface (k=0, B=1.0)
+        # MUST be 0 Pa - the real physical boundary condition for any
+        # hybrid sigma-pressure coordinate is p(surface) = Ps exactly.
+        # This previously started at 100000.0 Pa instead of 0.0, so every
+        # real solver run added a spurious +1000 hPa to its own real
+        # surface pressure (e.g. a real 1013.25 hPa surface came out as
+        # ~2013.25 hPa) - found while building the ACF Scientific
+        # Workstation (independently re-confirmed by its Data Quality
+        # Center, Thermodynamics Lab, and Research Mode, all flagging the
+        # same real ~2013 hPa anomaly; see reports/ACF_MASTER_AUDIT_v2.md).
+        # A(top) stays a real, small reference pressure (100 Pa = 1 hPa)
+        # for a real, physically-reasonable model-top pressure.
+        self.a_coeff = np.linspace(0.0, 100.0, self.n_levels)  # Pa
         self.b_coeff = np.linspace(1.0, 0.0, self.n_levels)
 
     def compute_cell_areas(self) -> np.ndarray:

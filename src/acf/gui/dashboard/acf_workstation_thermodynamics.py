@@ -99,12 +99,15 @@ __all__ = ["ACFThermodynamicsLabPanel", "compute_real_cape_cin_fields", "compute
 #: `acf_workstation_complexity.py` already uses for its own spatial/
 #: temporal complexity ranges) rather than a fixed guessed range: a
 #: real θ-e range depends heavily on the real solver's own surface
-#: pressure/humidity state (see this module's own real, disclosed
-#: finding - flagged separately - that a real ALADIN run's surface
-#: pressure currently comes out ~2x a realistic sea-level value,
-#: which by itself shifts θ-e well outside any single fixed guess).
-#: Relative humidity is a real, bounded percentage - 0-100% is not a
-#: guess, it is the quantity's own real definition.
+#: pressure/humidity state, which genuinely varies run to run - kept
+#: dynamic rather than reverted to a fixed guess even after finding
+#: and fixing (2026-09-04, task_f3c406d9) a real solver bug that used
+#: to shift a real ALADIN run's surface pressure ~2x too high (see
+#: `acf.simulation_engine.numerical_core.earth_grid.EarthGrid`'s own
+#: NOTE on its `a_coeff` fix) - a dynamic range is simply the more
+#: robust real design regardless. Relative humidity is a real, bounded
+#: percentage - 0-100% is not a guess, it is the quantity's own real
+#: definition.
 _AUTO_VARIABLES: dict[str, dict[str, Any]] = {
     "Equivalent potential temperature (θ-e)": {"unit": "K", "cmap": "plasma", "vmin": None, "vmax": None},
     "Relative humidity": {"unit": "%", "cmap": "YlGnBu", "vmin": 0.0, "vmax": 100.0},

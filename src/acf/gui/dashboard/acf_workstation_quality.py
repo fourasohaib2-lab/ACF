@@ -16,17 +16,21 @@ machinery over a whole grid instead of one point - closing the same
 "real infrastructure, never wired into a UI" gap this Workstation has
 already closed for CAPE/theta-e/wind shear/precipitation phase.
 
-Real, disclosed finding this panel surfaces (not fixed here)
+Real finding this panel independently confirmed, since fixed
 -------------------------------------------------------------------
 Running this real, unmodified quality check against the Workstation's
-own volume independently confirms a real, previously-found anomaly
-(flagged separately as task_f3c406d9, not fixed in this codebase):
-`pressure_volume_hpa` reports ~2013 hPa (201,325 Pa) - outside
+own volume once independently confirmed a real anomaly (task_f3c406d9):
+`pressure_volume_hpa` reported ~2013 hPa (201,325 Pa) - outside
 `OPERATIONAL_RANGES["air_pressure"]`'s real, documented [1000, 108500]
-Pa bound - so this panel will honestly show "Pressure" as OUT_OF_RANGE
-at every real grid point until that separate root cause is fixed. This
-is a genuine confirmation this real infrastructure catches a real
-problem, not a bug in this panel.
+Pa bound - a genuine demonstration this real infrastructure catches a
+real problem, not a bug in this panel. Root cause found and fixed
+2026-09-04: `acf.simulation_engine.numerical_core.earth_grid.
+EarthGrid`'s own hybrid sigma-pressure `a_coeff` started at 100000.0 Pa
+instead of the real, physically-required 0.0 Pa at the surface,
+adding a spurious +1000 hPa to every real solver run. Pressure now
+honestly reads VALID like every other real variable - see
+reports/ACF_MASTER_AUDIT_v2.md's own dated entry for the full fix and
+its verification.
 
 Real, auto-computed (not on-demand)
 --------------------------------------

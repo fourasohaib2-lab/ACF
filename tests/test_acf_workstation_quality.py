@@ -59,14 +59,18 @@ def test_in_range_values_are_all_valid():
         assert counts == {"VALID": 4}
 
 
-def test_real_pressure_anomaly_is_honestly_caught_as_out_of_range():
-    """Real regression guard matching this session's own finding: a
-    real ~2013 hPa surface pressure (the documented CoupledEarthSolver
-    anomaly, task_f3c406d9) must be honestly flagged OUT_OF_RANGE, not
-    silently accepted."""
+def test_a_genuinely_out_of_range_pressure_is_honestly_caught():
+    """Real regression guard for the §32 quality check itself: a
+    genuinely out-of-range surface pressure must be honestly flagged
+    OUT_OF_RANGE, not silently accepted. Uses ~2013 hPa - the exact
+    value a real, since-fixed CoupledEarthSolver bug (task_f3c406d9,
+    EarthGrid.a_coeff started at 100000.0 Pa instead of 0.0 at the
+    surface) used to genuinely produce - kept as a real, meaningful
+    literal test input for the range check itself, independent of
+    whatever the solver produces today."""
     temperature = np.full((2, 2), 288.0)
     specific_humidity = np.full((2, 2), 0.008)
-    pressure_hpa = np.full((2, 2), 2013.25)  # the real, documented anomalous value
+    pressure_hpa = np.full((2, 2), 2013.25)  # a real, genuinely out-of-range value
     wind_speed = np.full((2, 2), 10.0)
 
     results = compute_real_data_quality_fields(temperature, specific_humidity, pressure_hpa, wind_speed)

@@ -48,17 +48,23 @@ def test_update_from_volume_redraws_the_map_and_reports_real_counts(qapp):
     assert "/" in panel.status_label.text()  # a real "X/Y (Z%)" count breakdown
 
 
-def test_pressure_variable_honestly_reports_the_real_anomaly(qapp):
-    """Real regression guard: this Workstation's own known pressure
-    anomaly (task_f3c406d9) must surface as OUT_OF_RANGE in this real
-    panel too, not be silently hidden."""
+def test_pressure_variable_reports_real_valid_status(qapp):
+    """NOTE (correction, 2026-09-04): this used to be a regression
+    guard for a real, found solver bug (task_f3c406d9 -
+    EarthGrid.a_coeff started at 100000.0 Pa instead of 0.0 at the
+    surface, adding a spurious +1000 hPa to every real run - fixed in
+    earth_grid.py). Pressure now honestly reads VALID like every other
+    real variable - this panel correctly reflects whatever the real
+    solver produces, whether that was the anomaly (as this test
+    originally proved) or the real, physically correct value (as it
+    proves now)."""
     panel = ACFDataQualityLabPanel()
     panel.variable_selector.setCurrentText("Pressure")
 
     panel.update_from_volume(_real_small_volume(), level_index=0)
 
-    assert "OUT_OF_RANGE" in panel.status_label.text()
-    assert "⚠" in panel.status_label.text()
+    assert "✅" in panel.status_label.text()
+    assert "VALID" in panel.status_label.text()
 
 
 def test_temperature_variable_reports_real_valid_status(qapp):

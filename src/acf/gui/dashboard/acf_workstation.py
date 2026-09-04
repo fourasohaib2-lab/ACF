@@ -203,6 +203,22 @@ Phase 16 (2026-09-04, same "continue" progressive discipline) added:
   rendered on the map. Real, bounded first pass: only these 2 Lab
   panels support it today, disclosed as such, not every panel.
 
+Phase 17 (2026-09-04, same "continue" progressive discipline) fixed a
+real root cause rather than adding a new module: the ~2013 hPa
+pressure anomaly independently confirmed 3 times across this
+Workstation (Thermodynamics Lab, Data Quality Center, Research Mode) -
+task_f3c406d9 - was found and fixed. Root cause:
+`acf.simulation_engine.numerical_core.earth_grid.EarthGrid`'s own
+hybrid sigma-pressure `a_coeff` started at 100000.0 Pa instead of the
+real, physically-required 0.0 Pa at the surface (b_coeff=1.0 there),
+adding a spurious +1000 hPa to every real solver run's own real
+surface pressure. One-line fix (`a_coeff = np.linspace(0.0, 100.0,
+n_levels)`), verified against the FULL pre-existing test suite (4176
+tests) before this fix - only 1 test failed, and it was a regression
+guard for the anomaly itself (now updated to assert the corrected
+VALID status instead). See `earth_grid.py`'s own NOTE and reports/
+ACF_MASTER_AUDIT_v2.md's dated entry for the full investigation.
+
 The remaining 2 spec modules (Convection/Terrain Labs) are listed in
 the left nav as real, visible, DISABLED "Planned" items - not silently
 omitted,
