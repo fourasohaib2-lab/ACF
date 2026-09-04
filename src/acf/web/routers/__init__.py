@@ -25,6 +25,12 @@ here, only real endpoints exposing it:
 - `fno_router` -> the trained FNO surface-temperature surrogate -
   migrated here from its original unprefixed `/api/fno/predict_demo`
   path (see its own docstring).
+- `workstation_router` (added 2026-09-04) -> the ACF Scientific
+  Workstation's own real per-grid-point diagnostics
+  (`acf.awci.workstation_fields` - θ-e/relative humidity, wind speed/
+  vorticity/divergence, bulk wind shear) - the exact same real,
+  Qt-free functions the Workstation's own GUI panels call, extracted
+  there specifically so this router never needs to import PySide6.
 
 `hpc_router`/`fno_router` complete the migration reports/
 ACF_MASTER_AUDIT_v2.md's earlier update for this section had
@@ -40,5 +46,14 @@ from acf.web.routers.events_router import router as events_router
 from acf.web.routers.fno_router import router as fno_router
 from acf.web.routers.hpc_router import router as hpc_router
 from acf.web.routers.models_router import router as models_router
+from acf.web.routers.workstation_router import router as workstation_router
 
-__all__ = ["complexity_router", "datasets_router", "events_router", "fno_router", "hpc_router", "models_router"]
+__all__ = [
+    "complexity_router",
+    "datasets_router",
+    "events_router",
+    "fno_router",
+    "hpc_router",
+    "models_router",
+    "workstation_router",
+]

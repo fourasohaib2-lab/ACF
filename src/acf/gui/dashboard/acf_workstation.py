@@ -150,6 +150,22 @@ Phase 12 (2026-09-04, same "continue" progressive discipline) added:
   honestly held pending and clamped against the next real volume's own
   real level count once computed.
 
+Phase 13 (2026-09-04, same "continue" progressive discipline) added:
+- **`/api/v1/workstation` HTTP API** (`acf.web.routers.
+  workstation_router`) - closes the master spec's own disclosed
+  "extension API pour ces nouveaux modules" item. Real
+  `/theta_e`/`/dynamics`/`/wind_shear` GET endpoints call the exact
+  same real functions the Dynamics/Thermodynamics Labs' own GUI panels
+  use. Those functions were moved from the GUI panel modules (which
+  import PySide6) into a new, real, Qt-free `acf.awci.
+  workstation_fields` module first, so this web router never needs a
+  GUI toolkit importable in the server process - the GUI panels now
+  import the same functions FROM there (a plain re-export, zero
+  behavior change, verified by the full existing GUI test suite
+  passing unchanged). Same real request-size guard convention as
+  `complexity_router`/`events_router` (`_solver_guard.py`, extended
+  with a new `run_complexity_volume()` for a full 3D request).
+
 The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
 Study Lab, Research Mode etc. are larger, separate pieces of the
 master spec beyond the original "Labs" list) are listed in the left

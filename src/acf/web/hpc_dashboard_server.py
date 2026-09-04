@@ -35,7 +35,15 @@ from fastapi.responses import HTMLResponse
 
 from acf.ai.simulation.neural_operator import NeuralOperatorEngine
 from acf.hpc_connector.connection_manager import HPCConnectionManager
-from acf.web.routers import complexity_router, datasets_router, events_router, fno_router, hpc_router, models_router
+from acf.web.routers import (
+    complexity_router,
+    datasets_router,
+    events_router,
+    fno_router,
+    hpc_router,
+    models_router,
+    workstation_router,
+)
 from acf.web.routers.fno_router import DEFAULT_FNO_CHECKPOINT
 
 __all__ = ["DEFAULT_FNO_CHECKPOINT", "create_app", "run"]
@@ -88,6 +96,7 @@ def create_app(
     app.include_router(datasets_router, prefix="/api/v1")
     app.include_router(hpc_router, prefix="/api/v1")
     app.include_router(fno_router, prefix="/api/v1")
+    app.include_router(workstation_router, prefix="/api/v1")
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:

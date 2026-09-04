@@ -53,6 +53,13 @@ the same documented "coarser real grid for a fast result" trade-off
 disclosed engineering choice in this codebase - applied here to a
 subset of an already-computed real volume instead of a fresh, coarser
 solver run (no second solver run is ever triggered).
+
+NOTE (correction, 2026-09-04): `compute_real_theta_e_and_rh_fields()`
+used to be DEFINED here - moved to the real, Qt-free
+`acf.awci.workstation_fields` so the new `/api/v1/workstation` HTTP
+router can reuse it without importing PySide6 into the web server
+process. Re-imported below unchanged - every existing caller of this
+module keeps working with zero code changes.
 """
 
 from __future__ import annotations
@@ -64,9 +71,11 @@ from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
-from acf.awci.theta_e import compute_real_theta_e_at_point
+from acf.awci.workstation_fields import compute_real_theta_e_and_rh_fields
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
+
+__all__ = ["ACFThermodynamicsLabPanel", "compute_real_cape_cin_fields", "compute_real_theta_e_and_rh_fields"]
 
 #: Real, disclosed rendering ranges - see module docstring for CAPE/CIN's
 #: reference basis (the real STP/SCP normalization constants in
@@ -94,30 +103,6 @@ _CAPE_CIN_VARIABLES: dict[str, dict[str, Any]] = {
 
 #: See module docstring's "Honest performance trade-off" section.
 _CAPE_GRID_STRIDE = 3
-
-
-def compute_real_theta_e_and_rh_fields(
-    temperature: np.ndarray, specific_humidity: np.ndarray, pressure_hpa: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Real θ-e (K) and relative humidity (%) at every point of one real
-    2D level slice, via `compute_real_theta_e_at_point()` - see module
-    docstring. NaN (never a fabricated value) wherever that real
-    per-point computation itself honestly reports "not computed"
-    (non-positive real relative humidity - see its own docstring).
-    """
-    n_lat, n_lon = temperature.shape
-    theta_e = np.full((n_lat, n_lon), np.nan)
-    relative_humidity = np.full((n_lat, n_lon), np.nan)
-    for i in range(n_lat):
-        for j in range(n_lon):
-            result = compute_real_theta_e_at_point(
-                float(temperature[i, j]), float(specific_humidity[i, j]), float(pressure_hpa[i, j])
-            )
-            if result["is_real_data"]:
-                theta_e[i, j] = result["theta_e_k"]
-                relative_humidity[i, j] = result["relative_humidity_pct"]
-    return theta_e, relative_humidity
 
 
 def compute_real_cape_cin_fields(

@@ -6261,3 +6261,62 @@ séparée toujours en attente) ; 2 modules Lab restants (Convection,
 Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
 Lab, Research Mode, extension API) listés "(planned)" —
 "Configuration Management" retirée de cette liste, désormais réelle.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 13 : l'extension `/api/v1/workstation`, et un petit refactor Qt-free pour l'exposer proprement
+
+Suite explicite ("continue"), même discipline progressive. Ferme le
+dernier item disclosed du plan initial : "extension de l'API
+`/api/v1/*` pour ces nouveaux modules".
+
+**Constat architectural avant de construire** : les fonctions de champ
+réelles du Dynamics Lab/Thermodynamics Lab (`compute_real_vorticity_
+divergence`, `real_grid_spacing_m`, `compute_real_wind_shear_field`,
+`compute_real_theta_e_and_rh_fields`) vivaient directement dans les
+modules de panneaux GUI (`acf_workstation_dynamics.py`,
+`acf_workstation_thermodynamics.py`) — qui importent `PySide6.
+QtWidgets` en tête de fichier pour leurs propres classes `QWidget`.
+Les réutiliser directement depuis un routeur web aurait exigé que
+PySide6 (une bibliothèque GUI) soit importable dans le processus
+serveur — un vrai anti-pattern architectural, même si dans ce dépôt à
+environnement virtuel unique cela aurait techniquement fonctionné.
+
+**Construit** :
+- **Petit refactor propre** : ces 4 fonctions déplacées vers un
+  nouveau module réel, sans Qt : `acf.awci.workstation_fields`. Les
+  deux modules GUI les réimportent maintenant depuis ce nouvel
+  emplacement (une simple ré-exportation, jamais réimplémentées) —
+  **zéro changement de comportement**, vérifié par la suite de tests
+  GUI existante complète (94 tests) qui passe sans la moindre
+  modification, aucun fichier de test touché.
+- **`/api/v1/workstation`** (`acf.web.routers.workstation_router`) —
+  3 vrais endpoints GET : `/theta_e` (θ-e + humidité relative
+  réelles), `/dynamics` (vitesse du vent + vorticité + divergence
+  réelles), `/wind_shear` (cisaillement de vent réel, colonne
+  complète). Chacun fait réellement tourner `CoupledEarthSolver` une
+  fois (via une nouvelle fonction `run_complexity_volume()` ajoutée à
+  `_solver_guard.py`, même garde-fou de taille de requête réel que
+  `complexity_router`/`events_router`, étendu à une vraie requête 3D)
+  puis appelle exactement les mêmes fonctions réelles que les panneaux
+  GUI. Les valeurs `NaN` réelles (ex. singularité aux pôles pour la
+  vorticité) sérialisent honnêtement en `null` JSON, jamais une valeur
+  fabriquée — réutilise `field_to_json_safe_list()`, déjà réel et
+  déjà testé.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tous les fichiers
+touchés. Suite GUI complète re-exécutée sans changement (94 tests,
+zéro régression du refactor) + suite API web existante re-exécutée
+(53 tests, zéro régression). 8 nouveaux tests
+(`tests/test_web_workstation_api.py` — dont un test de régression
+reproduisant explicitement le cas des pôles honnêtement `null` via une
+vraie requête HTTP de bout en bout à travers `TestClient`, et la
+vérification du garde-fou de taille de requête). Suite complète
+**4142 → 4150**, toujours verte.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain — génuinement bloqués, aucune donnée réelle disponible sans
+fabrication) ; 3D/4D, Case Study Lab, Research Mode listés "(planned)"
+— "extension API" retirée de cette liste, désormais réelle (pour
+Dynamics/Thermodynamics ; CAPE/CIN, phase des précipitations et
+l'Interaction Engine restent GUI-only pour l'instant, un futur "continue"
+pourrait étendre l'API à ces modules avec la même discipline).
