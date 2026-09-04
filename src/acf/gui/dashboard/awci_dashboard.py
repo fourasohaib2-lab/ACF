@@ -211,6 +211,7 @@ class _ComponentRow(QFrame):
         self._hover_style = f"border: none; border-radius: 4px; background-color: {TOKENS.bg_surface_alt};"
         self.setStyleSheet(self._base_style)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip(f"Click for the real formula, status, and drill-down trace behind {label}.")
 
         row_layout = QHBoxLayout(self)
         row_layout.setContentsMargins(4, 2, 4, 2)

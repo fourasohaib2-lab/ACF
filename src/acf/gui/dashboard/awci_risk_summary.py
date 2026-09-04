@@ -36,9 +36,18 @@ from acf.gui.dashboard.awci_colors import risk_qcolor
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 #: Real module-score breakdown shown by AWCIRiskBadgeDetailDialog for
-#: the 3 composite rows (overall/physical/forecast) - the same 7 keys
-#: _ComponentValueList (awci_dashboard.py) already lists, in the same
-#: order, so a user sees the identical real breakdown either way.
+#: the 3 composite rows (overall/physical/forecast) - the first 7 keys
+#: match _ComponentValueList's own visible list (awci_dashboard.py,
+#: which deliberately stays at 7 rows to match the reference mockup's
+#: own "AWCI COMPONENTS" list pixel-for-pixel - not extended here).
+#: ensemble_spread/model_disagreement (added 2026-09-03, found while
+#: closing §51's vertical-profile detail dialog - the same 2 real
+#: AWCICalculator.calculate_module_scores() keys were missing there
+#: too) have no fixed-layout mockup constraint on this popup, so they
+#: are shown here for real completeness - honestly ~0.0 in demo mode
+#: (this dashboard's own per-point pipeline never supplies real
+#: ensemble_members/model_realizations), never a fabricated non-zero
+#: value.
 _MODULE_LABELS = [
     ("dynamic", "🌀", "Dynamic"),
     ("thermodynamic", "🌡️", "Thermodynamic"),
@@ -47,6 +56,8 @@ _MODULE_LABELS = [
     ("topographic", "⛰️", "Topographic"),
     ("temporal", "🕐", "Temporal"),
     ("confidence", "❓", "Uncertainty"),
+    ("ensemble_spread", "📊", "Ensemble spread"),
+    ("model_disagreement", "🔀", "Model disagreement"),
 ]
 
 _ROWS = [
@@ -83,6 +94,7 @@ class _RiskRow(QFrame):
         self._hover_style = f"border: none; border-radius: 4px; background-color: {TOKENS.bg_surface_alt};"
         self.setStyleSheet(self._base_style)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip(f"Click for the real detail behind {label}.")
 
         row_layout = QHBoxLayout(self)
         row_layout.setContentsMargins(0, 0, 0, 0)

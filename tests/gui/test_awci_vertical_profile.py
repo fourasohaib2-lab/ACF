@@ -78,6 +78,11 @@ def test_clicking_with_no_profile_does_not_raise(qapp):
     _click_at(widget, 50, 50)  # must not raise
 
 
+def test_widget_has_a_real_click_hint_tooltip(qapp):
+    widget = AWCIVerticalProfile()
+    assert widget.toolTip() != ""
+
+
 # --------------------------------------------------- AWCIVerticalProfileLevelDialog
 
 

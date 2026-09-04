@@ -4839,3 +4839,61 @@ vrai chantier de science distinct (construire un vrai module dédié) si
 demandé un jour ; le mode Real Physics n'offre toujours pas cette
 liste de niveaux standards (limite d'interpolation verticale déjà
 disclosed, inchangée).
+
+## Mise à jour 2026-09-03 (suite) — tooltips manquants + 2e occurrence du bug des 7/9 modules, trouvée et corrigée
+
+Suite explicite ("on continue"). Passe de polish accessibilité sur les
+tooltips déjà disclosed comme manquants dans
+`docs/awci/AWCI_BUTTON_CONTRACT.md` ("none — no `setToolTip()` yet") —
+en l'ajoutant à `_RiskRow`, une relecture croisée de son propre
+`_MODULE_LABELS` a révélé qu'il avait exactement le même défaut que
+celui trouvé et corrigé dans `AWCIVerticalProfileLevelDialog` pendant
+la fermeture précédente : seulement 7 des 9 vraies clés
+`AWCICalculator.calculate_module_scores()` étaient affichées,
+`ensemble_spread`/`model_disagreement` manquaient silencieusement.
+
+**Construit** :
+- `_ComponentRow` (`awci_dashboard.py`), `_RiskRow`
+  (`awci_risk_summary.py`) et `AWCIVerticalProfile`
+  (`awci_vertical_profile.py`) ont maintenant chacun un vrai
+  `setToolTip()` expliquant ce que le clic ouvre — les 3 derniers
+  endroits cliquables du dashboard qui n'en avaient pas encore.
+- `_MODULE_LABELS` dans `awci_risk_summary.py` (utilisé par
+  `AWCIRiskBadgeDetailDialog`, ouvert par les badges
+  Overall/Physical/Forecast) étendu de 7 à 9 entrées, avec
+  `ensemble_spread`/`model_disagreement` ajoutés — même correction que
+  celle déjà appliquée au dialogue du profil vertical.
+
+**Décision de périmètre honnête, inchangée** : `AWCIRadar` et
+`_ComponentValueList` (le panneau "AWCI COMPONENTS" du dashboard
+principal) restent volontairement à 7 lignes/axes — ils reproduisent
+`docs/reference/awci_dashboard_reference.jpg` pixel pour pixel, et
+cette maquette de référence ne montre que 7 lignes. Seuls les
+dialogues construits cette session sans contrainte de maquette
+(`AWCIRiskBadgeDetailDialog`, `AWCIVerticalProfileLevelDialog`)
+reçoivent la ventilation complète à 9 modules. `ensemble_spread`/
+`model_disagreement` restent honnêtement ~0.0 en mode démo (le
+pipeline per-point de ce dashboard ne fournit jamais de vrais
+`ensemble_members`/`model_realizations`) — jamais une valeur non nulle
+fabriquée.
+
+**Validation réelle** : 3 nouveaux tests (`test_composite_dialog_
+shows_all_9_real_modules_not_just_7`, `test_risk_row_and_component_
+row_have_real_tooltips`, `test_widget_has_a_real_click_hint_tooltip`).
+Suite complète **3965 → 3968**, `ruff`/`mypy` propres sur les 1435
+fichiers. Capture d'écran envoyée (`AWCIRiskBadgeDetailDialog` avec
+ses 9 vraies lignes : Dynamic 100.0, Thermodynamic 44.2, Convective
+38.1, Microphysical 27.2, Topographic 14.3, Temporal 1.9, Uncertainty
+34.0, Ensemble spread 0.0, Model disagreement 0.0).
+
+**Ce qui reste réellement** : `docs/awci/AWCI_BUTTON_CONTRACT.md` mis
+à jour pour refléter le nouveau tooltip et la correction des 9
+modules sur la ligne "Risk summary badge" ;
+`AWCI_COMPONENT_INVENTORY.md` inchangé (aucun composant nouveau, juste
+des tooltips + une correction de complétude sur des dialogues
+existants). Aucun autre endroit cliquable n'a été trouvé sans tooltip
+lors de cette relecture — cette 3e passe de polish clôt le point
+"aucune convention d'accessibilité" identifié dans l'audit initial
+pour les seuls contrôles réellement interactifs (pas un balayage ARIA
+complet du dépôt, toujours hors périmètre — voir
+`future-improvements.md`).

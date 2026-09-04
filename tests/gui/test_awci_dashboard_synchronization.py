@@ -146,6 +146,35 @@ def test_composite_dialog_shows_the_real_module_score_breakdown(qapp):
     assert f"{module_scores['dynamic']:.1f}" in dynamic_text
 
 
+def test_composite_dialog_shows_all_9_real_modules_not_just_7(qapp):
+    """Real regression guard: ensemble_spread/model_disagreement are 2
+    real AWCICalculator.calculate_module_scores() keys found missing
+    from this dialog's own breakdown while closing §51's vertical-
+    profile detail dialog - must not silently drop them here too."""
+    dashboard = AWCIDashboard()
+    dashboard.risk_summary.rowClicked.emit("overall")
+
+    dialog = dashboard._risk_badge_detail_window
+    assert set(dialog._module_rows.keys()) == {
+        "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
+        "ensemble_spread", "model_disagreement",
+    }
+
+
+def test_risk_row_and_component_row_have_real_tooltips(qapp):
+    """Real accessibility/discoverability polish - previously
+    disclosed as missing ("none — no setToolTip() yet") in
+    docs/awci/AWCI_BUTTON_CONTRACT.md."""
+    from acf.gui.dashboard.awci_dashboard import _ComponentRow
+    from acf.gui.dashboard.awci_risk_summary import _RiskRow
+
+    risk_row = _RiskRow("turbulence", "🌪️", "Turbulence Risk")
+    assert risk_row.toolTip() != ""
+
+    component_row = _ComponentRow("dynamic", "🌀", "Dynamic")
+    assert component_row.toolTip() != ""
+
+
 # --------------------------------------------------- flight-level selector
 
 

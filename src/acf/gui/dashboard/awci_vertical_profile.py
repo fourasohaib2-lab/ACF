@@ -70,6 +70,7 @@ class AWCIVerticalProfile(QWidget):
         self.setMinimumSize(200, 250)
         self.setStyleSheet("background: transparent;")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip("Click a bar for the real per-module breakdown at that level.")
 
     def set_profile(self, profile: dict[str, float]):
         """
