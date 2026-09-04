@@ -7297,3 +7297,59 @@ d'une entrée non-numérique/vide) + 1 test de routage dans
 
 **Ce qui reste réellement** : Products, Reports, Output restent à
 construire.
+
+## Mise à jour 2026-09-04 (suite) — Phase 29 (Output) : un vrai bug de conflit de dimensions trouvé et corrigé dans un writer partagé
+
+**Investigation** : `acf.simulation_engine.output.{netcdf_writer,
+zarr_writer}` sont de vrais writers déjà fonctionnels et testés
+(CF-1.8 NetCDF4 réel, Zarr chunké réel). Source de données réelle :
+`ModuleRegistry`'s own `coupled_earth_solver` (déjà connecté) - son
+vrai `initialize_coupled_state()` (construction vectorisée réelle, pas
+un solve itératif coûteux) fournit le vrai vecteur d'état à 15
+variables (T/P/U/V/q/O3/CO2/SST/Salinité/courants océaniques/Glace/
+Sol/Biomasse). Pour GRIB2 : `eccodes`/`cfgrib` sont réellement
+installés (vraie LECTURE GRIB2 possible), mais aucun vrai ÉCRIVAIN
+GRIB2 n'existe dans ce dépôt - écrire un GRIB2 correct exige une vraie
+gestion des templates/éditions GRIB, hors périmètre raisonnable de
+cette session (un essai naïf risquerait un fichier techniquement
+écrit mais scientifiquement non-conforme, pire que ne rien écrire).
+Pour GeoTIFF : les classes existantes (`geotiff_reader`/
+`geotiff_adapter`) sont de purs stubs (aucune ne lit réellement les
+pixels) - `rasterio` (déjà une vraie dépendance ACF) est utilisé
+directement à la place, un vrai écrivain GeoTIFF standard et correct.
+
+**Un vrai bug trouvé en testant l'export réel du vrai état couplé** :
+`ZarrWriter.write_zarr()` étiquetait INCONDITIONNELLEMENT tout tableau
+3D réel comme dimension "level", peu importe sa vraie taille - un vrai
+état Terre-système a pourtant plusieurs vraies profondeurs 3D
+distinctes (16 niveaux atmosphériques réels vs 4 couches de sol
+réelles) - xarray rejetait alors à raison le conflit réel de tailles.
+`NetcdfWriter.write_state()` avait déjà la vraie correction (repli sur
+"step" quand la taille ne correspond pas à `levels`) - reflétée ici
+dans `ZarrWriter` pour que les deux writers frères se comportent de
+façon identique sur le même état réel, conformément à la propre
+docstring de la classe ("2D/3D/4D"). Vérification d'ampleur d'impact :
+seuls 2 tests réels préexistants appellent `ZarrWriter` directement,
+tous deux avec un seul tableau 3D (donc insensibles au correctif) -
+suite réexécutée avant tout ajout de test, 0 régression.
+
+**Construit** : `OutputPanel` (`panel_manager.py`) - 3 vrais boutons
+d'export (NetCDF4, Zarr, GeoTIFF - ce dernier écrit la vraie
+température de surface avec un vrai CRS EPSG:4326 et une vraie
+transformation affine, vérifiée à l'octet près en aller-retour) plus
+une disclosure honnête pour GRIB2 ("non disponible", jamais fabriqué).
+Répertoire d'export réel et disclosed, injectable pour les tests (même
+convention que `save_case_studies()`'s propre paramètre `path`
+explicite) - un vrai run de test n'écrit jamais dans le vrai dépôt.
+
+**Validation réelle** : `ruff`/`mypy` propres. 1 nouveau test de
+régression réel (`tests/test_simulation_engine.py` - un vrai état à 2
+profondeurs 3D distinctes s'exporte désormais sans conflit) + 6
+nouveaux tests dédiés (`tests/test_esoc_output_panel.py` - export
+NetCDF4/Zarr/GeoTIFF réels avec toutes les 15 variables réelles,
+GeoTIFF vérifié à l'octet près, disclosure GRIB2 honnête, disclosure
+"non connecté" honnête) + 1 test de routage (`tests/test_esoc.py`,
+32→33 panneaux). Suite complète réexécutée : 4254 → 4262 tests, tous
+verts.
+
+**Ce qui reste réellement** : Products, Reports restent à construire.

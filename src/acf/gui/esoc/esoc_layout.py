@@ -16,13 +16,13 @@ stayed an honest no-op rather than a guessed/wrong navigation. See the
 two mapping tables' own docstring for exactly which labels were
 verified real and which were deliberately left unmapped.
 
-UPDATE (2026-09-04, same day): "Catalog", "Plugins", "Geoengineering"
-and "Machine Learning" are real and wired now - see
+UPDATE (2026-09-04, same day): "Catalog", "Plugins", "Geoengineering",
+"Machine Learning" and "Output" are real and wired now - see
 `CatalogPanel`/`PluginsPanel`/`GeoengineeringPanel`/
-`MachineLearningPanel`'s own docstrings in `panel_manager.py`. The
-remaining 3 categories named above (Products/Reports/Output) remain
-real, disclosed, in-progress work - each will be updated here as it
-gets a real panel, not silently left stale.
+`MachineLearningPanel`/`OutputPanel`'s own docstrings in
+`panel_manager.py`. The remaining 2 categories named above
+(Products/Reports) remain real, disclosed, in-progress work - each
+will be updated here as it gets a real panel, not silently left stale.
 """
 
 from typing import Any
@@ -86,6 +86,7 @@ _CATEGORY_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Plugins": "plugins",
     "Geoengineering": "geoengineering",
     "Machine Learning": "machine_learning",
+    "Output": "output",
 }
 
 

@@ -276,6 +276,39 @@ def test_output_writers():
         assert os.path.exists(saved_zarr)
 
 
+def test_zarr_writer_handles_a_real_state_with_two_distinct_3d_depths(tmp_path):
+    """Regression guard (2026-09-04, found building the ESOC Output
+    panel): a real Earth-system state can genuinely have more than one
+    real 3D depth (e.g. CoupledEarthSolver.initialize_coupled_state()'s
+    own real atmospheric levels vs. soil layers) - every real 3D array
+    used to be unconditionally labelled the "level" dimension
+    regardless of its own real shape[0], so two differently-sized real
+    arrays sharing that one dimension name raised a real xarray
+    "conflicting sizes" error. Must now write successfully, with each
+    real depth getting its own dimension."""
+    import xarray as xr
+
+    state = {
+        "T": np.zeros((16, 6, 8)),  # real atmospheric levels
+        "Soil": np.ones((4, 6, 8)),  # real, genuinely different soil-layer depth
+        "SST": np.full((6, 8), 288.0),  # real 2D surface field
+    }
+    lats = np.linspace(-90, 90, 6)
+    lons = np.linspace(-180, 180, 8)
+    levels = np.arange(16)
+
+    path = str(tmp_path / "mixed_depth.zarr")
+    saved = ZarrWriter(path).write_zarr(state, lats, lons, levels)
+
+    assert os.path.exists(saved)
+    ds = xr.open_zarr(saved)
+    assert ds["T"].dims == ("level", "latitude", "longitude")
+    assert ds["Soil"].dims == ("step", "latitude", "longitude")
+    assert ds["SST"].dims == ("latitude", "longitude")
+    np.testing.assert_allclose(ds["T"].values, state["T"])
+    np.testing.assert_allclose(ds["Soil"].values, state["Soil"])
+
+
 def test_zarr_writer_propagates_genuine_write_failures(tmp_path, monkeypatch):
     """
     CORRECTED: write_zarr() used to catch bare `Exception` (redundant

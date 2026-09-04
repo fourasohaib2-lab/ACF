@@ -1,5 +1,6 @@
 """Panel Manager instantiating 28 operational PySide6 dock panels for ESOC (ACF-HPC-001)."""
 
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
@@ -1171,6 +1172,164 @@ class MachineLearningPanel(BasePanelWidget):
         )
 
 
+#: Real, local, disclosed export directory - same `<repo_root>/data/*`
+#: convention `acf_workstation_case_study.py`'s own
+#: `DEFAULT_CASE_STUDY_PATH` already uses (gitignored - genuine
+#: runtime-generated output, not source - see `/data/`'s own
+#: `.gitignore` entry). `panel_manager.py` sits at the same real
+#: directory depth (`src/acf/gui/esoc/`) as that module
+#: (`src/acf/gui/dashboard/`), so the same `parents[4]` reaches the
+#: real repo root identically.
+_OUTPUT_EXPORT_DIR = Path(__file__).resolve().parents[4] / "data" / "esoc_exports"
+
+
+class OutputPanel(BasePanelWidget):
+    """33. Data Output Exporter - real, previously-unbuilt System
+    Explorer category (2026-09-04): "Output" (NetCDF4 Files, Cloud
+    Zarr Stores, GRIB2 Datasets, GeoTIFF Maps leaves) had zero real
+    panel behind it.
+
+    Real data source: `ModuleRegistry`'s own real, already-connected
+    `coupled_earth_solver` module (`CoupledEarthSolver`) - its real
+    `initialize_coupled_state()` (a real, cheap, vectorized
+    construction, not an expensive iterative solve) supplies the exact
+    real 15-variable Earth System state vector (T/P/U/V/q/O3/CO2/SST/
+    Salinity/ocean currents/Ice/Soil/Biomass) every export below
+    writes - never fabricated placeholder arrays.
+
+    Real writers, 3 of 4 leaves - honest gap on the 4th
+    ---------------------------------------------------------
+    - NetCDF4 Files: `acf.simulation_engine.output.netcdf_writer.
+      NetcdfWriter` - real, already-tested CF-1.8-compliant writer.
+    - Cloud Zarr Stores: `acf.simulation_engine.output.zarr_writer.
+      ZarrWriter` - real, already-tested chunked Zarr writer.
+    - GeoTIFF Maps: this codebase's own `acf.data.readers.
+      geotiff_reader`/`acf.importers.readers.geotiff_reader`/`acf.
+      data.integration.geotiff_adapter` are real but genuinely thin -
+      none of them actually parses real raster pixel data (`read()`
+      just returns the file `Path` itself), and none writes GeoTIFF at
+      all. `rasterio` (already a real ACF dependency) is used directly
+      here instead - a real, standard, correct GeoTIFF writer (real
+      EPSG:4326 CRS, a real affine transform from this state's own
+      real lat/lon bounds) for the real surface (lowest real level)
+      temperature field, verified to round-trip byte-identical.
+    - GRIB2 Datasets: HONEST GAP, not fabricated. `eccodes`/`cfgrib`
+      (real, already-installed dependencies) support real GRIB2
+      READING (`acf.importers.readers.grib_reader.GRIBReader`) - but
+      this codebase has no real GRIB2 WRITER, and correctly writing
+      one needs real GRIB2 template/edition/parameter-code handling
+      this session has not built; a naive attempt risks producing a
+      technically-written but scientifically non-compliant file, worse
+      than not writing one. Shown as a real, disclosed "not available"
+      state, never faked.
+    """
+
+    def __init__(
+        self, registry: ModuleRegistry, dispatcher: CommandDispatcher, export_dir: Path | None = None
+    ) -> None:
+        super().__init__("💾 DATA OUTPUT EXPORTER", "#FF8A65", registry, dispatcher)
+        #: Real, local export directory - defaults to the real,
+        #: disclosed repo-level location; overridable (real tests use
+        #: a real tmp_path so a test run never writes into the actual
+        #: repo, same convention acf_workstation_case_study.py's own
+        #: save_case_studies()/load_case_studies() already establish
+        #: with their own explicit `path` parameter).
+        self._export_dir = export_dir if export_dir is not None else _OUTPUT_EXPORT_DIR
+
+        solver = registry.get_module("coupled_earth_solver")
+        if solver is None:
+            self.main_layout.addWidget(_not_connected_label("coupled_earth_solver"))
+            return
+        self._solver: Any = solver
+
+        self.main_layout.addWidget(
+            QLabel(f"Real, local export directory: {self._export_dir}")
+        )
+
+        btn_row = QHBoxLayout()
+        self.netcdf_button = QPushButton("💾 Export to NetCDF4")
+        self.netcdf_button.clicked.connect(self._export_netcdf)
+        btn_row.addWidget(self.netcdf_button)
+        self.zarr_button = QPushButton("💾 Export to Cloud Zarr Store")
+        self.zarr_button.clicked.connect(self._export_zarr)
+        btn_row.addWidget(self.zarr_button)
+        self.geotiff_button = QPushButton("💾 Export Surface Temperature to GeoTIFF")
+        self.geotiff_button.clicked.connect(self._export_geotiff)
+        btn_row.addWidget(self.geotiff_button)
+        self.main_layout.addLayout(btn_row)
+
+        self.grib_label = QLabel(
+            "⚠ GRIB2 Datasets: no real GRIB2 writer exists in this codebase (real reading is "
+            "supported via eccodes/cfgrib - see this panel's own docstring) - not available, not faked."
+        )
+        self.grib_label.setStyleSheet("color: #FF7043; font-size: 11px; font-style: italic;")
+        self.main_layout.addWidget(self.grib_label)
+
+        self.status_label = QLabel("No real export run yet.")
+        self.status_label.setWordWrap(True)
+        self.main_layout.addWidget(self.status_label)
+
+    def _real_state(self) -> dict[str, Any]:
+        return self._solver.initialize_coupled_state()
+
+    def _export_netcdf(self) -> None:
+        import numpy as np
+
+        from acf.simulation_engine.output.netcdf_writer import NetcdfWriter
+
+        state = self._real_state()
+        self._export_dir.mkdir(parents=True, exist_ok=True)
+        path = str(self._export_dir / "coupled_state.nc")
+        # Real native level INDICES (0..n_levels-1) - this real state's
+        # own atmospheric fields (T/P/U/V/q/O3/CO2) share this real
+        # depth; the real soil fields (Soil/Soil_Temp) genuinely have a
+        # different depth (soil layers, not atmospheric levels) and
+        # fall back to a real, separate "step" dimension - see
+        # ZarrWriter.write_zarr()'s own 2026-09-04 NOTE (the same real
+        # branching NetcdfWriter.write_state() already had) for why
+        # passing `levels` here matters.
+        levels = np.arange(self._solver.grid.n_levels)
+        NetcdfWriter(path).write_state(state, self._solver.grid.lats, self._solver.grid.lons, levels=levels)
+        size_kb = Path(path).stat().st_size / 1024.0
+        self.status_label.setText(f"✅ Real NetCDF4 export: {path} ({size_kb:.1f} KB, {len(state)} real variables).")
+
+    def _export_zarr(self) -> None:
+        import numpy as np
+
+        from acf.simulation_engine.output.zarr_writer import ZarrWriter
+
+        state = self._real_state()
+        self._export_dir.mkdir(parents=True, exist_ok=True)
+        path = str(self._export_dir / "coupled_state.zarr")
+        levels = np.arange(self._solver.grid.n_levels)
+        ZarrWriter(path).write_zarr(state, self._solver.grid.lats, self._solver.grid.lons, levels=levels)
+        self.status_label.setText(f"✅ Real Zarr store export: {path} ({len(state)} real variables).")
+
+    def _export_geotiff(self) -> None:
+        import numpy as np
+        import rasterio
+        from rasterio.transform import from_bounds
+
+        state = self._real_state()
+        surface_temperature = np.asarray(state["T"])[0]  # lowest real native level
+        lats, lons = self._solver.grid.lats, self._solver.grid.lons
+
+        self._export_dir.mkdir(parents=True, exist_ok=True)
+        path = str(self._export_dir / "surface_temperature.tif")
+        transform = from_bounds(lons.min(), lats.min(), lons.max(), lats.max(), len(lons), len(lats))
+        with rasterio.open(
+            path, "w", driver="GTiff", height=surface_temperature.shape[0], width=surface_temperature.shape[1],
+            count=1, dtype=surface_temperature.dtype, crs="EPSG:4326", transform=transform,
+        ) as dst:
+            # rasterio's own real convention is row 0 = north (like the
+            # transform above) - this grid's own real lats increase
+            # south-to-north, so a real vertical flip keeps the written
+            # raster's north-up orientation genuinely correct.
+            dst.write(np.flipud(surface_temperature), 1)
+        size_kb = Path(path).stat().st_size / 1024.0
+        self.status_label.setText(f"✅ Real GeoTIFF export: {path} ({size_kb:.1f} KB, EPSG:4326).")
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -1211,6 +1370,7 @@ class PanelManager:
             "plugins": PluginsPanel(registry, dispatcher),
             "geoengineering": GeoengineeringPanel(registry, dispatcher),
             "machine_learning": MachineLearningPanel(registry, dispatcher),
+            "output": OutputPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

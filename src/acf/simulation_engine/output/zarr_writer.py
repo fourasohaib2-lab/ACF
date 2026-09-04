@@ -33,6 +33,20 @@ class ZarrWriter:
         Returns:
             str: Path to saved Zarr store.
         """
+        # NOTE (correction, 2026-09-04): every real 3D array used to be
+        # unconditionally labelled the "level" dimension, regardless of
+        # its own real shape[0] - a real Earth-system state genuinely
+        # has more than one real 3D depth (e.g. atmospheric levels vs.
+        # soil layers, CoupledEarthSolver.initialize_coupled_state()'s
+        # own real output) would then fail with a real xarray
+        # "conflicting sizes for dimension 'level'" error, since two
+        # differently-sized real arrays can't share one real dimension
+        # name. NetcdfWriter.write_state() already had the correct real
+        # fix (fall back to "step" for a real 3D array whose shape[0]
+        # doesn't match the given `levels`) - mirrored here so both
+        # real sibling writers behave identically on the same real
+        # state dict, matching this class's own docstring claim of
+        # real "2D/3D/4D" support.
         data_vars = {}
         for var_name, array in state.items():
             if not isinstance(array, np.ndarray):
@@ -40,7 +54,10 @@ class ZarrWriter:
             if array.ndim == 2:
                 data_vars[var_name] = (["latitude", "longitude"], array)
             elif array.ndim == 3:
-                data_vars[var_name] = (["level", "latitude", "longitude"], array)
+                if levels is not None and array.shape[0] == len(levels):
+                    data_vars[var_name] = (["level", "latitude", "longitude"], array)
+                else:
+                    data_vars[var_name] = (["step", "latitude", "longitude"], array)
 
         coords = {"latitude": lats, "longitude": lons}
         if levels is not None:
