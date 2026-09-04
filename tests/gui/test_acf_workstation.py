@@ -366,6 +366,80 @@ def test_clicking_a_real_map_updates_the_real_stability_indices(qapp):
     assert ws.stability_indices_panel.status()["has_data"] is True
 
 
+def test_domain_selector_lists_global_first_then_the_real_named_regions(qapp):
+    ws = ACFWorkstation()
+    items = [ws.domain_selector.itemText(i) for i in range(ws.domain_selector.count())]
+    assert items[0] == "Global"
+    assert "Western Mediterranean" in items
+    assert ws.domain_selector.currentText() == "Global"
+
+
+def test_selecting_a_real_domain_crops_every_real_main_map_panel(qapp):
+    """Real Phase 40 regression guard (2026-09-05): switching the
+    Domain selector must re-slice every real nav panel to a genuinely
+    smaller real grid - no new solver run."""
+    ws = ACFWorkstation()
+    volume = _real_volume(n_lat=20, n_lon=36)  # fine enough to have >= 2x2 real points in a named region
+    ws._on_volume_ready(volume)
+    full_shape = ws.overview_panel._volume["temperature_volume"].shape
+
+    ws.domain_selector.setCurrentText("Western Mediterranean")
+
+    cropped_shape = ws.overview_panel._volume["temperature_volume"].shape
+    assert cropped_shape != full_shape
+    assert cropped_shape[1] * cropped_shape[2] < full_shape[1] * full_shape[2]
+    # Every real nav panel must have picked up the SAME real cropped volume.
+    assert ws.dynamics_panel._volume is ws.overview_panel._volume
+    assert ws.terrain_panel._volume is ws.overview_panel._volume
+
+
+def test_domain_selection_never_triggers_a_new_solver_run(qapp, monkeypatch):
+    ws = ACFWorkstation()
+    ws._on_volume_ready(_real_volume(n_lat=20, n_lon=36))
+
+    def _fail_if_called(*_args, **_kwargs):
+        raise AssertionError("a new solver run must not happen on a domain change")
+
+    monkeypatch.setattr("acf.gui.dashboard.acf_workstation.compute_real_complexity_volume", _fail_if_called)
+
+    ws.domain_selector.setCurrentText("North Africa")
+
+    assert ws.overview_panel._volume is not None
+
+
+def test_side_panels_stay_on_the_full_uncropped_volume_regardless_of_domain(qapp):
+    """The always-visible side panels (Sounding/Interaction Graph/
+    Stability Indices) are real per-point diagnostics, not maps - a
+    Domain selection must never shrink what they can look up."""
+    ws = ACFWorkstation()
+    volume = _real_volume(n_lat=20, n_lon=36)
+    ws._on_volume_ready(volume)
+
+    ws.domain_selector.setCurrentText("Western Mediterranean")
+
+    lat, lon = float(volume["lats"][0]), float(volume["lons"][0])  # a real point outside the cropped domain
+    ws.overview_panel.map_panel.pointClicked.emit(lat, lon)
+
+    assert ws.sounding_panel.status()["point"] == (lat, lon)
+
+
+def test_re_running_with_a_non_global_domain_already_selected_keeps_the_pipeline_monitor_honest(qapp):
+    """Real regression guard for the identity-check fix (Phase 40):
+    the Interactions/Analysis/Visualization stages must still report
+    OK, never a false FAIL, when a real run completes while a non-
+    Global domain is already selected."""
+    ws = ACFWorkstation()
+    ws._on_volume_ready(_real_volume(n_lat=20, n_lon=36))
+    ws.domain_selector.setCurrentText("Western Mediterranean")
+
+    ws._on_volume_ready(_real_volume(n_lat=20, n_lon=36, seed=2))
+
+    snapshot = ws.pipeline_monitor.status_snapshot()
+    assert snapshot["Interactions"] == "OK"
+    assert snapshot["Analysis"] == "OK"
+    assert snapshot["Visualization"] == "OK"
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

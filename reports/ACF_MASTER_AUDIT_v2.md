@@ -7832,3 +7832,57 @@ d'écran réelle confirmant la grille sous le Sounding.
 sélecteur "Domain" ; le panneau "Layers/Domains" (couches raster/
 vecteur) - les 2 derniers restent les plus structurants (rayon
 d'impact large ou architecture nouvelle).
+
+## Mise à jour 2026-09-05 (suite) — Phase 40 : le vrai sélecteur "Domain"
+
+**Pourquoi / décision déléguée** : dernier des 3 chantiers "plus
+structurants" identifiés en fin de Phase 39 - l'utilisateur a de
+nouveau délégué ("je suis ton jugement"). Choisi en premier des 3 car
+architecturalement le plus élégant : un seul point d'entrée central
+(`_render_all_panels()`) plutôt qu'une modification des 14 panneaux
+individuels.
+
+**Construit** :
+- `acf_workstation_domain.py` : `crop_real_volume_to_domain()` (sans
+  Qt, testable isolément) - découpe RÉELLEMENT chaque tableau
+  lat/lon du volume déjà calculé vers une vraie boîte rectangulaire
+  nommée, générique par correspondance de forme (jamais une liste de
+  clés codée en dur) - jamais un second run solveur, jamais une
+  donnée régionale fabriquée. 4 régions réelles nommées
+  (Western Mediterranean/North Africa/Western Europe/North Atlantic),
+  boîtes rectangulaires rondes et honnêtement divulguées comme des
+  approximations.
+- `_render_all_panels()` calcule ce vrai découpage une seule fois par
+  rendu et distribue le MÊME objet découpé à tous les panneaux
+  d'onglet réels ; les panneaux latéraux permanents (Sounding/
+  Interaction Graph/Stability Indices/Map Inspector) restent
+  délibérément sur le vrai volume complet non découpé - ce sont des
+  diagnostics par point, pas des cartes, et une sélection de domaine
+  ne doit jamais réduire ce qu'un clic peut atteindre.
+- Un vrai minimum honnête de 2×2 points de grille est imposé
+  (`contourf()` de matplotlib ne peut réellement pas afficher moins) -
+  découverte en écrivant les tests d'intégration eux-mêmes (un crash
+  réel reproductible), corrigée à la source plutôt que masquée ; un
+  découpage trop fin retombe sur "Global" avec un message de statut
+  honnête plutôt que de planter ou de rendre du vide.
+- Correction du Pipeline Monitor : ses vérifications Interactions/
+  Analysis/Visualization comparaient l'identité contre le paramètre
+  `volume` brut du run - cassé en toute rigueur dès qu'un domaine
+  non-Global était déjà sélectionné au moment d'un nouveau run
+  (jamais observé avant, car aucun test ne couvrait ce cas) ; corrigé
+  pour comparer contre l'objet réellement distribué aux panneaux.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 7
+nouveaux tests sur `crop_real_volume_to_domain()`
+(`tests/test_acf_workstation_domain.py`, incluant le cas de découpage
+trop fin découvert ci-dessus), 5 nouveaux tests d'intégration
+(`tests/gui/test_acf_workstation.py`, dont un couvrant explicitement
+la régression du Pipeline Monitor corrigée). Capture d'écran réelle
+confirmant le vrai découpage géographique sur la carte (petite zone
+colorée positionnée exactement sur l'Europe du Sud/Méditerranée
+occidentale, sur fond de carte du monde complet).
+
+**Ce qui reste réellement** : le Global Timeline avec vignettes ; le
+panneau "Layers/Domains" (couches raster/vecteur, cases à cocher
+génériques de la maquette sans correspondance fonctionnelle claire à
+ce jour).

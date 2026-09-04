@@ -565,6 +565,30 @@ shear/N are inherently full-column or lowest-2-level diagnostics), so
 only updated in `_on_volume_ready()`/`_on_map_point_clicked()`, not
 `_on_level_changed()`.
 
+Phase 40 (2026-09-05) built the real **Domain** selector, matching the
+mockup's own top-bar "Domain: Western Mediterranean" chip -
+`acf_workstation_domain.crop_real_volume_to_domain()` slices EVERY
+real lat/lon-shaped array an already-computed volume carries down to a
+real, named rectangular box (generic over the volume's own field
+names via shape-matching, not a hardcoded key list) - "Global" (no
+crop) shows the real solver's own full native grid exactly as before;
+any other real region only crops, never re-runs the solver and never
+fabricates regional data. `_render_all_panels()` now computes this
+real crop once per render and passes the SAME cropped object to every
+real nav-tab panel (`_domain_cropped_volume()`); the always-visible
+side panels (Sounding/Interaction Graph/Stability Indices/Map
+Inspector) deliberately stay on the real, full uncropped volume - they
+are per-point diagnostics, not maps, and a Domain selection should
+never shrink what a click can reach. A real, honest minimum of 2x2
+grid points is enforced (matplotlib's own `contourf()` genuinely
+cannot render fewer) - a too-thin real crop falls back to Global with
+a disclosed status message rather than crashing or rendering nothing.
+The Pipeline Monitor's own Interactions/Analysis/Visualization checks
+were fixed to compare against the actual real object every panel
+received (`display_volume`, returned by `_render_all_panels()`) rather
+than the raw run's own `volume` parameter, so re-running while a non-
+Global domain is already selected never reports a false FAIL.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -620,6 +644,7 @@ from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDial
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
+from acf.gui.dashboard.acf_workstation_domain import DOMAIN_BOUNDS, DOMAIN_NAMES, crop_real_volume_to_domain
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
 from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
@@ -764,6 +789,26 @@ class ACFWorkstation(QWidget):
         self.model_selector.setCurrentText(_DEFAULT_MODEL)
         self.model_selector.currentTextChanged.connect(self._on_model_selector_changed)
         top_bar.addWidget(self.model_selector)
+
+        # Real Domain selector (added Phase 40, 2026-09-05, matching
+        # the reference mockup's own top-bar "Domain: Western
+        # Mediterranean" chip) - a real geographic crop of the
+        # already-computed volume's own lat/lon grid, applied to every
+        # real main-map panel by _render_all_panels() below via
+        # acf_workstation_domain.crop_real_volume_to_domain() - never a
+        # second solver run, never fabricated regional data. The
+        # always-visible side panels (Sounding/Interaction Graph/
+        # Stability Indices/Map Inspector) stay on the real, full
+        # uncropped volume - they are per-point diagnostics, not maps.
+        top_bar.addWidget(self._label("Domain:"))
+        self.domain_selector = QComboBox()
+        self.domain_selector.addItems(list(DOMAIN_NAMES))
+        self.domain_selector.setToolTip(
+            "Real geographic crop of the already-computed volume's own lat/lon grid -\n"
+            "never a second solver run, never fabricated regional data."
+        )
+        self.domain_selector.currentTextChanged.connect(self._on_domain_changed)
+        top_bar.addWidget(self.domain_selector)
 
         self.run_button = QPushButton("🔄 Run")
         self.run_button.setToolTip(
@@ -1287,21 +1332,28 @@ class ACFWorkstation(QWidget):
         norm_status, norm_detail = run_real_derivation_consistency_check(volume)
         self.pipeline_monitor.set_stage("Normalization", norm_status, norm_detail)
 
-        self._render_all_panels()
+        # Real display volume (added Phase 40, 2026-09-05) - the exact
+        # object every panel below actually received: `volume` itself
+        # for the default "Global" domain, or a real geographic crop
+        # of it otherwise - the Interactions/Analysis/Visualization
+        # checks below compare against THIS, never the raw `volume`
+        # parameter, so a non-Global domain selection never falsely
+        # reports these real stages as FAIL.
+        display_volume = self._render_all_panels()
 
-        interactions_ok = self.interactions_panel._volume is volume
+        interactions_ok = self.interactions_panel._volume is display_volume
         self.pipeline_monitor.set_stage(
             "Interactions", "OK" if interactions_ok else "FAIL",
             "Atmospheric Interaction Engine re-sliced this real volume."
             if interactions_ok else "Interaction Engine panel did not pick up this real volume.",
         )
-        analysis_ok = self.complexity_panel._volume is volume
+        analysis_ok = self.complexity_panel._volume is display_volume
         self.pipeline_monitor.set_stage(
             "Analysis", "OK" if analysis_ok else "FAIL",
             "Complexity Explorer re-sliced this real volume."
             if analysis_ok else "Complexity Explorer panel did not pick up this real volume.",
         )
-        rendered_panels = [name for name, panel in self._panel_by_name.items() if getattr(panel, "_volume", None) is volume]
+        rendered_panels = [name for name, panel in self._panel_by_name.items() if getattr(panel, "_volume", None) is display_volume]
         total_volume_panels = [name for name, panel in self._panel_by_name.items() if hasattr(panel, "_volume")]
         self.pipeline_monitor.set_stage(
             "Visualization",
@@ -1369,23 +1421,49 @@ class ACFWorkstation(QWidget):
         mean_pressure = float(self._volume["pressure_volume_hpa"][self._level_index].mean())
         self.level_label.setText(f"~{mean_pressure:.0f} hPa (native level {self._level_index + 1}/{self._volume['n_levels']})")
 
-    def _render_all_panels(self) -> None:
+    def _domain_cropped_volume(self) -> dict[str, Any]:
+        """Real, current display volume - the full real volume for
+        "Global", or a real geographic crop of it for any other real
+        Domain selection (added Phase 40, 2026-09-05). Falls back to
+        the full volume (with an honest status message) if the
+        selected real box genuinely contains none of this volume's own
+        native grid points, rather than leaving every panel blank."""
+        assert self._volume is not None
+        domain_name = self.domain_selector.currentText()
+        bounds = DOMAIN_BOUNDS.get(domain_name)
+        if bounds is None:  # "Global" - no crop
+            return self._volume
+        try:
+            return crop_real_volume_to_domain(self._volume, *bounds)
+        except ValueError as exc:
+            self._set_status(f"⚠ Domain {domain_name!r} has no real grid points at this resolution: {exc}")
+            return self._volume
+
+    def _render_all_panels(self) -> dict[str, Any]:
         if self._volume is None:
-            return
-        self.overview_panel.update_from_volume(self._volume, self._level_index)
-        self.dynamics_panel.update_from_volume(self._volume, self._level_index)
-        self.thermodynamics_panel.update_from_volume(self._volume, self._level_index)
-        self.microphysics_panel.update_from_volume(self._volume, self._level_index)
-        self.temporal_panel.update_from_volume(self._volume, self._level_index)
-        self.confidence_panel.update_from_volume(self._volume, self._level_index)
-        self.multimodel_panel.update_from_volume(self._volume, self._level_index)
-        self.interactions_panel.update_from_volume(self._volume, self._level_index)
-        self.quality_panel.update_from_volume(self._volume, self._level_index)
-        self.complexity_panel.update_from_volume(self._volume, self._level_index)
-        self.atmosphere_3d_panel.update_from_volume(self._volume, self._level_index)
-        self.case_study_panel.update_from_volume(self._volume, self._level_index)
-        self.convection_panel.update_from_volume(self._volume, self._level_index)
-        self.terrain_panel.update_from_volume(self._volume, self._level_index)
+            return {}
+        display_volume = self._domain_cropped_volume()
+        self.overview_panel.update_from_volume(display_volume, self._level_index)
+        self.dynamics_panel.update_from_volume(display_volume, self._level_index)
+        self.thermodynamics_panel.update_from_volume(display_volume, self._level_index)
+        self.microphysics_panel.update_from_volume(display_volume, self._level_index)
+        self.temporal_panel.update_from_volume(display_volume, self._level_index)
+        self.confidence_panel.update_from_volume(display_volume, self._level_index)
+        self.multimodel_panel.update_from_volume(display_volume, self._level_index)
+        self.interactions_panel.update_from_volume(display_volume, self._level_index)
+        self.quality_panel.update_from_volume(display_volume, self._level_index)
+        self.complexity_panel.update_from_volume(display_volume, self._level_index)
+        self.atmosphere_3d_panel.update_from_volume(display_volume, self._level_index)
+        self.case_study_panel.update_from_volume(display_volume, self._level_index)
+        self.convection_panel.update_from_volume(display_volume, self._level_index)
+        self.terrain_panel.update_from_volume(display_volume, self._level_index)
+        return display_volume
+
+    def _on_domain_changed(self, _domain_name: str) -> None:
+        """Real, immediate re-slice - no new solver run, matching this
+        Workstation's own "compute once, re-slice per interaction"
+        discipline (added Phase 40, 2026-09-05)."""
+        self._render_all_panels()
 
     # ----------------------------------------------------------------- nav
 
