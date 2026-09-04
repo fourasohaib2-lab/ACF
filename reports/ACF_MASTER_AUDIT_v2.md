@@ -6079,3 +6079,60 @@ Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
 Lab, Research Mode, Configuration Management, palette de commandes,
 raccourcis, export, extension API) listés "(planned)", pour les mêmes
 raisons honnêtes déjà disclosed.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 9 : export réel PNG/SVG/CSV/JSON sur le widget carte partagé
+
+Suite explicite ("continue"), même discipline progressive. Cette passe
+sort du cadre "un Lab de plus" — elle ferme un vrai gap déjà disclosed
+dans le plan initial ("export (PNG/SVG/CSV/JSON)") en l'appliquant au
+bon endroit : **le widget carte partagé** (`AWCIMapPanel`,
+`awci_map_panel.py`), pas un nouveau module. Résultat : toutes les
+cartes de tous les modules du Workstation ET du dashboard AWCI
+existant (qui réutilise le même widget) gagnent 3 nouveaux formats
+d'export réels d'un coup.
+
+**Constat** : `AWCIMapPanel` avait déjà un vrai bouton "⬇" fonctionnel
+(export PNG, `figure.savefig()`) — mais seulement PNG, un `QPushButton`
+simple. Aucune donnée brute (CSV/JSON) n'était exportable, seulement
+l'image rendue.
+
+**Construit** :
+- Le bouton "⬇" devient un vrai `QToolButton` + `QMenu` (même
+  convention "vraies actions derrière un seul contrôle" déjà établie
+  pour le menu "☰" d'`ACFGeneralDashboard`) — 4 vraies actions : Save
+  as PNG, Save as SVG (le vrai backend vectoriel natif de matplotlib,
+  pas une image PNG rebaptisée), Export data as CSV, Export data as
+  JSON. Aucun appelant/test existant ne dépendait du type Qt exact de
+  `download_button` (seulement `is not None`) — extension rétrocompatible
+  vérifiée par grep avant modification.
+- Nouveau state réel `self._last_lons`/`_last_lats`/`_last_grid`,
+  peuplé dans `update_data()` avec exactement les mêmes données que
+  celles rendues à l'écran (`_external_field`, le motif de démo AWCI,
+  OU l'état honnêtement vierge du Workstation) — CSV/JSON exportent
+  donc toujours ce qui est réellement affiché, jamais une seconde
+  source potentiellement obsolète.
+- CSV : format long réel (une vraie ligne par cellule de grille réelle
+  — `lat,lon,value`). JSON : structure réelle avec titre, horodatage
+  UTC réel (même convention que le "RENDERED" déjà affiché ailleurs),
+  lats/lons/grid. Une vraie cellule honnêtement vierge (NaN — ex.
+  l'état vide `show_demo_fallback=False` du Workstation, ou une
+  singularité aux pôles) s'exporte en champ CSV vide / `null` JSON,
+  jamais un 0 fabriqué.
+
+**Validation réelle** : `ruff`/`mypy` propres. 9 nouveaux tests
+(`tests/test_awci_map_panel_export.py` — dont un test dédié prouvant
+que les cellules NaN s'exportent honnêtement vides/null, un test
+prouvant qu'annuler la boîte de dialogue n'écrit aucun fichier, et un
+test de structure CSV/JSON complet) + suite de régression complète du
+widget carte partagé re-exécutée (98 tests : map panel + AWCI real
+physics/synchronization + Workstation chrome + ACFGeneralDashboard —
+zéro régression). Suite complète **4107 → 4116**, toujours verte.
+Capture d'écran réelle envoyée : le vrai menu déroulant à 4 formats,
+et le bouton "⬇" avec son vrai indicateur de menu déroulant visible.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
+Lab, Research Mode, Configuration Management, palette de commandes,
+raccourcis, extension API) listés "(planned)" — "export" retiré de
+cette liste, désormais réel.

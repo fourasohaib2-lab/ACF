@@ -103,6 +103,18 @@ Phase 8 (2026-09-04, same "continue" progressive discipline) added:
   Lab's own aggregate spread/mean ("where do these two SPECIFIC models
   actually disagree, and by how much?").
 
+Phase 9 (2026-09-04, same "continue" progressive discipline) added:
+- **Real multi-format export** (PNG/SVG/CSV/JSON) on `AWCIMapPanel`
+  itself (`awci_map_panel.py`) - so every map in this Workstation (and
+  AWCIDashboard's own maps, which share this exact widget) gained 3
+  new real export formats for free. The download button's PNG-only
+  `QPushButton` became a real `QToolButton` + `QMenu` (same "real
+  actions behind one control" convention as ACFGeneralDashboard's own
+  "☰" menu) - CSV/JSON export the exact (lons, lats, grid) currently
+  on screen, a real NaN cell (e.g. this Workstation's own
+  show_demo_fallback=False empty state) honestly written as an empty
+  CSV field / JSON `null`, never a fabricated 0.
+
 The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
 Study Lab, Research Mode, Configuration Management etc. are larger,
 separate pieces of the master spec beyond the original "Labs" list)

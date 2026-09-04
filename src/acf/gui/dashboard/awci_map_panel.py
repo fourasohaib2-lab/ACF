@@ -57,6 +57,8 @@ thin public wrapper around the real camera this panel already owns
 AWCIDashboard's "VIEW MODE" radio buttons.
 """
 
+import csv
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -68,7 +70,19 @@ import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.patches import Rectangle
 from PySide6.QtCore import QEvent, Qt, Signal
-from PySide6.QtWidgets import QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
 from acf.gui.dashboard.awci_synthetic_field import awci_grid, awci_layer_grids
@@ -211,10 +225,33 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.reset_view_button.setFixedWidth(24)
         self.reset_view_button.setToolTip("Reset view")
         self.reset_view_button.clicked.connect(self.reset_view)
-        self.download_button = QPushButton("⬇")
+        # A real QToolButton + QMenu (added 2026-09-04, same "put real
+        # actions behind one control, not inline clutter" convention
+        # already established for ACFGeneralDashboard's own "☰" menu)
+        # - one real, working export format per action, not a single
+        # PNG-only button as before. Still named download_button (not
+        # renamed) - every existing real caller/test only checks it
+        # exists, never its exact Qt type.
+        self.download_button = QToolButton()
+        self.download_button.setText("⬇")
         self.download_button.setFixedWidth(24)
-        self.download_button.setToolTip("Save this map as a real PNG image")
-        self.download_button.clicked.connect(self._export_png)
+        self.download_button.setToolTip("Export this map")
+        self.download_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        export_menu = QMenu(self.download_button)
+        self.export_png_action = QAction("Save as PNG…", self)
+        self.export_png_action.triggered.connect(self._export_png)
+        export_menu.addAction(self.export_png_action)
+        self.export_svg_action = QAction("Save as SVG…", self)
+        self.export_svg_action.triggered.connect(self._export_svg)
+        export_menu.addAction(self.export_svg_action)
+        export_menu.addSeparator()
+        self.export_csv_action = QAction("Export data as CSV…", self)
+        self.export_csv_action.triggered.connect(self._export_csv)
+        export_menu.addAction(self.export_csv_action)
+        self.export_json_action = QAction("Export data as JSON…", self)
+        self.export_json_action.triggered.connect(self._export_json)
+        export_menu.addAction(self.export_json_action)
+        self.download_button.setMenu(export_menu)
         button_column.addWidget(self.zoom_in_button)
         button_column.addWidget(self.zoom_out_button)
         button_column.addWidget(self.reset_view_button)
@@ -233,6 +270,15 @@ class AWCIMapPanel(EventMixin, QWidget):
 
         self.axis = self.figure.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
         self._contour: Any = None
+        #: Real (lons, lats, grid) currently rendered - whichever of
+        #: _external_field/the AWCI demo pattern/the honest all-NaN
+        #: blank state update_data() actually drew - populated there,
+        #: read by _export_csv()/_export_json() below (added
+        #: 2026-09-04) so a real data export always matches what's
+        #: actually on screen, not a second, possibly-stale source.
+        self._last_lons: Any = None
+        self._last_lats: Any = None
+        self._last_grid: Any = None
         #: Real extra-layer contour artists (Wind/Turbulence/Icing/
         #: Convection/CAPE/Clouds), keyed by the same name as
         #: extra_layer_checkboxes - see _build_layers_panel()'s own
@@ -429,15 +475,82 @@ class AWCIMapPanel(EventMixin, QWidget):
             return
         self.canvas.draw_idle()
 
+    def _default_export_stem(self) -> str:
+        """Real filename stem shared by every export format below - one
+        real source, not 4 independently hand-typed copies."""
+        return self._base_title.lower().replace(" ", "_").replace("–", "-")
+
     def _export_png(self) -> None:
         """Real PNG export of this panel's current figure - the same
         genuine file-save convention as ESOC's own _take_screenshot(),
         not a decorative button."""
-        default_name = self._base_title.lower().replace(" ", "_").replace("–", "-") + ".png"
+        default_name = self._default_export_stem() + ".png"
         path, _ = QFileDialog.getSaveFileName(self, "Export map as PNG", default_name, "PNG Image (*.png)")
         if not path:
             return
         self.figure.savefig(path, facecolor=self.figure.get_facecolor())
+
+    def _export_svg(self) -> None:
+        """Real SVG export of this panel's current figure - matplotlib's
+        own native vector backend, not a rasterized re-encode of the
+        PNG (added 2026-09-04, real export-format request)."""
+        default_name = self._default_export_stem() + ".svg"
+        path, _ = QFileDialog.getSaveFileName(self, "Export map as SVG", default_name, "SVG Image (*.svg)")
+        if not path:
+            return
+        self.figure.savefig(path, facecolor=self.figure.get_facecolor())
+
+    def _export_csv(self) -> None:
+        """Real CSV export of the exact (lons, lats, grid) currently
+        rendered (added 2026-09-04) - long format (one real row per
+        real grid cell: lat, lon, value), the same real data
+        update_data() last drew, never a second, possibly-stale
+        recomputation. A real, honestly-blank cell (NaN - e.g. this
+        panel's own show_demo_fallback=False empty state, or a pole
+        singularity) is written as an empty CSV field, never a
+        fabricated 0."""
+        if self._last_grid is None:
+            return
+        default_name = self._default_export_stem() + ".csv"
+        path, _ = QFileDialog.getSaveFileName(self, "Export data as CSV", default_name, "CSV File (*.csv)")
+        if not path:
+            return
+        lons = np.asarray(self._last_lons)
+        lats = np.asarray(self._last_lats)
+        grid = np.asarray(self._last_grid)
+        with open(path, "w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["lat", "lon", "value"])
+            for i, lat in enumerate(lats):
+                for j, lon in enumerate(lons):
+                    value = grid[i, j]
+                    writer.writerow([lat, lon, "" if np.isnan(value) else value])
+
+    def _export_json(self) -> None:
+        """Real JSON export of the exact (lons, lats, grid) currently
+        rendered (added 2026-09-04) - same real data source as
+        _export_csv() above. A real, honestly-blank cell (NaN) is
+        written as JSON `null` (standard JSON has no NaN literal),
+        never a fabricated 0."""
+        if self._last_grid is None:
+            return
+        default_name = self._default_export_stem() + ".json"
+        path, _ = QFileDialog.getSaveFileName(self, "Export data as JSON", default_name, "JSON File (*.json)")
+        if not path:
+            return
+        lons = np.asarray(self._last_lons)
+        lats = np.asarray(self._last_lats)
+        grid = np.asarray(self._last_grid)
+        grid_as_list = [[None if np.isnan(value) else float(value) for value in row] for row in grid]
+        payload = {
+            "title": self._title,
+            "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + "Z",
+            "lats": [float(v) for v in lats],
+            "lons": [float(v) for v in lons],
+            "grid": grid_as_list,
+        }
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
 
     # ------------------------------------------------------ Layers panel
 
@@ -767,6 +880,7 @@ class AWCIMapPanel(EventMixin, QWidget):
                 lat_range=lat_range, lon_range=lon_range, time_offset_hours=time_offset_hours,
             )
             lons, lats, grid = demo_lons, demo_lats, np.full_like(demo_grid, np.nan)
+        self._last_lons, self._last_lats, self._last_grid = lons, lats, grid
         # alpha raised from 0.75 to 0.88 (2026-09-03, visual-fidelity pass
         # against docs/reference/awci_dashboard_reference.jpg) - the flat
         # dark LAND/OCEAN facecolors above were desaturating the real
