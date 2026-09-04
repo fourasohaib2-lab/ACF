@@ -78,10 +78,13 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 35
+    assert len(pm.list_panel_names()) == 38
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
+    assert pm.get_panel("volcanoes_panel") is not None
+    assert pm.get_panel("wildfires_panel") is not None
+    assert pm.get_panel("aerosols_panel") is not None
     assert pm.get_panel("catalog") is not None
     assert pm.get_panel("plugins") is not None
     assert pm.get_panel("geoengineering") is not None
@@ -341,6 +344,37 @@ def test_clicking_an_unmapped_leaf_under_a_single_panel_category_falls_back_to_i
     layout._on_sidebar_item_selected("AMR", "Simulation")
 
     assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("simulation")
+
+
+def test_clicking_volcanoes_wildfires_aerosols_switches_to_their_real_panels(qapp):
+    """Real Phase 43 regression guard (2026-09-05): 3 more "Earth
+    System" leaves that used to be genuine dead clicks now route to
+    their own real panel."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    for label, panel_name in (
+        ("Volcanoes", "volcanoes_panel"),
+        ("Wildfires", "wildfires_panel"),
+        ("Aerosols", "aerosols_panel"),
+    ):
+        layout._on_sidebar_item_selected(label, "Earth System")
+        assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel(panel_name)
+
+
+def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):
+    """"Dust" (Earth System) is deliberately NOT mapped - no verified
+    real mineral-dust emission formula exists anywhere in this
+    codebase (see AerosolsPanel's own docstring) - must stay a real
+    no-op, never a guessed/wrong navigation."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+    layout.bottom_tabs.setCurrentIndex(0)
+    before = layout.bottom_tabs.currentIndex()
+
+    layout._on_sidebar_item_selected("Dust", "Earth System")
+
+    assert layout.bottom_tabs.currentIndex() == before
 
 
 def test_clicking_a_genuinely_unmapped_label_is_an_honest_no_op(qapp):

@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -1564,6 +1566,276 @@ class ReportsPanel(BasePanelWidget):
         )
 
 
+class VolcanoesPanel(BasePanelWidget):
+    """36. Volcanoes - real, previously-unbuilt System Explorer leaf
+    (2026-09-05, continuing the same "find a real dead leaf, wire a
+    real panel" discipline this file's own 34/35 entries established):
+    "Earth System / Volcanoes" had no real panel behind it. Real Mogi
+    (1958) point-source surface-deformation model and real plume-
+    height estimator (Mastin et al. 2009), both already implemented in
+    `acf.geology.volcanic_physics.VolcanicPhysicsEngine` (already
+    registered in `ModuleRegistry` as "volcanoes") - reused as-is, not
+    reimplemented. Operator-supplied real inputs, same convention as
+    `ProductsPanel`'s own flash-flood risk section (this engine has no
+    persistent live state to monitor - it is a real, cited formula
+    library, not a solver)."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌋 VOLCANIC DEFORMATION & PLUME DYNAMICS", "#FF7043", registry, dispatcher)
+        engine = registry.get_module("volcanoes")
+        if engine is None:
+            self.main_layout.addWidget(_not_connected_label("volcanoes"))
+            return
+        self._engine: Any = engine
+
+        deform_group = QGroupBox("Surface Deformation — Mogi (1958) Point-Source Model")
+        deform_layout = QVBoxLayout(deform_group)
+        deform_row = QHBoxLayout()
+        deform_row.addWidget(QLabel("Radial distance (m):"))
+        self.deform_radius = QDoubleSpinBox()
+        self.deform_radius.setRange(0.0, 100000.0)
+        self.deform_radius.setValue(2000.0)
+        deform_row.addWidget(self.deform_radius)
+        deform_row.addWidget(QLabel("Chamber depth (m):"))
+        self.deform_depth = QDoubleSpinBox()
+        self.deform_depth.setRange(1.0, 50000.0)
+        self.deform_depth.setValue(5000.0)
+        deform_row.addWidget(self.deform_depth)
+        deform_row.addWidget(QLabel("Volume change (m³):"))
+        self.deform_volume = QDoubleSpinBox()
+        self.deform_volume.setRange(-100_000_000.0, 100_000_000.0)
+        self.deform_volume.setDecimals(0)
+        self.deform_volume.setValue(1_000_000.0)
+        deform_row.addWidget(self.deform_volume)
+        deform_layout.addLayout(deform_row)
+        self.deform_button = QPushButton("🌋 Compute Surface Deformation")
+        self.deform_button.clicked.connect(self._compute_deformation)
+        deform_layout.addWidget(self.deform_button)
+        self.deform_result = QTextEdit()
+        self.deform_result.setReadOnly(True)
+        self.deform_result.setMaximumHeight(60)
+        deform_layout.addWidget(self.deform_result)
+        self.main_layout.addWidget(deform_group)
+
+        plume_group = QGroupBox("Eruptive Plume Height — Mastin et al. (2009)")
+        plume_layout = QVBoxLayout(plume_group)
+        plume_row = QHBoxLayout()
+        plume_row.addWidget(QLabel("Volumetric eruption rate (m³/s):"))
+        self.plume_rate = QDoubleSpinBox()
+        self.plume_rate.setRange(0.0, 1_000_000.0)
+        self.plume_rate.setValue(100.0)
+        plume_row.addWidget(self.plume_rate)
+        plume_layout.addLayout(plume_row)
+        self.plume_button = QPushButton("☁ Compute Plume Height")
+        self.plume_button.clicked.connect(self._compute_plume)
+        plume_layout.addWidget(self.plume_button)
+        self.plume_result = QLabel("—")
+        plume_layout.addWidget(self.plume_result)
+        self.main_layout.addWidget(plume_group)
+
+        self._compute_deformation()
+        self._compute_plume()
+
+    def _compute_deformation(self) -> None:
+        result = self._engine.mogi_surface_displacement_m(
+            radial_distance_m=self.deform_radius.value(),
+            chamber_depth_m=self.deform_depth.value(),
+            volume_change_m3=self.deform_volume.value(),
+        )
+        self.deform_result.setText(
+            f"Real vertical displacement: {result['vertical_displacement_m']:.4f} m\n"
+            f"Real radial displacement: {result['radial_displacement_m']:.4f} m"
+        )
+
+    def _compute_plume(self) -> None:
+        height_km = self._engine.volcanic_plume_height_km(self.plume_rate.value())
+        self.plume_result.setText(f"Real plume height: {height_km:.2f} km")
+
+
+class WildfiresPanel(BasePanelWidget):
+    """37. Wildfires - real, previously-unbuilt System Explorer leaf
+    (2026-09-05). Real Canadian-FWI-System-inspired fire weather index
+    (`acf.simulation_engine.extreme_events.wildfire.WildfireSimulator.
+    compute_fire_weather_index()`, already registered as
+    "wildfire_simulator") - a disclosed proxy formula (see that
+    method's own NOTE on its real, qualitatively-correct but not
+    numerically-faithful rain-wetting term), not the full multi-day
+    FFMC/DMC/DC/BUI system, reused as-is."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🔥 WILDFIRE WEATHER DANGER", "#FF5722", registry, dispatcher)
+        engine = registry.get_module("wildfire_simulator")
+        if engine is None:
+            self.main_layout.addWidget(_not_connected_label("wildfire_simulator"))
+            return
+        self._engine: Any = engine
+
+        group = QGroupBox("Fire Weather Index — Canadian FWI System (disclosed proxy)")
+        layout = QVBoxLayout(group)
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Temperature (°C):"))
+        self.temp = QDoubleSpinBox()
+        self.temp.setRange(-40.0, 55.0)
+        self.temp.setValue(28.0)
+        row.addWidget(self.temp)
+        row.addWidget(QLabel("Relative humidity (%):"))
+        self.rh = QDoubleSpinBox()
+        self.rh.setRange(1.0, 100.0)
+        self.rh.setValue(25.0)
+        row.addWidget(self.rh)
+        row.addWidget(QLabel("Wind speed (km/h):"))
+        self.wind = QDoubleSpinBox()
+        self.wind.setRange(0.0, 200.0)
+        self.wind.setValue(20.0)
+        row.addWidget(self.wind)
+        row.addWidget(QLabel("24h rain (mm):"))
+        self.rain = QDoubleSpinBox()
+        self.rain.setRange(0.0, 300.0)
+        self.rain.setValue(0.0)
+        row.addWidget(self.rain)
+        layout.addLayout(row)
+        self.button = QPushButton("🔥 Compute Fire Weather Index")
+        self.button.clicked.connect(self._compute)
+        layout.addWidget(self.button)
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.result.setMaximumHeight(100)
+        layout.addWidget(self.result)
+        self.main_layout.addWidget(group)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        result = self._engine.compute_fire_weather_index(
+            temp_c=np.array([self.temp.value()]),
+            relative_humidity_pct=np.array([self.rh.value()]),
+            wind_speed_kmh=np.array([self.wind.value()]),
+            rain_24h_mm=np.array([self.rain.value()]),
+        )
+        danger = "⚠ EXTREME" if bool(result["extreme_fire_danger"][0]) else "Normal"
+        self.result.setText(
+            f"Real Fire Weather Index (FWI): {float(result['FWI'][0]):.1f}   [{danger}]\n"
+            f"Real rate of spread: {float(result['ROS_m_min'][0]):.2f} m/min\n"
+            f"Real fire intensity: {float(result['fire_intensity_kw_m'][0]):.1f} kW/m\n"
+            f"Real flame length: {float(result['flame_length_m'][0]):.2f} m"
+        )
+
+
+class AerosolsPanel(BasePanelWidget):
+    """38. Aerosols - real, previously-unbuilt System Explorer leaf
+    (2026-09-05). Real, cited aerosol-cloud microphysics
+    (`acf.science.clouds.aerosols.CloudAerosolEngine`, already
+    registered as "aerosols_dust") - Twomey (1959) CCN activation,
+    Meyers et al. (1992) INP activation, and the Twomey (1977) first
+    indirect (cloud-albedo) effect (re-derived via the real Stephens
+    1978/Slingo 1989 cloud-optics relation, see that method's own
+    NOTE), all reused as-is.
+
+    Honest scope: the tree's sibling "Dust" leaf is deliberately NOT
+    mapped to this (or any) panel - a real mineral-dust emission
+    formula was investigated and deliberately left unimplemented
+    elsewhere in this codebase (`acf.science.encyclopedia.chemistry`'s
+    own "mineral_dust_aerosol" entry) because no single, precisely-
+    citable primary-source formula could be verified among several
+    competing real schemes (Gillette & Passi 1988, White 1979,
+    Marticorena & Bergametti 1995) - implementing one anyway here would
+    repeat exactly the fabrication that earlier decision avoided.
+    """
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌫️ AEROSOL-CLOUD MICROPHYSICS", "#B0BEC5", registry, dispatcher)
+        engine = registry.get_module("aerosols_dust")
+        if engine is None:
+            self.main_layout.addWidget(_not_connected_label("aerosols_dust"))
+            return
+        self._engine: Any = engine
+
+        ccn_group = QGroupBox("CCN Activation — Twomey (1959)")
+        ccn_layout = QVBoxLayout(ccn_group)
+        ccn_row = QHBoxLayout()
+        ccn_row.addWidget(QLabel("Supersaturation (%):"))
+        self.ccn_supersaturation = QDoubleSpinBox()
+        self.ccn_supersaturation.setRange(0.0, 5.0)
+        self.ccn_supersaturation.setDecimals(2)
+        self.ccn_supersaturation.setValue(0.5)
+        ccn_row.addWidget(self.ccn_supersaturation)
+        ccn_layout.addLayout(ccn_row)
+        self.ccn_button = QPushButton("💧 Compute CCN Activation")
+        self.ccn_button.clicked.connect(self._compute_ccn)
+        ccn_layout.addWidget(self.ccn_button)
+        self.ccn_result = QLabel("—")
+        ccn_layout.addWidget(self.ccn_result)
+        self.main_layout.addWidget(ccn_group)
+
+        inp_group = QGroupBox("INP Activation — Meyers et al. (1992)")
+        inp_layout = QVBoxLayout(inp_group)
+        inp_row = QHBoxLayout()
+        inp_row.addWidget(QLabel("Ice supersaturation (%):"))
+        self.inp_supersaturation = QDoubleSpinBox()
+        self.inp_supersaturation.setRange(0.0, 30.0)
+        self.inp_supersaturation.setValue(10.0)
+        inp_row.addWidget(self.inp_supersaturation)
+        inp_layout.addLayout(inp_row)
+        self.inp_button = QPushButton("❄ Compute INP Activation")
+        self.inp_button.clicked.connect(self._compute_inp)
+        inp_layout.addWidget(self.inp_button)
+        self.inp_result = QLabel("—")
+        inp_layout.addWidget(self.inp_result)
+        self.main_layout.addWidget(inp_group)
+
+        indirect_group = QGroupBox("First Indirect (Albedo) Effect — Twomey (1977)")
+        indirect_layout = QVBoxLayout(indirect_group)
+        indirect_row = QHBoxLayout()
+        indirect_row.addWidget(QLabel("Base CCN (cm⁻³):"))
+        self.indirect_ccn_base = QDoubleSpinBox()
+        self.indirect_ccn_base.setRange(1.0, 10000.0)
+        self.indirect_ccn_base.setValue(100.0)
+        indirect_row.addWidget(self.indirect_ccn_base)
+        indirect_row.addWidget(QLabel("Polluted CCN (cm⁻³):"))
+        self.indirect_ccn_polluted = QDoubleSpinBox()
+        self.indirect_ccn_polluted.setRange(1.0, 10000.0)
+        self.indirect_ccn_polluted.setValue(800.0)
+        indirect_row.addWidget(self.indirect_ccn_polluted)
+        indirect_row.addWidget(QLabel("Cloud water path (g/m²):"))
+        self.indirect_lwp = QDoubleSpinBox()
+        self.indirect_lwp.setRange(1.0, 1000.0)
+        self.indirect_lwp.setValue(100.0)
+        indirect_row.addWidget(self.indirect_lwp)
+        indirect_layout.addLayout(indirect_row)
+        self.indirect_button = QPushButton("☀ Compute Albedo Effect")
+        self.indirect_button.clicked.connect(self._compute_indirect_effect)
+        indirect_layout.addWidget(self.indirect_button)
+        self.indirect_result = QTextEdit()
+        self.indirect_result.setReadOnly(True)
+        self.indirect_result.setMaximumHeight(80)
+        indirect_layout.addWidget(self.indirect_result)
+        self.main_layout.addWidget(indirect_group)
+
+        self._compute_ccn()
+        self._compute_inp()
+        self._compute_indirect_effect()
+
+    def _compute_ccn(self) -> None:
+        n_ccn = self._engine.twomey_ccn_activation(self.ccn_supersaturation.value())
+        self.ccn_result.setText(f"Real activated CCN: {n_ccn:.1f} cm⁻³")
+
+    def _compute_inp(self) -> None:
+        n_inp = self._engine.meyers_inp_activation(self.inp_supersaturation.value())
+        self.inp_result.setText(f"Real activated INP: {n_inp:.2f} L⁻¹")
+
+    def _compute_indirect_effect(self) -> None:
+        result = self._engine.twomey_first_indirect_effect(
+            ccn_base_cm3=self.indirect_ccn_base.value(),
+            ccn_polluted_cm3=self.indirect_ccn_polluted.value(),
+            cloud_water_path=self.indirect_lwp.value(),
+        )
+        self.indirect_result.setText(
+            f"Real effective droplet radius: {result['r_eff_base_um']:.1f} → {result['r_eff_polluted_um']:.1f} µm\n"
+            f"Real cloud albedo: {result['albedo_base']:.3f} → {result['albedo_polluted']:.3f} "
+            f"(Δ = {result['albedo_increase']:+.3f})"
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -1607,6 +1879,9 @@ class PanelManager:
             "output": OutputPanel(registry, dispatcher),
             "products": ProductsPanel(registry, dispatcher),
             "reports": ReportsPanel(registry, dispatcher),
+            "volcanoes_panel": VolcanoesPanel(registry, dispatcher),
+            "wildfires_panel": WildfiresPanel(registry, dispatcher),
+            "aerosols_panel": AerosolsPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

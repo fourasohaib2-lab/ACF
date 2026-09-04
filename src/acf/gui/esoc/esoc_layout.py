@@ -23,6 +23,15 @@ Reports) are real and wired now - see `CatalogPanel`/`PluginsPanel`/
 `ProductsPanel`/`ReportsPanel`'s own docstrings in `panel_manager.py`.
 Every real System Explorer category this dead-click investigation
 originally found now has at least one real panel behind it.
+
+UPDATE (2026-09-05): 3 of the remaining individually-dead "Earth
+System" leaves (Volcanoes, Wildfires, Aerosols) are real and wired now
+- see `VolcanoesPanel`/`WildfiresPanel`/`AerosolsPanel`'s own
+docstrings in `panel_manager.py`. "Dust" stays a deliberate, disclosed
+no-op (no verified real formula exists); "Atmosphere"/"Biosphere"/
+"Land Surface"/"Atmospheric Chemistry" would each need a real solver-
+state display (akin to the ACF Scientific Workstation's own volume) -
+a substantially larger undertaking, not attempted in this pass.
 """
 
 from typing import Any
@@ -59,6 +68,18 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Benchmarks": "benchmark_panel",
     "HPC Profiles": "hpc_dashboard",
     "System Config": "system_console",
+    # Added 2026-09-05 (continuing the same dead-click investigation
+    # this file's own module docstring documents): 3 more real "Earth
+    # System" leaves, each with a real, already-registered engine
+    # (see VolcanoesPanel/WildfiresPanel/AerosolsPanel's own
+    # docstrings in panel_manager.py). "Dust" (the remaining sibling
+    # leaf) is deliberately NOT mapped here - no single, verified,
+    # precisely-citable mineral-dust emission formula exists anywhere
+    # in this codebase (see AerosolsPanel's own docstring for the
+    # real, already-documented reason) - stays an honest no-op.
+    "Volcanoes": "volcanoes_panel",
+    "Wildfires": "wildfires_panel",
+    "Aerosols": "aerosols_panel",
 }
 
 #: Real System Explorer top-level CATEGORY label -> real

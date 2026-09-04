@@ -7982,3 +7982,56 @@ testés et vérifiés (Phases 31 à 41). Le projet de mise en parité
 pixel-perfect du ACF Scientific Workstation avec sa maquette de
 référence est considéré clos pour cette session, avec une divulgation
 complète et honnête du seul élément volontairement omis.
+
+## Mise à jour 2026-09-05 (suite) — Phase 43 : 3 nouvelles feuilles réelles de l'System Explorer ESOC (Volcanoes, Wildfires, Aerosols)
+
+**Pourquoi** : après la clôture du projet Workstation, investigation
+du reste du backlog du projet ACF/ESOC plus large. Un audit direct
+(`_LEAF_LABEL_TO_PANEL_NAME`/`_CATEGORY_LABEL_TO_PANEL_NAME` contre
+`ESOCLeftSidebar.categories`) a trouvé 15 feuilles réelles sur 81
+encore de vrais clics morts, dont 3 avec un vrai moteur déjà
+enregistré dans `ModuleRegistry` et prêt à être câblé sans risque :
+Volcanoes (`VolcanicPhysicsEngine`), Wildfires (`WildfireSimulator`),
+Aerosols (`CloudAerosolEngine`).
+
+**Construit** :
+- `VolcanoesPanel` (36e panneau) - vraie déformation de surface (Mogi
+  1958, modèle à source ponctuelle) et vraie hauteur de panache
+  éruptif (Mastin et al. 2009), entrées réelles fournies par
+  l'opérateur (ce moteur n'a pas d'état persistant à surveiller - une
+  vraie bibliothèque de formules citées, pas un solveur).
+- `WildfiresPanel` (37e panneau) - vrai indice météorologique
+  d'incendie inspiré du système canadien FWI, taux de propagation,
+  intensité et longueur de flamme réels, entrées réelles opérateur.
+- `AerosolsPanel` (38e panneau) - vraie microphysique aérosols-nuages
+  citée (activation CCN Twomey 1959, activation INP Meyers et al.
+  1992, effet indirect d'albédo Twomey 1977 re-dérivé via la relation
+  réelle Stephens 1978/Slingo 1989).
+- Divulgation honnête : la feuille sœur "Dust" reste délibérément NON
+  mappée - une vraie formule d'émission de poussière minérale avait
+  déjà été investiguée et délibérément laissée non implémentée
+  ailleurs dans ce code (`acf.science.encyclopedia.chemistry`, entrée
+  "mineral_dust_aerosol") car aucune formule unique et précisément
+  citable n'a pu être vérifiée parmi plusieurs schémas réels
+  concurrents (Gillette & Passi 1988, White 1979, Marticorena &
+  Bergametti 1995) - l'implémenter ici aurait répété exactement la
+  fabrication que cette décision antérieure évitait.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 13
+nouveaux tests sur les 3 nouveaux panneaux (`tests/
+test_esoc_volcanoes_panel.py` - 4, `tests/test_esoc_wildfires_panel.py`
+- 4, `tests/test_esoc_aerosols_panel.py` - 5, tous cross-vérifiés
+contre chaque vrai moteur sous-jacent), 2 nouveaux tests de routage
+(`tests/test_esoc.py`, confirmant Volcanoes/Wildfires/Aerosols routent
+vers leur vrai panneau et que Dust reste un vrai no-op honnête).
+Compteur de panneaux ESOC mis à jour (35 → 38).
+
+**Ce qui reste réellement** : 12 des 15 feuilles mortes originales
+restent non mappées - "Atmosphere"/"Biosphere"/"Land Surface"/
+"Atmospheric Chemistry" nécessiteraient chacune un vrai affichage
+d'état de solveur (à l'image du volume du ACF Scientific Workstation)
+- un chantier substantiellement plus grand, non entrepris dans cette
+passe ; "Fourier Neural Operators"/"GNN Surrogates"/"PINN Models"
+(Intelligence Artificielle), "Workspace Modes"/"Layer Preferences"/
+"API Keys" (Settings), et "MPI Domain Topology" (HPC) restent aussi à
+investiguer.
