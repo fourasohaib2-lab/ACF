@@ -6320,3 +6320,69 @@ fabrication) ; 3D/4D, Case Study Lab, Research Mode listés "(planned)"
 Dynamics/Thermodynamics ; CAPE/CIN, phase des précipitations et
 l'Interaction Engine restent GUI-only pour l'instant, un futur "continue"
 pourrait étendre l'API à ces modules avec la même discipline).
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 14 : la vue 3D (structure volumique réelle)
+
+Suite explicite ("continue"), même discipline progressive. §23 du spec
+maître est explicite : "L'ACF ne doit pas seulement produire un score
+ponctuel. Il doit pouvoir représenter `C(x,y,t)` et éventuellement
+`C(x,y,z,t)` : 2D — Carte horizontale. **3D — Structure volumique.**"
+Chaque autre Lab de ce Workstation ne montre qu'une seule vraie coupe
+2D horizontale (le niveau courant) — cette passe construit la
+dimension manquante.
+
+**Construit** : **3D View**
+(`acf_workstation_3d.ACF3DAtmospherePanel`) — une vraie technique
+matplotlib standard et documentée : `Axes3D.contourf(..., zdir="z",
+offset=pression)` empile jusqu'à 6 vrais niveaux natifs du volume déjà
+calculé, chacun positionné à sa vraie pression moyenne réelle
+(`pressure_volume_hpa[level].mean()`) — un vrai "cube de données",
+jamais une isosurface interpolée ou fabriquée. Axe Z inversé
+(`invert_zaxis()`) pour respecter la convention météorologique réelle
+(pression décroissante vers le haut — sol/haute pression en bas,
+haute atmosphère/basse pression en haut) tout en gardant les vraies
+valeurs de données en hPa honnêtes, non modifiées. Choix de rendu
+honnêtement disclosed : pas tous les niveaux natifs (jusqu'à 32 pour
+AROME — illisible et lent) mais un sous-ensemble réel de 6 niveaux
+régulièrement espacés (même compromis déjà établi pour CAPE/CIN et le
+regrillage de Confidence Lab — jamais interpolé entre niveaux
+affichés). Pas de fond de carte géographique (disclosed explicitement
+dans le titre du panneau) — axes réels longitude/latitude/pression
+seuls. Ajouté à la nav (11ᵉ module désormais) et à
+`_render_all_panels()`/`_configuration_selectors()` (Configuration
+Management sauvegarde/restaure aussi son sélecteur de variable).
+
+**Régression réelle trouvée et corrigée par la suite elle-même** : la
+Phase 14 fait passer `_ENABLED_MODULES` à 11 entrées, dépassant les 10
+vraies touches Ctrl+chiffre disponibles (Ctrl+1-9, Ctrl+0). La suite
+complète a immédiatement détecté 2 tests de la Phase 10 en échec
+(`test_exactly_one_real_nav_shortcut_per_real_enabled_module`/
+`test_nav_shortcuts_use_the_real_ctrl_digit_sequence`), qui
+supposaient naïvement un raccourci par module. L'implémentation
+elle-même (`_setup_shortcuts()`) plafonnait déjà correctement à 10
+raccourcis réels (`_ENABLED_MODULES[:10]`) — seuls les tests et le
+docstring affirmaient encore l'ancienne hypothèse 1-pour-1. Corrigés
+pour refléter honnêtement le vrai plafond : "3D View" (11ᵉ module) n'a
+simplement pas de raccourci Ctrl+chiffre propre, reste réellement
+accessible via la nav ou la Command Palette — disclosed explicitement,
+pas une régression silencieuse.
+
+**Validation réelle** : `ruff`/`mypy` propres. 7 nouveaux tests
+(`tests/gui/test_acf_workstation_3d.py` — vraie projection 3D
+vérifiée, vrai regard-fou sur le nombre de niveaux affichés même pour
+un volume à 20 niveaux, vraie vérification de l'inversion de l'axe Z)
++ mise à jour des tests d'intégration du chrome (nouvelle position
+dans la nav/le stack à 11 modules désormais) + les 2 tests Phase 10
+corrigés ci-dessus. Suite complète **4150 → 4157**, toujours verte
+(après correction). Captures d'écran réelles envoyées : Temperature
+(nette différenciation visuelle entre niveaux, du bleu froid en
+altitude à l'orange chaud au sol) et Wind speed (uniformité honnête
+entre niveaux — un vrai résultat, pas un bug).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente, visible aussi sur l'axe Z de cette
+nouvelle vue — ~2013 hPa au lieu de ~1013 hPa attendu) ; 2 modules Lab
+restants (Convection, Terrain) ; Case Study Lab, Research Mode listés
+"(planned)" — "3D/4D" retirée de cette liste (la partie "4D" —
+évolution temporelle — était déjà couverte par le Temporal Evolution
+Lab de la Phase 4 ; cette passe ferme la partie "3D" restante).

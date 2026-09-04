@@ -100,6 +100,9 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     ws.nav_list.setCurrentRow(9)
     assert ws.stack.currentWidget() is ws.complexity_panel
 
+    ws.nav_list.setCurrentRow(10)
+    assert ws.stack.currentWidget() is ws.atmosphere_3d_panel
+
 
 def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     ws = ACFWorkstation()
@@ -122,6 +125,7 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     assert ws.interactions_panel._volume is volume
     assert ws.quality_panel._volume is volume
     assert ws.complexity_panel._volume is volume
+    assert ws.atmosphere_3d_panel._volume is volume
 
 
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):

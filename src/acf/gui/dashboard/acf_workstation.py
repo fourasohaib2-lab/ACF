@@ -166,10 +166,20 @@ Phase 13 (2026-09-04, same "continue" progressive discipline) added:
   `complexity_router`/`events_router` (`_solver_guard.py`, extended
   with a new `run_complexity_volume()` for a full 3D request).
 
-The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
-Study Lab, Research Mode etc. are larger, separate pieces of the
-master spec beyond the original "Labs" list) are listed in the left
-nav as real, visible, DISABLED "Planned" items - not silently omitted,
+Phase 14 (2026-09-04, same "continue" progressive discipline) added:
+- **3D View** (`acf_workstation_3d.ACF3DAtmospherePanel`) - docs/
+  ACF_MASTER_PROMPT.md §23's own explicit "3D — Structure volumique".
+  Real `matplotlib` `Axes3D.contourf(..., zdir="z", offset=pressure)`
+  stacks up to 6 real native levels of the current volume in one real
+  3D view, each positioned at its own real mean pressure (never
+  interpolated between levels) - a real "data cube", not a fabricated
+  isosurface. No geographic basemap (disclosed in its own title) -
+  real longitude/latitude/pressure axes only.
+
+The remaining 2 spec modules (Convection/Terrain Labs - Case Study
+Lab, Research Mode etc. are larger, separate pieces of the master spec
+beyond the original "Labs" list) are listed in the left nav as real,
+visible, DISABLED "Planned" items - not silently omitted,
 not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
@@ -239,6 +249,7 @@ from PySide6.QtWidgets import (
 
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
+from acf.gui.dashboard.acf_workstation_3d import ACF3DAtmospherePanel
 from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
@@ -261,7 +272,7 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
     "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
-    "Interactions", "Quality", "Complexity",
+    "Interactions", "Quality", "Complexity", "3D View",
 ]
 _PLANNED_MODULES = [
     "Convection", "Terrain",
@@ -424,6 +435,7 @@ class ACFWorkstation(QWidget):
         self.interactions_panel = ACFInteractionEnginePanel()
         self.quality_panel = ACFDataQualityLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
+        self.atmosphere_3d_panel = ACF3DAtmospherePanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
@@ -434,6 +446,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.interactions_panel)
         self.stack.addWidget(self.quality_panel)
         self.stack.addWidget(self.complexity_panel)
+        self.stack.addWidget(self.atmosphere_3d_panel)
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
@@ -445,10 +458,12 @@ class ACFWorkstation(QWidget):
         already does; F11 toggles the exact same real fullscreen the
         "⛶" button already does; Ctrl+1..Ctrl+9/Ctrl+0 jump to one of
         this Workstation's real enabled modules by its real position in
-        _ENABLED_MODULES (never more shortcuts than real modules - a
-        module added/removed there automatically gets/loses its own
-        shortcut, no separately hand-maintained list to drift out of
-        sync)."""
+        _ENABLED_MODULES - generated from that same list, so it can
+        never drift out of sync with the nav it targets. Real, honest
+        cap at the first 10 real modules (only 10 real single Ctrl+
+        digit keys exist) - any further real module beyond that (added
+        2026-09-04, Phase 14: "3D View") simply has no shortcut of its
+        own, still reachable via the nav list or the Command Palette."""
         self.shortcut_run = QShortcut(QKeySequence("Ctrl+R"), self)
         self.shortcut_run.activated.connect(self.refresh)
 
@@ -542,6 +557,7 @@ class ACFWorkstation(QWidget):
             "interactions_variable_a": self.interactions_panel.variable_a_selector,
             "interactions_variable_b": self.interactions_panel.variable_b_selector,
             "quality_variable": self.quality_panel.variable_selector,
+            "atmosphere_3d_variable": self.atmosphere_3d_panel.variable_selector,
         }
 
     def _export_configuration(self) -> dict[str, Any]:
@@ -702,6 +718,7 @@ class ACFWorkstation(QWidget):
         self.interactions_panel.update_from_volume(self._volume, self._level_index)
         self.quality_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
+        self.atmosphere_3d_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
 
