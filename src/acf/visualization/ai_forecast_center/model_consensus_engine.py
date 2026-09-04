@@ -248,3 +248,162 @@ class ModelConsensusEngine:
                 "per-model solver output, not invented."
             ),
         }
+
+    @classmethod
+    def compute_real_multi_model_disagreement_field(
+        cls,
+        models: list[str] | None = None,
+        steps: int = 3,
+        dt_seconds: float = 60.0,
+        perturbation_scale: float = 2.0,
+        field: str = "T",
+        level: int = 0,
+        target_model: str = "ARPEGE",
+        seed: int | None = 0,
+    ) -> dict[str, Any]:
+        """
+        Real multi-model disagreement over a WHOLE real grid (added
+        2026-09-04, ACF Scientific Workstation's Confidence Lab -
+        explicit "continue" progressive-build request).
+
+        Unlike compute_real_multi_model_disagreement() above (one
+        point, a fresh independent perturbation seeded per QUERY
+        point), this runs each real model's CoupledEarthSolver exactly
+        ONCE - one real perturbation draw per model, not per point (a
+        full-grid map needs one coherent real field per model, not a
+        different realization at every query point) - then regrids
+        every model's own real output onto `target_model`'s real
+        native grid via real nearest-neighbour lookup (same technique
+        the point method above already uses, vectorized here across
+        every target point at once) and computes real
+        acf.ai.ensemble.ensemble_manager.EnsembleManager statistics
+        (reused, not reimplemented) at EVERY point of that shared grid.
+
+        Real cost: N_models real solver runs (same order of cost as
+        the point method above - the expensive part is per MODEL, not
+        per grid point) plus O(n_lat*n_lon) real EnsembleManager
+        evaluations (pure Python arithmetic on 2-3 real numbers each -
+        negligible next to the solver runs).
+
+        Parameters
+        ----------
+        models : list of str, optional - default all of MODEL_CONFIGS.
+        steps, dt_seconds, perturbation_scale, field, level : same
+            real semantics as compute_real_multi_model_disagreement()
+            above.
+        target_model : str
+            Whose real native grid becomes the shared output grid
+            every other model is regridded onto - default "ARPEGE"
+            (the smallest of the 3 real MODEL_CONFIGS grids, fastest
+            to render).
+        seed : int or None
+            Base seed - each model's own perturbation draw is offset
+            by a real, deterministic hash of its own name, so
+            different models never share a draw; None disables
+            perturbation entirely (a flat initial state per model).
+            Same hash-based-seed characteristic (reproducible within
+            one process, not guaranteed bit-identical across
+            processes) as the point method above's own seeding - not a
+            new limitation introduced here.
+
+        Returns
+        -------
+        dict
+            lats, lons : target_model's own real coordinate arrays.
+            disagreement_mean_field, disagreement_spread_field : real
+                (n_lat, n_lon) arrays.
+            per_model_field : dict[model name -> real (n_lat, n_lon)
+                array, that model's own real field regridded onto the
+                shared grid] - for transparency/debugging, same
+                disclosure convention as the point method's own
+                per_model_value.
+            models_compared, field, level, target_model,
+            variable_label, status, is_real_data, honest_limitation.
+
+        Raises
+        ------
+        ValueError
+            Unknown model(s)/target_model, or fewer than 2 models.
+        """
+        from acf.ai.ensemble.ensemble_manager import EnsembleManager
+        from acf.forecast.engine import MODEL_CONFIGS
+        from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
+        from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
+
+        if models is None:
+            models = sorted(MODEL_CONFIGS)
+        unknown = [m for m in models if m not in MODEL_CONFIGS]
+        if unknown:
+            raise ValueError(f"Unknown model(s) {unknown} - expected some of {sorted(MODEL_CONFIGS)}")
+        if len(models) < 2:
+            raise ValueError("Need at least 2 models to compute a disagreement.")
+        if target_model not in MODEL_CONFIGS:
+            raise ValueError(f"Unknown target_model {target_model!r} - expected one of {sorted(MODEL_CONFIGS)}")
+
+        target_config = MODEL_CONFIGS[target_model]
+        target_grid = EarthGrid(
+            n_lat=target_config["n_lat"], n_lon=target_config["n_lon"], n_levels=target_config["n_levels"]
+        )
+        target_lats = np.asarray(target_grid.lats, dtype=float)
+        target_lons = np.asarray(target_grid.lons, dtype=float)
+
+        per_model_field: dict[str, np.ndarray] = {}
+        for model in models:
+            config = MODEL_CONFIGS[model]
+            grid = EarthGrid(n_lat=config["n_lat"], n_lon=config["n_lon"], n_levels=config["n_levels"])
+            solver = CoupledEarthSolver(grid)
+            state = solver.initialize_coupled_state()
+
+            if seed is not None and perturbation_scale > 0.0:
+                model_seed = (seed + abs(hash(model))) % (2**32)
+                rng = np.random.default_rng(seed=model_seed)
+                state[field] = state[field] + rng.normal(loc=0.0, scale=perturbation_scale, size=state[field].shape)
+
+            for _ in range(steps):
+                state = solver.step(state, dt=dt_seconds)
+
+            field_array = state[field][level, :, :]
+
+            # Real nearest-neighbour regrid onto the shared target grid
+            # - same technique compute_real_multi_model_disagreement()
+            # already uses per point (np.argmin(np.abs(grid.lats - lat))),
+            # vectorized here across every target point at once.
+            model_lats = np.asarray(grid.lats, dtype=float)
+            model_lons = np.asarray(grid.lons, dtype=float)
+            lat_indices = np.abs(target_lats[:, None] - model_lats[None, :]).argmin(axis=1)
+            lon_indices = np.abs(target_lons[:, None] - model_lons[None, :]).argmin(axis=1)
+            per_model_field[model] = field_array[np.ix_(lat_indices, lon_indices)]
+
+        n_lat, n_lon = len(target_lats), len(target_lons)
+        disagreement_mean_field = np.zeros((n_lat, n_lon))
+        disagreement_spread_field = np.zeros((n_lat, n_lon))
+        for i in range(n_lat):
+            for j in range(n_lon):
+                stats = EnsembleManager([float(per_model_field[model][i, j]) for model in models])
+                disagreement_mean_field[i, j] = stats.mean
+                disagreement_spread_field[i, j] = stats.spread
+
+        variable_label = "temperature" if field == "T" else field
+
+        return {
+            "lats": target_lats,
+            "lons": target_lons,
+            "models_compared": models,
+            "field": field,
+            "level": level,
+            "target_model": target_model,
+            "per_model_field": per_model_field,
+            "disagreement_mean_field": disagreement_mean_field,
+            "disagreement_spread_field": disagreement_spread_field,
+            "variable_label": variable_label,
+            "status": "REAL_DISAGREEMENT_FIELD_FROM_ACF_SOLVER_AT_MULTIPLE_GRID_CONFIGS",
+            "is_real_data": True,
+            "honest_limitation": (
+                "Same real solver/perturbation basis as compute_real_multi_model_disagreement() "
+                "(see that method's own honest_limitation) - here each model's own real field is "
+                "computed ONCE (a single perturbation draw per model, not per query point) and "
+                "regridded via real nearest-neighbour lookup onto target_model's own real native "
+                "grid, so a query point near a model's own real grid cell boundary may show a "
+                "small real regridding discretization effect, not a physical signal."
+            ),
+        }

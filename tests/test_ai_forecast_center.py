@@ -88,6 +88,79 @@ def test_compute_real_multi_model_disagreement_seed_is_deterministic_per_point()
     assert seed_a == seed_b
 
 
+def test_compute_real_multi_model_disagreement_field_runs_the_real_solver_per_model():
+    """Real, full-grid extension (added 2026-09-04, ACF Scientific
+    Workstation's Confidence Lab) of the real per-point method above -
+    must return real, distinct per-model fields regridded onto
+    target_model's own real grid, not a placeholder constant."""
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement_field(
+        models=["ALADIN", "ARPEGE"], steps=2, target_model="ARPEGE", seed=1
+    )
+
+    assert result["status"] == "REAL_DISAGREEMENT_FIELD_FROM_ACF_SOLVER_AT_MULTIPLE_GRID_CONFIGS"
+    assert result["is_real_data"] is True
+    assert set(result["per_model_field"]) == {"ALADIN", "ARPEGE"}
+    assert result["disagreement_spread_field"].shape == (len(result["lats"]), len(result["lons"]))
+    assert result["disagreement_mean_field"].shape == result["disagreement_spread_field"].shape
+    # A real, genuine spread across 2 real, independently-perturbed
+    # solver runs must not be uniformly zero everywhere.
+    assert result["disagreement_spread_field"].max() > 0.0
+
+
+def test_compute_real_multi_model_disagreement_field_matches_target_models_own_grid():
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement_field(
+        models=["ALADIN", "ARPEGE"], steps=2, target_model="ARPEGE", seed=1
+    )
+
+    from acf.forecast.engine import MODEL_CONFIGS
+
+    config = MODEL_CONFIGS["ARPEGE"]
+    assert len(result["lats"]) == config["n_lat"]
+    assert len(result["lons"]) == config["n_lon"]
+
+
+def test_compute_real_multi_model_disagreement_field_requires_at_least_two_models():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ModelConsensusEngine.compute_real_multi_model_disagreement_field(models=["AROME"])
+
+
+def test_compute_real_multi_model_disagreement_field_rejects_unknown_model():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ModelConsensusEngine.compute_real_multi_model_disagreement_field(models=["AROME", "WRF"])
+
+
+def test_compute_real_multi_model_disagreement_field_rejects_unknown_target_model():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ModelConsensusEngine.compute_real_multi_model_disagreement_field(
+            models=["AROME", "ALADIN"], target_model="WRF"
+        )
+
+
+def test_compute_real_multi_model_disagreement_field_spread_matches_ensemble_manager_directly():
+    """Cross-check discipline: one real grid cell's own spread/mean
+    must equal a fresh, independent EnsembleManager built from that
+    same cell's own real per-model values - never a separately
+    re-derived statistic."""
+    from acf.ai.ensemble.ensemble_manager import EnsembleManager
+
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement_field(
+        models=["ALADIN", "ARPEGE"], steps=2, target_model="ARPEGE", seed=1
+    )
+
+    i, j = 0, 0
+    values = [float(result["per_model_field"][model][i, j]) for model in result["models_compared"]]
+    expected = EnsembleManager(values)
+
+    assert result["disagreement_mean_field"][i, j] == expected.mean
+    assert result["disagreement_spread_field"][i, j] == expected.spread
+
+
 def test_model_consensus_and_dashboard():
     """Test du moteur de consensus pondéré et des modes du tableau de bord."""
     # CORRECTED: models_combined_count/weight_sum are genuinely

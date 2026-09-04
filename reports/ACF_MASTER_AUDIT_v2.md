@@ -5849,3 +5849,77 @@ propre, Data Quality Center, 3D/4D, Case Study Lab, Research Mode,
 Configuration Management, palette de commandes, raccourcis, export,
 extension API) listés "(planned)", pour les mêmes raisons honnêtes
 déjà disclosed.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 5 : le Confidence Lab, l'investigation de faisabilité tranchée
+
+Suite explicite ("continue"), même discipline progressive. Cette passe
+tranche l'investigation explicitement laissée en suspens à la fin de
+la Phase 4 : une vraie carte complète de désaccord multi-modèle
+(par opposition au point unique déjà utilisé par le Complexity
+Explorer) est-elle réellement faisable en coût de calcul ?
+
+**Investigation** : le point-clé est que
+`compute_real_multi_model_disagreement()` (la méthode existante,
+point unique) fait déjà tourner le solveur complet une fois PAR
+MODÈLE — le coût réel dominant n'est PAS lié au nombre de points
+interrogés, mais au nombre de modèles comparés. Boucler cette méthode
+existante sur chaque point de grille aurait donc été absurdement cher
+(N_points × N_modèles runs de solveur) — mais ce n'est pas nécessaire :
+il suffit de faire tourner chaque modèle UNE SEULE FOIS, puis de lire
+le champ complet (pas un seul point) et de le regriller sur une grille
+commune. Mesuré réellement : **~0.9 seconde** pour 2 modèles
+(ALADIN+ARPEGE) sur la vraie grille ARPEGE (48×96). Conclusion :
+réellement faisable, pas prohibitif.
+
+**Construit** :
+- Nouvelle méthode réelle `ModelConsensusEngine.
+  compute_real_multi_model_disagreement_field()`
+  (`model_consensus_engine.py`, ajout additif, zéro changement pour
+  les appelants existants de la méthode point) — fait tourner chaque
+  vrai `CoupledEarthSolver` une seule fois par modèle (un seul tirage
+  de perturbation par modèle, pas un par point interrogé — une vraie
+  carte complète a besoin d'un champ cohérent par modèle, pas d'une
+  réalisation différente à chaque requête), regrille le résultat de
+  chaque modèle sur la grille native réelle d'un modèle cible (défaut
+  ARPEGE) par plus-proche-voisin réel (même technique déjà utilisée
+  par la méthode point, vectorisée ici sur tous les points cibles à
+  la fois), puis calcule les vraies statistiques
+  `acf.ai.ensemble.ensemble_manager.EnsembleManager` (réutilisée, pas
+  réimplémentée) à chaque point de cette grille partagée.
+- **Confidence Lab** (`acf_workstation_confidence.
+  ACFConfidenceLabPanel`) — bouton à la demande "🔄 Compute Model
+  Confidence Field" (même modèles ALADIN/ARPEGE que le bouton existant
+  du Complexity Explorer, pour cohérence), hors thread. Affiche le
+  spread réel (écart-type) ET la moyenne réelle du désaccord comme
+  deux grandeurs physiques séparées — jamais combinées en un seul
+  score de "confiance" 0-100, appliquant littéralement la règle §21/§67
+  du spec maître à ce nouveau module. Ajouté à la nav (déplacé de
+  "planned" à activé, 7 modules désormais) et à `_render_all_panels()`
+  (bookkeeping seulement — le champ de désaccord reste sa propre
+  computation à la demande, indépendante du volume du Workstation,
+  même convention que CAPE/CIN et le temporal/consensus du Complexity
+  Explorer).
+
+**Validation réelle** : `ruff`/`mypy` propres. 6 nouveaux tests
+unitaires (`tests/test_ai_forecast_center.py` — dont un cross-check
+direct contre un vrai `EnsembleManager` construit indépendamment sur
+une cellule de grille précise, et la vérification que la grille de
+sortie correspond bien à la vraie grille native du modèle cible) + 4
+nouveaux tests GUI (`tests/gui/test_acf_workstation_confidence.py` —
+dont un vrai test de bout en bout du worker hors thread via
+`qtbot.waitUntil`) + mise à jour des tests d'intégration du chrome
+(nouvelle position dans la nav/le stack à 7 modules désormais). Suite
+complète **4073 → 4083**, toujours verte. Capture d'écran réelle
+envoyée : carte de spread réel ALADIN/ARPEGE (moyenne 1.572 K, max
+8.879 K — des valeurs réelles, pas arrondies ni inventées).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; ~4 modules restants (Convection,
+Terrain Labs, Interaction Engine, Multi-Model Lab en page propre, Data
+Quality Center, 3D/4D, Case Study Lab, Research Mode, Configuration
+Management, palette de commandes, raccourcis, export, extension API)
+listés "(planned)", pour les mêmes raisons honnêtes déjà disclosed.
+Note honnête sur la méthode de regrillage : un point proche d'une
+frontière de cellule de la grille native d'un modèle peut montrer un
+effet de discrétisation réel (pas un signal physique) — disclosed
+explicitement dans le docstring de la nouvelle méthode.

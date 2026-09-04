@@ -52,18 +52,29 @@ Phase 4 (2026-09-04, same "continue" progressive discipline) added:
   exposing the full real trajectory instead of one aggregated
   rate-of-change map).
 
-The remaining ~6 spec modules (Convection/Terrain/Confidence Labs,
-Interaction Engine, Multi-Model Lab, Data Quality Center, 3D/4D, Case
-Study Lab, Research Mode, Configuration Management...) are listed in
-the left nav as real, visible, DISABLED "Planned" items - not silently
-omitted, not faked - matching the master spec's own §68 audit-honesty
-rule applied in both directions: never claim something works when
-it's only simulated, and never hide real future scope either. See the
-plan this was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated
-entries) for the full, disclosed rationale and what's deferred.
-Convection Lab specifically was considered and deliberately deferred
-rather than built as a thin wrapper: the one real, well-established
-formula available for it (`acf.awci.updraft.
+Phase 5 (2026-09-04, same "continue" progressive discipline) added:
+- **Confidence Lab** (`acf_workstation_confidence.
+  ACFConfidenceLabPanel`): a real, full-grid multi-model disagreement
+  map (spread/mean, never a single 0-100 confidence score), via a new
+  `ModelConsensusEngine.compute_real_multi_model_disagreement_field()`
+  classmethod - a real extension of the SAME engine Complexity
+  Explorer's own "Compute Model Disagreement" button already uses at
+  one point, here run over an entire real grid (measured ~0.9s for 2
+  models) - the investigation deferred from Phase 4 found this
+  genuinely feasible, not prohibitively expensive.
+
+The remaining ~3 spec modules (Convection/Terrain Labs, Interaction
+Engine, Multi-Model Lab, Data Quality Center, 3D/4D, Case Study Lab,
+Research Mode, Configuration Management...) are listed in the left nav
+as real, visible, DISABLED "Planned" items - not silently omitted, not
+faked - matching the master spec's own §68 audit-honesty rule applied
+in both directions: never claim something works when it's only
+simulated, and never hide real future scope either. See the plan this
+was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entries)
+for the full, disclosed rationale and what's deferred. Convection Lab
+specifically was considered and deliberately deferred rather than
+built as a thin wrapper: the one real, well-established formula
+available for it (`acf.awci.updraft.
 compute_real_max_updraft_velocity()`, w_max = sqrt(2*CAPE)) is, by
 that module's own docstring, "a purely deterministic, monotonic
 function of CAPE alone" - it "carries no real information CAPE itself
@@ -119,6 +130,7 @@ from PySide6.QtWidgets import (
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
+from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
@@ -133,9 +145,9 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Real, built modules (index into the QStackedWidget) vs. real,
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
-_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Complexity"]
+_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Complexity"]
 _PLANNED_MODULES = [
-    "Convection", "Terrain", "Confidence", "Interactions",
+    "Convection", "Terrain", "Interactions",
 ]
 
 
@@ -269,12 +281,14 @@ class ACFWorkstation(QWidget):
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
         self.microphysics_panel = ACFMicrophysicsLabPanel()
         self.temporal_panel = ACFTemporalLabPanel()
+        self.confidence_panel = ACFConfidenceLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
         self.stack.addWidget(self.microphysics_panel)
         self.stack.addWidget(self.temporal_panel)
+        self.stack.addWidget(self.confidence_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -350,6 +364,7 @@ class ACFWorkstation(QWidget):
         self.thermodynamics_panel.update_from_volume(self._volume, self._level_index)
         self.microphysics_panel.update_from_volume(self._volume, self._level_index)
         self.temporal_panel.update_from_volume(self._volume, self._level_index)
+        self.confidence_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
