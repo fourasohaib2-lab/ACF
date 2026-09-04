@@ -54,6 +54,53 @@ def test_model_selector_lists_the_real_model_configs(qapp):
     assert real_names == set(MODEL_CONFIGS.keys())  # real AROME/ALADIN/ARPEGE, never invented
 
 
+def test_overview_landing_panel_is_the_real_first_stack_widget(qapp):
+    """Real Phase 31 regression guard (2026-09-04): the reference
+    mockup's own nav tree shows a distinct "Overview" above "Atmosphere
+    State" - construction alone must land on the real landing page, not
+    the raw-fields map panel."""
+    ws = ACFWorkstation()
+    assert ws.nav_list.item(0).text() == "Overview"
+    assert ws.nav_list.item(1).text() == "Atmosphere State"
+    assert ws.stack.currentWidget() is ws.overview_landing_panel
+    assert ws._panel_by_name["Overview"] is ws.overview_landing_panel
+    assert ws._panel_by_name["Atmosphere State"] is ws.overview_panel
+
+
+def test_model_selector_change_updates_the_real_landing_page(qapp):
+    ws = ACFWorkstation()
+    ws.model_selector.setCurrentText("AROME")
+    config = MODEL_CONFIGS["AROME"]
+    assert str(config["n_lat"]) in ws.overview_landing_panel.model_info_label.text()
+
+
+def test_run_status_mirrors_onto_the_real_landing_page(qapp):
+    ws = ACFWorkstation()
+    ws._on_volume_ready(_real_volume())
+    assert ws.overview_landing_panel.status_label.text() == ws.status_label.text()
+    assert "✅" in ws.overview_landing_panel.status_label.text()
+
+
+def test_data_sources_list_has_the_real_three_entries(qapp):
+    ws = ACFWorkstation()
+    labels = [ws.data_sources_list.item(i).text() for i in range(ws.data_sources_list.count())]
+    assert labels == ["Model Data", "Observations", "Scientific Explorer"]
+
+
+def test_more_labs_toolbar_reaches_every_real_relocated_module(qapp):
+    """Real Phase 31 regression guard: modules moved out of the main
+    nav (because the mockup's own tree doesn't show them) must stay
+    genuinely reachable - kept, never deleted."""
+    from acf.gui.dashboard.acf_workstation import _TOOLBAR_MODULES
+
+    ws = ACFWorkstation()
+    assert set(ws.more_labs_actions.keys()) == set(_TOOLBAR_MODULES)
+    for name in _TOOLBAR_MODULES:
+        ws.more_labs_actions[name].trigger()
+        assert ws.stack.currentWidget() is ws._panel_by_name[name]
+        assert ws.nav_list.currentRow() == -1
+
+
 def test_nav_lists_the_real_enabled_modules_and_the_rest_disabled(qapp):
     ws = ACFWorkstation()
     enabled_labels = []
@@ -70,47 +117,56 @@ def test_nav_lists_the_real_enabled_modules_and_the_rest_disabled(qapp):
 
 
 def test_nav_selection_switches_the_real_stacked_content(qapp):
+    # Real nav order/labels (Phase 31, 2026-09-04) - matches the
+    # Workstation's own reference mockup exactly, see _ENABLED_MODULES;
+    # routing is name-based (`_panel_by_name`), not row-index-based.
     ws = ACFWorkstation()
+    assert ws.stack.currentWidget() is ws.overview_landing_panel
+
+    ws.nav_list.setCurrentRow(1)  # Atmosphere State
     assert ws.stack.currentWidget() is ws.overview_panel
 
-    ws.nav_list.setCurrentRow(1)
-    assert ws.stack.currentWidget() is ws.dynamics_panel
-
-    ws.nav_list.setCurrentRow(2)
-    assert ws.stack.currentWidget() is ws.thermodynamics_panel
-
-    ws.nav_list.setCurrentRow(3)
-    assert ws.stack.currentWidget() is ws.microphysics_panel
-
-    ws.nav_list.setCurrentRow(4)
-    assert ws.stack.currentWidget() is ws.temporal_panel
-
-    ws.nav_list.setCurrentRow(5)
-    assert ws.stack.currentWidget() is ws.confidence_panel
-
-    ws.nav_list.setCurrentRow(6)
-    assert ws.stack.currentWidget() is ws.multimodel_panel
-
-    ws.nav_list.setCurrentRow(7)
-    assert ws.stack.currentWidget() is ws.interactions_panel
-
-    ws.nav_list.setCurrentRow(8)
-    assert ws.stack.currentWidget() is ws.quality_panel
-
-    ws.nav_list.setCurrentRow(9)
+    ws.nav_list.setCurrentRow(2)  # Complexity Explorer
     assert ws.stack.currentWidget() is ws.complexity_panel
 
-    ws.nav_list.setCurrentRow(10)
-    assert ws.stack.currentWidget() is ws.atmosphere_3d_panel
+    ws.nav_list.setCurrentRow(3)  # Atmospheric Interaction Engine
+    assert ws.stack.currentWidget() is ws.interactions_panel
 
-    ws.nav_list.setCurrentRow(11)
-    assert ws.stack.currentWidget() is ws.case_study_panel
+    ws.nav_list.setCurrentRow(4)  # Dynamics Lab
+    assert ws.stack.currentWidget() is ws.dynamics_panel
 
-    ws.nav_list.setCurrentRow(12)
+    ws.nav_list.setCurrentRow(5)  # Thermodynamics Lab
+    assert ws.stack.currentWidget() is ws.thermodynamics_panel
+
+    ws.nav_list.setCurrentRow(6)  # Convection Lab
     assert ws.stack.currentWidget() is ws.convection_panel
 
-    ws.nav_list.setCurrentRow(13)
+    ws.nav_list.setCurrentRow(7)  # Microphysics Lab
+    assert ws.stack.currentWidget() is ws.microphysics_panel
+
+    ws.nav_list.setCurrentRow(8)  # Terrain Lab
     assert ws.stack.currentWidget() is ws.terrain_panel
+
+    ws.nav_list.setCurrentRow(9)  # Temporal Evolution Lab
+    assert ws.stack.currentWidget() is ws.temporal_panel
+
+    ws.nav_list.setCurrentRow(10)  # Forecast Consistency Lab
+    assert ws.stack.currentWidget() is ws.confidence_panel
+
+    # Real modules the mockup's own nav tree doesn't show - kept,
+    # reachable via _navigate_to() (the "🧰 More Labs" toolbar path),
+    # never deleted.
+    ws._navigate_to("Multi-Model Lab")
+    assert ws.stack.currentWidget() is ws.multimodel_panel
+
+    ws._navigate_to("Data Quality Center")
+    assert ws.stack.currentWidget() is ws.quality_panel
+
+    ws._navigate_to("3D Atmosphere View")
+    assert ws.stack.currentWidget() is ws.atmosphere_3d_panel
+
+    ws._navigate_to("Case Study Lab")
+    assert ws.stack.currentWidget() is ws.case_study_panel
 
 
 def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):

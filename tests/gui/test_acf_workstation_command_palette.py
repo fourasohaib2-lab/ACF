@@ -104,9 +104,9 @@ def test_running_a_go_to_command_switches_the_real_nav(qapp):
     ws.nav_list.setCurrentRow(0)
     commands = dict(ws._build_palette_commands())
 
-    commands["Go to Microphysics"]()
+    commands["Go to Microphysics Lab"]()
 
-    assert ws.nav_list.currentRow() == _ENABLED_MODULES.index("Microphysics")
+    assert ws.nav_list.currentRow() == _ENABLED_MODULES.index("Microphysics Lab")
 
 
 def test_running_the_run_command_calls_the_real_refresh(qapp, monkeypatch):

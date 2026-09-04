@@ -59,7 +59,7 @@ def test_triggering_a_nav_shortcut_switches_to_the_real_module(qapp):
     ws.nav_shortcuts[3].activated.emit()  # the 4th real module, Ctrl+4
 
     assert ws.nav_list.currentRow() == 3
-    assert ws.stack.currentWidget() is ws.microphysics_panel
+    assert ws.stack.currentWidget() is ws.interactions_panel
 
 
 def test_ctrl_r_shortcut_calls_the_real_refresh(qapp, monkeypatch):

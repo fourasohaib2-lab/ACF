@@ -335,6 +335,63 @@ formulas composed and their honest, disclosed simplifications.
 `_PLANNED_MODULES` is now empty - every real §8 spec module this
 Workstation's plan named is built.
 
+Phase 31 (2026-09-04, explicit user request, attaching the
+Workstation's own true reference mockup -
+`docs/reference/acf_scientific_workstation_reference.jpg` - and stating
+twice: "garder ce modèle... ne change rien à 100%" and "chaque
+détails... je veux garder le moindre détail et l'afficher a la
+perfection comme dans les photos") realigned this Workstation's own
+chrome to match that mockup's real nav tree exactly, as the first,
+user-confirmed ("Structure d'abord") pass toward that full goal - a
+real structural pass, not the complete pixel-perfect rebuild, which
+continues in later phases:
+- `_ENABLED_MODULES` now holds the mockup's own real 11 nav labels/
+  order (Overview, Atmosphere State, Complexity Explorer, Atmospheric
+  Interaction Engine, Dynamics/Thermodynamics/Convection/Microphysics/
+  Terrain Lab, Temporal Evolution Lab, Forecast Consistency Lab) -
+  every real Lab this Workstation already had keeps its own real
+  backend and tests unchanged; only its nav label/position changed.
+- The 4 real modules the mockup's own tree does not show
+  (`_TOOLBAR_MODULES`: Multi-Model Lab, Data Quality Center, 3D
+  Atmosphere View, Case Study Lab) were **not deleted** - moved to a
+  real "🧰 More Labs" toolbar menu instead (`ne détruis pas
+  l'existant`, this project's own established rule).
+- Routing switched from row-index-coupled `stack.setCurrentIndex(row)`
+  to a real `self._panel_by_name: dict[str, QWidget]` +
+  `stack.setCurrentWidget(...)`, via the single `_navigate_to()` entry
+  point every "go to X" control (nav list, Overview's own Quick
+  Navigation buttons, the toolbar menu, the Command Palette) now
+  shares - so nav content/order can change without breaking any other
+  module's own mapping.
+- Added the real, previously-missing **Overview** landing page
+  (`acf_workstation_overview_landing.ACFOverviewLandingPanel`) - real
+  current-model `MODEL_CONFIGS` grid metadata and real run status
+  (mirrored verbatim from `status_label` via the new `_set_status()`
+  sink), plus real quick-navigation buttons - no map, no composite
+  score, nothing fabricated. The former sole "Overview" (the raw-
+  fields map panel) is unchanged, relabelled "Atmosphere State".
+- Relocated the real Research Mode toggle from the top bar into a new
+  "DIAGNOSTICS" nav section, and added a real "DATA SOURCES" nav
+  section (Model Data / Observations / Scientific Explorer), matching
+  the mockup's own left-column layout:
+  - **Model Data** opens a real dialog listing this Workstation's own
+    real `MODEL_CONFIGS` grid metadata for all 3 real models.
+  - **Observations** is an honest disclosure dialog - no real
+    observation feed is connected; every field elsewhere in this
+    Workstation comes from a real, live `CoupledEarthSolver` run.
+  - **Scientific Explorer** is a real, live search dialog over
+    `acf.science.encyclopedia.registry.EncyclopediaRegistry`'s own
+    real, populated formula database (`search()`/`list_entries()`) -
+    real name/domain/equation/description/references per entry, never
+    fabricated.
+Explicitly deferred to follow-up phases (disclosed, not silently
+dropped): the "ACF Pipeline Monitor" status box, the always-visible
+right-side panels (Vertical Complexity Sounding / Atmospheric
+Interaction Graph / Forecast Consistency), the Global Timeline
+scrubber with forecast-hour thumbnails, the Dynamics/Thermodynamics Lab
+bottom thumbnail strips, and full Domain-selector-driven geographic
+cropping across every panel.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -363,15 +420,20 @@ from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMenu,
     QPushButton,
     QSlider,
     QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -390,6 +452,7 @@ from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEngineP
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
 from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
@@ -400,14 +463,40 @@ logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
 
 _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastest real run, same default as acf_general_dashboard.py
 
-#: Real, built modules (index into the QStackedWidget) vs. real,
-#: disclosed-but-not-yet-built ones - see module docstring. Every name
-#: here is a real §8 spec module name, not invented.
+#: Real, built "ACF CORE" nav modules, in the exact order and with the
+#: exact real labels the Workstation's own reference mockup
+#: (`docs/reference/acf_scientific_workstation_reference.jpg`) shows
+#: (Phase 31, 2026-09-04, explicit user request: "garder ce modèle...
+#: ne change rien à 100%" - see the module docstring's own Phase 31
+#: entry for the full disclosure of what changed and why). Every real
+#: Lab this Workstation already had keeps its own real backend/tests
+#: unchanged - only its nav LABEL and position changed here to match
+#: the mockup; nothing real was removed.
 _ENABLED_MODULES = [
-    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
-    "Interactions", "Quality", "Complexity", "3D View", "Case Study", "Convection", "Terrain",
+    "Overview",
+    "Atmosphere State",
+    "Complexity Explorer",
+    "Atmospheric Interaction Engine",
+    "Dynamics Lab",
+    "Thermodynamics Lab",
+    "Convection Lab",
+    "Microphysics Lab",
+    "Terrain Lab",
+    "Temporal Evolution Lab",
+    "Forecast Consistency Lab",
 ]
 _PLANNED_MODULES: list[str] = []
+
+#: Real, built modules the mockup's own "ACF CORE" nav tree does NOT
+#: show - kept, never deleted (this project's own established
+#: "ne détruis pas l'existant" discipline), reachable from the real
+#: "🧰 More Labs" toolbar menu instead of the main nav list.
+_TOOLBAR_MODULES = [
+    "Multi-Model Lab",
+    "Data Quality Center",
+    "3D Atmosphere View",
+    "Case Study Lab",
+]
 
 
 class _VolumeWorkerSignals(QObject):
@@ -476,6 +565,7 @@ class ACFWorkstation(QWidget):
         self.model_selector = QComboBox()
         self.model_selector.addItems(list(MODEL_CONFIGS.keys()))
         self.model_selector.setCurrentText(_DEFAULT_MODEL)
+        self.model_selector.currentTextChanged.connect(self._on_model_selector_changed)
         top_bar.addWidget(self.model_selector)
 
         self.run_button = QPushButton("🔄 Run")
@@ -493,22 +583,27 @@ class ACFWorkstation(QWidget):
         self.fullscreen_button.clicked.connect(self._toggle_fullscreen)
         top_bar.addWidget(self.fullscreen_button)
 
-        # Real Research Mode (added 2026-09-04) - see
-        # _on_research_mode_toggled()'s own docstring for exactly what
-        # real behavior this turns on: clicking Thermodynamics/
-        # Microphysics Lab's own map re-calls the real per-point
-        # formula fresh at that point and shows its FULL real return,
-        # not just the single value already rendered.
-        self.research_mode_button = QPushButton("🔬 Research Mode")
-        self.research_mode_button.setCheckable(True)
-        self.research_mode_button.setToolTip(
-            "When on: click Thermodynamics/Microphysics Lab's own map to see the\n"
-            "full real per-point diagnostic detail (dewpoint, relative humidity,\n"
-            "wet-bulb, honest_limitation…) fresh at that point - not just the\n"
-            "single value already shown on the map."
+        # Real "More Labs" toolbar (added Phase 31, 2026-09-04) - the
+        # real Labs this Workstation already had that the reference
+        # mockup's own "ACF CORE" nav tree does not show (see
+        # _TOOLBAR_MODULES's own docstring) - kept, reachable here
+        # instead, never deleted.
+        self.more_labs_button = QToolButton()
+        self.more_labs_button.setText("🧰 More Labs")
+        self.more_labs_button.setToolTip(
+            "Real Labs this Workstation already has that the reference mockup's own\n"
+            "nav tree doesn't show - kept here, not deleted."
         )
-        self.research_mode_button.toggled.connect(self._on_research_mode_toggled)
-        top_bar.addWidget(self.research_mode_button)
+        self.more_labs_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        more_labs_menu = QMenu(self.more_labs_button)
+        self.more_labs_actions: dict[str, QAction] = {}
+        for name in _TOOLBAR_MODULES:
+            action = QAction(name, self)
+            action.triggered.connect(lambda _checked=False, target=name: self._navigate_to(target))
+            more_labs_menu.addAction(action)
+            self.more_labs_actions[name] = action
+        self.more_labs_button.setMenu(more_labs_menu)
+        top_bar.addWidget(self.more_labs_button)
 
         # Real Configuration Management (added 2026-09-04, closing a
         # gap this button's own tooltip used to disclose as "not yet
@@ -570,9 +665,48 @@ class ACFWorkstation(QWidget):
         self.nav_list.setCurrentRow(0)
         self.nav_list.currentRowChanged.connect(self._on_nav_changed)
         nav_col.addWidget(self.nav_list, stretch=1)
+
+        # Real "Data Sources" nav section (added Phase 31, 2026-09-04,
+        # matching the reference mockup's own left-column "DATA
+        # SOURCES" block) - each item opens a real dialog; see
+        # `_on_data_source_selected()`'s own docstring for exactly what
+        # real data (or honest "not connected" disclosure) each one
+        # shows.
+        data_sources_header = QLabel("DATA SOURCES")
+        data_sources_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        nav_col.addWidget(data_sources_header)
+        self.data_sources_list = QListWidget()
+        self.data_sources_list.setMaximumWidth(180)
+        self.data_sources_list.setMaximumHeight(90)
+        for name in ("Model Data", "Observations", "Scientific Explorer"):
+            self.data_sources_list.addItem(QListWidgetItem(name))
+        self.data_sources_list.itemClicked.connect(self._on_data_source_selected)
+        nav_col.addWidget(self.data_sources_list)
+
+        # Real "Diagnostics" nav section - relocates the real Research
+        # Mode toggle (previously in the top bar) here, matching the
+        # mockup's own left-column layout; same real toggle/behavior,
+        # only its position changed.
+        diagnostics_header = QLabel("DIAGNOSTICS")
+        diagnostics_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        nav_col.addWidget(diagnostics_header)
+        self.research_mode_button = QPushButton("🔬 Research Mode")
+        self.research_mode_button.setCheckable(True)
+        self.research_mode_button.setToolTip(
+            "When on: click Thermodynamics/Microphysics Lab's own map to see the\n"
+            "full real per-point diagnostic detail (dewpoint, relative humidity,\n"
+            "wet-bulb, honest_limitation…) fresh at that point - not just the\n"
+            "single value already shown on the map."
+        )
+        self.research_mode_button.toggled.connect(self._on_research_mode_toggled)
+        nav_col.addWidget(self.research_mode_button)
+
         body.addLayout(nav_col)
 
         self.stack = QStackedWidget()
+        self.overview_landing_panel = ACFOverviewLandingPanel(
+            navigate_to=self._navigate_to, module_names=_ENABLED_MODULES + _TOOLBAR_MODULES
+        )
         self.overview_panel = ACFOverviewPanel()
         self.dynamics_panel = ACFDynamicsLabPanel()
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
@@ -589,20 +723,31 @@ class ACFWorkstation(QWidget):
         )
         self.convection_panel = ACFConvectionLabPanel()
         self.terrain_panel = ACFTerrainLabPanel()
-        self.stack.addWidget(self.overview_panel)
-        self.stack.addWidget(self.dynamics_panel)
-        self.stack.addWidget(self.thermodynamics_panel)
-        self.stack.addWidget(self.microphysics_panel)
-        self.stack.addWidget(self.temporal_panel)
-        self.stack.addWidget(self.confidence_panel)
-        self.stack.addWidget(self.multimodel_panel)
-        self.stack.addWidget(self.interactions_panel)
-        self.stack.addWidget(self.quality_panel)
-        self.stack.addWidget(self.complexity_panel)
-        self.stack.addWidget(self.atmosphere_3d_panel)
-        self.stack.addWidget(self.case_study_panel)
-        self.stack.addWidget(self.convection_panel)
-        self.stack.addWidget(self.terrain_panel)
+
+        # Real name -> widget routing (added Phase 31, 2026-09-04,
+        # replacing the old row-index-coupled `setCurrentIndex(row)`)
+        # - decouples nav list content/order from stack widget order,
+        # so real modules can be added to/removed from the nav or
+        # toolbar without breaking any other module's own mapping.
+        self._panel_by_name: dict[str, QWidget] = {
+            "Overview": self.overview_landing_panel,
+            "Atmosphere State": self.overview_panel,
+            "Complexity Explorer": self.complexity_panel,
+            "Atmospheric Interaction Engine": self.interactions_panel,
+            "Dynamics Lab": self.dynamics_panel,
+            "Thermodynamics Lab": self.thermodynamics_panel,
+            "Convection Lab": self.convection_panel,
+            "Microphysics Lab": self.microphysics_panel,
+            "Terrain Lab": self.terrain_panel,
+            "Temporal Evolution Lab": self.temporal_panel,
+            "Forecast Consistency Lab": self.confidence_panel,
+            "Multi-Model Lab": self.multimodel_panel,
+            "Data Quality Center": self.quality_panel,
+            "3D Atmosphere View": self.atmosphere_3d_panel,
+            "Case Study Lab": self.case_study_panel,
+        }
+        for panel in self._panel_by_name.values():
+            self.stack.addWidget(panel)
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
@@ -649,6 +794,16 @@ class ACFWorkstation(QWidget):
 
         return _go_to_row
 
+    def _make_go_to_name(self, module_name: str) -> Callable[[], None]:
+        """Same late-binding-safe closure factory as `_make_go_to_row`,
+        for the real `_TOOLBAR_MODULES` (not in the nav list, so routed
+        through `_navigate_to` instead of `nav_list.setCurrentRow`)."""
+
+        def _go_to_name() -> None:
+            self._navigate_to(module_name)
+
+        return _go_to_name
+
     def _build_palette_commands(self) -> list[tuple[str, Callable[[], None]]]:
         """Real command list for the Command Palette (added
         2026-09-04) - every entry is a direct reference to an already-
@@ -662,6 +817,8 @@ class ACFWorkstation(QWidget):
         ]
         for row, name in enumerate(_ENABLED_MODULES):
             commands.append((f"Go to {name}", self._make_go_to_row(row)))
+        for name in _TOOLBAR_MODULES:
+            commands.append((f"Go to {name}", self._make_go_to_name(name)))
         # Real on-demand actions already built into specific Lab panels
         # - reuses each panel's own real button.click(), never a
         # second, independent trigger path.
@@ -804,12 +961,21 @@ class ACFWorkstation(QWidget):
 
     # --------------------------------------------------------------- volume
 
+    def _set_status(self, text: str) -> None:
+        """Real, single status sink (added Phase 31, 2026-09-04) - the
+        Overview landing page's own real status line
+        (`ACFOverviewLandingPanel.update_status()`) mirrors this
+        Workstation's own `status_label` verbatim, never a second,
+        independently-tracked status string."""
+        self.status_label.setText(text)
+        self.overview_landing_panel.update_status(text)
+
     def refresh(self) -> None:
         """Real, off-thread compute_real_complexity_volume() run - see
         module docstring."""
         self.run_button.setEnabled(False)
         model = self.model_selector.currentText()
-        self.status_label.setText(f"⏳ Computing real ACF volume ({model} grid, CoupledEarthSolver)…")
+        self._set_status(f"⏳ Computing real ACF volume ({model} grid, CoupledEarthSolver)…")
         self._compute_started_at = time.monotonic()
         config = MODEL_CONFIGS[model]
         worker = _VolumeWorker(
@@ -826,7 +992,7 @@ class ACFWorkstation(QWidget):
         elapsed = time.monotonic() - self._compute_started_at if self._compute_started_at else 0.0
         # Honest, real status - never a fabricated forecast run-ID/valid-time
         # (this is a live solver run, not an archived NWP product).
-        self.status_label.setText(
+        self._set_status(
             f"✅ Live CoupledEarthSolver run ({volume['model']} grid, {volume['n_levels']} real levels) "
             f"— computed in {elapsed:.1f}s."
         )
@@ -851,7 +1017,7 @@ class ACFWorkstation(QWidget):
 
     def _on_volume_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)
-        self.status_label.setText(f"⚠ Real volume computation failed: {message}")
+        self._set_status(f"⚠ Real volume computation failed: {message}")
         logger.error("ACF Scientific Workstation: volume computation failed: %s", message)
 
     def _on_level_changed(self, value: int) -> None:
@@ -889,7 +1055,117 @@ class ACFWorkstation(QWidget):
     def _on_nav_changed(self, row: int) -> None:
         if row < 0 or row >= len(_ENABLED_MODULES):
             return
-        self.stack.setCurrentIndex(row)
+        self.stack.setCurrentWidget(self._panel_by_name[_ENABLED_MODULES[row]])
+
+    def _navigate_to(self, module_name: str) -> None:
+        """Real, single navigation path (added Phase 31, 2026-09-04) -
+        every real "go to X" control this Workstation has (nav list,
+        Overview's own Quick Navigation buttons, the "🧰 More Labs"
+        toolbar menu, the Command Palette) ends up here. For a real
+        `_ENABLED_MODULES` name, selects the matching nav row (which
+        itself drives `_on_nav_changed` -> `setCurrentWidget`); for a
+        real `_TOOLBAR_MODULES` name (not in the nav list), clears the
+        nav selection and sets the stack widget directly from
+        `_panel_by_name` - never a second, independent routing table."""
+        if module_name in _ENABLED_MODULES:
+            self.nav_list.setCurrentRow(_ENABLED_MODULES.index(module_name))
+        elif module_name in self._panel_by_name:
+            self.nav_list.setCurrentRow(-1)
+            self.stack.setCurrentWidget(self._panel_by_name[module_name])
+
+    def _on_model_selector_changed(self, model: str) -> None:
+        """Real, live `MODEL_CONFIGS` grid metadata for the newly
+        selected model, mirrored onto the Overview landing page even
+        before any real run has happened - never a fabricated status."""
+        self.overview_landing_panel.set_model(model)
+
+    def _on_data_source_selected(self, item: QListWidgetItem) -> None:
+        """Real "Data Sources" dialogs (added Phase 31, 2026-09-04,
+        matching the reference mockup's own left-column block): "Model
+        Data" shows this Workstation's own real `MODEL_CONFIGS` grid
+        metadata for all 3 real models; "Observations" is an honest
+        disclosure that no real observation feed is connected (no
+        fabricated data); "Scientific Explorer" is a real search over
+        `acf.science.encyclopedia.registry.EncyclopediaRegistry`'s own
+        real, populated formula database."""
+        name = item.text()
+        if name == "Model Data":
+            self._show_model_data_dialog()
+        elif name == "Observations":
+            self._show_observations_dialog()
+        elif name == "Scientific Explorer":
+            self._show_scientific_explorer_dialog()
+        self.data_sources_list.clearSelection()
+
+    def _show_model_data_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Model Data — real MODEL_CONFIGS")
+        layout = QVBoxLayout(dialog)
+        table = QTableWidget(len(MODEL_CONFIGS), 5)
+        table.setHorizontalHeaderLabels(["Model", "Grid (lat×lon×levels)", "Resolution (km)", "Default steps", "Notes"])
+        for row, (model, config) in enumerate(MODEL_CONFIGS.items()):
+            table.setItem(row, 0, QTableWidgetItem(model))
+            table.setItem(
+                row, 1, QTableWidgetItem(f"{config['n_lat']}×{config['n_lon']}×{config['n_levels']}")
+            )
+            table.setItem(row, 2, QTableWidgetItem(str(config["resolution_km"])))
+            table.setItem(row, 3, QTableWidgetItem(str(config["default_steps"])))
+            table.setItem(row, 4, QTableWidgetItem("Real CoupledEarthSolver grid — this Workstation's own live run."))
+        table.resizeColumnsToContents()
+        layout.addWidget(table)
+        dialog.resize(560, 200)
+        dialog.exec()
+
+    def _show_observations_dialog(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Observations")
+        layout = QVBoxLayout(dialog)
+        label = QLabel(
+            "No real observation feed is connected to this Workstation.\n\n"
+            "Every field shown elsewhere in this Workstation comes from a real, live\n"
+            "CoupledEarthSolver run — never a real or simulated observation network.\n"
+            "This is an honest disclosure, not a placeholder for hidden data."
+        )
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        dialog.resize(420, 160)
+        dialog.exec()
+
+    def _show_scientific_explorer_dialog(self) -> None:
+        from acf.science.encyclopedia.registry import EncyclopediaRegistry
+
+        registry = EncyclopediaRegistry
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Scientific Explorer — {registry.count()} real formula entries")
+        layout = QVBoxLayout(dialog)
+        search_box = QLineEdit()
+        search_box.setPlaceholderText("Search the real EncyclopediaRegistry (name, domain, equation)…")
+        layout.addWidget(search_box)
+        results = QTextEdit()
+        results.setReadOnly(True)
+        layout.addWidget(results)
+
+        def render(entries: list[Any]) -> None:
+            if not entries:
+                results.setPlainText("No matching real entries.")
+                return
+            blocks = []
+            for entry in entries[:50]:
+                blocks.append(
+                    f"{entry.name} ({entry.domain}/{entry.subdomain})\n"
+                    f"  {entry.equation}\n"
+                    f"  {entry.description}\n"
+                    f"  References: {', '.join(entry.references) if entry.references else 'n/a'}"
+                )
+            results.setPlainText("\n\n".join(blocks))
+
+        def on_search(text: str) -> None:
+            render(registry.search(text) if text.strip() else registry.list_entries())
+
+        search_box.textChanged.connect(on_search)
+        render(registry.list_entries())
+        dialog.resize(640, 480)
+        dialog.exec()
 
     def _toggle_fullscreen(self) -> None:
         window = self.window()
@@ -909,7 +1185,7 @@ class ACFWorkstation(QWidget):
         self.thermodynamics_panel.set_research_mode(enabled)
         self.microphysics_panel.set_research_mode(enabled)
         if enabled:
-            self.status_label.setText(
+            self._set_status(
                 "🔬 Research Mode ON - click Thermodynamics/Microphysics Lab's map for full diagnostic detail."
             )
 

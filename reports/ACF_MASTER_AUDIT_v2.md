@@ -7395,3 +7395,78 @@ verts.
 vides (Catalog, Products, Reports, Output, Plugins, Geoengineering,
 Machine Learning) ont désormais toutes un vrai panneau. Chantier ESOC
 considéré fermé pour l'instant.
+
+## Mise à jour 2026-09-04 (suite) — Phase 31 : la structure du "ACF Scientific Workstation" réalignée sur sa vraie maquette de référence
+
+**Pourquoi** : l'utilisateur a joint la vraie photo de référence du
+Workstation (`docs/reference/acf_scientific_workstation_reference.jpg`)
+et a demandé explicitement, à deux reprises : « pour le dashboard je
+veux garder ce modèle suit le et ne change rien a 100% et pour les
+produits qui ne figure pas dans le dashboard tu peux les mettre dans
+la barre des tâches », puis « chaque détails chaque produit chaque
+affichage je veux garder le moindre détail et l'afficher a la
+perfection comme dans les photos ». Investigation préalable : le
+fichier `docs/reference/acf_dashboard_reference.jpg` cité dans le plan
+d'origine du Workstation s'est révélé être en réalité une AUTRE
+maquette (le tableau de bord "AWCI RESEARCH SUITE") - la vraie
+référence du Workstation n'avait en fait jamais été correctement
+enregistrée dans le dépôt avant cette session. Une question de cadrage
+a été posée à l'utilisateur (`AskUserQuestion`) ; il a choisi
+« Structure d'abord », confirmant un chantier progressif.
+
+**Construit** (cette passe - structure uniquement, pas encore le rendu
+pixel-perfect complet) :
+- `_ENABLED_MODULES` réordonné/relibellé pour correspondre exactement
+  aux 11 vraies entrées du menu "ACF CORE" de la maquette (Overview,
+  Atmosphere State, Complexity Explorer, Atmospheric Interaction
+  Engine, Dynamics/Thermodynamics/Convection/Microphysics/Terrain Lab,
+  Temporal Evolution Lab, Forecast Consistency Lab) - aucun vrai
+  Laboratoire supprimé, seuls le libellé et la position ont changé.
+- Les 4 vrais modules absents de la maquette (Multi-Model Lab, Data
+  Quality Center, 3D Atmosphere View, Case Study Lab) déplacés vers un
+  vrai menu barre d'outils « 🧰 More Labs » - jamais supprimés
+  (`ne détruis pas l'existant`).
+- Routage navigation refondu : de `stack.setCurrentIndex(row)` (couplé
+  à l'ordre) vers un vrai dictionnaire nommé `self._panel_by_name` +
+  `stack.setCurrentWidget(...)`, via un point d'entrée unique
+  `_navigate_to()` partagé par la nav-list, les boutons de navigation
+  rapide d'Overview, le menu barre d'outils, et la Palette de
+  commandes.
+- Nouvelle page d'accueil réelle « Overview »
+  (`ACFOverviewLandingPanel`) - vraies métadonnées `MODEL_CONFIGS` du
+  modèle sélectionné, vrai statut d'exécution (mirroré depuis
+  `status_label` via `_set_status()`), vrais boutons de navigation
+  rapide - aucune carte, aucun score composite, rien de fabriqué.
+  L'ancienne unique "Overview" (carte des champs bruts) devient
+  "Atmosphere State", inchangée.
+- Bouton Research Mode déplacé de la barre supérieure vers une
+  nouvelle section "DIAGNOSTICS" de la colonne de navigation.
+- Nouvelle section "DATA SOURCES" (Model Data / Observations /
+  Scientific Explorer), chacune ouvrant un vrai dialogue : Model Data
+  liste les vraies grilles `MODEL_CONFIGS` des 3 vrais modèles ;
+  Observations est une divulgation honnête « aucun vrai flux
+  d'observation connecté » ; Scientific Explorer est une vraie
+  recherche en direct sur `acf.science.encyclopedia.registry.
+  EncyclopediaRegistry` (base réelle et peuplée de formules
+  scientifiques).
+
+**Validation réelle** : `ruff check` et `.venv/bin/mypy` propres sur
+tous les fichiers touchés. 3 tests existants corrigés pour le nouvel
+ordre/libellés de navigation
+(`tests/gui/test_acf_workstation.py`,
+`tests/gui/test_acf_workstation_shortcuts.py`,
+`tests/gui/test_acf_workstation_command_palette.py`). 6 nouveaux tests
+de régression pour la page Overview/le menu barre d'outils/les
+sections Data Sources (`tests/gui/test_acf_workstation.py`) + un
+nouveau fichier dédié `tests/gui/test_acf_workstation_data_sources.py`
+(3 tests vérifiant le contenu réel de chaque dialogue). Suite complète
+réexécutée après ces changements.
+
+**Ce qui reste réellement** (annoncé, non caché) : le "ACF Pipeline
+Monitor", les 3 panneaux latéraux toujours visibles (Vertical
+Complexity Sounding / Atmospheric Interaction Graph / Forecast
+Consistency), le "Global Timeline" avec vignettes par échéance, les
+bandeaux de vignettes bas de page Dynamics/Thermodynamics Lab, et le
+câblage complet du sélecteur "Domain" pour un vrai découpage
+géographique - tous restent à construire dans des passes futures pour
+atteindre l'objectif "pixel-perfect" complet demandé par l'utilisateur.
