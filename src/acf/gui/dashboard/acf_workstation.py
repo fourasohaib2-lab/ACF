@@ -78,12 +78,26 @@ Phase 6 (2026-09-04, same "continue" progressive discipline) added:
   justified interaction measure, never an arbitrary unit-mismatched
   product.
 
+Phase 7 (2026-09-04, same "continue" progressive discipline) added:
+- **Data Quality Center** (`acf_workstation_quality.
+  ACFDataQualityLabPanel`): real per-point docs/ACF_MASTER_PROMPT.md
+  §32 quality status (VALID/OUT_OF_RANGE/MISSING/INVALID/...) for
+  Temperature/Specific humidity/Pressure/Wind speed, via
+  `acf.physics_guard.variable_quality.assess_variable_quality()` - the
+  real, already-built §32 taxonomy this codebase had never run over a
+  whole grid before. Independently confirmed the real pressure anomaly
+  already flagged separately (task_f3c406d9): Pressure reads
+  OUT_OF_RANGE at every real grid point (~2013 hPa is outside
+  OPERATIONAL_RANGES' real [1000, 108500] Pa bound) - a genuine
+  demonstration this real infrastructure catches a real problem, not a
+  panel bug.
+
 The remaining 2 spec modules (Convection/Terrain Labs - Multi-Model
-Lab, Data Quality Center, 3D/4D, Case Study Lab, Research Mode,
-Configuration Management etc. are larger, separate pieces of the
-master spec beyond the original "Labs" list) are listed in the left
-nav as real, visible, DISABLED "Planned" items - not silently omitted,
-not faked - matching the master spec's own §68 audit-honesty rule applied
+Lab, 3D/4D, Case Study Lab, Research Mode, Configuration Management
+etc. are larger, separate pieces of the master spec beyond the
+original "Labs" list) are listed in the left nav as real, visible,
+DISABLED "Planned" items - not silently omitted, not faked - matching
+the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
 was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entries)
@@ -151,6 +165,7 @@ from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
@@ -163,7 +178,8 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
-    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Interactions", "Complexity",
+    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Interactions", "Quality",
+    "Complexity",
 ]
 _PLANNED_MODULES = [
     "Convection", "Terrain",
@@ -302,6 +318,7 @@ class ACFWorkstation(QWidget):
         self.temporal_panel = ACFTemporalLabPanel()
         self.confidence_panel = ACFConfidenceLabPanel()
         self.interactions_panel = ACFInteractionEnginePanel()
+        self.quality_panel = ACFDataQualityLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
@@ -310,6 +327,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.temporal_panel)
         self.stack.addWidget(self.confidence_panel)
         self.stack.addWidget(self.interactions_panel)
+        self.stack.addWidget(self.quality_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -387,6 +405,7 @@ class ACFWorkstation(QWidget):
         self.temporal_panel.update_from_volume(self._volume, self._level_index)
         self.confidence_panel.update_from_volume(self._volume, self._level_index)
         self.interactions_panel.update_from_volume(self._volume, self._level_index)
+        self.quality_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav

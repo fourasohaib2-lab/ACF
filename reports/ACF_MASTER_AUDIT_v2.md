@@ -5978,3 +5978,57 @@ originelle des "Labs" (Multi-Model Lab en page propre, Data Quality
 Center, 3D/4D, Case Study Lab, Research Mode, Configuration
 Management, palette de commandes, raccourcis, export, extension API)
 listés "(planned)", pour les mêmes raisons honnêtes déjà disclosed.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 7 : le Data Quality Center, confirmation indépendante de l'anomalie de pression
+
+Suite explicite ("continue"), même discipline progressive. Cette passe
+réutilise une infrastructure réelle déjà construite mais jamais
+appelée sur une grille complète : `acf.physics_guard.
+variable_quality.assess_variable_quality()`, la taxonomie §32 du spec
+maître (VALID/SUSPECT/MISSING/INVALID/OUT_OF_RANGE/UNIT_ERROR/
+GRID_ERROR/TIME_ERROR/PHYSICAL_INCONSISTENCY), elle-même bâtie sur les
+vraies bornes opérationnelles documentées de
+`acf.physics_guard.range_check.OPERATIONAL_RANGES`.
+
+**Construit** : **Data Quality Center**
+(`acf_workstation_quality.ACFDataQualityLabPanel`) — statut §32 réel
+par point pour 4 variables réelles (Temperature/Specific humidity/
+Pressure/Wind speed), calculé automatiquement à chaque changement de
+niveau (mesuré ~0.07ms/point pour les 4 variables ensemble — largement
+assez rapide pour un calcul automatique sur la grille native
+complète). Rendu comme une vraie carte à colormap discrète (une
+couleur par vrai statut §32, jamais un dégradé continu qui impliquerait
+des statuts intermédiaires fictifs) plus un vrai résumé textuel des
+comptages par statut.
+
+**Confirmation indépendante d'un vrai résultat déjà trouvé** : ce
+panneau, construit sans référence directe au bug de pression déjà
+flagged, le redétecte de façon totalement indépendante — Pressure
+affiche OUT_OF_RANGE à **100% des points réels** de la grille (~2013
+hPa hors de la borne documentée [1000, 108500] Pa), tandis que
+Temperature/Specific humidity/Wind speed restent honnêtement VALID à
+100%. Une vraie preuve que cette infrastructure §32 fonctionne
+correctement sur un cas réel connu, pas juste sur des données
+synthétiques de test.
+
+**Validation réelle** : `ruff`/`mypy` propres. 3 nouveaux tests unitaires
+(`tests/test_acf_workstation_quality.py` — cross-vérifiés point par
+point contre `assess_variable_quality()` appelée directement, plus un
+test de régression reproduisant exactement l'anomalie de pression
+connue) + 5 nouveaux tests GUI
+(`tests/gui/test_acf_workstation_quality.py` — dont un test dédié
+prouvant que ce panneau réel affiche bien "OUT_OF_RANGE" pour
+Pressure) + mise à jour des tests d'intégration du chrome (nouvelle
+position dans la nav/le stack à 9 modules désormais). Suite complète
+**4093 → 4101**, toujours verte. Captures d'écran réelles envoyées :
+carte Pressure entièrement rouge (OUT_OF_RANGE 7200/7200, 100%) et
+carte Temperature entièrement verte (VALID 7200/7200, 100%).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente — maintenant doublement confirmée, par ce
+panneau ET par la découverte initiale en Thermodynamics Lab) ; 2
+modules Lab restants (Convection, Terrain) plus les pièces plus larges
+du spec maître (Multi-Model Lab en page propre, 3D/4D, Case Study Lab,
+Research Mode, Configuration Management, palette de commandes,
+raccourcis, export, extension API) listés "(planned)", pour les mêmes
+raisons honnêtes déjà disclosed.
