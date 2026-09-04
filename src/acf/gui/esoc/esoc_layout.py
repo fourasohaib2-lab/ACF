@@ -32,6 +32,11 @@ no-op (no verified real formula exists); "Atmosphere"/"Biosphere"/
 "Land Surface"/"Atmospheric Chemistry" would each need a real solver-
 state display (akin to the ACF Scientific Workstation's own volume) -
 a substantially larger undertaking, not attempted in this pass.
+
+UPDATE (2026-09-05, same day): "HPC / MPI Domain Topology" is real and
+wired now too - see `MPIDomainTopologyPanel`'s own docstring in
+`panel_manager.py` (real domain-splitting arithmetic only; real halo
+exchange is honestly unavailable, no MPI library is connected).
 """
 
 from typing import Any
@@ -80,6 +85,12 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Volcanoes": "volcanoes_panel",
     "Wildfires": "wildfires_panel",
     "Aerosols": "aerosols_panel",
+    # Added 2026-09-05 (same investigation, HPC category): real 2D
+    # domain decomposition, already registered as "mpi_domain" - see
+    # MPIDomainTopologyPanel's own docstring for its honest scope
+    # (no real halo exchange - no MPI library is connected anywhere in
+    # this codebase).
+    "MPI Domain Topology": "mpi_domain_topology",
 }
 
 #: Real System Explorer top-level CATEGORY label -> real

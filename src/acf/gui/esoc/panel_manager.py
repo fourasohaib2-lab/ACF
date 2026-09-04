@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSlider,
+    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
@@ -1836,6 +1837,88 @@ class AerosolsPanel(BasePanelWidget):
         )
 
 
+class MPIDomainTopologyPanel(BasePanelWidget):
+    """39. MPI Domain Topology - real, previously-unbuilt System
+    Explorer leaf (2026-09-05): "HPC / MPI Domain Topology" had no real
+    panel behind it. Real 2D domain decomposition
+    (`acf.hpc.simulation.mpi_domain.MPIDomainDecomposition`, already
+    registered in `ModuleRegistry` as "mpi_domain") - for every real
+    MPI rank in an operator-chosen process grid, shows the real
+    `(lat_start, lat_end, lon_start, lon_end)` index bounds that rank
+    would own of a real global grid - genuine, deterministic
+    arithmetic (`get_local_bounds()`), not fabricated.
+
+    Honest scope: `MPIDomainDecomposition.exchange_halo_boundaries()`
+    deliberately raises `NotImplementedError` (see that method's own
+    NOTE) - no real MPI library is connected anywhere in this
+    codebase, so a genuine inter-rank halo exchange cannot be
+    performed. This panel therefore shows only the real, purely
+    arithmetic domain split `get_local_bounds()` computes, and
+    discloses the halo-exchange gap explicitly rather than attempting
+    or faking it."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🧩 MPI DOMAIN TOPOLOGY", "#7E57C2", registry, dispatcher)
+        module = registry.get_module("mpi_domain")
+        if module is None:
+            self.main_layout.addWidget(_not_connected_label("mpi_domain"))
+            return
+        self._domain_cls: Any = type(module)
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Global grid (lat × lon):"))
+        self.global_nlat = QSpinBox()
+        self.global_nlat.setRange(1, 4096)
+        self.global_nlat.setValue(module.global_nlat)
+        row.addWidget(self.global_nlat)
+        self.global_nlon = QSpinBox()
+        self.global_nlon.setRange(1, 4096)
+        self.global_nlon.setValue(module.global_nlon)
+        row.addWidget(self.global_nlon)
+        row.addWidget(QLabel("Process grid (n_proc_lat × n_proc_lon):"))
+        self.n_proc_lat = QSpinBox()
+        self.n_proc_lat.setRange(1, 64)
+        self.n_proc_lat.setValue(module.n_proc_lat)
+        row.addWidget(self.n_proc_lat)
+        self.n_proc_lon = QSpinBox()
+        self.n_proc_lon.setRange(1, 64)
+        self.n_proc_lon.setValue(module.n_proc_lon)
+        row.addWidget(self.n_proc_lon)
+        self.main_layout.addLayout(row)
+
+        self.button = QPushButton("🧩 Compute Real Domain Decomposition")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["Rank", "lat_start", "lat_end", "lon_start", "lon_end"])
+        self.main_layout.addWidget(self.table)
+
+        note = QLabel(
+            "⚠ Real halo exchange is NOT available - no MPI library is connected in this codebase "
+            "(MPIDomainDecomposition.exchange_halo_boundaries() honestly raises NotImplementedError)."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #FF7043; font-size: 10px; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        global_nlat = self.global_nlat.value()
+        global_nlon = self.global_nlon.value()
+        n_proc_lat = self.n_proc_lat.value()
+        n_proc_lon = self.n_proc_lon.value()
+        total_ranks = n_proc_lat * n_proc_lon
+        self.table.setRowCount(total_ranks)
+        for rank in range(total_ranks):
+            domain = self._domain_cls(global_nlat, global_nlon, n_proc_lat, n_proc_lon, rank)
+            lat_start, lat_end, lon_start, lon_end = domain.get_local_bounds()
+            for col, value in enumerate((rank, lat_start, lat_end, lon_start, lon_end)):
+                self.table.setItem(rank, col, QTableWidgetItem(str(value)))
+        self.table.resizeColumnsToContents()
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -1882,6 +1965,7 @@ class PanelManager:
             "volcanoes_panel": VolcanoesPanel(registry, dispatcher),
             "wildfires_panel": WildfiresPanel(registry, dispatcher),
             "aerosols_panel": AerosolsPanel(registry, dispatcher),
+            "mpi_domain_topology": MPIDomainTopologyPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

@@ -78,13 +78,14 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 38
+    assert len(pm.list_panel_names()) == 39
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
     assert pm.get_panel("volcanoes_panel") is not None
     assert pm.get_panel("wildfires_panel") is not None
     assert pm.get_panel("aerosols_panel") is not None
+    assert pm.get_panel("mpi_domain_topology") is not None
     assert pm.get_panel("catalog") is not None
     assert pm.get_panel("plugins") is not None
     assert pm.get_panel("geoengineering") is not None
@@ -360,6 +361,18 @@ def test_clicking_volcanoes_wildfires_aerosols_switches_to_their_real_panels(qap
     ):
         layout._on_sidebar_item_selected(label, "Earth System")
         assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel(panel_name)
+
+
+def test_clicking_mpi_domain_topology_switches_to_its_real_panel(qapp):
+    """Real Phase 44 regression guard (2026-09-05): the "HPC" category
+    has several distinct real panels among its own leaves - MPI Domain
+    Topology must resolve to its own, not a shared category-wide one."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("MPI Domain Topology", "HPC")
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("mpi_domain_topology")
 
 
 def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):

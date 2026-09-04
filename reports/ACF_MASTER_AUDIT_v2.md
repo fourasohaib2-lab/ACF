@@ -8035,3 +8035,42 @@ passe ; "Fourier Neural Operators"/"GNN Surrogates"/"PINN Models"
 (Intelligence Artificielle), "Workspace Modes"/"Layer Preferences"/
 "API Keys" (Settings), et "MPI Domain Topology" (HPC) restent aussi à
 investiguer.
+
+## Mise à jour 2026-09-05 (suite) — Phase 44 : "MPI Domain Topology" (HPC)
+
+**Pourquoi** : dernière feuille restante avec un vrai moteur déjà
+enregistré et directement exploitable
+(`acf.hpc.simulation.mpi_domain.MPIDomainDecomposition`, "mpi_domain").
+
+**Construit** : `MPIDomainTopologyPanel` (39e panneau) - pour une
+grille de processus choisie par l'opérateur (n_proc_lat × n_proc_lon)
+et une grille globale réelle, affiche pour CHAQUE vrai rang MPI les
+vraies bornes d'indices `(lat_start, lat_end, lon_start, lon_end)`
+que ce rang posséderait - arithmétique réelle et déterministe
+(`get_local_bounds()`), jamais fabriquée.
+
+**Divulgation honnête** : `exchange_halo_boundaries()` de ce même
+moteur lève délibérément `NotImplementedError` (déjà corrigé lors
+d'une session antérieure - aucune bibliothèque MPI n'est connectée
+nulle part dans ce code, donc un vrai échange inter-rangs est
+impossible) - ce panneau montre uniquement le découpage arithmétique
+réel, et divulgue explicitement l'absence d'échange de halo réel
+plutôt que de la fabriquer ou de l'ignorer silencieusement.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 5
+nouveaux tests (`tests/test_esoc_mpi_domain_topology_panel.py`),
+incluant une vérification réelle de pavage sans trou ni chevauchement
+(la somme des zones de chaque rang reconstruit exactement la grille
+globale). 1 nouveau test de routage. Compteur de panneaux ESOC mis à
+jour (38 → 39).
+
+**Ce qui reste réellement** : 11 des 15 feuilles mortes originales
+restent non mappées - voir la liste de la Phase 43 (Atmosphere/
+Biosphere/Land Surface/Atmospheric Chemistry, FNO/GNN/PINN, Workspace
+Modes/Layer Preferences/API Keys), moins MPI Domain Topology
+maintenant réel. Plus largement (hors System Explorer ESOC) : le
+fichier Encyclopédie (299 entrées réelles, 165 sans `compute_func`,
+aucun navigateur ESOC dédié) et le paquet `acf.model4d` (19 385
+lignes réelles, totalement déconnecté du reste du code - zéro import
+externe confirmé) restent à investiguer plus en profondeur avant
+toute décision de construction.
