@@ -5791,3 +5791,61 @@ champ de température réel à ce niveau/ce run est partout au-dessus du
 seuil de gel), pas un motif fabriqué, mais qui illustre concrètement
 que ce panneau ne montrera une vraie variété de phases que sur un run
 couvrant des latitudes/saisons plus froides.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 4 : le Temporal Evolution Lab, et deux modules délibérément écartés (Terrain, Confidence pour l'instant)
+
+Suite explicite ("continue"), même discipline progressive.
+
+**Construit** : **Temporal Evolution Lab**
+(`acf_workstation_temporal.ACFTemporalLabPanel`) — réutilise
+`acf.awci.temporal_field.compute_real_complexity_evolution()` tel
+quel, le même moteur réel déjà utilisé par le bouton "Run Temporal
+Analysis" du Complexity Explorer, mais expose cette fois la vraie
+trajectoire multi-frame complète (temperature_evolution/
+wind_speed_evolution/specific_humidity_evolution/
+pressure_evolution_hpa, jamais `awci_evolution`) au lieu d'une seule
+statistique agrégée : un vrai slider de frame permet de parcourir 4
+vrais instantanés d'une trajectoire réelle du `CoupledEarthSolver`
+(mêmes paramètres que le bouton existant du Complexity Explorer —
+4 frames, 3 pas d'intégration réels entre chaque — pour rester
+cohérent, pas redérivés indépendamment). À la demande, hors thread
+(coût réel : plusieurs vrais pas de solveur), le résultat reste tel
+quel lors d'un changement de niveau ou d'un nouveau "🔄 Run" du
+Workstation (même convention déjà établie pour CAPE/CIN et le
+temporal/consensus du Complexity Explorer) — seul un nouveau clic sur
+son propre bouton relance un vrai calcul.
+
+**Deux modules examinés et délibérément non construits, disclosed
+dans le docstring du chrome, pas oubliés** :
+- **Terrain Lab** — `acf.awci.orographic_froude`'s own docstring
+  révèle déjà que le vrai état de `CoupledEarthSolver` "has no
+  terrain-elevation field at all" et aucune vraie coordonnée de
+  hauteur géométrique. Un vrai Terrain Lab nécessiterait soit un vrai
+  jeu de données d'élévation externe (aucun n'existe dans ce
+  codebase aujourd'hui), soit un relief fabriqué — explicitement
+  interdit. Reste honnêtement "(planned)".
+- **Confidence Lab** — non construit cette passe faute de temps
+  d'investigation suffisant sur la faisabilité réelle d'une carte de
+  désaccord multi-modèle complète (par opposition au point unique déjà
+  utilisé par le Complexity Explorer, qui nécessiterait de faire
+  tourner plusieurs solveurs réels à CHAQUE point de grille — un coût
+  potentiellement très élevé à vérifier avant de s'engager). Reste
+  "(planned)", à investiguer avant construction plutôt que deviné.
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests
+(`tests/gui/test_acf_workstation_temporal.py` — dont un vrai test de
+bout en bout du worker hors thread via `qtbot.waitUntil`, et un test
+de régression prouvant qu'un changement de frame ne relance jamais le
+solveur) + mise à jour des tests d'intégration du chrome (nouvelle
+position dans la nav/le stack à 6 modules désormais). Suite complète
+**4068 → 4073**, toujours verte. Captures d'écran réelles envoyées :
+état honnête "Not yet computed" avant calcul, frame 4/4 (t+0.20h)
+après un vrai calcul, avec son vrai titre et sa vraie colorbar.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; ~5 modules restants (Convection,
+Terrain, Confidence Labs, Interaction Engine, Multi-Model Lab en page
+propre, Data Quality Center, 3D/4D, Case Study Lab, Research Mode,
+Configuration Management, palette de commandes, raccourcis, export,
+extension API) listés "(planned)", pour les mêmes raisons honnêtes
+déjà disclosed.

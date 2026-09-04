@@ -43,27 +43,42 @@ Phase 3 (2026-09-04, same "continue" progressive discipline) added:
   column, independent of the level slider), via
   `acf.awci.wind_shear.compute_real_wind_shear_at_point()`.
 
-The remaining ~7 spec modules (Convection/Terrain/Temporal/Confidence
-Labs, Interaction Engine, Multi-Model Lab, Data Quality Center, 3D/4D,
-Case Study Lab, Research Mode, Configuration Management...) are listed
-in the left nav as real, visible, DISABLED "Planned" items - not
-silently omitted, not faked - matching the master spec's own §68
-audit-honesty rule applied in both directions: never claim something
-works when it's only simulated, and never hide real future scope
-either. See the plan this was built from (`reports/
-ACF_MASTER_AUDIT_v2.md`'s own dated entries) for the full, disclosed
-rationale and what's deferred. Convection Lab specifically was
-considered and deliberately deferred rather than built as a thin
-wrapper: the one real, well-established formula available for it
-(`acf.awci.updraft.compute_real_max_updraft_velocity()`, w_max =
-sqrt(2*CAPE)) is, by that module's own docstring, "a purely
-deterministic, monotonic function of CAPE alone" - it "carries no real
-information CAPE itself did not already carry" (already shown in
-Thermodynamics Lab) - a genuine Convection Lab worth building deserves
-a real, independent published composite index (e.g. SCP/STP, which
-need real storm-relative helicity/effective shear this codebase does
-not yet compute at every grid point), not a thin re-presentation of
-existing data.
+Phase 4 (2026-09-04, same "continue" progressive discipline) added:
+- **Temporal Evolution Lab** (`acf_workstation_temporal.
+  ACFTemporalLabPanel`): a real frame slider scrubbing through an
+  actual multi-frame `CoupledEarthSolver` trajectory (on-demand, the
+  SAME real `compute_real_complexity_evolution()` engine Complexity
+  Explorer's own "Run Temporal Analysis" button already uses, but
+  exposing the full real trajectory instead of one aggregated
+  rate-of-change map).
+
+The remaining ~6 spec modules (Convection/Terrain/Confidence Labs,
+Interaction Engine, Multi-Model Lab, Data Quality Center, 3D/4D, Case
+Study Lab, Research Mode, Configuration Management...) are listed in
+the left nav as real, visible, DISABLED "Planned" items - not silently
+omitted, not faked - matching the master spec's own §68 audit-honesty
+rule applied in both directions: never claim something works when
+it's only simulated, and never hide real future scope either. See the
+plan this was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated
+entries) for the full, disclosed rationale and what's deferred.
+Convection Lab specifically was considered and deliberately deferred
+rather than built as a thin wrapper: the one real, well-established
+formula available for it (`acf.awci.updraft.
+compute_real_max_updraft_velocity()`, w_max = sqrt(2*CAPE)) is, by
+that module's own docstring, "a purely deterministic, monotonic
+function of CAPE alone" - it "carries no real information CAPE itself
+did not already carry" (already shown in Thermodynamics Lab) - a
+genuine Convection Lab worth building deserves a real, independent
+published composite index (e.g. SCP/STP, which need real
+storm-relative helicity/effective shear this codebase does not yet
+compute at every grid point), not a thin re-presentation of existing
+data. Terrain Lab was considered and deliberately deferred too:
+`acf.awci.orographic_froude`'s own docstring already discloses that
+`CoupledEarthSolver`'s real state "has no terrain-elevation field at
+all" and no real geometric height coordinate - a real Terrain Lab
+would need either a real external elevation dataset (none exists in
+this codebase today) or fabricated terrain, so it stays honestly
+"(planned)" rather than built on invented elevation data.
 
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
@@ -107,6 +122,7 @@ from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPa
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
@@ -117,10 +133,9 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Real, built modules (index into the QStackedWidget) vs. real,
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
-_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Complexity"]
+_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Complexity"]
 _PLANNED_MODULES = [
-    "Convection", "Terrain",
-    "Temporal", "Confidence", "Interactions",
+    "Convection", "Terrain", "Confidence", "Interactions",
 ]
 
 
@@ -253,11 +268,13 @@ class ACFWorkstation(QWidget):
         self.dynamics_panel = ACFDynamicsLabPanel()
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
         self.microphysics_panel = ACFMicrophysicsLabPanel()
+        self.temporal_panel = ACFTemporalLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
         self.stack.addWidget(self.microphysics_panel)
+        self.stack.addWidget(self.temporal_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -332,6 +349,7 @@ class ACFWorkstation(QWidget):
         self.dynamics_panel.update_from_volume(self._volume, self._level_index)
         self.thermodynamics_panel.update_from_volume(self._volume, self._level_index)
         self.microphysics_panel.update_from_volume(self._volume, self._level_index)
+        self.temporal_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
