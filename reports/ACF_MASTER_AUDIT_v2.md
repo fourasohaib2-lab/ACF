@@ -7353,3 +7353,45 @@ GeoTIFF vérifié à l'octet près, disclosure GRIB2 honnête, disclosure
 verts.
 
 **Ce qui reste réellement** : Products, Reports restent à construire.
+
+## Mise à jour 2026-09-04 (suite) — Phase 30 (Products + Reports) : les 7 catégories ESOC vides sont désormais toutes construites
+
+**Investigation** : pour Products (3 feuilles) - `acf.reports.briefings.
+briefing_generator.BriefingGenerator.generate_briefing()` (réel, déjà
+corrigé d'un faux consensus de modèles) pour "Weather Bulletins" ;
+`acf.aviation.icao.sigmet_decoder.SIGMETDecoder.decode()` (vrai
+parseur SIGMET cité ICAO Annexe 3, champs non-extractibles
+honnêtement `None`, jamais devinés) pour "Aviation SIGMETs" ;
+`acf.hydrology.flooding.flood_engine.FloodForecastEngine.
+evaluate_flash_flood_risk()` (vraie méthode rationnelle citée
+Qp=C·i·A/3.6, déjà corrigée pour exiger une vraie surface de bassin)
+pour "Hydrological Warnings". Pour Reports (2 feuilles) -
+`acf.intelligence.reports.executive_report.AutonomousReportGenerator`
+(vrai stub honnête "non généré, aucune donnée réelle connectée", déjà
+corrigé d'un récit catastrophe fabriqué) pour "Executive Risk
+Briefings" ; les modules déjà réels et connectés `cmip6_engine`/
+`ssp_engine` (`acf.simulation_engine.climate_scenarios`, formule
+réelle et citée du forçage radiatif CO2 dF=5.35·ln(CO2/280), la
+formule standard citée par le GIEC) pour "Climate Impact Assessments".
+
+**Construit** : `ProductsPanel` (3 sections réelles interactives :
+génération de bulletin à partir d'un vrai résumé synoptique fourni par
+l'opérateur, décodage SIGMET réel avec rejet honnête d'un texte
+invalide, évaluation réelle du risque de crue éclair qui varie
+authentiquement avec l'entrée) et `ReportsPanel` (disclosure honnête
+Executive Risk Briefings + évaluateur réel et interactif d'horizon
+climatique CMIP6/SSP). Wirés dans `_CATEGORY_LABEL_TO_PANEL_NAME` et
+`PanelManager.panels` (34e et 35e panneaux).
+
+**Validation réelle** : `ruff`/`mypy` propres. 11 nouveaux tests dédiés
+(`tests/test_esoc_products_panel.py` - 7, `tests/test_esoc_
+reports_panel.py` - 4, tous cross-vérifiés contre chaque vrai moteur
+sous-jacent, résultats qui varient authentiquement avec l'entrée
+réelle, rejets honnêtes) + 2 tests de routage (`tests/test_esoc.py`,
+33→35 panneaux). Suite complète réexécutée : 4262 → 4275 tests, tous
+verts.
+
+**Ce qui reste réellement** : les 7 catégories ESOC originellement
+vides (Catalog, Products, Reports, Output, Plugins, Geoengineering,
+Machine Learning) ont désormais toutes un vrai panneau. Chantier ESOC
+considéré fermé pour l'instant.

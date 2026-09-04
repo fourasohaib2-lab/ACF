@@ -78,7 +78,7 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 33
+    assert len(pm.list_panel_names()) == 35
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
@@ -87,6 +87,8 @@ def test_panel_manager(qapp):
     assert pm.get_panel("geoengineering") is not None
     assert pm.get_panel("machine_learning") is not None
     assert pm.get_panel("output") is not None
+    assert pm.get_panel("products") is not None
+    assert pm.get_panel("reports") is not None
 
 
 def test_view_manager(qapp):
@@ -298,6 +300,36 @@ def test_clicking_the_output_category_opens_the_real_output_panel(qapp):
 
     layout._on_sidebar_item_selected("Cloud Zarr Stores", "Output")
     assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("output")
+
+
+def test_clicking_the_products_category_opens_the_real_products_panel(qapp):
+    """Real regression guard (2026-09-04): "Products" used to be a
+    genuinely unmapped category - all 3 leaves (Weather Bulletins,
+    Aviation SIGMETs, Hydrological Warnings) were honest no-ops."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Products", None)
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("products")
+
+    layout._on_sidebar_item_selected("Aviation SIGMETs", "Products")
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("products")
+
+
+def test_clicking_the_reports_category_opens_the_real_reports_panel(qapp):
+    """Real regression guard (2026-09-04): "Reports" used to be a
+    genuinely unmapped category - both leaves (Executive Risk
+    Briefings, Climate Impact Assessments) were honest no-ops. This is
+    also the last of the original 7 empty categories to get a real
+    panel."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Reports", None)
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("reports")
+
+    layout._on_sidebar_item_selected("Climate Impact Assessments", "Reports")
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("reports")
 
 
 def test_clicking_an_unmapped_leaf_under_a_single_panel_category_falls_back_to_it(qapp):

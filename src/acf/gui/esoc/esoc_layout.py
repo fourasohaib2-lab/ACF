@@ -16,13 +16,13 @@ stayed an honest no-op rather than a guessed/wrong navigation. See the
 two mapping tables' own docstring for exactly which labels were
 verified real and which were deliberately left unmapped.
 
-UPDATE (2026-09-04, same day): "Catalog", "Plugins", "Geoengineering",
-"Machine Learning" and "Output" are real and wired now - see
-`CatalogPanel`/`PluginsPanel`/`GeoengineeringPanel`/
-`MachineLearningPanel`/`OutputPanel`'s own docstrings in
-`panel_manager.py`. The remaining 2 categories named above
-(Products/Reports) remain real, disclosed, in-progress work - each
-will be updated here as it gets a real panel, not silently left stale.
+UPDATE (2026-09-04, same day): all 7 originally-empty categories
+(Catalog, Plugins, Geoengineering, Machine Learning, Output, Products,
+Reports) are real and wired now - see `CatalogPanel`/`PluginsPanel`/
+`GeoengineeringPanel`/`MachineLearningPanel`/`OutputPanel`/
+`ProductsPanel`/`ReportsPanel`'s own docstrings in `panel_manager.py`.
+Every real System Explorer category this dead-click investigation
+originally found now has at least one real panel behind it.
 """
 
 from typing import Any
@@ -87,6 +87,8 @@ _CATEGORY_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Geoengineering": "geoengineering",
     "Machine Learning": "machine_learning",
     "Output": "output",
+    "Products": "products",
+    "Reports": "reports",
 }
 
 
