@@ -243,6 +243,17 @@ def test_clicking_any_real_map_updates_the_shared_sounding_panel(qapp):
     assert ws.sounding_panel.status()["point"] == (lat, lon)
 
 
+def test_on_volume_ready_populates_the_real_interaction_graph(qapp):
+    """Real Phase 34 regression guard (2026-09-05): the always-visible
+    Atmospheric Interaction Graph must reflect this real run."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+
+    ws._on_volume_ready(volume)
+
+    assert ws.interaction_graph_panel.status()["has_edges"] is True
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

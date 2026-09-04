@@ -7574,3 +7574,48 @@ et seulement pour son propre point) ; les 2 autres panneaux latéraux
 permanents (Atmospheric Interaction Graph, Forecast Consistency) ; le
 Global Timeline avec vignettes ; les bandeaux de vignettes Dynamics/
 Thermodynamics Lab ; le sélecteur "Domain".
+
+## Mise à jour 2026-09-05 (suite) — Phase 34 : le deuxième panneau latéral permanent, "Atmospheric Interaction Graph"
+
+**Pourquoi** : deuxième des 3 panneaux latéraux permanents de la
+maquette. Choisi ensuite car réutilise directement la vraie fonction
+statistique déjà construite pour l'onglet Interaction Engine
+(`compute_real_local_interaction()`, corrélation de Pearson réelle et
+justifiée statistiquement, cf. §22 du master prompt "ne pas inventer
+arbitrairement interaction = A × B").
+
+**Construit** : `acf_workstation_interaction_graph_panel.
+ACFInteractionGraphWidget` - un vrai réseau de corrélation à 5 nœuds
+(Wind/Terrain/Humidity/Temperature/Precipitation) au niveau courant,
+chaque arête étant la même fonction réelle réutilisée telle quelle
+(jamais réimplémentée), appliquée automatiquement à un jeu fixe de 5
+variables réelles et bon marché (vitesse du vent, élévation du
+terrain réelle SRTM15+, humidité relative réelle, température,
+sévérité réelle de la phase des précipitations) - couleur/épaisseur
+des arêtes réellement proportionnelles au signe et à la magnitude de
+r. Re-tranché dans `_on_volume_ready()`/`_on_level_changed()`, mesuré
+~50ms sur la grille AROME complète 90×180 - aucun nouveau calcul
+solveur.
+
+**Divulgation honnête** : le 5e nœud de la maquette s'appelle
+"Convection" ; aucun champ de convection réel, bon marché et
+disponible à chaque point de grille n'existe aujourd'hui dans ce
+Workstation (CAPE/CIN n'est calculé qu'à la demande, par point, dans
+le Research Mode de Thermodynamics Lab) - "Temperature" le remplace
+honnêtement plutôt que d'inventer un proxy de convection.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 4
+nouveaux tests sur le widget
+(`tests/gui/test_acf_workstation_interaction_graph_panel.py`,
+incluant une contre-vérification indépendante via `numpy.corrcoef`
+brut), 1 nouveau test d'intégration
+(`tests/gui/test_acf_workstation.py`). Capture d'écran réelle
+confirmant le rendu (réseau à 5 nœuds, arête Humidity-Temperature
+fortement visible avec r≈-0.91, une vraie corrélation physiquement
+plausible).
+
+**Ce qui reste réellement** : le 3e panneau latéral permanent
+(Forecast Consistency) ; le Global Timeline avec vignettes ; les
+bandeaux de vignettes Dynamics/Thermodynamics Lab ; le sélecteur
+"Domain" ; la petite grille colorée d'indices de stabilité de la
+maquette.

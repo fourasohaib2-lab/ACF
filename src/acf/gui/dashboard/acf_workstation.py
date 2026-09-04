@@ -441,6 +441,24 @@ real CAPE/CIN, and only for its own single point) - and the other 2
 always-visible side panels (Atmospheric Interaction Graph, Forecast
 Consistency).
 
+Phase 34 (2026-09-05) built the second always-visible side panel:
+the **Atmospheric Interaction Graph**
+(`acf_workstation_interaction_graph_panel.ACFInteractionGraphWidget`) -
+a real 5-node correlation network (Wind/Terrain/Humidity/Temperature/
+Precipitation) at the current level, every edge the SAME real,
+statistically-justified Pearson correlation
+`acf_workstation_interactions.compute_real_local_interaction()` the
+Interaction Engine tab already computes on demand - reused as-is here,
+never reimplemented, just auto-applied to a fixed real node set and
+drawn as a small network (edge color = sign of r, thickness/opacity =
+|r|). Honest node-choice disclosure: the mockup's own 5th label reads
+"Convection"; no real, cheap, always-available gridded convection
+field exists in this Workstation today (CAPE/CIN is on-demand,
+per-point only) - real Temperature substitutes for it instead of a
+fabricated convection proxy. Re-sliced in `_on_volume_ready()`/
+`_on_level_changed()` alongside the sounding panel (measured ~50ms at
+AROME's own full 90x180 grid - cheap, no new solver run).
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -497,6 +515,7 @@ from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPa
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
+from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
@@ -836,6 +855,15 @@ class ACFWorkstation(QWidget):
         self.sounding_panel.setMinimumWidth(260)
         self.sounding_panel.setMaximumWidth(340)
         right_col.addWidget(self.sounding_panel, stretch=1)
+        # Real Atmospheric Interaction Graph (added Phase 34,
+        # 2026-09-05) - see acf_workstation_interaction_graph_panel.py's
+        # own module docstring for the real, fixed 5-node correlation
+        # network it draws; re-sliced per level like the sounding panel
+        # above, in _on_volume_ready()/_on_level_changed() below.
+        self.interaction_graph_panel = ACFInteractionGraphWidget()
+        self.interaction_graph_panel.setMinimumWidth(260)
+        self.interaction_graph_panel.setMaximumWidth(340)
+        right_col.addWidget(self.interaction_graph_panel, stretch=1)
         body.addLayout(right_col)
 
         for panel in self._panel_by_name.values():
@@ -1158,6 +1186,11 @@ class ACFWorkstation(QWidget):
         lat, lon = self._last_clicked_point or (float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2]))
         self.sounding_panel.update_from_volume_and_point(volume, lat, lon, level_index=self._level_index)
 
+        # Real Atmospheric Interaction Graph update (added Phase 34,
+        # 2026-09-05) - real per-level Pearson correlations, re-derived
+        # here (once per run/level change), not on every map click.
+        self.interaction_graph_panel.update_from_volume(volume, self._level_index)
+
     def _on_volume_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)
         self._set_status(f"⚠ Real volume computation failed: {message}")
@@ -1177,9 +1210,11 @@ class ACFWorkstation(QWidget):
         self._level_index = value
         self._update_level_label()
         self._render_all_panels()
-        if self._volume is not None and self._last_clicked_point is not None:
-            lat, lon = self._last_clicked_point
-            self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
+        if self._volume is not None:
+            if self._last_clicked_point is not None:
+                lat, lon = self._last_clicked_point
+                self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
+            self.interaction_graph_panel.update_from_volume(self._volume, self._level_index)
 
     def _update_level_label(self) -> None:
         if self._volume is None:
