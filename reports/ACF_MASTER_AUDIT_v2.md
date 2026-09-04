@@ -8183,3 +8183,62 @@ totalement déconnectées) reste le dernier chantier d'investigation
 substantiel identifié. Les 6 feuilles ESOC mortes restantes (Earth
 System x4, Settings x2) nécessitent soit un gros chantier solveur,
 soit n'ont aucun backend réel.
+
+## Mise à jour 2026-09-05 (suite) — Phase 48 : investigation de `acf.model4d` (clôture du dernier chantier d'investigation)
+
+**Pourquoi** : dernier des 2 chantiers d'investigation substantiels
+identifiés en fin de Phase 46/47. Avant toute décision de construction
+(intégrer, ignorer ou retirer), une vraie investigation était
+nécessaire plutôt qu'une supposition.
+
+**Investigation réelle menée** :
+- **Réel et testé** : 169 fichiers de test sous `tests/` importent de
+  `acf.model4d`, tous verts, faisant partie de la suite complète de ce
+  projet (4409 tests) - ce n'est PAS du code cassé ou abandonné.
+- **Totalement déconnecté** : recherche exhaustive confirmant zéro
+  import réel depuis n'importe où ailleurs dans `src/acf/` -
+  `ModuleRegistry` ne le référence jamais, aucun panneau ESOC ni le
+  Workstation ne l'utilise.
+- **Délibéré, pas accidentel** : présent depuis le tout premier commit
+  du projet (21 juillet 2026), construit sprint par sprint (vrais
+  messages de commit "Sprint N.M terminé").
+- **`docs/ACF_MASTER_PROMPT.md` sections 23/50** exigent explicitement
+  une vraie capacité 4D `C(x,y,z,t)`/`AWCI(x,y,z,t)` ("naviguer
+  longitude/latitude/altitude/temps") - ce paquet ressemble à une
+  première tentative de répondre exactement à cette exigence.
+- Cette même exigence est aujourd'hui satisfaite d'une AUTRE manière
+  réelle : `compute_real_complexity_volume()` (x,y,z) +
+  `compute_real_complexity_evolution()` (+t) + le curseur de niveau/
+  sélecteur Domain/Global Timeline du Workstation (Phase 41) -
+  construits plus tard, semblant avoir supplanté ce paquet sans le
+  supprimer (conformément à la discipline "ne jamais détruire une
+  vraie capacité").
+- Vérification ponctuelle de redondance : `acf.model4d.operators.
+  divergence.Divergence` et `acf.science.divergence.Divergence`
+  (celle réellement utilisée dans le code livré) sont quasi-identiques,
+  même nom de classe - preuve réelle d'une duplication substantielle
+  sous un nom de paquet différent, jamais adopté.
+
+**Construit** : les découvertes ont été écrites directement dans le
+docstring de module de `src/acf/model4d/__init__.py` (divulgation
+permanente dans le code lui-même, pas seulement en mémoire de
+session), plus une nouvelle mémoire persistante dédiée.
+
+**Décision** : `acf.model4d` reste en l'état - ni intégré, ni
+supprimé. Une intégration risquerait de dupliquer une capacité 4D déjà
+réelle et livrée ; une suppression de 19 385 lignes réelles et
+testées est une action difficile à annuler qui nécessite une
+confirmation explicite de l'utilisateur, jamais une décision
+unilatérale. Reste non résolu : si chacun des ~150 fichiers physiques
+duplique aussi précisément son équivalent `acf.science`/
+`acf.simulation_engine`/`acf.earth_physics`, ou si certains portent une
+vraie capacité distincte à récupérer - un audit complet de duplication
+(ou une décision d'archivage) est un travail futur séparé, non
+entrepris ici.
+
+**Conclusion** : avec cette investigation, les 2 chantiers
+d'investigation substantiels identifiés en fin de Phase 46 sont
+maintenant clos (Encyclopédie construite en Phase 47, model4d
+investigué et documenté en Phase 48). Il ne reste que les 6 feuilles
+ESOC mortes nécessitant soit un gros chantier solveur, soit n'ayant
+aucun backend réel.
