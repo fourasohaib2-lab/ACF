@@ -7937,3 +7937,48 @@ sans correspondance fonctionnelle claire avec une vraie capacité
 togglable de ce Workstation aujourd'hui ; le construire risquerait de
 violer la discipline "jamais de fausse fonctionnalité" sans d'abord
 identifier ce que ces cases représenteraient réellement.
+
+## Mise à jour 2026-09-05 (suite) — Phase 42 : clôture du projet de parité avec la maquette de référence (non-construction délibérée du panneau "Layers/Domains")
+
+**Décision déléguée** : l'utilisateur a délégué la décision finale
+("suit ton jugement"). Après investigation réelle des options
+disponibles, décision de NE PAS construire ce panneau - divulguée
+explicitement plutôt que silencieusement omise.
+
+**Investigation réelle menée** :
+- La liste "Domains" de la maquette (Raster Intensity, Raster
+  Contours, Dynamics Complexity, Raster Layer, Vector Layer... répétés
+  de nombreuses fois) est longue et répétitive d'une manière qui
+  suggère un remplissage généré par IA plutôt qu'une spécification
+  fonctionnelle délibérée - renforcé par la découverte, plus tôt dans
+  la Phase 41, d'un texte de légende de la même image (près du Global
+  Timeline) qui s'est avéré être un charabia illisible généré par IA
+  ("Thoeline is apochronised wln s Mep") lors d'un zoom réel sur
+  l'image source.
+- Option réelle envisagée 1 : réutiliser le vrai panneau "Layers" déjà
+  construit et testé dans `awci_map_panel.AWCIMapPanel`
+  (`show_layers_panel=True`) - rejetée car sa case à cocher principale
+  est nommée en dur "AWCI" et bascule un contour "AWCI SCALE" ; ce
+  Workstation a pour règle explicite et centrale "ACF CORE ONLY - NO
+  AWCI" depuis sa toute première phase - l'utiliser violerait
+  directement cette règle fondatrice.
+- Option réelle envisagée 2 : construire un nouveau toggle minimal
+  (`AWCIMapPanel.set_contour_visible()`) pour une seule case "Show
+  Data Layer" par panneau - rejetée comme disproportionnée : un
+  unique vrai toggle ne représenterait honnêtement qu'une fraction
+  minime de ce que la maquette montre visuellement, créant un
+  décalage visuel/fonctionnel plutôt que de le résoudre.
+- Conclusion : construire une longue liste de cases à cocher pour
+  imiter visuellement la maquette, sans capacité réelle et distincte
+  derrière chacune, serait exactement le type d'affordance inventée
+  que ce projet a été construit pour éliminer - la même discipline que
+  celle déjà établie et documentée dans `awci_map_panel.py` pour ses 6
+  couches de démonstration sans vraie donnée.
+
+**Conclusion du projet** : avec cette décision, les 10 des 11 éléments
+structurels identifiés dans la maquette de référence avec une vraie
+correspondance fonctionnelle honnête sont désormais construits,
+testés et vérifiés (Phases 31 à 41). Le projet de mise en parité
+pixel-perfect du ACF Scientific Workstation avec sa maquette de
+référence est considéré clos pour cette session, avec une divulgation
+complète et honnête du seul élément volontairement omis.

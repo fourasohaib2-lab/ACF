@@ -611,6 +611,32 @@ Domain selection, or any nav-tab panel; wiring that would be a
 substantially larger, separate integration, not attempted in this
 pass.
 
+Phase 42 (2026-09-05) closes the reference-mockup-parity project with
+a deliberate NON-build, disclosed rather than silently skipped: the
+mockup's own central "Domains"/"Layers" checklist (a long, repetitive
+list - "Raster Layer"/"Vector Layer" appearing many times over,
+alongside one confirmed-illegible AI-mockup-generation artifact
+elsewhere on the same image, the Global Timeline's own caption) has no
+real, distinct functional correspondence in this Workstation today -
+every one of its own map panels already draws exactly one real,
+already-controllable data layer (the selected variable's own
+contour), not several independently toggleable raster/vector layers.
+Investigated real options (a public `AWCIMapPanel.set_contour_
+visible()` toggle; reusing that class's own existing AWCI-dashboard
+Layers panel) were rejected: the latter hardcodes an "AWCI" checkbox
+label, which would violate this Workstation's own explicit "ACF CORE
+ONLY - NO AWCI" rule stated at the very top of this docstring. Rather
+than build a thin, likely-confusing checklist just to visually match a
+list that does not reliably specify real intended functionality, this
+is disclosed as an intentional, permanent non-build - the same
+"honest gap over invented affordance" discipline `awci_map_panel.py`'s
+own docstring already established for its 6 real-data-less demo
+layers. With this decision, every element of the reference mockup with
+a real, honest functional correspondence (10 of the original 11
+identified structural items) is now built - see `reports/
+ACF_MASTER_AUDIT_v2.md`'s own Phase 32-42 entries for the full,
+disclosed history of this project.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
