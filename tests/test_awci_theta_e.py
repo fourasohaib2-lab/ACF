@@ -58,6 +58,25 @@ def test_cold_dry_air_still_produces_a_real_finite_theta_e():
     assert result["theta_e_k"] > 0.0
 
 
+def test_a_genuinely_saturated_real_solver_point_does_not_crash():
+    """Regression guard (2026-09-04, found smoke-testing the ACF
+    Scientific Workstation's real level-slider sweep): this exact
+    real (T, q, P) triple, taken from a live CoupledEarthSolver
+    column, is genuinely saturated (relative humidity clips to exactly
+    100%) - the Magnus-Tetens dewpoint inversion then rounds to a
+    dewpoint a few ULPs above the input temperature, which used to
+    raise ValueError (a real IEEE-754 rounding artifact wrongly treated
+    as a physical impossibility - see acf.science.constants.
+    DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K's own docstring for the
+    fix). Must succeed, not raise or crash."""
+    result = compute_real_theta_e_at_point(
+        temperature_k=283.5012090757036, specific_humidity=0.01, pressure_hpa=1013.25
+    )
+    assert result["is_real_data"] is True
+    assert result["relative_humidity_pct"] == 100.0
+    assert result["theta_e_k"] is not None
+
+
 def test_zero_specific_humidity_is_honestly_not_computed():
     """Exactly zero specific humidity -> zero real relative humidity ->
     no real meaningful dewpoint - honestly None, never fabricated."""

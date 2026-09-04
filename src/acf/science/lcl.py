@@ -3,7 +3,7 @@ Lifting Condensation Level (LCL)
 ================================
 """
 
-from acf.science.constants import CP, G, T0
+from acf.science.constants import CP, DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K, G, T0
 from acf.science.equivalent_potential_temperature import EquivalentPotentialTemperature
 
 
@@ -25,8 +25,14 @@ class LCL:
         and is more accurate away from "typical" humidity conditions.
         """
 
-        if dewpoint_c > temperature_c:
+        # Real, disclosed floating-point tolerance (see
+        # acf.science.constants.DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K's
+        # own docstring) - same real reasoning as
+        # EquivalentPotentialTemperature.lcl_temperature_bolton_1980()'s
+        # own identical check.
+        if dewpoint_c > temperature_c + DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K:
             raise ValueError("dew point cannot exceed air temperature.")
+        dewpoint_c = min(dewpoint_c, temperature_c)
 
         return 125.0 * (temperature_c - dewpoint_c)
 

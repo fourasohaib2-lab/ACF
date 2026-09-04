@@ -7023,3 +7023,67 @@ calculé.
 
 **Ce qui reste réellement** : plus aucun module de spec planifié ne
 reste à construire. Aucune tâche séparée en attente ne reste ouverte.
+
+## Mise à jour 2026-09-04 (suite) — Phase 23 : un vrai crash trouvé et corrigé par un test de fumée complet, jamais exécuté avant
+
+**Pourquoi** : le plan initial étant entièrement construit, j'ai jugé
+qu'un vrai test de bout-en-bout à travers TOUS les 14 modules réels du
+Workstation (jamais fait comme un seul passage holistique — seulement
+module par module ou par paire pendant les Phases précédentes) était
+la vérification la plus utile à faire maintenant, plutôt que
+d'inventer une nouvelle fonctionnalité.
+
+**Trouvé un vrai bug** : un script réel ouvrant le Workstation, lançant
+un vrai run ALADIN, puis parcourant les 14 modules ET balayant le
+slider de niveau sur toute sa plage a fait remonter un vrai
+`ValueError: dewpoint cannot exceed temperature` (imprimé par le
+gestionnaire d'exceptions par défaut de PySide6, sans faire planter le
+script Python lui-même — mais un vrai crash silencieux d'un panneau
+réel en usage normal).
+
+**Cause racine** : `Thermodynamics.calculate_relative_humidity()`
+plafonne réellement l'humidité relative à 100% (`min(100.0, ...)`). À
+un point réellement saturé (humidité relative plafonnée à exactement
+100.0), l'inversion Magnus-Tetens du point de rosée
+(`acf.science.dewpoint.DewPoint.calculate()`) peut redonner, par un vrai
+arrondi IEEE-754, un point de rosée de quelques ULP AU-DESSUS de la
+température d'entrée (~1.8e-15 K de dépassement, vérifié sur une vraie
+colonne du solveur) — pas une vraie violation physique, un vrai
+artefact d'arrondi. `EquivalentPotentialTemperature.
+lcl_temperature_bolton_1980()` (et son jumeau exact,
+`LCL.calculate()`, l'ancienne règle d'Espy) comparaient avec un `>`
+strict, sans aucune tolérance, rejetant ce cas pourtant réel et
+bénin.
+
+**Construit** : nouvelle constante réelle et documentée
+`acf.science.constants.DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K = 1e-6`
+(des ordres de grandeur au-dessus du bruit flottant réel mesuré, des
+ordres de grandeur en dessous de toute vraie erreur d'entrée d'un
+appelant) — appliquée aux deux comparaisons strictes identiques
+(`lcl_temperature_bolton_1980()`, `LCL.calculate()`), avec un
+`dewpoint = min(dewpoint, temperature)` pour retomber exactement sur le
+cas de saturation exacte plutôt que de propager le bruit résiduel.
+
+**Vérification de l'ampleur de l'impact** : recherche de toute
+occurrence du même motif de comparaison stricte dans `acf/science/` —
+exactement ces 2 occurrences trouvées, toutes deux corrigées. Suite
+existante de ces 2 fichiers réexécutée avant tout ajout de test : 100%
+verte, aucune régression introduite.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests réels
+(tolérance de saturation réelle acceptée pour les deux formules, un
+vrai dépassement significatif toujours rejeté pour les deux, et un
+test au niveau de `compute_real_theta_e_at_point()` lui-même
+reproduisant l'exact triplet (T, q, P) réel qui plantait). Stress-test
+réel supplémentaire (hors suite pytest, vérification manuelle) : 50
+runs réels ALADIN indépendants (24 niveaux x grille échantillonnée),
+345 600 vrais points vérifiés, 0 erreur après le correctif (le même
+stress-test AVANT le correctif avait fait remonter l'erreur dès les
+tout premiers runs). Nouveau test de fumée complet réexécuté à travers
+les 14 modules réels + balayage complet du slider de niveau : plus
+aucune trace d'exception. Suite complète pytest réexécutée : 4219 →
+4224 tests, tous verts.
+
+**Ce qui reste réellement** : plus aucun module de spec planifié ne
+reste à construire, plus aucun bug connu. Aucune tâche séparée en
+attente ne reste ouverte.

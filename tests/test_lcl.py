@@ -30,6 +30,21 @@ def test_invalid():
         )
 
 
+def test_tolerates_a_real_floating_point_overshoot_at_exact_saturation():
+    """Regression guard (2026-09-04): a genuinely saturated point can
+    have a dewpoint a few ULPs above the input temperature due to real
+    floating-point rounding upstream - same reasoning as
+    EquivalentPotentialTemperature.lcl_temperature_bolton_1980()'s own
+    identical fix. Must not raise, and must give the same real height
+    as exact saturation (0.0)."""
+    assert LCL.calculate(20.0, 20.0 + 1e-12) == 0.0
+
+
+def test_still_rejects_a_real_meaningful_dewpoint_excess():
+    with pytest.raises(ValueError):
+        LCL.calculate(20.0, 20.001)
+
+
 def test_bolton_close_to_espy_approximation():
     # For a typical 10 degC dewpoint depression, Bolton's physically
     # grounded height should be in the same ballpark as Espy's fixed

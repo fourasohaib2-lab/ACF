@@ -22,7 +22,7 @@ Reference:
 
 from math import exp, log
 
-from acf.science.constants import CP, KAPPA, LV
+from acf.science.constants import CP, DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K, KAPPA, LV
 from acf.science.saturation_mixing_ratio import SaturationMixingRatio
 from acf.science.saturation_vapor_pressure import SaturationVaporPressure
 
@@ -98,8 +98,16 @@ class EquivalentPotentialTemperature:
         """
         if temperature_k <= 0 or dewpoint_k <= 0:
             raise ValueError("temperature and dewpoint must be positive.")
-        if dewpoint_k > temperature_k:
+        # Real, disclosed floating-point tolerance (see
+        # acf.science.constants.DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K's
+        # own docstring) - a genuinely saturated point (RH clipped to
+        # exactly 100%) can round-trip through the Magnus-Tetens
+        # dewpoint inversion a few ULPs above the input temperature;
+        # only a real, meaningfully larger excess is treated as a
+        # genuine caller-input error.
+        if dewpoint_k > temperature_k + DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K:
             raise ValueError("dewpoint cannot exceed temperature.")
+        dewpoint_k = min(dewpoint_k, temperature_k)
 
         return 56.0 + 1.0 / (1.0 / (dewpoint_k - 56.0) + log(temperature_k / dewpoint_k) / 800.0)
 

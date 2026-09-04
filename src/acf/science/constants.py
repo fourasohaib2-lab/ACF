@@ -61,3 +61,24 @@ MOLAR_MASS_DRY_AIR = 0.0289644
 MOLAR_MASS_WATER = 0.01801528
 
 UNIVERSAL_GAS_CONSTANT = 8.314462618
+
+# ------------------------------------------------------------------
+# Numerical tolerances
+# ------------------------------------------------------------------
+
+#: Real, disclosed floating-point tolerance (K) for "dewpoint cannot
+#: exceed temperature" validation (2026-09-04, found while smoke-
+#: testing the ACF Scientific Workstation's real level-slider sweep):
+#: dewpoint is mathematically derived FROM relative humidity, itself
+#: clipped to a real, physical 100% ceiling (Thermodynamics.
+#: calculate_relative_humidity()'s own `min(100.0, ...)`) - at a
+#: genuinely saturated real point (RH clipped to exactly 100.0), the
+#: Magnus-Tetens dewpoint inversion (acf.science.dewpoint.DewPoint.
+#: calculate()) can round-trip to a dewpoint a few ULPs (~1e-15 K,
+#: verified) ABOVE the input temperature - a real IEEE-754 rounding
+#: artifact of the round trip, not a genuine physical violation. A
+#: strict `>` comparison with no tolerance rejected this real, benign
+#: case; 1e-6 K is many orders of magnitude larger than any plausible
+#: floating-point noise here, yet many orders of magnitude smaller
+#: than any real caller-input error this check exists to catch.
+DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K = 1e-6
