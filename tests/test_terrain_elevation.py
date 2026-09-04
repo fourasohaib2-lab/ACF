@@ -6,9 +6,16 @@ solver grid (added 2026-09-04, Terrain Lab).
 
 from __future__ import annotations
 
-import numpy as np
+import math
 
-from acf.awci.terrain_elevation import interpolate_real_terrain_elevation, load_real_terrain_elevation
+import numpy as np
+import pytest
+
+from acf.awci.terrain_elevation import (
+    compute_real_terrain_slope_aspect_at_point,
+    interpolate_real_terrain_elevation,
+    load_real_terrain_elevation,
+)
 
 
 def test_load_real_terrain_elevation_returns_the_real_bundled_180x360_grid():
@@ -74,3 +81,33 @@ def test_interpolated_elevation_is_never_nan_globally():
     elevation = interpolate_real_terrain_elevation(target_lats, target_lons)
 
     assert not np.isnan(elevation).any()
+
+
+def test_slope_aspect_returns_the_real_interpolated_elevation_at_the_point():
+    result = compute_real_terrain_slope_aspect_at_point(lat=28.0, lon=84.0)  # near the Himalaya
+    expected_elevation = float(interpolate_real_terrain_elevation(np.array([28.0]), np.array([84.0]))[0, 0])
+
+    assert result["elevation_m"] == pytest.approx(expected_elevation)
+
+
+def test_slope_is_a_real_non_negative_magnitude():
+    for lat, lon in [(46.5, 10.5), (0.0, -140.0), (23.0, 10.0)]:
+        result = compute_real_terrain_slope_aspect_at_point(lat, lon)
+        assert result["slope"] >= 0.0
+
+
+def test_mountainous_terrain_has_a_real_higher_slope_than_a_flat_ocean_point():
+    """Real, hand-verifiable sanity check: the Alps must show a real,
+    meaningfully higher slope than a flat mid-Pacific ocean point."""
+    mountain = compute_real_terrain_slope_aspect_at_point(lat=46.5, lon=10.5)  # the Alps
+    ocean = compute_real_terrain_slope_aspect_at_point(lat=0.0, lon=-140.0)  # flat mid-Pacific
+
+    assert mountain["slope"] > ocean["slope"]
+
+
+def test_aspect_is_a_real_compass_degree_or_honest_nan_when_flat():
+    result = compute_real_terrain_slope_aspect_at_point(lat=46.5, lon=10.5)
+    if result["slope"] == 0.0:
+        assert math.isnan(result["aspect_deg"])
+    else:
+        assert 0.0 <= result["aspect_deg"] < 360.0

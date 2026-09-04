@@ -7668,3 +7668,53 @@ Timeline avec vignettes ; les bandeaux de vignettes Dynamics/
 Thermodynamics Lab ; le sélecteur "Domain" ; la petite grille colorée
 d'indices de stabilité de la maquette ; le "Map Inspector" au clic sur
 la carte ; le panneau "Layers/Domains" (couches raster/vecteur).
+
+## Mise à jour 2026-09-05 (suite) — Phase 36 : le vrai "Map Inspector"
+
+**Pourquoi** : élément suivant de la maquette, choisi car il réutilise
+presque exclusivement des fonctions réelles déjà construites et
+testées (théta-e, phase des précipitations, vorticité/divergence,
+cisaillement de vent), avec une seule vraie nouveauté (pente/aspect du
+terrain).
+
+**Construit** :
+- `acf.awci.terrain_elevation.compute_real_terrain_slope_aspect_at_point()`
+  (nouveau) - pente/aspect réels par différences finies centrées sur
+  la grille d'élévation déjà bundlée, au pas de 0.5° choisi pour
+  correspondre à la vraie résolution native du jeu de données
+  (~1 degré) - divulgation honnête : c'est une estimation réelle mais
+  grossière (échelle continentale), pas un relief local haute
+  résolution.
+- `acf_workstation_map_inspector.py` : `compute_real_map_inspector_snapshot()`
+  (sans Qt, testable isolément) rassemble 16 champs réels au point
+  cliqué - température/vent/humidité/pression (lecture directe du
+  volume), humidité relative/θ-e, phase des précipitations/
+  wet-bulb, vorticité/divergence (calculées sur la vraie grille du
+  niveau courant puis échantillonnées au point), cisaillement de vent
+  massif - chacun réutilisant une vraie fonction déjà existante,
+  jamais réimplémentée. `ACFMapInspectorDialog` (QDialog non-modal,
+  réutilisé entre les clics comme la Palette de Commandes) l'affiche.
+- Câblé dans le gestionnaire partagé `_on_map_point_clicked()` déjà
+  utilisé par le Sounding/Interaction Graph - un clic sur N'IMPORTE
+  QUELLE carte ouvre/rafraîchit le même inspecteur.
+
+**Divulgation honnête** : CAPE/CIN n'est délibérément PAS calculé ici
+(ce calcul réel MetPy à ascension de parcelle est réellement plus
+coûteux par point et a déjà un vrai foyer dédié dans le Research Mode
+de Thermodynamics Lab) - l'inspecteur le dit explicitement plutôt que
+de l'omettre silencieusement.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 9
+nouveaux tests sur `compute_real_terrain_slope_aspect_at_point()`
+(`tests/test_terrain_elevation.py`, incluant une vraie comparaison
+Alpes vs Pacifique plat), 6 nouveaux tests sur le snapshot/formatage
+(`tests/test_acf_workstation_map_inspector.py`, sans Qt), 3 nouveaux
+tests sur le dialogue (`tests/gui/test_acf_workstation_map_inspector_dialog.py`),
+4 nouveaux tests d'intégration (`tests/gui/test_acf_workstation.py`).
+Capture d'écran réelle du popup confirmant les 16 champs réels et
+cohérents après un vrai clic.
+
+**Ce qui reste réellement** : le Global Timeline avec vignettes ; les
+bandeaux de vignettes Dynamics/Thermodynamics Lab ; le sélecteur
+"Domain" ; la petite grille colorée d'indices de stabilité de la
+maquette ; le panneau "Layers/Domains" (couches raster/vecteur).

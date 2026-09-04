@@ -268,6 +268,39 @@ def test_forecast_consistency_panel_is_present_and_starts_uncomputed(qapp):
     assert ws.forecast_consistency_panel.status() == {"has_result": False}
 
 
+def test_map_inspector_stays_none_until_a_real_click(qapp):
+    """Real Phase 36 regression guard (2026-09-05): the Map Inspector
+    is created lazily, never eagerly at construction."""
+    ws = ACFWorkstation()
+    assert ws._map_inspector is None
+
+
+def test_clicking_a_real_map_opens_and_fills_the_map_inspector(qapp):
+    ws = ACFWorkstation()
+    volume = _real_volume()
+    ws._on_volume_ready(volume)
+
+    lat, lon = float(volume["lats"][1]), float(volume["lons"][2])
+    ws.thermodynamics_panel.map_panel.pointClicked.emit(lat, lon)
+
+    assert ws._map_inspector is not None
+    assert ws._map_inspector.isVisible() is True
+    assert f"{lat:.2f}" in ws._map_inspector.text_label.text()
+
+
+def test_a_second_real_click_reuses_the_same_map_inspector_instance(qapp):
+    """Real regression guard: never a second, independent popup per click."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+    ws._on_volume_ready(volume)
+
+    ws.thermodynamics_panel.map_panel.pointClicked.emit(float(volume["lats"][1]), float(volume["lons"][2]))
+    first_inspector = ws._map_inspector
+    ws.thermodynamics_panel.map_panel.pointClicked.emit(float(volume["lats"][3]), float(volume["lons"][4]))
+
+    assert ws._map_inspector is first_inspector
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

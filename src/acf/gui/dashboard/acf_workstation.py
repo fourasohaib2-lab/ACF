@@ -483,6 +483,32 @@ rather than faking a run history. All 3 mockup side panels are now
 real and present; only the mockup's own small stability-index color
 grid stays deferred (see Phase 33's own disclosure above).
 
+Phase 36 (2026-09-05) built the real **Map Inspector**
+(`acf_workstation_map_inspector.ACFMapInspectorDialog` +
+`compute_real_map_inspector_snapshot()`) - a real, non-modal popup
+that opens/refreshes on every real map click (any Lab panel's own
+`AWCIMapPanel.pointClicked`, same shared `_on_map_point_clicked()`
+already driving the sounding/interaction-graph panels), showing real
+lat/lon/elevation/slope/aspect (`acf.awci.terrain_elevation.
+compute_real_terrain_slope_aspect_at_point()`, added alongside this
+panel - real central-differencing of the bundled elevation grid, at
+its own real ~1-degree resolution, honestly disclosed as coarse, not
+high-resolution local relief), real temperature/wind/humidity/
+pressure at that exact point, real relative humidity/θ-e
+(`acf.awci.theta_e.compute_real_theta_e_at_point()`), real
+precipitation phase/wet-bulb (`acf.awci.hydrometeor_phase.
+compute_real_hydrometeor_phase_at_point()`), real vorticity/
+divergence (`acf.awci.workstation_fields.
+compute_real_vorticity_divergence()`, evaluated over the current
+level's real grid and sampled at the point), and real bulk wind shear
+(`acf.awci.wind_shear.compute_real_wind_shear_at_point()`) - every
+value a real, already-existing ACF function called fresh at the
+clicked point, nothing new invented. Honest scope: CAPE/CIN is
+deliberately NOT computed here (that real MetPy parcel-ascent
+calculation is genuinely more expensive per point and already has a
+dedicated home in Thermodynamics Lab's own Research Mode) - the
+inspector says so explicitly rather than silently omitting it.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -542,6 +568,7 @@ from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
 from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
+from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialog, compute_real_map_inspector_snapshot
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
@@ -632,6 +659,10 @@ class ACFWorkstation(QWidget):
         self._level_index = 0
         self._compute_started_at: float | None = None
         self._command_palette: CommandPaletteDialog | None = None
+        #: Real, non-modal, reused-across-clicks Map Inspector popup
+        #: (added Phase 36, 2026-09-05) - created lazily on the first
+        #: real map click, see _on_map_point_clicked().
+        self._map_inspector: ACFMapInspectorDialog | None = None
         #: A real level_index restored from a loaded configuration
         #: (added 2026-09-04) before any real volume exists yet to
         #: clamp it against - applied in _on_volume_ready() once a
@@ -1235,10 +1266,17 @@ class ACFWorkstation(QWidget):
         """Real, shared handler for every map panel's own real
         `pointClicked` signal (added Phase 33, 2026-09-05) - updates
         the always-visible Vertical Complexity Sounding from whichever
-        real map the user actually clicked."""
+        real map the user actually clicked, and (Phase 36, 2026-09-05)
+        opens/refreshes the real Map Inspector popup at that point."""
         self._last_clicked_point = (lat, lon)
         if self._volume is not None:
             self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
+            snapshot = compute_real_map_inspector_snapshot(self._volume, lat, lon, self._level_index)
+            if self._map_inspector is None:
+                self._map_inspector = ACFMapInspectorDialog(self)
+            self._map_inspector.set_snapshot(snapshot)
+            self._map_inspector.show()
+            self._map_inspector.raise_()
 
     def _on_level_changed(self, value: int) -> None:
         self._level_index = value
