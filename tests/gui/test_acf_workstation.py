@@ -301,6 +301,27 @@ def test_a_second_real_click_reuses_the_same_map_inspector_instance(qapp):
     assert ws._map_inspector is first_inspector
 
 
+def test_dynamics_lab_thumbnail_strip_renders_every_real_variable(qapp):
+    """Real Phase 37 regression guard (2026-09-05): all 4 real
+    variables must be rendered on the thumbnail strip after a real
+    run, not just the currently-selected main-map variable."""
+    ws = ACFWorkstation()
+
+    ws._on_volume_ready(_real_volume())
+
+    status = ws.dynamics_panel.thumbnail_strip.status()
+    assert set(status["rendered"]) == set(status["variables"])
+
+
+def test_clicking_a_dynamics_thumbnail_switches_the_real_main_map(qapp):
+    ws = ACFWorkstation()
+    ws._on_volume_ready(_real_volume())
+
+    ws.dynamics_panel.thumbnail_strip.variableSelected.emit("Bulk wind shear (full column)")
+
+    assert ws.dynamics_panel.variable_selector.currentText() == "Bulk wind shear (full column)"
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

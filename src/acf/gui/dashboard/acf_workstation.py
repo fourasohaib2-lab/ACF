@@ -509,6 +509,23 @@ calculation is genuinely more expensive per point and already has a
 dedicated home in Thermodynamics Lab's own Research Mode) - the
 inspector says so explicitly rather than silently omitting it.
 
+Phase 37 (2026-09-05) added a real thumbnail strip
+(`acf_workstation_thumbnail_strip.ACFVariableThumbnailStrip`) below
+Dynamics Lab's own main map, matching the mockup's own bottom
+"DYNAMICS LAB" thumbnail row - a real, lightweight (plain
+`pcolormesh`, no cartopy projection) small-multiple preview of all 4
+real variables that Lab already offers (Wind speed/Relative
+vorticity/Divergence/Bulk wind shear), computed once per redraw
+(`ACFDynamicsLabPanel._all_fields()`) and shared between the main map
+and every thumbnail - never recomputed per thumbnail. Clicking a
+thumbnail switches the main map to it via the same real
+`variable_selector`, no separate selection state. Deferred: the
+mockup's own second thumbnail row (Thermodynamics Lab: Temperature/
+Dew Point/θ-e/Inversions) - Thermodynamics Lab today only auto-computes
+2 of those 4 real fields (θ-e, relative humidity); Dew Point and
+Inversions would need 2 new real field computations first, kept as
+its own separate, disclosed follow-up rather than bundled in here.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs

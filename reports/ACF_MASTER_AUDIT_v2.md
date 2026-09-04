@@ -7718,3 +7718,34 @@ cohérents après un vrai clic.
 bandeaux de vignettes Dynamics/Thermodynamics Lab ; le sélecteur
 "Domain" ; la petite grille colorée d'indices de stabilité de la
 maquette ; le panneau "Layers/Domains" (couches raster/vecteur).
+
+## Mise à jour 2026-09-05 (suite) — Phase 37 : le bandeau de vignettes de Dynamics Lab
+
+**Pourquoi** : élément suivant, choisi car réutilise exclusivement les
+4 vrais champs déjà calculés par Dynamics Lab (Wind speed/Relative
+vorticity/Divergence/Bulk wind shear) - zéro nouvelle science, risque
+minimal.
+
+**Construit** : `acf_workstation_thumbnail_strip.
+ACFVariableThumbnailStrip` - un vrai widget léger et réutilisable
+(pcolormesh brut, sans projection cartopy) affichant une petite
+vignette par variable réelle ; un clic sur une vignette bascule la
+carte principale sur cette variable via le même vrai
+`variable_selector`. `ACFDynamicsLabPanel` refactorisé
+(`_all_fields()`) pour calculer les 4 vrais champs une seule fois par
+redraw, partagés entre la carte principale et les 4 vignettes -
+jamais recalculés séparément.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 4
+nouveaux tests sur le widget générique
+(`tests/gui/test_acf_workstation_thumbnail_strip.py`), 2 nouveaux
+tests d'intégration (`tests/gui/test_acf_workstation.py`). Capture
+d'écran réelle confirmant le bandeau de 4 vraies vignettes sous la
+carte principale de Dynamics Lab.
+
+**Ce qui reste réellement** : le bandeau de vignettes de
+Thermodynamics Lab (nécessite 2 nouveaux champs réels - Dew Point et
+Inversions - Thermodynamics Lab n'auto-calcule aujourd'hui que θ-e et
+l'humidité relative) ; le Global Timeline avec vignettes ; le
+sélecteur "Domain" ; la petite grille colorée d'indices de stabilité ;
+le panneau "Layers/Domains".

@@ -62,6 +62,7 @@ from acf.awci.workstation_fields import (
     compute_real_wind_shear_field,
     real_grid_spacing_m,
 )
+from acf.gui.dashboard.acf_workstation_thumbnail_strip import ACFVariableThumbnailStrip
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
 
@@ -114,6 +115,16 @@ class ACFDynamicsLabPanel(QWidget):
         )
         layout.addWidget(self.map_panel, stretch=1)
 
+        # Real thumbnail strip (added Phase 37, 2026-09-05, matching
+        # the reference mockup's own bottom "DYNAMICS LAB" thumbnail
+        # row) - every real field this panel's own Variable selector
+        # already offers, shown side by side; clicking one switches the
+        # main map to it, real data reused (never recomputed twice
+        # per-field - see _all_fields()).
+        self.thumbnail_strip = ACFVariableThumbnailStrip(list(_VARIABLES.keys()))
+        self.thumbnail_strip.variableSelected.connect(self.variable_selector.setCurrentText)
+        layout.addWidget(self.thumbnail_strip)
+
     @staticmethod
     def _label(text: str) -> QLabel:
         lbl = QLabel(text)
@@ -128,26 +139,40 @@ class ACFDynamicsLabPanel(QWidget):
         self._level_index = level_index
         self._redraw()
 
+    def _all_fields(self) -> dict[str, Any]:
+        """Real, single-source computation of every real variable this
+        panel offers - called once per redraw so the main map and the
+        thumbnail strip (added Phase 37) never recompute the same real
+        field twice."""
+        assert self._volume is not None
+        lats, lons = self._volume["lats"], self._volume["lons"]
+        level = self._level_index
+        vorticity, divergence = compute_real_vorticity_divergence(
+            self._volume["u_volume"][level], self._volume["v_volume"][level], lats, lons
+        )
+        return {
+            "Wind speed": self._volume["wind_speed_volume"][level],
+            "Relative vorticity": vorticity,
+            "Divergence": divergence,
+            # A real, full-column diagnostic - NOT sliced by the
+            # current level (see compute_real_wind_shear_field()'s own
+            # docstring), unlike this panel's other 3 variables.
+            "Bulk wind shear (full column)": compute_real_wind_shear_field(
+                self._volume["u_volume"], self._volume["v_volume"]
+            ),
+        }
+
     def _redraw(self) -> None:
         if self._volume is None:
             return
         variable = self.variable_selector.currentText()
         spec = _VARIABLES[variable]
         lats, lons = self._volume["lats"], self._volume["lons"]
-        level = self._level_index
 
-        if variable == "Wind speed":
-            field = self._volume["wind_speed_volume"][level]
-        elif variable == "Bulk wind shear (full column)":
-            # A real, full-column diagnostic - NOT sliced by the
-            # current level (see compute_real_wind_shear_field()'s own
-            # docstring), unlike this panel's other 3 variables.
-            field = compute_real_wind_shear_field(self._volume["u_volume"], self._volume["v_volume"])
-        else:
-            vorticity, divergence = compute_real_vorticity_divergence(
-                self._volume["u_volume"][level], self._volume["v_volume"][level], lats, lons
-            )
-            field = vorticity if variable == "Relative vorticity" else divergence
+        fields = self._all_fields()
+        field = fields[variable]
+        for name, thumb_field in fields.items():
+            self.thumbnail_strip.set_field(name, thumb_field, _VARIABLES[name]["cmap"], _VARIABLES[name]["vmin"], _VARIABLES[name]["vmax"])
 
         self.map_panel.set_external_field(
             lons,
