@@ -177,6 +177,100 @@ def test_esoc_layout_passes_the_real_registry_through_to_the_search_bar(qapp):
     assert window.layout_manager.left_sidebar.registry is window.registry
 
 
+# ------------------------------------------ System Explorer tree -> real panel
+
+
+def test_clicking_a_real_leaf_with_a_verified_panel_switches_to_it(qapp):
+    """Closes a real, confirmed "dead click" bug: ESOCLeftSidebar's
+    own on_select_callback was connected to a real tree.itemClicked
+    signal but never supplied by any real caller - every one of the
+    tree's ~150 leaves was a genuine no-op. ESOCLayout is its first
+    real caller."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Ocean", "Earth System")
+
+    ocean_panel = layout.panel_manager.get_panel("ocean")
+    assert layout.bottom_tabs.currentWidget() is ocean_panel
+
+
+def test_clicking_a_real_hpc_leaf_switches_to_its_distinct_real_panel(qapp):
+    """The "HPC" category has several distinct real panels among its
+    own leaves (unlike e.g. "Simulation", which has exactly one) -
+    each leaf must resolve to its own, not a shared category-wide
+    one."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Job Explorer", "HPC")
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("job_explorer")
+
+    layout._on_sidebar_item_selected("CUDA GPU Monitor", "HPC")
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("gpu_monitor")
+
+
+def test_clicking_a_category_header_opens_its_one_real_panel(qapp):
+    """A category with exactly one real panel across all its leaves -
+    clicking the category header itself (category=None, no parent)
+    must also resolve, the same as clicking any of its leaves would
+    via the fallback path below."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Simulation", None)
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("simulation")
+
+
+def test_clicking_an_unmapped_leaf_under_a_single_panel_category_falls_back_to_it(qapp):
+    """"AMR" itself has no specific real panel, but its parent
+    category "Simulation" does - real category-level fallback."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("AMR", "Simulation")
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("simulation")
+
+
+def test_clicking_a_genuinely_unmapped_label_is_an_honest_no_op(qapp):
+    """"Atmosphere" (Earth System) has no real panel anywhere - must
+    stay a real no-op, never a guessed/wrong navigation."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+    layout.bottom_tabs.setCurrentIndex(0)
+    before = layout.bottom_tabs.currentIndex()
+
+    layout._on_sidebar_item_selected("Atmosphere", "Earth System")
+
+    assert layout.bottom_tabs.currentIndex() == before
+
+
+def test_a_real_qt_tree_click_reaches_the_real_panel_switch(qapp):
+    """End-to-end: a real tree.itemClicked signal, not a direct method
+    call - the same discipline as AWCI's own
+    test_clicking_a_real_bar_via_a_real_mouse_event_opens_the_dialog."""
+    from PySide6.QtWidgets import QTreeWidgetItemIterator
+
+    window = ESOCWindow()
+    layout = window.layout_manager
+    sidebar = layout.left_sidebar
+
+    it = QTreeWidgetItemIterator(sidebar.tree)
+    ocean_item = None
+    while it.value():
+        if it.value().text(0) == "Ocean":
+            ocean_item = it.value()
+            break
+        it += 1
+    assert ocean_item is not None
+
+    sidebar.tree.itemClicked.emit(ocean_item, 0)
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("ocean")
+
+
 def test_esoc_right_sidebar_discloses_illustrative_content(qapp):
     """
     CORRECTED: ESOCRightSidebar's 7 inspector tabs used to present

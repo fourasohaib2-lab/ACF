@@ -63,7 +63,7 @@ class ESOCLeftSidebar(QWidget):
 
     def __init__(
         self,
-        on_select_callback: Callable[[str], None] | None = None,
+        on_select_callback: Callable[[str, str | None], None] | None = None,
         registry: ModuleRegistry | None = None,
     ) -> None:
         super().__init__()
@@ -222,9 +222,24 @@ class ESOCLeftSidebar(QWidget):
         self.search_results_label.setVisible(True)
 
     def _on_item_clicked(self, item: QTreeWidgetItem, column: int) -> None:
+        """NOTE (correction, 2026-09-04): `on_select_callback` had a
+        real signature and a real connection to `tree.itemClicked`,
+        but - verified by a repo-wide grep - no real caller anywhere
+        in the app ever supplied one: every one of this tree's ~150
+        real leaves was a genuine no-op click. `ESOCLayout` (added
+        this same day) is this callback's first real caller, routing
+        to the matching real `panel_manager.py` panel where one
+        exists. The parent category's own label is now also passed
+        (`None` for a top-level category item clicked directly) so a
+        real caller can resolve a category-wide panel (e.g. every leaf
+        under "Simulation" opening the one real Simulation panel) as
+        well as a leaf's own more specific panel - see ESOCLayout's
+        own mapping tables for which labels that actually is."""
         text = item.text(0)
+        parent = item.parent()
+        parent_text = parent.text(0) if parent is not None else None
         if self.on_select_callback:
-            self.on_select_callback(text)
+            self.on_select_callback(text, parent_text)
 
 
 class ESOCRightSidebar(QWidget):

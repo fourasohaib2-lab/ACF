@@ -5323,3 +5323,69 @@ maintenant toutes un vrai appelant. Il ne reste que l'unification
 prudente des deux arbres de catégories (sidebar vs registre),
 volontairement non entamée pour la même raison que la fermeture
 précédente.
+
+## Mise à jour 2026-09-04 (suite) — ~150 clics morts dans l'arbre System Explorer d'ESOC, réellement corrigés
+
+Suite explicite ("continue"). En creusant la piste "pourquoi deux
+arbres de catégories" de la fermeture précédente, découverte d'un vrai
+bug plus large et plus visible : `ESOCLeftSidebar._on_item_clicked()`
+appelle bien `self.on_select_callback(text)` sur chaque clic dans
+l'arbre System Explorer — mais vérification exhaustive (grep sur tout
+le dépôt) : **aucun vrai appelant n'a jamais fourni ce callback**.
+Chacune des ~150 vraies feuilles de cet arbre (Ocean, Hydrology, Job
+Explorer, Simulation, AMR, ...) était un vrai clic mort — exactement
+la même famille de bug déjà trouvée et corrigée plusieurs fois dans
+ESOC ("14 des 21 boutons de la toolbar ne faisaient rien").
+
+**Vraie piste de résolution trouvée** : `panel_manager.py` enregistre
+28 vrais panneaux opérationnels réels (`job_explorer`, `ocean`,
+`simulation`, etc.), affichés comme onglets réels dans
+`ESOCLayout.bottom_tabs`. Comparaison label par label entre l'arbre de
+la sidebar et ces 28 vraies clés a confirmé l'hypothèse de la
+fermeture précédente : la catégorie "HPC" de la sidebar
+("Job Explorer", "Remote Terminal", "Storage & Scratch", "CUDA GPU
+Monitor", "Benchmarks", "HPC Profiles") nomme bien de vrais panneaux
+UI distincts (pas les mêmes concepts que le "HPC" du registre, qui
+lui liste des concepts d'infra backend comme "MPI Domain Topology") —
+confirmant que les deux arbres ne sont PAS de simples doublons à
+fusionner, mais deux vraies taxonomies différentes qui partagent
+juste un même nom de catégorie par coïncidence.
+
+**Construit** : `ESOCLayout` fournit maintenant un vrai
+`on_select_callback` à `ESOCLeftSidebar` (jusque-là jamais transmis).
+Deux tables de correspondance vérifiées une par une (jamais devinées
+en bloc) : `_LEAF_LABEL_TO_PANEL_NAME` (13 feuilles avec leur propre
+panneau réel distinct — Ocean, Hydrology, Cryosphere, Air Quality,
+Geology, Carbon Cycle, et les 6 feuilles HPC + System Config) et
+`_CATEGORY_LABEL_TO_PANEL_NAME` (9 catégories n'ayant qu'un seul vrai
+panneau pour toutes leurs feuilles — Forecast, Assimilation,
+Simulation, Digital Twin, Climate, Planetary Limits, Earth Physics,
+Monitoring, Verification). Un clic sur une feuille sans correspondance
+réelle (ex. "Atmosphere", toute la catégorie "Catalog"/"Products"/
+"Reports"/"Output"/"Plugins") reste un vrai no-op honnête plutôt
+qu'une navigation devinée. Signature de `on_select_callback` étendue
+de `(text)` à `(text, category)` pour permettre le repli au niveau
+catégorie (aucun appelant réel n'existait avant, changement sans
+risque).
+
+**Validation réelle** : vérifié à la main avec un vrai `ESOCWindow()`
+et un vrai signal `tree.itemClicked.emit()` (pas juste l'appel direct
+de la méthode) — cliquer "Job Explorer" bascule réellement l'onglet
+du dock du bas sur le vrai panneau HPC Job Lifecycle Explorer.
+Capture d'écran envoyée. 6 nouveaux tests (feuille avec panneau
+propre, feuilles HPC distinctes les unes des autres, clic sur l'en-
+tête de catégorie, repli catégorie pour une feuille non mappée,
+no-op honnête pour une feuille non mappée, et un vrai clic Qt de bout
+en bout). Suite complète **4020 → 4026**, `ruff`/`mypy` propres.
+
+**Ce qui reste réellement** : plusieurs catégories entières
+("Catalog", "Products", "Reports", "Output", "Plugins",
+"Geoengineering", "Machine Learning") et de nombreuses feuilles
+individuelles au sein de catégories par ailleurs mappées (ex.
+"Atmosphere", "Land Surface" sous "Earth System" ; "MPI Domain
+Topology" sous "HPC") n'ont toujours aucun vrai panneau opérationnel
+construit — un vrai gap de couverture UI, honnêtement disclosed
+plutôt que masqué par un mapping approximatif. Construire ces
+panneaux manquants (ou en décider l'abandon délibéré) reste un vrai
+chantier de produit séparé, hors périmètre de cette fermeture qui ne
+corrige que le routage vers ce qui existe déjà réellement.
