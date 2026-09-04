@@ -7087,3 +7087,32 @@ aucune trace d'exception. Suite complète pytest réexécutée : 4219 →
 **Ce qui reste réellement** : plus aucun module de spec planifié ne
 reste à construire, plus aucun bug connu. Aucune tâche séparée en
 attente ne reste ouverte.
+
+## Mise à jour 2026-09-04 (suite) — Phase 24 : vérification de fermeture — Configuration Management confirmée générique pour les 2 nouveaux sélecteurs, export confirmé partagé
+
+**Pourquoi** : dernière vérification réelle avant de considérer le
+Workstation clos. `_export_configuration()`/`_apply_configuration()`
+sont génériques (itèrent réellement `_configuration_selectors()`, un
+dict incluant déjà `convection_variable`/`terrain_variable` depuis les
+Phases 18/22) - mais aucun test existant ne le prouvait explicitement
+pour CES deux sélecteurs précis (les tests existants ne vérifiaient
+qu'un sous-ensemble choisi à la main). Le mécanisme d'export
+PNG/SVG/CSV/JSON est lui testé au niveau du widget partagé
+`AWCIMapPanel` (`tests/test_awci_map_panel_export.py`) - Convection/
+Terrain l'héritent automatiquement via `set_external_field()`, sans
+gap réel à combler là.
+
+**Construit** : un seul nouveau test réel, générique et à l'épreuve du
+futur - itère `_configuration_selectors()` lui-même (pas une liste
+codée en dur), choisit le DERNIER élément réel de chaque sélecteur
+(jamais la valeur par défaut déjà présente, pour une vraie preuve de
+round-trip), exporte, réimporte sur une seconde instance, vérifie
+chaque valeur. Couvre désormais automatiquement tout futur nouveau
+sélecteur de Lab sans test dédié à écrire.
+
+**Validation réelle** : `ruff`/`mypy` propres. Suite complète
+réexécutée : 4224 → 4225 tests, tous verts.
+
+**Ce qui reste réellement** : plus aucun module de spec planifié, plus
+aucun bug connu, aucune tâche séparée en attente. Le Workstation est
+considéré fonctionnellement clos.

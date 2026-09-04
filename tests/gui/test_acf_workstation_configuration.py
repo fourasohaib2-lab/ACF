@@ -84,6 +84,34 @@ def test_apply_configuration_ignores_unknown_or_malformed_fields(qapp):
     assert ws.nav_list.currentRow() == 0  # unchanged - non-int nav_row ignored
 
 
+def test_export_then_apply_round_trips_every_real_configuration_selector(qapp):
+    """Real, future-proof coverage: every entry _configuration_
+    selectors() itself declares - not a hand-picked subset - must
+    genuinely round-trip through export/apply. Iterates the same real
+    dict the Workstation's own save/load logic uses, so a newly added
+    Lab's own selector (e.g. Convection/Terrain, added Phases 18/22)
+    is automatically covered without a separate test having to be
+    remembered for it."""
+    ws = ACFWorkstation()
+    chosen: dict[str, str] = {}
+    for key, selector in ws._configuration_selectors().items():
+        assert selector.count() > 0, f"{key} has no real items to choose from"
+        # Pick the LAST real item (rarely the selector's own default) -
+        # a genuine, real proof this isn't just reading back the
+        # selector's own unchanged starting value.
+        chosen[key] = selector.itemText(selector.count() - 1)
+        selector.setCurrentText(chosen[key])
+
+    config = ws._export_configuration()
+    for key, expected in chosen.items():
+        assert config[key] == expected
+
+    ws2 = ACFWorkstation()
+    ws2._apply_configuration(config)
+    for key, expected in chosen.items():
+        assert ws2._configuration_selectors()[key].currentText() == expected
+
+
 def test_export_then_apply_round_trips_the_real_configuration(qapp):
     ws = ACFWorkstation()
     ws.model_selector.setCurrentText("ARPEGE")
