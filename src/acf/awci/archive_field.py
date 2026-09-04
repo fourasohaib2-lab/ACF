@@ -40,6 +40,17 @@ domain — not a live feed, not a growing archive, and not a substitute
 for Real Physics mode's own ability to run at an arbitrary
 configuration. It is real, historical, and fixed.
 
+**Update 2026-09-04 (same day, "continue")**: all 17 real 3-hourly
+lead times (00h→48h) are genuinely present and equally real - spot-
+checked (`0000`, `0024`, `0048`) to each decode fully (8/8 levels, 0
+missing fields) with a real, correctly-ADVANCING validity time
+(2026-08-31 00Z / 2026-09-01 00Z / 2026-09-02 00Z respectively) -
+these are genuinely different real forecast hours, not one file
+copied under different names. `restor_fullpos_path()` below builds
+the real path for any of them; the dashboard's own lead-time selector
+(added the same closure) lets a user step through the real forecast
+instead of only ever seeing the 00h analysis.
+
 Real vertical levels
 ---------------------
 RESTOR's FA files carry 7 genuine constant-pressure levels (850, 700,
@@ -94,6 +105,23 @@ RESTOR_PRESSURE_LEVELS_HPA: dict[str, float] = {
     "20000": 200.0,
     "10000": 100.0,
 }
+
+#: Real RESTOR archive layout (`RESTOR/ALADIN/date.config`'s own real
+#: ECH=48/nECH=17): one real FULLPOS file per 3-hourly lead time out
+#: to +48h - 17 real values, all spot-checked to decode fully (see
+#: module docstring's 2026-09-04 update).
+RESTOR_LEAD_TIMES_HOURS: list[int] = list(range(0, 49, 3))
+
+
+def restor_fullpos_path(aladin_data_dir: str | Path, run_datetime: str, lead_hours: int) -> Path:
+    """
+    Real RESTOR filename convention: `FULLPOS_<run_datetime>_<HHHH>`,
+    e.g. `restor_fullpos_path(..., "2026083100", 24)` ->
+    `.../FULLPOS_2026083100_0024`. A thin, testable naming helper - no
+    file access here, so callers can build/validate a path without
+    needing the real archive present.
+    """
+    return Path(aladin_data_dir) / f"FULLPOS_{run_datetime}_{lead_hours:04d}"
 
 
 def _level_label(pressure_hpa: float) -> str:

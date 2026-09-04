@@ -97,7 +97,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acf.awci.archive_field import load_real_aladin_restor_run, sample_archive_at_point
+from acf.awci.archive_field import (
+    RESTOR_LEAD_TIMES_HOURS,
+    load_real_aladin_restor_run,
+    restor_fullpos_path,
+    sample_archive_at_point,
+)
 from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
@@ -135,13 +140,21 @@ from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
 
-# Real archived ALADIN 00Z run (2026-08-31), machine-local only - NOT
+# Real archived ALADIN run (2026-08-31 00Z), machine-local only - NOT
 # part of this git repository (real operational NWP output, ~20MB per
 # lead time). See acf.awci.archive_field's own module docstring for
 # the full honest scope. A machine without $HOME/RESTOR simply cannot
-# open this - _open_real_archive() reports that honestly rather than
-# hiding the button or fabricating a result.
-_RESTOR_ALADIN_ARCHIVE_FILE = Path.home() / "RESTOR" / "ALADIN" / "data" / "FULLPOS_2026083100_0000"
+# open this - _refresh_real_archive() reports that honestly rather
+# than hiding the button or fabricating a result.
+_RESTOR_ALADIN_DATA_DIR = Path.home() / "RESTOR" / "ALADIN" / "data"
+_RESTOR_RUN_DATETIME = "2026083100"  # the one real run RESTOR has archived
+# Real lead-time selector options (added 2026-09-04, "continue" -
+# closes the real, bounded follow-up already disclosed in this
+# closure's own audit entry: only +0h was wired at first, RESTOR has
+# 17 real 3-hourly lead times). Label format ("00h") kept independent
+# of acf.awci.archive_field.RESTOR_LEAD_TIMES_HOURS's own bare-int
+# list - this dict is this file's own real display convention.
+_RESTOR_LEAD_TIME_OPTIONS: dict[str, int] = {f"{h:02d}h": h for h in RESTOR_LEAD_TIMES_HOURS}
 
 # Reference-style demo route/point of interest: JFK -> CDG (global map / cross-section)
 _GLOBAL_ROUTE = [(40.64, -73.78, "JFK"), (49.01, 2.55, "CDG")]
@@ -549,17 +562,21 @@ class AWCIDashboard(QWidget):
         self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
         self._risk_badge_detail_window: AWCIRiskBadgeDetailDialog | None = None
-        # Real Archive mode state (added 2026-09-04) - _real_archive is
-        # loaded lazily on first click and cached (the real FA file
-        # decode is not free); None means "not attempted yet", distinct
-        # from an attempt that genuinely failed (tracked by the dialog's
-        # own status label each time, since a transient failure - e.g.
-        # RESTOR mounted/unmounted between clicks - should be retried,
-        # not remembered as permanent).
+        # Real Archive mode state (added 2026-09-04, extended same day
+        # with a real lead-time selector - "continue") - each real
+        # lead time's decoded archive is loaded lazily (on first
+        # selection) and cached in _real_archive_cache, keyed by its
+        # real lead hours; a lead time simply absent from that dict
+        # means "not attempted yet", distinct from one that genuinely
+        # failed to load (a transient failure - e.g. RESTOR mounted/
+        # unmounted between clicks - is retried on the next selection,
+        # not remembered as permanent, since a failed load is never
+        # cached).
         self._real_archive_window: QDialog | None = None
         self._real_archive_widget: AWCIVerticalProfile | None = None
         self._real_archive_status_label: QLabel | None = None
-        self._real_archive: dict[str, Any] | None = None
+        self._real_archive_lead_selector: QComboBox | None = None
+        self._real_archive_cache: dict[int, dict[str, Any]] = {}
         self._real_archive_data: dict[str, dict[str, Any]] = {}
         self._real_archive_detail_window: AWCIVerticalProfileLevelDialog | None = None
 
@@ -1318,12 +1335,31 @@ class AWCIDashboard(QWidget):
         Reuses AWCIVerticalProfile/AWCIVerticalProfileLevelDialog
         exactly as _open_vertical_profile() does - same real click-to-
         detail pattern, just fed from acf.awci.archive_field instead
-        of _synthetic_inputs()/the Real Physics volume."""
+        of _synthetic_inputs()/the Real Physics volume. The lead-time
+        selector (added same day, "continue") lets a user step through
+        RESTOR's own 17 real 3-hourly lead times instead of only ever
+        seeing the +0h analysis."""
         if self._real_archive_window is None:
             self._real_archive_window = QDialog(self)
-            self._real_archive_window.setWindowTitle("AWCI – Real ALADIN Archive (2026-08-31 00Z)")
+            self._real_archive_window.setWindowTitle("AWCI – Real ALADIN Archive")
             self._real_archive_window.setStyleSheet(dashboard_stylesheet())
             layout = QVBoxLayout(self._real_archive_window)
+
+            lead_row = QHBoxLayout()
+            lead_label = QLabel("Lead time:")
+            lead_label.setStyleSheet(label_style("text_secondary", "xs"))
+            lead_row.addWidget(lead_label)
+            self._real_archive_lead_selector = QComboBox()
+            self._real_archive_lead_selector.addItems(list(_RESTOR_LEAD_TIME_OPTIONS.keys()))
+            self._real_archive_lead_selector.setToolTip(
+                "RESTOR's own 17 real 3-hourly lead times (+0h analysis to +48h) - each\n"
+                "loaded and decoded from its own real FA file on first selection, then cached."
+            )
+            self._real_archive_lead_selector.currentTextChanged.connect(self._refresh_real_archive)
+            lead_row.addWidget(self._real_archive_lead_selector)
+            lead_row.addStretch()
+            layout.addLayout(lead_row)
+
             self._real_archive_status_label = QLabel()
             self._real_archive_status_label.setWordWrap(True)
             self._real_archive_status_label.setStyleSheet(label_style("text_secondary", "xs"))
@@ -1332,34 +1368,56 @@ class AWCIDashboard(QWidget):
             self._real_archive_widget.set_title("Real ALADIN Archive")
             self._real_archive_widget.levelClicked.connect(self._on_real_archive_level_clicked)
             layout.addWidget(self._real_archive_widget)
-            self._real_archive_window.resize(340, 400)
-        assert self._real_archive_status_label is not None  # for mypy - always built above
-        assert self._real_archive_widget is not None
+            self._real_archive_window.resize(340, 430)
 
-        if self._real_archive is None:
+        self._refresh_real_archive()  # every open, not just the first - the point of interest may have changed
+        self._real_archive_window.show()
+        self._real_archive_window.raise_()
+        self._real_archive_window.activateWindow()
+
+    def _refresh_real_archive(self, _lead_time_text: str | None = None) -> None:
+        """Real (re)load-and-sample for whatever real lead time is
+        currently selected - called once when the dialog is first
+        built and again every time the lead-time selector changes
+        (Qt's currentTextChanged passes the new text; ignored here,
+        the selector's own currentText() is read directly instead, so
+        this is also safely callable with no argument). Each real
+        lead time's decoded archive is cached in
+        self._real_archive_cache, keyed by its real lead hours, so
+        returning to an already-loaded one is instant - the real FA
+        decode only ever runs once per lead time per session."""
+        assert self._real_archive_status_label is not None  # for mypy - always built in _open_real_archive()
+        assert self._real_archive_widget is not None
+        assert self._real_archive_lead_selector is not None
+
+        lead_hours = _RESTOR_LEAD_TIME_OPTIONS[self._real_archive_lead_selector.currentText()]
+
+        if lead_hours not in self._real_archive_cache:
+            path = restor_fullpos_path(_RESTOR_ALADIN_DATA_DIR, _RESTOR_RUN_DATETIME, lead_hours)
             try:
-                self._real_archive = load_real_aladin_restor_run(_RESTOR_ALADIN_ARCHIVE_FILE)
+                self._real_archive_cache[lead_hours] = load_real_aladin_restor_run(path)
             except Exception as exc:
                 # A machine without $HOME/RESTOR (every machine but the
                 # one this feature was built on) - or any other real
                 # read failure - reported honestly, never silently
                 # substituted with demo/solver data under this same
-                # button.
-                logger.warning("AWCIDashboard: real archive unavailable: %s", exc)
+                # button. Deliberately NOT cached, so the next
+                # selection (or a retry at the same lead time) tries a
+                # real read again rather than remembering this as
+                # permanent.
+                logger.warning("AWCIDashboard: real archive unavailable (lead=%dh): %s", lead_hours, exc)
                 self._real_archive_status_label.setText(
                     f"⚠ Real archive not available on this machine ({type(exc).__name__}: {exc})."
                 )
                 self._real_archive_widget.set_profile({})
-                self._real_archive_window.show()
-                self._real_archive_window.raise_()
-                self._real_archive_window.activateWindow()
                 return
 
+        archive = self._real_archive_cache[lead_hours]
         lat, lon = self._point_of_interest
-        lats, lons = self._real_archive["lats"], self._real_archive["lons"]
+        lats, lons = archive["lats"], archive["lons"]
         within_domain = bool(lats.min() <= lat <= lats.max() and lons.min() <= lon <= lons.max())
 
-        sample = sample_archive_at_point(self._real_archive, lat, lon)
+        sample = sample_archive_at_point(archive, lat, lon)
         calc = AWCICalculator()
         profile: dict[str, float] = {}
         self._real_archive_data = {}
@@ -1369,11 +1427,11 @@ class AWCIDashboard(QWidget):
             self._real_archive_data[level_label] = {"hpa": inputs["pressure"], "result": result}
         self._real_archive_widget.set_profile(profile)
 
-        run_dt = self._real_archive.get("run_datetime")
+        run_dt = archive.get("run_datetime")
         if within_domain:
             self._real_archive_status_label.setText(
-                f"Real ALADIN 00Z run ({run_dt}) - point ({lat:.2f}, {lon:.2f}) sampled via real "
-                "nearest-neighbour lookup on the archive's own North Africa grid."
+                f"Real ALADIN run, +{lead_hours}h ({run_dt}) - point ({lat:.2f}, {lon:.2f}) sampled via "
+                "real nearest-neighbour lookup on the archive's own North Africa grid."
             )
         else:
             self._real_archive_status_label.setText(
@@ -1381,10 +1439,6 @@ class AWCIDashboard(QWidget):
                 f"(lat {lats.min():.2f}..{lats.max():.2f}, lon {lons.min():.2f}..{lons.max():.2f}) - "
                 "the nearest-edge value below is not physically meaningful for this point."
             )
-
-        self._real_archive_window.show()
-        self._real_archive_window.raise_()
-        self._real_archive_window.activateWindow()
 
     def _on_real_archive_level_clicked(self, level_label: str) -> None:
         """Same real click-to-detail pattern as

@@ -5049,3 +5049,42 @@ Real Physics mode reste plus fort sur un point précis (un solveur
 configurable à volonté) ; la vraie valeur de ce 3e niveau est que ses
 chiffres sont une vraie sortie opérationnelle archivée, jamais une
 sortie de solveur.
+
+## Mise à jour 2026-09-04 (suite) — les 17 vraies échéances RESTOR câblées (suite explicite "continue")
+
+Le "Ce qui reste réellement" de la fermeture précédente notait un vrai
+chantier borné et déjà identifié : seule l'échéance +0h (analyse)
+était câblée dans le dashboard, alors que RESTOR contient 17 vraies
+échéances 3-horaires (+0h→+48h) déjà spot-checkées comme réellement
+complètes et distinctes (validité réelle qui avance : 2026-08-31 00Z /
+2026-09-01 00Z / 2026-09-02 00Z pour +0h/+24h/+48h).
+
+**Construit** : `acf/awci/archive_field.py` gagne `restor_fullpos_path()`
+(construction pure du vrai nom de fichier RESTOR, testable sans accès
+disque) et `RESTOR_LEAD_TIMES_HOURS` (les 17 vraies échéances, dérivées
+du vrai `date.config` de RESTOR : ECH=48/nECH=17). Le dialogue
+"📡 Real Archive" gagne un vrai sélecteur "Lead time:" (17 options
+réelles, +0h par défaut — comportement bit-identique à la fermeture
+précédente tant qu'on n'y touche pas, même discipline que le
+sélecteur de niveau de vol). Chaque échéance sélectionnée est
+réellement décodée depuis son propre vrai fichier FA au premier choix,
+puis mise en cache (`_real_archive_cache`, clé = heures réelles) —
+un échec de chargement n'est jamais mis en cache, pour que le prochain
+essai retente un vrai accès plutôt que de mémoriser un échec comme
+permanent.
+
+**Validation réelle** : un nouveau test prouve directement que changer
+l'échéance charge une archive réellement différente (la vraie validité
+avance : 2026-08-31→2026-09-01) et pas la même donnée relabellée ; un
+autre confirme les 3 échéances spot-checkées (+0h/+24h/+48h) décodent
+chacune sans champ manquant avec leur propre vraie date. Capture
+d'écran envoyée : dialogue à +24h, 8 vraies barres avec des valeurs
+réellement différentes de celles à +0h (13/11/6/3/1/2/4/18 contre
+12/9/4/2/3/4/5/18). Suite complète **3995 → 4001**, `ruff`/`mypy`
+propres.
+
+**Ce qui reste réellement** : les 17 échéances sont maintenant toutes
+câblées ; il ne reste plus de chantier RESTOR borné et déjà identifié
+sur ce point. Les limites disclosed précédemment restent inchangées
+(un seul domaine régional, pas de vraies données AROME/ARPEGE, pas de
+CAPE/CIN/phase de précipitation par niveau).

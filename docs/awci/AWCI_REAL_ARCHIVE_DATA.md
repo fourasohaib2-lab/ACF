@@ -80,6 +80,17 @@ dashboard's current point of interest. Does **not** touch
 `_point_of_interest`/Real Physics's own state machine — a fully
 independent, additive third data tier.
 
+**Update 2026-09-04 (same day, "continue")**: the dialog now also has
+a real **Lead time** selector — RESTOR's own 17 real 3-hourly lead
+times (+0h analysis → +48h), each loaded and decoded from its own real
+FA file on first selection (`restor_fullpos_path()`), then cached in
+`self._real_archive_cache` (keyed by real lead hours) so returning to
+one already seen is instant. Defaults to "00h" — the same bit-
+identical behaviour this closure originally shipped with, now just one
+option among 17 real ones rather than the only one. A failed load is
+deliberately never cached, so a transient failure (e.g. RESTOR
+unmounted between clicks) is retried, not remembered as permanent.
+
 Two honest degradation paths, both surfaced in the dialog's own status
 label, never a silent fallback to demo/solver data:
 - The archive is genuinely unavailable on this machine (no
@@ -94,15 +105,12 @@ label, never a silent fallback to demo/solver data:
 ## Real scope limits (disclosed, not hidden)
 
 - **Single, fixed, historical run** — 2026-08-31 00Z. Not a live feed,
-  not a growing archive. `RESTOR/ALADIN/data/` has 17 real lead times
-  (00h→48h); only the 00h analysis (`FULLPOS_2026083100_0000`) is
-  wired into the dashboard today — a real, disclosed reduction of
-  scope, not a technical limitation (`load_real_aladin_restor_run()`
-  takes any real `FULLPOS_*` path, so wiring the other 16 real lead
-  times is a real, bounded follow-up, not a new capability).
-  Real Physics mode is stronger here still (a solver that can be run
-  at any configuration); this tier's own value is that its numbers are
-  genuine archived operational output, not a solver's output.
+  not a growing archive. All 17 real 3-hourly lead times (+0h→+48h)
+  are now wired into the dashboard's own lead-time selector (closed
+  2026-09-04, same day as this doc's first version, which had only
+  +0h). Real Physics mode is stronger on flexibility (a solver
+  runnable at any configuration); this tier's own value is that its
+  numbers are genuine archived operational output, not a solver's.
 - **One regional domain** — North Africa only. A point of interest
   outside it gets the honest "OUTSIDE" warning above, never a silently
   misleading value.
@@ -115,16 +123,22 @@ label, never a silent fallback to demo/solver data:
 
 ## Tests
 
-- `tests/test_awci_archive_field.py` — 10 tests directly against the
-  real archive (skipped, not faked, on a machine without it), including
-  the independent legacy-EDF-decode cross-check above and a real
-  degradation test (one field forced to fail via monkeypatch → its
-  level is honestly omitted, `missing_fields` names it, every other
-  level stays real and present).
+- `tests/test_awci_archive_field.py` — 3 unconditional tests for
+  `restor_fullpos_path()`/`RESTOR_LEAD_TIMES_HOURS` (pure path-building
+  logic, no real file needed) + `TestWithTheRealArchive` (11 tests,
+  gated on the real archive's presence), including the independent
+  legacy-EDF-decode cross-check above, a real degradation test (one
+  field forced to fail via monkeypatch → its level is honestly
+  omitted, `missing_fields` names it, every other level stays real and
+  present), and a real proof that 3 different real lead times (+0h/
+  +24h/+48h) each decode with their own real, correctly-advancing
+  validity time.
 - `tests/test_moisture.py` — 3 new tests for
   `specific_humidity_from_relative_humidity()` (round-trips with the
   existing forward chain, bounded, monotonic in RH).
 - `tests/gui/test_awci_dashboard_reference_parity.py` —
-  `TestRealArchiveWithTheRealFile` (gated the same way) + 2 ungated
-  tests (button wiring, honest-failure path via monkeypatch — these
-  run on every machine regardless of RESTOR's presence).
+  `TestRealArchiveWithTheRealFile` (gated, now including a real
+  lead-time-switch test proving 2 different lead times cache 2
+  genuinely different real archives) + 3 ungated tests (button wiring,
+  honest-failure path via monkeypatch, default lead-time selection —
+  these run on every machine regardless of RESTOR's presence).

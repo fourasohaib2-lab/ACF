@@ -438,9 +438,15 @@ def test_real_archive_reports_honestly_when_unavailable(qapp, monkeypatch):
     dashboard = AWCIDashboard()
     dashboard._open_real_archive()
 
-    assert dashboard._real_archive is None
+    assert dashboard._real_archive_cache == {}  # a failed load is never cached
     assert "not available" in dashboard._real_archive_status_label.text()
     assert dashboard._real_archive_widget._profile == {}  # honestly empty, not a fabricated bar
+
+
+def test_real_archive_lead_time_selector_defaults_to_the_00h_analysis(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+    assert dashboard._real_archive_lead_selector.currentText() == "00h"
 
 
 REAL_RESTOR_FILE = Path.home() / "RESTOR" / "ALADIN" / "data" / "FULLPOS_2026083100_0000"
@@ -459,21 +465,36 @@ class TestRealArchiveWithTheRealFile:
         dashboard = AWCIDashboard()
         dashboard._open_real_archive()
 
-        assert dashboard._real_archive is not None
+        assert 0 in dashboard._real_archive_cache  # the default +0h lead time, real and loaded
         profile = dashboard._real_archive_widget._profile
         assert profile  # the default point of interest is real and within this archive's domain
         for score in profile.values():
             assert 0.0 <= score <= 100.0
         assert "OUTSIDE" not in dashboard._real_archive_status_label.text()
 
-    def test_archive_is_loaded_once_and_cached_across_calls(self, qapp):
+    def test_archive_is_loaded_once_per_lead_time_and_cached_across_calls(self, qapp):
         dashboard = AWCIDashboard()
         dashboard._open_real_archive()
-        first_archive = dashboard._real_archive
+        first_archive = dashboard._real_archive_cache[0]
 
         dashboard._open_real_archive()
 
-        assert dashboard._real_archive is first_archive
+        assert dashboard._real_archive_cache[0] is first_archive
+
+    def test_changing_the_lead_time_selector_loads_and_caches_a_different_real_archive(self, qapp):
+        """Real, direct proof this is a genuinely different real
+        forecast hour, not the same +0h data relabelled - the run's
+        own real validity time must advance."""
+        dashboard = AWCIDashboard()
+        dashboard._open_real_archive()
+        validity_at_0h = dashboard._real_archive_cache[0]["run_datetime"]
+
+        dashboard._real_archive_lead_selector.setCurrentText("24h")
+
+        assert 24 in dashboard._real_archive_cache
+        validity_at_24h = dashboard._real_archive_cache[24]["run_datetime"]
+        assert validity_at_24h != validity_at_0h
+        assert "+24h" in dashboard._real_archive_status_label.text()
 
     def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(self, qapp):
         dashboard = AWCIDashboard()
