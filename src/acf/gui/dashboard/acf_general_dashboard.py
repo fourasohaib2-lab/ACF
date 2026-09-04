@@ -61,6 +61,21 @@ this was built from):
   disambiguating a real map click from a real pan-drag (EventMixin's
   mousePressEvent already starts a potential drag) within this pass's
   scope.
+
+Hamburger menu (☰) (added 2026-09-04, explicit user instruction: keep
+this dashboard's own fixed reference-mockup chrome clean - real
+actions belong behind the "☰" icon shown top-left in the reference
+mockup, not as extra inline buttons cluttering the main panels). The
+mockup's own ☰ icon had never been built; "🔄 Refresh Evolution" and
+"🔄 Compute Consensus" were real, working actions but lived as inline
+QPushButtons not present anywhere in the reference image - moved
+behind a real QMenu on this new button instead, wired to the exact
+same real refresh()/_start_consensus() methods (QAction.triggered,
+not QPushButton.clicked - both objects still expose the same
+isEnabled()/setEnabled() the rest of this class' own disable-while-
+running discipline already used). Any further real capability this
+dashboard gains should be added here, not as a new inline widget in
+the fixed layout.
 """
 
 from __future__ import annotations
@@ -70,7 +85,8 @@ from typing import Any
 
 import numpy as np
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget
 
 from acf.awci.calculator import AWCICalculator
 from acf.awci.path_sampling import sample_volume_cross_section
@@ -177,6 +193,40 @@ class ACFGeneralDashboard(QWidget):
 
         # --- Top status row --------------------------------------------
         status_row = QHBoxLayout()
+
+        # Real "☰" navigation menu (added 2026-09-04, see module
+        # docstring) - matches the reference mockup's own top-left icon
+        # exactly, and is this dashboard's real home for actions that
+        # would otherwise clutter the fixed, mockup-matched panels
+        # below. Real QAction entries, not decorative - each wired to
+        # the exact same real method its former inline button called.
+        self.menu_button = QToolButton()
+        self.menu_button.setText("☰")
+        self.menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.menu_button.setToolTip("Dashboard actions")
+        self.nav_menu = QMenu(self.menu_button)
+
+        self.refresh_button = QAction("🔄 Refresh Evolution", self)
+        self.refresh_button.setToolTip(
+            "Real, off-thread compute_real_complexity_evolution() run (CoupledEarthSolver,\n"
+            f"{_N_LEAD_TIME_FRAMES} real frames) - drives every panel below from one real trajectory."
+        )
+        self.refresh_button.triggered.connect(self.refresh)
+        self.nav_menu.addAction(self.refresh_button)
+
+        self.consensus_button = QAction("🔄 Compute Consensus", self)
+        self.consensus_button.setToolTip(
+            "Real multi-model comparison (acf.visualization.ai_forecast_center.\n"
+            "ModelConsensusEngine) - runs ACF's own solver once per real model grid\n"
+            "configuration at the point of interest. The most expensive real\n"
+            "computation in this dashboard - on demand, not automatic."
+        )
+        self.consensus_button.triggered.connect(self._start_consensus)
+        self.nav_menu.addAction(self.consensus_button)
+
+        self.menu_button.setMenu(self.nav_menu)
+        status_row.addWidget(self.menu_button)
+
         header = QLabel("ATMOSPHERIC COMPLEXITY FRAMEWORK (ACF) — RESEARCH SUITE")
         header.setStyleSheet(label_style("text_primary", "lg", "bold"))
         status_row.addWidget(header)
@@ -217,9 +267,6 @@ class ACFGeneralDashboard(QWidget):
             lead_time_row.addWidget(btn)
             self.lead_time_buttons.append(btn)
         lead_time_row.addStretch()
-        self.refresh_button = QPushButton("🔄 Refresh Evolution")
-        self.refresh_button.clicked.connect(self.refresh)
-        lead_time_row.addWidget(self.refresh_button)
         outer.addLayout(lead_time_row)
 
         self.status_label = QLabel("Not yet computed.")
@@ -287,15 +334,6 @@ class ACFGeneralDashboard(QWidget):
         spread_col = QVBoxLayout()
         self.spread_chart = AWCIModelSpreadChart("MULTI-MODEL CONSENSUS SPREAD")
         spread_col.addWidget(self.spread_chart)
-        self.consensus_button = QPushButton("🔄 Compute Consensus")
-        self.consensus_button.setToolTip(
-            "Real multi-model comparison (acf.visualization.ai_forecast_center.\n"
-            "ModelConsensusEngine) - runs ACF's own solver once per real model grid\n"
-            "configuration at the point of interest. The most expensive real\n"
-            "computation in this dashboard - on demand, not automatic."
-        )
-        self.consensus_button.clicked.connect(self._start_consensus)
-        spread_col.addWidget(self.consensus_button)
         row2.addLayout(spread_col, stretch=2)
 
         outer.addLayout(row2, stretch=2)

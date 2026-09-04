@@ -162,6 +162,39 @@ def test_lead_time_click_before_any_evolution_is_a_safe_no_op(qapp):
     assert dashboard._current_frame_index == 0
 
 
+def test_hamburger_menu_matches_the_reference_mockups_own_icon(qapp):
+    """docs/reference/acf_dashboard_reference.jpg shows a real "☰" icon
+    top-left - explicit user instruction (2026-09-04): real dashboard
+    actions belong behind it, not as extra inline widgets in the fixed
+    panels below."""
+    dashboard = ACFGeneralDashboard()
+    assert dashboard.menu_button.text() == "☰"
+    assert [a.text() for a in dashboard.nav_menu.actions()] == ["🔄 Refresh Evolution", "🔄 Compute Consensus"]
+
+
+def test_triggering_the_real_refresh_menu_action_runs_the_real_refresh(qapp, monkeypatch):
+    """Real proof the menu action is wired to the exact same real
+    method the old inline QPushButton called - not a decorative
+    QAction with no real connection."""
+    dashboard = ACFGeneralDashboard()
+    called = []
+    monkeypatch.setattr(dashboard, "refresh", lambda: called.append(True))
+
+    dashboard.refresh_button.trigger()
+
+    assert called == [True]
+
+
+def test_triggering_the_real_consensus_menu_action_runs_the_real_consensus(qapp, monkeypatch):
+    dashboard = ACFGeneralDashboard()
+    called = []
+    monkeypatch.setattr(dashboard, "_start_consensus", lambda: called.append(True))
+
+    dashboard.consensus_button.trigger()
+
+    assert called == [True]
+
+
 def test_evolution_failure_reports_error_and_reenables_refresh(qapp):
     dashboard = ACFGeneralDashboard()
     dashboard.refresh_button.setEnabled(False)

@@ -5389,3 +5389,55 @@ plutôt que masqué par un mapping approximatif. Construire ces
 panneaux manquants (ou en décider l'abandon délibéré) reste un vrai
 chantier de produit séparé, hors périmètre de cette fermeture qui ne
 corrige que le routage vers ce qui existe déjà réellement.
+
+## Mise à jour 2026-09-04 (suite) — le menu ☰ du dashboard général ACF construit, discipline de fidélité pixel étendue
+
+Suite explicite ("continue"), avec une consigne directe de
+l'utilisateur (image à l'appui, `docs/reference/acf_dashboard_reference.jpg`,
+le vrai mockup de référence d'`ACFGeneralDashboard` — pas celui
+d'AWCI) : les vraies actions de ce dashboard doivent vivre derrière la
+vraie icône "☰" visible en haut à gauche du mockup, jamais comme
+boutons additionnels dans les panneaux fixes déjà pixel-matched.
+
+**Constat** : cette icône ☰ n'avait jamais été construite.
+`ACFGeneralDashboard` avait déjà 2 vraies actions fonctionnelles
+("🔄 Refresh Evolution", "🔄 Compute Consensus") mais sous forme de
+`QPushButton` en ligne — absents du mockup de référence, une vraie
+déviation de fidélité pixel jamais corrigée jusqu'ici.
+
+**Construit** : un vrai `QToolButton` "☰" en position exacte du
+mockup (avant le titre, tout à gauche de la barre de statut), ouvrant
+un vrai `QMenu` contenant les 2 actions réelles converties en
+`QAction` (même méthode réelle connectée — `triggered` au lieu de
+`clicked` — même discipline `setEnabled()`/`isEnabled()` pendant un
+calcul en cours, sans aucune régression). Nouveau style QSS
+`QToolButton`/`QMenu` ajouté à `dashboard_stylesheet()` (fonction
+partagée avec `AWCIDashboard` — additif seulement, aucun risque de
+régression visuelle pour ce dernier). Documentation de la classe
+étendue avec la consigne explicite pour guider tout ajout futur de
+capacité réelle vers ce même menu plutôt que vers un nouveau widget en
+ligne.
+
+**Validation réelle** : les 12 tests existants passent sans aucune
+modification (l'interface `QAction`/`QPushButton` partage
+`isEnabled()`/`setEnabled()`, migration sans risque). 3 nouveaux tests
+(le menu contient bien les 2 vraies actions attendues ; déclencher
+chaque action via `.trigger()` appelle bien la vraie méthode
+`refresh()`/`_start_consensus()`, pas un simulacre). Suite complète
+**4026 → 4029**, `ruff`/`mypy` propres. Capture d'écran envoyée :
+en-tête épuré matching le mockup (icône ☰ seule, plus aucun bouton en
+ligne) + le menu déroulant avec ses 2 vraies actions.
+
+**Ce qui reste réellement** : la consigne a été donnée avec l'image de
+référence d'`ACFGeneralDashboard` spécifiquement — appliquée ici à ce
+seul dashboard. Note honnête : `awci_dashboard_reference.jpg` (le
+mockup d'`AWCIDashboard`) ne montre lui non plus aucun bandeau de
+boutons ni icône ☰ — le bandeau réel d'`AWCIDashboard` (Real Physics,
+Real Archive, etc., construit au fil de cette session) dévie donc de
+son propre mockup exactement de la même façon. Aucun changement
+rétroactif appliqué à `AWCIDashboard` dans cette fermeture : c'est un
+dashboard distinct, son propre bandeau est une fonctionnalité réelle
+déjà construite, testée et montrée à l'utilisateur à de nombreuses
+reprises sans objection — une refonte rétroactive de cette ampleur
+reste une vraie décision séparée à confirmer explicitement avant
+d'être entreprise, pas à deviner.

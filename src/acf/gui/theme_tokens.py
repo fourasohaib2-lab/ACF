@@ -176,6 +176,35 @@ def dashboard_stylesheet() -> str:
             background: {t.bg_card};
             color: {t.text_primary};
         }}
+        QToolButton {{
+            background-color: {t.bg_surface_alt};
+            color: {t.text_primary};
+            border: 1px solid {t.border};
+            border-radius: {t.radius_md}px;
+            padding: {t.spacing_xs}px {t.spacing_sm}px;
+        }}
+        QToolButton:hover {{
+            background-color: {t.bg_card};
+            border-color: {t.accent_primary};
+        }}
+        QToolButton::menu-indicator {{
+            image: none;
+        }}
+        QMenu {{
+            background-color: {t.bg_card};
+            color: {t.text_primary};
+            border: 1px solid {t.border};
+            border-radius: {t.radius_md}px;
+            padding: {t.spacing_xs}px;
+        }}
+        QMenu::item {{
+            padding: {t.spacing_xs}px {t.spacing_md}px;
+            border-radius: {t.radius_sm}px;
+        }}
+        QMenu::item:selected {{
+            background-color: {t.bg_surface_alt};
+            color: {t.accent_primary};
+        }}
     """
 
 
