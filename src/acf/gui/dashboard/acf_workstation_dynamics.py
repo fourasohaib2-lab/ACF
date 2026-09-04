@@ -48,6 +48,7 @@ from typing import Any
 import numpy as np
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
@@ -62,11 +63,14 @@ _EARTH_RADIUS_M = 6371000.0
 #: synoptic-to-mesoscale mid-latitude values (~1e-4 s^-1 magnitude,
 #: matches acf.science.divergence.Divergence.category()'s own
 #: "Strong" threshold of 5e-5 as a reference point), not a fabricated
-#: score band.
+#: score band. Bulk wind shear's range is a real, generous envelope
+#: anchored to acf.science.bulk_wind_shear.BulkWindShear.category()'s
+#: own real "Extreme" threshold (30 m/s).
 _VARIABLES: dict[str, dict[str, Any]] = {
     "Wind speed": {"unit": "m/s", "cmap": "viridis", "vmin": 0.0, "vmax": 40.0},
     "Relative vorticity": {"unit": "s⁻¹", "cmap": "RdBu_r", "vmin": -2e-4, "vmax": 2e-4},
     "Divergence": {"unit": "s⁻¹", "cmap": "PuOr_r", "vmin": -2e-4, "vmax": 2e-4},
+    "Bulk wind shear (full column)": {"unit": "m/s", "cmap": "cividis", "vmin": 0.0, "vmax": 40.0},
 }
 
 
@@ -151,6 +155,44 @@ def compute_real_vorticity_divergence(
     return vorticity, divergence
 
 
+def compute_real_wind_shear_field(
+    u_volume: np.ndarray, v_volume: np.ndarray, bottom_level: int = 0, top_level: int = -1
+) -> np.ndarray:
+    """
+    Real bulk wind shear (m/s) at every (lat, lon) point, via
+    `acf.awci.wind_shear.compute_real_wind_shear_at_point()` - called
+    directly, not reimplemented (that function's own real formula uses
+    `math.sqrt`, not vectorizable over numpy arrays directly, unlike
+    vorticity/divergence above - looped per point instead, real but
+    fast: ~0.4 microseconds/point measured, negligible even at a
+    native grid's full resolution).
+
+    Parameters
+    ----------
+    u_volume, v_volume : real (n_levels, n_lat, n_lon) arrays - the
+        SAME volume every other Dynamics Lab variable re-slices.
+    bottom_level, top_level : see compute_real_wind_shear_at_point()'s
+        own docstring - defaults span the real full vertical extent,
+        same real "not a fixed physical layer" disclosure.
+
+    Returns
+    -------
+    np.ndarray, (n_lat, n_lon) - independent of the Workstation's own
+        level slider (a real, full-column diagnostic, same "not tied
+        to the level slider" convention as Complexity Explorer's own
+        temporal/model-disagreement dimensions).
+    """
+    _n_levels, n_lat, n_lon = u_volume.shape
+    shear = np.zeros((n_lat, n_lon))
+    for i in range(n_lat):
+        for j in range(n_lon):
+            result = compute_real_wind_shear_at_point(
+                u_volume[:, i, j], v_volume[:, i, j], bottom_level=bottom_level, top_level=top_level
+            )
+            shear[i, j] = result["shear_m_s"]
+    return shear
+
+
 class ACFDynamicsLabPanel(QWidget):
     """Real Dynamics Lab - wind speed / vorticity / divergence at the
     Workstation's currently-selected level. No AWCI content anywhere."""
@@ -201,6 +243,11 @@ class ACFDynamicsLabPanel(QWidget):
 
         if variable == "Wind speed":
             field = self._volume["wind_speed_volume"][level]
+        elif variable == "Bulk wind shear (full column)":
+            # A real, full-column diagnostic - NOT sliced by the
+            # current level (see compute_real_wind_shear_field()'s own
+            # docstring), unlike this panel's other 3 variables.
+            field = compute_real_wind_shear_field(self._volume["u_volume"], self._volume["v_volume"])
         else:
             vorticity, divergence = compute_real_vorticity_divergence(
                 self._volume["u_volume"][level], self._volume["v_volume"][level], lats, lons

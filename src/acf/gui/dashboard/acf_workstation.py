@@ -33,16 +33,37 @@ Phase 2 (2026-09-04, same "continue" progressive discipline) added:
   real CAPE/CIN from an actual MetPy parcel ascent (on-demand, a
   coarser real grid - see that module's own docstring for why).
 
-The remaining ~9 spec modules (Convection/Microphysics/Terrain/
-Temporal/Confidence Labs, Interaction Engine, Multi-Model Lab, Data
-Quality Center, 3D/4D, Case Study Lab, Research Mode, Configuration
-Management...) are listed in the left nav as real, visible, DISABLED
-"Planned" items - not silently omitted, not faked - matching the
-master spec's own §68 audit-honesty rule applied in both directions:
-never claim something works when it's only simulated, and never hide
-real future scope either. See the plan this was built from
-(`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entry) for the full,
-disclosed rationale and what's deferred.
+Phase 3 (2026-09-04, same "continue" progressive discipline) added:
+- **Microphysics Lab** (`acf_workstation_microphysics.
+  ACFMicrophysicsLabPanel`): real surface precipitation-phase
+  severity/wet-bulb temperature (auto, from the current level), via
+  `acf.awci.hydrometeor_phase`'s own already-real, self-disclosed
+  heuristic classification - no new species fabricated.
+- **Dynamics Lab** gained a 4th real variable: bulk wind shear (full
+  column, independent of the level slider), via
+  `acf.awci.wind_shear.compute_real_wind_shear_at_point()`.
+
+The remaining ~7 spec modules (Convection/Terrain/Temporal/Confidence
+Labs, Interaction Engine, Multi-Model Lab, Data Quality Center, 3D/4D,
+Case Study Lab, Research Mode, Configuration Management...) are listed
+in the left nav as real, visible, DISABLED "Planned" items - not
+silently omitted, not faked - matching the master spec's own §68
+audit-honesty rule applied in both directions: never claim something
+works when it's only simulated, and never hide real future scope
+either. See the plan this was built from (`reports/
+ACF_MASTER_AUDIT_v2.md`'s own dated entries) for the full, disclosed
+rationale and what's deferred. Convection Lab specifically was
+considered and deliberately deferred rather than built as a thin
+wrapper: the one real, well-established formula available for it
+(`acf.awci.updraft.compute_real_max_updraft_velocity()`, w_max =
+sqrt(2*CAPE)) is, by that module's own docstring, "a purely
+deterministic, monotonic function of CAPE alone" - it "carries no real
+information CAPE itself did not already carry" (already shown in
+Thermodynamics Lab) - a genuine Convection Lab worth building deserves
+a real, independent published composite index (e.g. SCP/STP, which
+need real storm-relative helicity/effective shear this codebase does
+not yet compute at every grid point), not a thin re-presentation of
+existing data.
 
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
@@ -84,6 +105,7 @@ from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
+from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
@@ -95,9 +117,9 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Real, built modules (index into the QStackedWidget) vs. real,
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
-_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Complexity"]
+_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Complexity"]
 _PLANNED_MODULES = [
-    "Convection", "Microphysics", "Terrain",
+    "Convection", "Terrain",
     "Temporal", "Confidence", "Interactions",
 ]
 
@@ -230,10 +252,12 @@ class ACFWorkstation(QWidget):
         self.overview_panel = ACFOverviewPanel()
         self.dynamics_panel = ACFDynamicsLabPanel()
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
+        self.microphysics_panel = ACFMicrophysicsLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
+        self.stack.addWidget(self.microphysics_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -307,6 +331,7 @@ class ACFWorkstation(QWidget):
         self.overview_panel.update_from_volume(self._volume, self._level_index)
         self.dynamics_panel.update_from_volume(self._volume, self._level_index)
         self.thermodynamics_panel.update_from_volume(self._volume, self._level_index)
+        self.microphysics_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav

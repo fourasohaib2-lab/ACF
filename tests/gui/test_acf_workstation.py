@@ -54,7 +54,7 @@ def test_model_selector_lists_the_real_model_configs(qapp):
     assert real_names == set(MODEL_CONFIGS.keys())  # real AROME/ALADIN/ARPEGE, never invented
 
 
-def test_nav_lists_the_3_real_enabled_modules_and_the_rest_disabled(qapp):
+def test_nav_lists_the_real_enabled_modules_and_the_rest_disabled(qapp):
     ws = ACFWorkstation()
     enabled_labels = []
     disabled_labels = []
@@ -80,6 +80,9 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     assert ws.stack.currentWidget() is ws.thermodynamics_panel
 
     ws.nav_list.setCurrentRow(3)
+    assert ws.stack.currentWidget() is ws.microphysics_panel
+
+    ws.nav_list.setCurrentRow(4)
     assert ws.stack.currentWidget() is ws.complexity_panel
 
 
@@ -97,6 +100,7 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     assert ws.overview_panel._volume is volume
     assert ws.dynamics_panel._volume is volume
     assert ws.thermodynamics_panel._volume is volume
+    assert ws.microphysics_panel._volume is volume
     assert ws.complexity_panel._volume is volume
 
 

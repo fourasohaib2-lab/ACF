@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import numpy as np
 
+from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
 from acf.gui.dashboard.acf_workstation_dynamics import (
     compute_real_vorticity_divergence,
+    compute_real_wind_shear_field,
     real_grid_spacing_m,
 )
 from acf.science.divergence import Divergence
@@ -133,3 +135,32 @@ def test_vorticity_divergence_reuse_the_real_formula_classes_directly():
 
     assert vorticity[i, j] == expected_vorticity
     assert divergence[i, j] == expected_divergence
+
+
+def test_wind_shear_field_matches_the_real_point_function_directly():
+    """Cross-check discipline: every grid cell must equal an
+    independent, direct call to compute_real_wind_shear_at_point() on
+    that exact real column - never a separately re-derived formula."""
+    rng = np.random.default_rng(2)
+    n_levels, n_lat, n_lon = 6, 4, 5
+    u_volume = rng.uniform(-15.0, 15.0, size=(n_levels, n_lat, n_lon))
+    v_volume = rng.uniform(-15.0, 15.0, size=(n_levels, n_lat, n_lon))
+
+    shear = compute_real_wind_shear_field(u_volume, v_volume)
+
+    for i in range(n_lat):
+        for j in range(n_lon):
+            expected = compute_real_wind_shear_at_point(u_volume[:, i, j], v_volume[:, i, j])
+            assert shear[i, j] == expected["shear_m_s"]
+
+
+def test_wind_shear_field_is_zero_for_a_barotropic_column():
+    """A real, trivial sanity case: identical wind at every real level
+    (no real vertical shear) must be exactly 0 everywhere."""
+    n_levels, n_lat, n_lon = 5, 3, 3
+    u_volume = np.broadcast_to(np.array([7.0]), (n_levels, n_lat, n_lon))
+    v_volume = np.broadcast_to(np.array([-2.0]), (n_levels, n_lat, n_lon))
+
+    shear = compute_real_wind_shear_field(u_volume, v_volume)
+
+    assert np.allclose(shear, 0.0)

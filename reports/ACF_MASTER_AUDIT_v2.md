@@ -5712,3 +5712,82 @@ Center, 3D/4D, Case Study Lab, Research Mode, Configuration
 Management, palette de commandes, raccourcis, export, extension API)
 restent listés "(planned)" dans la nav, non construits, pour les mêmes
 raisons honnêtes déjà disclosed dans la clôture précédente.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 3 : le Microphysics Lab, et le cisaillement de vent ajouté au Dynamics Lab
+
+Suite explicite ("continue"), même discipline progressive. Deux ajouts
+réels cette passe, tous deux réutilisant des pipelines déjà réels et
+déjà testés construits lors d'une closure antérieure pour AWCI
+(`acf.awci.hydrometeor_phase`, `acf.awci.wind_shear`) — leur premier
+appel en dehors du contexte AWCI, sur une grille complète.
+
+**Pourquoi le Convection Lab n'a PAS été construit cette passe** :
+considéré puis explicitement écarté. La seule vraie formule disponible
+pour un module convectif (`acf.awci.updraft.
+compute_real_max_updraft_velocity()`, w_max = sqrt(2×CAPE)) est, par
+le propre docstring de ce module, "a purely deterministic, monotonic
+function of CAPE alone" — elle ne porte aucune information réelle que
+CAPE (déjà affiché dans Thermodynamics Lab) ne porte pas déjà. Un vrai
+Convection Lab mériterait un vrai indice composite publié et
+indépendant (SCP/STP), qui nécessite un vrai hélicité relative à la
+tempête et un cisaillement effectif à chaque point de grille — non
+disponibles dans ce codebase aujourd'hui. Construire un onglet autour
+d'une simple retransformation des données déjà affichées ailleurs
+aurait été le genre de "fonctionnalité fictive à faible valeur" que ce
+projet évite délibérément — décision disclosed, pas un oubli.
+
+**Construit** :
+- **Microphysics Lab** (`acf_workstation_microphysics.
+  ACFMicrophysicsLabPanel`) — réutilise
+  `acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()`
+  tel quel (relative humidity réelle + température du thermomètre
+  mouillé réelle de Stull (2011) + `HydrometeorType.classify()`, un
+  vrai heuristique explicitement self-disclosed, pas une formule
+  validée) : phase de précipitation de surface (Rain/Snow/Wet
+  Snow-Mix/Freezing Rain-Ice Pellets) et sa sévérité ordinale réelle
+  ACF ([0,1], 0.2/0.5/0.7/1.0) — rendue avec une vraie colormap
+  discrète à 4 couleurs (pas un dégradé continu qui impliquerait
+  faussement des phases intermédiaires) — plus la température du
+  thermomètre mouillé elle-même, un vrai sous-produit gratuit du même
+  appel. Mesuré ~1 microseconde/point — recalcul automatique à chaque
+  changement de niveau, comme Overview/Dynamics/le θ-e de
+  Thermodynamics Lab. Ajouté à la nav (déplacé de "planned" à activé)
+  et à `_render_all_panels()`.
+- **Dynamics Lab** — 4ᵉ variable réelle : cisaillement de vent global
+  (bulk wind shear), via
+  `acf.awci.wind_shear.compute_real_wind_shear_at_point()` appelé
+  directement par point (sa propre formule utilise `math.sqrt`, non
+  vectorisable sur des tableaux numpy contrairement à
+  vorticité/divergence — mesuré ~0.4 microseconde/point, négligeable
+  même sur la grille native complète). Un vrai diagnostic de colonne
+  complète, donc — disclosed explicitement dans son propre nom de
+  variable ("full column") — indépendant du slider de niveau, même
+  convention déjà établie pour CAPE/CIN et la complexité
+  temporelle/désaccord multi-modèle.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests
+unitaires (`tests/test_acf_workstation_microphysics.py`,
+`tests/test_acf_workstation_dynamics.py` — cross-vérifiés point par
+point contre les vraies fonctions `compute_real_hydrometeor_phase_at_point`/
+`compute_real_wind_shear_at_point` appelées directement) + 4 nouveaux
+tests GUI (`tests/gui/test_acf_workstation_microphysics.py`) + mise à
+jour des tests d'intégration du chrome (nouvelle position dans la
+nav/le stack à 5 modules désormais). Suite complète **4060 → 4068**,
+toujours verte. Captures d'écran réelles envoyées : cisaillement de
+vent (Dynamics Lab), phase de précipitation (légende à 4 catégories
+visible sur la colorbar), température du thermomètre mouillé.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; ~7 modules restants (Convection,
+Terrain, Temporal, Confidence Labs, Interaction Engine, Multi-Model
+Lab en page propre, Data Quality Center, 3D/4D, Case Study Lab,
+Research Mode, Configuration Management, palette de commandes,
+raccourcis, export, extension API) listés "(planned)", non construits,
+pour les mêmes raisons honnêtes déjà disclosed. Note honnête sur ce
+Microphysics Lab spécifiquement : la phase de précipitation observée
+au niveau de surface d'un run ALADIN réel était uniformément "Rain"
+sur toute la grille dans la capture envoyée — un vrai résultat (le
+champ de température réel à ce niveau/ce run est partout au-dessus du
+seuil de gel), pas un motif fabriqué, mais qui illustre concrètement
+que ce panneau ne montrera une vraie variété de phases que sur un run
+couvrant des latitudes/saisons plus froides.
