@@ -124,11 +124,22 @@ Phase 10 (2026-09-04, same "continue" progressive discipline) added:
   module, generated from that same list, so it can never drift out of
   sync with the nav it targets.
 
+Phase 11 (2026-09-04, same "continue" progressive discipline) added:
+- **Command Palette** (Ctrl+K, `acf_workstation_command_palette.
+  CommandPaletteDialog`): a real, fuzzy-searchable list of this
+  Workstation's own already-real actions - "Run", "Toggle Fullscreen",
+  "Go to <module>" for each of the 10 real enabled modules, and every
+  on-demand Lab action (CAPE/CIN, temporal analysis, model
+  disagreement, temporal evolution, model confidence, model
+  comparison) - each entry a direct reference to the real method/
+  button it triggers, never a new capability. Non-modal open-or-raise
+  (`.show()`), same convention as `AWCIExecutionReportDialog`.
+
 The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
-Study Lab, Research Mode, Configuration Management, a real Command
-Palette etc. are larger, separate pieces of the master spec beyond the
-original "Labs" list) are listed in the left nav as real, visible,
-DISABLED "Planned" items - not silently omitted, not faked - matching
+Study Lab, Research Mode, Configuration Management etc. are larger,
+separate pieces of the master spec beyond the original "Labs" list)
+are listed in the left nav as real, visible, DISABLED "Planned" items
+- not silently omitted, not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
@@ -173,6 +184,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
@@ -192,6 +204,7 @@ from PySide6.QtWidgets import (
 
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
+from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
@@ -253,6 +266,7 @@ class ACFWorkstation(QWidget):
         self._volume: dict[str, Any] | None = None
         self._level_index = 0
         self._compute_started_at: float | None = None
+        self._command_palette: CommandPaletteDialog | None = None
         self._build_ui()
         self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
@@ -393,6 +407,63 @@ class ACFWorkstation(QWidget):
             shortcut = QShortcut(QKeySequence(f"Ctrl+{key_digit}"), self)
             shortcut.activated.connect(lambda target_row=row: self.nav_list.setCurrentRow(target_row))
             self.nav_shortcuts.append(shortcut)
+
+        self.shortcut_command_palette = QShortcut(QKeySequence("Ctrl+K"), self)
+        self.shortcut_command_palette.activated.connect(self._open_command_palette)
+
+    def _make_go_to_row(self, row: int) -> Callable[[], None]:
+        """A real, small closure factory - avoids the classic late-
+        binding loop-variable bug (a bare `lambda: self.nav_list.
+        setCurrentRow(row)` built inside a for-loop would have every
+        closure share the SAME final `row`), and gives mypy an
+        explicit, checkable return type unlike an inline default-arg
+        lambda."""
+
+        def _go_to_row() -> None:
+            self.nav_list.setCurrentRow(row)
+
+        return _go_to_row
+
+    def _build_palette_commands(self) -> list[tuple[str, Callable[[], None]]]:
+        """Real command list for the Command Palette (added
+        2026-09-04) - every entry is a direct reference to an already-
+        real chrome method or Lab panel button, never a new capability.
+        Rebuilt on every open (cheap - a couple dozen tuples) so it
+        never needs separate invalidation logic."""
+        commands: list[tuple[str, Callable[[], None]]] = [
+            ("Run", self.refresh),
+            ("Toggle Fullscreen", self._toggle_fullscreen),
+        ]
+        for row, name in enumerate(_ENABLED_MODULES):
+            commands.append((f"Go to {name}", self._make_go_to_row(row)))
+        # Real on-demand actions already built into specific Lab panels
+        # - reuses each panel's own real button.click(), never a
+        # second, independent trigger path.
+        commands.extend(
+            [
+                ("Compute CAPE/CIN Field (Thermodynamics Lab)", self.thermodynamics_panel.cape_button.click),
+                ("Run Temporal Analysis (Complexity Explorer)", self.complexity_panel.temporal_button.click),
+                ("Compute Model Disagreement (Complexity Explorer)", self.complexity_panel.consensus_button.click),
+                ("Run Temporal Evolution (Temporal Lab)", self.temporal_panel.run_button.click),
+                ("Compute Model Confidence Field (Confidence Lab)", self.confidence_panel.run_button.click),
+                ("Compare Models (Multi-Model Lab)", self.multimodel_panel.run_button.click),
+            ]
+        )
+        return commands
+
+    def _open_command_palette(self) -> None:
+        """Real open-or-raise, same convention as
+        AWCIExecutionReportDialog's own _open_execution_report() -
+        `.show()`, never a blocking `.exec()`."""
+        if self._command_palette is None:
+            self._command_palette = CommandPaletteDialog(self._build_palette_commands(), parent=self)
+        else:
+            self._command_palette.set_commands(self._build_palette_commands())
+        self._command_palette.search_input.clear()
+        self._command_palette.show()
+        self._command_palette.raise_()
+        self._command_palette.activateWindow()
+        self._command_palette.search_input.setFocus()
 
     @staticmethod
     def _label(text: str) -> QLabel:

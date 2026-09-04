@@ -6172,3 +6172,46 @@ Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
 Lab, Research Mode, Configuration Management, une vraie palette de
 commandes, extension API) listés "(planned)" — "raccourcis" retiré de
 cette liste, désormais réel.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 11 : la Command Palette (Ctrl+K)
+
+Suite explicite ("continue"), même discipline progressive. Ferme le
+dernier item d'interface simple encore listé "(planned)" : le spec
+maître nomme explicitement une "Command Palette (Ctrl+K)" dans sa
+section design.
+
+**Construit** : **Command Palette**
+(`acf_workstation_command_palette.CommandPaletteDialog`) — une vraie
+liste de commandes filtrable en temps réel (recherche floue,
+insensible à la casse, sous-chaîne), ouverte par Ctrl+K. **18 vraies
+commandes réelles au total**, aucune capacité inventée : "Run",
+"Toggle Fullscreen", "Go to <module>" pour chacun des 10 modules
+réels activés, plus chaque action à la demande déjà construite dans
+un Lab (CAPE/CIN, Run Temporal Analysis, Compute Model Disagreement,
+Run Temporal Evolution, Compute Model Confidence Field, Compare
+Models) — chaque entrée référence directement la vraie méthode ou le
+vrai bouton qu'elle déclenche (ex. `self.thermodynamics_panel.
+cape_button.click`), jamais un second chemin de déclenchement
+indépendant. Ouverture non-modale (`.show()`, jamais `.exec()` bloquant),
+même convention réelle déjà établie par `AWCIExecutionReportDialog`.
+Navigation Haut/Bas réelle depuis le champ de recherche via un vrai
+event filter Qt (pattern standard de palette de commandes) ; Entrée
+exécute la commande sélectionnée et referme la palette.
+
+**Validation réelle** : `ruff`/`mypy` propres. 10 nouveaux tests
+(`tests/gui/test_acf_workstation_command_palette.py` — filtrage réel,
+exécution réelle d'une commande via `run_command()`, Entrée déclenche
+bien la commande sélectionnée, réutilisation de la même instance de
+dialogue à l'ouverture répétée, vérification que la liste contient
+bien "Run"/"Toggle Fullscreen"/chacun des 10 modules) + suite
+d'intégration du chrome re-exécutée (zéro régression). Suite complète
+**4121 → 4131**, toujours verte. Captures d'écran réelles envoyées :
+les 18 commandes réelles listées, puis le filtre "temporal" réduisant
+correctement à 3 résultats réels.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
+Lab, Research Mode, Configuration Management, extension API) listés
+"(planned)" — "palette de commandes" retirée de cette liste, désormais
+réelle.
