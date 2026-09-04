@@ -4,6 +4,7 @@ import os
 import tempfile
 
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
@@ -103,6 +104,60 @@ def test_esoc_widgets(qapp):
 
     st.update_metrics(utc_str="2026-08-03 08:00:00Z", workspace_mode="Climate")
     assert "Climate" in st.lbl_workspace.text()
+
+
+def test_esoc_left_sidebar_without_a_registry_has_no_fabricated_search_results(qapp):
+    """Real, backward-compatible default (registry=None, e.g. this
+    widget used standalone as test_esoc_widgets does above) - a real
+    query must never show a made-up results line with no registry
+    behind it."""
+    sidebar = ESOCLeftSidebar()
+    sidebar.search_input.setText("temperature")
+    assert sidebar.search_results_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+
+def test_esoc_left_sidebar_search_uses_the_real_module_registry(qapp):
+    """Closes the gap disclosed in ESOCLeftSidebar's own NOTE
+    (correction, 2026-09-04): the "🔍 Universal Search" placeholder
+    previously had no way to reach ModuleRegistry.global_search() at
+    all - this is that search bar's first real backend."""
+    registry = ModuleRegistry()
+    sidebar = ESOCLeftSidebar(registry=registry)
+
+    sidebar.search_input.setText("temperature")
+
+    assert not sidebar.search_results_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+    expected = registry.global_search("temperature")
+    assert f"{len(expected)} real match" in sidebar.search_results_label.text()
+    assert expected  # a real, non-empty result for this query - the label's own count is meaningful
+
+
+def test_esoc_left_sidebar_search_honestly_reports_zero_real_matches(qapp):
+    registry = ModuleRegistry()
+    sidebar = ESOCLeftSidebar(registry=registry)
+
+    sidebar.search_input.setText("xyznonexistentquery123")
+
+    assert "0 real matches" in sidebar.search_results_label.text()
+
+
+def test_esoc_left_sidebar_search_results_hide_when_the_query_is_cleared(qapp):
+    registry = ModuleRegistry()
+    sidebar = ESOCLeftSidebar(registry=registry)
+    sidebar.search_input.setText("catalog")
+    assert not sidebar.search_results_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+    sidebar.search_input.setText("")
+
+    assert sidebar.search_results_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+
+def test_esoc_layout_passes_the_real_registry_through_to_the_search_bar(qapp):
+    """End-to-end wiring proof: ESOCWindow's own real ModuleRegistry
+    reaches ESOCLeftSidebar through ESOCLayout - not a second/
+    independent instance."""
+    window = ESOCWindow()
+    assert window.layout_manager.left_sidebar.registry is window.registry
 
 
 def test_esoc_right_sidebar_discloses_illustrative_content(qapp):

@@ -34,15 +34,37 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import _example_layout_disclaimer
 
 
 class ESOCLeftSidebar(QWidget):
-    """Left Sidebar: Universal Global Search Bar + System Explorer navigation tree."""
+    """Left Sidebar: Universal Global Search Bar + System Explorer navigation tree.
 
-    def __init__(self, on_select_callback: Callable[[str], None] | None = None) -> None:
+    NOTE (correction, 2026-09-04): the "🔍 Universal Search" placeholder
+    always promised real modules/AI results, but this class had no way
+    to reach `ModuleRegistry` at all - `ESOCLayout` (the only real
+    caller, `esoc_layout.py`) constructed it with zero arguments, so
+    `_on_search_text_changed()` could only ever filter this widget's
+    own static `self.categories` label tree. `ModuleRegistry.
+    global_search()`/`is_connected()` (fixed the same day this note was
+    written - see that module's own docstring) had, verified by a
+    repo-wide grep, ZERO real callers anywhere in the app. New optional
+    `registry` parameter closes that gap: when supplied, a real search
+    now also queries `registry.global_search()` and reports the real
+    match count/names beneath the search box - the tree's own static
+    filter is unchanged (still real, still useful for pure category
+    browsing), this is a real, additive second result, not a
+    replacement."""
+
+    def __init__(
+        self,
+        on_select_callback: Callable[[str], None] | None = None,
+        registry: ModuleRegistry | None = None,
+    ) -> None:
         super().__init__()
         self.on_select_callback = on_select_callback
+        self.registry = registry
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -57,6 +79,16 @@ class ESOCLeftSidebar(QWidget):
         self.search_input.textChanged.connect(self._on_search_text_changed)
         search_box.addWidget(self.search_input)
         layout.addLayout(search_box)
+
+        # Real ModuleRegistry.global_search() results (added 2026-09-04
+        # - see this class's own NOTE above) - hidden until a real,
+        # non-empty query has actually run, so it never shows a
+        # misleading "0 results" before the user has typed anything.
+        self.search_results_label = QLabel("")
+        self.search_results_label.setWordWrap(True)
+        self.search_results_label.setStyleSheet("color: #4FC3F7; font-size: 10px;")
+        self.search_results_label.setVisible(False)
+        layout.addWidget(self.search_results_label)
 
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
@@ -127,6 +159,7 @@ class ESOCLeftSidebar(QWidget):
     def _on_search_text_changed(self, text: str) -> None:
         if not text or len(text.strip()) == 0:
             self._populate_tree(self.categories)
+            self.search_results_label.setVisible(False)
             return
 
         query = text.lower().strip()
@@ -136,6 +169,27 @@ class ESOCLeftSidebar(QWidget):
             if matching_items or query in cat.lower():
                 filtered[cat] = matching_items if matching_items else items
         self._populate_tree(filtered)
+
+        self._update_real_search_results(text)
+
+    def _update_real_search_results(self, text: str) -> None:
+        """Real registry.global_search() results for this same query -
+        see this class's own NOTE (correction) for why this exists.
+        A caller with no registry (e.g. this widget used standalone,
+        as several tests do) simply gets no real-results line, never a
+        fabricated one."""
+        if self.registry is None:
+            self.search_results_label.setVisible(False)
+            return
+
+        results = self.registry.global_search(text)
+        if not results:
+            self.search_results_label.setText(f"🔍 0 real matches in ModuleRegistry for \"{text}\"")
+        else:
+            shown = ", ".join(r["name"] for r in results[:5])
+            more = f" (+{len(results) - 5} more)" if len(results) > 5 else ""
+            self.search_results_label.setText(f"🔍 {len(results)} real match(es): {shown}{more}")
+        self.search_results_label.setVisible(True)
 
     def _on_item_clicked(self, item: QTreeWidgetItem, column: int) -> None:
         text = item.text(0)

@@ -5229,3 +5229,60 @@ brancher la barre de recherche universelle sur `global_search()` reste
 un vrai chantier séparé, non entamé ici pour éviter tout risque de
 collision avec le travail très récent d'une session parallèle sur
 `esoc_statusbar.py` (largeur de fenêtre, voir historique git).
+
+## Mise à jour 2026-09-04 (suite) — la barre de recherche universelle d'ESOC branchée sur le vrai ModuleRegistry
+
+Suite explicite ("continue"), fermeture directe du "Ce qui reste
+réellement" ci-dessus. Investigation : `ESOCLeftSidebar` (barre
+latérale gauche d'ESOC, placeholder réel "🔍 Universal Search
+(Modules, Parameters, Maps, AI)...") avait un vrai handler
+`_on_search_text_changed()`, mais celui-ci ne filtrait que la propre
+copie statique de `self.categories` du widget — jamais
+`ModuleRegistry.global_search()`. Cause racine trouvée : `ESOCLayout`
+(le seul vrai appelant de `ESOCLeftSidebar`, dans `esoc_layout.py`)
+construisait ce widget sans aucun argument, alors qu'`ESOCWindow`
+possède bien un vrai `self.registry` — jamais transmis jusque-là.
+Confirmation supplémentaire : `self.categories` (sidebar) et
+`ModuleRegistry.build_system_tree()` (registre) se sont avérés être
+quasi-identiques (18 des 20 catégories de premier niveau
+byte-pour-byte identiques) — deux copies indépendantes d'une même
+donnée qui a dérivé légèrement, plutôt qu'une vraie divergence
+intentionnelle.
+
+**Construit** : `registry: ModuleRegistry | None = None` ajouté à
+`ESOCLeftSidebar.__init__()` et propagé via `ESOCLayout.__init__()`
+jusqu'à `ESOCWindow`'s own `self.registry` (un seul vrai transmis, pas
+une seconde instance). Le filtre statique de l'arbre reste inchangé
+(toujours utile pour la navigation par catégorie) ; une nouvelle
+étiquette réelle sous la barre de recherche affiche maintenant les
+vrais résultats de `registry.global_search(text)` — vrai décompte,
+vrais noms de modules/paramètres, honnêtement masquée quand aucune
+requête n'est en cours ou quand aucun `registry` n'est fourni (ex. le
+widget utilisé seul, comme le fait déjà `test_esoc_widgets`) — jamais
+une ligne de résultats fabriquée sans vrai registre derrière.
+
+**Validation réelle** : recherche "model" testée à la main — la
+nouvelle ligne réelle affiche `atmospheric_model, ocean_model,
+wave_model, soil_model, vegetation_model (+2 more)` (7 vrais modules
+réellement connectés, y compris `catalog`/`forecast`/etc. fixés dans
+la fermeture précédente), tandis que l'arbre statique montre ses
+propres correspondances de labels ("PINN Models", "Model Calibration")
+— les deux résultats coexistent, complémentaires, jamais l'un ne
+remplace l'autre. Capture d'écran envoyée. 5 nouveaux tests dans
+`tests/test_esoc.py` (pas de résultat fabriqué sans registre, vrai
+décompte avec registre, 0 résultat honnêtement rapporté pour une
+requête absurde, masquage au clear, et une preuve de bout en bout que
+`ESOCWindow` transmet bien SON PROPRE registre jusqu'au widget plutôt
+qu'une instance séparée). Suite complète **4013 → 4018**, `ruff`/`mypy`
+propres.
+
+**Ce qui reste réellement** : `get_system_status_summary()`/
+`is_connected()` n'ont toujours aucun vrai consommateur GUI (un
+panneau de statut ESOC affichant "21/25 sous-systèmes connectés"
+resterait un vrai chantier séparé). L'arbre statique de la sidebar
+(`self.categories`) et celui du registre (`build_system_tree()`)
+restent deux copies indépendantes légèrement divergentes (2 catégories
+sur 20 différent réellement, HPC et Forecast) — non unifiées ici par
+prudence (le contenu HPC de la sidebar semble décrire des panneaux UI
+réels distincts des concepts infra du registre, une vraie nuance à
+vérifier avant de fusionner plutôt qu'à écraser).

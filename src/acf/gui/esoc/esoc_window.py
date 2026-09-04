@@ -89,7 +89,7 @@ class ESOCWindow(QMainWindow):
         self.controller = ESOCController(self.registry, self.dispatcher, self.workspace_manager, self.session_manager)
 
         # 3. Layout & UI Components
-        self.layout_manager = ESOCLayout(self, self.panel_manager)
+        self.layout_manager = ESOCLayout(self, self.panel_manager, registry=self.registry)
         self.toolbar = ESOCToolbar(
             on_action_callback=self._handle_toolbar_action,
             on_mode_callback=self._handle_mode_changed,

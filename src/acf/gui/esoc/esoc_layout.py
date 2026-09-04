@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from acf.gui.esoc.esoc_sidebar import ESOCLeftSidebar, ESOCRightSidebar
+from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.view_manager import ViewManager
 
@@ -17,7 +18,12 @@ from acf.gui.esoc.view_manager import ViewManager
 class ESOCLayout:
     """Manages the docking layout and panel positioning within ESOC QMainWindow."""
 
-    def __init__(self, main_window: QMainWindow, panel_manager: PanelManager) -> None:
+    def __init__(
+        self,
+        main_window: QMainWindow,
+        panel_manager: PanelManager,
+        registry: ModuleRegistry | None = None,
+    ) -> None:
         self.main_window = main_window
         self.panel_manager = panel_manager
 
@@ -25,8 +31,10 @@ class ESOCLayout:
         self.view_manager = ViewManager()
         self.main_window.setCentralWidget(self.view_manager)
 
-        # Left Sidebar Dock
-        self.left_sidebar = ESOCLeftSidebar()
+        # Left Sidebar Dock - registry (added 2026-09-04) gives its
+        # own real "🔍 Universal Search" a real ModuleRegistry.
+        # global_search() backend - see ESOCLeftSidebar's own NOTE.
+        self.left_sidebar = ESOCLeftSidebar(registry=registry)
         self.dock_left = QDockWidget("System Explorer", self.main_window)
         self.dock_left.setWidget(self.left_sidebar)
         self.main_window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_left)
