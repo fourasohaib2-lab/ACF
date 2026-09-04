@@ -102,6 +102,21 @@ label, never a silent fallback to demo/solver data:
   clearly flagged as not physically meaningful for that point, rather
   than presented as if it were.
 
+**Update 2026-09-04 (same day, "continue")**: the dialog also has an
+on-demand **"📈 Load Real 48h Trend (Surface)"** button — a genuine
+capability Real Physics mode structurally cannot offer, since a single
+`CoupledEarthSolver` run is one snapshot, not an archived multi-lead-
+time forecast. On click, `_RealArchiveTrendWorker` decodes any of
+RESTOR's 17 real lead times not already cached (off the GUI thread —
+all 17 take ~7s the first time, measured while building this) and
+samples the real Surface-level AWCI score at the point of interest for
+each, rendered as a real trend line (reusing `AWCITimeline`, previously
+only driven by the REGIONAL TREND panel's own synthetic data — this is
+its first real caller). A lead time whose real column doesn't bracket
+the point at Surface level is honestly omitted from the trend, not
+zero-filled; the status label reports `N/17 real lead times` so a
+partial trend is never mistaken for a complete one.
+
 ## Real scope limits (disclosed, not hidden)
 
 - **Single, fixed, historical run** — 2026-08-31 00Z. Not a live feed,
@@ -137,8 +152,15 @@ label, never a silent fallback to demo/solver data:
   `specific_humidity_from_relative_humidity()` (round-trips with the
   existing forward chain, bounded, monotonic in RH).
 - `tests/gui/test_awci_dashboard_reference_parity.py` —
-  `TestRealArchiveWithTheRealFile` (gated, now including a real
+  `TestRealArchiveWithTheRealFile` (gated, including a real
   lead-time-switch test proving 2 different lead times cache 2
-  genuinely different real archives) + 3 ungated tests (button wiring,
-  honest-failure path via monkeypatch, default lead-time selection —
-  these run on every machine regardless of RESTOR's presence).
+  genuinely different real archives, and a real end-to-end
+  `qtbot.waitUntil()` test that genuinely drives
+  `_RealArchiveTrendWorker` through `QThreadPool` - same discipline as
+  `test_acf_general_dashboard.py`'s own real-worker test, pre-caching
+  16 of the 17 real lead times so it only pays for one real ~0.4s FA
+  decode) + 8 ungated tests (button wiring, honest-failure path via
+  monkeypatch, default lead-time selection, trend button's immediate
+  disable-and-loading-status, trend ready/empty-trend/failed handlers
+  called directly with constructed results - these all run on every
+  machine regardless of RESTOR's presence).

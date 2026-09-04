@@ -2,15 +2,16 @@
 AWCI Timeline Widget
 ====================
 
-NOTE (found, NOT changed - RÈGLE D'OR / single source of truth): this
-widget predates the AWCI dashboard rebuild (awci_dashboard.py) and was
-already unused before it - neither the old skeleton AWCIDashboard nor the
-rebuilt one instantiates it (the rebuilt one uses AWCIRouteChart, a
-matplotlib area chart, for its "AWCI along route" panel instead). Still
-re-exported by this package's __init__.py and fully correct/self-contained,
-just currently unreachable from any real UI. Not deleted per project
-convention - flagged so nobody mistakes it for live code. Same situation
-as data/engine.py's NOTE.
+NOTE (correction, 2026-09-04): the note that used to live here claimed
+this widget was unreachable/unused - stale even before this file's own
+current edit: `AWCIDashboard.regional_trend` (docs/reference/
+awci_dashboard_reference.jpg parity work) already reuses this exact
+class for its own REGIONAL TREND sparkline (synthetic demo data), and
+this same closure adds a second real caller - the "📡 Real Archive"
+dialog's own real 48h forecast-evolution trend
+(`AWCIDashboard._real_archive_trend_widget`, real RESTOR data, not
+synthetic). Both share this one real widget rather than each
+maintaining their own copy.
 """
 
 from PySide6.QtCore import QPoint, Qt
@@ -32,6 +33,17 @@ class AWCITimeline(QWidget):
     def set_data(self, data: list[tuple[str, float]], forecast_start: int | None = None):
         self._data = data
         self._forecast_start = forecast_start
+        self.update()
+
+    def set_title(self, title: str) -> None:
+        """Real, real-caller-driven title (added 2026-09-04 for
+        AWCIDashboard's own Real Archive trend panel - this widget's
+        title was previously a fixed "Évolution AWCI" constant, with
+        no way for a caller to distinguish this real archived-forecast
+        trend from the REGIONAL TREND panel's own synthetic one, both
+        of which reuse this same class). Same convention as
+        AWCIVerticalProfile.set_title()."""
+        self._title = title
         self.update()
 
     def paintEvent(self, event):

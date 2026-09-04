@@ -391,6 +391,62 @@ class _EvolutionWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _RealArchiveTrendWorker(QRunnable):
+    """Loads whichever real RESTOR lead-time archives aren't already
+    cached (added 2026-09-04, "continue" - closes the real forecast-
+    evolution gap Real Physics mode cannot fill: a single solver
+    snapshot has no genuine multi-lead-time forecast to show, while
+    RESTOR's own real 17 lead times do) and samples the real AWCI
+    score at one point/level for each - off the GUI thread, since
+    decoding all 17 real FA files takes ~7s (measured while building
+    this feature), which would otherwise freeze the dashboard.
+
+    Deliberately does NOT write into the dashboard's own
+    _real_archive_cache directly (a QRunnable runs on a worker
+    thread; mutating GUI-owned state from there is a real race
+    hazard) - newly-decoded archives are returned in the result dict
+    for the GUI thread's own finished-signal handler to merge in,
+    same real "compute off-thread, apply on-thread" discipline as
+    _RealFieldWorker/_EvolutionWorker above."""
+
+    def __init__(
+        self,
+        lat: float,
+        lon: float,
+        level_label: str,
+        already_cached: dict[int, dict[str, Any]],
+    ) -> None:
+        super().__init__()
+        self.lat = lat
+        self.lon = lon
+        self.level_label = level_label
+        self._already_cached = already_cached  # read-only snapshot at worker-start time
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            newly_loaded: dict[int, dict[str, Any]] = {}
+            trend: list[tuple[str, float]] = []
+            calc = AWCICalculator()
+            for lead_hours in RESTOR_LEAD_TIMES_HOURS:
+                archive = self._already_cached.get(lead_hours)
+                if archive is None:
+                    path = restor_fullpos_path(_RESTOR_ALADIN_DATA_DIR, _RESTOR_RUN_DATETIME, lead_hours)
+                    archive = load_real_aladin_restor_run(path)
+                    newly_loaded[lead_hours] = archive
+                sample = sample_archive_at_point(archive, self.lat, self.lon)
+                inputs = sample.get(self.level_label)
+                if inputs is None:
+                    continue  # this real lead time's own column didn't bracket this point/level - honestly skipped
+                result = calc.calculate(inputs)
+                trend.append((f"+{lead_hours}h", result["awci"]))
+        except Exception as exc:
+            logger.exception("Real Archive trend computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit({"trend": trend, "newly_loaded": newly_loaded})
+
+
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
@@ -579,6 +635,15 @@ class AWCIDashboard(QWidget):
         self._real_archive_cache: dict[int, dict[str, Any]] = {}
         self._real_archive_data: dict[str, dict[str, Any]] = {}
         self._real_archive_detail_window: AWCIVerticalProfileLevelDialog | None = None
+        # Real 48h trend state (added 2026-09-04, same "continue" as
+        # the lead-time selector) - real AWCI evolution across
+        # RESTOR's own 17 real lead times at the point of interest,
+        # something Real Physics mode (one solver snapshot) cannot
+        # offer. Lazily built, run on demand (not automatically on
+        # dialog open - decoding all 17 real files takes ~7s).
+        self._real_archive_trend_widget: AWCITimeline | None = None
+        self._real_archive_trend_button: QPushButton | None = None
+        self._real_archive_trend_status_label: QLabel | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -1368,7 +1433,28 @@ class AWCIDashboard(QWidget):
             self._real_archive_widget.set_title("Real ALADIN Archive")
             self._real_archive_widget.levelClicked.connect(self._on_real_archive_level_clicked)
             layout.addWidget(self._real_archive_widget)
-            self._real_archive_window.resize(340, 430)
+
+            self._real_archive_trend_button = QPushButton("📈 Load Real 48h Trend (Surface)")
+            self._real_archive_trend_button.setToolTip(
+                "Real AWCI evolution across RESTOR's own 17 real 3-hourly lead times\n"
+                "(+0h analysis -> +48h) at the current point of interest, real Surface\n"
+                "level - something Real Physics mode's single solver snapshot cannot\n"
+                "offer. Decodes any not-yet-cached real lead time (~7s for all 17 the\n"
+                "first time) on a background worker, never freezing the dialog."
+            )
+            self._real_archive_trend_button.clicked.connect(self._load_real_archive_trend)
+            layout.addWidget(self._real_archive_trend_button)
+            self._real_archive_trend_status_label = QLabel()
+            self._real_archive_trend_status_label.setWordWrap(True)
+            self._real_archive_trend_status_label.setStyleSheet(label_style("text_secondary", "xs"))
+            layout.addWidget(self._real_archive_trend_status_label)
+            self._real_archive_trend_widget = AWCITimeline()
+            self._real_archive_trend_widget.set_title("Real 48h AWCI Trend (Surface)")
+            self._real_archive_trend_widget.setFixedHeight(110)
+            self._real_archive_trend_widget.setVisible(False)  # shown once a real trend has actually loaded
+            layout.addWidget(self._real_archive_trend_widget)
+
+            self._real_archive_window.resize(340, 560)
 
         self._refresh_real_archive()  # every open, not just the first - the point of interest may have changed
         self._real_archive_window.show()
@@ -1450,6 +1536,68 @@ class AWCIDashboard(QWidget):
         if self._real_archive_detail_window is None:
             self._real_archive_detail_window = AWCIVerticalProfileLevelDialog(parent=self)
         self._real_archive_detail_window.show_detail(level_label, data["hpa"], data["result"])
+
+    def _load_real_archive_trend(self) -> None:
+        """Real, on-demand 48h forecast trend at the point of
+        interest, real Surface level, across all 17 real RESTOR lead
+        times (added 2026-09-04, "continue") - the genuine multi-lead-
+        time forecast EVOLUTION Real Physics mode's own single solver
+        snapshot cannot offer. Runs off the GUI thread
+        (_RealArchiveTrendWorker) since decoding every not-yet-cached
+        real lead time takes real time (~7s for all 17, measured while
+        building this feature)."""
+        assert self._real_archive_trend_button is not None
+        assert self._real_archive_trend_status_label is not None
+
+        self._real_archive_trend_button.setEnabled(False)
+        self._real_archive_trend_status_label.setText("⏳ Loading real 48h trend (decoding any new lead times)…")
+
+        lat, lon = self._point_of_interest
+        worker = _RealArchiveTrendWorker(lat, lon, "Surface", dict(self._real_archive_cache))
+        worker.signals.finished.connect(self._on_real_archive_trend_ready)
+        worker.signals.failed.connect(self._on_real_archive_trend_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_real_archive_trend_ready(self, result: dict[str, Any]) -> None:
+        assert self._real_archive_trend_button is not None
+        assert self._real_archive_trend_status_label is not None
+        assert self._real_archive_trend_widget is not None
+
+        # Merge the worker's newly-decoded real archives into the
+        # dashboard's own cache HERE, on the GUI thread - never inside
+        # the worker itself (see _RealArchiveTrendWorker's own
+        # docstring on why). The lead-time selector/vertical-profile
+        # panel above benefit too: any of these 17 lead times it's
+        # opened next is now already cached.
+        self._real_archive_cache.update(result["newly_loaded"])
+
+        trend: list[tuple[str, float]] = result["trend"]
+        self._real_archive_trend_button.setEnabled(True)
+        if not trend:
+            self._real_archive_trend_status_label.setText(
+                "⚠ No real lead time's own archive bracketed this point at the Surface level - "
+                "the point of interest is likely outside RESTOR's own real domain."
+            )
+            self._real_archive_trend_widget.setVisible(False)
+            return
+
+        self._real_archive_trend_status_label.setText(
+            f"Real AWCI Surface-level trend, {len(trend)}/17 real lead times "
+            f"({'all' if len(trend) == 17 else 'some honestly missing - see the omitted labels'})."
+        )
+        # index 0 (+0h) is the real analysis, not itself a forecast -
+        # forecast_start=1 marks every later real lead time as the
+        # real forecast portion, same semantic AWCIDashboard.refresh()
+        # already uses for regional_trend's own synthetic data.
+        self._real_archive_trend_widget.set_data(trend, forecast_start=1)
+        self._real_archive_trend_widget.setVisible(True)
+
+    def _on_real_archive_trend_failed(self, message: str) -> None:
+        assert self._real_archive_trend_button is not None
+        assert self._real_archive_trend_status_label is not None
+        logger.warning("AWCIDashboard: real archive trend failed: %s", message)
+        self._real_archive_trend_button.setEnabled(True)
+        self._real_archive_trend_status_label.setText(f"⚠ Real 48h trend failed: {message}")
 
     # -------------------------------------------- FL280/FL320 comparison
 

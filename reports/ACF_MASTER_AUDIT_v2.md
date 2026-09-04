@@ -5088,3 +5088,69 @@ câblées ; il ne reste plus de chantier RESTOR borné et déjà identifié
 sur ce point. Les limites disclosed précédemment restent inchangées
 (un seul domaine régional, pas de vraies données AROME/ARPEGE, pas de
 CAPE/CIN/phase de précipitation par niveau).
+
+## Mise à jour 2026-09-04 (suite) — vraie tendance 48h RESTOR : ce que Real Physics ne peut pas offrir
+
+Suite explicite ("continue"). Le point d'entrée facile de l'audit AWCI
+initial était épuisé (les 8 items restants de `future-improvements.md`
+sont des choix architecturaux délibérés, pas de vrais gaps
+constructibles) et une recherche large dans le reste d'ACF
+(fabrication/`NotImplementedError`) n'a trouvé que des limitations
+déjà honnêtement disclosed (4D-Var, EnKF, fusion radar-satellite — de
+vrais chantiers de science numérique majeurs, pas de petites
+fermetures). Question posée à l'utilisateur sur la direction ; réponse
+"suit ton jugement" — choix motivé : étendre le mode Real Archive vers
+sa propre vraie force plutôt que de forcer une parité complète avec
+Real Physics (carte/radar/risk summary en grille complète 350×350
+demanderaient une vectorisation d'`AWCICalculator` non triviale et
+risquée — mesuré : ~7s pour décoder les 17 fichiers réels en boucle
+point-par-point sur toute la grille aurait été bien pire).
+
+**Construit** : `_RealArchiveTrendWorker` — un vrai worker `QThreadPool`
+(même discipline que `_RealFieldWorker`/`_EvolutionWorker`) qui décode
+les échéances réelles pas encore en cache et échantillonne le vrai
+score AWCI niveau Surface au point d'intérêt pour chacune des 17
+vraies échéances RESTOR. Un nouveau bouton "📈 Load Real 48h Trend
+(Surface)" dans le dialogue "Real Archive" déclenche ce calcul hors
+thread GUI (mesuré : ~7s pour les 17 fichiers la première fois),
+jamais bloquant. Résultat rendu via `AWCITimeline` — widget déjà
+existant mais dont la propre docstring affirmait faussement être
+"inutilisé" alors que `regional_trend` l'utilisait déjà (note
+corrigée au passage) ; ce nouveau bouton en devient le premier VRAI
+appelant côté données archivées réelles (`regional_trend` reste
+lui-même alimenté par le motif synthétique démo). `AWCITimeline` gagne
+un vrai `set_title()` (même convention que `AWCIVerticalProfile`) pour
+distinguer les deux usages.
+
+**Discipline honnête maintenue** : le worker ne mute jamais l'état du
+dashboard depuis le thread d'arrière-plan (nouvelles archives
+retournées via le signal, fusionnées dans `_real_archive_cache` par le
+thread GUI lui-même — même principe que `_RealFieldWorker`) ; une
+échéance dont la vraie colonne n'encadre pas le point au niveau
+Surface est honnêtement omise de la tendance (jamais mise à 0), avec
+un statut `N/17 real lead times` explicite ; une tendance vide reste
+honnêtement masquée plutôt que d'afficher un graphique vide comme s'il
+était réel.
+
+**Validation réelle** : test de bout en bout réel utilisant
+`qtbot.waitUntil()` pour driver le vrai worker `QThreadPool` (même
+discipline que le test réel de `test_acf_general_dashboard.py`), 16
+des 17 échéances pré-cachées pour ne payer qu'un seul vrai décodage
+FA (~0.4s) plutôt que les 17 (~7s) — preuve directe que le worker
+fusionne bien sa propre archive nouvellement décodée dans le cache du
+thread GUI. 5 tests supplémentaires non conditionnés (widget masqué
+par défaut, état de chargement synchrone du bouton, handlers ready/
+vide/échec appelés directement avec un résultat construit). Suite
+complète **4001 → 4007**, `ruff`/`mypy` propres. Capture d'écran envoyée : dialogue complet avec
+les 17 vraies valeurs de tendance affichées (17.6→19.2→17.0 sur les
+48h réelles).
+
+**Ce qui reste réellement** : la tendance reste fixée au niveau
+Surface (choix délibéré pour un seul graphique lisible, pas une
+limitation technique — `sample_archive_at_point()` retourne déjà les 8
+niveaux). Real Physics mode reste plus fort en couverture spatiale
+(carte/radar/risk summary en grille complète) ; Real Archive mode
+reste plus fort en évolution temporelle réelle (17 échéances
+archivées, pas un seul instantané de solveur) — les deux modes ont
+maintenant chacun leur propre vraie valeur ajoutée distincte plutôt
+que l'un dupliquant l'autre en moins bien.

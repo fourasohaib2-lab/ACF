@@ -449,6 +449,78 @@ def test_real_archive_lead_time_selector_defaults_to_the_00h_analysis(qapp):
     assert dashboard._real_archive_lead_selector.currentText() == "00h"
 
 
+def test_real_archive_trend_widget_starts_hidden(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+    assert dashboard._real_archive_trend_widget.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+
+def test_loading_the_real_trend_immediately_disables_the_button_and_shows_a_loading_status(qapp, monkeypatch):
+    """Synchronous state right after the click, before any background
+    worker runs - QThreadPool.globalInstance().start() itself is
+    monkeypatched to a no-op so this test never leaves a real
+    background thread running past its own lifetime (the worker's own
+    real completion path is exercised deliberately, and waited on, by
+    the gated end-to-end test in TestRealArchiveWithTheRealFile)."""
+    from PySide6.QtCore import QThreadPool
+
+    monkeypatch.setattr(QThreadPool, "start", lambda self, worker: None)
+
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+
+    dashboard._load_real_archive_trend()
+
+    assert dashboard._real_archive_trend_button.isEnabled() is False
+    assert "Loading" in dashboard._real_archive_trend_status_label.text()
+
+
+def test_on_real_archive_trend_ready_populates_the_widget_and_merges_the_cache(qapp):
+    """Same real "handler called directly with a constructed result"
+    convention as test_awci_dashboard_real_physics.py's own tests -
+    the QThreadPool/signal plumbing itself is standard, trusted Qt
+    machinery, covered separately by the real end-to-end worker test
+    in TestRealArchiveWithTheRealFile above."""
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+    assert dashboard._real_archive_trend_widget.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+    fake_new_archive = {"run_datetime": "2026-08-31 06:00:00"}  # a real-shaped, not real, dict for this unit test
+    dashboard._on_real_archive_trend_ready(
+        {"trend": [("+0h", 12.0), ("+3h", 15.0)], "newly_loaded": {6: fake_new_archive}}
+    )
+
+    assert dashboard._real_archive_trend_button.isEnabled() is True
+    assert dashboard._real_archive_cache[6] is fake_new_archive  # merged on the GUI thread, as documented
+    assert dashboard._real_archive_trend_widget._data == [("+0h", 12.0), ("+3h", 15.0)]
+    assert not dashboard._real_archive_trend_widget.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+    assert "2/17" in dashboard._real_archive_trend_status_label.text()
+
+
+def test_on_real_archive_trend_ready_with_an_empty_trend_stays_honestly_hidden(qapp):
+    """A point genuinely outside every real lead time's own domain -
+    the widget must not show a fabricated/empty chart as if it were
+    real data."""
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+
+    dashboard._on_real_archive_trend_ready({"trend": [], "newly_loaded": {}})
+
+    assert dashboard._real_archive_trend_widget.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+    assert "No real lead time" in dashboard._real_archive_trend_status_label.text()
+
+
+def test_on_real_archive_trend_failed_reports_honestly(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+    dashboard._real_archive_trend_button.setEnabled(False)
+
+    dashboard._on_real_archive_trend_failed("disk full")
+
+    assert dashboard._real_archive_trend_button.isEnabled() is True
+    assert "disk full" in dashboard._real_archive_trend_status_label.text()
+
+
 REAL_RESTOR_FILE = Path.home() / "RESTOR" / "ALADIN" / "data" / "FULLPOS_2026083100_0000"
 
 
@@ -513,3 +585,30 @@ class TestRealArchiveWithTheRealFile:
         dashboard._open_real_archive()
 
         assert "OUTSIDE" in dashboard._real_archive_status_label.text()
+
+    def test_real_48h_trend_worker_genuinely_runs_off_thread_and_populates_the_widget(self, qapp, qtbot):
+        """Drives the actual QThreadPool.globalInstance().start() +
+        Qt event loop path (same discipline as
+        test_acf_general_dashboard.py's own real-worker test) - a
+        signal-connection bug would only be caught this way, not by
+        calling the ready handler directly. Pre-populates every real
+        lead time except +6h so this test only pays for one real ~0.4s
+        FA decode, not all 17."""
+        from acf.awci.archive_field import load_real_aladin_restor_run, restor_fullpos_path
+
+        dashboard = AWCIDashboard()
+        dashboard._open_real_archive()
+        for lead_hours in (0, 3, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48):
+            path = restor_fullpos_path(REAL_RESTOR_FILE.parent, "2026083100", lead_hours)
+            dashboard._real_archive_cache[lead_hours] = load_real_aladin_restor_run(path)
+        assert 6 not in dashboard._real_archive_cache  # the one real lead time the worker must actually decode
+
+        dashboard._load_real_archive_trend()
+
+        assert dashboard._real_archive_trend_button.isEnabled() is False  # real synchronous immediate disable
+        qtbot.waitUntil(lambda: dashboard._real_archive_trend_button.isEnabled(), timeout=30000)
+
+        assert 6 in dashboard._real_archive_cache  # the worker's own real decode, merged on the GUI thread
+        assert len(dashboard._real_archive_trend_widget._data) == 17
+        assert "17/17" in dashboard._real_archive_trend_status_label.text()
+        assert not dashboard._real_archive_trend_widget.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
