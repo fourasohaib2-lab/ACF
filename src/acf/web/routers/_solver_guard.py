@@ -9,6 +9,7 @@ not N copies of the same check.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import numpy as np
@@ -29,6 +30,13 @@ MAX_STEPS = 50
 #: run is proportionally more expensive per level, so this stays a real
 #: multiple of MAX_FIELD_POINTS rather than reusing it directly.
 MAX_VOLUME_POINTS = 4 * MAX_FIELD_POINTS
+#: A real MetPy parcel ascent (`acf.awci.convective_energy.
+#: compute_real_cape_cin_at_point()`, called once per real point of
+#: `/api/v1/workstation/convection`'s own coarser, strided grid) costs
+#: ~5ms/point - this real per-point cost, not MAX_VOLUME_POINTS above
+#: (which bounds the pre-stride solver run only), is what must stay
+#: responsive over HTTP.
+MAX_CONVECTION_POINTS_AFTER_STRIDE = 400
 
 
 def run_complexity_field(
@@ -81,6 +89,26 @@ def run_complexity_volume(
     if steps < 1 or steps > MAX_STEPS:
         raise HTTPException(400, f"steps must be in [1, {MAX_STEPS}], got {steps}")
     return compute_real_complexity_volume(model=model, steps=steps, n_lat=n_lat, n_lon=n_lon, n_levels=n_levels, seed=seed)
+
+
+def validate_convection_stride(n_lat: int, n_lon: int, stride: int) -> None:
+    """Validate the real post-stride point count `/api/v1/workstation/
+    convection` will actually run a real MetPy parcel ascent over -
+    raises HTTPException(400) rather than letting an oversized request
+    (a small `stride` on a large grid) hang the server. Separate from
+    `run_complexity_volume()`'s own pre-stride MAX_VOLUME_POINTS guard,
+    which bounds the underlying solver run, not this endpoint's own,
+    much more expensive, real per-point parcel-ascent cost."""
+    if stride < 1:
+        raise HTTPException(400, f"stride must be >= 1, got {stride}")
+    n_points_after_stride = math.ceil(n_lat / stride) * math.ceil(n_lon / stride)
+    if n_points_after_stride > MAX_CONVECTION_POINTS_AFTER_STRIDE:
+        raise HTTPException(
+            400,
+            f"ceil(n_lat/stride)*ceil(n_lon/stride)={n_points_after_stride} exceeds this API's real max of "
+            f"{MAX_CONVECTION_POINTS_AFTER_STRIDE} post-stride points per request (protects the server from "
+            f"an unbounded real MetPy parcel-ascent cost over HTTP - increase stride or shrink n_lat/n_lon)",
+        )
 
 
 def field_to_json_safe_list(arr: np.ndarray) -> list[list[float | None]]:

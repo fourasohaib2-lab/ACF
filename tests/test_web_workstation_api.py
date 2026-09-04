@@ -115,3 +115,52 @@ def test_wind_shear_runs_a_real_small_solver_volume(client):
 def test_wind_shear_rejects_an_unknown_model(client):
     res = client.get("/api/v1/workstation/wind_shear", params={"model": "GFS", "n_lat": 2, "n_lon": 2, "n_levels": 2})
     assert res.status_code == 400
+
+
+# --------------------------------------------------------- /convection
+
+
+def test_convection_runs_a_real_small_solver_volume(client):
+    res = client.get(
+        "/api/v1/workstation/convection",
+        params={"model": "ALADIN", "steps": 2, "n_lat": 6, "n_lon": 6, "n_levels": 8, "stride": 2},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["model"] == "ALADIN"
+    assert body["stride"] == 2
+    assert len(body["lats"]) == 3  # ceil(6/2)
+    assert len(body["lons"]) == 3
+    for key in ("cape_j_kg", "cin_j_kg", "lcl_m", "bulk_shear_m_s", "srh_m2_s2", "ehi", "scp", "stp"):
+        assert len(body[key]) == 3 and len(body[key][0]) == 3
+    assert body["is_real_data"] is True
+    # Real physical non-negativity, same real convention as every other test/panel.
+    assert all(v is None or v >= 0.0 for row in body["cape_j_kg"] for v in row)
+    assert all(v is None or v >= 0.0 for row in body["cin_j_kg"] for v in row)
+
+
+def test_convection_rejects_an_unknown_model(client):
+    res = client.get(
+        "/api/v1/workstation/convection", params={"model": "GFS", "n_lat": 2, "n_lon": 2, "n_levels": 2}
+    )
+    assert res.status_code == 400
+
+
+def test_convection_rejects_an_invalid_stride(client):
+    res = client.get(
+        "/api/v1/workstation/convection", params={"n_lat": 4, "n_lon": 4, "n_levels": 2, "stride": 0}
+    )
+    assert res.status_code == 400
+    assert "stride" in res.json()["detail"]
+
+
+def test_convection_rejects_an_oversized_post_stride_grid(client):
+    """A small stride on a large grid must be rejected - the real
+    per-point MetPy parcel-ascent cost, not the pre-stride solver-size
+    guard, is what this endpoint additionally protects."""
+    res = client.get(
+        "/api/v1/workstation/convection",
+        params={"n_lat": 100, "n_lon": 100, "n_levels": 1, "stride": 1},
+    )
+    assert res.status_code == 400
+    assert "exceeds" in res.json()["detail"]

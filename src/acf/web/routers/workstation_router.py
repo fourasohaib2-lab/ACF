@@ -22,11 +22,17 @@ from typing import Any
 from fastapi import APIRouter
 
 from acf.awci.workstation_fields import (
+    CONVECTION_GRID_STRIDE,
+    compute_real_convection_indices_field,
     compute_real_theta_e_and_rh_fields,
     compute_real_vorticity_divergence,
     compute_real_wind_shear_field,
 )
-from acf.web.routers._solver_guard import field_to_json_safe_list, run_complexity_volume
+from acf.web.routers._solver_guard import (
+    field_to_json_safe_list,
+    run_complexity_volume,
+    validate_convection_stride,
+)
 
 router = APIRouter(prefix="/workstation", tags=["workstation"])
 
@@ -139,5 +145,63 @@ async def wind_shear(
         "lons": volume["lons"].tolist(),
         "wind_shear_m_s": field_to_json_safe_list(shear_field),
         "status": "REAL_WIND_SHEAR_FROM_ACF_SOLVER",
+        "is_real_data": True,
+    }
+
+
+@router.get("/convection")
+async def convection(
+    model: str = "ARPEGE",
+    steps: int = 4,
+    n_lat: int = 8,
+    n_lon: int = 8,
+    n_levels: int = 8,
+    seed: int = 0,
+    stride: int = CONVECTION_GRID_STRIDE,
+) -> dict[str, Any]:
+    """
+    Real severe-convection composite indices - CAPE, CIN, LCL height,
+    bulk wind shear, storm-relative helicity, EHI, SCP, STP - on a
+    real, coarser subset of the requested grid (every `stride`-th real
+    row/column). Genuinely runs `CoupledEarthSolver` once (see
+    `theta_e()`'s own docstring for the shared request-size guard),
+    then calls `acf.awci.workstation_fields.
+    compute_real_convection_indices_field()` (same real pipeline the
+    Convection Lab's own "🔄 Compute Convective Indices Field" button
+    uses - see that function's own docstring for the full disclosure
+    of every real, cited formula composed and the honest parcel/layer
+    simplifications used). No `level` parameter - these are all real
+    full-column diagnostics, same convention as `wind_shear()` above.
+    `stride` additionally guards this endpoint's own real per-point
+    MetPy parcel-ascent cost (~5ms/point - see
+    `validate_convection_stride()`'s own docstring), separate from
+    `run_complexity_volume()`'s pre-stride solver-size guard above.
+    """
+    validate_convection_stride(n_lat, n_lon, stride)
+    volume = run_complexity_volume(model=model, steps=steps, n_lat=n_lat, n_lon=n_lon, n_levels=n_levels, seed=seed)
+    result = compute_real_convection_indices_field(
+        volume["temperature_volume"],
+        volume["specific_humidity_volume"],
+        volume["pressure_volume_hpa"],
+        volume["u_volume"],
+        volume["v_volume"],
+        volume["lats"],
+        volume["lons"],
+        stride=stride,
+    )
+    return {
+        "model": volume["model"],
+        "stride": stride,
+        "lats": result["lats"].tolist(),
+        "lons": result["lons"].tolist(),
+        "cape_j_kg": field_to_json_safe_list(result["cape_j_kg"]),
+        "cin_j_kg": field_to_json_safe_list(result["cin_j_kg"]),
+        "lcl_m": field_to_json_safe_list(result["lcl_m"]),
+        "bulk_shear_m_s": field_to_json_safe_list(result["bulk_shear_m_s"]),
+        "srh_m2_s2": field_to_json_safe_list(result["srh_m2_s2"]),
+        "ehi": field_to_json_safe_list(result["ehi"]),
+        "scp": field_to_json_safe_list(result["scp"]),
+        "stp": field_to_json_safe_list(result["stp"]),
+        "status": "REAL_CONVECTION_INDICES_FROM_ACF_SOLVER",
         "is_real_data": True,
     }

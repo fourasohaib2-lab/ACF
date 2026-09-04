@@ -6918,3 +6918,36 @@ envoyées (cisaillement, SCP). `task_17a412ee` retirée (résolue).
 **Ce qui reste réellement** : seul Terrain Lab reste bloqué (aucune
 donnée d'élévation réelle disponible). Aucune tâche séparée en attente
 ne reste ouverte.
+
+## Mise à jour 2026-09-04 (suite) — Phase 21 : `/api/v1/workstation/convection`, l'extension API fermée pour le Convection Lab
+
+**Pourquoi** : suite explicite ("continue selon ton jugement"). Avec
+les deux tâches séparées désormais résolues et Terrain Lab seul
+génuinement bloqué, le gap réel restant le plus concret était
+l'extension `/api/v1/*` que la Phase 13 avait ouverte pour les
+Labs alors existants (`/theta_e`, `/dynamics`, `/wind_shear`) mais qui
+n'avait jamais été étendue au Convection Lab, construit après coup
+(Phase 18).
+
+**Construit** : nouvel endpoint réel `GET /api/v1/workstation/
+convection` (`workstation_router.py`) - appelle exactement le même
+pipeline réel `compute_real_convection_indices_field()` que le bouton
+"🔄 Compute Convective Indices Field" du Convection Lab, aucune
+seconde implémentation. Nouveau garde-fou dédié
+`validate_convection_stride()` (`_solver_guard.py`,
+`MAX_CONVECTION_POINTS_AFTER_STRIDE=400`) - séparé du garde-fou déjà
+existant `run_complexity_volume()` (qui borne la taille du run réel du
+solveur AVANT la foulée), car un `stride` trop petit sur une grille par
+ailleurs autorisée pourrait quand même déclencher un nombre non-borné
+de vraies ascensions de parcelle MetPy (~5ms/point) - un vrai risque de
+coût distinct, pas déjà couvert par le garde-fou pré-existant.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests réels
+dans `tests/test_web_workstation_api.py` (requête réelle réussie avec
+formes/valeurs vérifiées, modèle inconnu rejeté, `stride` invalide
+rejeté, grille trop grande après foulée rejetée sans même lancer le
+vrai solveur). Suite complète réexécutée : 4197 → 4201 tests, tous
+verts.
+
+**Ce qui reste réellement** : seul Terrain Lab reste bloqué. Aucune
+tâche séparée en attente ne reste ouverte.

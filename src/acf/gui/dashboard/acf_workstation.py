@@ -305,6 +305,20 @@ elevation dataset (none exists in this codebase today) or fabricated
 terrain, so it stays honestly "(planned)" rather than built on
 invented elevation data.
 
+Phase 21 (2026-09-04, same "continue selon ton jugement" delegation)
+extended `/api/v1/workstation` (Phase 13) with a real `/convection` GET
+endpoint - the same real `acf.awci.workstation_fields.
+compute_real_convection_indices_field()` pipeline the Convection Lab's
+own button uses, closing the same "extension API pour ces nouveaux
+modules" item Phase 13 first opened, for the one real module built
+since (Phase 18) that Phase 13 couldn't have covered yet. A dedicated
+`validate_convection_stride()` guard (`_solver_guard.py`) additionally
+bounds this endpoint's own real per-point MetPy parcel-ascent cost
+(~5ms/point) - separate from, and stricter than, `run_complexity_
+volume()`'s existing pre-stride solver-size guard, since a small
+`stride` on an otherwise-small-enough volume could still request an
+unbounded number of real parcel ascents.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
