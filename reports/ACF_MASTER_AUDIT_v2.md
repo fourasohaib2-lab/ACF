@@ -6781,3 +6781,57 @@ d'élévation réelle) et `task_17a412ee` (cisaillement de vent faible du
 solveur, une vraie caractéristique du champ de vent, pas un bug -
 resterait risqué à "corriger" sans réviser en profondeur la structure
 dynamique du solveur lui-même, hors périmètre de cette investigation).
+
+## Mise à jour 2026-09-04 (suite) — `task_17a412ee` investiguée : cause racine trouvée, correction délibérément NON engagée sans accord explicite
+
+**Pourquoi** : suite explicite ("continue selon ton jugement"). Après
+la Phase 19, il restait une seule tâche séparée ouverte non bloquée
+par un manque de données (contrairement à Terrain) :
+`task_17a412ee`, le cisaillement de vent faible du solveur qui
+empêche SCP de jamais dépasser son seuil réel de 10 m/s.
+
+**Investigation (cause racine trouvée)** : `acf.simulation_engine.
+atmosphere_solver.atmospheric_model.AtmosphericModel.
+initialize_state()` initialise le vent ainsi :
+```python
+"U": np.random.normal(10.0, 2.0, size=shape_3d),
+"V": np.random.normal(0.0, 1.0, size=shape_3d),
+```
+— un tirage aléatoire indépendant (i.i.d.) À CHAQUE niveau vertical,
+sans AUCUNE structure verticale réelle imposée (contrairement à la
+température, qui a au moins un vrai gradient adiabatique standard
+imposé : `288.15 - 0.0065 * (k * 500.0)`). Le "cisaillement" mesuré
+entre deux niveaux n'est donc que le bruit entre deux échantillons
+gaussiens indépendants (écarts-types 2 et 1 m/s) - naturellement
+borné bien en dessous de tout vrai cisaillement de jet-stream réaliste
+(10-40+ m/s), qui reflète une vraie structure physique cohérente
+(typiquement dérivée de l'équilibre du vent thermique, DU/Dz
+proportionnel au gradient horizontal de température - Holton,
+"An Introduction to Dynamic Meteorology"). Ce n'est donc pas un bug
+ponctuel comme la pression ou le CIN - c'est un vrai manque de
+physique dans l'initialisation du champ de vent du solveur, à la
+racine de tout `CoupledEarthSolver`.
+
+**Décision délibérée de ne pas corriger ici** : contrairement aux
+Phases 17/19 (corrections d'une seule ligne, localisées, à risque
+mesuré et vérifié faible), une vraie correction ici signifierait
+concevoir un vrai profil vertical de vent cohérent avec l'équilibre du
+vent thermique - une décision de modélisation physique substantielle,
+pas une correction de bug au sens strict, avec un rayon d'impact bien
+plus large : `AtmosphericModel.initialize_state()` est au cœur de
+`CoupledEarthSolver`, utilisé par la quasi-totalité des labs et
+dashboards de ce dépôt (Dynamics Lab, tout mouvement de tempête,
+toutes les hélicités déjà calculées, etc.) - un changement ici
+modifierait potentiellement le comportement numérique de tests
+existants à travers tout le projet, pas seulement du Convection Lab.
+Décision : documenter la cause racine précisément (fait), ne PAS
+modifier le solveur sans un accord explicite de l'utilisateur sur
+l'approche (rayon d'impact + risque de fabrication d'une structure de
+vent inventée si mal cadrée). Question posée à l'utilisateur en
+conséquence.
+
+**Ce qui reste réellement** : Terrain Lab (bloqué) ; `task_17a412ee`
+reste ouverte, avec sa cause racine désormais documentée précisément,
+en attente d'une décision explicite de l'utilisateur sur l'opportunité
+d'une vraie refonte physique (équilibre du vent thermique) du champ de
+vent initial du solveur.
