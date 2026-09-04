@@ -589,6 +589,28 @@ received (`display_volume`, returned by `_render_all_panels()`) rather
 than the raw run's own `volume` parameter, so re-running while a non-
 Global domain is already selected never reports a false FAIL.
 
+Phase 41 (2026-09-05) built the real **Global Timeline (Time
+Machine)** bar (`acf_workstation_global_timeline.
+ACFGlobalTimelineWidget`), a full-width bar at the very bottom of the
+Workstation, matching the mockup's own position. Fed by `acf.awci.
+temporal_field.compute_real_complexity_evolution()` - the SAME real
+multi-frame `CoupledEarthSolver` integration Temporal Evolution Lab's
+own on-demand button already uses (`n_frames=4`/`steps_per_frame=3`,
+the same real constants) - real, on-demand (its own "🔄 Run Temporal
+Analysis" button), independent of the main volume. Each real frame
+gets a real thumbnail (`acf_workstation_thumbnail_strip.
+ACFVariableThumbnailStrip`, extended with 2 new real, reusable
+capabilities - `set_label()` for a post-computation real forecast-hour
+label, `set_selected()` for a real highlight of the current frame) of
+that frame's own real surface temperature, labelled with its own real
+valid time. A real Play/Pause + speed control cycles through the
+ALREADY-computed real frames (a `QTimer` UI convenience, never a new
+computation per tick). Honest, disclosed scope: scrubbing here updates
+only this widget's own readout - it does NOT drive the level slider,
+Domain selection, or any nav-tab panel; wiring that would be a
+substantially larger, separate integration, not attempted in this
+pass.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -647,6 +669,7 @@ from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
 from acf.gui.dashboard.acf_workstation_domain import DOMAIN_BOUNDS, DOMAIN_NAMES, crop_real_volume_to_domain
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
+from acf.gui.dashboard.acf_workstation_global_timeline import ACFGlobalTimelineWidget
 from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialog, compute_real_map_inspector_snapshot
@@ -1049,6 +1072,16 @@ class ACFWorkstation(QWidget):
 
         outer.addLayout(body, stretch=1)
 
+        # Real Global Timeline (Time Machine) (added Phase 41,
+        # 2026-09-05) - matching the mockup's own full-width bottom bar
+        # position. Real, on-demand (its own "🔄 Run Temporal Analysis"
+        # button), independent of the main volume - see
+        # acf_workstation_global_timeline.py's own module docstring for
+        # its disclosed "not synchronized with the rest of the
+        # dashboard" scope.
+        self.global_timeline_panel = ACFGlobalTimelineWidget()
+        outer.addWidget(self.global_timeline_panel)
+
     def _setup_shortcuts(self) -> None:
         """Real keyboard shortcuts (added 2026-09-04) - faster real
         access to already-real actions, nothing new invented: Ctrl+R
@@ -1380,6 +1413,13 @@ class ACFWorkstation(QWidget):
         # 2026-09-05) - real per-level Pearson correlations, re-derived
         # here (once per run/level change), not on every map click.
         self.interaction_graph_panel.update_from_volume(volume, self._level_index)
+
+        # Real Global Timeline bookkeeping (added Phase 41,
+        # 2026-09-05) - real model/grid context only; the evolution
+        # itself stays whatever it was until its own "🔄 Run Temporal
+        # Analysis" button is clicked, same on-demand convention as
+        # Confidence Lab/CAPE-CIN/Forecast Consistency.
+        self.global_timeline_panel.update_from_volume(volume, self._level_index)
 
     def _on_volume_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)

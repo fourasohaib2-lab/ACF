@@ -440,6 +440,19 @@ def test_re_running_with_a_non_global_domain_already_selected_keeps_the_pipeline
     assert snapshot["Visualization"] == "OK"
 
 
+def test_global_timeline_panel_is_present_and_starts_uncomputed(qapp):
+    """Real Phase 41 regression guard (2026-09-05): the Global Timeline
+    is a real, on-demand widget - present after a run, but honestly
+    "not yet computed" until its own real button is clicked."""
+    ws = ACFWorkstation()
+
+    assert ws.global_timeline_panel.status() == {"has_evolution": False, "current_frame": None}
+
+    ws._on_volume_ready(_real_volume())
+
+    assert ws.global_timeline_panel.status() == {"has_evolution": False, "current_frame": None}
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

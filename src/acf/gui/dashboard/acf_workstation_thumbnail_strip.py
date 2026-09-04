@@ -30,7 +30,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from acf.gui.theme_tokens import TOKENS, label_style
+from acf.gui.theme_tokens import COLORS, TOKENS, label_style
 
 
 class _Thumbnail(QWidget):
@@ -55,11 +55,11 @@ class _Thumbnail(QWidget):
         self.axis.set_xticks([])
         self.axis.set_yticks([])
 
-        label = QLabel(name)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setWordWrap(True)
-        label.setStyleSheet(label_style("text_muted", "xs"))
-        layout.addWidget(label)
+        self.label_widget = QLabel(name)
+        self.label_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_widget.setWordWrap(True)
+        self.label_widget.setStyleSheet(label_style("text_muted", "xs"))
+        layout.addWidget(self.label_widget)
 
         self._has_field = False
         self._draw_empty()
@@ -109,6 +109,23 @@ class ACFVariableThumbnailStrip(QWidget):
         if name not in self._thumbnails:
             raise ValueError(f"Unknown real thumbnail variable {name!r} - expected one of {list(self._thumbnails)}")
         self._thumbnails[name].set_field(field, cmap, vmin, vmax)
+
+    def set_label(self, name: str, text: str) -> None:
+        """Real, post-construction label override (added Phase 41,
+        2026-09-05) - for a real value only known after the thumbnail
+        was built (e.g. a real forecast-hour timestamp), never at
+        `__init__` time. `name` still identifies the real thumbnail
+        (`set_field`'s own key) - only its DISPLAYED text changes."""
+        if name not in self._thumbnails:
+            raise ValueError(f"Unknown real thumbnail variable {name!r} - expected one of {list(self._thumbnails)}")
+        self._thumbnails[name].label_widget.setText(text)
+
+    def set_selected(self, name: str | None) -> None:
+        """Real, at-most-one visual highlight (added Phase 41,
+        2026-09-05) - e.g. the Global Timeline's own currently-scrubbed
+        frame. `None` clears every highlight."""
+        for thumb_name, thumb in self._thumbnails.items():
+            thumb.setStyleSheet(f"background-color: {COLORS['bg_surface_alt']};" if thumb_name == name else "")
 
     def status(self) -> dict[str, Any]:
         return {

@@ -7886,3 +7886,54 @@ occidentale, sur fond de carte du monde complet).
 panneau "Layers/Domains" (couches raster/vecteur, cases à cocher
 génériques de la maquette sans correspondance fonctionnelle claire à
 ce jour).
+
+## Mise à jour 2026-09-05 (suite) — Phase 41 : le vrai "Global Timeline (Time Machine)"
+
+**Pourquoi** : dernier des 3 chantiers "plus structurants" à avoir une
+vraie correspondance fonctionnelle claire (contrairement au panneau
+"Layers/Domains", resté volontairement en attente - voir plus bas).
+Réutilise directement le moteur multi-frame déjà construit pour
+Temporal Evolution Lab.
+
+**Construit** :
+- `acf_workstation_global_timeline.ACFGlobalTimelineWidget` - barre
+  pleine largeur en bas de l'écran, position identique à la maquette.
+  Bouton "🔄 Run Temporal Analysis" réel à la demande (même moteur
+  `compute_real_complexity_evolution()`, mêmes constantes réelles
+  n_frames=4/steps_per_frame=3 que Temporal Evolution Lab), curseur de
+  frame réel, boutons Play/Pause + vitesse (QTimer réel, cycle
+  uniquement les frames DÉJÀ calculées, jamais un nouveau calcul par
+  tick), 4 vignettes réelles (température de surface de chaque vraie
+  frame), étiquetées avec leur vrai temps de validité une fois
+  calculées.
+- `ACFVariableThumbnailStrip` (Phase 37) étendu avec 2 nouvelles
+  capacités réelles et réutilisables : `set_label()` (étiquette
+  post-construction, pour une vraie valeur - le temps de validité -
+  connue seulement après calcul) et `set_selected()` (surbrillance
+  réelle de la vignette active).
+
+**Divulgation honnête** : le défilement des frames ne met à jour que
+l'affichage propre de ce widget - il ne modifie PAS le curseur de
+niveau, la sélection de Domaine, ni aucun panneau d'onglet. Câbler
+cela serait une intégration séparée et substantiellement plus grande,
+non tentée dans cette passe et explicitement disclosed plutôt
+qu'implicitement suggérée par le nom "Time Machine".
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 7
+nouveaux tests sur les capacités ajoutées au thumbnail strip
+(`tests/gui/test_acf_workstation_thumbnail_strip.py`), 9 nouveaux
+tests sur le widget lui-même
+(`tests/gui/test_acf_workstation_global_timeline.py`, incluant un
+vrai run hors-thread, le bouclage de frame, et le real Play/Pause), 1
+nouveau test d'intégration (`tests/gui/test_acf_workstation.py`).
+Capture d'écran réelle confirmant la barre complète avec ses 4
+vignettes réelles après un vrai run temporel.
+
+**Ce qui reste réellement** : le panneau "Layers/Domains" (couches
+raster/vecteur) reste le seul élément du backlog original sans
+décision prise - la maquette montre des cases à cocher assez
+génériques ("Raster Layer", "Vector Layer" répétés plusieurs fois)
+sans correspondance fonctionnelle claire avec une vraie capacité
+togglable de ce Workstation aujourd'hui ; le construire risquerait de
+violer la discipline "jamais de fausse fonctionnalité" sans d'abord
+identifier ce que ces cases représenteraient réellement.

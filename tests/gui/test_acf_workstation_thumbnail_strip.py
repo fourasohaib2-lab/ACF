@@ -49,3 +49,34 @@ def test_clicking_a_thumbnail_emits_its_real_variable_name(qapp):
     strip._thumbnails["B"].clicked.emit()
 
     assert received == ["B"]
+
+
+def test_set_label_overrides_the_displayed_text(qapp):
+    strip = ACFVariableThumbnailStrip(["A", "B"])
+
+    strip.set_label("A", "T+3h")
+
+    assert strip._thumbnails["A"].label_widget.text() == "T+3h"
+    assert strip._thumbnails["B"].label_widget.text() == "B"  # untouched
+
+
+def test_set_label_rejects_an_unknown_variable(qapp):
+    strip = ACFVariableThumbnailStrip(["A"])
+    with pytest.raises(ValueError, match="Unknown real thumbnail variable"):
+        strip.set_label("Z", "T+3h")
+
+
+def test_set_selected_highlights_at_most_one_real_thumbnail(qapp):
+    strip = ACFVariableThumbnailStrip(["A", "B"])
+
+    strip.set_selected("A")
+    assert strip._thumbnails["A"].styleSheet() != ""
+    assert strip._thumbnails["B"].styleSheet() == ""
+
+    strip.set_selected("B")
+    assert strip._thumbnails["A"].styleSheet() == ""
+    assert strip._thumbnails["B"].styleSheet() != ""
+
+    strip.set_selected(None)
+    assert strip._thumbnails["A"].styleSheet() == ""
+    assert strip._thumbnails["B"].styleSheet() == ""
