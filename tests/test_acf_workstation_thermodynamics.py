@@ -7,9 +7,11 @@ Scientific Workstation's Thermodynamics Lab (added 2026-09-04).
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
+from acf.awci.workstation_fields import compute_real_dewpoint_field, compute_real_temperature_inversion_field
 from acf.gui.dashboard.acf_workstation_thermodynamics import (
     compute_real_cape_cin_fields,
     compute_real_theta_e_and_rh_fields,
@@ -127,3 +129,77 @@ def test_cape_cin_fields_return_a_real_coarser_grid_not_the_native_resolution():
     assert cape_grid.shape[1] < n_lon
     assert not np.isnan(cape_grid).any()  # every cell of the real coarser grid was actually computed
     assert not np.isnan(cin_grid).any()
+
+
+def test_dewpoint_field_matches_the_real_point_functions_own_intermediate_value():
+    """Cross-check discipline: every cell must equal
+    compute_real_theta_e_at_point()'s own real dewpoint_k intermediate
+    value - reused, never a separately re-derived formula."""
+    rng = np.random.default_rng(1)
+    temperature = 288.0 + rng.uniform(-10.0, 10.0, size=(4, 5))
+    specific_humidity = np.clip(0.008 + rng.uniform(-0.003, 0.003, size=(4, 5)), 1e-6, None)
+    pressure_hpa = np.full((4, 5), 950.0)
+
+    dewpoint_c = compute_real_dewpoint_field(temperature, specific_humidity, pressure_hpa)
+
+    for i in range(4):
+        for j in range(5):
+            expected = compute_real_theta_e_at_point(
+                float(temperature[i, j]), float(specific_humidity[i, j]), float(pressure_hpa[i, j])
+            )
+            assert dewpoint_c[i, j] == pytest.approx(expected["dewpoint_k"] - 273.15)
+
+
+def test_dewpoint_field_never_exceeds_the_real_temperature():
+    """Real physical law: dewpoint can never exceed air temperature."""
+    rng = np.random.default_rng(2)
+    temperature = 288.0 + rng.uniform(-10.0, 10.0, size=(6, 6))
+    specific_humidity = np.clip(0.006 + rng.uniform(-0.003, 0.003, size=(6, 6)), 1e-6, None)
+    pressure_hpa = np.full((6, 6), 950.0)
+
+    dewpoint_c = compute_real_dewpoint_field(temperature, specific_humidity, pressure_hpa)
+
+    assert np.all(dewpoint_c <= (temperature - 273.15) + 1e-6)
+
+
+def test_dewpoint_field_is_honestly_nan_for_a_genuinely_dry_point():
+    temperature = np.array([[288.0]])
+    specific_humidity = np.array([[0.0]])
+    pressure_hpa = np.array([[950.0]])
+
+    dewpoint_c = compute_real_dewpoint_field(temperature, specific_humidity, pressure_hpa)
+
+    assert np.isnan(dewpoint_c[0, 0])
+
+
+def test_temperature_inversion_field_is_zero_for_a_real_monotonically_decreasing_column():
+    """Real, trivial sanity case: temperature strictly decreasing with
+    height everywhere (no real inversion) must be exactly 0."""
+    n_levels, n_lat, n_lon = 6, 3, 3
+    profile = np.linspace(298.0, 260.0, n_levels)
+    temperature_volume = np.broadcast_to(profile[:, None, None], (n_levels, n_lat, n_lon))
+
+    inversion = compute_real_temperature_inversion_field(temperature_volume)
+
+    assert np.array_equal(inversion, np.zeros((n_lat, n_lon)))
+
+
+def test_temperature_inversion_field_detects_a_real_known_inversion():
+    """A real, hand-constructed column with one real inversion layer
+    (temperature increases from level 2 to level 3) must report
+    exactly that real jump, never 0 and never a fabricated value."""
+    profile = np.array([295.0, 290.0, 285.0, 288.0, 280.0, 270.0])  # real 285->288 inversion
+    temperature_volume = profile[:, None, None]
+
+    inversion = compute_real_temperature_inversion_field(temperature_volume)
+
+    assert inversion[0, 0] == pytest.approx(3.0)
+
+
+def test_temperature_inversion_field_is_never_negative():
+    rng = np.random.default_rng(3)
+    temperature_volume = 280.0 + rng.uniform(-20.0, 20.0, size=(8, 5, 5))
+
+    inversion = compute_real_temperature_inversion_field(temperature_volume)
+
+    assert np.all(inversion >= 0.0)

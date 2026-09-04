@@ -84,7 +84,12 @@ from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QMessageBox, QPush
 
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
-from acf.awci.workstation_fields import compute_real_theta_e_and_rh_fields
+from acf.awci.workstation_fields import (
+    compute_real_dewpoint_field,
+    compute_real_temperature_inversion_field,
+    compute_real_theta_e_and_rh_fields,
+)
+from acf.gui.dashboard.acf_workstation_thumbnail_strip import ACFVariableThumbnailStrip
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
 
@@ -111,7 +116,25 @@ __all__ = ["ACFThermodynamicsLabPanel", "compute_real_cape_cin_fields", "compute
 _AUTO_VARIABLES: dict[str, dict[str, Any]] = {
     "Equivalent potential temperature (θ-e)": {"unit": "K", "cmap": "plasma", "vmin": None, "vmax": None},
     "Relative humidity": {"unit": "%", "cmap": "YlGnBu", "vmin": 0.0, "vmax": 100.0},
+    # Added Phase 38 (2026-09-05, thumbnail-strip parity work) - real,
+    # cheap, auto (level-sliced) fields, extending this Lab's own
+    # Variable selector so every real thumbnail below has a matching
+    # full-size main-map entry.
+    "Temperature": {"unit": "°C", "cmap": "coolwarm", "vmin": None, "vmax": None},
+    "Dew Point": {"unit": "°C", "cmap": "BuGn", "vmin": None, "vmax": None},
+    # A real, full-column diagnostic - NOT sliced by the current level
+    # (same "not tied to the level slider" convention as Dynamics
+    # Lab's own Bulk wind shear).
+    "Inversions": {"unit": "K", "cmap": "hot", "vmin": 0.0, "vmax": None},
 }
+#: Real thumbnail strip subset (added Phase 38) - exactly the 4
+#: variables the reference mockup's own "THERMODYNAMICS LAB" thumbnail
+#: row shows (Temperature/Dew Point/θ-e/Inversions) - Relative humidity
+#: stays a real, selectable main-map variable above but is not one of
+#: the mockup's own 4 thumbnails, so it is not duplicated here.
+_THUMBNAIL_VARIABLES: tuple[str, ...] = (
+    "Temperature", "Dew Point", "Equivalent potential temperature (θ-e)", "Inversions",
+)
 _CAPE_CIN_VARIABLES: dict[str, dict[str, Any]] = {
     "CAPE (convective available potential energy)": {"unit": "J/kg", "cmap": "inferno", "vmin": 0.0, "vmax": 3000.0},
     "CIN (convective inhibition)": {"unit": "J/kg", "cmap": "cividis", "vmin": 0.0, "vmax": 200.0},
@@ -231,6 +254,13 @@ class ACFThermodynamicsLabPanel(QWidget):
         self.map_panel.pointClicked.connect(self._on_map_point_clicked)
         layout.addWidget(self.map_panel, stretch=1)
 
+        # Real thumbnail strip (added Phase 38, 2026-09-05, matching
+        # the reference mockup's own bottom "THERMODYNAMICS LAB"
+        # thumbnail row) - see _THUMBNAIL_VARIABLES/_all_auto_fields().
+        self.thumbnail_strip = ACFVariableThumbnailStrip(list(_THUMBNAIL_VARIABLES))
+        self.thumbnail_strip.variableSelected.connect(self.variable_selector.setCurrentText)
+        layout.addWidget(self.thumbnail_strip)
+
         # --- CAPE/CIN (on-demand, full-column real parcel ascent) ---
         layout.addWidget(
             self._header(
@@ -325,21 +355,48 @@ class ACFThermodynamicsLabPanel(QWidget):
             text,
         )
 
+    def _all_auto_fields(self) -> dict[str, np.ndarray]:
+        """Real, single-source computation of every real auto (level-
+        sliced) variable this panel offers - called once per redraw so
+        the main map and the thumbnail strip (added Phase 38) never
+        recompute the same real field twice."""
+        assert self._volume is not None
+        level = self._level_index
+        temperature = self._volume["temperature_volume"][level]
+        theta_e, relative_humidity = compute_real_theta_e_and_rh_fields(
+            temperature, self._volume["specific_humidity_volume"][level], self._volume["pressure_volume_hpa"][level]
+        )
+        dewpoint_c = compute_real_dewpoint_field(
+            temperature, self._volume["specific_humidity_volume"][level], self._volume["pressure_volume_hpa"][level]
+        )
+        return {
+            "Equivalent potential temperature (θ-e)": theta_e,
+            "Relative humidity": relative_humidity,
+            "Temperature": temperature - 273.15,
+            "Dew Point": dewpoint_c,
+            # A real, full-column diagnostic - NOT sliced by the
+            # current level (see compute_real_temperature_inversion_
+            # field()'s own docstring), unlike this panel's other 4
+            # variables.
+            "Inversions": compute_real_temperature_inversion_field(self._volume["temperature_volume"]),
+        }
+
     def _redraw_auto(self) -> None:
         if self._volume is None:
             return
         variable = self.variable_selector.currentText()
-        spec = _AUTO_VARIABLES[variable]
         lats, lons = self._volume["lats"], self._volume["lons"]
-        level = self._level_index
 
-        theta_e, relative_humidity = compute_real_theta_e_and_rh_fields(
-            self._volume["temperature_volume"][level],
-            self._volume["specific_humidity_volume"][level],
-            self._volume["pressure_volume_hpa"][level],
-        )
-        field = theta_e if variable.startswith("Equivalent") else relative_humidity
+        fields = self._all_auto_fields()
+        field = fields[variable]
+        for name in _THUMBNAIL_VARIABLES:
+            thumb_spec = _AUTO_VARIABLES[name]
+            thumb_field = fields[name]
+            thumb_vmin = thumb_spec["vmin"] if thumb_spec["vmin"] is not None else float(np.nanpercentile(thumb_field, 5))
+            thumb_vmax = thumb_spec["vmax"] if thumb_spec["vmax"] is not None else float(np.nanpercentile(thumb_field, 95))
+            self.thumbnail_strip.set_field(name, thumb_field, thumb_spec["cmap"], thumb_vmin, thumb_vmax)
 
+        spec = _AUTO_VARIABLES[variable]
         # A None vmin/vmax (θ-e - see _AUTO_VARIABLES' own comment)
         # falls back to the real 5th/95th percentile of THIS field -
         # same dynamic-range convention acf_workstation_complexity.py

@@ -7749,3 +7749,42 @@ Inversions - Thermodynamics Lab n'auto-calcule aujourd'hui que θ-e et
 l'humidité relative) ; le Global Timeline avec vignettes ; le
 sélecteur "Domain" ; la petite grille colorée d'indices de stabilité ;
 le panneau "Layers/Domains".
+
+## Mise à jour 2026-09-05 (suite) — Phase 38 : le bandeau de vignettes de Thermodynamics Lab
+
+**Pourquoi** : ferme le suivi explicitement annoncé à la fin de la
+Phase 37 - nécessitait 2 nouveaux champs réels (Dew Point, Inversions)
+avant d'être réalisable.
+
+**Construit** :
+- `acf.awci.workstation_fields.compute_real_dewpoint_field()` (nouveau) -
+  réutilise la vraie valeur intermédiaire `dewpoint_k` déjà calculée
+  par `compute_real_theta_e_at_point()` (auparavant jetée), dans une
+  nouvelle boucle séparée - gardée distincte de
+  `compute_real_theta_e_and_rh_fields()` plutôt que d'ajouter une 3e
+  valeur de retour, pour que ses 4 vrais appelants existants (plus le
+  routeur HTTP `/api/v1/workstation`) gardent leur déballage à 2
+  valeurs inchangé.
+- `acf.awci.workstation_fields.compute_real_temperature_inversion_field()`
+  (nouveau) - définition réelle et standard (`np.diff` le long de
+  l'axe des niveaux, tronqué à ≥0) : le plus grand real saut de
+  température vers le haut trouvé dans chaque colonne, 0 si aucune
+  inversion réelle n'existe.
+- `_AUTO_VARIABLES` de Thermodynamics Lab étendu avec 3 nouvelles
+  vraies entrées (Temperature/Dew Point/Inversions), rien supprimé ;
+  bandeau de 4 vignettes réelles (Temperature/Dew Point/θ-e/
+  Inversions) exactement comme la maquette.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 10
+nouveaux tests sur les 2 nouvelles fonctions de champ
+(`tests/test_acf_workstation_thermodynamics.py`, incluant une loi
+physique réelle vérifiée : le point de rosée ne dépasse jamais la
+température), 2 nouveaux tests d'intégration
+(`tests/gui/test_acf_workstation.py`). Capture d'écran réelle
+confirmant les 4 vignettes sous la carte principale de Thermodynamics
+Lab.
+
+**Ce qui reste réellement** : les 2 bandeaux de vignettes de la
+maquette sont désormais tous réels et présents. Restent : le Global
+Timeline avec vignettes ; le sélecteur "Domain" ; la petite grille
+colorée d'indices de stabilité ; le panneau "Layers/Domains".

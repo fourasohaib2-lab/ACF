@@ -519,12 +519,30 @@ vorticity/Divergence/Bulk wind shear), computed once per redraw
 (`ACFDynamicsLabPanel._all_fields()`) and shared between the main map
 and every thumbnail - never recomputed per thumbnail. Clicking a
 thumbnail switches the main map to it via the same real
-`variable_selector`, no separate selection state. Deferred: the
-mockup's own second thumbnail row (Thermodynamics Lab: Temperature/
-Dew Point/θ-e/Inversions) - Thermodynamics Lab today only auto-computes
-2 of those 4 real fields (θ-e, relative humidity); Dew Point and
-Inversions would need 2 new real field computations first, kept as
-its own separate, disclosed follow-up rather than bundled in here.
+`variable_selector`, no separate selection state.
+
+Phase 38 (2026-09-05) closed Phase 37's own disclosed follow-up: a
+matching real thumbnail strip for Thermodynamics Lab (Temperature/Dew
+Point/θ-e/Inversions, exactly the mockup's own 4 labels). Two new real
+field functions in `acf.awci.workstation_fields` made this possible
+without any new physics: `compute_real_dewpoint_field()` reuses
+`compute_real_theta_e_at_point()`'s own real `dewpoint_k` intermediate
+value (already computed there, previously discarded) in a new,
+separate per-point loop - kept separate from
+`compute_real_theta_e_and_rh_fields()` rather than adding a 3rd return
+value, so every one of that function's existing real callers (4 call
+sites plus the `/api/v1/workstation` HTTP router) keeps its exact
+current 2-value unpacking unchanged; `compute_real_temperature_
+inversion_field()` is a real, disclosed, standard definition (real
+`np.diff` along the level axis, clipped to non-negative - the real
+maximum temperature-increase-with-height found in each column, 0 where
+none exists) - genuinely new arithmetic, but standard, not invented
+physics. `ACFThermodynamicsLabPanel`'s own `variable_selector` grew 3
+new real entries (Temperature/Dew Point/Inversions) alongside its
+existing θ-e/Relative humidity, so every thumbnail has a matching
+full-size main-map view - nothing removed, only added. All 4 mockup
+thumbnail rows this Workstation's 2 relevant Labs can honestly support
+are now real and present.
 
 Real data source, once, re-sliced everywhere
 -----------------------------------------------

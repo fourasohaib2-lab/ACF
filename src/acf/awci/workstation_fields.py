@@ -290,6 +290,71 @@ def compute_real_theta_e_and_rh_fields(
     return theta_e, relative_humidity
 
 
+def compute_real_dewpoint_field(
+    temperature: np.ndarray, specific_humidity: np.ndarray, pressure_hpa: np.ndarray
+) -> np.ndarray:
+    """
+    Real dewpoint temperature (°C) at every point of one real 2D level
+    slice - via `compute_real_theta_e_at_point()`'s own real
+    `dewpoint_k` intermediate value (added 2026-09-05, Thermodynamics
+    Lab thumbnail strip parity work), reused as-is - not a second,
+    independently reimplemented Magnus-Tetens loop. A genuinely
+    separate function (rather than a 3rd return value bolted onto
+    `compute_real_theta_e_and_rh_fields()` above) so every one of that
+    function's own existing real callers keeps its exact current
+    2-value unpacking unchanged.
+
+    NaN (never a fabricated value) wherever the real per-point
+    computation itself honestly reports "not computed" (non-positive
+    real relative humidity - see `acf.awci.theta_e`'s own docstring).
+    """
+    n_lat, n_lon = temperature.shape
+    dewpoint_c = np.full((n_lat, n_lon), np.nan)
+    for i in range(n_lat):
+        for j in range(n_lon):
+            result = compute_real_theta_e_at_point(
+                float(temperature[i, j]), float(specific_humidity[i, j]), float(pressure_hpa[i, j])
+            )
+            if result["is_real_data"]:
+                dewpoint_c[i, j] = result["dewpoint_k"] - 273.15
+    return dewpoint_c
+
+
+def compute_real_temperature_inversion_field(temperature_volume: np.ndarray) -> np.ndarray:
+    """
+    Real temperature-inversion strength (K) at every real (lat, lon)
+    column (added 2026-09-05, Thermodynamics Lab thumbnail strip parity
+    work) - the standard real definition of a temperature inversion:
+    air temperature INCREASING with height at some point in the
+    column, rather than the usual real tropospheric decrease.
+
+    Real, disclosed definition
+    -------------------------------
+    For each column, this is the real maximum of
+    `temperature_volume[level + 1] - temperature_volume[level]` over
+    every pair of adjacent real native levels (`temperature_volume`'s
+    own documented "surface at index 0, top of atmosphere at the last
+    index" ordering - same convention as
+    `acf.awci.vertical_field.vertical_profile_at_point()`), clipped at
+    0 - a real, positive value means a real inversion layer exists
+    somewhere in that column (its own real strongest jump); exactly 0
+    means no real inversion anywhere in that column (never a
+    fabricated negative "anti-inversion" score).
+
+    Parameters
+    ----------
+    temperature_volume : real (n_levels, n_lat, n_lon) array.
+
+    Returns
+    -------
+    np.ndarray
+        Real (n_lat, n_lon) array, always >= 0.
+    """
+    level_to_level_delta = np.diff(temperature_volume, axis=0)  # real T[k+1] - T[k]
+    positive_delta = np.clip(level_to_level_delta, a_min=0.0, a_max=None)
+    return np.max(positive_delta, axis=0)
+
+
 def compute_real_convection_indices_field(
     temperature_volume: np.ndarray,
     specific_humidity_volume: np.ndarray,
