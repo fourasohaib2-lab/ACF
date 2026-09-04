@@ -5923,3 +5923,58 @@ Note honnête sur la méthode de regrillage : un point proche d'une
 frontière de cellule de la grille native d'un modèle peut montrer un
 effet de discrétisation réel (pas un signal physique) — disclosed
 explicitement dans le docstring de la nouvelle méthode.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 6 : l'Interaction Engine, une corrélation réelle et statistiquement justifiée
+
+Suite explicite ("continue"), même discipline progressive. Le
+§22 du spec maître ("INTERACTIONS — CŒUR DU PROJET") est explicite et
+sans ambiguïté : *"Les interactions doivent être étudiées
+scientifiquement. Ne pas inventer arbitrairement `interaction = A × B`
+sans justification physique ou statistique."* Cette passe applique
+cette règle littéralement.
+
+**Construit** : **Interaction Engine**
+(`acf_workstation_interactions.ACFInteractionEnginePanel`) — calcule
+le vrai coefficient de corrélation de Pearson, standard et publié,
+entre deux vrais champs physiques choisis par l'utilisateur, PLUS sa
+vraie décomposition ponctuelle affichée en carte
+(`local_interaction(x,y) = z_A(x,y) × z_B(x,y)`, où `z` est l'anomalie
+standardisée réelle — sa moyenne spatiale équivaut exactement, par
+construction, à la formule classique `r = cov(A,B)/(std(A)×std(B))`,
+vérifié dans les tests contre `numpy.corrcoef` directement) — une
+vraie décomposition statistique de manuel, pas un score par point
+inventé. Jamais un produit brut `A × B` en unités hétérogènes (ex.
+vitesse du vent en m/s × humidité spécifique en kg/kg n'aurait aucun
+sens dimensionnel) — exactement le type d'interaction non justifiée
+que le spec met en garde contre.
+
+**Cross-module par conception** : les 11 variables sélectionnables
+réutilisent TOUTES les fonctions réelles déjà construites dans les
+autres Labs (`acf_workstation_dynamics` pour vorticité/divergence/
+cisaillement de vent, `acf_workstation_thermodynamics` pour θ-e/
+humidité relative, `acf_workstation_microphysics` pour la sévérité de
+phase/température humide, plus les champs bruts d'Overview) — aucune
+formule réimplémentée. Permet d'étudier littéralement l'exemple donné
+par le spec maître lui-même ("Vent élevé + Humidité élevée + Relief"),
+en choisissant par exemple "Bulk wind shear" × "Relative humidity".
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests
+unitaires (`tests/test_acf_workstation_interactions.py` — cross-
+vérifiés directement contre `numpy.corrcoef`, plus les cas limites
+réels : corrélation parfaite +1/-1, champ à variance nulle
+honnêtement NaN au lieu d'une valeur fabriquée, deux champs aléatoires
+indépendants proches de 0) + 5 nouveaux tests GUI
+(`tests/gui/test_acf_workstation_interactions.py`) + mise à jour des
+tests d'intégration du chrome (nouvelle position dans la nav/le stack
+à 8 modules désormais). Suite complète **4083 → 4093**, toujours
+verte. Capture d'écran réelle envoyée : carte Temperature × Wind speed
+sur un vrai run ALADIN, avec son vrai statut "Real Pearson r = -0.005
+(negative correlation)".
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître hors de la liste
+originelle des "Labs" (Multi-Model Lab en page propre, Data Quality
+Center, 3D/4D, Case Study Lab, Research Mode, Configuration
+Management, palette de commandes, raccourcis, export, extension API)
+listés "(planned)", pour les mêmes raisons honnêtes déjà disclosed.

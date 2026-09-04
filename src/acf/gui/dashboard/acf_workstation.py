@@ -63,11 +63,27 @@ Phase 5 (2026-09-04, same "continue" progressive discipline) added:
   models) - the investigation deferred from Phase 4 found this
   genuinely feasible, not prohibitively expensive.
 
-The remaining ~3 spec modules (Convection/Terrain Labs, Interaction
-Engine, Multi-Model Lab, Data Quality Center, 3D/4D, Case Study Lab,
-Research Mode, Configuration Management...) are listed in the left nav
-as real, visible, DISABLED "Planned" items - not silently omitted, not
-faked - matching the master spec's own §68 audit-honesty rule applied
+Phase 6 (2026-09-04, same "continue" progressive discipline) added:
+- **Interaction Engine** (`acf_workstation_interactions.
+  ACFInteractionEnginePanel`): docs/ACF_MASTER_PROMPT.md §22 ("INTERACTIONS
+  — CŒUR DU PROJET") is explicit: "Ne pas inventer arbitrairement
+  `interaction = A × B` sans justification physique ou statistique."
+  This panel computes the real, standard, published PEARSON
+  CORRELATION COEFFICIENT (and its real pointwise spatial
+  contribution, rendered as a map) between two real physical fields a
+  user picks from across every other Lab already built (Overview's raw
+  fields, Dynamics' vorticity/divergence/wind shear, Thermodynamics'
+  θ-e/relative humidity, Microphysics' precipitation-phase severity/
+  wet-bulb temperature) - a genuinely cross-module, statistically
+  justified interaction measure, never an arbitrary unit-mismatched
+  product.
+
+The remaining 2 spec modules (Convection/Terrain Labs - Multi-Model
+Lab, Data Quality Center, 3D/4D, Case Study Lab, Research Mode,
+Configuration Management etc. are larger, separate pieces of the
+master spec beyond the original "Labs" list) are listed in the left
+nav as real, visible, DISABLED "Planned" items - not silently omitted,
+not faked - matching the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
 was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entries)
@@ -132,6 +148,7 @@ from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
+from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
@@ -145,9 +162,11 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Real, built modules (index into the QStackedWidget) vs. real,
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
-_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Complexity"]
+_ENABLED_MODULES = [
+    "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Interactions", "Complexity",
+]
 _PLANNED_MODULES = [
-    "Convection", "Terrain", "Interactions",
+    "Convection", "Terrain",
 ]
 
 
@@ -282,6 +301,7 @@ class ACFWorkstation(QWidget):
         self.microphysics_panel = ACFMicrophysicsLabPanel()
         self.temporal_panel = ACFTemporalLabPanel()
         self.confidence_panel = ACFConfidenceLabPanel()
+        self.interactions_panel = ACFInteractionEnginePanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
@@ -289,6 +309,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.microphysics_panel)
         self.stack.addWidget(self.temporal_panel)
         self.stack.addWidget(self.confidence_panel)
+        self.stack.addWidget(self.interactions_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -365,6 +386,7 @@ class ACFWorkstation(QWidget):
         self.microphysics_panel.update_from_volume(self._volume, self._level_index)
         self.temporal_panel.update_from_volume(self._volume, self._level_index)
         self.confidence_panel.update_from_volume(self._volume, self._level_index)
+        self.interactions_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav

@@ -89,6 +89,9 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     assert ws.stack.currentWidget() is ws.confidence_panel
 
     ws.nav_list.setCurrentRow(6)
+    assert ws.stack.currentWidget() is ws.interactions_panel
+
+    ws.nav_list.setCurrentRow(7)
     assert ws.stack.currentWidget() is ws.complexity_panel
 
 
@@ -109,6 +112,7 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     assert ws.microphysics_panel._volume is volume
     assert ws.temporal_panel._volume is volume
     assert ws.confidence_panel._volume is volume
+    assert ws.interactions_panel._volume is volume
     assert ws.complexity_panel._volume is volume
 
 
