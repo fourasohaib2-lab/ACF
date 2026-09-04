@@ -55,8 +55,14 @@ UPDATE (2026-09-05, same day): 2 more "Earth System" leaves are real
 and wired now too - "Land Surface" (`LandSurfacePanel`, a real 4-layer
 soil model) and "Biosphere" (`BiospherePanel`, a real dynamic
 vegetation model) - see their own docstrings in `panel_manager.py`.
-"Atmosphere"/"Atmospheric Chemistry" stay unmapped - each would need
-its own real solver-state display, not attempted in this pass.
+
+UPDATE (2026-09-05, same day): "Atmosphere" is real and wired now too
+- `AtmospherePanel`, the real primitive-equation solver
+`CoupledEarthSolver` itself uses internally, exposed on its own. Its
+own sibling leaf "Atmospheric Chemistry" stays the one remaining
+unmapped "Earth System" leaf - no real chemistry orchestrator class
+exists anywhere in this codebase outside the disconnected
+`acf.model4d` reserve (Phase 48).
 """
 
 from typing import Any
@@ -107,12 +113,17 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Aerosols": "aerosols_panel",
     # Added 2026-09-05 (same investigation, Earth System category): 2
     # more real leaves - see LandSurfacePanel/BiospherePanel's own
-    # docstrings in panel_manager.py. "Atmosphere"/"Atmospheric
-    # Chemistry" (the remaining sibling leaves) stay unmapped - each
-    # would need a real solver-state display of its own, not attempted
-    # in this pass.
+    # docstrings in panel_manager.py.
     "Land Surface": "land_surface",
     "Biosphere": "biosphere",
+    # Added 2026-09-05 (same investigation, same category): real
+    # primitive-equation atmospheric state - see AtmospherePanel's own
+    # docstring in panel_manager.py. "Atmospheric Chemistry" (its last
+    # remaining sibling leaf) stays unmapped - no real chemistry
+    # orchestrator class exists anywhere in this codebase outside the
+    # disconnected `acf.model4d` reserve (see that package's own
+    # module docstring, Phase 48).
+    "Atmosphere": "atmosphere",
     # Added 2026-09-05 (same investigation, HPC category): real 2D
     # domain decomposition, already registered as "mpi_domain" - see
     # MPIDomainTopologyPanel's own docstring for its honest scope

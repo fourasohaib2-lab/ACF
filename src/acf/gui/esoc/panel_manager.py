@@ -2173,6 +2173,95 @@ class BiospherePanel(BasePanelWidget):
         )
 
 
+#: Real state variable -> (display name, unit) - AtmosphericModel's
+#: own real state dict keys, documented in its own class docstring.
+_ATMOSPHERE_VARIABLES: tuple[tuple[str, str, str], ...] = (
+    ("T", "Temperature", "K"),
+    ("P", "Pressure", "Pa"),
+    ("U", "Zonal wind", "m/s"),
+    ("V", "Meridional wind", "m/s"),
+    ("q", "Specific humidity", "kg/kg"),
+    ("O3", "Ozone", "ppmv"),
+    ("CO2", "Carbon dioxide", "ppmv"),
+)
+
+
+class AtmospherePanel(BasePanelWidget):
+    """43. Atmosphere - real, previously-unbuilt System Explorer leaf
+    (2026-09-05): "Earth System / Atmosphere" had no real panel behind
+    it. Real primitive-equation atmospheric solver
+    (`acf.simulation_engine.atmosphere_solver.atmospheric_model.
+    AtmosphericModel`, already registered in `ModuleRegistry` as
+    "atmospheric_model", the exact same real class `CoupledEarthSolver`
+    itself uses internally) - shows the real initial 7-variable state
+    (T/P/U/V/q/O3/CO2, same real fields the Workstation's own volume
+    carries) as real mean/min/max per variable, and lets the operator
+    advance it real time steps (measured ~2ms/step at this registry's
+    own full 36x72x16 resolution - cheap, synchronous, no off-thread
+    worker needed, same convention as Land Surface/Biosphere above).
+
+    Honest scope: "Atmospheric Chemistry" (this leaf's own sibling)
+    stays unmapped - no real chemistry orchestrator class exists
+    anywhere in this codebase OUTSIDE the disconnected `acf.model4d`
+    reserve (see that package's own module docstring, investigated and
+    deliberately left unintegrated in Phase 48) - wiring it in now
+    would mean either fabricating a new chemistry engine or reaching
+    into that disconnected reserve, neither attempted here."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌍 ATMOSPHERE — PRIMITIVE EQUATION STATE", "#4FC3F7", registry, dispatcher)
+        module = registry.get_module("atmospheric_model")
+        if module is None:
+            self.main_layout.addWidget(_not_connected_label("atmospheric_model"))
+            return
+        self._model: Any = module
+        self._state = module.initialize_state()
+        self._elapsed_seconds = 0.0
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Real steps:"))
+        self.n_steps = QSpinBox()
+        self.n_steps.setRange(1, 100)
+        self.n_steps.setValue(5)
+        row.addWidget(self.n_steps)
+        row.addWidget(QLabel("Δt (s):"))
+        self.dt_seconds = QDoubleSpinBox()
+        self.dt_seconds.setRange(1.0, 600.0)
+        self.dt_seconds.setValue(60.0)
+        row.addWidget(self.dt_seconds)
+        self.main_layout.addLayout(row)
+
+        self.button = QPushButton("🌍 Advance Real Atmospheric State")
+        self.button.clicked.connect(self._advance)
+        self.main_layout.addWidget(self.button)
+
+        self.status_label = QLabel("Real elapsed simulated time: 0 s.")
+        self.status_label.setStyleSheet("color: #90A4AE; font-size: 10px;")
+        self.main_layout.addWidget(self.status_label)
+
+        self.table = QTableWidget(len(_ATMOSPHERE_VARIABLES), 4)
+        self.table.setHorizontalHeaderLabels(["Variable", "Mean", "Min", "Max"])
+        self.main_layout.addWidget(self.table)
+
+        self._render()
+
+    def _advance(self) -> None:
+        for _ in range(self.n_steps.value()):
+            self._state = self._model.step(self._state, dt=self.dt_seconds.value())
+            self._elapsed_seconds += self.dt_seconds.value()
+        self.status_label.setText(f"Real elapsed simulated time: {self._elapsed_seconds:.0f} s.")
+        self._render()
+
+    def _render(self) -> None:
+        for row, (key, name, unit) in enumerate(_ATMOSPHERE_VARIABLES):
+            field = self._state[key]
+            self.table.setItem(row, 0, QTableWidgetItem(f"{name} ({unit})"))
+            self.table.setItem(row, 1, QTableWidgetItem(f"{float(field.mean()):.4g}"))
+            self.table.setItem(row, 2, QTableWidgetItem(f"{float(field.min()):.4g}"))
+            self.table.setItem(row, 3, QTableWidgetItem(f"{float(field.max()):.4g}"))
+        self.table.resizeColumnsToContents()
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -2223,6 +2312,7 @@ class PanelManager:
             "workspace_modes": WorkspaceModesPanel(registry, dispatcher),
             "land_surface": LandSurfacePanel(registry, dispatcher),
             "biosphere": BiospherePanel(registry, dispatcher),
+            "atmosphere": AtmospherePanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

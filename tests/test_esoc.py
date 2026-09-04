@@ -78,7 +78,7 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 42
+    assert len(pm.list_panel_names()) == 43
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
@@ -89,6 +89,7 @@ def test_panel_manager(qapp):
     assert pm.get_panel("workspace_modes") is not None
     assert pm.get_panel("land_surface") is not None
     assert pm.get_panel("biosphere") is not None
+    assert pm.get_panel("atmosphere") is not None
     assert pm.get_panel("catalog") is not None
     assert pm.get_panel("plugins") is not None
     assert pm.get_panel("geoengineering") is not None
@@ -417,6 +418,18 @@ def test_clicking_land_surface_and_biosphere_switches_to_their_real_panels(qapp)
         assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel(panel_name)
 
 
+def test_clicking_atmosphere_switches_to_its_real_panel(qapp):
+    """Real Phase 50 regression guard (2026-09-05): "Atmosphere" used
+    to be a genuine dead click - "Atmospheric Chemistry" (its own
+    sibling) stays a real, disclosed no-op."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Atmosphere", "Earth System")
+
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("atmosphere")
+
+
 def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):
     """"Dust" (Earth System) is deliberately NOT mapped - no verified
     real mineral-dust emission formula exists anywhere in this
@@ -433,14 +446,17 @@ def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):
 
 
 def test_clicking_a_genuinely_unmapped_label_is_an_honest_no_op(qapp):
-    """"Atmosphere" (Earth System) has no real panel anywhere - must
-    stay a real no-op, never a guessed/wrong navigation."""
+    """"Atmospheric Chemistry" (Earth System) has no real panel
+    anywhere - must stay a real no-op, never a guessed/wrong
+    navigation. (Its sibling "Atmosphere" used to be this test's own
+    example until Phase 50 gave it a real panel - see
+    AtmospherePanel.)"""
     window = ESOCWindow()
     layout = window.layout_manager
     layout.bottom_tabs.setCurrentIndex(0)
     before = layout.bottom_tabs.currentIndex()
 
-    layout._on_sidebar_item_selected("Atmosphere", "Earth System")
+    layout._on_sidebar_item_selected("Atmospheric Chemistry", "Earth System")
 
     assert layout.bottom_tabs.currentIndex() == before
 

@@ -8288,3 +8288,43 @@ nécessiterait un vrai affichage d'état de solveur atmosphérique
 complet, plus substantiel que les modèles ponctuels sol/végétation
 utilisés ici. "Layer Preferences"/"API Keys" restent sans aucun
 backend réel.
+
+## Mise à jour 2026-09-05 (suite) — Phase 50 : "Atmosphere" (Earth System)
+
+**Pourquoi** : après réflexion, "Atmosphere" n'exigeait pas un
+tableau de bord complet à l'échelle d'un mini-Workstation - le même
+moteur réel déjà utilisé en interne par `CoupledEarthSolver`
+(`AtmosphericModel`) est déjà séparément enregistré dans
+`ModuleRegistry` sous "atmospheric_model" et directement exploitable
+avec le même patron borné que Land Surface/Biosphere (initialiser +
+faire avancer + afficher).
+
+**Construit** : `AtmospherePanel` (43e panneau) - affiche l'état
+initial réel des 7 variables (T/P/U/V/q/O3/CO2, mêmes champs réels
+que porte le volume du Workstation) sous forme de moyenne/min/max
+réels par variable, et permet à l'opérateur de faire avancer l'état
+de N vrais pas de temps réels (mesuré ~2ms/pas à la résolution
+complète 36×72×16 de ce registre - bon marché, synchrone, aucun
+worker hors-thread nécessaire).
+
+**Divulgation honnête** : "Atmospheric Chemistry" (la dernière feuille
+sœur restante) reste non mappée - aucune classe orchestratrice de
+chimie réelle n'existe nulle part dans ce code en dehors de la
+réserve déconnectée `acf.model4d` (Phase 48) ; la câbler maintenant
+signifierait soit fabriquer un nouveau moteur de chimie, soit puiser
+dans cette réserve déconnectée - aucune des deux tentée ici.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 5
+nouveaux tests (`tests/test_esoc_atmosphere_panel.py`), incluant une
+vérification que les champs de vent évoluent authentiquement après un
+vrai pas (jamais un affichage figé). 1 nouveau test de routage, plus
+correction du test existant qui utilisait "Atmosphere" comme exemple
+de feuille non mappée (remplacé par "Atmospheric Chemistry", qui l'est
+réellement encore). Compteur de panneaux ESOC mis à jour (42 → 43).
+
+**Ce qui reste réellement** : sur les 15 feuilles mortes originales de
+la Phase 43, une seule nécessiterait encore un vrai backend à
+construire ("Atmospheric Chemistry", bloquée sans fabrication) ; les 2
+dernières ("Layer Preferences"/"API Keys") resteront définitivement
+non mappées, aucun backend réel de persistance de préférences
+n'existant nulle part dans ce code.
