@@ -6,6 +6,8 @@ Profile" dialog, REGIONAL TREND sparkline, cross-section hazard icon
 overlay, FL280/FL320 route comparison, and the recommendation banner.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 from PySide6.QtCore import Qt
@@ -410,3 +412,83 @@ def test_recommendation_banner_hidden_when_nothing_is_elevated(qapp):
     dashboard = AWCIDashboard()
     dashboard._update_recommendation_banner({}, 0.0, None, None, None, None)
     assert dashboard.recommendation_banner.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+
+
+# ------------------------------------------------------- Real Archive (RESTOR)
+
+
+def test_real_archive_button_is_wired(qapp):
+    dashboard = AWCIDashboard()
+    assert dashboard.real_archive_button.toolTip() != ""
+    assert dashboard._real_archive_window is None
+
+
+def test_real_archive_reports_honestly_when_unavailable(qapp, monkeypatch):
+    """Real, deliberate degradation path - a machine without
+    $HOME/RESTOR (every machine but the one this feature was built
+    on) must get an honest status message, never a crash and never a
+    silently-substituted demo/solver value under this same button."""
+    import acf.gui.dashboard.awci_dashboard as dashboard_module
+
+    def _raise(*_args, **_kwargs):
+        raise FileNotFoundError("no real archive on this machine")
+
+    monkeypatch.setattr(dashboard_module, "load_real_aladin_restor_run", _raise)
+
+    dashboard = AWCIDashboard()
+    dashboard._open_real_archive()
+
+    assert dashboard._real_archive is None
+    assert "not available" in dashboard._real_archive_status_label.text()
+    assert dashboard._real_archive_widget._profile == {}  # honestly empty, not a fabricated bar
+
+
+REAL_RESTOR_FILE = Path.home() / "RESTOR" / "ALADIN" / "data" / "FULLPOS_2026083100_0000"
+
+
+@pytest.mark.skipif(
+    not REAL_RESTOR_FILE.exists(),
+    reason="Real RESTOR ALADIN archive not present on this machine (machine-local only, not in git)",
+)
+class TestRealArchiveWithTheRealFile:
+    """Gated on the real RESTOR archive being present - see
+    tests/test_awci_archive_field.py for the module-level tests this
+    mirrors at the dashboard-integration level."""
+
+    def test_opens_and_shows_a_real_profile_at_the_default_point_of_interest(self, qapp):
+        dashboard = AWCIDashboard()
+        dashboard._open_real_archive()
+
+        assert dashboard._real_archive is not None
+        profile = dashboard._real_archive_widget._profile
+        assert profile  # the default point of interest is real and within this archive's domain
+        for score in profile.values():
+            assert 0.0 <= score <= 100.0
+        assert "OUTSIDE" not in dashboard._real_archive_status_label.text()
+
+    def test_archive_is_loaded_once_and_cached_across_calls(self, qapp):
+        dashboard = AWCIDashboard()
+        dashboard._open_real_archive()
+        first_archive = dashboard._real_archive
+
+        dashboard._open_real_archive()
+
+        assert dashboard._real_archive is first_archive
+
+    def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(self, qapp):
+        dashboard = AWCIDashboard()
+        dashboard._open_real_archive()
+        assert dashboard._real_archive_detail_window is None
+
+        dashboard._real_archive_widget.levelClicked.emit("850 hPa")
+
+        assert dashboard._real_archive_detail_window is not None
+        assert "850 hPa" in dashboard._real_archive_detail_window.windowTitle()
+
+    def test_flags_honestly_when_the_point_of_interest_is_outside_the_real_domain(self, qapp):
+        dashboard = AWCIDashboard()
+        dashboard._point_of_interest = (-40.0, 170.0)  # a real point, far outside North Africa
+
+        dashboard._open_real_archive()
+
+        assert "OUTSIDE" in dashboard._real_archive_status_label.text()

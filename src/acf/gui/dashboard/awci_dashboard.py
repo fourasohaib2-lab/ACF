@@ -55,9 +55,30 @@ Only the global map animates today - the regional map/route/cross-
 section stay on their static Real Physics snapshot during playback
 (animating all four would need path_sampling calls repeated per frame,
 not built here).
+
+Real Archive mode (added 2026-09-04, explicit user request: a real
+archived ALADIN/AROME/ARPEGE dataset was found in $HOME/RESTOR - "tu
+peux les utiliser pour rendre ACF reel")
+-----------------------------------------------------------------------
+"📡 Real Archive" is a THIRD, distinct real data tier alongside demo
+mode's synthetic pattern and Real Physics mode's live solver: an
+actual archived ALADIN 00Z operational forecast for 2026-08-31 (North
+Africa domain), decoded straight from its real FA file via
+acf.awci.archive_field (Météo-France's own EPyGrAM library, no
+hand-rolled parser). See that module's own docstring for the full,
+honest scope: ONE fixed historical run, 7 real constant-pressure
+levels + a real surface entry, and - despite RESTOR's own folder
+names - genuinely NO real AROME/ARPEGE data (RESTOR/AROME/data is a
+stale symlink to the same ALADIN files, confirmed before writing a
+single line of this feature). This mode does not touch
+_point_of_interest/Real Physics's own state machine at all - it opens
+its own dialog, reusing AWCIVerticalProfile/
+AWCIVerticalProfileLevelDialog exactly as "🔍 See Vertical Profile"
+does, just fed from this real archive instead.
 """
 
 import logging
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -76,6 +97,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from acf.awci.archive_field import load_real_aladin_restor_run, sample_archive_at_point
 from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
@@ -112,6 +134,14 @@ from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
+
+# Real archived ALADIN 00Z run (2026-08-31), machine-local only - NOT
+# part of this git repository (real operational NWP output, ~20MB per
+# lead time). See acf.awci.archive_field's own module docstring for
+# the full honest scope. A machine without $HOME/RESTOR simply cannot
+# open this - _open_real_archive() reports that honestly rather than
+# hiding the button or fabricating a result.
+_RESTOR_ALADIN_ARCHIVE_FILE = Path.home() / "RESTOR" / "ALADIN" / "data" / "FULLPOS_2026083100_0000"
 
 # Reference-style demo route/point of interest: JFK -> CDG (global map / cross-section)
 _GLOBAL_ROUTE = [(40.64, -73.78, "JFK"), (49.01, 2.55, "CDG")]
@@ -487,6 +517,17 @@ class AWCIDashboard(QWidget):
         self.execution_report_button.clicked.connect(self._open_execution_report)
         header_row.addWidget(self.execution_report_button)
 
+        self.real_archive_button = QPushButton("📡 Real Archive (2026-08-31)")
+        self.real_archive_button.setToolTip(
+            "Open a real archived ALADIN 00Z forecast (2026-08-31, North Africa domain,\n"
+            "acf.awci.archive_field) at the current point of interest - a genuine third\n"
+            "data tier alongside demo mode and Real Physics, decoded from a real FA file\n"
+            "via Météo-France's own EPyGrAM library. Machine-local only (not in this\n"
+            "repository) - honestly reports if unavailable here, never a fabricated result."
+        )
+        self.real_archive_button.clicked.connect(self._open_real_archive)
+        header_row.addWidget(self.real_archive_button)
+
         # Real, static status badge (added 2026-09-03, docs/reference/
         # awci_dashboard_reference.jpg parity work) - the mockup's own
         # top-right "RESEARCH STAGE / Prototype Version" badge. Pure
@@ -508,6 +549,19 @@ class AWCIDashboard(QWidget):
         self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
         self._risk_badge_detail_window: AWCIRiskBadgeDetailDialog | None = None
+        # Real Archive mode state (added 2026-09-04) - _real_archive is
+        # loaded lazily on first click and cached (the real FA file
+        # decode is not free); None means "not attempted yet", distinct
+        # from an attempt that genuinely failed (tracked by the dialog's
+        # own status label each time, since a transient failure - e.g.
+        # RESTOR mounted/unmounted between clicks - should be retried,
+        # not remembered as permanent).
+        self._real_archive_window: QDialog | None = None
+        self._real_archive_widget: AWCIVerticalProfile | None = None
+        self._real_archive_status_label: QLabel | None = None
+        self._real_archive: dict[str, Any] | None = None
+        self._real_archive_data: dict[str, dict[str, Any]] = {}
+        self._real_archive_detail_window: AWCIVerticalProfileLevelDialog | None = None
 
         subheader = QLabel("Concept Output – Research Prototype")
         subheader.setStyleSheet(label_style("text_muted", "sm"))
@@ -1255,6 +1309,93 @@ class AWCIDashboard(QWidget):
         if self._vertical_profile_detail_window is None:
             self._vertical_profile_detail_window = AWCIVerticalProfileLevelDialog(parent=self)
         self._vertical_profile_detail_window.show_detail(level_label, data["hpa"], data["result"])
+
+    # ---------------------------------------------------- Real Archive
+
+    def _open_real_archive(self) -> None:
+        """Open (or refresh, or raise) the real archived-ALADIN dialog
+        (see this module's own "Real Archive mode" docstring section).
+        Reuses AWCIVerticalProfile/AWCIVerticalProfileLevelDialog
+        exactly as _open_vertical_profile() does - same real click-to-
+        detail pattern, just fed from acf.awci.archive_field instead
+        of _synthetic_inputs()/the Real Physics volume."""
+        if self._real_archive_window is None:
+            self._real_archive_window = QDialog(self)
+            self._real_archive_window.setWindowTitle("AWCI – Real ALADIN Archive (2026-08-31 00Z)")
+            self._real_archive_window.setStyleSheet(dashboard_stylesheet())
+            layout = QVBoxLayout(self._real_archive_window)
+            self._real_archive_status_label = QLabel()
+            self._real_archive_status_label.setWordWrap(True)
+            self._real_archive_status_label.setStyleSheet(label_style("text_secondary", "xs"))
+            layout.addWidget(self._real_archive_status_label)
+            self._real_archive_widget = AWCIVerticalProfile()
+            self._real_archive_widget.set_title("Real ALADIN Archive")
+            self._real_archive_widget.levelClicked.connect(self._on_real_archive_level_clicked)
+            layout.addWidget(self._real_archive_widget)
+            self._real_archive_window.resize(340, 400)
+        assert self._real_archive_status_label is not None  # for mypy - always built above
+        assert self._real_archive_widget is not None
+
+        if self._real_archive is None:
+            try:
+                self._real_archive = load_real_aladin_restor_run(_RESTOR_ALADIN_ARCHIVE_FILE)
+            except Exception as exc:
+                # A machine without $HOME/RESTOR (every machine but the
+                # one this feature was built on) - or any other real
+                # read failure - reported honestly, never silently
+                # substituted with demo/solver data under this same
+                # button.
+                logger.warning("AWCIDashboard: real archive unavailable: %s", exc)
+                self._real_archive_status_label.setText(
+                    f"⚠ Real archive not available on this machine ({type(exc).__name__}: {exc})."
+                )
+                self._real_archive_widget.set_profile({})
+                self._real_archive_window.show()
+                self._real_archive_window.raise_()
+                self._real_archive_window.activateWindow()
+                return
+
+        lat, lon = self._point_of_interest
+        lats, lons = self._real_archive["lats"], self._real_archive["lons"]
+        within_domain = bool(lats.min() <= lat <= lats.max() and lons.min() <= lon <= lons.max())
+
+        sample = sample_archive_at_point(self._real_archive, lat, lon)
+        calc = AWCICalculator()
+        profile: dict[str, float] = {}
+        self._real_archive_data = {}
+        for level_label, inputs in sample.items():
+            result = calc.calculate(inputs)
+            profile[level_label] = result["awci"]
+            self._real_archive_data[level_label] = {"hpa": inputs["pressure"], "result": result}
+        self._real_archive_widget.set_profile(profile)
+
+        run_dt = self._real_archive.get("run_datetime")
+        if within_domain:
+            self._real_archive_status_label.setText(
+                f"Real ALADIN 00Z run ({run_dt}) - point ({lat:.2f}, {lon:.2f}) sampled via real "
+                "nearest-neighbour lookup on the archive's own North Africa grid."
+            )
+        else:
+            self._real_archive_status_label.setText(
+                f"⚠ Point ({lat:.2f}, {lon:.2f}) is OUTSIDE this real archive's own domain "
+                f"(lat {lats.min():.2f}..{lats.max():.2f}, lon {lons.min():.2f}..{lons.max():.2f}) - "
+                "the nearest-edge value below is not physically meaningful for this point."
+            )
+
+        self._real_archive_window.show()
+        self._real_archive_window.raise_()
+        self._real_archive_window.activateWindow()
+
+    def _on_real_archive_level_clicked(self, level_label: str) -> None:
+        """Same real click-to-detail pattern as
+        _on_vertical_profile_level_clicked() - reuses the identical
+        dialog class, fed from self._real_archive_data instead."""
+        data = self._real_archive_data.get(level_label)
+        if data is None:
+            return
+        if self._real_archive_detail_window is None:
+            self._real_archive_detail_window = AWCIVerticalProfileLevelDialog(parent=self)
+        self._real_archive_detail_window.show_detail(level_label, data["hpa"], data["result"])
 
     # -------------------------------------------- FL280/FL320 comparison
 

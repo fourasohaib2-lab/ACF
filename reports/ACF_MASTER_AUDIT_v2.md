@@ -4956,3 +4956,96 @@ raisons déjà disclosed (travail de physique séparé, ou décision
 architecturale délibérée). L'interpolation reste horizontalement au
 plus proche voisin (pas d'interpolation spatiale lat/lon) — même
 convention que `vertical_profile_at_point()` et le reste du dashboard.
+
+## Mise à jour 2026-09-04 — un vrai 3e niveau de données AWCI : archive ALADIN réelle (RESTOR)
+
+Demande explicite de l'utilisateur : *"tu vas trouver un dossier ...
+RESTOR ... des données réelles de aladin et arome et arpege tu peux
+les utiliser pour rendre ACF réel"*.
+
+**Investigation réelle avant tout code** : `$HOME/RESTOR` est une
+vraie boîte à outils "retour d'expérience" d'un site opérationnel
+(README daté 01/05/2022) — scripts + un vrai décodeur Fortran 32-bit
+"EDF" + de vraies sorties de modèle archivées. `RESTOR/ALADIN/data/`
+contient 17 vrais fichiers FULLPOS (00h→48h, pas de 3h) d'une vraie
+run ALADIN 00Z du **31/08/2026**, domaine Afrique du Nord réel (grille
+régulière 350×350, 0.08°, lon -10.71..17.21°E, lat 18.54..46.46°N).
+**Découverte honnête importante** : `RESTOR/AROME/data/*` ne sont PAS
+de vraies données AROME — ce sont de simples liens symboliques vers
+les mêmes fichiers ALADIN (`readlink` vérifié avant d'écrire la
+moindre ligne de code), et il n'existe aucun répertoire ARPEGE du
+tout. Donc malgré le nom du dossier, seules de vraies données ALADIN
+sont réellement exploitables ici — disclosed explicitement partout
+plutôt que caché.
+
+**Construit** : `acf/awci/archive_field.py` — un vrai lecteur qui
+décode directement le vrai fichier FA via **EPyGrAM**, la vraie
+bibliothèque Météo-France déjà intégrée et auditée dans ce code
+(`acf.data.readers.epygram_reader.EPyGrAMReader`, étendue cette
+fermeture avec un vrai accesseur de grille lon/lat,
+`read_field_lonlat_grid()`). Aucun parseur binaire/FA fait main —
+le vieux décodeur Fortran 32-bit de RESTOR n'a servi qu'à **vérifier
+indépendamment** les vraies valeurs lues par ce nouveau module (jamais
+comme dépendance runtime).
+
+7 vrais niveaux de pression constante (850/700/500/400/300/200/100
+hPa, confirmés contre le vrai namelist `namel_H` de RESTOR) + 1 vraie
+entrée "Surface" — sourcée depuis les vrais diagnostics d'écran CLS
+(`CLSTEMPERATURE`, `CLSVENT.ZONAL/MERIDIEN`, `CLSHUMI.SPECIFIQ`) plus
+la vraie pression locale réelle `SURFPRESSION`, jamais une constante
+1013.25 hPa devinée. Découverte honnête en cours de route : le champ
+`P00000...` de RESTOR n'est PAS un vrai niveau de pression constante
+malgré son nom — vérifié à la main (son propre géopotentiel réel
+correspond à une vraie altitude de terrain saharienne ~100m, pas à un
+géopotentiel 1000hPa plausible) : c'est le niveau modèle le plus bas,
+honnêtement exclu de la liste des niveaux de pression plutôt que
+mal-étiqueté.
+
+L'humidité relative réelle de RESTOR (`HUMI_RELAT`) s'est avérée être
+une fraction 0-1 (vérifié en lisant de vraies valeurs, pas 0-100 comme
+le nom pourrait suggérer) — convertie en humidité spécifique via une
+nouvelle `Moisture.specific_humidity_from_relative_humidity()`
+(`acf/science/moisture.py`), qui ne fait que composer des primitives
+déjà réelles et déjà testées (`SaturationVaporPressure`,
+`SaturationMixingRatio`, `SpecificHumidity`) — aucune nouvelle formule.
+
+**GUI** : nouveau bouton "📡 Real Archive (2026-08-31)" — réutilise
+intégralement `AWCIVerticalProfile`/`AWCIVerticalProfileLevelDialog`
+(même pattern clic→détail que "🔍 See Vertical Profile"), alimenté par
+un vrai lookup au plus proche voisin au point d'intérêt courant.
+N'interfère jamais avec l'état de Real Physics — un 3e niveau de
+données entièrement additif. Deux vrais chemins de dégradation
+honnête, jamais un repli silencieux vers demo/solveur : archive
+absente sur la machine (`$HOME/RESTOR` n'existe pas ailleurs — donnée
+réelle locale à cette machine, non versionnée) → message explicite ;
+point d'intérêt hors du vrai domaine Afrique du Nord de l'archive →
+avertissement explicite plutôt qu'une valeur de bord silencieusement
+trompeuse.
+
+**Validation réelle** : cross-check indépendant réussi — la
+température à un point de la grille lue par ce nouveau module
+EPyGrAM correspond EXACTEMENT (à la précision d'impression près) à la
+même valeur décodée indépendamment par le vieux toolchain Fortran EDF
+du site sur le même vrai fichier. 13 nouveaux tests directs sur le
+module (dont ce cross-check, un test de dégradation honnête par
+monkeypatch, et des bornes physiques sur l'humidité spécifique
+réelle sur toute la grille) + 3 tests sur `Moisture` + 6 tests
+d'intégration dashboard (bouton câblé, échec honnête sans RESTOR,
+point hors domaine, cache de l'archive chargée, clic réel ouvrant le
+détail). Suite complète **3976 → 3995**, `ruff`/`mypy` propres sur
+tous les fichiers touchés. Capture d'écran réelle envoyée : dialogue
+"Real ALADIN Archive" avec ses 8 vraies barres (11.9/8.7/4.1/1.8/2.9/
+3.6/4.7/17.6) au point d'intérêt par défaut (34.5°N, 12.3°E).
+
+**Ce qui reste réellement** : seule l'échéance 00h (analyse) est
+câblée dans le dashboard — RESTOR contient 17 vraies échéances
+(00h→48h) ; `load_real_aladin_restor_run()` accepte déjà n'importe quel
+vrai chemin `FULLPOS_*`, donc câbler les 16 autres échéances est un
+vrai chantier borné, pas une nouvelle capacité à construire. Aucune
+donnée AROME/ARPEGE réelle n'existe dans cette archive malgré son nom
+(disclosed ci-dessus). Pas de CAPE/CIN/phase de précipitation par
+niveau décodés (mêmes limites que `spatial_field.py`/`vertical_field.py`).
+Real Physics mode reste plus fort sur un point précis (un solveur
+configurable à volonté) ; la vraie valeur de ce 3e niveau est que ses
+chiffres sont une vraie sortie opérationnelle archivée, jamais une
+sortie de solveur.

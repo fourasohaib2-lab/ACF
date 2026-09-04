@@ -244,6 +244,49 @@ class EPyGrAMReader(BaseReader):
             results[fid] = self.read_field(fid)
         return results
 
+    def read_field_lonlat_grid(self, field_id: str) -> dict[str, Any]:
+        """
+        Real per-point longitude/latitude grid for one field (added
+        2026-09-04, acf.awci.archive_field's own real need: turning a
+        real FA field's 2D data array into per-point coordinates for
+        nearest-neighbour sampling). Same honest-disclosure convention
+        as read_field() above - a genuinely unavailable geometry
+        (resource not open, field not found, or epygram's own
+        get_lonlat_grid() raising) reports lon/lat as None with
+        status "NOT_READ_NO_REAL_RESOURCE_OPENED"/is_real_data False,
+        never a fabricated or reused-from-elsewhere grid.
+
+        All fields on one real FA resource share the exact same real
+        horizontal grid (confirmed against RESTOR's own real ALADIN
+        archive: every field's geometry is the identical 350x350
+        RegLLGeometry) - callers needing lon/lat for several fields
+        from the SAME open resource only need to call this once, for
+        any one real field already known to exist.
+        """
+        self._require_open()
+
+        if self._resource and hasattr(self._resource, "readfield"):
+            try:
+                field_obj = self._resource.readfield(field_id)
+                lon, lat = field_obj.geometry.get_lonlat_grid()
+                return {
+                    "field_id": field_id,
+                    "lon": lon,
+                    "lat": lat,
+                    "status": "READ_FROM_EPYGRAM_RESOURCE",
+                    "is_real_data": True,
+                }
+            except Exception:
+                pass
+
+        return {
+            "field_id": field_id,
+            "lon": None,
+            "lat": None,
+            "status": "NOT_READ_NO_REAL_RESOURCE_OPENED",
+            "is_real_data": False,
+        }
+
     def metadata(self) -> dict[str, Any]:
         """
         Extract dataset metadata (format, model, validity time, center).
@@ -267,7 +310,20 @@ class EPyGrAMReader(BaseReader):
 
         if self._resource:
             if hasattr(self._resource, "validity"):
-                meta["validity"] = str(self._resource.validity)
+                # NOTE (correction, 2026-09-04): str(FieldValidityList)
+                # renders as a real but needlessly verbose multi-line
+                # "<List of FieldValidity which date/time are:\n...\n>"
+                # - a caller building a one-line status string (e.g.
+                # acf.awci.archive_field) got that whole blob. .get()
+                # returns the real single real datetime directly when
+                # the resource has exactly one (true for every RESTOR
+                # FULLPOS file); only resources with genuinely several
+                # real validities fall back to the full real list.
+                validity = self._resource.validity
+                try:
+                    meta["validity"] = str(validity.get())
+                except Exception:
+                    meta["validity"] = str(validity)
             if hasattr(self._resource, "header"):
                 meta["header"] = str(self._resource.header)
 

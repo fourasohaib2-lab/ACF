@@ -83,3 +83,37 @@ class Moisture:
         e = Moisture.vapor_pressure(specific_humidity, pressure_hpa)
         es = Moisture.saturation_vapor_pressure(temperature_k, is_kelvin=True)
         return Moisture.relative_humidity(e, es)
+
+    @staticmethod
+    def specific_humidity_from_relative_humidity(
+        relative_humidity_percent: float, pressure_hpa: float, temperature_k: float
+    ) -> float:
+        """
+        Convenience chain: specific humidity q (kg/kg) from relative
+        humidity, pressure and temperature - the real REVERSE of
+        relative_humidity_from_temperature() above (added 2026-09-04,
+        acf.awci.archive_field's own real need: RESTOR's real archived
+        ALADIN output reports HUMI_RELAT (RH, %), not specific
+        humidity directly, at its 7 real constant-pressure levels).
+
+        Composes ONLY the already-existing, already-tested primitives
+        below (RH -> e via es, then e -> w by REUSING
+        SaturationMixingRatio's own w = 0.622*e/(p-e) formula with the
+        real actual vapor pressure e rather than es - that formula is
+        agnostic to which vapor pressure is passed in - then w -> q)
+        - no new formula is implemented here, matching this module's
+        own "single source of truth" rule.
+
+        Parameters
+        ----------
+        relative_humidity_percent : float
+            Relative humidity, 0-100 (not 0-1 - matches RESTOR's own
+            real HUMI_RELAT field convention).
+        pressure_hpa, temperature_k : float
+            Real local pressure (hPa) and temperature (K) at the same
+            point/level RH was measured/computed at.
+        """
+        es = Moisture.saturation_vapor_pressure(temperature_k, is_kelvin=True)
+        e = (relative_humidity_percent / 100.0) * es
+        w = Moisture.saturation_mixing_ratio(e, pressure_hpa)
+        return Moisture.specific_humidity(w)
