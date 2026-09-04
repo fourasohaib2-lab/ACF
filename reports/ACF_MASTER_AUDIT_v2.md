@@ -8111,3 +8111,38 @@ mis à jour (39 → 40).
 restent non mappées. Le fichier Encyclopédie et le paquet
 `acf.model4d` restent les 2 chantiers d'investigation les plus
 substantiels identifiés à ce jour.
+
+## Mise à jour 2026-09-05 (suite) — Phase 46 : catégorie "Artificial Intelligence" (FNO/GNN/PINN)
+
+**Pourquoi** : investigation des 3 feuilles restantes sous
+"Artificial Intelligence" a trouvé qu'un panneau réel et
+thématiquement exact existait déjà : `AIForecastPanel` ("🧠 AI
+OPERATIONS CENTER (PINN / GNN / FNO)", clé "ai_forecast") - avec un
+vrai bouton "⚡ Execute AI Forecast" déjà fonctionnel qui exécute le
+vrai modèle FNO entraîné (`acf.ai.simulation.fno_model.
+FourierNeuralOperator2D`, via `ESOCController.handle_run_ai_forecast()`).
+Aucun nouveau panneau nécessaire - uniquement un routage manquant.
+
+**Construit** : ajout de `"Artificial Intelligence": "ai_forecast"`
+dans `_CATEGORY_LABEL_TO_PANEL_NAME` (repli de niveau catégorie, comme
+"Simulation"/"Forecast" - une seule vraie correspondance pour les 3
+feuilles). GNN/PINN restent honnêtement affichés dans ce panneau
+comme des capacités DÉCRITES (aucune classe réelle GNN ou PINN
+n'existe nulle part dans ce code, confirmé par recherche), jamais
+présentées comme fonctionnelles - le panneau le divulguait déjà
+("capabilities, not live status"). Distinct de la catégorie déjà
+réelle "Machine Learning" (Model Calibration/Feature Importance/
+Uncertainty Quant → `MachineLearningPanel`) - concepts réellement
+différents.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 1
+nouveau test de routage vérifiant les 3 feuilles ET l'en-tête de
+catégorie (`tests/test_esoc.py`). Aucun nouveau panneau - compteur
+inchangé (40).
+
+**Ce qui reste réellement** : 6 des 15 feuilles mortes originales
+restent non mappées - "Atmosphere"/"Biosphere"/"Land Surface"/
+"Atmospheric Chemistry" (gros chantier solveur) et "Layer
+Preferences"/"API Keys" (aucun backend réel). Le fichier Encyclopédie
+et `acf.model4d` restent les 2 chantiers d'investigation les plus
+substantiels.

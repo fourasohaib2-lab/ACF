@@ -43,6 +43,13 @@ and wired now too - see `WorkspaceModesPanel`'s own docstring in
 `panel_manager.py` (a real, read-only reference browser; actually
 switching the active mode still only happens via `ESOCToolbar`'s own
 combo box - deliberately not duplicated here).
+
+UPDATE (2026-09-05, same day): the whole "Artificial Intelligence"
+category (Fourier Neural Operators (FNO)/GNN Surrogates/PINN Models)
+is real and wired now too, via a real category-level fallback to the
+already-existing `AIForecastPanel` ("ai_forecast") - no new panel
+needed, that panel's own title already reads "AI OPERATIONS CENTER
+(PINN / GNN / FNO)" and already runs the real trained FNO surrogate.
 """
 
 from typing import Any
@@ -136,6 +143,23 @@ _CATEGORY_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Output": "output",
     "Products": "products",
     "Reports": "reports",
+    # Added 2026-09-05 (same dead-click investigation, continuing past
+    # Phase 45): "Artificial Intelligence" (Fourier Neural Operators
+    # (FNO)/GNN Surrogates/PINN Models) had no real panel behind ANY of
+    # its 3 leaves - but a real, thematically exact match already
+    # exists: AIForecastPanel ("🧠 AI OPERATIONS CENTER (PINN / GNN /
+    # FNO)", panel key "ai_forecast") already has a real, working
+    # "⚡ Execute AI Forecast" button running the real trained FNO
+    # surrogate (acf.ai.simulation.fno_model.FourierNeuralOperator2D,
+    # via ESOCController.handle_run_ai_forecast() ->
+    # NeuralOperatorEngine.predict_surface_temperature()) - GNN/PINN
+    # are honestly shown there as described capabilities with no real
+    # backend anywhere in this codebase (confirmed via search), not
+    # fabricated as working. Distinct from the separate, already-real
+    # "Machine Learning" category above (Model Calibration/Feature
+    # Importance/Uncertainty Quant -> MachineLearningPanel) - the two
+    # categories cover genuinely different real concepts.
+    "Artificial Intelligence": "ai_forecast",
 }
 
 

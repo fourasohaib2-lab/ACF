@@ -387,6 +387,22 @@ def test_clicking_workspace_modes_switches_to_its_real_panel(qapp):
     assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("workspace_modes")
 
 
+def test_clicking_any_artificial_intelligence_leaf_falls_back_to_the_real_ai_forecast_panel(qapp):
+    """Real Phase 46 regression guard (2026-09-05): all 3
+    "Artificial Intelligence" leaves (FNO/GNN/PINN) - and the category
+    header itself - used to be genuine dead clicks. A real,
+    thematically exact panel already existed (AIForecastPanel, "AI
+    OPERATIONS CENTER (PINN / GNN / FNO)") - no new panel was needed,
+    only the category-level routing fallback."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+    ai_forecast_panel = layout.panel_manager.get_panel("ai_forecast")
+
+    for label in ("Fourier Neural Operators (FNO)", "GNN Surrogates", "PINN Models", "Artificial Intelligence"):
+        layout._on_sidebar_item_selected(label, "Artificial Intelligence")
+        assert layout.bottom_tabs.currentWidget() is ai_forecast_panel
+
+
 def test_clicking_dust_stays_a_deliberate_honest_no_op(qapp):
     """"Dust" (Earth System) is deliberately NOT mapped - no verified
     real mineral-dust emission formula exists anywhere in this
