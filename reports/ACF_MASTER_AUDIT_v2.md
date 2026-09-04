@@ -6215,3 +6215,49 @@ Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
 Lab, Research Mode, Configuration Management, extension API) listés
 "(planned)" — "palette de commandes" retirée de cette liste, désormais
 réelle.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 12 : Configuration Management (save/load réel)
+
+Suite explicite ("continue"), même discipline progressive. Ferme un
+autre gap déjà disclosed depuis la Phase 1 : le bouton "⚙" existait
+depuis le début mais était désactivé, son propre tooltip disant
+littéralement "Settings — not yet implemented".
+
+**Construit** : le bouton "⚙" devient un vrai `QToolButton` + `QMenu`
+(même convention que le menu d'export et le "☰" d'`ACFGeneralDashboard`)
+avec deux vraies actions : "💾 Save Configuration…" / "📂 Load
+Configuration…". Sérialise/restaure en JSON réel les vrais RÉGLAGES
+choisis par l'utilisateur — modèle, niveau, ligne de nav active, et le
+sélecteur de variable de **chacun des 9 Labs** (Overview, Dynamics,
+Thermodynamics, Microphysics, Temporal, Confidence, Multi-Model×3,
+Interactions×2, Quality) — via une seule table `_configuration_
+selectors()` partagée entre export et import (source unique de vérité,
+un nouveau Lab n'a qu'un seul endroit à mettre à jour). **Jamais les
+données calculées elles-mêmes** : charger une configuration restaure
+seulement CE QU'IL FAUT REGARDER, l'utilisateur doit toujours cliquer
+"🔄 Run" pour une vraie donnée — respect littéral de la règle "no
+fake functionality" du projet (ne jamais rejouer une sauvegarde comme
+si c'était un vrai résultat frais). Restauration défensive réelle :
+un champ inconnu/malformé (fichier édité à la main) est simplement
+ignoré, jamais une erreur fatale sur tout le reste. Un `level_index`
+restauré avant qu'un vrai volume n'existe reste honnêtement en attente
+(`_pending_level_index`) et s'applique, borné au vrai nombre de
+niveaux réels, dès le prochain run réel. Ajouté aussi à la Command
+Palette ("Save Configuration…"/"Load Configuration…").
+
+**Validation réelle** : `ruff`/`mypy` propres. 11 nouveaux tests
+(`tests/gui/test_acf_workstation_configuration.py` — export/import
+réels, ignorance réelle des champs malformés, aller-retour complet
+entre deux instances réelles du Workstation, le cas `level_index` en
+attente PUIS appliqué après un vrai run, JSON invalide honnêtement
+signalé) + suite d'intégration du chrome re-exécutée (23 tests, zéro
+régression). Vérifié aussi par un vrai script bout-en-bout (export →
+écriture disque → nouvelle instance → lecture → import, tous les
+champs corrects). Suite complète **4131 → 4142**, toujours verte.
+Capture d'écran réelle envoyée : le vrai menu à 2 actions.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
+Lab, Research Mode, extension API) listés "(planned)" —
+"Configuration Management" retirée de cette liste, désormais réelle.

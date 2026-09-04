@@ -135,11 +135,26 @@ Phase 11 (2026-09-04, same "continue" progressive discipline) added:
   button it triggers, never a new capability. Non-modal open-or-raise
   (`.show()`), same convention as `AWCIExecutionReportDialog`.
 
+Phase 12 (2026-09-04, same "continue" progressive discipline) added:
+- **Configuration Management** - the "⚙" button (previously disabled,
+  its own tooltip disclosing "not yet implemented") became a real
+  QToolButton + QMenu (same convention as the export menu/"☰" menu):
+  "💾 Save Configuration…"/"📂 Load Configuration…" serialize/restore
+  the real user-chosen SETTINGS this Workstation's model/level/nav/
+  every Lab's own variable selector currently hold, as real JSON - the
+  real computed DATA is never saved/replayed as a stand-in for a fresh
+  solver run (this project's own no-fake-functionality rule); loading
+  a configuration only restores what to look at, then the user still
+  presses "🔄 Run" for real data. Also reachable from the Command
+  Palette. A level_index restored before any real volume exists yet is
+  honestly held pending and clamped against the next real volume's own
+  real level count once computed.
+
 The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
-Study Lab, Research Mode, Configuration Management etc. are larger,
-separate pieces of the master spec beyond the original "Labs" list)
-are listed in the left nav as real, visible, DISABLED "Planned" items
-- not silently omitted, not faked - matching
+Study Lab, Research Mode etc. are larger, separate pieces of the
+master spec beyond the original "Labs" list) are listed in the left
+nav as real, visible, DISABLED "Planned" items - not silently omitted,
+not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
@@ -182,22 +197,26 @@ solver run per tab switch. Only the volume's real physical fields
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QMenu,
     QPushButton,
     QSlider,
     QStackedWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -267,6 +286,11 @@ class ACFWorkstation(QWidget):
         self._level_index = 0
         self._compute_started_at: float | None = None
         self._command_palette: CommandPaletteDialog | None = None
+        #: A real level_index restored from a loaded configuration
+        #: (added 2026-09-04) before any real volume exists yet to
+        #: clamp it against - applied in _on_volume_ready() once a
+        #: real volume's own real level count is known.
+        self._pending_level_index: int | None = None
         self._build_ui()
         self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
@@ -311,10 +335,24 @@ class ACFWorkstation(QWidget):
         self.fullscreen_button.clicked.connect(self._toggle_fullscreen)
         top_bar.addWidget(self.fullscreen_button)
 
-        self.settings_button = QPushButton("⚙")
+        # Real Configuration Management (added 2026-09-04, closing a
+        # gap this button's own tooltip used to disclose as "not yet
+        # implemented") - same "real actions behind one control"
+        # convention as the export menu (awci_map_panel.py) and
+        # ACFGeneralDashboard's own "☰" menu.
+        self.settings_button = QToolButton()
+        self.settings_button.setText("⚙")
         self.settings_button.setFixedWidth(28)
-        self.settings_button.setEnabled(False)
-        self.settings_button.setToolTip("Settings — not yet implemented")
+        self.settings_button.setToolTip("Configuration")
+        self.settings_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        settings_menu = QMenu(self.settings_button)
+        self.save_configuration_action = QAction("💾 Save Configuration…", self)
+        self.save_configuration_action.triggered.connect(self._save_configuration)
+        settings_menu.addAction(self.save_configuration_action)
+        self.load_configuration_action = QAction("📂 Load Configuration…", self)
+        self.load_configuration_action.triggered.connect(self._load_configuration)
+        settings_menu.addAction(self.load_configuration_action)
+        self.settings_button.setMenu(settings_menu)
         top_bar.addWidget(self.settings_button)
         outer.addLayout(top_bar)
 
@@ -447,6 +485,8 @@ class ACFWorkstation(QWidget):
                 ("Run Temporal Evolution (Temporal Lab)", self.temporal_panel.run_button.click),
                 ("Compute Model Confidence Field (Confidence Lab)", self.confidence_panel.run_button.click),
                 ("Compare Models (Multi-Model Lab)", self.multimodel_panel.run_button.click),
+                ("Save Configuration…", self._save_configuration),
+                ("Load Configuration…", self._load_configuration),
             ]
         )
         return commands
@@ -464,6 +504,104 @@ class ACFWorkstation(QWidget):
         self._command_palette.raise_()
         self._command_palette.activateWindow()
         self._command_palette.search_input.setFocus()
+
+    # ------------------------------------------------- Configuration Management
+
+    #: Real (config key -> the selector it reads/restores). One shared
+    #: table for both export and import (added 2026-09-04) - single
+    #: source of truth, so a new Lab's own selector only needs adding
+    #: here once, never two separately-maintained lists that could
+    #: silently drift apart.
+    def _configuration_selectors(self) -> dict[str, QComboBox]:
+        return {
+            "overview_variable": self.overview_panel.variable_selector,
+            "dynamics_variable": self.dynamics_panel.variable_selector,
+            "thermodynamics_variable": self.thermodynamics_panel.variable_selector,
+            "microphysics_variable": self.microphysics_panel.variable_selector,
+            "temporal_variable": self.temporal_panel.variable_selector,
+            "confidence_variable": self.confidence_panel.variable_selector,
+            "multimodel_model_a": self.multimodel_panel.model_a_selector,
+            "multimodel_model_b": self.multimodel_panel.model_b_selector,
+            "multimodel_display": self.multimodel_panel.display_selector,
+            "interactions_variable_a": self.interactions_panel.variable_a_selector,
+            "interactions_variable_b": self.interactions_panel.variable_b_selector,
+            "quality_variable": self.quality_panel.variable_selector,
+        }
+
+    def _export_configuration(self) -> dict[str, Any]:
+        """Real UI configuration snapshot - the real user-chosen
+        SETTINGS this Workstation's own model/level/nav/selectors
+        currently hold. Never the computed data itself: real data is
+        always re-computed fresh from a real solver run on "🔄 Run",
+        never saved/replayed as a stand-in for one (this project's own
+        no-fake-functionality rule) - loading a configuration restores
+        what to look at, not a snapshot pretending to already be a
+        real result."""
+        config: dict[str, Any] = {
+            "model": self.model_selector.currentText(),
+            "level_index": self._level_index,
+            "nav_row": self.nav_list.currentRow(),
+        }
+        for key, selector in self._configuration_selectors().items():
+            config[key] = selector.currentText()
+        return config
+
+    def _apply_configuration(self, config: dict[str, Any]) -> None:
+        """Real, defensive restore - `config` may be a real file a
+        user hand-edited or copied between sessions, so every field is
+        individually validated before use; an unknown/malformed field
+        is simply skipped (QComboBox.setCurrentText() itself already
+        no-ops on a value absent from a combo's own real items - no
+        separate validation needed there), never raised as a fatal
+        error over one bad field."""
+        model = config.get("model")
+        if isinstance(model, str) and model in MODEL_CONFIGS:
+            self.model_selector.setCurrentText(model)
+
+        for key, selector in self._configuration_selectors().items():
+            value = config.get(key)
+            if isinstance(value, str):
+                selector.setCurrentText(value)
+
+        nav_row = config.get("nav_row")
+        if isinstance(nav_row, int) and 0 <= nav_row < len(_ENABLED_MODULES):
+            self.nav_list.setCurrentRow(nav_row)
+
+        level_index = config.get("level_index")
+        if isinstance(level_index, int) and level_index >= 0:
+            if self._volume is not None:
+                clamped = max(0, min(level_index, self._volume["n_levels"] - 1))
+                self.level_slider.setValue(clamped)
+            else:
+                self._pending_level_index = level_index
+
+    def _save_configuration(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Workstation Configuration", "acf_workstation_config.json", "JSON File (*.json)"
+        )
+        if not path:
+            return
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(self._export_configuration(), handle, indent=2)
+        self.status_label.setText(f"✅ Configuration saved to {path}.")
+
+    def _load_configuration(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Load Workstation Configuration", "", "JSON File (*.json)"
+        )
+        if not path:
+            return
+        try:
+            with open(path, encoding="utf-8") as handle:
+                config = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            self.status_label.setText(f"⚠ Could not load configuration: {exc}")
+            return
+        if not isinstance(config, dict):
+            self.status_label.setText("⚠ Could not load configuration: file does not contain a JSON object.")
+            return
+        self._apply_configuration(config)
+        self.status_label.setText(f"✅ Configuration loaded from {path}.")
 
     @staticmethod
     def _label(text: str) -> QLabel:
@@ -503,10 +641,18 @@ class ACFWorkstation(QWidget):
         n_levels = volume["n_levels"]
         self.level_slider.setMaximum(max(0, n_levels - 1))
         self.level_slider.setEnabled(True)
+        # A real, pending level_index restored from a loaded
+        # configuration (added 2026-09-04 - see _apply_configuration())
+        # takes priority over the default level 0, clamped to this
+        # real volume's own real level count.
+        initial_level = 0
+        if self._pending_level_index is not None:
+            initial_level = max(0, min(self._pending_level_index, n_levels - 1))
+            self._pending_level_index = None
         self.level_slider.blockSignals(True)
-        self.level_slider.setValue(0)
+        self.level_slider.setValue(initial_level)
         self.level_slider.blockSignals(False)
-        self._level_index = 0
+        self._level_index = initial_level
         self._update_level_label()
         self._render_all_panels()
 
