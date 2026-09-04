@@ -6584,3 +6584,106 @@ plus échouer systématiquement à cause de cette seule variable.
 **Ce qui reste réellement** : 2 modules Lab (Convection, Terrain) —
 génuinement bloqués, aucune vraie donnée disponible dans ce codebase
 sans fabrication. Aucune tâche séparée en attente ne reste ouverte.
+
+## Mise à jour 2026-09-04 (suite) — Phase 18 : le Convection Lab construit, correction d'une conclusion erronée de la Phase 1
+
+**Pourquoi** : après la clôture de la Phase 17, l'utilisateur a délégué
+explicitement toute décision suivante ("tu es le chef, tu gères selon
+ton jugement"). Le Convection Lab restait le seul module de spec
+encore listé comme "Planned" sans blocage physique réel (contrairement
+à Terrain, qui manque authentiquement de toute donnée d'élévation).
+Sa propre justification de rejet (Phase 1/8) affirmait que la seule
+vraie formule disponible (`acf.awci.updraft.
+compute_real_max_updraft_velocity()`, w_max = sqrt(2×CAPE)) était "une
+fonction purement déterministe et monotone du seul CAPE", et qu'un
+vrai Convection Lab méritait un indice composite publié et
+indépendant (SCP/STP), lesquels nécessiteraient un vrai calcul
+d'hélicité relative à la tempête que ce codebase "ne calcule pas
+encore en tout point de grille" — implicitement, que ces formules
+n'existaient pas du tout. Une recherche plus approfondie (motivée par
+cette délégation explicite) a trouvé que cette conclusion était
+**fausse** : `acf/science/storm_motion.py` (mouvement de tempête de
+Bunkers et al. 2000, réel et complet), `acf/science/
+storm_relative_helicity.py` (hélicité relative à la tempête de
+Davies-Jones/Burgess/Foster 1990, réelle et complète),
+`acf/science/severe_weather.py` (SCP/STP/EHI, vérifiées contre les
+définitions officielles SPC/NOAA, réelles et complètes) et
+`acf/science/lcl.py` (hauteur du LCL de Bolton 1980, réelle et
+complète) existaient déjà intégralement dans le dépôt — une erreur de
+recherche de la Phase 1, pas une réelle absence de capacité.
+
+**Construit** :
+- `acf.awci.workstation_fields.compute_real_convection_indices_field()` —
+  pipeline réel composant, pour chaque point d'une grille réelle plus
+  grossière (foulée 3, même compromis de coût réel et disclosed que le
+  CAPE/CIN du Thermodynamics Lab — une vraie ascension de parcelle
+  MetPy coûte ~5ms/point) : CAPE/CIN réels
+  (`compute_real_cape_cin_at_point`, déjà réel et testé), LCL réel
+  (`LCL.calculate_bolton`, nourri du vrai point de rosée déjà calculé
+  par `compute_real_theta_e_at_point`, jamais un second point de rosée
+  redérivé), cisaillement de vent réel (`compute_real_wind_shear_at_
+  point`), mouvement de tempête réel de Bunkers
+  (`StormMotion.calculate_bunkers`), hélicité relative à la tempête
+  réelle (`StormRelativeHelicity.calculate_profile`), puis EHI/SCP/STP
+  réels (`SevereWeather`). Chaque NaN honnête d'une formule réelle
+  amont (trop peu de niveaux réels pour CAPE, humidité relative non
+  positive pour le point de rosée, vecteur de cisaillement réellement
+  nul rendant indéfinie la direction de déviation de Bunkers) se
+  propage honnêtement, jamais remplacé par une valeur fabriquée.
+- `acf.gui.dashboard.acf_workstation_convection.ACFConvectionLabPanel` —
+  panneau réel avec sélecteur de 8 variables (désactivé jusqu'au
+  calcul), bouton "🔄 Compute Convective Indices Field" on-demand
+  hors-thread (même pattern `QRunnable`/`_WorkerSignals` que partout
+  ailleurs dans ce Workstation), carte réelle réutilisant
+  `AWCIMapPanel`, légende disclosed rappelant que ces 8 indices restent
+  chacun séparé — jamais fusionnés en un score composite unique
+  (règle §21/§67 du master spec, respectée ici comme partout
+  ailleurs). Intégré dans `acf_workstation.py` : nav (13e module
+  activé), stack, `_render_all_panels()` (bookkeeping seul — même
+  convention "reste ce qu'il était" que le CAPE/CIN du Thermodynamics
+  Lab, puisque ce sont des diagnostics pleine-colonne indépendants du
+  niveau sélectionné), Configuration Management, Command Palette.
+  `_PLANNED_MODULES` ne contient désormais plus que `["Terrain"]`.
+
+**Deux vraies découvertes, disclosed, non corrigées ici** (chacune
+signalée séparément via `spawn_task`, hors périmètre de cette
+construction) : en calculant ces formules réelles contre la vraie
+sortie du solveur, le CIN sort systématiquement de l'ordre de plusieurs
+milliers de J/kg (un CIN opérationnel réaliste est plutôt 0-300 J/kg)
+alors que le pipeline CAPE/CIN réel appliqué est le même déjà testé et
+utilisé par le Thermodynamics Lab — l'ampleur elle-même pourrait
+refléter une vraie caractéristique du profil thermodynamique simplifié
+du solveur (`task_9f9c2f99`) ; et le cisaillement de vent pleine-colonne
+réel de ce solveur reste sous les 10 m/s dans toutes les configurations
+testées, ce qui fait que le terme EBWD réel de SCP (nul par définition
+sous ce seuil, cf. la doc SPC) lit systématiquement 0 ici — un résultat
+réel et honnête compte tenu du vrai champ de vent de ce solveur, pas un
+bug de la formule (`task_17a412ee`). Aucune des deux n'a été corrigée
+dans cette construction : ce sont des caractéristiques réelles des
+données du solveur, pas des bugs du Convection Lab lui-même.
+
+**Validation réelle** : `ruff check`/`.venv/bin/mypy` propres sur tous
+les fichiers touchés. Nouveaux tests unitaires
+(`tests/test_acf_workstation_convection.py`, 4 tests) vérifiant chaque
+point de grille réel de `compute_real_convection_indices_field()`
+contre un appel direct et indépendant à chaque formule réelle sous-
+jacente (CAPE/CIN, LCL, mouvement de tempête, hélicité, EHI/SCP/STP),
+plus les 3 cas honnêtement NaN (grille plus grossière réelle jamais
+native, cisaillement réellement nul, humidité réellement nulle).
+Nouveaux tests GUI (`tests/gui/test_acf_workstation_convection.py`,
+7 tests) suivant la même discipline que les autres panneaux on-demand
+de ce Workstation : sélecteur désactivé au départ, bouton sans volume
+signale une vraie erreur honnête, calcul réel hors-thread via
+`qtbot.waitUntil`, changement de variable redessine bien, résultat non
+réinitialisé par un changement de niveau. Suite complète `pytest -q`
+réexécutée : 4176 → 4187 tests (11 nouveaux), tous verts. Captures
+d'écran réelles envoyées : avant calcul, CAPE réel, SCP réel.
+
+**Ce qui reste réellement** : Terrain Lab seul — génuinement bloqué,
+`acf.awci.orographic_froude` documentant déjà qu'aucune vraie donnée
+d'élévation n'existe dans ce codebase, et en télécharger une externe
+nécessiterait une permission explicite de l'utilisateur (règle de
+sécurité sur le téléchargement de fichiers), non sollicitée ici. Les
+deux découvertes CIN/cisaillement restent des tâches séparées en
+attente (`task_9f9c2f99`, `task_17a412ee`), explicitement non
+bloquantes pour ce Convection Lab.

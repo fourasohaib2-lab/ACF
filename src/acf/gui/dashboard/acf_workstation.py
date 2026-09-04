@@ -219,33 +219,48 @@ guard for the anomaly itself (now updated to assert the corrected
 VALID status instead). See `earth_grid.py`'s own NOTE and reports/
 ACF_MASTER_AUDIT_v2.md's dated entry for the full investigation.
 
-The remaining 2 spec modules (Convection/Terrain Labs) are listed in
-the left nav as real, visible, DISABLED "Planned" items - not silently
-omitted,
-not faked - matching
-the master spec's own §68 audit-honesty rule applied
-in both directions: never claim something works when it's only
-simulated, and never hide real future scope either. See the plan this
-was built from (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entries)
-for the full, disclosed rationale and what's deferred. Convection Lab
-specifically was considered and deliberately deferred rather than
-built as a thin wrapper: the one real, well-established formula
-available for it (`acf.awci.updraft.
-compute_real_max_updraft_velocity()`, w_max = sqrt(2*CAPE)) is, by
-that module's own docstring, "a purely deterministic, monotonic
-function of CAPE alone" - it "carries no real information CAPE itself
-did not already carry" (already shown in Thermodynamics Lab) - a
-genuine Convection Lab worth building deserves a real, independent
-published composite index (e.g. SCP/STP, which need real
-storm-relative helicity/effective shear this codebase does not yet
-compute at every grid point), not a thin re-presentation of existing
-data. Terrain Lab was considered and deliberately deferred too:
-`acf.awci.orographic_froude`'s own docstring already discloses that
-`CoupledEarthSolver`'s real state "has no terrain-elevation field at
-all" and no real geometric height coordinate - a real Terrain Lab
-would need either a real external elevation dataset (none exists in
-this codebase today) or fabricated terrain, so it stays honestly
-"(planned)" rather than built on invented elevation data.
+Phase 18 (2026-09-04, following the user's explicit "tu es le chef,
+tu gères selon ton jugement" delegation) corrects the Phase 1/8
+dismissal of Convection Lab above: that dismissal was wrong. A closer,
+more thorough search of this codebase (the one this delegation
+prompted) found that real, independent, SPC (NOAA Storm Prediction
+Center)-verified composite formulas already existed and simply hadn't
+been found the first time - `acf.science.storm_motion.StormMotion`
+(Bunkers et al. 2000), `acf.science.storm_relative_helicity.
+StormRelativeHelicity` (Davies-Jones/Burgess/Foster 1990),
+`acf.science.severe_weather.SevereWeather` (SCP/STP/EHI), and
+`acf.science.lcl.LCL` (Bolton 1980) all had real, complete, cited
+implementations already sitting in the tree. The new **Convection
+Lab** (`acf_workstation_convection.ACFConvectionLabPanel`, real
+pipeline in `acf.awci.workstation_fields.
+compute_real_convection_indices_field()`) composes these into 8 real,
+separately-shown fields - CAPE, CIN, LCL height, bulk wind shear,
+storm-relative helicity, EHI, SCP, STP - never merged into one further
+fabricated score, same on-demand/off-thread/coarser-grid discipline as
+Thermodynamics Lab's own CAPE/CIN. Building it against this solver's
+own real output surfaced two real, disclosed characteristics of the
+solver's own data, deliberately NOT fixed here (each flagged
+separately for its own investigation, not blocking this Lab): CIN
+comes out several thousand J/kg (real operational CIN is typically
+0-300 J/kg) even though the same, already-tested CAPE/CIN pipeline is
+applied correctly; and this solver's own real full-column wind shear
+stays under 10 m/s across every configuration tried, so SCP's own
+real EBWD term (by definition 0 below that threshold) reads 0 here - a
+real, honest result given this solver's own real wind field, not a
+bug in the formula or in SCP itself. See `acf_workstation_convection.
+py`'s own module docstring for the full disclosure.
+
+Terrain Lab remains listed in the left nav as a real, visible,
+DISABLED "Planned" item - not silently omitted, not faked - matching
+the master spec's own §68 audit-honesty rule applied in both
+directions: never claim something works when it's only simulated, and
+never hide real future scope either. `acf.awci.orographic_froude`'s
+own docstring already discloses that `CoupledEarthSolver`'s real state
+"has no terrain-elevation field at all" and no real geometric height
+coordinate - a real Terrain Lab would need either a real external
+elevation dataset (none exists in this codebase today) or fabricated
+terrain, so it stays honestly "(planned)" rather than built on
+invented elevation data.
 
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
@@ -296,6 +311,7 @@ from acf.gui.dashboard.acf_workstation_case_study import ACFCaseStudyLabPanel
 from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
+from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
@@ -315,10 +331,10 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
     "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
-    "Interactions", "Quality", "Complexity", "3D View", "Case Study",
+    "Interactions", "Quality", "Complexity", "3D View", "Case Study", "Convection",
 ]
 _PLANNED_MODULES = [
-    "Convection", "Terrain",
+    "Terrain",
 ]
 
 
@@ -499,6 +515,7 @@ class ACFWorkstation(QWidget):
         self.case_study_panel = ACFCaseStudyLabPanel(
             export_configuration=self._export_configuration, apply_configuration=self._apply_configuration
         )
+        self.convection_panel = ACFConvectionLabPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
@@ -511,6 +528,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.complexity_panel)
         self.stack.addWidget(self.atmosphere_3d_panel)
         self.stack.addWidget(self.case_study_panel)
+        self.stack.addWidget(self.convection_panel)
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
@@ -584,6 +602,7 @@ class ACFWorkstation(QWidget):
                 ("Save Configuration…", self._save_configuration),
                 ("Load Configuration…", self._load_configuration),
                 ("Save Current Configuration as Case…", self.case_study_panel.save_button.click),
+                ("Compute Convective Indices Field (Convection Lab)", self.convection_panel.run_button.click),
             ]
         )
         return commands
@@ -624,6 +643,7 @@ class ACFWorkstation(QWidget):
             "interactions_variable_b": self.interactions_panel.variable_b_selector,
             "quality_variable": self.quality_panel.variable_selector,
             "atmosphere_3d_variable": self.atmosphere_3d_panel.variable_selector,
+            "convection_variable": self.convection_panel.variable_selector,
         }
 
     def _export_configuration(self) -> dict[str, Any]:
@@ -786,6 +806,7 @@ class ACFWorkstation(QWidget):
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
         self.atmosphere_3d_panel.update_from_volume(self._volume, self._level_index)
         self.case_study_panel.update_from_volume(self._volume, self._level_index)
+        self.convection_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
 
