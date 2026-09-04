@@ -50,6 +50,13 @@ is real and wired now too, via a real category-level fallback to the
 already-existing `AIForecastPanel` ("ai_forecast") - no new panel
 needed, that panel's own title already reads "AI OPERATIONS CENTER
 (PINN / GNN / FNO)" and already runs the real trained FNO surrogate.
+
+UPDATE (2026-09-05, same day): 2 more "Earth System" leaves are real
+and wired now too - "Land Surface" (`LandSurfacePanel`, a real 4-layer
+soil model) and "Biosphere" (`BiospherePanel`, a real dynamic
+vegetation model) - see their own docstrings in `panel_manager.py`.
+"Atmosphere"/"Atmospheric Chemistry" stay unmapped - each would need
+its own real solver-state display, not attempted in this pass.
 """
 
 from typing import Any
@@ -98,6 +105,14 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     "Volcanoes": "volcanoes_panel",
     "Wildfires": "wildfires_panel",
     "Aerosols": "aerosols_panel",
+    # Added 2026-09-05 (same investigation, Earth System category): 2
+    # more real leaves - see LandSurfacePanel/BiospherePanel's own
+    # docstrings in panel_manager.py. "Atmosphere"/"Atmospheric
+    # Chemistry" (the remaining sibling leaves) stay unmapped - each
+    # would need a real solver-state display of its own, not attempted
+    # in this pass.
+    "Land Surface": "land_surface",
+    "Biosphere": "biosphere",
     # Added 2026-09-05 (same investigation, HPC category): real 2D
     # domain decomposition, already registered as "mpi_domain" - see
     # MPIDomainTopologyPanel's own docstring for its honest scope

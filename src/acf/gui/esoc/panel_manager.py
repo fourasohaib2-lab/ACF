@@ -2035,6 +2035,144 @@ class WorkspaceModesPanel(BasePanelWidget):
         )
 
 
+class LandSurfacePanel(BasePanelWidget):
+    """41. Land Surface - real, previously-unbuilt System Explorer
+    leaf (2026-09-05): "Earth System / Land Surface" had no real panel
+    behind it. Real, cited (Richards equation moisture transport, heat
+    conduction) 4-layer soil model (`acf.simulation_engine.land_solver.
+    soil_model.SoilModel`, already registered as "soil_model") - shows
+    the real initial 4-layer soil state, and lets the operator advance
+    it one real time step with real forcing (precipitation,
+    evapotranspiration, surface temperature)."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌱 LAND SURFACE — SOIL MOISTURE & THERMAL DYNAMICS", "#8D6E63", registry, dispatcher)
+        module = registry.get_module("soil_model")
+        if module is None:
+            self.main_layout.addWidget(_not_connected_label("soil_model"))
+            return
+        self._soil_model: Any = module
+        self._state = module.initialize_soil_state((1, 1))
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Precip rate (mm/h):"))
+        self.precip = QDoubleSpinBox()
+        self.precip.setRange(0.0, 200.0)
+        self.precip.setValue(0.0)
+        row.addWidget(self.precip)
+        row.addWidget(QLabel("Evapotranspiration (mm/h):"))
+        self.evapo = QDoubleSpinBox()
+        self.evapo.setRange(0.0, 20.0)
+        self.evapo.setValue(0.2)
+        row.addWidget(self.evapo)
+        row.addWidget(QLabel("Surface temperature (K):"))
+        self.surface_temp = QDoubleSpinBox()
+        self.surface_temp.setRange(200.0, 330.0)
+        self.surface_temp.setValue(295.0)
+        row.addWidget(self.surface_temp)
+        row.addWidget(QLabel("Δt (hours):"))
+        self.dt_hours = QDoubleSpinBox()
+        self.dt_hours.setRange(0.1, 24.0)
+        self.dt_hours.setValue(1.0)
+        row.addWidget(self.dt_hours)
+        self.main_layout.addLayout(row)
+
+        self.button = QPushButton("🌱 Advance Real Soil State")
+        self.button.clicked.connect(self._advance)
+        self.main_layout.addWidget(self.button)
+
+        self.table = QTableWidget(4, 3)
+        self.table.setHorizontalHeaderLabels(["Layer depth (m)", "Soil moisture (m³/m³)", "Soil temperature (K)"])
+        self.main_layout.addWidget(self.table)
+
+        self._render()
+
+    def _advance(self) -> None:
+        mm_per_hour_to_m_per_s = 1.0 / (1000.0 * 3600.0)
+        precip_rate = np.full((1, 1), self.precip.value() * mm_per_hour_to_m_per_s)
+        evapo_rate = np.full((1, 1), self.evapo.value() * mm_per_hour_to_m_per_s)
+        surface_temp = np.full((1, 1), self.surface_temp.value())
+        dt_seconds = self.dt_hours.value() * 3600.0
+        self._state = self._soil_model.step(self._state, precip_rate, evapo_rate, surface_temp, dt=dt_seconds)
+        self._render()
+
+    def _render(self) -> None:
+        depths = self._soil_model.layer_depths
+        for i in range(4):
+            self.table.setItem(i, 0, QTableWidgetItem(f"{depths[i]:.2f}"))
+            self.table.setItem(i, 1, QTableWidgetItem(f"{float(self._state['soil_moisture'][i, 0, 0]):.4f}"))
+            self.table.setItem(i, 2, QTableWidgetItem(f"{float(self._state['soil_temperature'][i, 0, 0]):.2f}"))
+        self.table.resizeColumnsToContents()
+
+
+class BiospherePanel(BasePanelWidget):
+    """42. Biosphere - real, previously-unbuilt System Explorer leaf
+    (2026-09-05): "Earth System / Biosphere" had no real panel behind
+    it. Real, disclosed dynamic vegetation model
+    (`acf.simulation_engine.land_solver.vegetation_model.
+    VegetationModel`, already registered as "vegetation_model") -
+    computes real LAI/NDVI/NPP/canopy resistance from real
+    temperature/soil-moisture/solar-radiation forcing.
+
+    Honest disclosure: `CoupledEarthSolver`'s own `initialize_coupled_
+    state()` "Biomass" field is a flat, hardcoded 5.0 kg/m² constant
+    everywhere (a real, disclosed placeholder, never dynamically
+    modeled - see that method's own source) - this panel instead uses
+    `VegetationModel`'s own real, temperature/moisture/light-limited
+    growth formulation, a genuinely more informative real capability
+    already present in this codebase under a different, previously-
+    unconnected class."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌿 BIOSPHERE — VEGETATION DYNAMICS", "#7CB342", registry, dispatcher)
+        module = registry.get_module("vegetation_model")
+        if module is None:
+            self.main_layout.addWidget(_not_connected_label("vegetation_model"))
+            return
+        self._model: Any = module
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Temperature (°C):"))
+        self.temp_c = QDoubleSpinBox()
+        self.temp_c.setRange(-40.0, 55.0)
+        self.temp_c.setValue(20.0)
+        row.addWidget(self.temp_c)
+        row.addWidget(QLabel("Soil moisture (m³/m³):"))
+        self.soil_moisture = QDoubleSpinBox()
+        self.soil_moisture.setRange(0.0, 0.45)
+        self.soil_moisture.setDecimals(3)
+        self.soil_moisture.setValue(0.25)
+        row.addWidget(self.soil_moisture)
+        row.addWidget(QLabel("Solar radiation (W/m²):"))
+        self.solar = QDoubleSpinBox()
+        self.solar.setRange(0.0, 1200.0)
+        self.solar.setValue(400.0)
+        row.addWidget(self.solar)
+        self.main_layout.addLayout(row)
+
+        self.button = QPushButton("🌿 Compute Vegetation Indices")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        temperature_k = np.array([[self.temp_c.value() + 273.15]])
+        soil_moisture = np.array([[self.soil_moisture.value()]])
+        solar_radiation = np.array([[self.solar.value()]])
+        result = self._model.compute_vegetation_indices(temperature_k, soil_moisture, solar_radiation)
+        self.result.setText(
+            f"Real LAI: {float(result['LAI'][0, 0]):.3f} m²/m²\n"
+            f"Real NDVI: {float(result['NDVI'][0, 0]):.3f}\n"
+            f"Real NPP: {float(result['NPP'][0, 0]):.3f} gC/m²/day\n"
+            f"Real canopy resistance: {float(result['canopy_resistance'][0, 0]):.1f} s/m"
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -2083,6 +2221,8 @@ class PanelManager:
             "aerosols_panel": AerosolsPanel(registry, dispatcher),
             "mpi_domain_topology": MPIDomainTopologyPanel(registry, dispatcher),
             "workspace_modes": WorkspaceModesPanel(registry, dispatcher),
+            "land_surface": LandSurfacePanel(registry, dispatcher),
+            "biosphere": BiospherePanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:

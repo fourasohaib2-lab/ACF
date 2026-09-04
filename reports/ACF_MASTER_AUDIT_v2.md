@@ -8242,3 +8242,49 @@ maintenant clos (Encyclopédie construite en Phase 47, model4d
 investigué et documenté en Phase 48). Il ne reste que les 6 feuilles
 ESOC mortes nécessitant soit un gros chantier solveur, soit n'ayant
 aucun backend réel.
+
+## Mise à jour 2026-09-05 (suite) — Phase 49 : "Land Surface" et "Biosphere" (Earth System)
+
+**Pourquoi** : investigation des 4 feuilles "Earth System" restantes
+a trouvé 2 vrais moteurs directement exploitables et déjà enregistrés
+(`SoilModel`/`VegetationModel`), déjà utilisés en interne par
+`CoupledEarthSolver` mais jamais exposés séparément.
+
+**Construit** :
+- `LandSurfacePanel` (41e panneau) - vrai modèle de sol à 4 couches
+  cité (équation de Richards pour le transport d'humidité,
+  conduction thermique), `acf.simulation_engine.land_solver.
+  soil_model.SoilModel` (déjà enregistré "soil_model") - affiche
+  l'état initial réel des 4 couches, et permet à l'opérateur de faire
+  avancer l'état d'un vrai pas de temps avec un forçage réel
+  (précipitation, évapotranspiration, température de surface).
+- `BiospherePanel` (42e panneau) - vrai modèle dynamique de
+  végétation, `acf.simulation_engine.land_solver.vegetation_model.
+  VegetationModel` (déjà enregistré "vegetation_model") - calcule
+  LAI/NDVI/NPP/résistance de canopée réels à partir d'un forçage réel
+  (température, humidité du sol, rayonnement solaire).
+
+**Divulgation honnête** : le champ "Biomass" propre de
+`CoupledEarthSolver.initialize_coupled_state()` est une constante
+plate codée en dur (5.0 kg/m² partout, jamais modélisée
+dynamiquement) - `BiospherePanel` utilise à la place la vraie
+formulation de croissance limitée par température/humidité/lumière de
+`VegetationModel`, une vraie capacité déjà présente dans ce code sous
+une classe différente et jusqu'ici non connectée - une amélioration
+honnête, jamais une dissimulation du placeholder existant.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 9
+nouveaux tests (5 pour `LandSurfacePanel`, 4 pour `BiospherePanel`),
+incluant une vérification que la pluie intense sature bien la couche
+de surface au point de porosité réel, que les couches profondes
+restent authentiquement inchangées après un seul pas (conforme au
+périmètre documenté du modèle), et qu'une température de gel arrête
+bien la croissance réelle. 1 nouveau test de routage. Compteur de
+panneaux ESOC mis à jour (40 → 42).
+
+**Ce qui reste réellement** : "Atmosphere"/"Atmospheric Chemistry"
+restent les 2 dernières feuilles mortes originales - chacune
+nécessiterait un vrai affichage d'état de solveur atmosphérique
+complet, plus substantiel que les modèles ponctuels sol/végétation
+utilisés ici. "Layer Preferences"/"API Keys" restent sans aucun
+backend réel.
