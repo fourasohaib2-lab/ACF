@@ -6136,3 +6136,39 @@ Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
 Lab, Research Mode, Configuration Management, palette de commandes,
 raccourcis, extension API) listés "(planned)" — "export" retiré de
 cette liste, désormais réel.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 10 : raccourcis clavier réels
+
+Suite explicite ("continue"), même discipline progressive. Petite
+passe fermant un autre item déjà disclosed dans le plan initial
+("raccourcis clavier").
+
+**Construit** : 3 vrais raccourcis, tous des accès plus rapides à des
+actions déjà réelles, aucune nouvelle capacité inventée :
+- **Ctrl+R** — redéclenche exactement le même vrai `refresh()` que le
+  bouton "🔄 Run".
+- **F11** — bascule exactement le même vrai plein écran que le bouton
+  "⛶".
+- **Ctrl+1..Ctrl+9, Ctrl+0** — saute au module réel correspondant par
+  sa position réelle dans `_ENABLED_MODULES` — un seul raccourci
+  généré par module de cette même liste (10 modules réels aujourd'hui
+  = 10 raccourcis), jamais une liste séparée à maintenir à la main qui
+  pourrait dériver hors synchronisation si un module est ajouté ou
+  retiré de la nav.
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests
+(`tests/gui/test_acf_workstation_shortcuts.py` — vérifiant le vrai
+nombre de raccourcis, la vraie séquence Ctrl+chiffre de chacun, et
+que déclencher chacun appelle bien la vraie méthode attendue) + suite
+d'intégration du chrome re-exécutée (zéro régression). Vérifié
+manuellement de bout en bout (script réel construisant `ACFWorkstation`
+et émettant `.activated` sur les raccourcis Ctrl+0/Ctrl+1 : bascule
+bien vers la ligne de nav 9 puis 0). Suite complète **4116 → 4121**,
+toujours verte.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente) ; 2 modules Lab restants (Convection,
+Terrain) plus les pièces plus larges du spec maître (3D/4D, Case Study
+Lab, Research Mode, Configuration Management, une vraie palette de
+commandes, extension API) listés "(planned)" — "raccourcis" retiré de
+cette liste, désormais réel.

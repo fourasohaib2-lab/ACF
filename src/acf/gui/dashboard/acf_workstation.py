@@ -115,11 +115,20 @@ Phase 9 (2026-09-04, same "continue" progressive discipline) added:
   show_demo_fallback=False empty state) honestly written as an empty
   CSV field / JSON `null`, never a fabricated 0.
 
+Phase 10 (2026-09-04, same "continue" progressive discipline) added:
+- **Real keyboard shortcuts** - Ctrl+R re-triggers the exact same real
+  `refresh()` the "🔄 Run" button already does; F11 toggles the exact
+  same real fullscreen the "⛶" button already does; Ctrl+1..Ctrl+9/
+  Ctrl+0 jump to one of this Workstation's real enabled modules by its
+  real position in `_ENABLED_MODULES` - one real shortcut per real
+  module, generated from that same list, so it can never drift out of
+  sync with the nav it targets.
+
 The remaining 2 spec modules (Convection/Terrain Labs - 3D/4D, Case
-Study Lab, Research Mode, Configuration Management etc. are larger,
-separate pieces of the master spec beyond the original "Labs" list)
-are listed in the left nav as real, visible, DISABLED "Planned" items
-- not silently omitted, not faked - matching
+Study Lab, Research Mode, Configuration Management, a real Command
+Palette etc. are larger, separate pieces of the master spec beyond the
+original "Labs" list) are listed in the left nav as real, visible,
+DISABLED "Planned" items - not silently omitted, not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
 simulated, and never hide real future scope either. See the plan this
@@ -167,6 +176,7 @@ import time
 from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -244,6 +254,7 @@ class ACFWorkstation(QWidget):
         self._level_index = 0
         self._compute_started_at: float | None = None
         self._build_ui()
+        self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
         # Honest, disclosed choice, same convention as AWCIDashboard/
         # ACFGeneralDashboard's own constructors: no real background
@@ -358,6 +369,30 @@ class ACFWorkstation(QWidget):
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
+
+    def _setup_shortcuts(self) -> None:
+        """Real keyboard shortcuts (added 2026-09-04) - faster real
+        access to already-real actions, nothing new invented: Ctrl+R
+        re-triggers the exact same real refresh() the "🔄 Run" button
+        already does; F11 toggles the exact same real fullscreen the
+        "⛶" button already does; Ctrl+1..Ctrl+9/Ctrl+0 jump to one of
+        this Workstation's real enabled modules by its real position in
+        _ENABLED_MODULES (never more shortcuts than real modules - a
+        module added/removed there automatically gets/loses its own
+        shortcut, no separately hand-maintained list to drift out of
+        sync)."""
+        self.shortcut_run = QShortcut(QKeySequence("Ctrl+R"), self)
+        self.shortcut_run.activated.connect(self.refresh)
+
+        self.shortcut_fullscreen = QShortcut(QKeySequence("F11"), self)
+        self.shortcut_fullscreen.activated.connect(self._toggle_fullscreen)
+
+        self.nav_shortcuts: list[QShortcut] = []
+        for row, _name in enumerate(_ENABLED_MODULES[:10]):  # Ctrl+1..Ctrl+9, Ctrl+0 - real digit keys, no more
+            key_digit = (row + 1) % 10  # row 0 -> "1", ..., row 8 -> "9", row 9 -> "0"
+            shortcut = QShortcut(QKeySequence(f"Ctrl+{key_digit}"), self)
+            shortcut.activated.connect(lambda target_row=row: self.nav_list.setCurrentRow(target_row))
+            self.nav_shortcuts.append(shortcut)
 
     @staticmethod
     def _label(text: str) -> QLabel:
