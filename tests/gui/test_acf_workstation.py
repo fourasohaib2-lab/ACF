@@ -109,6 +109,9 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     ws.nav_list.setCurrentRow(12)
     assert ws.stack.currentWidget() is ws.convection_panel
 
+    ws.nav_list.setCurrentRow(13)
+    assert ws.stack.currentWidget() is ws.terrain_panel
+
 
 def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     ws = ACFWorkstation()
@@ -137,6 +140,7 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     # call didn't raise, matching the uniform per-panel call in
     # _render_all_panels().
     assert ws.convection_panel._volume is volume
+    assert ws.terrain_panel._volume is volume
 
 
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):

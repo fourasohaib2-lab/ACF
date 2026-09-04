@@ -293,18 +293,6 @@ SRH/EHI/SCP/STP may still often read small or negative on a
 straight (non-veering) hodograph, a real, known meteorological
 consequence, not a further bug.
 
-Terrain Lab remains listed in the left nav as a real, visible,
-DISABLED "Planned" item - not silently omitted, not faked - matching
-the master spec's own §68 audit-honesty rule applied in both
-directions: never claim something works when it's only simulated, and
-never hide real future scope either. `acf.awci.orographic_froude`'s
-own docstring already discloses that `CoupledEarthSolver`'s real state
-"has no terrain-elevation field at all" and no real geometric height
-coordinate - a real Terrain Lab would need either a real external
-elevation dataset (none exists in this codebase today) or fabricated
-terrain, so it stays honestly "(planned)" rather than built on
-invented elevation data.
-
 Phase 21 (2026-09-04, same "continue selon ton jugement" delegation)
 extended `/api/v1/workstation` (Phase 13) with a real `/convection` GET
 endpoint - the same real `acf.awci.workstation_fields.
@@ -318,6 +306,34 @@ bounds this endpoint's own real per-point MetPy parcel-ascent cost
 volume()`'s existing pre-stride solver-size guard, since a small
 `stride` on an otherwise-small-enough volume could still request an
 unbounded number of real parcel ascents.
+
+Phase 22 (2026-09-04, explicit user authorization: "tu as mon accord")
+built the **Terrain Lab** - the last remaining planned §8 spec module,
+closing this Workstation's build-out. `acf.awci.orographic_froude`'s
+own module docstring had named the exact real blocker:
+"CoupledEarthSolver's real state has no terrain-elevation field at
+all" - a real, cited mountain-wave Froude number formula already
+existed (`compute_real_mountain_wave_froude_number_at_point()`, ICAO
+Doc 9817), genuinely unable to run for lack of real input data. With
+the user's explicit permission to download one real, small, external
+file, `acf.awci.terrain_elevation` supplies it: a real, bundled 111 KB
+SRTM15+ V2.7 1 arc-degree global elevation grid (Tozer et al., 2019,
+Earth and Space Science - GMT's own official public data server; see
+that module's own `data/NOTICE.md` for the full source/license
+disclosure), interpolated onto this solver's own real grid. The new
+**Terrain Lab** (`acf_workstation_terrain.ACFTerrainLabPanel`, real
+pipeline in `acf.awci.workstation_fields.compute_real_terrain_field()`)
+shows 3 real, separately-shown fields - terrain elevation, near-
+surface Brunt-Väisälä static stability, and the real mountain-wave
+Froude number - never merged into one further fabricated score.
+Auto-rendered, not on-demand: unlike CAPE/CIN's real MetPy parcel
+ascent, the real formulas here are simple, closed-form, and fully
+vectorized across the whole real grid (verified in well under a
+second even at this Workstation's largest real grid, AROME's
+90x180=16200 points) - see that function's own docstring for the real
+formulas composed and their honest, disclosed simplifications.
+`_PLANNED_MODULES` is now empty - every real §8 spec module this
+Workstation's plan named is built.
 
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
@@ -376,6 +392,7 @@ from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
+from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
@@ -388,11 +405,9 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: here is a real §8 spec module name, not invented.
 _ENABLED_MODULES = [
     "Overview", "Dynamics", "Thermodynamics", "Microphysics", "Temporal", "Confidence", "Multi-Model",
-    "Interactions", "Quality", "Complexity", "3D View", "Case Study", "Convection",
+    "Interactions", "Quality", "Complexity", "3D View", "Case Study", "Convection", "Terrain",
 ]
-_PLANNED_MODULES = [
-    "Terrain",
-]
+_PLANNED_MODULES: list[str] = []
 
 
 class _VolumeWorkerSignals(QObject):
@@ -573,6 +588,7 @@ class ACFWorkstation(QWidget):
             export_configuration=self._export_configuration, apply_configuration=self._apply_configuration
         )
         self.convection_panel = ACFConvectionLabPanel()
+        self.terrain_panel = ACFTerrainLabPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
         self.stack.addWidget(self.thermodynamics_panel)
@@ -586,6 +602,7 @@ class ACFWorkstation(QWidget):
         self.stack.addWidget(self.atmosphere_3d_panel)
         self.stack.addWidget(self.case_study_panel)
         self.stack.addWidget(self.convection_panel)
+        self.stack.addWidget(self.terrain_panel)
         body.addWidget(self.stack, stretch=1)
 
         outer.addLayout(body, stretch=1)
@@ -701,6 +718,7 @@ class ACFWorkstation(QWidget):
             "quality_variable": self.quality_panel.variable_selector,
             "atmosphere_3d_variable": self.atmosphere_3d_panel.variable_selector,
             "convection_variable": self.convection_panel.variable_selector,
+            "terrain_variable": self.terrain_panel.variable_selector,
         }
 
     def _export_configuration(self) -> dict[str, Any]:
@@ -864,6 +882,7 @@ class ACFWorkstation(QWidget):
         self.atmosphere_3d_panel.update_from_volume(self._volume, self._level_index)
         self.case_study_panel.update_from_volume(self._volume, self._level_index)
         self.convection_panel.update_from_volume(self._volume, self._level_index)
+        self.terrain_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav
 

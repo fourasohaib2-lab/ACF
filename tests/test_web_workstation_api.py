@@ -164,3 +164,34 @@ def test_convection_rejects_an_oversized_post_stride_grid(client):
     )
     assert res.status_code == 400
     assert "exceeds" in res.json()["detail"]
+
+
+# ----------------------------------------------------------- /terrain
+
+
+def test_terrain_runs_a_real_small_solver_volume(client):
+    res = client.get(
+        "/api/v1/workstation/terrain",
+        params={"model": "ALADIN", "steps": 2, "n_lat": 5, "n_lon": 5, "n_levels": 4},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["model"] == "ALADIN"
+    assert len(body["lats"]) == 5
+    assert len(body["lons"]) == 5
+    for key in ("elevation_m", "brunt_vaisala_n_s1", "froude_number"):
+        assert len(body[key]) == 5 and len(body[key][0]) == 5
+    assert body["is_real_data"] is True
+    # Real, global dataset - elevation is never null/None.
+    assert all(v is not None for row in body["elevation_m"] for v in row)
+
+
+def test_terrain_rejects_an_unknown_model(client):
+    res = client.get("/api/v1/workstation/terrain", params={"model": "GFS", "n_lat": 2, "n_lon": 2, "n_levels": 2})
+    assert res.status_code == 400
+
+
+def test_terrain_rejects_an_oversized_volume(client):
+    res = client.get("/api/v1/workstation/terrain", params={"n_lat": 1000, "n_lon": 1000, "n_levels": 10})
+    assert res.status_code == 400
+    assert "exceeds" in res.json()["detail"]

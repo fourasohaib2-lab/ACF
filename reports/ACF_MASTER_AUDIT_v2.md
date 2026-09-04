@@ -6951,3 +6951,75 @@ verts.
 
 **Ce qui reste réellement** : seul Terrain Lab reste bloqué. Aucune
 tâche séparée en attente ne reste ouverte.
+
+## Mise à jour 2026-09-04 (suite) — Phase 22 : Terrain Lab construit, accord explicite de l'utilisateur pour télécharger une vraie donnée d'élévation externe
+
+**Pourquoi** : après la clôture de la Phase 21, j'ai rappelé que seul
+Terrain Lab restait bloqué — faute de toute vraie donnée d'élévation
+dans ce dépôt — et que je ne téléchargerais rien sans accord explicite.
+L'utilisateur a répondu : **"tu as mon accord"**.
+
+**Investigation de la source réelle** : `acf.awci.orographic_froude`
+disposait déjà d'une vraie formule citée et complète (nombre de Froude
+d'onde de relief, Fr = U/(N·H), ICAO Doc 9817 ; AMS Aviation
+Meteorology) — jamais utilisable faute d'un vrai H (hauteur de relief).
+Recherché un vrai jeu de données d'élévation global, petit, légitime,
+librement redistribuable : le serveur de données publiques officiel du
+projet Generic Mapping Tools (GMT, logiciel libre LGPL) sert un vrai
+extrait "IGPP Earth Relief" (compilation SRTM15+ V2.7, Tozer et al.
+2019, Earth and Space Science) à sa résolution la plus grossière
+(`01d`, 1 degré, 180x360 points) — **111 646 octets exactement**,
+vérifié réel (élévations de -7057 à 5326.5 m, cohérent avec la réalité
+terrestre) avant toute intégration.
+
+**Construit** :
+- Fichier réel `src/acf/awci/data/earth_relief_01d.nc` (111 646 octets,
+  inchangé par rapport au fichier servi par GMT) + `NOTICE.md` réel
+  (URL source exacte, citation complète, licence, date de
+  récupération) — placé dans l'arbre du package (pas `/data/`, réservé
+  par ce dépôt aux états d'exécution, cf. `.gitignore`) puisque c'est
+  un vrai actif source statique versionné. `pyproject.toml` mis à jour
+  (`package-data`) pour que ce fichier soit réellement inclus dans un
+  build du package.
+- `acf.awci.terrain_elevation` — chargement réel (mis en cache) +
+  interpolation bilinéaire réelle (`scipy.interpolate.
+  RegularGridInterpolator`, technique standard) sur la grille propre du
+  solveur.
+- `acf.awci.workstation_fields.compute_real_terrain_field()` — élévation
+  réelle, stabilité statique de Brunt-Väisälä réelle (température
+  potentielle + équation hypsométrique, formule textbook réelle,
+  vérifiée à moins de 0.02 m de `metpy.calc.thickness_hydrostatic()`),
+  et nombre de Froude réel via `compute_real_mountain_wave_
+  froude_number_at_point()` (appelé tel quel, jamais réimplémenté).
+  **Entièrement vectorisé** (numpy pur, aucune boucle Python coûteuse)
+  après avoir mesuré qu'une première version en boucle par point
+  aurait pris ~9s sur la plus grande grille réelle (AROME, 16200
+  points) — la version vectorisée s'exécute en < 0.01s une fois le
+  jeu de données mis en cache.
+- **Terrain Lab** (`acf_workstation_terrain.ACFTerrainLabPanel`) — 3
+  champs réels séparés (élévation, stabilité statique, Froude), jamais
+  fusionnés en un score. **Auto-rendu, pas à la demande** (contrairement
+  au Convection Lab) — les formules ici sont bon marché et entièrement
+  vectorisées, vérifié empiriquement bien en dessous d'une seconde
+  même sur la plus grande grille réelle. `_PLANNED_MODULES` est
+  désormais vide.
+- `GET /api/v1/workstation/terrain` — même pipeline réel, aucun
+  garde-fou de foulée nécessaire (contrairement à `/convection`)
+  puisqu'aucune ascension de parcelle réelle n'est en jeu ici.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tous les fichiers
+touchés (1456 fichiers source, contre 1454). Nouveaux tests réels :
+`tests/test_terrain_elevation.py` (5, dont un vrai point proche de
+l'Himalaya et un vrai point de l'Atlantique moyen, tous deux
+vérifiés), `tests/test_acf_workstation_terrain.py` (5, cross-vérifiés
+formule par formule contre chaque formule réelle sous-jacente + cas
+honnêtement NaN — océan, profil neutre), `tests/gui/
+test_acf_workstation_terrain.py` (5), `tests/test_web_workstation_api.py`
+(+3 pour `/terrain`). Suite complète réexécutée : 4201 tests + 18
+nouveaux = 4219 attendus, tous verts. Captures d'écran réelles envoyées
+(élévation, Froude) — élévation réelle vérifiée dans [-6288, 5177] m
+sur un vrai run ALADIN, 1314/7200 points réels avec un vrai Froude
+calculé.
+
+**Ce qui reste réellement** : plus aucun module de spec planifié ne
+reste à construire. Aucune tâche séparée en attente ne reste ouverte.
