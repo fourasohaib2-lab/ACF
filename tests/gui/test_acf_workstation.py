@@ -1,9 +1,9 @@
 """
 Tests for acf.gui.dashboard.acf_workstation.ACFWorkstation - the real,
 AWCI-free "ACF Scientific Workstation" dashboard (added 2026-09-04,
-explicit user master spec: "ACF CORE ONLY - NO AWCI"). Phase 1: chrome
-+ Overview/Dynamics/Complexity Explorer, all sliced from a single real
-`compute_real_complexity_volume()` run.
+explicit user master spec: "ACF CORE ONLY - NO AWCI"). Chrome +
+Overview/Dynamics/Thermodynamics/Complexity Explorer, all sliced from
+a single real `compute_real_complexity_volume()` run.
 
 The background-thread plumbing (QThreadPool/_VolumeWorker) is standard,
 trusted Qt machinery for most tests here - `test_refresh_genuinely_
@@ -77,6 +77,9 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     assert ws.stack.currentWidget() is ws.dynamics_panel
 
     ws.nav_list.setCurrentRow(2)
+    assert ws.stack.currentWidget() is ws.thermodynamics_panel
+
+    ws.nav_list.setCurrentRow(3)
     assert ws.stack.currentWidget() is ws.complexity_panel
 
 
@@ -93,6 +96,7 @@ def test_on_volume_ready_populates_the_level_slider_and_every_panel(qapp):
     assert "20241027" not in ws.status_label.text()  # never a fabricated forecast run-ID
     assert ws.overview_panel._volume is volume
     assert ws.dynamics_panel._volume is volume
+    assert ws.thermodynamics_panel._volume is volume
     assert ws.complexity_panel._volume is volume
 
 

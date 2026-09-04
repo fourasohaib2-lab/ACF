@@ -15,7 +15,7 @@ ACFGeneralDashboard`, which this Workstation now replaces as ESOC's
 "ACF Dashboard" entry point - see `acf_general_dashboard.py`'s own
 NOTE for that history; it is not deleted, per project convention).
 
-Phase 1 scope (this closure) — a real, working chrome plus 3 real
+Phase 1 scope (2026-09-04) — a real, working chrome plus 3 real
 content modules, all sliced from a SINGLE real solver run:
 - **Overview** (`acf_workstation_overview.ACFOverviewPanel`): real
   Temperature/Wind speed/Specific humidity/Pressure fields.
@@ -26,14 +26,21 @@ content modules, all sliced from a SINGLE real solver run:
   disagreement complexity dimensions, shown separately, never
   combined into one score.
 
-The remaining ~10 spec modules (Thermodynamics/Convection/
-Microphysics/Terrain/Temporal/Confidence Labs, Interaction Engine,
-Multi-Model Lab, Data Quality Center, 3D/4D, Case Study Lab, Research
-Mode, Configuration Management...) are listed in the left nav as real,
-visible, DISABLED "Planned" items - not silently omitted, not faked -
-matching the master spec's own §68 audit-honesty rule applied in both
-directions: never claim something works when it's only simulated, and
-never hide real future scope either. See the plan this was built from
+Phase 2 (2026-09-04, same "continue" progressive discipline) added:
+- **Thermodynamics Lab** (`acf_workstation_thermodynamics.
+  ACFThermodynamicsLabPanel`): real θ-e (equivalent potential
+  temperature)/relative humidity (auto, from the current level) and
+  real CAPE/CIN from an actual MetPy parcel ascent (on-demand, a
+  coarser real grid - see that module's own docstring for why).
+
+The remaining ~9 spec modules (Convection/Microphysics/Terrain/
+Temporal/Confidence Labs, Interaction Engine, Multi-Model Lab, Data
+Quality Center, 3D/4D, Case Study Lab, Research Mode, Configuration
+Management...) are listed in the left nav as real, visible, DISABLED
+"Planned" items - not silently omitted, not faked - matching the
+master spec's own §68 audit-honesty rule applied in both directions:
+never claim something works when it's only simulated, and never hide
+real future scope either. See the plan this was built from
 (`reports/ACF_MASTER_AUDIT_v2.md`'s own dated entry) for the full,
 disclosed rationale and what's deferred.
 
@@ -78,6 +85,7 @@ from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
 from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
@@ -87,9 +95,9 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Real, built modules (index into the QStackedWidget) vs. real,
 #: disclosed-but-not-yet-built ones - see module docstring. Every name
 #: here is a real §8 spec module name, not invented.
-_ENABLED_MODULES = ["Overview", "Dynamics", "Complexity"]
+_ENABLED_MODULES = ["Overview", "Dynamics", "Thermodynamics", "Complexity"]
 _PLANNED_MODULES = [
-    "Thermodynamics", "Convection", "Microphysics", "Terrain",
+    "Convection", "Microphysics", "Terrain",
     "Temporal", "Confidence", "Interactions",
 ]
 
@@ -221,9 +229,11 @@ class ACFWorkstation(QWidget):
         self.stack = QStackedWidget()
         self.overview_panel = ACFOverviewPanel()
         self.dynamics_panel = ACFDynamicsLabPanel()
+        self.thermodynamics_panel = ACFThermodynamicsLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.stack.addWidget(self.overview_panel)
         self.stack.addWidget(self.dynamics_panel)
+        self.stack.addWidget(self.thermodynamics_panel)
         self.stack.addWidget(self.complexity_panel)
         body.addWidget(self.stack, stretch=1)
 
@@ -296,6 +306,7 @@ class ACFWorkstation(QWidget):
             return
         self.overview_panel.update_from_volume(self._volume, self._level_index)
         self.dynamics_panel.update_from_volume(self._volume, self._level_index)
+        self.thermodynamics_panel.update_from_volume(self._volume, self._level_index)
         self.complexity_panel.update_from_volume(self._volume, self._level_index)
 
     # ----------------------------------------------------------------- nav

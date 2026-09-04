@@ -5611,3 +5611,104 @@ programme complet de tests visuels/accessibilité en 6 types — aucun
 n'est construit dans cette passe, chacun a sa propre raison honnête de
 ne pas l'être (backend réel manquant, ou simplement hors du périmètre
 borné de cette étape), aucun n'est silencieusement abandonné.
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 2 : le Thermodynamics Lab, et une vraie anomalie de pression découverte au passage
+
+Suite explicite ("continue"), même discipline progressive que la
+Phase 1 : le 4ᵉ module réel du Workstation, **Thermodynamics Lab**,
+construit en réutilisant deux pipelines réels déjà existants dans le
+projet (jamais réimplémentés) — la seule vraie nouveauté est leur
+premier appel en dehors du contexte AWCI, sur une grille complète,
+avec leur propre carte dédiée.
+
+**Pourquoi** : `acf.awci.theta_e.compute_real_theta_e_at_point()`
+(θ-e canonique de Bolton (1980), composée de 3 formules réelles déjà
+testées) et `acf.awci.convective_energy.compute_real_cape_cin_at_point()`
+(un vrai ascenseur de particule MetPy suivi de
+`acf.science.cape.CAPE.calculate()`/`cin.CIN.calculate()`) existaient
+déjà, construits lors d'une closure antérieure pour alimenter
+`AWCICalculator`, mais n'avaient jamais été appelés en dehors de ce
+contexte AWCI ni sur une grille complète pour produire leur propre
+carte.
+
+**Construit** :
+- `compute_real_theta_e_and_rh_fields()` — appelle
+  `compute_real_theta_e_at_point()` à chaque point du niveau courant
+  (mesuré réellement à ~1 microseconde/point — assez rapide pour un
+  recalcul automatique à chaque changement de niveau/modèle, comme
+  Overview/Dynamics). Un seul appel par point fournit à la fois θ-e ET
+  l'humidité relative réelle (son propre résultat intermédiaire) —
+  jamais recalculée séparément.
+- `compute_real_cape_cin_fields()` — un vrai ascenseur de particule
+  MetPy par point mesuré à ~5 ms/point (~33s pour la grille native
+  complète d'ALADIN, 60×120 = 7200 colonnes — bien trop lent pour une
+  UI interactive). Compromis réel et disclosed : calculé sur un sous-
+  ensemble réel plus grossier des colonnes déjà réelles du volume
+  (tous les 3 points de la grille native — 20×40 pour ALADIN, ~3.7s),
+  jamais interpolé — chaque valeur retournée est un vrai CAPE/CIN
+  calculé sur cette colonne réelle exacte. Même convention déjà établie
+  par les paramètres `n_lat`/`n_lon` de
+  `compute_real_complexity_field()` pour un résultat plus grossier
+  mais rapide — appliquée ici à un sous-ensemble d'un volume déjà
+  calculé, jamais à un second run du solveur.
+- **`ACFThermodynamicsLabPanel`** — θ-e/humidité relative en temps réel
+  (sélecteur de variable, redessiné à chaque niveau) ; CAPE/CIN à la
+  demande (bouton "🔄 Compute CAPE/CIN Field", vrai `QRunnable` hors
+  thread, même convention que les boutons temporal/consensus du
+  Complexity Explorer) — indépendant du slider de niveau (CAPE/CIN sont
+  par nature des diagnostics de colonne complète, toujours soulevés
+  depuis le vrai niveau natif le plus bas). Ajouté à la nav du
+  Workstation (déplacé de "planned" à activé) et à `_render_all_panels()`.
+
+**Une vraie anomalie découverte, disclosed et non corrigée dans cette
+passe** : en vérifiant visuellement le rendu θ-e (capture d'écran
+initiale complètement plate, hors de l'échelle de couleur choisie), la
+cause a été tracée jusqu'à `pressure_volume_hpa` — le volume réel
+retourné par `compute_real_complexity_volume()` pour un run ALADIN
+réel rapporte une pression de surface uniforme d'environ **2013 hPa**
+au lieu d'une valeur réaliste (~1000-1013 hPa), soit environ le double
+de la valeur physique attendue. Cette pression anormalement élevée,
+combinée à une humidité spécifique elle-même uniforme (0.01 kg/kg
+partout), sature l'humidité relative calculée à 100% sur toute la
+grille, ce qui aplatit le champ θ-e réel. **Décision** : ne pas tenter
+de corriger le solveur (`CoupledEarthSolver`) dans cette passe — un
+changement à cette échelle affecterait potentiellement tous les autres
+consommateurs réels de ce même état (`AWCIDashboard`,
+`ACFGeneralDashboard`, ce Workstation), certains ayant peut-être des
+hypothèses compensatoires construites autour de la valeur actuelle
+(fausse) ; une investigation et correction dédiées, avec vérification
+complète de la non-régression, sont hors du périmètre borné de cette
+closure. **Flagged** via une tâche séparée
+(`task_f3c406d9` — "Investigate CoupledEarthSolver pressure ~2x too
+high"). Pour que le panneau reste honnête et informatif quel que soit
+l'état réel (même anormal) du solveur, l'échelle de couleur θ-e a été
+rendue dynamique (percentile réel 5/95 du champ courant, même
+convention déjà utilisée par le Complexity Explorer) plutôt qu'une
+plage fixe devinée qui ne correspondait pas à cette sortie réelle du
+solveur — l'humidité relative reste honnêtement affichée saturée à
+100% (une donnée réelle, pas fabriquée) jusqu'à ce que la cause racine
+soit corrigée séparément.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests unitaires
+(`tests/test_acf_workstation_thermodynamics.py` — cross-vérifiés point
+par point contre les vraies fonctions `compute_real_theta_e_at_point`/
+`compute_real_cape_cin_at_point` appelées directement, jamais une
+réimplémentation séparée) + 6 nouveaux tests GUI
+(`tests/gui/test_acf_workstation_thermodynamics.py` — dont un vrai
+test de bout en bout du worker hors thread via `qtbot.waitUntil`,
+matching la discipline déjà établie) + mise à jour des tests d'intégration
+du chrome (`tests/gui/test_acf_workstation.py` — nouvelle position dans
+la nav/le stack, panneau bien alimenté par `_on_volume_ready`). Suite
+complète **4050 → 4060**, toujours verte. Captures d'écran réelles
+envoyées : θ-e avant/après correction de l'échelle de couleur, humidité
+relative (honnêtement saturée), CAPE/CIN avant (carte vierge honnête)
+et après calcul (points chauds convectifs réels).
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x reste non
+corrigée (tâche séparée en attente) ; les ~9 modules restants du plan
+(Convection, Microphysics, Terrain, Temporal, Confidence Labs,
+Interaction Engine, Multi-Model Lab en page propre, Data Quality
+Center, 3D/4D, Case Study Lab, Research Mode, Configuration
+Management, palette de commandes, raccourcis, export, extension API)
+restent listés "(planned)" dans la nav, non construits, pour les mêmes
+raisons honnêtes déjà disclosed dans la clôture précédente.
