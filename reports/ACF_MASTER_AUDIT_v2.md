@@ -7170,3 +7170,39 @@ Suite complète réexécutée : 4225 → 4232 tests, tous verts.
 Geoengineering, Machine Learning restent à construire - chantier en
 cours, prochaine étape Plugins (backend simple et déjà réel,
 `PluginManager`).
+
+## Mise à jour 2026-09-04 (suite) — Phase 26 (Plugins), un vrai bug de doublons trouvé et corrigé au passage
+
+**Investigation** : `acf.core.plugin_manager.PluginManager.discover()`
+scanne réellement le vrai répertoire `plugins/` de ce dépôt (contient
+un vrai `example_plugin/`) - vérifié fonctionnel avec le CWD réel du
+repo. `ModuleRegistry` construit la classe mais n'appelle jamais
+`.discover()` lui-même - le panneau doit l'appeler.
+
+**Un vrai bug trouvé en cours de construction** : `discover()`
+accumulait dans `self.plugins` sans jamais le vider d'abord - un
+vrai "🔄 Rescan" dans l'UI aurait dupliqué chaque entrée réelle à
+chaque clic. Corrigé : `self.plugins = []` en tête de `discover()`,
+rendant un vrai rebalayage idempotent. 2 nouveaux tests réels dans
+`tests/test_core_application_layer.py` (rebalayages répétés sans
+doublon, un vrai nouveau plugin ajouté bien détecté).
+
+**Construit** : `PluginsPanel` (`panel_manager.py`) - affiche le vrai
+chemin scanné, un vrai tableau des plugins réellement trouvés, un vrai
+bouton "🔄 Rescan Plugin Directory" ré-appelant `discover()` (désormais
+sûr). Un seul panneau réel couvre les 2 feuilles ("Custom Physics
+Extensions"/"AI Model Plug-ins") - `PluginManager` scanne un seul vrai
+répertoire plat, sans distinction physique/IA réelle dans ce dépôt.
+Wiré dans `_CATEGORY_LABEL_TO_PANEL_NAME` et `PanelManager.panels`
+(30e panneau).
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests dédiés
+(`tests/test_esoc_plugins_panel.py` - scan réel affiché, cross-check
+direct contre le vrai manager, rebalayage réel via le vrai bouton sans
+doublon, détection réelle d'un nouveau plugin ajouté, disclosure
+honnête si déconnecté) + 1 test de routage dans `tests/test_esoc.py`
+(29→30 panneaux, clic catégorie/feuille "Plugins"). Suite complète
+réexécutée : 4232 → 4240 tests, tous verts.
+
+**Ce qui reste réellement** : Products, Reports, Output,
+Geoengineering, Machine Learning restent à construire.

@@ -56,6 +56,40 @@ def test_plugin_manager_missing_directory_is_handled(tmp_path):
     assert pm.list_plugins() == []
 
 
+def test_plugin_manager_rescanning_does_not_duplicate_entries(tmp_path):
+    """Regression guard (2026-09-04): discover() used to append without
+    clearing first - calling it twice (e.g. a real "rescan" UI action)
+    duplicated every real entry rather than reporting the true, current
+    filesystem state."""
+    plugin_dir = tmp_path / "plugins"
+    plugin_dir.mkdir()
+    (plugin_dir / "plugin_a").mkdir()
+
+    pm = PluginManager(plugin_dir=str(plugin_dir))
+    pm.discover()
+    pm.discover()
+    pm.discover()
+
+    assert pm.list_plugins() == ["plugin_a"]
+
+
+def test_plugin_manager_rescan_reflects_a_real_new_plugin(tmp_path):
+    """A real rescan must pick up a real plugin added since the last
+    discover() call, not just avoid duplicating the old list."""
+    plugin_dir = tmp_path / "plugins"
+    plugin_dir.mkdir()
+    (plugin_dir / "plugin_a").mkdir()
+
+    pm = PluginManager(plugin_dir=str(plugin_dir))
+    pm.discover()
+    assert pm.list_plugins() == ["plugin_a"]
+
+    (plugin_dir / "plugin_b").mkdir()
+    pm.discover()
+
+    assert sorted(pm.list_plugins()) == ["plugin_a", "plugin_b"]
+
+
 def test_config_manager_loads_yaml(tmp_path):
     config_file = tmp_path / "config.yaml"
     config_file.write_text("general:\n  mode: production\n  retries: 3\n")

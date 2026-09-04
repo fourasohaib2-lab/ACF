@@ -78,11 +78,12 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 29
+    assert len(pm.list_panel_names()) == 30
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
     assert pm.get_panel("catalog") is not None
+    assert pm.get_panel("plugins") is not None
 
 
 def test_view_manager(qapp):
@@ -237,6 +238,20 @@ def test_clicking_the_catalog_category_opens_the_real_catalog_panel(qapp):
 
     layout._on_sidebar_item_selected("WMO Standards", "Catalog")
     assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("catalog")
+
+
+def test_clicking_the_plugins_category_opens_the_real_plugins_panel(qapp):
+    """Real regression guard (2026-09-04): "Plugins" used to be a
+    genuinely unmapped category - both leaves (Custom Physics
+    Extensions, AI Model Plug-ins) were honest no-ops."""
+    window = ESOCWindow()
+    layout = window.layout_manager
+
+    layout._on_sidebar_item_selected("Plugins", None)
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("plugins")
+
+    layout._on_sidebar_item_selected("AI Model Plug-ins", "Plugins")
+    assert layout.bottom_tabs.currentWidget() is layout.panel_manager.get_panel("plugins")
 
 
 def test_clicking_an_unmapped_leaf_under_a_single_panel_category_falls_back_to_it(qapp):

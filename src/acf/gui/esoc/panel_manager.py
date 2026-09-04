@@ -855,6 +855,76 @@ class CatalogPanel(BasePanelWidget):
         self._populate(filtered)
 
 
+class PluginsPanel(BasePanelWidget):
+    """30. Plugin Directory Browser - real, previously-unbuilt System
+    Explorer category (2026-09-04): "Plugins" (Custom Physics
+    Extensions, AI Model Plug-ins leaves) had zero real panel behind
+    it.
+
+    Real backend: `acf.core.plugin_manager.PluginManager`
+    (`ModuleRegistry`'s own real, already-connected "plugins" module) -
+    a real, genuine filesystem scan of this codebase's own real
+    `plugins/` directory (`PluginManager.discover()`), not a fabricated
+    plugin list. `ModuleRegistry` itself never calls `discover()`
+    (only constructs the manager), so this panel calls it explicitly -
+    see `PluginManager.discover()`'s own 2026-09-04 NOTE fixing a real
+    duplicate-entry bug this panel's own "🔄 Rescan" button would
+    otherwise have triggered on a second real scan.
+
+    Honest scope: "Custom Physics Extensions"/"AI Model Plug-ins" are
+    NOT two separately-scanned real categories - `PluginManager` scans
+    one real, single, flat plugin directory with no real
+    physics-vs-AI distinction in this codebase, so one real panel
+    covers both leaves (same "one panel per category when only one
+    real backend exists" convention as Catalog above)."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🧩 PLUGIN DIRECTORY", "#BA68C8", registry, dispatcher)
+
+        manager = registry.get_module("plugins")
+        if manager is None:
+            self.main_layout.addWidget(_not_connected_label("plugins"))
+            return
+        self._manager: Any = manager
+
+        self.dir_label = QLabel()
+        self.dir_label.setStyleSheet("color: #B0BEC5; font-size: 10px;")
+        self.dir_label.setWordWrap(True)
+        self.main_layout.addWidget(self.dir_label)
+
+        btn_row = QHBoxLayout()
+        self.rescan_button = QPushButton("🔄 Rescan Plugin Directory")
+        self.rescan_button.clicked.connect(self._rescan)
+        btn_row.addWidget(self.rescan_button)
+        btn_row.addStretch()
+        self.main_layout.addLayout(btn_row)
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(1)
+        self.table.setHorizontalHeaderLabels(["Plugin Directory Name"])
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.main_layout.addWidget(self.table)
+
+        self.status_label = QLabel()
+        self.status_label.setStyleSheet("color: #B0BEC5; font-size: 10px;")
+        self.main_layout.addWidget(self.status_label)
+
+        self._rescan()
+
+    def _rescan(self) -> None:
+        self.dir_label.setText(f"Real, live scan of: {self._manager.plugin_dir.resolve()}")
+        self._manager.discover()
+        plugins = self._manager.list_plugins()
+        self.table.setRowCount(len(plugins))
+        for row, name in enumerate(plugins):
+            self.table.setItem(row, 0, QTableWidgetItem(name))
+        self.status_label.setText(
+            f"✅ {len(plugins)} real plugin(s) found."
+            if plugins
+            else "No real plugins found in this real directory."
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -892,6 +962,7 @@ class PanelManager:
             "hpc": HPCPanel(registry, dispatcher),
             "awci_dashboard": AWCIDashboardPanel(registry, dispatcher),
             "catalog": CatalogPanel(registry, dispatcher),
+            "plugins": PluginsPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:
