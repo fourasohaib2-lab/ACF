@@ -7206,3 +7206,50 @@ réexécutée : 4232 → 4240 tests, tous verts.
 
 **Ce qui reste réellement** : Products, Reports, Output,
 Geoengineering, Machine Learning restent à construire.
+
+## Mise à jour 2026-09-04 (suite) — Phase 27 (Geoengineering) : une conclusion erronée corrigée, un bien plus riche backend réel trouvé
+
+**Investigation** : le module déjà enregistré dans `ModuleRegistry`
+pour ce domaine (`geoengineering_lab` → `acf.digital_twin.
+geoengineering_lab.GeoengineeringLab`) n'a qu'UNE seule méthode (SAI)
+et rapporte honnêtement `is_real_data: False` (aucun modèle
+climatique connecté - une vraie désillusion assumée, pas un bug). Une
+recherche plus large a trouvé un package bien plus riche, jamais
+enregistré comme un tout dans `ModuleRegistry` (même raison que
+`earth_physics`/`space_weather` : plusieurs moteurs réels
+indépendants, aucun orchestrateur unique) mais dont les CLASSES
+individuelles sont réelles et directement utilisables :
+`acf.geoengineering.solar_radiation_management.
+SolarRadiationManagementEngine` (formule physique réelle, dF =
+-0.45·SO2(Mt/an), dT = λ·dF, λ=0.8 K/(W/m²) - un paramètre standard de
+sensibilité climatique - déjà corrigée dans ce dépôt pour plafonner
+la perturbation de mousson à 100% réel) et
+`acf.geoengineering.carbon_removal.CarbonRemovalEngine` (estimations
+d'ingénierie réelles et disclosed pour le DACCS : coût, énergie,
+surface, TRL - Technology Readiness Level, la vraie échelle NASA 1-9).
+
+**Construit** : `GeoengineeringPanel` (`panel_manager.py`) - deux
+sections réelles et interactives : un vrai simulateur SAI (saisie du
+taux d'injection de SO2, calcul réel du forçage/refroidissement/
+perturbation de mousson/risque de choc de terminaison) et une vraie
+évaluation DACCS (saisie de la capacité cible, calcul réel du coût/
+énergie/surface/TRL) - les deux appellent directement les vraies
+classes du package `acf.geoengineering`, jamais via le module
+`geoengineering_lab` sous-exploité du registre. Un seul panneau réel
+couvre les 2 feuilles (chacune avec sa propre section réelle et
+distincte, pas une fusion artificielle). Wiré dans
+`_CATEGORY_LABEL_TO_PANEL_NAME` et `PanelManager.panels` (31e
+panneau).
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests dédiés
+(`tests/test_esoc_geoengineering_panel.py` - simulation SAI réelle à
+la construction, résultat qui varie authentiquement avec l'entrée
+utilisateur - preuve directe contre le motif de fabrication déjà
+corrigé pour une classe sœur dans ce même package -, évaluation DACCS
+réelle à la construction, cross-check direct contre le vrai moteur) +
+1 test de routage dans `tests/test_esoc.py` (30→31 panneaux, clic
+catégorie/feuille "Geoengineering"). Suite complète réexécutée :
+4240 → 4245 tests, tous verts.
+
+**Ce qui reste réellement** : Products, Reports, Output, Machine
+Learning restent à construire.

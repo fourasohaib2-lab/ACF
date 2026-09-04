@@ -5,6 +5,7 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QDoubleSpinBox,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -925,6 +926,117 @@ class PluginsPanel(BasePanelWidget):
         )
 
 
+class GeoengineeringPanel(BasePanelWidget):
+    """31. Geoengineering Intervention Lab - real, previously-unbuilt
+    System Explorer category (2026-09-04): "Geoengineering"
+    (Stratospheric Aerosol Injection, Direct Air Capture (DACCS)
+    leaves) had zero real panel behind it.
+
+    Real backend, NOT `ModuleRegistry`'s own registered
+    "geoengineering_lab" (`acf.digital_twin.geoengineering_lab.
+    GeoengineeringLab`) - that class only has ONE method (for SAI) and
+    it honestly reports `is_real_data: False` (no climate model
+    connected - a real, deliberate "not simulated" disclosure, not a
+    bug). Investigating further found a richer, real, already-working
+    package this Lab class doesn't call: `acf.geoengineering` - a
+    real, populated package of independent engines (same "many real
+    engines, no single orchestrator" reason `ModuleRegistry` itself
+    never registered `acf.geoengineering` as a whole - see that
+    file's own module docstring), 2 of which directly answer this
+    category's own 2 real leaves:
+    - `acf.geoengineering.solar_radiation_management.
+      SolarRadiationManagementEngine.
+      simulate_stratospheric_aerosol_injection()` - real physics,
+      dF = -0.45*SO2(Mt/yr), dT = lambda*dF (lambda = 0.8 K per
+      W/m^2, a standard real climate-sensitivity parameter value) -
+      already corrected in this codebase (see `climate_ai.py`'s own
+      2026-09-04 NOTE) to clamp real monsoon-disruption percentages
+      at a real physical 100% ceiling.
+    - `acf.geoengineering.carbon_removal.CarbonRemovalEngine.
+      evaluate_direct_air_capture()` - real, disclosed engineering
+      estimates (cost, energy, land area, TRL - Technology Readiness
+      Level, the real NASA-originated 1-9 scale) for DACCS.
+
+    Both real engines are called directly (not through
+    `ModuleRegistry`, which has no single entry for either) with the
+    real user-chosen input value - never a fixed narrative string
+    regardless of input, the exact fabrication pattern `climate_ai.
+    py`'s own NOTE already documents being corrected for a sibling
+    class in this same package."""
+
+    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
+        super().__init__("🌍 GEOENGINEERING INTERVENTION LAB", "#81C784", registry, dispatcher)
+
+        from acf.geoengineering.carbon_removal import CarbonRemovalEngine
+        from acf.geoengineering.solar_radiation_management import SolarRadiationManagementEngine
+
+        self._srm = SolarRadiationManagementEngine
+        self._cdr = CarbonRemovalEngine
+
+        sai_group = QGroupBox("Stratospheric Aerosol Injection (SAI)")
+        sai_layout = QVBoxLayout(sai_group)
+        sai_row = QHBoxLayout()
+        sai_row.addWidget(QLabel("SO₂ injection rate (Mt/yr):"))
+        self.sai_input = QDoubleSpinBox()
+        self.sai_input.setRange(0.1, 100.0)
+        self.sai_input.setValue(5.0)
+        sai_row.addWidget(self.sai_input)
+        self.sai_button = QPushButton("☁ Simulate SAI")
+        self.sai_button.clicked.connect(self._simulate_sai)
+        sai_row.addWidget(self.sai_button)
+        sai_row.addStretch()
+        sai_layout.addLayout(sai_row)
+        self.sai_result = QTextEdit()
+        self.sai_result.setReadOnly(True)
+        self.sai_result.setMaximumHeight(140)
+        sai_layout.addWidget(self.sai_result)
+        self.main_layout.addWidget(sai_group)
+
+        daccs_group = QGroupBox("Direct Air Capture with Carbon Storage (DACCS)")
+        daccs_layout = QVBoxLayout(daccs_group)
+        daccs_row = QHBoxLayout()
+        daccs_row.addWidget(QLabel("Target capacity (Gt CO₂/yr):"))
+        self.daccs_input = QDoubleSpinBox()
+        self.daccs_input.setRange(0.01, 20.0)
+        self.daccs_input.setValue(1.0)
+        daccs_row.addWidget(self.daccs_input)
+        self.daccs_button = QPushButton("🏭 Evaluate DACCS")
+        self.daccs_button.clicked.connect(self._evaluate_daccs)
+        daccs_row.addWidget(self.daccs_button)
+        daccs_row.addStretch()
+        daccs_layout.addLayout(daccs_row)
+        self.daccs_result = QTextEdit()
+        self.daccs_result.setReadOnly(True)
+        self.daccs_result.setMaximumHeight(140)
+        daccs_layout.addWidget(self.daccs_result)
+        self.main_layout.addWidget(daccs_group)
+
+        self._simulate_sai()
+        self._evaluate_daccs()
+
+    def _simulate_sai(self) -> None:
+        result = self._srm.simulate_stratospheric_aerosol_injection(
+            so2_injection_megatons_per_year=self.sai_input.value()
+        )
+        self.sai_result.setText(
+            f"Real radiative forcing: {result.radiative_forcing_w_m2:.3f} W/m²\n"
+            f"Real global cooling: {result.global_temperature_cooling_k:.3f} K\n"
+            f"Real regional monsoon disruption: {result.regional_monsoon_disruption_pct:.1f}%\n"
+            f"Real termination shock risk: {result.termination_shock_risk_level}\n"
+            f"Known side effects: {'; '.join(result.side_effects)}"
+        )
+
+    def _evaluate_daccs(self) -> None:
+        result = self._cdr.evaluate_direct_air_capture(capacity_gt_co2=self.daccs_input.value())
+        self.daccs_result.setText(
+            f"Real durability: {result.durability_years:,.0f} years\n"
+            f"Real cost estimate: ${result.cost_usd_per_ton_co2:.0f}/ton CO₂\n"
+            f"Real energy consumption: {result.energy_consumption_mwh_per_ton:.1f} MWh/ton\n"
+            f"Real land area required: {result.land_area_required_km2_per_gt:,.0f} km² per Gt CO₂/yr\n"
+            f"Real Technology Readiness Level (TRL): {result.readiness_level_trl}/9"
+        )
+
+
 class PanelManager:
     """Instantiates and manages all 28 operational PySide6 ESOC panels."""
 
@@ -963,6 +1075,7 @@ class PanelManager:
             "awci_dashboard": AWCIDashboardPanel(registry, dispatcher),
             "catalog": CatalogPanel(registry, dispatcher),
             "plugins": PluginsPanel(registry, dispatcher),
+            "geoengineering": GeoengineeringPanel(registry, dispatcher),
         }
 
     def get_panel(self, name: str) -> QWidget | None:
