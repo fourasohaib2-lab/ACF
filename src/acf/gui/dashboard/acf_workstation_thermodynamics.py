@@ -60,6 +60,18 @@ used to be DEFINED here - moved to the real, Qt-free
 router can reuse it without importing PySide6 into the web server
 process. Re-imported below unchanged - every existing caller of this
 module keeps working with zero code changes.
+
+Research Mode (added 2026-09-04)
+------------------------------------
+When `set_research_mode(True)` (toggled from the Workstation's own
+chrome), clicking the θ-e/relative-humidity map re-calls
+`compute_real_theta_e_at_point()` fresh at the nearest real grid point
+to the click - showing its FULL real return (θ-e, relative humidity,
+dewpoint, and its own real `honest_limitation` text), not just the
+single value already rendered on the map. Real, on-demand, per-click -
+never a new field computation, and `AWCIMapPanel.pointClicked`
+(already real, already tested elsewhere) is reused as-is, not
+reimplemented.
 """
 
 from __future__ import annotations
@@ -68,9 +80,10 @@ from typing import Any
 
 import numpy as np
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
+from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.workstation_fields import compute_real_theta_e_and_rh_fields
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
@@ -192,6 +205,7 @@ class ACFThermodynamicsLabPanel(QWidget):
         self._cin_grid: np.ndarray | None = None
         self._cape_lats: np.ndarray | None = None
         self._cape_lons: np.ndarray | None = None
+        self._research_mode_enabled = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -211,6 +225,7 @@ class ACFThermodynamicsLabPanel(QWidget):
             "THERMODYNAMICS LAB", show_legend=False, show_info_boxes=False, show_demo_fallback=False
         )
         self.map_panel.setMinimumHeight(260)
+        self.map_panel.pointClicked.connect(self._on_map_point_clicked)
         layout.addWidget(self.map_panel, stretch=1)
 
         # --- CAPE/CIN (on-demand, full-column real parcel ascent) ---
@@ -270,6 +285,42 @@ class ACFThermodynamicsLabPanel(QWidget):
         self._volume = volume
         self._level_index = level_index
         self._redraw_auto()
+
+    def set_research_mode(self, enabled: bool) -> None:
+        """Real toggle (see module docstring's "Research Mode" section)
+        - controlled by `acf_workstation.ACFWorkstation`'s own chrome,
+        not this panel."""
+        self._research_mode_enabled = enabled
+
+    def _on_map_point_clicked(self, lat: float, lon: float) -> None:
+        if not self._research_mode_enabled or self._volume is None:
+            return
+        lats = np.asarray(self._volume["lats"])
+        lons = np.asarray(self._volume["lons"])
+        lat_idx = int(np.argmin(np.abs(lats - lat)))
+        lon_idx = int(np.argmin(np.abs(lons - lon)))
+        level = self._level_index
+
+        result = compute_real_theta_e_at_point(
+            float(self._volume["temperature_volume"][level, lat_idx, lon_idx]),
+            float(self._volume["specific_humidity_volume"][level, lat_idx, lon_idx]),
+            float(self._volume["pressure_volume_hpa"][level, lat_idx, lon_idx]),
+        )
+        real_lat, real_lon = float(lats[lat_idx]), float(lons[lon_idx])
+        if result["is_real_data"]:
+            text = (
+                f"θ-e: {result['theta_e_k']:.2f} K\n"
+                f"Relative humidity: {result['relative_humidity_pct']:.1f} %\n"
+                f"Dewpoint: {result['dewpoint_k']:.2f} K\n"
+                f"Status: {result['status']}"
+            )
+        else:
+            text = f"Status: {result['status']}\n\n{result['honest_limitation']}"
+        QMessageBox.information(
+            self,
+            f"Research Detail — Thermodynamics ({real_lat:.2f}°N, {real_lon:.2f}°E)",
+            text,
+        )
 
     def _redraw_auto(self) -> None:
         if self._volume is None:

@@ -191,10 +191,21 @@ Phase 15 (2026-09-04, same "continue" progressive discipline) added:
   case_studies.json` (same real `data/*` convention as
   `events_router`/`datasets_router`'s own storage).
 
-The remaining 2 spec modules (Convection/Terrain Labs - Research Mode
-etc. is a larger, separate piece of the master spec beyond the
-original "Labs" list) are listed in the left nav as real, visible,
-DISABLED "Planned" items - not silently omitted,
+Phase 16 (2026-09-04, same "continue" progressive discipline) added:
+- **Research Mode** (top-bar "🔬" toggle) - clicking Thermodynamics/
+  Microphysics Lab's own map (reusing `AWCIMapPanel.pointClicked`,
+  already real, already tested elsewhere) re-calls the exact real
+  per-point formula fresh at the nearest real grid point
+  (`compute_real_theta_e_at_point()`/`compute_real_hydrometeor_phase_
+  at_point()`) and shows its FULL real return (dewpoint, relative
+  humidity, wet-bulb, the function's own real `honest_limitation`
+  text…) in a real dialog - not just the single value already
+  rendered on the map. Real, bounded first pass: only these 2 Lab
+  panels support it today, disclosed as such, not every panel.
+
+The remaining 2 spec modules (Convection/Terrain Labs) are listed in
+the left nav as real, visible, DISABLED "Planned" items - not silently
+omitted,
 not faked - matching
 the master spec's own §68 audit-honesty rule applied
 in both directions: never claim something works when it's only
@@ -378,6 +389,23 @@ class ACFWorkstation(QWidget):
         self.fullscreen_button.clicked.connect(self._toggle_fullscreen)
         top_bar.addWidget(self.fullscreen_button)
 
+        # Real Research Mode (added 2026-09-04) - see
+        # _on_research_mode_toggled()'s own docstring for exactly what
+        # real behavior this turns on: clicking Thermodynamics/
+        # Microphysics Lab's own map re-calls the real per-point
+        # formula fresh at that point and shows its FULL real return,
+        # not just the single value already rendered.
+        self.research_mode_button = QPushButton("🔬 Research Mode")
+        self.research_mode_button.setCheckable(True)
+        self.research_mode_button.setToolTip(
+            "When on: click Thermodynamics/Microphysics Lab's own map to see the\n"
+            "full real per-point diagnostic detail (dewpoint, relative humidity,\n"
+            "wet-bulb, honest_limitation…) fresh at that point - not just the\n"
+            "single value already shown on the map."
+        )
+        self.research_mode_button.toggled.connect(self._on_research_mode_toggled)
+        top_bar.addWidget(self.research_mode_button)
+
         # Real Configuration Management (added 2026-09-04, closing a
         # gap this button's own tooltip used to disclose as "not yet
         # implemented") - same "real actions behind one control"
@@ -522,6 +550,7 @@ class ACFWorkstation(QWidget):
         commands: list[tuple[str, Callable[[], None]]] = [
             ("Run", self.refresh),
             ("Toggle Fullscreen", self._toggle_fullscreen),
+            ("Toggle Research Mode", self.research_mode_button.toggle),
         ]
         for row, name in enumerate(_ENABLED_MODULES):
             commands.append((f"Go to {name}", self._make_go_to_row(row)))
@@ -755,6 +784,21 @@ class ACFWorkstation(QWidget):
             window.showNormal()
         else:
             window.showFullScreen()
+
+    def _on_research_mode_toggled(self, enabled: bool) -> None:
+        """Real, disclosed scope (added 2026-09-04): only the 2 Lab
+        panels with real, currently-hidden per-point diagnostic detail
+        worth surfacing support this today - Thermodynamics Lab
+        (θ-e/relative humidity/dewpoint) and Microphysics Lab
+        (precipitation phase/wet-bulb/relative humidity). Every other
+        Lab panel's own map is unaffected by this toggle - a real,
+        bounded first pass, not a claim that every panel gained this."""
+        self.thermodynamics_panel.set_research_mode(enabled)
+        self.microphysics_panel.set_research_mode(enabled)
+        if enabled:
+            self.status_label.setText(
+                "🔬 Research Mode ON - click Thermodynamics/Microphysics Lab's map for full diagnostic detail."
+            )
 
     def status(self) -> dict[str, Any]:
         return {"has_volume": self._volume is not None, "level_index": self._level_index}

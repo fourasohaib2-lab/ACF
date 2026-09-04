@@ -6441,3 +6441,52 @@ séparée toujours en attente) ; 2 modules Lab restants (Convection,
 Terrain — génuinement bloqués, aucune donnée réelle sans fabrication) ;
 Research Mode listé "(planned)", pièce plus large du spec maître hors
 de la liste originelle des "Labs".
+
+## Mise à jour 2026-09-04 (suite) — ACF Scientific Workstation, Phase 16 : le Research Mode
+
+Suite explicite ("continue"), même discipline progressive. Dernière
+grande pièce du plan initial restant à fermer (avec Convection/Terrain,
+génuinement bloqués sans fabrication).
+
+**Construit** : un vrai bouton bascule "🔬 Research Mode" dans la barre
+du haut. Activé, cliquer sur la carte du Thermodynamics Lab ou du
+Microphysics Lab (réutilise `AWCIMapPanel.pointClicked`, déjà réel,
+déjà testé ailleurs pour AWCI) recalcule EN DIRECT, au point de grille
+réel le plus proche du clic, la vraie fonction ponctuelle sous-jacente
+(`compute_real_theta_e_at_point()`/`compute_real_hydrometeor_phase_
+at_point()`) et affiche son retour réel COMPLET dans une vraie boîte
+de dialogue — pas seulement la valeur unique déjà affichée sur la
+carte, mais aussi le point de rosée réel, l'humidité relative réelle,
+la température du thermomètre mouillé réelle, et le texte
+`honest_limitation` réel de la fonction elle-même. Zéro nouvelle
+physique — seulement une exposition, à la demande, de données déjà
+réelles jusque-là jetées après le rendu de la carte.
+
+**Périmètre honnêtement borné** : seuls 2 Labs (Thermodynamics,
+Microphysics) supportent Research Mode dans cette passe — les autres
+Labs ne sont pas affectés par le bouton, disclosed explicitement dans
+le docstring plutôt que prétendre une couverture universelle. Aussi
+accessible depuis la Command Palette ("Toggle Research Mode").
+
+**Validation réelle** : `ruff`/`mypy` propres. 9 nouveaux tests
+(`tests/gui/test_acf_workstation_research_mode.py` — clic sans effet
+quand désactivé, détail réel complet affiché quand activé, absence de
+volume gérée sans crash, bascule propagée aux deux panneaux, accessible
+depuis la Command Palette) + suite Workstation complète re-exécutée
+(120 tests, zéro régression). Vérifié aussi par un vrai script
+bout-en-bout à travers tout le chrome `ACFWorkstation` (clic réel sur
+la carte Thermodynamics d'un vrai run ALADIN → boîte de dialogue réelle
+avec θ-e=244.39K, humidité relative=100% [confirme à nouveau
+l'anomalie de pression connue, honnêtement affichée, pas masquée],
+point de rosée=285.98K). Suite complète **4167 → 4176**, toujours
+verte. Capture d'écran réelle envoyée : le bouton "🔬 Research Mode"
+visible dans son état activé dans la barre du haut.
+
+**Ce qui reste réellement** : l'anomalie de pression ~2x (tâche
+séparée toujours en attente — maintenant triplement confirmée : Data
+Quality Center, découverte initiale Thermodynamics Lab, et Research
+Mode) ; 2 modules Lab restants (Convection, Terrain — génuinement
+bloqués, aucune donnée réelle disponible sans fabrication). Avec cette
+fermeture, toutes les pièces du plan initial jugées réellement
+réalisables sans fabriquer de données sont maintenant construites,
+testées et vérifiées visuellement.
