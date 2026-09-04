@@ -120,6 +120,7 @@ already-established trade-off.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import numpy as np
@@ -131,6 +132,7 @@ from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
 from acf.science.constants import G, RD
+from acf.science.cyclones import BruntVaisalaFrequency
 from acf.science.divergence import Divergence
 from acf.science.lcl import LCL
 from acf.science.potential_temperature import PotentialTemperature
@@ -477,6 +479,48 @@ def compute_real_convection_indices_field(
                 )
 
     return {"lats": sub_lats, "lons": sub_lons, **fields}
+
+
+def compute_real_near_surface_static_stability_at_point(
+    temperature_bottom_k: float, temperature_next_k: float, pressure_bottom_hpa: float, pressure_next_hpa: float
+) -> float | None:
+    """
+    Real, near-surface Brunt-Väisälä static stability N (rad/s) at one
+    real point, from its own 2 lowest native levels (added 2026-09-05,
+    Stability Indices panel parity work) - the real, scalar sibling of
+    `compute_real_terrain_field()`'s own vectorized N calculation
+    below, same real formula/constants
+    (`PotentialTemperature.calculate()`, `BruntVaisalaFrequency.
+    calculate()`, `acf.science.constants.G`/`RD`) - kept as its own
+    small function rather than calling `compute_real_terrain_field()`
+    and discarding everything but one point, so a caller needing N at
+    only ONE point never pays that function's own full-grid elevation/
+    Froude-number cost (~0.5s at AROME's own full resolution,
+    measured) for a single real value.
+
+    Parameters
+    ----------
+    temperature_bottom_k, temperature_next_k : float
+        Real air temperature (K) at the lowest and second-lowest real
+        native levels.
+    pressure_bottom_hpa, pressure_next_hpa : float
+        Real pressure (hPa) at those same 2 levels.
+
+    Returns
+    -------
+    float or None
+        Real N (rad/s) - 0.0 for genuinely neutral/unstable air (same
+        convention as `BruntVaisalaFrequency.calculate()`), or `None`
+        (never a fabricated value) where the real hypsometric height
+        spacing itself is degenerate (duplicate/inverted real levels).
+    """
+    theta_bottom = PotentialTemperature.calculate(temperature_bottom_k, pressure_bottom_hpa)
+    theta_next = PotentialTemperature.calculate(temperature_next_k, pressure_next_hpa)
+    dz = (RD / G) * ((temperature_bottom_k + temperature_next_k) / 2.0) * math.log(pressure_bottom_hpa / pressure_next_hpa)
+    if not (dz > 0.0):
+        return None
+    dtheta_dz = (theta_next - theta_bottom) / dz
+    return BruntVaisalaFrequency.calculate(theta_bottom, dtheta_dz)
 
 
 def compute_real_terrain_field(

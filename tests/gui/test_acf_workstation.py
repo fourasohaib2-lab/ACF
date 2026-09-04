@@ -344,6 +344,28 @@ def test_clicking_a_thermodynamics_thumbnail_switches_the_real_main_map(qapp):
     assert ws.thermodynamics_panel.variable_selector.currentText() == "Inversions"
 
 
+def test_on_volume_ready_populates_the_real_stability_indices(qapp):
+    """Real Phase 39 regression guard (2026-09-05): the always-visible
+    Stability Indices panel must reflect this real run, at the real
+    grid-center point before any click."""
+    ws = ACFWorkstation()
+
+    ws._on_volume_ready(_real_volume())
+
+    assert ws.stability_indices_panel.status()["has_data"] is True
+
+
+def test_clicking_a_real_map_updates_the_real_stability_indices(qapp):
+    ws = ACFWorkstation()
+    volume = _real_volume()
+    ws._on_volume_ready(volume)
+
+    lat, lon = float(volume["lats"][1]), float(volume["lons"][2])
+    ws.dynamics_panel.map_panel.pointClicked.emit(lat, lon)
+
+    assert ws.stability_indices_panel.status()["has_data"] is True
+
+
 def test_changing_the_level_slider_reslices_without_a_new_solver_run(qapp, monkeypatch):
     """Real regression guard: switching levels must re-slice the
     already-computed volume, never trigger a second real solver run."""

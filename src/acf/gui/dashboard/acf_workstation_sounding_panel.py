@@ -21,15 +21,15 @@ pressure-inverted (surface at the bottom, meteorological convention) -
 no CAPE/CIN parcel ascent, no synthetic skew-T background, nothing
 this Workstation cannot back with a real number.
 
-Honest scope
--------------
-The mockup's own small colored grid beside its sounding plot (labelled
-"High Shear / Stability / CIN / CAPE / Wind Shear") is NOT built here -
-that would need a real per-point stability-index summary this
-Workstation does not compute at every column today (only
-Thermodynamics Lab's own Research Mode click computes CAPE/CIN, and
-only for its own single point-of-interest, not a persistent
-always-visible grid). Deferred, disclosed, not silently dropped.
+Stability Indices
+--------------------
+The mockup's own small colored grid beside this sounding plot
+(labelled "High Shear / Stability / CIN / CAPE / Wind Shear") is built
+as its own sibling widget, `acf_workstation_stability_indices.
+ACFStabilityIndicesWidget` (Phase 39, 2026-09-05) - kept separate
+rather than merged into this class so each stays independently
+testable; `acf_workstation.py` updates both together, at the same
+real clicked point.
 """
 
 from __future__ import annotations

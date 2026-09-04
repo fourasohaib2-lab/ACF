@@ -7788,3 +7788,47 @@ Lab.
 maquette sont désormais tous réels et présents. Restent : le Global
 Timeline avec vignettes ; le sélecteur "Domain" ; la petite grille
 colorée d'indices de stabilité ; le panneau "Layers/Domains".
+
+## Mise à jour 2026-09-05 (suite) — Phase 39 : la grille d'indices de stabilité
+
+**Pourquoi** : ferme le dernier gap explicitement annoncé par le
+panneau Sounding depuis la Phase 33 - la petite grille colorée de la
+maquette (CAPE/CIN/Wind Shear/Static Stability) à côté du sondage.
+Choisi comme le plus borné des 4 chantiers restants : réutilise
+directement le moteur CAPE/CIN déjà construit, appelé pour UN seul
+point (~5ms, réellement bon marché) plutôt qu'une grille complète
+(qui resterait à la demande, comme dans Thermodynamics Lab).
+
+**Construit** :
+- `acf.awci.workstation_fields.compute_real_near_surface_static_stability_at_point()`
+  (nouveau) - version scalaire réelle et bon marché (~7 microsecondes,
+  mesuré) du calcul de N déjà vectorisé dans
+  `compute_real_terrain_field()`, gardée séparée pour ne jamais payer
+  le coût plein-grille de cette dernière (~0.5s sur AROME complet,
+  mesuré) pour une seule valeur réelle - vérifiée pour concorder
+  exactement avec la version grille.
+- `acf_workstation_stability_indices.py` : `compute_real_stability_indices_at_point()`
+  (sans Qt, testable isolément) rassemble CAPE/CIN (réutilise le vrai
+  pipeline MetPy déjà utilisé par Thermodynamics Lab), cisaillement de
+  vent massif réel, et la stabilité statique réelle ci-dessus.
+  `ACFStabilityIndicesWidget` l'affiche sous forme de petite grille
+  réelle, positionnée juste sous le panneau Sounding.
+- Indépendant du curseur de niveau (CAPE/CIN/shear/N sont des
+  diagnostics de colonne complète ou des 2 niveaux les plus bas) - mis
+  à jour uniquement sur un vrai run ou un vrai clic, jamais sur un
+  changement de niveau seul.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 4
+nouveaux tests sur `compute_real_near_surface_static_stability_at_point()`
+(`tests/test_acf_workstation_terrain.py`, incluant une contre-
+vérification exacte contre la version grille), 4 nouveaux tests sur le
+snapshot (`tests/test_acf_workstation_stability_indices.py`, sans Qt),
+3 nouveaux tests sur le widget
+(`tests/gui/test_acf_workstation_stability_indices.py`), 2 nouveaux
+tests d'intégration (`tests/gui/test_acf_workstation.py`). Capture
+d'écran réelle confirmant la grille sous le Sounding.
+
+**Ce qui reste réellement** : le Global Timeline avec vignettes ; le
+sélecteur "Domain" ; le panneau "Layers/Domains" (couches raster/
+vecteur) - les 2 derniers restent les plus structurants (rayon
+d'impact large ou architecture nouvelle).

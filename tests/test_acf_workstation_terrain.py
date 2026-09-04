@@ -8,10 +8,11 @@ backing the AWCI-free ACF Scientific Workstation's Terrain Lab (added
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from acf.awci.orographic_froude import compute_real_mountain_wave_froude_number_at_point
 from acf.awci.terrain_elevation import interpolate_real_terrain_elevation
-from acf.awci.workstation_fields import compute_real_terrain_field
+from acf.awci.workstation_fields import compute_real_near_surface_static_stability_at_point, compute_real_terrain_field
 from acf.science.constants import G, RD
 from acf.science.cyclones import BruntVaisalaFrequency
 from acf.science.potential_temperature import PotentialTemperature
@@ -138,3 +139,41 @@ def test_terrain_field_runs_at_full_native_resolution_no_stride():
     assert np.array_equal(result["lats"], lats)
     assert np.array_equal(result["lons"], lons)
     assert result["elevation_m"].shape == (6, 7)
+
+
+def test_static_stability_at_point_matches_the_real_grid_function_at_the_same_point():
+    """Cross-check discipline: the real, scalar per-point function must
+    agree exactly with compute_real_terrain_field()'s own vectorized N
+    at the same real point - same formula, two real implementations
+    kept for a real, disclosed performance reason (see the point
+    function's own docstring), never allowed to silently drift apart."""
+    temperature_volume, pressure_volume_hpa, wind_speed_volume, lats, lons = _build_volume(4, 5)
+
+    grid_result = compute_real_terrain_field(temperature_volume, pressure_volume_hpa, wind_speed_volume, lats, lons)
+
+    for i in range(4):
+        for j in range(5):
+            point_n = compute_real_near_surface_static_stability_at_point(
+                float(temperature_volume[0, i, j]), float(temperature_volume[1, i, j]),
+                float(pressure_volume_hpa[0, i, j]), float(pressure_volume_hpa[1, i, j]),
+            )
+            assert point_n == pytest.approx(float(grid_result["brunt_vaisala_n_s1"][i, j]))
+
+
+def test_static_stability_at_point_is_zero_for_a_real_neutral_profile():
+    """Same real neutral-profile construction as
+    test_terrain_field_reports_a_real_neutral_stability_honestly above."""
+    t_level_1 = 295.0 * (900.0 / 1000.0) ** PotentialTemperature.RD_CP
+
+    n = compute_real_near_surface_static_stability_at_point(295.0, t_level_1, 1000.0, 900.0)
+
+    assert n == 0.0
+
+
+def test_static_stability_at_point_is_honestly_none_for_a_degenerate_profile():
+    """Identical pressure at both real levels - a genuinely degenerate
+    height spacing (dz undefined) - must be None, never a fabricated
+    number or a crash."""
+    n = compute_real_near_surface_static_stability_at_point(295.0, 288.0, 1000.0, 1000.0)
+
+    assert n is None

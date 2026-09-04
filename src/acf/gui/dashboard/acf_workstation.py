@@ -544,6 +544,27 @@ full-size main-map view - nothing removed, only added. All 4 mockup
 thumbnail rows this Workstation's 2 relevant Labs can honestly support
 are now real and present.
 
+Phase 39 (2026-09-05) built the **Stability Indices** panel
+(`acf_workstation_stability_indices.ACFStabilityIndicesWidget`),
+closing the sounding panel's own disclosed "Honest scope" gap from
+Phase 33 - the mockup's small colored grid beside its sounding plot
+(CAPE/CIN/Wind Shear/Static Stability). Every value is real and reused
+as-is at the same clicked point: CAPE/CIN from `acf.awci.
+convective_energy.compute_real_cape_cin_at_point()` (the same real
+MetPy pipeline Thermodynamics Lab's own on-demand button uses - cheap
+enough, ~5ms, for ONE point, unlike a whole grid), bulk wind shear
+from `acf.awci.wind_shear.compute_real_wind_shear_at_point()`, and a
+new real, scalar `compute_real_near_surface_static_stability_at_point()`
+(`acf.awci.workstation_fields`) - the real, cheap (~7 microseconds,
+measured) scalar sibling of `compute_real_terrain_field()`'s own
+vectorized near-surface N, added so this per-point panel never pays
+that function's own full-grid elevation/Froude-number cost (~0.5s at
+AROME's own full resolution) just to read one value; cross-checked to
+agree with it exactly. Independent of the level slider (CAPE/CIN/
+shear/N are inherently full-column or lowest-2-level diagnostics), so
+only updated in `_on_volume_ready()`/`_on_map_point_clicked()`, not
+`_on_level_changed()`.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -615,6 +636,7 @@ from acf.gui.dashboard.acf_workstation_pipeline_checks import (
 from acf.gui.dashboard.acf_workstation_pipeline_monitor import ACFPipelineMonitorWidget
 from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
 from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
+from acf.gui.dashboard.acf_workstation_stability_indices import ACFStabilityIndicesWidget, compute_real_stability_indices_at_point
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
@@ -946,6 +968,15 @@ class ACFWorkstation(QWidget):
         self.sounding_panel.setMinimumWidth(260)
         self.sounding_panel.setMaximumWidth(340)
         right_col.addWidget(self.sounding_panel, stretch=1)
+        # Real Stability Indices (added Phase 39, 2026-09-05) - the
+        # mockup's own small colored grid beside its sounding plot
+        # (CAPE/CIN/Wind Shear/Static Stability), at the same real
+        # point as the sounding above. See
+        # acf_workstation_stability_indices.py's own module docstring.
+        self.stability_indices_panel = ACFStabilityIndicesWidget()
+        self.stability_indices_panel.setMinimumWidth(260)
+        self.stability_indices_panel.setMaximumWidth(340)
+        right_col.addWidget(self.stability_indices_panel)
         # Real Atmospheric Interaction Graph (added Phase 34,
         # 2026-09-05) - see acf_workstation_interaction_graph_panel.py's
         # own module docstring for the real, fixed 5-node correlation
@@ -1286,6 +1317,13 @@ class ACFWorkstation(QWidget):
         lat, lon = self._last_clicked_point or (float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2]))
         self.sounding_panel.update_from_volume_and_point(volume, lat, lon, level_index=self._level_index)
 
+        # Real Stability Indices update (added Phase 39, 2026-09-05) -
+        # same real point as the sounding above; not tied to the level
+        # slider (CAPE/CIN/shear/static-stability are inherently full-
+        # column or lowest-2-level diagnostics), so not re-triggered in
+        # _on_level_changed() below.
+        self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(volume, lat, lon))
+
         # Real Atmospheric Interaction Graph update (added Phase 34,
         # 2026-09-05) - real per-level Pearson correlations, re-derived
         # here (once per run/level change), not on every map click.
@@ -1306,6 +1344,7 @@ class ACFWorkstation(QWidget):
         self._last_clicked_point = (lat, lon)
         if self._volume is not None:
             self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
+            self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(self._volume, lat, lon))
             snapshot = compute_real_map_inspector_snapshot(self._volume, lat, lon, self._level_index)
             if self._map_inspector is None:
                 self._map_inspector = ACFMapInspectorDialog(self)
