@@ -192,8 +192,23 @@ for name in modules:
     try:
         __import__(name)
         print("OK:", name)
-    except ModuleNotFoundError:
-        print("WARN: module not present:", name)
+    except ModuleNotFoundError as exc:
+        # Ne traiter en WARN (non bloquant) que le cas où le paquet
+        # top-level testé lui-même est absent (exc.name == name) :
+        # ces 10 paquets existent tous réellement sous src/acf/, donc ce
+        # cas ne devrait plus se produire en pratique. Avant ce fix,
+        # TOUT ModuleNotFoundError était avalé en WARN quel que soit son
+        # exc.name - un import cassé comme `import acf.hpc_workflow`
+        # levant ModuleNotFoundError("paramiko") (dépendance transitive
+        # non installée, cf. acf.hpc_connector.ssh_connector) ressortait
+        # à tort comme "WARN: module not present: acf.hpc_workflow",
+        # masquant un vrai problème de dépendance derrière un message
+        # qui laisse croire que le paquet lui-même n'existe pas.
+        if exc.name == name:
+            print("WARN: module not present:", name)
+        else:
+            print("ERROR:", name, "- missing dependency:", repr(exc))
+            raise
     except Exception as exc:
         print("ERROR:", name, repr(exc))
         raise
@@ -207,6 +222,17 @@ run_pytest() {
     if [ ! -d tests ]; then
         echo "[WARN] tests/ absent"
         return 0
+    fi
+
+    # Sans serveur d'affichage (repro sur cette machine : DISPLAY vide),
+    # pytest-qt plante dès pytest_configure() en essayant de charger QtGui
+    # avec la plateforme Qt par défaut ("xcb", qui a besoin d'un vrai X
+    # server) - confirmé en exécutant ce même run sur cette machine. On
+    # force donc le backend offscreen dans ce cas précis, sans changer le
+    # comportement sur un poste avec un vrai DISPLAY ou un QT_QPA_PLATFORM
+    # déjà choisi explicitement.
+    if [ -z "${DISPLAY:-}" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
+        export QT_QPA_PLATFORM=offscreen
     fi
 
     "$PYTHON_BIN" -m pytest -q
