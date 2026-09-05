@@ -9,6 +9,20 @@ Global Module Registry Module (Phase 2)
 class GlobalModuleRegistry:
     """
     Registre global de découverte et d'inspection de tous les modules scientifiques d'ACF.
+
+    NOTE (correction, 2026-09-05 audit de continuation): "discovering"
+    in this module's own docstring overstates what MODULES is - a
+    hand-curated static list, not the result of any real filesystem or
+    import-time package discovery. Checked against the real top-level
+    packages under src/acf/: most of the 21 names correspond directly
+    (or closely enough - e.g. "DigitalTwin" for digital_twin), but
+    "Atmosphere", "Cryosphere", "Knowledge", and "Operations" do not
+    match any actual top-level src/acf/ package (the closest real
+    packages are earth_physics/climate for atmosphere-and-cryosphere
+    content, knowledge_platform for "Knowledge", and hazard_operations
+    for "Operations" - none an exact match). Not fabricated (no
+    numeric/status claim here is false), but the registry is a
+    conceptual/marketing taxonomy, not a verified package inventory.
     """
 
     MODULES: list[str] = [

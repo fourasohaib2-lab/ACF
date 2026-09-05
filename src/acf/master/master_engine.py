@@ -32,6 +32,17 @@ class MasterRuntime:
 class ACFMasterEngine:
     """
     Moteur Master unifié capable d'orchestrer automatiquement les 40 missions du framework ACF.
+
+    NOTE (correction, 2026-09-05 audit de continuation): "les 40
+    missions" est une formule décorative répétée à plusieurs endroits
+    de ce paquet (voir aussi master_report.py et
+    science.query_engine.py, corrigés le même jour) - aucun décompte
+    réel de "40 missions" n'a été trouvé nulle part dans ce dépôt.
+    discover_modules()/load_everything() énumèrent
+    GlobalModuleRegistry.MODULES (21 noms catalogués statiquement, pas
+    "orchestrés"), et synchronize()/execute() disclosent déjà
+    honnêtement l'absence de toute orchestration réelle - voir leurs
+    propres NOTE ci-dessous.
     """
 
     def __init__(self, context: ExecutionContext | None = None):
@@ -45,12 +56,27 @@ class ACFMasterEngine:
         return self.registry.list_modules()
 
     def load_everything(self) -> dict[str, Any]:
-        """Charge l'ensemble des modules, enregistres et dépendances d'ACF."""
+        """
+        Charge l'ensemble des modules, enregistres et dépendances d'ACF.
+
+        NOTE (correction, 2026-09-05 audit de continuation): "status"
+        used to unconditionally claim "ALL_MODULES_LOADED" as if 21 real
+        Python modules had actually been imported/instantiated - this
+        method only ever enumerates GlobalModuleRegistry.MODULES, a
+        hand-curated static name list (see that registry's own NOTE: not
+        the result of real package discovery, and some of its 21 names
+        do not correspond to any actual top-level src/acf/ package). No
+        import or instantiation of any kind happens here - same
+        underlying gap already disclosed for synchronize()/execute() in
+        this same class. total_discovered_modules/modules genuinely
+        reflect the real registry content (unaffected). Not fabricated.
+        """
         modules = self.discover_modules()
         return {
-            "status": "ALL_MODULES_LOADED",
+            "status": "NOT_LOADED_ONLY_ENUMERATED_FROM_STATIC_REGISTRY",
             "total_discovered_modules": len(modules),
             "modules": modules,
+            "is_real_data": False,
         }
 
     def initialize(self) -> dict[str, Any]:

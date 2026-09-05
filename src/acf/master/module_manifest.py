@@ -8,12 +8,15 @@ test coverage, doc coverage, and HPC requirements across all ACF subsystems.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger("acf.master.module_manifest")
 
 
 class MaturityLevel(str, Enum):
@@ -133,6 +136,20 @@ class ModuleRegistryManager:
         tested/documented with zero real manifest ever read from disk.
         Fixed to honestly leave self.manifests empty when nothing is
         found, rather than inventing plausible-looking entries.
+
+        NOTE (correction, 2026-09-05 audit de continuation): a
+        module.yaml file that DOES exist but fails to parse (invalid
+        YAML, or valid YAML missing a required field) used to be
+        swallowed by the same bare `except Exception: pass` and treated
+        identically to "no manifest at all" - the same
+        cannot-distinguish-absent-from-broken bug already found and
+        fixed for hpc_workflow/workflow_configuration.py in the
+        2026-09-02 repo-wide `except Exception: pass` sweep (this file
+        did not exist yet at the time of that sweep, so it was never
+        covered by it). A genuinely missing manifest stays silent
+        (legitimate - most subsystems have none); a present-but-broken
+        one is now logged as a real warning instead of vanishing
+        without a trace.
         """
         self.manifests.clear()
         manifest_files = list(self.root_dir.glob("**/module.yaml"))
@@ -142,7 +159,7 @@ class ModuleRegistryManager:
                 manifest = ModuleManifest.from_yaml(mf)
                 self.manifests[manifest.name] = manifest
             except Exception:
-                pass
+                logger.warning("Failed to parse module manifest %s - skipping it", mf, exc_info=True)
 
         return self.manifests
 

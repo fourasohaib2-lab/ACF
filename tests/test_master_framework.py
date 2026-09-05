@@ -30,8 +30,14 @@ def test_acf_master_engine_lifecycle():
     modules = engine.discover_modules()
     assert len(modules) == 21
 
+    # CORRECTED (2026-09-05 audit de continuation): load_everything()
+    # used to unconditionally claim "ALL_MODULES_LOADED" as if 21 real
+    # Python modules had been imported/instantiated - it only ever
+    # enumerates GlobalModuleRegistry.MODULES, a static name list; no
+    # import or instantiation happens here.
     load_res = engine.load_everything()
-    assert load_res["status"] == "ALL_MODULES_LOADED"
+    assert load_res["status"] == "NOT_LOADED_ONLY_ENUMERATED_FROM_STATIC_REGISTRY"
+    assert load_res["total_discovered_modules"] == 21
 
     init_res = engine.initialize()
     assert init_res["status"] == "INITIALIZED"
@@ -174,6 +180,16 @@ def test_master_dashboard_and_executive_reporting():
     assert rep["format"] == "Markdown"
     assert "NOT_AUDITED" in rep["content"]
     assert "PLATINUM CERTIFIED" not in rep["content"]
+
+    # CORRECTED (2026-09-05 audit de continuation): the report text
+    # still unconditionally asserted "21 Active Core Modules (40
+    # Engineering Missions Completed)" right next to the now-honest
+    # certification block - "Active" and "Completed" were never
+    # verified, and no real count of "40 missions" exists anywhere in
+    # this codebase.
+    assert "Active Core Modules" not in rep["content"]
+    assert "Engineering Missions Completed" not in rep["content"]
+    assert "21 names registered in GlobalModuleRegistry" in rep["content"]
 
 
 def test_performance_profiler_and_health_monitor():

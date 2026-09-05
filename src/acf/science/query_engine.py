@@ -250,9 +250,18 @@ class ScientificQueryEngine:
                 "question": question,
                 "action": "activate_workspace",
                 "workspace_name": "ACF MASTER FRAMEWORK UNIFIED CONTROL CENTER",
+                # CORRECTED (2026-09-05 audit de continuation): this used
+                # to also claim "40 missions d'ingénierie intégrées" and
+                # "Découverte automatique des 21 modules" - no real count
+                # of "40 missions" exists anywhere in this codebase, and
+                # GlobalModuleRegistry.MODULES is a static hand-curated
+                # name list (see its own NOTE), not the result of any
+                # real automatic discovery.
                 "physical_explanation": (
-                    "Activation du Master Framework unifié d'ACF (40 missions d'ingénierie intégrées). "
-                    "Découverte automatique des 21 modules principaux et des 13 catégories de capacités scientifiques."
+                    "Activation du Master Framework unifié d'ACF. "
+                    "21 modules principaux et 13 catégories de capacités scientifiques recensés "
+                    "dans un catalogue statique (GlobalModuleRegistry / ScientificCapabilityRegistry), "
+                    "pas découverts automatiquement."
                 ),
                 # CORRECTED: used to claim "Platinum Certified" - the
                 # same false certification independently fabricated by

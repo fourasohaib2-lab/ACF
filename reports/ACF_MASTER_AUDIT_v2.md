@@ -8697,3 +8697,82 @@ auditées (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
 `ocean`, `planetary`, `plugins`, `release`, `resources`, `search`,
 `space_weather`, `storage`, `surfex`, `time`, `utils`, `workspace`) -
 `parameters` retiré de la liste, désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — continuation de l'audit : `acf.master` (déjà largement corrigé, 6 fissures réelles trouvées dans les coutures)
+
+**Zone couverte** : `acf.master` (17 fichiers, 1191 lignes) - malgré 0
+occurrence dans ce document avant aujourd'hui, la lecture fichier par
+fichier montre que la quasi-totalité du paquet a déjà été auditée et
+corrigée lors d'une session antérieure non retracable dans l'historique
+git accessible (dépôt shallow) : `scientific_certification.py`,
+`equation_validator.py`, `health_monitor.py`, `performance.py`,
+`master_graph.py`, `science_gateway.py`, `workflow_master.py`,
+`documentation_index.py`, `module_registry.py` (son propre
+`get_module_info()`) portent chacun un vrai "NOTE (correction)" et un
+comportement honnête vérifié à l'exécution. `capabilities.py` a été
+vérifié par sondage (Mogi/OVATION/ENLIL/NEO-PHA/Shockwave/EnKF/Tsunami
+pointent chacun vers un fichier d'implémentation réel ailleurs dans le
+dépôt) - pas de fabrication détectée. `traceability.py`/
+`master_settings.py`/`awci_master_dashboard.py` sont de simples
+structures de données/descripteurs UI statiques sans revendication
+vérifiable.
+
+**6 fissures réelles trouvées dans les coutures** (ce que la passe de
+correction précédente n'a pas couvert, vérifié par exécution) :
+
+1. **`master_engine.py.ACFMasterEngine.load_everything()`** :
+   revendiquait inconditionnellement `"ALL_MODULES_LOADED"` alors
+   qu'aucun import ni instanciation n'a jamais lieu - seule
+   `GlobalModuleRegistry.MODULES` (une liste statique) est énumérée.
+   Même famille que `synchronize()`/`execute()`, déjà corrigés dans le
+   même fichier, mais cette méthode-sœur était restée intacte. Corrigé
+   en `"NOT_LOADED_ONLY_ENUMERATED_FROM_STATIC_REGISTRY"`.
+2. **`module_registry.py.GlobalModuleRegistry`** : son propre docstring
+   ("discovering all 21 core package modules") survend une liste
+   saisie à la main - vérifié contre les vrais répertoires de
+   `src/acf/` : 4 des 21 noms (`Atmosphere`, `Cryosphere`, `Knowledge`,
+   `Operations`) ne correspondent à aucun paquet top-level réel. NOTE
+   ajoutée, aucune donnée n'était fausse à proprement parler (juste le
+   mot "discovering").
+3. **`master_report.py.MasterExecutiveReport.generate_report()`** : la
+   correction précédente avait neutralisé le bloc de certification
+   fabriqué, mais laissé intacte, juste à côté, la phrase
+   `"21 Active Core Modules (40 Engineering Missions Completed)"` -
+   "Active" et "Completed" jamais vérifiés, "40 missions" sans aucun
+   décompte réel trouvé nulle part dans le dépôt. Corrigé pour ne
+   revendiquer que ce qui est réellement vérifiable (21 noms
+   enregistrés dans un catalogue statique).
+4. **`science/query_engine.py`** (route NLQ "Show Master") : même
+   phrase décorative ("40 missions d'ingénierie intégrées",
+   "Découverte automatique des 21 modules") renvoyée telle quelle à
+   l'utilisateur final par `ScientificQueryEngine.ask()` - corrigée en
+   cohérence avec le point 3.
+5. **`master_engine.py.ACFMasterEngine`** (docstring de classe) : même
+   décompte "40 missions" jamais vérifié - NOTE ajoutée pointant vers
+   les 3 corrections ci-dessus.
+6. **`module_manifest.py.ModuleRegistryManager.scan_workspace()`** : un
+   `except Exception: pass` nu avalait silencieusement un
+   `module.yaml` réellement présent mais malformé, le traitant
+   identiquement à "aucun manifeste" - exactement le même bug que celui
+   déjà trouvé et corrigé pour
+   `hpc_workflow/workflow_configuration.py` lors du balayage exhaustif
+   du 2026-09-02 (ce fichier n'existait pas encore à ce moment-là, donc
+   jamais couvert par ce balayage). Corrigé avec un vrai
+   `logger.warning(..., exc_info=True)`, même schéma que les 2 bugs
+   déjà trouvés par ce balayage.
+
+**Validation réelle** : `tests/test_master_framework.py` (8/8),
+`tests/test_module_manifest.py` (5/5, dont 1 nouveau test forçant un
+YAML réellement invalide et vérifiant le vrai log), suite complète
+réexécutée après chaque édition. `ruff check` propre sur tous les
+fichiers touchés (`master/master_engine.py`, `master/module_registry.py`,
+`master/master_report.py`, `master/module_manifest.py`,
+`science/query_engine.py`, et les 2 fichiers de test). Grep confirmant
+qu'aucun autre appelant ne dépendait des anciennes chaînes fabriquées.
+
+**Ce qui reste réellement** : 22 zones à 0 occurrence toujours non
+auditées (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
+`climate`, `connectors`, `fire_weather`, `geospatial`, `ocean`,
+`planetary`, `plugins`, `release`, `resources`, `search`,
+`space_weather`, `storage`, `surfex`, `time`, `utils`, `workspace`) -
+`master` retiré de la liste, désormais audité.
