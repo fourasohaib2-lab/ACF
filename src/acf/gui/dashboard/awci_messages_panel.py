@@ -31,6 +31,7 @@ from acf.aviation.icao.metar_decoder import METARReport, metar_report_quality
 from acf.aviation.icao.sigmet_decoder import SIGMETReport
 from acf.aviation.icao.taf_decoder import TAFForecastPeriod, TAFReport
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 logger = logging.getLogger("acf.gui.dashboard.awci_messages_panel")
 
@@ -191,7 +192,12 @@ class AWCIMessagesDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("AWCI – Live Aviation Weather Messages")
-        self.resize(720, 560)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(720, 560) - the largest of this codebase's secondary
+        # dialogs, and so the most likely to open off-screen on a small
+        # display. Clamp to the actual screen instead, same fix as
+        # gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 720, 560)
         self.setStyleSheet(dashboard_stylesheet())
 
         outer = QVBoxLayout(self)

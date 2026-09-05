@@ -57,6 +57,7 @@ from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.awci.workstation_fields import compute_real_vorticity_divergence
 from acf.gui.theme_tokens import label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 
 def compute_real_map_inspector_snapshot(volume: dict[str, Any], lat: float, lon: float, level_index: int) -> dict[str, Any]:
@@ -159,7 +160,10 @@ class ACFMapInspectorDialog(QDialog):
         self.text_label.setWordWrap(True)
         self.text_label.setStyleSheet(label_style("text_primary", "sm") + "font-family: monospace;")
         layout.addWidget(self.text_label)
-        self.resize(320, 380)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(320, 380) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 320, 380)
 
     def set_snapshot(self, snapshot: dict[str, Any]) -> None:
         self.text_label.setText("\n".join(format_map_inspector_lines(snapshot)))

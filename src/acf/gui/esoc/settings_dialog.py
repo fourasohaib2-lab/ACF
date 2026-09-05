@@ -5,6 +5,7 @@ from typing import Any
 from PySide6.QtWidgets import QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from acf.gui.theme import ThemeManager
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 
 class SettingsDialog(QDialog):
@@ -15,7 +16,10 @@ class SettingsDialog(QDialog):
     def __init__(self, current_theme: str = "dark", parent: Any | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("⚙️ ESOC Settings")
-        self.resize(380, 160)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(380, 160) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 380, 160)
 
         layout = QVBoxLayout(self)
 

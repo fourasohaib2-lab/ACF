@@ -32,6 +32,7 @@ from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 
 class AWCIVerticalProfile(QWidget):
@@ -348,7 +349,10 @@ class AWCIVerticalProfileLevelDialog(QDialog):
         note.setStyleSheet(label_style("text_muted", "xs"))
         layout.addWidget(note)
 
-        self.resize(360, 360)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(360, 360) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 360, 360)
 
     def show_detail(self, level_label: str, hpa: float, result: dict[str, Any]) -> None:
         self.setWindowTitle(f"AWCI – {level_label}")

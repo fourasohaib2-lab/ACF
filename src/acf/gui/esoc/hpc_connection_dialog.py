@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from acf.gui_screen_utils import fit_dialog_to_screen
+
 # Ordered presets shown in "Saved HPC Profile". ``key`` is the lookup name passed
 # to HPCConfiguration.get_cluster_profile() / HPCConnectionManager.connect(), so it
 # MUST match a key under ``cluster_profiles:`` in config/hpc.yaml for the profile to
@@ -94,7 +96,10 @@ class HPCConnectionDialog(QDialog):
     def __init__(self, parent: Any | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("🔌 Universal HPC Connection Wizard & Profiles")
-        self.resize(600, 480)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(600, 480) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 600, 480)
 
         main_layout = QVBoxLayout(self)
 

@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
 from acf.awci.execution_report import summarize_execution
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 if TYPE_CHECKING:
     from acf.awci.result import AWCIResult
@@ -43,7 +44,10 @@ class AWCIExecutionReportDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("AWCI – Execution Report")
-        self.resize(420, 320)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(420, 320) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 420, 320)
         self.setStyleSheet(dashboard_stylesheet())
 
         outer = QVBoxLayout(self)

@@ -35,6 +35,7 @@ from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 from acf.awci.diagnostic_registry import DIAGNOSTIC_REGISTRY
 from acf.awci.weights import WeightsManager
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 #: Maps a real COMPONENT_INFO module key to its real
 #: acf.awci.diagnostic_registry entry - only the 5 modules with a real
@@ -150,7 +151,10 @@ class AWCIComponentDetailDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setStyleSheet(dashboard_stylesheet())
-        self.resize(440, 320)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(440, 320) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 440, 320)
 
         outer = QVBoxLayout(self)
         self.header_label = QLabel("")

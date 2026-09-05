@@ -27,6 +27,8 @@ from collections.abc import Callable
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import QDialog, QLineEdit, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
+from acf.gui_screen_utils import fit_dialog_to_screen
+
 
 class CommandPaletteDialog(QDialog):
     """Real, fuzzy-filterable list of (label, callback) commands - see
@@ -53,7 +55,10 @@ class CommandPaletteDialog(QDialog):
         self.result_list.itemActivated.connect(lambda item: self.run_command(item.text()))
         layout.addWidget(self.result_list)
 
-        self.resize(420, 320)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(420, 320) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 420, 320)
         self._filter("")
 
     def set_commands(self, commands: list[tuple[str, Callable[[], None]]]) -> None:

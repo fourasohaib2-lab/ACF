@@ -34,6 +34,7 @@ from acf.aviation.icao.metar_decoder import METARReport
 from acf.gui.dashboard.awci_colors import risk_qcolor
 from acf.gui.dashboard.awci_risk_summary import _ROWS, _band
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui_screen_utils import fit_dialog_to_screen
 
 #: Real, elevated-only threshold - Moderate/Low are not alerts, matching
 #: this dialog's own purpose (surface what actually needs attention).
@@ -108,7 +109,10 @@ class AWCIAlertsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("AWCI – Active Alerts")
-        self.resize(480, 420)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(480, 420) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 480, 420)
         self.setStyleSheet(dashboard_stylesheet())
 
         outer = QVBoxLayout(self)

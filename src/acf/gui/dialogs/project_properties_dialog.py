@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from acf.gui_screen_utils import fit_dialog_to_screen
+
 
 class ProjectPropertiesDialog(QDialog):
     """
@@ -26,7 +28,10 @@ class ProjectPropertiesDialog(QDialog):
 
         self.setWindowTitle("Project Properties")
 
-        self.resize(500, 400)
+        # NOTE (real responsive-sizing fix, 2026-09-05): was a hardcoded
+        # self.resize(500, 400) - clamp to the actual screen instead, same
+        # fix as gui_screen_utils.fit_window_to_screen for main windows.
+        fit_dialog_to_screen(self, 500, 400)
 
         self.build_ui()
 
