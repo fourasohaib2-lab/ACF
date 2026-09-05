@@ -81,13 +81,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDockWidget,
     QMainWindow,
-    QTabWidget,
 )
 
 from acf.gui.esoc.esoc_sidebar import ESOCLeftSidebar, ESOCRightSidebar
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.view_manager import ViewManager
+from acf.gui.widgets.current_page_sizing import CurrentPageTabWidget
 
 #: Real System Explorer tree LEAF label -> real panel_manager.py panel
 #: key, verified one at a time (each label's own real matching panel
@@ -241,7 +241,16 @@ class ESOCLayout:
         self.main_window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_right)
 
         # Bottom Dock (Tabbed Operational Panels)
-        self.bottom_tabs = QTabWidget()
+        # NOTE (real responsive-sizing fix, 2026-09-05): a plain
+        # QTabWidget here would size itself to the LARGEST of all 44
+        # tabs (Qt's own default "size to every page" behaviour), so
+        # this dock - and the whole ESOC window, whose minimum size Qt
+        # floors to the sum of its docks' minimums - could never shrink
+        # below that one biggest tab regardless of screen size or which
+        # (possibly tiny) tab the operator actually had open. See
+        # acf.gui.widgets.current_page_sizing's own module docstring for
+        # the measured numbers this was verified against.
+        self.bottom_tabs = CurrentPageTabWidget()
         for name in self.panel_manager.list_panel_names():
             panel = self.panel_manager.get_panel(name)
             if panel:

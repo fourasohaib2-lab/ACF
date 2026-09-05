@@ -675,7 +675,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QSlider,
-    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
@@ -715,6 +714,7 @@ from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
+from acf.gui.widgets.current_page_sizing import CurrentPageStackedWidget
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
 
@@ -1003,7 +1003,16 @@ class ACFWorkstation(QWidget):
 
         body.addLayout(nav_col)
 
-        self.stack = QStackedWidget()
+        # NOTE (real responsive-sizing fix, 2026-09-05): a plain
+        # QStackedWidget sizes itself to the LARGEST of all 15 Lab
+        # panels it holds (Qt's own default "size to every page"
+        # behaviour), not just the one actually showing - measured
+        # minimumSizeHint() of (646, 737), floored by "Atmospheric
+        # Interaction Engine" (width) and "Complexity Explorer"
+        # (height), enforced even while e.g. the much smaller
+        # "Atmosphere State" panel (180x147) was selected. See
+        # acf.gui.widgets.current_page_sizing's own module docstring.
+        self.stack = CurrentPageStackedWidget()
         self.overview_landing_panel = ACFOverviewLandingPanel(
             navigate_to=self._navigate_to, module_names=_ENABLED_MODULES + _TOOLBAR_MODULES
         )
