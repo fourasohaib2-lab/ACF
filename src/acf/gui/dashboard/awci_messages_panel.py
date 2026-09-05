@@ -24,13 +24,14 @@ from __future__ import annotations
 import logging
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 from acf.aviation.icao.live_source import REAL_STATIONS, LiveReport, LiveStationBundle, fetch_active_sigmets, fetch_and_decode_station
 from acf.aviation.icao.metar_decoder import METARReport, metar_report_quality
 from acf.aviation.icao.sigmet_decoder import SIGMETReport
 from acf.aviation.icao.taf_decoder import TAFForecastPeriod, TAFReport
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui.widgets.current_page_sizing import CurrentPageTabWidget
 from acf.gui_screen_utils import fit_dialog_to_screen
 
 logger = logging.getLogger("acf.gui.dashboard.awci_messages_panel")
@@ -221,7 +222,15 @@ class AWCIMessagesDialog(QDialog):
         # shared rather than the two dialogs staying independent.
         self.last_bundles: dict[str, LiveStationBundle] | None = None
 
-        self.tabs = QTabWidget()
+        # NOTE (real responsive-sizing fix, 2026-09-05): same class of
+        # bug as ESOCLayout.bottom_tabs/ACFWorkstation.stack (see
+        # acf.gui.widgets.current_page_sizing's own module docstring) -
+        # a plain QTabWidget floors this dialog at its single largest
+        # station/SIGMET tab. Every tab here is already scroll-wrapped
+        # to a small, near-identical minimum today, so this is a no-op
+        # in practice right now - fixed anyway for consistency, and so
+        # it stays correct if a future tab's content ever grows.
+        self.tabs = CurrentPageTabWidget()
         outer.addWidget(self.tabs, stretch=1)
 
         self.station_text_edits: dict[str, QTextEdit] = {}

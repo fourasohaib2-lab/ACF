@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QTabWidget,
     QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
@@ -36,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import _example_layout_disclaimer
+from acf.gui.widgets.current_page_sizing import CurrentPageTabWidget
 
 
 class ESOCLeftSidebar(QWidget):
@@ -251,7 +251,16 @@ class ESOCRightSidebar(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
 
-        self.tabs = QTabWidget()
+        # NOTE (real responsive-sizing fix, 2026-09-05): same class of
+        # bug as ESOCLayout.bottom_tabs/ACFWorkstation.stack (see
+        # acf.gui.widgets.current_page_sizing's own module docstring) -
+        # a plain QTabWidget floors this dock at its single largest of
+        # 7 tabs ("AI Analysis & Plots") even while a smaller one is
+        # selected. Smaller magnitude here than that first case (measured
+        # ~20px width / ~120px height difference between tabs, not
+        # hundreds), but the same real effect, so fixed the same way for
+        # consistency.
+        self.tabs = CurrentPageTabWidget()
 
         # 1. Properties Tab
         tab_props_container = QWidget()
