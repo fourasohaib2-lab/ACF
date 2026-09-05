@@ -10,6 +10,25 @@ from PySide6.QtWidgets import (
 
 from acf.gui.map.map_canvas import MapCanvas
 
+#: Real responsive-sizing fix (2026-09-05): QComboBox's default
+#: `AdjustToContentsOnFirstShow` policy makes its *minimum* size hint
+#: wide enough for its single longest item, in full, with no eliding -
+#: "Comparison View (Obs vs Model)"/"Sea Ice Concentration & Thickness"
+#: here. Measured effect: this control bar's own minimumSizeHint() was
+#: (800, 30), floored almost entirely by these two combos plus their
+#: labels, which floors ESOCWindow's central widget - and so the whole
+#: ESOC window - at that width no matter the operator's screen size.
+#: `AdjustToMinimumContentsLengthWithIcon` instead floors the box at a
+#: fixed character count, letting it shrink further and elide ("...")
+#: the closed box's text when squeezed - standard Qt behaviour, and the
+#: dropdown popup itself still always shows every item's full text.
+_COMBO_MIN_CONTENTS_LENGTH = 16
+
+
+def _shrink_combo_min_width(combo: QComboBox) -> None:
+    combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+    combo.setMinimumContentsLength(_COMBO_MIN_CONTENTS_LENGTH)
+
 
 class ViewManager(QWidget):
     """Manages Phase 3 Earth View Projections & Phase 4 Scientific Layer Catalog."""
@@ -48,6 +67,7 @@ class ViewManager(QWidget):
         ]
         self.combo_view_mode.addItems(self.view_modes)
         self.combo_view_mode.currentTextChanged.connect(self._on_view_mode_changed)
+        _shrink_combo_min_width(self.combo_view_mode)
         c_layout.addWidget(self.combo_view_mode)
 
         lbl_layer = QLabel("Quick Layer Toggle: ")
@@ -75,6 +95,7 @@ class ViewManager(QWidget):
         ]
         self.combo_quick_layer.addItems(self.scientific_layers)
         self.combo_quick_layer.currentTextChanged.connect(self._on_quick_layer_changed)
+        _shrink_combo_min_width(self.combo_quick_layer)
         c_layout.addWidget(self.combo_quick_layer)
 
         layout.addWidget(ctrl_bar)
