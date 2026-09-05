@@ -5,8 +5,9 @@ from typing import Any
 
 import numpy as np
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QGroupBox,
@@ -624,20 +625,145 @@ class ClimatePanel(BasePanelWidget):
         self.main_layout.addWidget(btn)
 
 
+#: Real ocean state variable -> (display name, unit) - OceanModel's
+#: own real state dict keys, documented in its own class docstring.
+_OCEAN_VARIABLES: tuple[tuple[str, str, str], ...] = (
+    ("SST", "Sea surface temperature", "°C"),
+    ("Salinity", "Salinity", "PSU"),
+    ("U_ocean", "Eastward current", "m/s"),
+    ("V_ocean", "Northward current", "m/s"),
+    ("eta", "Sea surface height anomaly", "m"),
+)
+
+
 class OceanPanel(BasePanelWidget):
-    """17. Oceanography Panel."""
+    """17. Oceanography Panel.
+
+    NOTE (correction, 2026-09-05): used to show fixed AMOC/wave numbers
+    behind an honest "Example Layout" disclaimer, with no real ocean
+    model connected at all. A real ocean model was already registered
+    and unused (`acf.simulation_engine.ocean_solver.ocean_model.
+    OceanModel`, "ocean_model") - and a real, cited, already-corrected
+    wind-wave model too (`acf.simulation_engine.ocean_solver.
+    wave_model.WaveModel`, fetch-limited SMB/SPM formulas, "wave_model")
+    - both reused as-is below. Not a fabrication fix (the old text was
+    already honestly labelled as an example, not asserted as real) -
+    an upgrade from disclosed placeholder to real, live computation.
+
+    Honest disclosure: `OceanModel.initialize_state()`'s own
+    `AMOC_strength_sv` is itself a flat, hardcoded 18.0 Sverdrup
+    constant (never dynamically computed by that model) - shown as
+    such, not represented as a real live simulation output."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌊 3D OCEAN DYNAMICS & WAVE SPECTRA", "#0288D1", registry, dispatcher)
-        # NOTE (correction): fixed AMOC/wave numbers shown with no real
-        # ocean model or observation connected. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Ocean Hydrodynamics (Example Layout):\n• AMOC Strength: 18.2 Sverdrups\n• Peak Wave Period (Tp): 11.4 s\n• Significant Wave Height (Hs): 3.2 m"
+        ocean_module = registry.get_module("ocean_model")
+        wave_module = registry.get_module("wave_model")
+        if ocean_module is None or wave_module is None:
+            self.main_layout.addWidget(_not_connected_label("ocean_model / wave_model"))
+            return
+        self._ocean_model: Any = ocean_module
+        self._wave_model: Any = wave_module
+        self._state = ocean_module.initialize_state()
+
+        state_group = QGroupBox("Ocean State — real OceanModel (AMOC/thermohaline/Gulf Stream physics)")
+        state_layout = QVBoxLayout(state_group)
+        forcing_row = QHBoxLayout()
+        forcing_row.addWidget(QLabel("Wind stress τx (N/m²):"))
+        self.wind_stress_x = QDoubleSpinBox()
+        self.wind_stress_x.setRange(-1.0, 1.0)
+        self.wind_stress_x.setDecimals(3)
+        self.wind_stress_x.setValue(0.05)
+        forcing_row.addWidget(self.wind_stress_x)
+        forcing_row.addWidget(QLabel("Wind stress τy (N/m²):"))
+        self.wind_stress_y = QDoubleSpinBox()
+        self.wind_stress_y.setRange(-1.0, 1.0)
+        self.wind_stress_y.setDecimals(3)
+        self.wind_stress_y.setValue(0.0)
+        forcing_row.addWidget(self.wind_stress_y)
+        forcing_row.addWidget(QLabel("Heat flux (W/m²):"))
+        self.heat_flux = QDoubleSpinBox()
+        self.heat_flux.setRange(-500.0, 500.0)
+        self.heat_flux.setValue(50.0)
+        forcing_row.addWidget(self.heat_flux)
+        forcing_row.addWidget(QLabel("Δt (hours):"))
+        self.ocean_dt_hours = QDoubleSpinBox()
+        self.ocean_dt_hours.setRange(0.1, 240.0)
+        self.ocean_dt_hours.setValue(24.0)
+        forcing_row.addWidget(self.ocean_dt_hours)
+        state_layout.addLayout(forcing_row)
+
+        self.ocean_button = QPushButton("🌊 Advance Real Ocean State")
+        self.ocean_button.clicked.connect(self._advance_ocean)
+        state_layout.addWidget(self.ocean_button)
+
+        self.ocean_table = QTableWidget(len(_OCEAN_VARIABLES), 4)
+        self.ocean_table.setHorizontalHeaderLabels(["Variable", "Mean", "Min", "Max"])
+        state_layout.addWidget(self.ocean_table)
+
+        self.amoc_label = QLabel()
+        self.amoc_label.setStyleSheet("color: #90A4AE; font-size: 10px; font-style: italic;")
+        state_layout.addWidget(self.amoc_label)
+        self.main_layout.addWidget(state_group)
+
+        wave_group = QGroupBox("Wave Spectrum — real WaveModel (fetch-limited SMB/SPM formulas)")
+        wave_layout = QVBoxLayout(wave_group)
+        wave_row = QHBoxLayout()
+        wave_row.addWidget(QLabel("Wind speed at 10m (m/s):"))
+        self.wave_wind_speed = QDoubleSpinBox()
+        self.wave_wind_speed.setRange(0.0, 60.0)
+        self.wave_wind_speed.setValue(15.0)
+        wave_row.addWidget(self.wave_wind_speed)
+        wave_row.addWidget(QLabel("Fetch (km):"))
+        self.wave_fetch = QDoubleSpinBox()
+        self.wave_fetch.setRange(1.0, 5000.0)
+        self.wave_fetch.setValue(200.0)
+        wave_row.addWidget(self.wave_fetch)
+        wave_layout.addLayout(wave_row)
+        self.wave_button = QPushButton("🌊 Compute Real Wave Spectrum")
+        self.wave_button.clicked.connect(self._compute_waves)
+        wave_layout.addWidget(self.wave_button)
+        self.wave_result = QLabel()
+        wave_layout.addWidget(self.wave_result)
+        self.main_layout.addWidget(wave_group)
+
+        self._render_ocean()
+        self._compute_waves()
+
+    def _advance_ocean(self) -> None:
+        shape_2d = self._state["SST"].shape
+        wind_stress_x = np.full(shape_2d, self.wind_stress_x.value())
+        wind_stress_y = np.full(shape_2d, self.wind_stress_y.value())
+        heat_flux = np.full(shape_2d, self.heat_flux.value())
+        dt_seconds = self.ocean_dt_hours.value() * 3600.0
+        self._state = self._ocean_model.step(
+            self._state, wind_stress_x=wind_stress_x, wind_stress_y=wind_stress_y,
+            heat_flux=heat_flux, dt=dt_seconds,
         )
-        self.main_layout.addWidget(self.txt)
+        self._render_ocean()
+
+    def _render_ocean(self) -> None:
+        for row, (key, name, unit) in enumerate(_OCEAN_VARIABLES):
+            field = self._state[key]
+            self.ocean_table.setItem(row, 0, QTableWidgetItem(f"{name} ({unit})"))
+            self.ocean_table.setItem(row, 1, QTableWidgetItem(f"{float(field.mean()):.4g}"))
+            self.ocean_table.setItem(row, 2, QTableWidgetItem(f"{float(field.min()):.4g}"))
+            self.ocean_table.setItem(row, 3, QTableWidgetItem(f"{float(field.max()):.4g}"))
+        self.ocean_table.resizeColumnsToContents()
+        self.amoc_label.setText(
+            f"⚠ AMOC strength: {self._state['AMOC_strength_sv']:.1f} Sv - a real, but flat, hardcoded "
+            "baseline constant in OceanModel, not a dynamically simulated output."
+        )
+
+    def _compute_waves(self) -> None:
+        result = self._wave_model.compute_significant_wave_height(
+            wind_speed_10m=np.array([self.wave_wind_speed.value()]), fetch_km=self.wave_fetch.value()
+        )
+        self.wave_result.setText(
+            f"Real significant wave height (Hs): {float(result['Hs'][0]):.2f} m   "
+            f"Real peak period (Tp): {float(result['Tp'][0]):.2f} s   "
+            f"Real wave energy: {float(result['wave_energy'][0]):.1f} J/m²"
+        )
 
 
 class HydrologyPanel(BasePanelWidget):
@@ -1986,10 +2112,11 @@ class WorkspaceModesPanel(BasePanelWidget):
     second, panel-level "Apply" button here would need new
     `ESOCController`/`ESOCWindow` plumbing, a separate, larger change
     not attempted in this pass to avoid touching that already-
-    sensitive file for this bounded improvement. "Layer Preferences"/
-    "API Keys" (this leaf's own siblings) stay unmapped - no real
-    settings-persistence backend exists anywhere in this codebase for
-    either, confirmed via search."""
+    sensitive file for this bounded improvement. "API Keys" (one of
+    this leaf's own siblings) stays unmapped - no real code anywhere
+    in this codebase reads an API key. "Layer Preferences" (the other
+    sibling) is real and mapped now too - see LayerPreferencesPanel's
+    own docstring below, added in a later pass."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🗂️ WORKSPACE MODES CATALOG", "#26A69A", registry, dispatcher)
@@ -2033,6 +2160,115 @@ class WorkspaceModesPanel(BasePanelWidget):
             f"Real active map layers: {', '.join(profile['active_map_layers'])}\n\n"
             f"{profile['description']}"
         )
+
+
+class LayerPreferencesPanel(BasePanelWidget):
+    """44. Layer Preferences - real, previously-unbuilt System Explorer
+    leaf (2026-09-05, "ultra scan" gap pass over
+    reports/ACF_MASTER_AUDIT_v2.md's Phases 1-49): "Settings / Layer
+    Preferences" had no real panel AND no real settings-persistence
+    backend at all anywhere in this codebase - `WorkspaceModesPanel`'s
+    own docstring above explicitly confirmed this via search. Unlike
+    "API Keys" (this leaf's own sibling, deliberately left unmapped -
+    see the leaf mapping table's own comment in esoc_layout.py: zero
+    real code anywhere in this codebase reads an API key, so a form
+    for saving one would have no real consumer to connect to), a real,
+    already-connected feature exists here to build on:
+    `acf.gui.map.map_layers.LayerManager.available_layers`/
+    `active_layer_names`, the SAME real object `LayerTogglePanel`
+    (`acf.gui.map.layer_toggle_panel`) already lets the operator toggle
+    live.
+
+    This panel constructs its own `LayerManager()` purely to read its
+    real, genuine layer catalog and built-in default active set (that
+    class needs no live `MapCanvas` to do so - confirmed by reading its
+    `__init__`) - not a second, parallel, independently-drifting map.
+    Checking/unchecking a box here only edits this panel's OWN pending
+    selection; "💾 Save as Default" is what persists it, via
+    `QSettings("ACF", "ESOC")`
+    (`layer_toggle_panel.LAYER_PREFERENCES_KEY`), and "↺ Restore
+    Built-in Default" clears the saved preference back to
+    `LayerManager`'s own hardcoded default. `LayerTogglePanel.__init__`
+    (see its own updated docstring) reads that same real, shared key at
+    startup and applies it to the live map - so Save as Default here
+    genuinely changes what layers are active next time ESOC opens, not
+    an inert setting nobody reads back.
+
+    Honest scope: takes effect on the NEXT window open, like most
+    "restart to apply" preferences - this pass does not also add a
+    live "apply to the currently open map now" action, which would
+    need a real path from this panel back to the live `MapCanvas`
+    instance (panels are constructed with `(registry, dispatcher)`
+    only; `MapCanvas`/`LayerManager` are not registered in
+    `ModuleRegistry` - the exact same constraint `WorkspaceModesPanel`
+    already disclosed above for its own "Apply" button)."""
+
+    def __init__(
+        self, registry: ModuleRegistry, dispatcher: CommandDispatcher, settings: QSettings | None = None
+    ) -> None:
+        super().__init__("🗺️ LAYER PREFERENCES", "#26A69A", registry, dispatcher)
+
+        from acf.gui.map.layer_toggle_panel import (
+            LAYER_PREFERENCES_KEY,
+            load_default_active_layer_names,
+            make_layer_preferences_settings,
+        )
+        from acf.gui.map.map_layers import LayerManager
+
+        self._settings_key = LAYER_PREFERENCES_KEY
+        # settings= lets tests inject a tmp_path-backed QSettings instead of
+        # this real user's actual ~/.config/ACF/ESOC.conf (see
+        # make_layer_preferences_settings's own docstring).
+        self._settings = settings if settings is not None else make_layer_preferences_settings()
+        # A standalone LayerManager purely for its real layer catalog and
+        # built-in default - never bound to any live map (see class docstring).
+        self._reference_manager = LayerManager()
+
+        note = QLabel(
+            "ℹ Sets which map layers are active by default the NEXT time ESOC opens. "
+            "Use the map's own \"Map Layers\" dock to change what's active right now."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #90A4AE; font-size: 10px; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        self._checkboxes: dict[str, QCheckBox] = {}
+        for name in self._reference_manager.available_layers:
+            checkbox = QCheckBox(name)
+            self._checkboxes[name] = checkbox
+            self.main_layout.addWidget(checkbox)
+
+        saved = load_default_active_layer_names(self._settings)
+        active = set(saved) if saved is not None else set(self._reference_manager.active_layer_names)
+        for name, checkbox in self._checkboxes.items():
+            checkbox.setChecked(name in active)
+
+        self.status_label = QLabel(
+            "Showing a saved default." if saved is not None else "Showing LayerManager's built-in default (nothing saved yet)."
+        )
+        self.status_label.setStyleSheet("color: #78909C; font-size: 10px;")
+        self.main_layout.addWidget(self.status_label)
+
+        row = QHBoxLayout()
+        save_button = QPushButton("💾 Save as Default")
+        save_button.clicked.connect(self._save)
+        row.addWidget(save_button)
+        restore_button = QPushButton("↺ Restore Built-in Default")
+        restore_button.clicked.connect(self._restore)
+        row.addWidget(restore_button)
+        self.main_layout.addLayout(row)
+        self.main_layout.addStretch()
+
+    def _save(self) -> None:
+        chosen = [name for name, checkbox in self._checkboxes.items() if checkbox.isChecked()]
+        self._settings.setValue(self._settings_key, chosen)
+        self.status_label.setText(f"Saved as default ({len(chosen)} layer(s)) - applies next time ESOC opens.")
+
+    def _restore(self) -> None:
+        self._settings.remove(self._settings_key)
+        for name, checkbox in self._checkboxes.items():
+            checkbox.setChecked(name in self._reference_manager.active_layer_names)
+        self.status_label.setText("Reverted to LayerManager's built-in default - applies next time ESOC opens.")
 
 
 class LandSurfacePanel(BasePanelWidget):
@@ -2310,6 +2546,7 @@ class PanelManager:
             "aerosols_panel": AerosolsPanel(registry, dispatcher),
             "mpi_domain_topology": MPIDomainTopologyPanel(registry, dispatcher),
             "workspace_modes": WorkspaceModesPanel(registry, dispatcher),
+            "layer_preferences": LayerPreferencesPanel(registry, dispatcher),
             "land_surface": LandSurfacePanel(registry, dispatcher),
             "biosphere": BiospherePanel(registry, dispatcher),
             "atmosphere": AtmospherePanel(registry, dispatcher),

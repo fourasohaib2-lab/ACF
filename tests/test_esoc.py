@@ -78,7 +78,7 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 43
+    assert len(pm.list_panel_names()) == 44
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
     assert pm.get_panel("awci_dashboard") is not None
@@ -90,6 +90,7 @@ def test_panel_manager(qapp):
     assert pm.get_panel("land_surface") is not None
     assert pm.get_panel("biosphere") is not None
     assert pm.get_panel("atmosphere") is not None
+    assert pm.get_panel("layer_preferences") is not None
     assert pm.get_panel("catalog") is not None
     assert pm.get_panel("plugins") is not None
     assert pm.get_panel("geoengineering") is not None

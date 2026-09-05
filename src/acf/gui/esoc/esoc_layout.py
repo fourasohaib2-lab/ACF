@@ -63,6 +63,16 @@ own sibling leaf "Atmospheric Chemistry" stays the one remaining
 unmapped "Earth System" leaf - no real chemistry orchestrator class
 exists anywhere in this codebase outside the disconnected
 `acf.model4d` reserve (Phase 48).
+
+UPDATE (2026-09-05, "ultra scan" gap pass over Phases 1-49): "Settings
+/ Layer Preferences" is real and wired now too - `LayerPreferencesPanel`
+in `panel_manager.py`, a real settings-persistence backend
+(`QSettings`) for the default active map layers, genuinely read back
+by `LayerTogglePanel` at startup (see that class's own updated
+docstring) - not a write-only, never-read-back setting. "API Keys"
+(its last remaining Settings sibling) stays unmapped - zero real code
+anywhere in this codebase reads an API key, confirmed via search, so a
+form for saving one would have no real consumer to connect to.
 """
 
 from typing import Any
@@ -135,10 +145,16 @@ _LEAF_LABEL_TO_PANEL_NAME: dict[str, str] = {
     # "Workspace Mode" combo box) - this leaf gets a real, read-only
     # reference browser instead (see WorkspaceModesPanel's own honest-
     # scope docstring for why it doesn't also switch the active mode).
-    # "Layer Preferences"/"API Keys" (this leaf's own siblings) stay
-    # unmapped - no real settings-persistence backend exists for
-    # either anywhere in this codebase.
+    # "API Keys" (this leaf's own sibling) stays unmapped - zero real
+    # code anywhere in this codebase reads an API key, confirmed via
+    # search, so a form for saving one would have no real consumer.
     "Workspace Modes": "workspace_modes",
+    # Added 2026-09-05 (same Settings category, "ultra scan" gap pass
+    # over Phases 1-49): real settings-persistence backend for the
+    # default active map layers, genuinely read back by
+    # LayerTogglePanel at startup - see LayerPreferencesPanel's own
+    # docstring in panel_manager.py.
+    "Layer Preferences": "layer_preferences",
 }
 
 #: Real System Explorer top-level CATEGORY label -> real
