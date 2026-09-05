@@ -8328,3 +8328,63 @@ construire ("Atmospheric Chemistry", bloquée sans fabrication) ; les 2
 dernières ("Layer Preferences"/"API Keys") resteront définitivement
 non mappées, aucun backend réel de persistance de préférences
 n'existant nulle part dans ce code.
+
+## Mise à jour 2026-09-05 (suite) — Phase 51 : upgrade réel du panneau "Ocean" (déjà mappé)
+
+**Pourquoi** : contrairement aux phases précédentes (feuilles mortes
+sans aucun panneau), "Ocean" est un panneau déjà mappé depuis
+longtemps (panneau #17, clé `"ocean"`) - mais son contenu était un
+bloc de texte figé ("AMOC Strength: 18.2 Sverdrups... Hs: 3.2 m...")
+derrière un disclaimer honnête "Example Layout", sans aucun moteur
+océanique réel connecté. Or `ModuleRegistry` enregistre déjà, et
+depuis longtemps, deux moteurs réels et non exploités :
+`acf.simulation_engine.ocean_solver.ocean_model.OceanModel`
+("ocean_model" - température de surface avec un vrai gradient de
+latitude, salinité, courants Est/Nord, hauteur de surface, dynamique
+d'Ekman) et `acf.simulation_engine.ocean_solver.wave_model.WaveModel`
+("wave_model" - formule SMB/SPM à fetch limité, Shore Protection
+Manual/Coastal Engineering Manual, déjà corrigée dans une session
+antérieure d'un bug de fetch ignoré). Aucun nouveau leaf de routage
+n'était nécessaire ("Ocean" pointait déjà vers ce panneau) - seule
+l'implémentation interne du panneau devait changer, ce qui a d'abord
+été vérifié comme sûr (aucun test dédié n'existait avant cette phase,
+seule une vérification d'identité de widget dans `test_esoc.py`).
+
+**Construit** : `OceanPanel` reconstruit avec deux sections réelles.
+(1) État océanique : table réelle moyenne/min/max pour SST/Salinité/
+courants U,V/eta (même convention de table que `AtmospherePanel`),
+plus un bouton "Advance" qui appelle réellement `OceanModel.step()`
+avec des contraintes de vent et un flux de chaleur fournis par
+l'opérateur (`QDoubleSpinBox`). (2) Spectre de vagues : entrées
+réelles vitesse du vent à 10m + fetch (km), bouton appelant
+`WaveModel.compute_significant_wave_height()` - Hs/Tp/énergie
+affichés augmentent réellement avec le vent (vérifié : 3.32 m à 15
+m/s → 7.93 m à 30 m/s).
+
+**Divulgation honnête** : `OceanModel.initialize_state()` définit
+`AMOC_strength_sv` comme une constante plate et figée (18.0
+Sverdrups, jamais recalculée dynamiquement par ce modèle) - exactement
+la même classe de limitation que le `Biomass=5.0` de
+`CoupledEarthSolver` déjà divulguée dans `BiospherePanel` (Phase 49).
+Le panneau affiche cette valeur avec un label explicite : "constante
+de référence figée, pas une sortie dynamiquement simulée." D'autres
+panneaux "Example Layout" analogues (Hydrology, Cryosphere, Air
+Quality, Earth Monitoring) restent inchangés dans cette phase - seul
+Ocean a été investigué et amélioré ; leur amélioration éventuelle
+suivrait le même jugement au cas par cas lors d'une phase future.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 9
+nouveaux tests (`tests/test_esoc_ocean_panel.py`), incluant une
+vérification que la SST porte un vrai gradient de latitude (>10°C
+d'écart min/max, jamais un champ plat fabriqué), que l'état
+océanique évolue authentiquement après un vrai pas, que la hauteur de
+vague réelle augmente avec la vitesse du vent, et deux tests de
+déconnexion honnête (`ocean_model` et `wave_model` séparément). Aucun
+nouveau test de routage requis (le routage existait déjà). Suite
+complète `pytest -q` restée verte.
+
+**Ce qui reste réellement** : Hydrology/Cryosphere/Air Quality/Earth
+Monitoring restent, comme Ocean l'était avant cette phase, des
+panneaux "Example Layout" honnêtement disclaimés mais non connectés à
+un moteur réel - une extension possible du même travail, non
+entreprise cette phase-ci faute de décision explicite de portée.
