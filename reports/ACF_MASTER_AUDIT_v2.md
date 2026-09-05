@@ -9212,3 +9212,65 @@ Aucune modification de code nécessaire.
 
 **Ce qui reste réellement** : 2 zones encore jamais auditées du tout
 (`release`, `space_weather`) - `geospatial` retiré, désormais vérifié.
+
+## Mise à jour 2026-09-05 (suite) — `acf.space_weather` : 3 docstrings survendus (encore la même famille), 1 limite disclosée, reste propre
+
+**Zone couverte** : `acf.space_weather` (23 fichiers, 769 lignes ;
+3/23 déjà corrigés - `geomagnetic_engine.py`, `solar_wind_engine.py`,
+`solar_database.py`). Lue intégralement. 20 fichiers jamais touchés
+avant cette passe (dont 11 `__init__.py` à 1 ligne, triviaux).
+
+**3 docstrings survendus trouvés**, même famille que `climate`/`ocean`/
+`planetary` (4e à 6e occurrences de cette même classe de bug ce
+trimestre) :
+- `models/space_models.py` nommait 8 modèles (WSA-ENLIL, EUHFORIA,
+  BATS-R-US, OpenGGCM, TIE-GCM, IRI, NeQuick, SAMI3) ; `SPACE_WEATHER_
+  MODELS_REGISTRY` n'en contient réellement que 3 (WSA-ENLIL, BATS-R-US,
+  IRI).
+- `observations/observatories.py` nommait 8 observatoires (SDO, SOHO,
+  ACE, DSCOVR, STEREO, Parker Solar Probe, Solar Orbiter, GOES) ;
+  `SPACE_OBSERVATORIES_REGISTRY` n'en contient réellement que 2
+  (DSCOVR, SDO).
+- `satellites/spacecraft_effects.py` nommait 6 satellites/
+  constellations (GOES, Meteosat, Sentinel, Starlink, GPS, ISS) ;
+  `SATELLITE_REGISTRY` n'en contient réellement que 3 (ISS, Starlink,
+  GPS).
+
+Dans les 3 cas, `.get_*()` renvoie honnêtement `None` pour toute clé
+manquante - seuls les en-têtes survendaient. Corrigés pour ne nommer
+que ce qui est réellement dans chaque registre.
+
+**1 limite honnêtement disclosée** (pas fabriquée, "flagged, not
+fixed", même convention que `ionosphere_engine.py`'s M-factor déjà
+présent) : `forecast/forecast_engine.py.generate_space_weather_forecast()`
+fait déjà varier `predicted_kp`/`predicted_dst`/`X_class_pct` avec les
+entrées réelles (sunspot_number, cme_speed_km_s, imf_bz_nt), mais
+`C_class_pct` (90.0) et `M_class_pct` (55.0) restaient fixes quelle que
+soit l'entrée. Les vraies prévisions NOAA SWPC font varier ces
+probabilités avec l'activité solaire via une climatologie empirique
+(régions de taches solaires McIntosh, des décennies de données GOES
+X-ray) - une relation tabulée, pas une formule fermée simple. Inventer
+une formule numérique ici sans source citable remplacerait une
+constante non fondée par une autre - documenté plutôt que "corrigé"
+avec une formule non vérifiée, exactement la même situation que le
+M-factor déjà disclosé dans `ionosphere_engine.py`.
+
+**Reste vérifié clean sans modification** : `alerts/space_alerts.py`
+(seuils G/R/S NOAA réels, variant avec kp_index/xray_flux/proton_flux),
+`aviation/aviation_space_weather.py` (dose de radiation polaire réelle,
+variant avec flight_level), `ionosphere/ionosphere_engine.py` (formule
+GNSS réelle Δs=40.3/f²×TEC, échelle R0-R5 NOAA réelle, M-factor déjà
+disclosé), `magnetosphere/radiation_belts.py` (zones de Van Allen
+réelles et seuils de charge), `alerts/space_alerts.py` -
+`evaluate_system_alerts` porte un `@classmethod` avec un premier
+paramètre nommé `self` au lieu de `cls` (cosmétique, sans effet
+fonctionnel Python, hors périmètre de cet audit fabrication/
+duplication - non corrigé).
+
+**Validation réelle** : `tests/test_space_weather_platform.py` (11
+tests, tous les seuils `assert len(...) >= N` déjà alignés sur les
+tailles réelles des registres, donc inchangés) ré-exécuté : 11/11
+passent. `ruff check` propre sur tout le paquet.
+
+**Ce qui reste réellement** : 1 zone encore jamais auditée
+(`release`) - `space_weather` retiré, désormais audité.

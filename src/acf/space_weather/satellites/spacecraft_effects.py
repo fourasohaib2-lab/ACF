@@ -2,7 +2,18 @@
 Atmospheric Complexity Framework (ACF)
 
 Satellite Infrastructure Database & Spacecraft Hazards Module (Phase 6)
-(GOES, Meteosat, Sentinel, Starlink, GPS, ISS, Orbital Drag Decay, SEUs)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 6 specific satellites/
+constellations (GOES, Meteosat, Sentinel, Starlink, GPS, ISS) alongside
+2 real hazard phenomena this module does compute (Orbital Drag Decay,
+SEUs) as if all 6 satellites were catalogued here too. Only 3 actually
+have a SATELLITE_REGISTRY entry: ISS, the Starlink constellation, and
+the GPS constellation - GOES, Meteosat, and Sentinel are not
+implemented anywhere in this module. Same class of gap as this
+session's other registry docstrings - no code behaves incorrectly, only
+the header oversold coverage. Corrected to name what SATELLITE_REGISTRY
+actually contains.
 """
 
 from dataclasses import dataclass

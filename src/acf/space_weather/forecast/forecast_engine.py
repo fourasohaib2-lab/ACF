@@ -19,7 +19,25 @@ class SpaceWeatherForecastEngine:
         cme_speed_km_s: float = 1200.0,
         imf_bz_nt: float = -12.0,
     ) -> dict[str, Any]:
-        """Génère un bulletin complet de prévision du temps spatial Soleil-Terre."""
+        """
+        Génère un bulletin complet de prévision du temps spatial Soleil-Terre.
+
+        NOTE (found, NOT changed — Physics Guard, found during the
+        post-model4d audit, 2026-09-05): flare_probability_24h's
+        C_class_pct (90.0) and M_class_pct (55.0) are fixed regardless
+        of sunspot_number/cme_speed_km_s/imf_bz_nt - only X_class_pct
+        varies (by a crude threshold on sunspot_number). Real NOAA SWPC
+        flare-probability forecasts do vary C/M-class probability with
+        solar activity (via McIntosh sunspot-region climatology built
+        from decades of GOES X-ray data), but that is an empirical/
+        tabulated relationship, not a simple closed-form formula -
+        inventing a specific numeric function here without a citable
+        source would risk replacing one unfounded constant with
+        another, the same situation already documented in this
+        package's own ionosphere_engine.py (maximum_usable_frequency_
+        muf_mhz's M-factor). Flagged rather than "corrected" with an
+        unverified formula.
+        """
         cme_lead_time_hours = 1.5e8 / (cme_speed_km_s * 3600.0)  # Distance Terre-Soleil / V_cme
 
         predicted_kp = 4.0 + (cme_speed_km_s / 400.0) + (abs(imf_bz_nt) / 3.0) if imf_bz_nt < 0 else 3.0

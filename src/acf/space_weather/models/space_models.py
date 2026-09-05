@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Space Weather & Magnetosphere Numerical Models Registry Module (Phase 8)
-(WSA-ENLIL, EUHFORIA, BATS-R-US, OpenGGCM, TIE-GCM, IRI, NeQuick, SAMI3)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 8 models (WSA-ENLIL,
+EUHFORIA, BATS-R-US, OpenGGCM, TIE-GCM, IRI, NeQuick, SAMI3) as if all
+were described here. Only 3 actually have a
+SPACE_WEATHER_MODELS_REGISTRY entry: WSA-ENLIL, BATS-R-US, and IRI -
+the other 5 (EUHFORIA, OpenGGCM, TIE-GCM, NeQuick, SAMI3) are not
+implemented anywhere in this module. Same class of gap as this
+session's other registry docstrings (acf.climate, acf.ocean,
+acf.planetary) and acf.master.module_registry.GlobalModuleRegistry's
+own docstring - no code behaves incorrectly
+(SpaceWeatherModelEngine.get_model() honestly returns None for any of
+the 5 missing keys), only the header oversold coverage. Corrected to
+name what SPACE_WEATHER_MODELS_REGISTRY actually contains.
 """
 
 from dataclasses import dataclass

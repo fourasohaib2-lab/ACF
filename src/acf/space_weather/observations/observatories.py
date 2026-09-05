@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Heliophysics Observatories & Spacecraft Observatory Registry Module (Phase 9)
-(SDO, SOHO, ACE, DSCOVR, STEREO, Parker Solar Probe, Solar Orbiter, GOES)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 8 observatories (SDO,
+SOHO, ACE, DSCOVR, STEREO, Parker Solar Probe, Solar Orbiter, GOES) as
+if all were catalogued here. Only 2 actually have a
+SPACE_OBSERVATORIES_REGISTRY entry: DSCOVR and SDO - the other 6
+(SOHO, ACE, STEREO, Parker Solar Probe, Solar Orbiter, GOES) are not
+implemented anywhere in this module. Same class of gap as this
+session's other registry docstrings (acf.climate, acf.ocean,
+acf.planetary, this package's own models/space_models.py) - no code
+behaves incorrectly (SpaceObservatoryEngine.get_observatory() honestly
+returns None for any of the 6 missing keys), only the header oversold
+coverage. Corrected to name what SPACE_OBSERVATORIES_REGISTRY actually
+contains.
 """
 
 from dataclasses import dataclass
