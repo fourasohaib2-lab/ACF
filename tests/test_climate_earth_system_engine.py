@@ -114,6 +114,14 @@ def test_query_engine_phase14_climate_questions():
     # 5. Show drought index
     r5 = q_engine.ask("Show drought index")
     assert "drought_indices" in r5
+    # Regression guard (2026-09-05, post-model4d audit): this used to
+    # list SPI, SPEI and PDSI as if all three were backed by
+    # CLIMATE_INDICES_REGISTRY, but only SPI ("spi_drought") actually
+    # has an entry - ClimateIndicesEngine.get("spei")/.get("pdsi") both
+    # return None. Must only claim what the registry actually has.
+    assert r5["drought_indices"] == ["SPI (Standardized Precipitation Index)"]
+    assert ClimateIndicesEngine.get("spei") is None
+    assert ClimateIndicesEngine.get("pdsi") is None
 
     # 6. Compare climate models
     r6 = q_engine.ask("Compare climate models")

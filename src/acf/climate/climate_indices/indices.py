@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Climate Indices & Teleconnection Patterns Module
-(ENSO, ONI, SOI, PDO, AMO, NAO, AO, SAM, MJO, QBO, IOD, SPI, SPEI, PDSI, Fire Weather Index)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 15 indices/teleconnection
+patterns (ENSO, ONI, SOI, PDO, AMO, NAO, AO, SAM, MJO, QBO, IOD, SPI,
+SPEI, PDSI, Fire Weather Index) as if all were described here. Only 5
+actually have a CLIMATE_INDICES_REGISTRY entry: ENSO/ONI (enso_nino34),
+NAO, AMO, PDO, and SPI (spi_drought) - the other 10 names (SOI, AO,
+SAM, MJO, QBO, IOD, SPEI, PDSI, Fire Weather Index) are not
+implemented anywhere in this module. Same class of gap as
+acf.master.module_registry.GlobalModuleRegistry's own docstring
+("discovering 21 modules", 4 of which don't exist) - no code behaves
+incorrectly (ClimateIndicesEngine.get() honestly returns None for any
+of the 10 missing keys), only the header oversold coverage. Corrected
+to name what CLIMATE_INDICES_REGISTRY actually contains.
 """
 
 from dataclasses import dataclass

@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Earth System & Climate Models Registry Module
-(CESM2, EC-Earth3, MPI-ESM1.2, HadGEM3, NorESM2, GFDL-CM4, IPSL-CM6A, CNRM-CM6, SCREAM, ICON-ESM)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 10 models (CESM2,
+EC-Earth3, MPI-ESM1.2, HadGEM3, NorESM2, GFDL-CM4, IPSL-CM6A, CNRM-CM6,
+SCREAM, ICON-ESM) as if all were described here. Only 5 actually have a
+CLIMATE_MODELS_REGISTRY entry: CESM2, EC-Earth3, MPI-ESM1.2, CNRM-CM6,
+and SCREAM - the other 5 (HadGEM3, NorESM2, GFDL-CM4, IPSL-CM6A,
+ICON-ESM) are not implemented anywhere in this module. Same class of
+gap as acf.master.module_registry.GlobalModuleRegistry's own docstring
+("discovering 21 modules", 4 of which don't exist) - no code behaves
+incorrectly (ClimateModelEngine.get_model() honestly returns None for
+any of the 5 missing keys), only the header oversold coverage.
+Corrected to name what CLIMATE_MODELS_REGISTRY actually contains.
 """
 
 from dataclasses import dataclass

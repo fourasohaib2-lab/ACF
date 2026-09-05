@@ -8776,3 +8776,94 @@ auditées (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
 `planetary`, `plugins`, `release`, `resources`, `search`,
 `space_weather`, `storage`, `surfex`, `time`, `utils`, `workspace`) -
 `master` retiré de la liste, désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — continuation de l'audit : `acf.climate` (3 docstrings survendus, 1 overclaim utilisateur), + 4 zones vérifiées propres
+
+**Méthode affinée** : avant de lire fichier par fichier, grep de
+`"NOTE (correction"` dans chaque zone à 0 occurrence restante pour
+distinguer ce qui a déjà été audité et corrigé lors d'une session
+antérieure non retracable (dépôt shallow - même phénomène que
+`aeos`/`master`/`knowledge_platform`) de ce qui ne l'a vraiment jamais
+été. Résultat : `surfex` 8/8 fichiers déjà corrigés, `release` 21/34,
+`ocean` 5/13, `space_weather` 3/23, `planetary` 4/13, `workspace` 2/8,
+`connectors` 2/3, `geospatial` 1/6, `alerts`/`analysis`/`animation` 1/2
+chacun - tous à ré-auditer partiellement dans une passe future.
+`api`, `catalogs`, `climate`, `fire_weather`, `plugins`, `resources`,
+`search`, `storage`, `time`, `utils` : 0/N, jamais touchés.
+
+**Zone principale couverte** : `acf.climate` (13 fichiers, 568 lignes).
+`earth_system/coupling.py` et `verification/metrics.py` sont de vrais
+calculs (flux de quantité de mouvement océan-atmosphère, rétroaction
+d'albédo glace-océan, NPP, ACC, tendance décennale, diagramme de
+Taylor) - aucune fabrication. `projection/scenarios.py` (5 SSP décrits,
+5 dans le registre) est exact. Mais 3 des 6 fichiers survendaient leur
+propre couverture dans leur docstring d'en-tête, exactement la même
+classe de bug que `GlobalModuleRegistry` ("discovering 21 modules", 4
+inexistants) trouvée lors de la passe `master` :
+
+1. **`climate_indices/indices.py`** : en-tête nommait 15 indices/modes
+   de téléconnexion (ENSO, ONI, SOI, PDO, AMO, NAO, AO, SAM, MJO, QBO,
+   IOD, SPI, SPEI, PDSI, Fire Weather Index) ; `CLIMATE_INDICES_REGISTRY`
+   n'en contient réellement que 5 (ENSO/ONI, NAO, AMO, PDO, SPI).
+2. **`climate_models/models.py`** : en-tête nommait 10 modèles (CESM2,
+   EC-Earth3, MPI-ESM1.2, HadGEM3, NorESM2, GFDL-CM4, IPSL-CM6A,
+   CNRM-CM6, SCREAM, ICON-ESM) ; `CLIMATE_MODELS_REGISTRY` n'en
+   contient réellement que 5 (les 5 premiers de la liste testée par
+   `tests/test_climate_earth_system_engine.py`).
+3. **`reanalysis/database.py`** : en-tête nommait 7 réanalyses (ERA5,
+   ERA5-Land, ERA-Interim, MERRA-2, JRA-55, NCEP/NCAR CFSR, 20CR) ;
+   `REANALYSIS_REGISTRY` n'en contient réellement que 4 (ERA5,
+   ERA5-Land, MERRA-2, JRA-55).
+
+Dans les 3 cas, aucun code ne se comporte mal (`.get()` renvoie
+honnêtement `None` pour toute clé manquante) - seul l'en-tête survendait
+la couverture. Corrigé par un "NOTE (correction)" dans chaque docstring
+nommant précisément ce qui est réellement dans le registre, sans
+inventer les entrées manquantes (risque de fabrication plus grave que
+le problème résolu).
+
+**Overclaim utilisateur, plus significatif** : `science/query_engine.py`
+(route NLQ "Show drought index") renvoyait `"drought_indices": ["SPI
+(...)", "SPEI (...)", "PDSI (...)"]` comme si les 3 étaient décrits par
+ce moteur, alors que `CLIMATE_INDICES_REGISTRY` n'a d'entrée que pour
+SPI (`spi_drought`) - `ClimateIndicesEngine.get("spei")`/`.get("pdsi")`
+renvoient tous deux `None`. Contrairement aux 3 docstrings ci-dessus,
+ceci est un texte renvoyé tel quel à l'utilisateur final, même famille
+que le "40 missions d'ingénierie" du module `master` déjà corrigé.
+Corrigé pour ne lister que SPI (le texte pédagogique général sur SPI/
+SPEI dans `physical_explanation` reste - définitions génériques
+correctes, pas une revendication de données).
+
+**Validation réelle** : `tests/test_climate_earth_system_engine.py`
+étendu avec une régression verrouillant le nouveau contenu exact de
+`drought_indices` et les 2 `None` de `ClimateIndicesEngine`. Suite
+complète du fichier + `tests/test_geoengineering_platform.py`
+ré-exécutée : 13/13 passent. `ruff check` propre sur les 3 fichiers
+`acf.climate` touchés, `science/query_engine.py` et le fichier de
+test. Grep confirmant qu'aucun autre appelant ne dépend des anciennes
+listes.
+
+**4 zones supplémentaires lues intégralement et vérifiées propres**
+(aucune fabrication trouvée, retirées de la liste) :
+- `acf.catalogs` (10 fichiers) : couche fine réelle déléguant à
+  `acf.catalog.manager.CatalogManager` (import vérifié fonctionnel),
+  `acf.standards.cf_standard_names`, `acf.standards.ecmwf.manager` -
+  aucune donnée inventée.
+- `acf.plugins` (1 fichier) : stub `__init__.py` vide (docstring
+  générique uniquement), même famille que les 4 stubs déjà disclosés
+  dans `acf.parameters` - rien à corriger, juste vide.
+- `acf.resources` (0 fichier Python, 2 fichiers JSON statiques :
+  `standards/ecmwf/parameters.json`, `standards/cf/cf_standard_names.json`)
+  : données de référence, pas de code, pas de revendication à vérifier.
+- `acf.search` (2 fichiers) : `ScientificSearch` délègue réellement à
+  `acf.catalogs.hub.CatalogHub` - aucune fabrication.
+
+**Ce qui reste réellement** : 17 zones encore jamais auditées du tout
+(`alerts`, `analysis`, `animation`, `api`, `connectors`, `fire_weather`,
+`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
+`storage`, `surfex`, `time`, `utils`, `workspace`) - `surfex` (8/8
+fichiers déjà porteurs de "NOTE (correction)") et `release` (21/34)
+sont probablement déjà largement corrigés en profondeur (comme
+`master`/`aeos` l'étaient) mais restent à vérifier par exécution avant
+de les retirer de cette liste ; `climate`, `catalogs`, `plugins`,
+`resources` et `search` retirés, désormais audités.

@@ -2,7 +2,18 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Meteorological Reanalysis Database Module
-(ERA5, ERA5-Land, ERA-Interim, MERRA-2, JRA-55, NCEP/NCAR CFSR, 20CR)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 7 datasets (ERA5,
+ERA5-Land, ERA-Interim, MERRA-2, JRA-55, NCEP/NCAR CFSR, 20CR) as if
+all were described here. Only 4 actually have a REANALYSIS_REGISTRY
+entry: ERA5, ERA5-Land, MERRA-2, and JRA-55 - the other 3 (ERA-Interim,
+NCEP/NCAR CFSR, 20CR) are not implemented anywhere in this module. Same
+class of gap as acf.master.module_registry.GlobalModuleRegistry's own
+docstring ("discovering 21 modules", 4 of which don't exist) - no code
+behaves incorrectly (ReanalysisEngine.get() honestly returns None for
+any of the 3 missing keys), only the header oversold coverage.
+Corrected to name what REANALYSIS_REGISTRY actually contains.
 """
 
 from dataclasses import dataclass

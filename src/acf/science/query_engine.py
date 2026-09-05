@@ -1123,6 +1123,17 @@ class ScientificQueryEngine:
             }
 
         if "drought index" in q or "indice de sécheresse" in q or "show drought" in q or "show spi" in q:
+            # NOTE (correction — user-facing overclaim, found during the
+            # post-model4d audit, 2026-09-05): "drought_indices" used to
+            # list SPI, SPEI and PDSI as if this engine described all
+            # three, but acf.climate.climate_indices.indices'
+            # CLIMATE_INDICES_REGISTRY only has an entry for SPI
+            # ("spi_drought") - ClimateIndicesEngine.get("spei")/
+            # .get("pdsi") both honestly return None. SPEI/PDSI stay in
+            # the educational physical_explanation text (real, general
+            # meteorological definitions, not a claim of data behind
+            # them) but are no longer listed as if backed by this
+            # engine's own registry.
             return {
                 "question": question,
                 "action": "activate_layer",
@@ -1133,8 +1144,6 @@ class ScientificQueryEngine:
                 ),
                 "drought_indices": [
                     "SPI (Standardized Precipitation Index)",
-                    "SPEI (Evapotranspiration-based)",
-                    "PDSI (Palmer Drought Severity Index)",
                 ],
                 "references": ["WMO-No. 1090 SPI User Guide", "McKee et al. (1993)"],
             }
