@@ -25,4 +25,13 @@ Scientific Context:
 -------------------
 Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
 physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+
+NOTE (correction, 2026-09-05 audit de continuation): this module is an
+empty scaffolding stub - no category taxonomy exists here despite the
+"Categories" purpose claimed above. Not imported by anything in src/ or
+tests/ (verified by grep). ParameterRegistry.categories()/by_category()
+(acf.parameters.registry) already provide a real, working category
+grouping derived directly from each registered Parameter.category
+field - this file duplicates neither it nor anything else. Disclosure
+only, no behavior to correct.
 """

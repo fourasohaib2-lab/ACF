@@ -8637,3 +8637,63 @@ dans ce dépôt (`acf.knowledge_platform.parameter_database`,
 `acf.science.parameters.engine`, et le paquet `acf.parameters` encore
 non audité) - candidat direct pour un futur audit de duplication,
 même famille que le premier finding sur `acf.model4d`.
+
+## Mise à jour 2026-09-05 (suite) — continuation de l'audit : `acf.parameters` (le doublon suspecté n'en est pas un, mais 4 fichiers vides non divulgués)
+
+**Zone couverte** : `acf.parameters` (12 fichiers, 452 lignes), suivant
+directement la piste laissée ouverte par la mise à jour précédente
+("au moins 3 implémentations de registre de paramètres coexistent").
+
+**Le doublon suspecté n'en est pas un** : `parameter.py`/`registry.py`/
+`hub.py`/`search.py`/`index.py`/`aliases.py`/`catalog.py` sont
+l'implémentation canonique réelle, déjà auditée (sans être nommée
+comme telle) par la passe de consolidation ACF-017 du 2026-09-02 (voir
+plus haut, section "consolidation réelle des doublons catalogués") -
+`acf.core.parameter_registry`/`acf.core.parameter` la référencent déjà
+explicitement comme "Compatibility Layer forwarding to
+acf.parameters.*", et `tests/test_collisions_consolidation.py` le
+prouve par assertions d'identité `is`. Rien à corriger ici : ce sont 7
+fichiers réels, testés (7 fichiers de test dédiés
+`tests/test_parameter_*.py`), sans fabrication.
+
+**Constat réel, non documenté jusqu'ici** : 4 des 12 fichiers du
+paquet (`converter.py`, `validator.py`, `units.py`, `categories.py`)
+sont des coquilles vides - uniquement un docstring générique
+("PARAMETERS - Converter/Validator/Units/Categories..."), zéro classe,
+zéro fonction, zéro table de conversion. Vérifié par lecture directe
+(pas par le nom) et par `grep` : ni `src/`, ni `tests/` n'importent
+quoi que ce soit depuis ces 4 fichiers - orphelins complets. Le
+docstring du paquet (`__init__.py`) promettait pourtant explicitement
+"unit conversion tables" comme responsabilité du paquet - promesse non
+tenue par aucun de ses 12 fichiers. Les vraies implémentations de
+conversion d'unités du dépôt sont ailleurs
+(`acf.data.unit_converter`, `acf.normalization.units` - ce dernier
+s'appuyant sur MetPy/pint) ; aucune implémentation réelle de validation ou de
+taxonomie de catégories n'a été trouvée nulle part ailleurs
+(`ParameterRegistry.categories()`/`by_category()` couvre déjà,
+correctement, le besoin de catégorisation - `categories.py` n'est
+même pas un doublon incomplet de quelque chose de réel, juste vide).
+
+**Correction appliquée** : disclosure uniquement (rien à "corriger"
+comportementalement puisqu'il n'y a aucun comportement) - NOTE ajoutée
+dans chacun des 4 fichiers vides et dans `__init__.py` du paquet,
+précisant explicitement ce qui est réel (7 fichiers) contre ce qui ne
+l'est pas (4 fichiers, purs stubs). Verrouillé par un nouveau fichier
+de test, `tests/test_parameters_stub_modules_disclosure.py` : vérifie
+par introspection (`dir()`) que les 4 modules n'exportent toujours
+rien de public, vérifie par AST que leur code source ne contient
+toujours qu'un seul docstring comme unique instruction, et vérifie que
+`acf.data.unit_converter`/`acf.normalization.units` contiennent
+réellement des définitions de classe/fonction (lu via AST, pas importé,
+pour ne pas dépendre de MetPy dans cet environnement de test).
+
+**Validation réelle** : `pytest` sur les 3 nouveaux tests + les 7
+fichiers de test existants du paquet `acf.parameters` → 10/10 passent.
+`ruff check` propre sur tout le paquet et le nouveau fichier de test.
+
+**Ce qui reste réellement** : 23 zones à 0 occurrence toujours non
+auditées (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
+`climate`, `connectors`, `fire_weather`, `geospatial`, `master`,
+`ocean`, `planetary`, `plugins`, `release`, `resources`, `search`,
+`space_weather`, `storage`, `surfex`, `time`, `utils`, `workspace`) -
+`parameters` retiré de la liste, désormais audité.
