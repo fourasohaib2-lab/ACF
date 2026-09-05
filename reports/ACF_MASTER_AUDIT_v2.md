@@ -8445,3 +8445,119 @@ suivant exactement le même patron qu'Ocean/Carbon. Aucun moteur réel
 équivalent n'a été trouvé pour Cryosphere/Air Quality/Space Weather/
 Geology lors de cette phase (recherche non exhaustive - à confirmer
 avant toute décision de les laisser définitivement non améliorés).
+
+## Mise à jour 2026-09-05 (suite) — continuation de l'audit après model4d : `acf.aeos`, cartographie des zones non couvertes
+
+**Contexte** : suite au commit `7f7252a` (audit duplication/fabrication
+de `acf.model4d`, décision de disposition du package explicitement
+laissée à l'utilisateur - archiver / auditer davantage / laisser tel
+quel, **non tranchée ici**), reprise de l'audit sur les zones du dépôt
+non encore couvertes par ce document. Un commit `feat(esoc)` (Phase 52,
+`71f1041`) s'est intercalé entre-temps sans lien avec l'audit.
+
+**Méthode** : recensement de tous les sous-paquets de `src/acf/` par
+occurrence de leur nom dans ce document (`grep -c`) pour distinguer
+zones déjà couvertes (`awci`, `gui`, `science`, `core`, `model4d`,
+`simulation_engine`, `physics_guard`, etc.) des zones à 0 occurrence :
+`aeos`, `alerts`, `analysis`, `animation`, `api`, `catalogs`, `climate`,
+`connectors`, `fire_weather`, `geospatial`, `knowledge_platform`,
+`master`, `ocean`, `parameters`, `planetary`, `plugins`, `release`,
+`resources`, `search`, `space_weather`, `storage`, `surfex`, `time`,
+`utils`, `workspace`. Choix de commencer par `acf.aeos` (26 fichiers,
+803 lignes) : nom et docstring ("Global Autonomous Earth Operating
+System & Self-Evolving Platform", agents "autonomes", moteur
+"self-healing", base de connaissances "auto-évolutive") suggèrent
+exactement le même risque de fabrication que celui documenté pour
+`acf.model4d` dans le commit précédent.
+
+**Constat** : les 11 fichiers de `acf.aeos` ont en réalité déjà fait
+l'objet, dans une session antérieure non visible dans l'historique git
+accessible (dépôt shallow, 50 commits seulement - la totalité du
+paquet `aeos` existe déjà, notes "NOTE (correction)" incluses, dans le
+commit le plus ancien atteignable), d'un audit et d'une correction
+disclosure-only identiques dans l'esprit à celui de model4d : chaque
+valeur auparavant fabriquée (CPU/RAM/GPU fixes, "100% HEALTHY", "100%
+VERIFIED SCIENTIFIC ACCURACY", résolution de modèle identique pour les
+9 modèles, etc.) a été remplacée par un sentinel honnête
+(`None`/`"NOT_...CONNECTED"`/`is_real_data: False`) dans
+`aeos_kernel.py` (health_check), `self_healing.py`,
+`knowledge_evolution.py`, `cluster_manager.py`, `model_orchestrator.py`,
+`resource_optimizer.py`, `task_scheduler.py`, `aeos_report.py`,
+`mission_control.py`, `workflow_engine.py`, et dans les routes AEOS de
+`science/query_engine.py`. `event_bus.py` et `service_registry.py` ont
+été vérifiés et sont d'authentiques implémentations génériques (pub/sub
+réel, registre statique honnête) - rien à corriger.
+
+**Ce que cette correction antérieure avait manqué** (vérifié en lisant
+le code, pas les docstrings ni les noms) :
+- `AEOSKernel.monitor_services()` retournait encore inconditionnellement
+  `"RUNNING / HEALTHY"` pour chaque service actif, sans la moindre
+  sonde réelle - exactement le même défaut déjà corrigé dans
+  `SelfHealingEngine.run_system_health_audit()` du même paquet, mais
+  resté intact ici.
+- `AEOSKernel.scheduler()` / `.event_loop()` / `.resource_manager()`
+  retournaient chacun une chaîne figée affirmant un état actif
+  ("... Active", "... Processing Events", "... Allocating Memory and
+  Threads") sans qu'aucun scheduler, event loop ou allocateur ne soit
+  réellement instancié ou exécuté.
+- `agents/autonomous_agents.py` (`AutonomousAgent.observe()`/
+  `.reason()`/`.act()`, agrégé par `AgentManager.run_all_agents()`)
+  n'assemblait qu'une f-string narrative ("Observing domain...",
+  "Reasoning on physical laws for...", "Executing autonomous action
+  for...") pour chacun des 10 agents scientifiques - aucune donnée
+  lue, aucune règle physique appliquée, aucune action exécutée. Non
+  fabriqué au sens strict (aucun résultat numérique présenté comme
+  mesuré), mais un nommage de méthode ("observe"/"reason"/"act")
+  suggérant une capacité d'agent qui n'existe pas dans le code -
+  exactement la même famille de constat que les `*_engine.py`
+  IA/ML de `acf.model4d`. Ni `test_aeos_platform.py` (qui ne vérifie
+  que `active_agents_count == 10`, jamais le contenu du cycle) ni la
+  passe de correction précédente n'avaient couvert ces 4 méthodes.
+
+**Correction appliquée** (disclosure uniquement, même philosophie que
+model4d et que le reste du paquet `aeos` : pas de nouvelle capacité
+construite ici) :
+`monitor_services()` retourne désormais
+`"NOT_MONITORED_NO_HEALTH_PROBE_CONNECTED"` par service ;
+`scheduler()`/`event_loop()`/`resource_manager()` retournent chacun une
+chaîne explicitement `"NOT_CONNECTED_..."` / `"NOT_RUNNING_..."` au
+lieu d'affirmer un état actif ; `observe()`/`reason()`/`act()`
+retournent chacun `"NOT_REAL_OBSERVATION_NO_DATA_SOURCE_CONNECTED"` /
+`"NOT_REAL_REASONING_NO_RULE_ENGINE_CONNECTED"` /
+`"NOT_REAL_ACTION_NOTHING_EXECUTED"`. NOTE (correction) ajoutée dans
+chacun des docstrings concernés, format identique aux corrections
+déjà présentes dans le même fichier/paquet. Aucune signature de
+fonction changée (types de retour inchangés), aucun appelant externe
+affecté (`monitor_services`/`scheduler`/`event_loop`/
+`resource_manager` ne sont référencés nulle part ailleurs dans
+`src/` ou `tests/`, vérifié par grep).
+
+**Validation réelle** : `tests/test_aeos_platform.py` étendu avec des
+assertions couvrant les 7 méthodes corrigées (au lieu de les laisser
+non testées) ; suite complète du fichier réexécutée
+(`pytest tests/test_aeos_platform.py -v`) → 9/9 tests passent. Logique
+également revérifiée indépendamment par exécution directe des
+fonctions hors pytest (import direct des modules).
+
+**Disposition de `acf.aeos`** : non tranchée ici, pour la même raison
+que `acf.model4d` - mais avec un constat différent : contrairement à
+model4d (179 fichiers de physique réelle, testée, disconnectée),
+`acf.aeos` est un paquet entièrement scaffolding/façade (aucun calcul
+scientifique réel, un seul appelant symbolique dans
+`master/health_monitor.py`, testé uniquement par son propre fichier de
+test) qui a déjà, dans une large mesure, été honnêtement disclaimé
+plutôt que supprimé. Ce n'est donc pas un candidat identique à
+model4d ; simplement noté ici pour que la décision d'ensemble
+(garder tel quel comme façade UI documentée / réduire / retirer) reste,
+elle aussi, une décision explicite de l'utilisateur plutôt qu'un choix
+pris unilatéralement par cette passe d'audit.
+
+**Ce qui reste réellement** : 24 des 25 zones à 0 occurrence listées
+ci-dessus (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
+`climate`, `connectors`, `fire_weather`, `geospatial`,
+`knowledge_platform`, `master`, `ocean`, `parameters`, `planetary`,
+`plugins`, `release`, `resources`, `search`, `space_weather`,
+`storage`, `surfex`, `time`, `utils`, `workspace`) restent à auditer
+avec la même rigueur (lecture de code, pas seulement des noms/
+docstrings) - non exhaustif, chantier explicitement laissé ouvert pour
+la suite de cette même continuation.

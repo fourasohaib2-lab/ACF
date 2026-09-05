@@ -32,6 +32,20 @@ def test_aeos_kernel_lifecycle():
     health = kernel.health_check()
     assert health["kernel_status"] == "HEALTHY"
 
+    # CORRECTED (2026-09-05 audit de continuation): monitor_services()
+    # used to unconditionally claim "RUNNING / HEALTHY" for every
+    # active service with no real liveness probe behind it.
+    statuses = kernel.monitor_services()
+    assert len(statuses) == 15
+    assert all(v == "NOT_MONITORED_NO_HEALTH_PROBE_CONNECTED" for v in statuses.values())
+
+    # CORRECTED: scheduler()/event_loop()/resource_manager() used to
+    # unconditionally claim "Active"/"Processing Events"/"Allocating
+    # Memory and Threads" - none of them create or run anything real.
+    assert "NOT_CONNECTED_NO_SCHEDULER_INSTANCE_RUNNING" in kernel.scheduler()
+    assert "NOT_RUNNING_NO_EVENT_LOOP_STARTED" in kernel.event_loop()
+    assert "NOT_CONNECTED_NO_REAL_ALLOCATION_LOGIC" in kernel.resource_manager()
+
     shutdown_res = kernel.shutdown()
     assert shutdown_res["status"] == "SHUTDOWN COMPLETE"
 
@@ -148,6 +162,17 @@ def test_planetary_event_bus_and_autonomous_agents():
     assert len(agent_mgr.list_agents()) == 10
     agent_res = agent_mgr.run_all_agents()
     assert agent_res["active_agents_count"] == 10
+
+    # CORRECTED (2026-09-05 audit de continuation): observe()/reason()/
+    # act() used to return a plain narrative sentence ("Observing
+    # domain...", "Reasoning on physical laws...", "Executing
+    # autonomous action...") with no real data read, rule applied, or
+    # action executed behind any of the three - same fabrication
+    # pattern as acf.model4d's *_engine.py, disclosed the same way.
+    cycle = agent_res["agent_cycles"]["MeteorologyAgent"]
+    assert "NOT_REAL_OBSERVATION_NO_DATA_SOURCE_CONNECTED" in cycle["observe"]
+    assert "NOT_REAL_REASONING_NO_RULE_ENGINE_CONNECTED" in cycle["reason"]
+    assert "NOT_REAL_ACTION_NOTHING_EXECUTED" in cycle["act"]
 
 
 def test_mission_control_dashboard_and_reporting():

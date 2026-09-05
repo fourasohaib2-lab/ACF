@@ -48,8 +48,18 @@ class AEOSKernel:
         return self.active_services
 
     def monitor_services(self) -> dict[str, str]:
-        """Surveille l'état des services actifs."""
-        return {service: "RUNNING / HEALTHY" for service in self.active_services}
+        """
+        Surveille l'état des services actifs.
+
+        NOTE (correction, 2026-09-05 audit de continuation - suite au
+        finding model4d/acf.aeos): this used to unconditionally claim
+        "RUNNING / HEALTHY" for every active service regardless of any
+        real state - no service-liveness probe exists anywhere in this
+        codebase (same underlying gap as
+        aeos.health.self_healing.SelfHealingEngine.run_system_health_audit(),
+        corrected earlier). Not fabricated.
+        """
+        return {service: "NOT_MONITORED_NO_HEALTH_PROBE_CONNECTED" for service in self.active_services}
 
     def health_check(self) -> dict[str, Any]:
         """
@@ -91,13 +101,37 @@ class AEOSKernel:
             self.active_services.remove(service_name)
 
     def scheduler(self) -> str:
-        """Accède au planificateur de tâches du noyau."""
-        return "AEOS Autonomous Task Scheduler Active"
+        """
+        Accède au planificateur de tâches du noyau.
+
+        NOTE (correction, 2026-09-05 audit de continuation): used to
+        unconditionally claim "Active" - this method never creates or
+        runs an actual scheduler instance (see
+        aeos.scheduler.task_scheduler.TaskScheduler, which itself does
+        not execute anything either - see its own NOTE). Not fabricated.
+        """
+        return "AEOS Task Scheduler: NOT_CONNECTED_NO_SCHEDULER_INSTANCE_RUNNING"
 
     def event_loop(self) -> str:
-        """Boucle d'événements principale du noyau."""
-        return "AEOS Event Loop Processing Events"
+        """
+        Boucle d'événements principale du noyau.
+
+        NOTE (correction, 2026-09-05 audit de continuation): used to
+        unconditionally claim "Processing Events" - no event loop is
+        started here (see aeos.events.event_bus.PlanetaryEventBus for
+        the real, genuine pub/sub primitive this kernel does not
+        actually run). Not fabricated.
+        """
+        return "AEOS Event Loop: NOT_RUNNING_NO_EVENT_LOOP_STARTED"
 
     def resource_manager(self) -> str:
-        """Gestionnaire de ressources CPU/RAM/GPU du noyau."""
-        return "AEOS Resource Manager Allocating Memory and Threads"
+        """
+        Gestionnaire de ressources CPU/RAM/GPU du noyau.
+
+        NOTE (correction, 2026-09-05 audit de continuation): used to
+        unconditionally claim "Allocating Memory and Threads" - no
+        allocation of any kind happens here (see
+        aeos.resources.resource_optimizer.ResourceOptimizer, corrected
+        earlier for the same pattern). Not fabricated.
+        """
+        return "AEOS Resource Manager: NOT_CONNECTED_NO_REAL_ALLOCATION_LOGIC"

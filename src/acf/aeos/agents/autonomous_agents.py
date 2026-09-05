@@ -9,20 +9,35 @@ from typing import Any
 
 
 class AutonomousAgent:
-    """Agent scientifique autonome universel."""
+    """
+    Agent scientifique autonome universel.
+
+    NOTE (correction, 2026-09-05 audit de continuation - même famille
+    que le finding de fabrication documenté dans
+    acf.model4d/physics/*_engine.py): observe()/reason()/act()
+    n'assemblent qu'une f-string statique avec le nom et le domaine de
+    l'agent - aucune donnée n'est lue (observe), aucune règle physique
+    n'est appliquée (reason) et rien n'est réellement exécuté (act).
+    Non fabriqué au sens strict (aucune valeur numérique ou résultat
+    n'est présenté comme mesuré/validé), mais les noms de méthode
+    ("observe", "reason", "act") suggèrent une capacité d'agent IA que
+    ce code ne fournit pas. Disclosure uniquement - le comportement
+    (nombre d'agents, structure du cycle) reste inchangé pour ne pas
+    casser le contrat de test existant (test_aeos_platform.py).
+    """
 
     def __init__(self, name: str, domain: str):
         self.name = name
         self.domain = domain
 
     def observe(self) -> str:
-        return f"[{self.name}] Observing domain {self.domain}."
+        return f"[{self.name}] NOT_REAL_OBSERVATION_NO_DATA_SOURCE_CONNECTED (domain: {self.domain})"
 
     def reason(self) -> str:
-        return f"[{self.name}] Reasoning on physical laws for {self.domain}."
+        return f"[{self.name}] NOT_REAL_REASONING_NO_RULE_ENGINE_CONNECTED (domain: {self.domain})"
 
     def act(self) -> str:
-        return f"[{self.name}] Executing autonomous action for {self.domain}."
+        return f"[{self.name}] NOT_REAL_ACTION_NOTHING_EXECUTED (domain: {self.domain})"
 
 
 class MeteorologyAgent(AutonomousAgent):
@@ -76,7 +91,14 @@ class KnowledgeAgent(AutonomousAgent):
 
 
 class AgentManager:
-    """Gestionnaire principal des 10 agents scientifiques autonomes d'AEOS."""
+    """
+    Gestionnaire principal des 10 agents scientifiques autonomes d'AEOS.
+
+    active_agents_count (run_all_agents()) is a genuine len(self.agents)
+    count - see AutonomousAgent's own NOTE for why the per-agent
+    "observe"/"reason"/"act" cycle content it aggregates is disclosed
+    rather than a real observation/reasoning/action.
+    """
 
     def __init__(self):
         self.agents = [
