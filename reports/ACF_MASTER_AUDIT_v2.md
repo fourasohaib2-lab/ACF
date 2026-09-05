@@ -8867,3 +8867,48 @@ sont probablement déjà largement corrigés en profondeur (comme
 `master`/`aeos` l'étaient) mais restent à vérifier par exécution avant
 de les retirer de cette liste ; `climate`, `catalogs`, `plugins`,
 `resources` et `search` retirés, désormais audités.
+
+## Mise à jour 2026-09-05 (suite) — `api`, `storage`, `time`, `utils` : 4 zones lues intégralement, aucune fabrication, rien à corriger
+
+**Zones couvertes** (les 4 plus petites zones encore à 0 occurrence,
+lues fichier par fichier - pas de grep de mots-clés cette fois, le
+volume le permettait) :
+
+- `acf.api` (2 fichiers) : `ACFAPI` délègue réellement à
+  `acf.core.default_parameters.create_registry`,
+  `acf.ai.analyzers.dataset_analyzer.DatasetAnalyzer`,
+  `acf.ai.forecast.forecast_assistant.ForecastAssistant`,
+  `acf.ai.alerts.weather_alert_engine.WeatherAlertEngine` - pure
+  façade sans revendication propre à vérifier. Les classes déléguées
+  elles-mêmes relèvent d'`acf.ai`/`acf.core`, hors du périmètre de
+  cette passe (déjà couvertes en grande partie par le balayage
+  "*_engine.py à branding IA" de l'audit `model4d`).
+- `acf.storage` (2 fichiers) : `StorageWriter` est une façade réelle
+  documentée comme telle - NetCDF/Zarr délégués aux writers déjà
+  audités (`acf.simulation_engine.output.{netcdf_writer,zarr_writer}`,
+  cf. le bug de dimension déjà corrigé Phase 29), CSV est un vrai
+  nouvel export stdlib `csv` (pas de pandas - retiré du projet le
+  2026-09-02) en format long (une ligne par point de grille), sans
+  valeur inventée (niveau vide plutôt que 0 fabriqué pour une variable
+  2D).
+- `acf.time` (2 fichiers) : `TimeManager` est un curseur d'index réel
+  sur une liste de pas de temps - logique triviale mais correcte,
+  aucune revendication.
+- `acf.utils` (6 fichiers, 82 lignes) : fonctions utilitaires réelles
+  et triviales (existence de fichier/dossier via `pathlib`, nom
+  d'OS/version Python via `platform`, horodatage via `datetime`,
+  racine du projet via `Path(__file__).resolve().parents[3]` -
+  vérifié : `src/acf/utils/paths.py` -> `src/acf/utils` ->
+  `src/acf` -> `src` -> racine, correct).
+
+**Validation réelle** : `tests/test_api.py`, `tests/test_storage.py`,
+`tests/test_time_manager.py` ré-exécutés : 10/10 passent (pas de test
+dédié pour `acf.utils`, mais ses fonctions sont triviales et sans état
+partagé). Aucune modification de code nécessaire - ces 4 zones sont
+authentiquement propres.
+
+**Ce qui reste réellement** : 12 zones encore jamais auditées du tout
+(`alerts`, `analysis`, `animation`, `connectors`, `fire_weather`,
+`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
+`surfex`, `workspace`) - `api`, `storage`, `time`, `utils` retirés,
+désormais vérifiés.
