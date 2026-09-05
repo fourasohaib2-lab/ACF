@@ -50,6 +50,19 @@ class GlobalWeatherKnowledgeGraphEngine:
     Global Weather Knowledge Graph Engine
 
     Meteorological memory and analogue discovery layer.
+
+    NOTE (Physics Guard, 2026-09-05 model4d duplication/fabrication
+    audit - see acf.model4d's own module docstring): no graph structure
+    (nodes/edges, persistence, or query engine) exists anywhere in this
+    class - despite its name, `find_weather_analogue()` is a plain
+    linear scan over an in-memory list, and `atmospheric_similarity()`
+    is `100 - abs_difference / 4`. Real, deterministic arithmetic, but
+    not the knowledge-graph capability the class name claims. Not
+    fabricated data (nothing here is presented as a measured or
+    validated result), but a misleading name for what the method bodies
+    actually do - left as-is (this package is disconnected from the
+    rest of ACF; see acf.model4d's own docstring for why no behavior
+    here is changed), disclosed rather than silently trusted.
     """
 
     def create_weather_signature(

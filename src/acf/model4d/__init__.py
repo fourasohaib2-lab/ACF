@@ -64,11 +64,53 @@ evidence this package substantially duplicates functionality that
 already exists, tested, and integrated elsewhere under different
 package names (`acf.science`/`acf.simulation_engine`/`acf.earth_physics`).
 
-Not yet resolved: whether every one of the ~150 physics files here
-duplicates its `acf.science`/`acf.simulation_engine`/`acf.earth_physics`
-counterpart this precisely, or whether some carry genuinely distinct
-real capability worth salvaging. Left as a real, disclosed, low-
-priority reserve rather than integrated or removed - a full
-duplication audit (or a decision to retire/archive it) is real,
-separate future work.
+UPDATE (2026-09-05, "continue selon ton jugement" - the follow-up
+duplication audit this file's own docstring had flagged as separate
+future work): 151 real files under `physics/` (not ~150 - counted
+directly), not all disconnected for the same reason.
+
+By exact filename, only 15 of 151 collide with a same-named file under
+`acf.science`/`acf.simulation_engine`/`acf.earth_physics`; by exact
+top-level class name, only 3 (`Divergence`, `Dynamics`, `Moisture`) -
+weaker overlap than this docstring's earlier wording implied, though
+`dynamics.py`/`moisture.py`'s class bodies differ enough in length
+(28 vs. 103, 119 vs. 102 lines) that "duplicate" undersells it as much
+as "distinct" would - same physical concept, independently
+implemented, at different depth.
+
+More significant finding, NOT about duplication: 21 of these 151 files
+are named `*_engine.py` with AI/ML/"intelligence" branding
+(`self_improving_forecast_neural_engine.py`,
+`global_weather_knowledge_graph_engine.py`,
+`weather_causal_reasoning_engine.py`, `natural_language_weather_
+intelligence_engine.py`, and 17 more - full list in
+`reports/ACF_MASTER_AUDIT_v2.md`'s own model4d section). 7 of the 21
+already carry a real Physics Guard correction from an earlier pass
+(e.g. `weather_causal_reasoning_engine.py`'s own NOTE, which removed
+an unexplained calibration offset). Of the 14 that do NOT yet, this
+pass opened and read `self_improving_forecast_neural_engine.py` and
+`global_weather_knowledge_graph_engine.py` in full: neither trains,
+loads, or runs any actual model, graph structure, or NLP component -
+`SelfImprovingForecastNeuralEngine.improvement_gain()` is
+`learning_rate * training_cycles`, and
+`GlobalWeatherKnowledgeGraphEngine.find_weather_analogue()` is a
+linear scan computing `100 - abs-difference/4` against an in-memory
+list - real, deterministic Python, but arbitrary weighted-sum/nearest-
+neighbour arithmetic wearing a "neural"/"knowledge graph" name, not
+the capability the name claims. Only these 2 of the 14 were opened
+(not an exhaustive sweep of all 14) - both confirmed the same pattern,
+which is what these 2 files' own file names, siblings' names, and
+sprint-numbered class docstrings ("Sprint 9.52", "Sprint 9.53" -
+matching this whole package's real, git-verified sprint-by-sprint
+history) suggest is likely true of some or all of the remaining 12,
+but that remains this pass's own honest limitation, not verified here.
+
+Disposition still not decided, and still not this pass's call to make
+unilaterally (same reasoning as before: archiving/deleting 179 real,
+tested files is a large, hard-to-reverse action). What's different now
+is the reason FOR archiving is stronger than "unused" alone - a
+meaningful fraction of this reserve is cosmetic/fabricated-sounding
+scaffolding, not dormant real physics, which is exactly the pattern
+this project's audits exist to flag rather than let sit undocumented
+in a reserve someone might resurrect later while trusting its names.
 """
