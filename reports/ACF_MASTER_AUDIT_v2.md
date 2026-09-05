@@ -8912,3 +8912,54 @@ authentiquement propres.
 `geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
 `surfex`, `workspace`) - `api`, `storage`, `time`, `utils` retirés,
 désormais vérifiés.
+
+## Mise à jour 2026-09-05 (suite) — `alerts`, `analysis`, `animation` : 1 fissure réelle trouvée, 2 zones déjà propres confirmées
+
+**Contexte** : ces 3 zones affichaient déjà 1/2 fichiers porteurs de
+"NOTE (correction)" (le 2e fichier étant systématiquement le stub
+`__init__.py` générique, sans code) - donc déjà largement corrigées
+lors d'une session antérieure non retracable, comme `aeos`/`master`/
+`surfex`. Lues intégralement pour vérifier qu'aucune fissure n'avait
+été manquée, même méthode que la passe `master`.
+
+**1 fissure réelle trouvée** : `acf.alerts.warning_engine.WarningEngine
+.issue_warning()` avait déjà reçu une vraie correction (valid_from/
+valid_until dérivés du vrai instant d'émission, confidence_score
+honnêtement `None` sans modèle connecté) - mais juste à côté, le texte
+par défaut de `ai_explanation` revendiquait encore inconditionnellement
+"Prédiction d'IA confirmant un risque élevé de {phenomenon}" dès qu'un
+appelant ne le fournissait pas. Même famille de fabrication que
+`confidence_score` (une revendication d'IA non vérifiée, sans modèle
+réel connecté), manquée par cette même passe de correction. Le seul
+appelant réel (`tests/test_operational_meteorological_center.py`) ne
+fournit jamais `ai_explanation`, donc chaque alerte émise par ce chemin
+affichait la revendication fabriquée. Corrigé pour déclarer
+honnêtement qu'aucun modèle d'IA n'est connecté, sauf fourniture
+explicite par l'appelant.
+
+**Autre inexactitude, mineure** : `acf.analysis.postprocessing
+.PostProcessingEngine.export_geotiff()` (déjà honnêtement un
+`NotImplementedError` documenté, pas une fabrication) affirmait que
+"rasterio (already a project dependency)" - faux depuis le nettoyage
+du 2026-09-02 qui l'a retiré de `pyproject.toml`/`requirements.txt`
+comme réellement inutilisé (0 site d'import). Corrigé pour refléter
+qu'il faudrait le ré-ajouter avant une vraie implémentation.
+
+**`acf.animation`** : `AnimationEngine` porte déjà une vraie correction
+(`next_frame()` respecte enfin `self.loop`, qui n'avait auparavant
+aucun effet) - relu intégralement, aucune fissure supplémentaire
+trouvée.
+
+**Validation réelle** : `tests/test_operational_meteorological_center.py`
+étendu avec une régression verrouillant la nouvelle valeur honnête de
+`ai_explanation` et un appel avec une vraie valeur fournie par
+l'appelant. `tests/test_postprocessing.py`, `tests/test_animation_engine.py`
+et le fichier de test ci-dessus ré-exécutés : 16/16 passent. `ruff
+check` propre sur les 3 zones et le fichier de test touché. Suite
+complète ré-exécutée après la modification : 4457 passed, 18 skipped,
+0 failed (inchangé).
+
+**Ce qui reste réellement** : 9 zones encore jamais auditées du tout
+(`connectors`, `fire_weather`, `geospatial`, `ocean`, `planetary`,
+`release`, `space_weather`, `surfex`, `workspace`) - `alerts`,
+`analysis`, `animation` retirés, désormais audités.

@@ -63,6 +63,18 @@ class WarningEngine:
         from the real issuance time and the caller's valid_hours;
         confidence_score is only set when a caller genuinely supplies
         one (e.g. from real ensemble spread), else honestly None.
+
+        NOTE (correction, 2026-09-05 - crack in the seam this same fix
+        missed): ai_explanation's own default text still unconditionally
+        claimed "Prédiction d'IA confirmant un risque élevé de
+        {phenomenon}" ("AI prediction confirming a high risk") whenever
+        a caller didn't supply one - same fabrication family as the
+        confidence_score bug fixed above (an unverified AI claim with no
+        model behind it), just missed by that pass. The only real caller
+        (tests/test_operational_meteorological_center.py) never supplies
+        ai_explanation, so every warning issued through this path showed
+        the fabricated claim. Default now honestly states no AI model is
+        connected.
         """
         w_id = f"WARN-{uuid4().hex[:8].upper()}"
 
@@ -91,7 +103,8 @@ class WarningEngine:
             recommended_actions=actions,
             scientific_explanation=scientific_explanation
             or f"Alerte déclenchée en raison des conditions favorables à {phenomenon}.",
-            ai_explanation=ai_explanation or f"Prédiction d'IA confirmant un risque élevé de {phenomenon}.",
+            ai_explanation=ai_explanation
+            or f"Aucun modèle d'IA connecté pour {phenomenon} - alerte émise sur seuils opérationnels uniquement.",
         )
         self.active_warnings.append(warning)
         return warning

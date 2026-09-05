@@ -100,6 +100,20 @@ def test_warning_engine():
     alert = w_engine.issue_warning("Thunderstorm", "Orange", 85.0, ["Île-de-France", "Normandie"])
     assert alert.severity == "Orange"
     assert len(w_engine.get_active_warnings()) == 1
+    # Regression guard (2026-09-05, post-model4d audit): ai_explanation
+    # used to unconditionally claim "Prédiction d'IA confirmant un
+    # risque élevé" for every warning with no AI model actually
+    # connected - same fabrication family as confidence_score (already
+    # covered above via the None check pattern). Must now honestly
+    # disclose no AI model is connected rather than claiming one
+    # confirmed the risk, unless a caller genuinely supplies one.
+    assert "IA" not in alert.ai_explanation or "Aucun modèle d'IA connecté" in alert.ai_explanation
+    assert alert.confidence_score is None
+
+    custom = w_engine.issue_warning(
+        "Flood", "Red", 95.0, ["Provence"], ai_explanation="Real ensemble-based AI risk score: 0.93"
+    )
+    assert custom.ai_explanation == "Real ensemble-based AI risk score: 0.93"
 
 
 def test_briefing_generator():

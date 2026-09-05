@@ -133,8 +133,16 @@ class PostProcessingEngine:
         {variable_name}" to a file named like a real .tif file and
         return that path - Path(...).exists() would pass while the
         file is not valid GeoTIFF at all and dataset was never touched.
-        A real implementation needs rasterio (already a project
-        dependency) to actually write dataset's real raster data.
+        A real implementation needs rasterio to actually write dataset's
+        real raster data.
+
+        NOTE (correction, 2026-09-05 - stale claim, found during the
+        post-model4d audit): this docstring used to say rasterio was
+        "already a project dependency" - it was removed from
+        pyproject.toml/requirements.txt on 2026-09-02 as genuinely
+        unused (zero import sites anywhere in src/ or tests/, see
+        pyproject.toml's core `dependencies` comment), so a real
+        implementation would need to add it back first.
         """
         raise NotImplementedError(
             f"export_geotiff(variable_name={variable_name!r}, filename={filename!r}) needs the real "
