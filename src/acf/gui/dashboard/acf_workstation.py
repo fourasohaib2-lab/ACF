@@ -674,6 +674,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMenu,
     QPushButton,
+    QScrollArea,
     QSlider,
     QTableWidget,
     QTableWidgetItem,
@@ -1057,7 +1058,27 @@ class ACFWorkstation(QWidget):
         }
         for panel in self._panel_by_name.values():
             self.stack.addWidget(panel)
-        body.addWidget(self.stack, stretch=1)
+        # NOTE (real responsive-sizing fix, 2026-09-05, continuing the
+        # CurrentPageStackedWidget fix above): that fix stops the stack
+        # from being PERMANENTLY floored at its largest Lab panel, but a
+        # top-level window never auto-shrinks its real on-screen size
+        # just because its computed minimum went down - only auto-grows
+        # when it goes up. Measured effect without this scroll wrap:
+        # opening "Complexity Explorer" (737px tall, itself from 2 real
+        # stacked AWCIMapPanel maps + a spread chart) even once grew the
+        # whole window from 633 to 978px tall, and it then STAYED there
+        # after switching back to a small panel like "Atmosphere State"
+        # (147px) - on a small screen, a single visit to a heavy Lab
+        # panel permanently outgrows the display. Wrapping in a
+        # QScrollArea (same established pattern as panel_manager.py's
+        # own AWCIDashboardPanel scroll wrap, for the exact same reason)
+        # decouples the window's minimum from EVERY Lab panel's content
+        # entirely; a panel that doesn't fit the space actually given
+        # scrolls instead of forcing the window to grow.
+        stack_scroll = QScrollArea()
+        stack_scroll.setWidgetResizable(True)
+        stack_scroll.setWidget(self.stack)
+        body.addWidget(stack_scroll, stretch=1)
 
         # Real, always-visible right column (added Phase 33,
         # 2026-09-05, matching the mockup's own persistent top-right

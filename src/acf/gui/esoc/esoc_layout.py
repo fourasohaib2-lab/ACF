@@ -81,6 +81,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDockWidget,
     QMainWindow,
+    QScrollArea,
 )
 
 from acf.gui.esoc.esoc_sidebar import ESOCLeftSidebar, ESOCRightSidebar
@@ -257,8 +258,31 @@ class ESOCLayout:
                 title = name.replace("_", " ").title()
                 self.bottom_tabs.addTab(panel, title)
 
+        # NOTE (real responsive-sizing fix, 2026-09-05, continuing the
+        # fix above): CurrentPageTabWidget stops the dock from being
+        # PERMANENTLY floored at the largest tab, but Qt's own top-level
+        # windows never auto-shrink their real on-screen size just
+        # because their computed minimum went down - only auto-GROW when
+        # it goes up. Measured effect without this scroll wrap: opening
+        # the "Products" tab (one of the tallest, at 620px) even once
+        # grew the whole ESOC window from 736 to 1051px tall, and it
+        # then STAYED there after switching back to a tiny tab like
+        # "Hpc Dashboard" (154px) - on a small screen, a single visit to
+        # a heavy tab permanently outgrows the display. Wrapping in a
+        # QScrollArea (same established pattern as AWCIDashboardPanel's
+        # own scroll wrap above, for the exact same reason) decouples
+        # the dock's minimum from EVERY tab's content entirely - Qt
+        # never queries a QScrollArea's child for its size when deciding
+        # the scroll area's own minimum - so the window can always be
+        # shrunk regardless of which tab was ever opened; a tab whose
+        # content doesn't fit the space actually given scrolls instead
+        # of forcing the window to grow.
+        bottom_tabs_scroll = QScrollArea()
+        bottom_tabs_scroll.setWidgetResizable(True)
+        bottom_tabs_scroll.setWidget(self.bottom_tabs)
+
         self.dock_bottom = QDockWidget("Operational Command Panels", self.main_window)
-        self.dock_bottom.setWidget(self.bottom_tabs)
+        self.dock_bottom.setWidget(bottom_tabs_scroll)
         self.main_window.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_bottom)
 
     def _on_sidebar_item_selected(self, label: str, category: str | None) -> None:
