@@ -79,8 +79,13 @@ def test_boot_startup_and_shutdown_sequences():
     assert startup["steps_completed_count"] == 0
     assert startup["startup_status"] == "NOT_STARTED_STEPS_NOT_EXECUTED"
 
+    # CORRECTED: run_shutdown() used to claim "SHUTDOWN_CLEAN" just by
+    # counting the static STEPS list length - none of the 8 steps
+    # (save state, flush logs, stop services...) actually run here,
+    # same bug class as run_startup() above.
     shutdown = ShutdownSequence.run_shutdown()
-    assert shutdown["status"] == "SHUTDOWN_CLEAN"
+    assert shutdown["status"] == "NOT_SHUT_DOWN_STEPS_NOT_EXECUTED"
+    assert shutdown["steps_completed_count"] == 0
     assert len(shutdown["shutdown_steps"]) >= 8
 
 
@@ -152,8 +157,14 @@ def test_services_health_and_diagnostics():
     assert health["overall_health"] in ("HOST_RESOURCES_OK", "HOST_RESOURCES_STRAINED", "UNKNOWN_PSUTIL_NOT_INSTALLED")
     assert health["subsystems_healthy"] is None
 
+    # CORRECTED: run_diagnostics() used to unconditionally claim
+    # "NO_ISSUES_DETECTED" with 0 parameters and no real probe
+    # connected. Now reuses ProductionHealthCheck's real host-resource
+    # probe and honestly discloses no application-level diagnostic
+    # suite is connected.
     diag = ProductionDiagnostics.run_diagnostics()
-    assert diag["diagnostic_result"] == "NO_ISSUES_DETECTED"
+    assert diag["diagnostic_result"] in ("HOST_RESOURCES_OK", "HOST_RESOURCES_STRAINED", "UNKNOWN_PSUTIL_NOT_INSTALLED")
+    assert diag["application_diagnostics_status"] == "NOT_RUN_NO_DIAGNOSTIC_SUITE_CONNECTED"
 
 
 def test_benchmarks_and_performance_reports():
@@ -165,11 +176,19 @@ def test_benchmarks_and_performance_reports():
     assert bench["ai_inference_speed_ms"] is None
     assert bench["benchmark_status"] == "NOT_RUN_NO_BENCHMARK_HARNESS_IMPLEMENTED"
 
+    # CORRECTED: generate_report() used to unconditionally claim
+    # "overall_grade": "A+" with 0 parameters and no benchmark/profiler
+    # ever run - same fabrication family as run_benchmarks() above.
     report = PerformanceReportGenerator.generate_report()
-    assert report["overall_grade"] == "A+"
+    assert report["overall_grade"] == "NOT_GRADED_NO_BENCHMARK_SUITE_CONNECTED"
 
+    # CORRECTED: "highlights" used to claim "Integration of 45
+    # Engineering Missions" and "Platinum Certification" - the same
+    # false certification pattern found duplicated across 4 other
+    # places this session, none backed by a real audit.
     notes = ReleaseNotesGenerator.generate_release_notes()
-    assert len(notes["highlights"]) >= 5
+    assert notes["highlights"] is None
+    assert notes["highlights_status"] == "NOT_GENERATED_NO_AUTOMATED_CHANGELOG_CONNECTED"
 
     # CORRECTED: verify_licenses() used to unconditionally claim
     # "Apache 2.0 / Open Science License, 100% COMPLIANT" without
@@ -232,14 +251,23 @@ def test_installer_updater_logging_and_security():
     assert upd["latest_version"] is None
     assert upd["update_available"] is None
 
+    # CORRECTED: run_migrations() used to unconditionally claim "status":
+    # "UP_TO_DATE" with 0 parameters and no real database connection or
+    # migration framework wired up anywhere in this codebase.
     mig = MigrationManager.run_migrations()
-    assert mig["status"] == "UP_TO_DATE"
+    assert mig["status"] == "NOT_CHECKED_NO_MIGRATION_SYSTEM_CONNECTED"
+    assert mig["migrations_applied_count"] is None
 
     log_cfg = LoggingConfiguration.setup_logging()
     assert log_cfg["log_format"] == "JSON_STRUCTURED"
 
+    # CORRECTED: handle_error() used to unconditionally claim "handled":
+    # True and "recovery_action": "RETRY_SAFE" for ANY exception, with
+    # no logging and no real recovery logic. Now genuinely logs the
+    # error and honestly discloses no automated recovery policy exists.
     err = ProductionErrorHandler.handle_error(ValueError("Sample Error"))
-    assert err["handled"] is True
+    assert err["logged"] is True
+    assert err["recovery_action"] == "NOT_DETERMINED_NO_PER_EXCEPTION_POLICY_CONNECTED"
 
     exc_cat = ExceptionManager.classify_exception(RuntimeError("Sample Exception"))
     assert exc_cat == "SYSTEM_RECOVERABLE"

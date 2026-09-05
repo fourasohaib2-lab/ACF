@@ -9274,3 +9274,93 @@ passent. `ruff check` propre sur tout le paquet.
 
 **Ce qui reste réellement** : 1 zone encore jamais auditée
 (`release`) - `space_weather` retiré, désormais audité.
+
+## Mise à jour 2026-09-05 (suite, DERNIÈRE ZONE) — `acf.release` : 6 fabrications réelles corrigées, dernière zone du balayage initial close
+
+**Zone couverte** : `acf.release` (34 fichiers, 1099 lignes ; 21/34
+déjà corrigés lors d'une session antérieure non retracable - le paquet
+le plus densément déjà-audité de cette continuation. Les 13 fichiers
+restants (dont `__init__.py`, pure agrégation d'imports sans
+revendication propre) ont été lus intégralement.
+
+**6 fabrications réelles trouvées et corrigées**, chacune exactement
+dans la même veine que les corrections déjà présentes dans ce même
+paquet (`health_check.py`'s "100% HEALTHY", `integrity_checker.py`'s
+hash fixe, `startup_sequence.py`'s "PRODUCTION_READY_V1.0" par simple
+comptage d'une liste statique) - mais ces 6 fichiers avaient échappé à
+cette même passe :
+
+1. **`diagnostics.py.ProductionDiagnostics.run_diagnostics()`** :
+   revendiquait inconditionnellement `"NO_ISSUES_DETECTED"` avec 0
+   paramètre et aucune sonde réelle connectée. Corrigé pour réutiliser
+   la vraie sonde `ProductionHealthCheck` (psutil) plutôt qu'une
+   deuxième implémentation concurrente, et déclarer honnêtement
+   qu'aucune suite de diagnostic applicatif n'est branchée.
+2. **`error_handler.py.ProductionErrorHandler.handle_error()`** :
+   revendiquait inconditionnellement `"handled": True` et
+   `"recovery_action": "RETRY_SAFE"` pour N'IMPORTE QUELLE exception,
+   sans journalisation ni logique de reprise réelle - dangereux
+   (un appelant pourrait relancer une opération dont l'échec n'est pas
+   sûr à réessayer). Corrigé pour journaliser réellement l'erreur
+   (`logger.error(..., exc_info=...)`) et déclarer honnêtement qu'aucune
+   politique de reprise par type d'exception n'existe.
+3. **`migration.py.MigrationManager.run_migrations()`** : revendiquait
+   inconditionnellement `"status": "UP_TO_DATE"` sans connexion de base
+   de données ni framework de migration (Alembic ou autre) nulle part
+   dans ce dépôt. Corrigé en `"NOT_CHECKED_NO_MIGRATION_SYSTEM_CONNECTED"`.
+4. **`performance_report.py.PerformanceReportGenerator.generate_report()`** :
+   revendiquait inconditionnellement `"overall_grade": "A+"` sans
+   aucune mesure - même famille que `HPCConnectionManager
+   .benchmark_performance()` déjà corrigé et que `benchmark.py` déjà
+   corrigé dans ce même paquet. Corrigé pour réutiliser
+   `ProductionHealthCheck` et déclarer honnêtement qu'aucune suite de
+   benchmark n'est connectée pour noter la performance.
+5. **`release_notes.py.ReleaseNotesGenerator.generate_release_notes()`** :
+   `"highlights"` revendiquait "Integration of 45 Engineering Missions"
+   (même schéma que les "40 missions" déjà corrigées dans `master`) et
+   "Platinum Certification for physical equations and WMO/CF standards
+   compliance" - exactement la même fausse certification déjà trouvée
+   et corrigée à 4 autres endroits cette session (dont
+   `ReleaseManager.get_release_info()` dans ce même paquet). Les 2
+   autres items (AEOS, plateforme temps réel multi-modèles)
+   nécessiteraient chacun leur propre ré-vérification substantielle -
+   non faite ici. Plutôt que reformuler individuellement ou laisser les
+   2 revendications confirmées fausses, `"highlights"` est remplacé par
+   une déclaration honnête d'absence de génération automatique depuis
+   un vrai changelog/historique git.
+6. **`shutdown_sequence.py.ShutdownSequence.run_shutdown()`** :
+   revendiquait `"status": "SHUTDOWN_CLEAN"` en comptant simplement la
+   longueur d'une liste statique de 8 étapes (Save State, Flush Logs,
+   Stop Services...) - aucune n'est réellement exécutée. Exactement le
+   même bug que `startup_sequence.py.run_startup()` déjà corrigé dans
+   ce même fichier de test. Corrigé en `"NOT_SHUT_DOWN_STEPS_NOT_EXECUTED"`,
+   `steps_completed_count: 0`.
+
+**Laissés tels quels, jugés non fabriqués** : `docker_support.py`/
+`kubernetes_support.py`/`slurm_support.py` (génèrent des métadonnées de
+configuration - chemins de fichiers, nombre de nœuds - sans revendiquer
+un état vérifié ou un déploiement réel), `configuration.py` (dictionnaire
+de configuration de production statique), `exception_manager.py`
+(heuristique de classification dépendante de l'entrée réelle, pas une
+valeur fixe - `"SYSTEM_RECOVERABLE"` par défaut est discutable mais hors
+périmètre fabrication/duplication de cet audit).
+
+**Validation réelle** : `tests/test_release_v1.py` étendu (suivant le
+style "CORRECTED:" déjà utilisé pour les 15 autres corrections du même
+fichier) pour verrouiller les 6 nouveaux comportements honnêtes.
+Fichier ré-exécuté : 8/8 passent. `ruff check` propre sur tout le
+paquet et le fichier de test. Grep confirmant qu'aucun autre appelant
+dans le dépôt (les autres `generate_report`/`run_shutdown` trouvés
+appartiennent à des classes sans rapport) ne dépend des anciennes
+valeurs fabriquées.
+
+**Bilan de cette continuation d'audit (`model4d` -> ici)** : 21 zones
+à 0 occurrence initialement recensées (`aeos` compris) sont maintenant
+toutes auditées ou vérifiées. Zones avec fabrication réelle corrigée :
+`aeos`, `knowledge_platform`, `parameters`, `master`, `climate`,
+`alerts`, `surfex`, `ocean` (docstring), `planetary`, `space_weather`,
+`release`. Zones vérifiées propres sans modification :
+`api`, `storage`, `time`, `utils`, `connectors`, `fire_weather`,
+`geospatial`, `catalogs`, `plugins`, `resources`, `search`. Suite
+complète stable tout du long (dernier relevé : 4466 passed, 18
+skipped, 0 failed).
