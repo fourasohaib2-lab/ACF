@@ -9083,3 +9083,37 @@ passent. Grep confirmant qu'aucun autre appelant ne lit ce champ.
 **Ce qui reste réellement** : 5 zones encore jamais auditées du tout
 (`geospatial`, `ocean`, `planetary`, `release`, `space_weather`) -
 `surfex` retiré, désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — `acf.ocean` : 1 docstring survendu (même famille que `climate`/`master`), reste déjà très propre
+
+**Zone couverte** : `acf.ocean` (13 fichiers ; 5/13 déjà porteurs de
+"NOTE (correction)", le reste étant soit le stub `__init__.py` racine
+(25 lignes, façade d'imports réels sans revendication propre) soit des
+`__init__.py` de sous-paquet vides à 1 ligne). `tests/
+test_marine_meteorology_oceanography.py` verrouille déjà des
+corrections physiques réelles et précises dans les 5 fichiers corrigés
+(N²/Ekman/géostrophie, spectre JONSWAP - erreur dimensionnelle
+√g corrigée, échelle Douglas - décalage d'un cran corrigé, catégorie
+Saffir-Simpson, cyclones actifs honnêtement vides, décodage de bouée
+honnêtement non connecté) : lu intégralement, aucune fissure
+supplémentaire trouvée dans ces 5 fichiers.
+
+**1 docstring survendu trouvé**, même famille que `climate`/`master` :
+`models/ocean_models.py` nommait 8 modèles de circulation océanique
+(HYCOM, NEMO, ROMS, MITgcm, SCHISM, ADCIRC, MOM6, FVCOM) ; `OCEAN_MODELS_
+REGISTRY` n'en contient réellement que 3 (NEMO, HYCOM, ROMS).
+`OceanModelEngine.get_model()` renvoie honnêtement `None` pour les 5
+manquants - seul l'en-tête survendait. Corrigé pour ne nommer que ce
+qui est réellement dans le registre. `waves/wave_models.py`
+(WaveWatch III, WAM, SWAN) vérifié : les 3 noms cités ont bien chacun
+une entrée dans `WAVE_MODELS_REGISTRY` - pas de survente là.
+
+**Validation réelle** : `tests/test_marine_meteorology_oceanography.py`
+(7 tests, dont `test_ocean_models_registry` qui n'asserte que `>= 3` -
+inchangé par la correction du docstring) ré-exécuté : 7/7 passent.
+`ruff check` propre. Grep confirmant qu'aucun code (query_engine
+compris) ne revendique les 5 modèles manquants ailleurs.
+
+**Ce qui reste réellement** : 4 zones encore jamais auditées du tout
+(`geospatial`, `planetary`, `release`, `space_weather`) - `ocean`
+retiré, désormais audité.

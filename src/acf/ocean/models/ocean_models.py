@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Ocean Numerical Circulation Models Registry (Phase 5)
-(HYCOM, NEMO, ROMS, MITgcm, SCHISM, ADCIRC, MOM6, FVCOM)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 8 models (HYCOM, NEMO,
+ROMS, MITgcm, SCHISM, ADCIRC, MOM6, FVCOM) as if all were described
+here. Only 3 actually have an OCEAN_MODELS_REGISTRY entry: NEMO,
+HYCOM, and ROMS - the other 5 (MITgcm, SCHISM, ADCIRC, MOM6, FVCOM) are
+not implemented anywhere in this module. Same class of gap as
+acf.climate's climate_indices/climate_models/reanalysis docstrings and
+acf.master.module_registry.GlobalModuleRegistry's own docstring - no
+code behaves incorrectly (OceanModelEngine.get_model() honestly
+returns None for any of the 5 missing keys), only the header oversold
+coverage. Corrected to name what OCEAN_MODELS_REGISTRY actually
+contains.
 """
 
 from dataclasses import dataclass
