@@ -9177,3 +9177,38 @@ passent. `ruff check` propre. Grep confirmant qu'aucun autre appelant
 **Ce qui reste réellement** : 3 zones encore jamais auditées du tout
 (`geospatial`, `release`, `space_weather`) - `planetary` retiré,
 désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — `acf.geospatial` : lu intégralement, exemplaire, rien à corriger
+
+**Zone couverte** : `acf.geospatial` (6 fichiers, 1402 lignes - la plus
+grosse zone à 0 occurrence restante ; 1/6 déjà porteur de "NOTE
+(correction)" - `distortion.py`, pour un vrai bug de logique
+booléenne, `any(...) or None` ne pouvant jamais produire `False`,
+corrigé). Lue intégralement, fichier par fichier - aucune fissure
+trouvée nulle part, un des paquets les plus soigneusement conçus
+rencontrés dans cette continuation.
+
+Ce paquet suit une spécification numérotée détaillée ("mission section
+N") avec des règles de non-fabrication déjà intégrées dès la
+conception plutôt que retrofittées : `crs_manager.py`/`metadata.py`
+délèguent toute analyse de CRS réelle à pyproj/PROJ (jamais de
+lookup datum/ellipsoïde/EPSG fait main), refusent explicitement de
+deviner un CRS ambigu ("AMBIGUOUS"/"UNKNOWN" plutôt qu'une supposition
+- "mission rule #13"), et `CRSMetadata` documente lui-même sa propre
+convention ("tous les champs sont Optional... jamais fabriqués").
+`reprojection.py` ne fait que déléguer à `pyproj.Transformer` (jamais
+de formule de projection recodée à la main), toujours sur une copie,
+avec une vraie mesure d'erreur géodésique aller-retour via
+`pyproj.Geod`. `projections.py` (564 lignes, la plus grosse) contient
+une matrice de décision et un catalogue de 22 projections cartographiques
+réelles et exactes (codes EPSG, familles, distorsions, usages) plus une
+vraie logique de sélection de zone UTM qui refuse explicitement de
+choisir arbitrairement une zone quand l'étendue en couvre plusieurs
+(retombe sur LCC au lieu de deviner).
+
+**Validation réelle** : `tests/test_geospatial.py` (37 tests)
+ré-exécuté : 37/37 passent. `ruff check` propre sur tout le paquet.
+Aucune modification de code nécessaire.
+
+**Ce qui reste réellement** : 2 zones encore jamais auditées du tout
+(`release`, `space_weather`) - `geospatial` retiré, désormais vérifié.
