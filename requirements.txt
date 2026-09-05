@@ -17,6 +17,15 @@
 # undeclared here too despite acf/core/logger.py importing it
 # unconditionally - added, same finding as pyproject.toml's core
 # dependencies comment.
+#
+# UPDATED 2026-09-05 (found by actually running the full test suite from a
+# fresh venv built off this file, via repair_acf_environment.sh): zarr,
+# httpx2 and psutil were each undeclared here despite being needed for
+# tests/test_simulation_engine.py + test_storage.py + test_esoc_output_
+# panel.py (zarr), tests/test_web_*.py (httpx2, via fastapi.testclient.
+# TestClient/starlette), and tests/test_monitoring_platform.py (psutil) to
+# pass - see pyproject.toml's formats/web/monitoring extras for the full
+# reasoning behind each.
 numpy
 scipy
 PyYAML
@@ -30,9 +39,12 @@ netCDF4
 cfgrib
 eccodes
 epygram
+zarr
 metpy
 paramiko
 fastapi
 uvicorn
 websockets
+httpx2
 torch
+psutil

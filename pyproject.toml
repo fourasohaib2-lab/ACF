@@ -71,7 +71,17 @@ geospatial = ["cartopy", "pyproj", "matplotlib"]
 # venv from this file alone would not have it). Found by checking, not
 # assumed: `pip index versions epygram` confirms it's a real, normal
 # PyPI package (2.1.0), not something needing a special index.
-formats = ["xarray", "netCDF4", "cfgrib", "eccodes", "epygram"]
+#
+# zarr (2026-09-05): same class of gap again, found the same way - not
+# guessed - by actually running the full test suite in a fresh venv built
+# from this file. xarray's own Zarr backend (acf.simulation_engine.output.
+# zarr_writer.ZarrWriter, exercised by tests/test_simulation_engine.py,
+# tests/test_storage.py, tests/test_esoc_output_panel.py) needs it to
+# round-trip a store it just wrote (xr.open_zarr) - without it xarray
+# raises "The zarr package is required for working with Zarr stores" and
+# those 3 tests fail. Declared here rather than under "science"/"hpc" since
+# it's the same NWP-output-format family as netCDF4/cfgrib/eccodes above.
+formats = ["xarray", "netCDF4", "cfgrib", "eccodes", "epygram", "zarr"]
 # Meteorological unit/calculation helpers used by science/.
 science = ["metpy"]
 # Real cluster access (hpc_connector/ssh_connector.py). Also required
@@ -81,19 +91,36 @@ science = ["metpy"]
 # holds its physics; found via a real fresh-venv import smoke test,
 # not fixed here - untangling that coupling is a separate refactor).
 hpc = ["paramiko"]
-# FastAPI/WebSocket HPC dashboard (acf-web entry point).
-web = ["fastapi", "uvicorn", "websockets"]
+# FastAPI/WebSocket HPC dashboard (acf-web entry point). httpx2 (2026-09-05,
+# same fresh-venv-test finding as zarr above) is needed too:
+# tests/test_web_*.py import fastapi.testclient.TestClient, and starlette's
+# TestClient now requires httpx2 (falling back to the older httpx with a
+# deprecation warning only if httpx2 is absent, and hard-failing if neither
+# is installed) - genuinely undeclared here despite being needed to even
+# collect those test modules.
+web = ["fastapi", "uvicorn", "websockets", "httpx2"]
 # Fourier Neural Operator surrogate (ai/simulation/, master/, release/).
 ai = ["torch"]
+# Real host CPU/RAM introspection (acf.monitoring.telemetry_engine).
+# Deliberately optional-import in that module (TelemetryEngine.
+# collect_telemetry() degrades to cpu_usage_pct/ram_usage_gb=None,
+# system_status="UNKNOWN_PSUTIL_NOT_INSTALLED" when absent, rather than
+# requiring it outright) - kept as its own extra rather than a core
+# dependency for that reason - but genuinely undeclared anywhere in this
+# file, so tests/test_monitoring_platform.py::test_telemetry_engine (which
+# asserts the real-data happy path, cpu_usage_pct is not None) fails
+# without it. Found the same way as zarr/httpx2 above (2026-09-05).
+monitoring = ["psutil"]
 # Everything above - convenience for a full desktop+HPC+web install.
 all = [
     "PySide6", "matplotlib",
     "cartopy", "pyproj",
-    "xarray", "netCDF4", "cfgrib", "eccodes", "epygram",
+    "xarray", "netCDF4", "cfgrib", "eccodes", "epygram", "zarr",
     "metpy",
     "paramiko",
-    "fastapi", "uvicorn", "websockets",
+    "fastapi", "uvicorn", "websockets", "httpx2",
     "torch",
+    "psutil",
 ]
 dev = ["pytest", "pytest-cov", "pytest-timeout", "black", "ruff", "mypy"]
 
