@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import json
+import re
 import subprocess
+import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -11,13 +14,23 @@ OLLAMA = "http://127.0.0.1:11434/api/chat"
 
 def hpc(cmd):
     remote = f"source ~/miniforge3/etc/profile.d/conda.sh && conda activate acf-hpc && cd {PROJECT} && {cmd}"
-    return subprocess.run(
+    result = subprocess.run(
         ["ssh", HPC, remote],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
-    ).stdout
+    )
+    if result.returncode != 0:
+        # ssh (ou la commande distante) a échoué : le dire explicitement au
+        # lieu de continuer avec un diagnostic tronqué/vide envoyé à qwen()
+        # comme s'il était complet (silencieusement trompeur - la version
+        # précédente n'inspectait jamais returncode).
+        print(
+            f"[ERREUR] ssh {HPC} a retourné le code {result.returncode}",
+            file=sys.stderr,
+        )
+    return result.stdout
 
 
 def qwen(prompt):
@@ -47,8 +60,19 @@ def qwen(prompt):
         headers={"Content-Type": "application/json"},
     )
 
-    with urllib.request.urlopen(req, timeout=1800) as r:
-        return json.loads(r.read())["message"]["content"]
+    try:
+        with urllib.request.urlopen(req, timeout=1800) as r:
+            return json.loads(r.read())["message"]["content"]
+    except (urllib.error.URLError, OSError) as exc:
+        # Sans ce garde-fou, un Ollama local injoignable (service arrêté,
+        # mauvais port, etc.) faisait planter le script avec une
+        # traceback brute au lieu d'un message exploitable - repro en
+        # local, aucun service Ollama n'écoutant sur 127.0.0.1:11434.
+        raise SystemExit(
+            f"[ERREUR] Impossible de joindre Ollama sur {OLLAMA}: {exc}\n"
+            "Vérifiez qu'un serveur Ollama local sert bien le modèle "
+            "'qwen3' (ex. `ollama serve` + `ollama run qwen3`)."
+        ) from exc
 
 
 def main():
@@ -75,12 +99,24 @@ find src/acf -type f | grep -E \
 
     print(diagnostic)
 
+    # Le diagnostic ci-dessus interroge déjà `git branch --show-current` en
+    # direct sur le HPC ; extraire cette valeur réelle plutôt que de coder
+    # en dur un nom de branche ("acf-historical-recovery-9223251") figé au
+    # moment où ce script a été écrit. Ce nom devient faux dès que le HPC
+    # change de branche (ce qui a très probablement eu lieu depuis - le
+    # dépôt local en est à la Phase 52) et induirait alors qwen() en erreur
+    # avec une prémisse fausse sur la branche réellement diagnostiquée.
+    branch_match = re.search(
+        r"=== BRANCH ===\n(.*)\n=== STATUS ===", diagnostic, re.DOTALL
+    )
+    branch = branch_match.group(1).strip() if branch_match else "(inconnue - échec ssh ?)"
+
     prompt = f"""
 Projet ACF situé sur le HPC:
 {PROJECT}
 
 Branche actuelle:
-acf-historical-recovery-9223251
+{branch}
 
 Diagnostic réel exécuté sur le HPC:
 
