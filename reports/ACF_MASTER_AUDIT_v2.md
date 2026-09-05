@@ -8388,3 +8388,60 @@ Monitoring restent, comme Ocean l'était avant cette phase, des
 panneaux "Example Layout" honnêtement disclaimés mais non connectés à
 un moteur réel - une extension possible du même travail, non
 entreprise cette phase-ci faute de décision explicite de portée.
+
+## Mise à jour 2026-09-05 (suite) — Phase 52 : upgrade réel du panneau "Carbon" (déjà mappé)
+
+**Pourquoi** : même famille de travail que la Phase 51 (Ocean) -
+"Carbon" (panneau #21, clé `"carbon"`) était déjà mappé mais affichait
+un bloc de texte figé ("GPP: 120 GtC/yr... NEE: -4.2 GtC/yr") derrière
+un disclaimer "Example Layout" honnête, sans aucun moteur de cycle du
+carbone réel connecté. `ModuleRegistry` enregistre déjà, et depuis
+longtemps, deux moteurs réels et non exploités par ce panneau :
+`acf.simulation_engine.land_solver.vegetation_model.VegetationModel`
+("vegetation_model" - le même moteur déjà utilisé par `BiospherePanel`,
+Phase 49, fournissant un champ NPP réel à partir de température/
+humidité du sol/rayonnement solaire) et `acf.simulation_engine.
+land_solver.carbon_flux.CarbonFluxModel` ("carbon_flux_model" - GPP/
+R_hetero/NEE via une formulation de fertilisation au CO2 citée et déjà
+corrigée dans une session antérieure, documentée dans le commentaire
+"NOTE (correction — Physics Guard)" de cette classe elle-même).
+
+**Construit** : `CarbonPanel` reconstruit en chaînant les deux moteurs
+réels - entrées opérateur (température de l'air, humidité du sol,
+rayonnement solaire, température du sol, CO2 atmosphérique en ppm) →
+`VegetationModel.compute_vegetation_indices()` produit un champ NPP
+réel → `CarbonFluxModel.compute_carbon_fluxes()` calcule GPP/
+R_hetero/NEE réels à partir de ce NPP. Vérifié : une hausse du CO2 de
+300 à 800 ppm augmente réellement le GPP affiché (fertilisation
+carbonique logarithmique à rendements décroissants, citée dans le
+code source), et le signe du NEE affiché correspond toujours à
+l'étiquette Puits/Source affichée.
+
+**Divulgation honnête** : aucun placeholder figé n'était nécessaire
+ici (contrairement à l'AMOC d'Ocean ou au Biomass de Biosphere) - les
+deux moteurs chaînés sont entièrement dynamiques et réactifs aux
+entrées de l'opérateur.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 5
+nouveaux tests (`tests/test_esoc_carbon_panel.py`), incluant une
+vérification directe contre les deux moteurs réels appelés
+indépendamment, une vérification physique que le GPP augmente
+réellement avec le CO2, une vérification que l'étiquette Puits/Source
+correspond toujours au signe réel du NEE affiché, et deux tests de
+déconnexion honnête (`vegetation_model` et `carbon_flux_model`
+séparément). Aucun nouveau test de routage requis (le routage
+existait déjà, comme pour Ocean). Suite complète `pytest -q` restée
+verte.
+
+**Ce qui reste réellement** : Hydrology/Cryosphere/Air Quality/Earth
+Monitoring/Space Weather/Geology restent des panneaux "Example
+Layout" honnêtement disclaimés, non connectés à un moteur réel.
+Découverte notable pour une phase future : `acf.simulation_engine.
+extreme_events.flood.FloodSimulator` est déjà réellement enregistré
+sous la clé "flood_simulator" (inondation par ruissellement/routage
+de rivière via une méthode de Muskingum) et n'est utilisé nulle part
+dans l'UI - un candidat direct pour un futur upgrade de Hydrology,
+suivant exactement le même patron qu'Ocean/Carbon. Aucun moteur réel
+équivalent n'a été trouvé pour Cryosphere/Air Quality/Space Weather/
+Geology lors de cette phase (recherche non exhaustive - à confirmer
+avant toute décision de les laisser définitivement non améliorés).

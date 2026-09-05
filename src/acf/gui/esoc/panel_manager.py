@@ -817,19 +817,94 @@ class AirQualityPanel(BasePanelWidget):
 
 
 class CarbonPanel(BasePanelWidget):
-    """21. Terrestrial & Ocean Carbon Cycle Panel."""
+    """21. Terrestrial & Ocean Carbon Cycle Panel.
+
+    NOTE (correction, 2026-09-05): used to show fixed GPP/NEE numbers
+    (120 GtC/yr, -4.2 GtC/yr) behind an honest "Example Layout"
+    disclaimer, with no real carbon-cycle model connected. Two real,
+    already-registered, previously-unused engines existed: `acf.
+    simulation_engine.land_solver.vegetation_model.VegetationModel`
+    ("vegetation_model", same engine `BiospherePanel` already uses,
+    supplying a real NPP field from temperature/moisture/light) feeding
+    `acf.simulation_engine.land_solver.carbon_flux.CarbonFluxModel`
+    ("carbon_flux_model" - real GPP/R_hetero/NEE via a cited,
+    already-corrected CO2-fertilization beta-factor formulation,
+    documented in that class's own "NOTE (correction — Physics Guard)"
+    comment). Reused as-is below - not a fabrication fix, an upgrade
+    from disclosed placeholder to real, live computation."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌱 CARBON CYCLE & NET ECOSYSTEM EXCHANGE (NEE)", "#A5D6A7", registry, dispatcher)
-        # NOTE (correction): fixed GPP/NEE numbers shown with no real
-        # carbon-cycle model or observation connected. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Carbon Flux Balance (Example Layout):\n• Gross Primary Productivity (GPP): 120 GtC/yr\n• Net Ecosystem Exchange (NEE): -4.2 GtC/yr (Sink)"
+        vegetation_module = registry.get_module("vegetation_model")
+        carbon_module = registry.get_module("carbon_flux_model")
+        if vegetation_module is None or carbon_module is None:
+            self.main_layout.addWidget(_not_connected_label("vegetation_model / carbon_flux_model"))
+            return
+        self._vegetation_model: Any = vegetation_module
+        self._carbon_model: Any = carbon_module
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Air temperature (°C):"))
+        self.temp_c = QDoubleSpinBox()
+        self.temp_c.setRange(-40.0, 55.0)
+        self.temp_c.setValue(20.0)
+        row.addWidget(self.temp_c)
+        row.addWidget(QLabel("Soil moisture (m³/m³):"))
+        self.soil_moisture = QDoubleSpinBox()
+        self.soil_moisture.setRange(0.0, 0.45)
+        self.soil_moisture.setDecimals(3)
+        self.soil_moisture.setValue(0.25)
+        row.addWidget(self.soil_moisture)
+        row.addWidget(QLabel("Solar radiation (W/m²):"))
+        self.solar = QDoubleSpinBox()
+        self.solar.setRange(0.0, 1200.0)
+        self.solar.setValue(400.0)
+        row.addWidget(self.solar)
+        self.main_layout.addLayout(row)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Soil temperature (°C):"))
+        self.soil_temp_c = QDoubleSpinBox()
+        self.soil_temp_c.setRange(-40.0, 55.0)
+        self.soil_temp_c.setValue(15.0)
+        row2.addWidget(self.soil_temp_c)
+        row2.addWidget(QLabel("Atmospheric CO₂ (ppm):"))
+        self.co2_ppm = QDoubleSpinBox()
+        self.co2_ppm.setRange(180.0, 1000.0)
+        self.co2_ppm.setValue(420.0)
+        row2.addWidget(self.co2_ppm)
+        self.main_layout.addLayout(row2)
+
+        self.button = QPushButton("🌱 Compute Real Carbon Fluxes")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        temperature_k = np.array([[self.temp_c.value() + 273.15]])
+        soil_moisture = np.array([[self.soil_moisture.value()]])
+        solar_radiation = np.array([[self.solar.value()]])
+        soil_temp_k = np.array([[self.soil_temp_c.value() + 273.15]])
+
+        vegetation = self._vegetation_model.compute_vegetation_indices(
+            temperature_k, soil_moisture, solar_radiation
         )
-        self.main_layout.addWidget(self.txt)
+        fluxes = self._carbon_model.compute_carbon_fluxes(
+            co2_ppm=self.co2_ppm.value(), npp_field=vegetation["NPP"], soil_temp_k=soil_temp_k
+        )
+        sink_or_source = "Carbon Sink" if bool(fluxes["is_carbon_sink"][0, 0]) else "Carbon Source"
+        self.result.setText(
+            "Real Carbon Flux Balance (VegetationModel -> CarbonFluxModel):\n"
+            f"• Net Primary Productivity (NPP): {float(vegetation['NPP'][0, 0]):.3f} g C/m²/day\n"
+            f"• Gross Primary Productivity (GPP): {float(fluxes['GPP'][0, 0]):.3f} g C/m²/day\n"
+            f"• Heterotrophic (soil) respiration (R_hetero): {float(fluxes['R_hetero'][0, 0]):.3f} g C/m²/day\n"
+            f"• Net Ecosystem Exchange (NEE): {float(fluxes['NEE'][0, 0]):.3f} g C/m²/day ({sink_or_source})"
+        )
 
 
 class SpaceWeatherPanel(BasePanelWidget):
