@@ -9117,3 +9117,63 @@ compris) ne revendique les 5 modèles manquants ailleurs.
 **Ce qui reste réellement** : 4 zones encore jamais auditées du tout
 (`geospatial`, `planetary`, `release`, `space_weather`) - `ocean`
 retiré, désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — `acf.planetary` : 1 fabrication réelle significative + 2 docstrings survendus
+
+**Zone couverte** : `acf.planetary` (13 fichiers, 1084 lignes ; 4/13
+déjà corrigés - `astrobiology.py`, `exoplanets.py`, `planetary_ai.py`,
+`planetary_database.py`). Lue intégralement.
+
+**1 fabrication réelle significative trouvée**, même famille que celle
+déjà corrigée dans `planetary_ai.py` du même paquet :
+`cosmic_hazards.py.CosmicHazardEngine.evaluate_threats()` (jamais
+touché avant cette passe, alors que `planetary_ai.py` l'avait déjà été
+pour EXACTEMENT le même type de problème - un `run_planetary_reasoning_
+chain()` à narratif fixe) renvoyait une liste FIXE de 3 menaces
+(astéroïde générique, tempête solaire, sursaut gamma) avec des
+probabilités-par-siècle à l'apparence précise (0.01, 0.12, 0.00001) et
+des IDs "HAZ-..." inventés, sans aucun catalogue NEO ni flux
+d'observation astronomique réel connecté - identique à chaque appel.
+Corrigé en reprenant exactement la convention déjà établie par
+`planetary_ai.py` : l'entrée astéroïde dérive maintenant réellement de
+`PlanetaryDefenseRegistry`/`HAZARD_ASSESSMENT_REGISTRY` (Bennu est le
+seul NEO du module à avoir à la fois une fiche orbitale réelle ET une
+évaluation Torino/Palermo vérifiée - Apophis est déjà éliminé
+(probabilité 0.0 documentée dans NEO_REGISTRY) et Chicxulub a déjà
+impacté il y a 66 Ma, aucun des deux n'est un risque futur réel à
+rapporter ici). Tempête Solaire/Sursaut Gamma restent comme catégories
+réelles de risque cosmique documentées dans la littérature, mais leur
+`probability_per_century`/`risk_level` sont désormais honnêtement
+`None`/`UNASSESSED_NO_REAL_MONITORING_CONNECTED` plutôt qu'un nombre
+inventé (`acf.space_weather` a ses propres moteurs de prévision réels
+pour ces phénomènes - non branchés ici, une vraie intégration
+importerait depuis ce paquet plutôt que d'inventer un nombre).
+
+**2 docstrings survendus**, même famille que `climate`/`ocean` :
+- `planetary_atmospheres.py` nommait 9 corps (Earth, Mars, Venus,
+  Mercury, Jupiter, Saturn, Uranus, Neptune, Titan) ; `PLANET_
+  ATMOSPHERES` n'en contient réellement que 5 (Earth, Mars, Venus,
+  Jupiter, Titan).
+- `space_observatories.py` nommait 9 observatoires (JWST, Hubble,
+  Gaia, Euclid, Roman, Rubin, Pan-STARRS, NEOWISE, NEO Surveyor) ;
+  `OBSERVATORY_CATALOG` n'en contient réellement que 3 (JWST, NEO
+  Surveyor, Rubin). `awci_planetary_dashboard.py` (métadonnées UI pure)
+  vérifié cohérent : ne cite que les 3 mêmes observatoires réels.
+
+`impact_engine.py`, `impact_tsunami.py`, `orbital_mechanics.py`,
+`planetary_climate.py` (4 planètes nommées dans le docstring, 4 dans
+le dict - pas de survente) : relus intégralement, vraie physique
+(E=½mv², loi d'échelle de cratère de Collins et al. 2005, équations de
+Kepler/Vis-Viva, célérité de tsunami c=√(gd), loi de Green), aucune
+fabrication.
+
+**Validation réelle** : `tests/test_planetary_resilience_platform.py`
+étendu d'assertions verrouillant la dérivation réelle de l'entrée
+Bennu (probabilité 0.00037, `is_real_data=True`) et le statut
+honnêtement non évalué des 2 autres menaces. Fichier ré-exécuté : 8/8
+passent. `ruff check` propre. Grep confirmant qu'aucun autre appelant
+(GUI compris) ne lit `evaluate_threats()`/les registres corrigés.
+
+**Ce qui reste réellement** : 3 zones encore jamais auditées du tout
+(`geospatial`, `release`, `space_weather`) - `planetary` retiré,
+désormais audité.

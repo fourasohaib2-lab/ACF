@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Planetary Atmospheres Engine Module (Phase 5)
-(PlanetaryAtmosphereEngine modeling Earth, Mars, Venus, Mercury, Jupiter, Saturn, Uranus, Neptune, Titan)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 9 bodies (Earth, Mars,
+Venus, Mercury, Jupiter, Saturn, Uranus, Neptune, Titan) as if all were
+modeled here. Only 5 actually have a PLANET_ATMOSPHERES entry: Earth,
+Mars, Venus, Jupiter, and Titan - the other 4 (Mercury, Saturn, Uranus,
+Neptune) are not implemented anywhere in this module. Same class of
+gap as acf.climate/acf.ocean's registry docstrings and
+acf.master.module_registry.GlobalModuleRegistry's own docstring - no
+code behaves incorrectly (PlanetaryAtmosphereEngine.get_atmosphere()
+honestly returns None for any of the 4 missing keys), only the header
+oversold coverage. Corrected to name what PLANET_ATMOSPHERES actually
+contains.
 """
 
 from dataclasses import dataclass

@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Space Observatories Registry Module (Phase 9)
-(ObservatoryRegistry cataloguing JWST, Hubble, Gaia, Euclid, Roman, Rubin, Pan-STARRS, NEOWISE, NEO Surveyor)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 9 observatories (JWST,
+Hubble, Gaia, Euclid, Roman, Rubin, Pan-STARRS, NEOWISE, NEO Surveyor)
+as if all were catalogued here. Only 3 actually have an
+OBSERVATORY_CATALOG entry: JWST, NEO Surveyor, and Rubin (LSST) - the
+other 6 (Hubble, Gaia, Euclid, Roman, Pan-STARRS, NEOWISE) are not
+implemented anywhere in this module. Same class of gap as this
+package's other registries (ocean_models.py, planetary_atmospheres.py)
+and acf.master.module_registry.GlobalModuleRegistry's own docstring -
+no code behaves incorrectly (ObservatoryRegistry.get_observatory()
+honestly returns None for any of the 6 missing keys), only the header
+oversold coverage. Corrected to name what OBSERVATORY_CATALOG actually
+contains.
 """
 
 from dataclasses import dataclass

@@ -4,9 +4,11 @@ Atmospheric Complexity Framework (ACF)
 Global Planetary Resilience, Cosmic Hazard & Interplanetary Observation Platform Test Suite (MISSION ACF-039)
 """
 
+import pytest
+
 from acf.planetary.astrobiology import HabitabilityAssessment, HabitabilityEngine
 from acf.planetary.awci_planetary_dashboard import PlanetaryDefenseDashboard
-from acf.planetary.cosmic_hazards import CosmicHazardEngine
+from acf.planetary.cosmic_hazards import CosmicHazardEngine, CosmicRiskLevel
 from acf.planetary.exoplanets import ExoplanetDatabase
 from acf.planetary.impact_engine import ImpactEngine, ImpactSeverity
 from acf.planetary.impact_tsunami import ImpactTsunamiEngine
@@ -122,6 +124,24 @@ def test_space_observatories_and_cosmic_hazards():
     threats = CosmicHazardEngine.evaluate_threats()
     assert len(threats) >= 3
     assert threats[0].hazard_type.startswith("Near-Earth Asteroid")
+    # Regression guard (2026-09-05, post-model4d audit): the asteroid
+    # entry used to be a fixed "HAZ-ASTEROID-01" with an invented
+    # probability_per_century=0.01, unconnected to any real NEO data.
+    # It must now genuinely derive from PlanetaryDefenseRegistry's real
+    # Bennu entry (the only NEO here with both an orbital record and a
+    # vetted Torino/Palermo hazard assessment).
+    asteroid_threat = threats[0]
+    assert "Bennu" in asteroid_threat.hazard_type
+    assert asteroid_threat.probability_per_century == pytest.approx(0.00037)
+    assert asteroid_threat.is_real_data is True
+    # Solar Storm / GRB used to claim invented probabilities (0.12,
+    # 0.00001) and risk levels (HIGH, LOW) with no real space-weather
+    # or astronomical-survey feed connected - must now be honestly
+    # unassessed rather than a plausible-looking fabricated number.
+    for other in threats[1:]:
+        assert other.probability_per_century is None
+        assert other.is_real_data is False
+        assert other.risk_level == CosmicRiskLevel.UNASSESSED
 
 
 def test_planetary_ai_and_dashboard():
