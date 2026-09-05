@@ -35,6 +35,13 @@ def test_surfex_engine_simulation():
     assert res["is_real_submission"] is False
     assert res["domain"] == "Algerie_Nord"
     assert "job_id" in res
+    # Regression guard (2026-09-05, post-model4d audit): surface_output
+    # used to be hard-coded to "/tmp/surfex_output.nc" regardless of
+    # is_real_submission - submit_simulation_job() never returns an
+    # output path, so this was invented and claimed even when nothing
+    # was really submitted. Must be honestly None here (no real
+    # scheduler is connected in this test environment).
+    assert res["surface_output"] is None
 
 
 def test_surfex_schemes_no_longer_claim_fabricated_success():

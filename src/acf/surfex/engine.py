@@ -31,12 +31,22 @@ class SurfexEngine:
         # real SLURM submission from one that never reached a real
         # scheduler (see its "is_real_submission" field), but this
         # wrapper was silently discarding that signal. Not fabricated.
+        #
+        # NOTE (correction, 2026-09-05 - crack in the seam missed by the
+        # fix above, found during the post-model4d audit): "surface_output"
+        # stayed hard-coded to "/tmp/surfex_output.nc" regardless of
+        # was_really_submitted - submit_simulation_job() only ever
+        # forwards to JobManager.submit_job() (no output-path field
+        # anywhere in its return value), so this path was invented here
+        # and claimed even when nothing was really submitted (confirmed:
+        # no test asserted on this field). Now honestly None unless the
+        # job genuinely reached a real scheduler.
         was_really_submitted = bool(job.get("is_real_submission", False))
         return {
             "status": "SUCCESS" if was_really_submitted else job.get("status", "NOT_SUBMITTED_NO_REAL_SCHEDULER_CONNECTION"),
             "job_id": job.get("job_id"),
             "domain": domain,
             "forcing_file": forcing_file,
-            "surface_output": "/tmp/surfex_output.nc",
+            "surface_output": "/tmp/surfex_output.nc" if was_really_submitted else None,
             "is_real_submission": was_really_submitted,
         }

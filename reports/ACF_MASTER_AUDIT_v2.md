@@ -9046,3 +9046,40 @@ réels de `WorkspaceManager`/`RecentProjectsManager`) ré-exécutés :
 **Ce qui reste réellement** : 6 zones encore jamais auditées du tout
 (`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
 `surfex`) - `workspace` retiré, désormais audité.
+
+## Mise à jour 2026-09-05 (suite) — `acf.surfex` : déjà 8/8 corrigé, 1 fissure réelle trouvée dans `engine.py`
+
+**Zone couverte** : `acf.surfex` (8 fichiers, 205 lignes de code direct
++ 6 sous-paquets `land_surface/snow/soil/urban/vegetation/water`, tous
+déjà 8/8 porteurs de "NOTE (correction)" - le paquet le plus
+complètement corrigé rencontré jusqu'ici dans cette continuation.
+Chaque classe de chaque sous-paquet a déjà été honnêtement corrigée
+(retour `False`/liste vide pour un booléen de succès fabriqué, ou
+`NotImplementedError` documenté pour un nombre physique fabriqué -
+`Photosynthesis.gpp()` claimait 4.2, `CarbonFlux.nee()` claimait -1.5,
+etc., vérifié sur `vegetation/__init__.py` en exemple). `tests/
+test_surfex_engine.py` verrouille déjà 3 classes de correction
+complètes (schémas, résultats numériques, classes de façade du paquet).
+
+**1 fissure réelle trouvée**, dans `engine.py.SurfexEngine
+.run_simulation()` (déjà partiellement corrigé - "status" propage
+honnêtement `is_real_submission`) : `"surface_output"` restait codé en
+dur à `"/tmp/surfex_output.nc"` **quelle que soit** la valeur de
+`was_really_submitted`. `submit_simulation_job()` ne fait que déléguer
+à `JobManager.submit_job()` (aucun champ de chemin de sortie nulle
+part dans son retour) - ce chemin était donc inventé ici et revendiqué
+même quand rien n'avait réellement été soumis. Aucun test n'en
+vérifiait le contenu jusqu'ici. Corrigé pour n'afficher ce chemin que
+lorsque la soumission a réellement atteint un vrai ordonnanceur, sinon
+honnêtement `None` - même principe que "status" juste au-dessus dans
+la même méthode.
+
+**Validation réelle** : `tests/test_surfex_engine.py` étendu d'une
+assertion verrouillant `surface_output is None` dans cet environnement
+sans ordonnanceur réel connecté. Suite du fichier ré-exécutée : 4/4
+passent. Grep confirmant qu'aucun autre appelant ne lit ce champ.
+`ruff check` propre.
+
+**Ce qui reste réellement** : 5 zones encore jamais auditées du tout
+(`geospatial`, `ocean`, `planetary`, `release`, `space_weather`) -
+`surfex` retiré, désormais audité.
