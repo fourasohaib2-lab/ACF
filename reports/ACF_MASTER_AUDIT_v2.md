@@ -8963,3 +8963,41 @@ complète ré-exécutée après la modification : 4457 passed, 18 skipped,
 (`connectors`, `fire_weather`, `geospatial`, `ocean`, `planetary`,
 `release`, `space_weather`, `surfex`, `workspace`) - `alerts`,
 `analysis`, `animation` retirés, désormais audités.
+
+## Mise à jour 2026-09-05 (suite) — `connectors` et `fire_weather` : 2 zones lues intégralement, aucune fissure, aucune fabrication
+
+**`acf.connectors`** (2/3 fichiers déjà porteurs de "NOTE (correction)",
+le 3e étant le stub `__init__.py`) : relu intégralement pour vérifier
+l'absence de fissure manquée (même méthode que `warning_engine.py`
+juste avant). `wmo_wis.py` (`parse_gts_header`/
+`get_station_oscar_metadata`) et `live_connectors.py`
+(`LIVE_CONNECTORS_REGISTRY`/`sync_latest_dataset`) portent déjà des
+corrections complètes et cohérentes - `wigos_station_id`, statuts de
+connecteur et résultat de synchronisation honnêtement `None`/
+`"NOT_...CONNECTED"` sans aucune revendication résiduelle. Le docstring
+de `live_connectors.py` nomme 6 fournisseurs (ECMWF, Copernicus CDS,
+NOAA NOMADS, DWD ICON, NASA EarthData, EUMETSAT) et
+`LIVE_CONNECTORS_REGISTRY` en contient exactement 6 - pas de
+survente façon `climate`. Rien à corriger.
+
+**`acf.fire_weather`** (3 fichiers, 0/3 - jamais touché, mais déjà
+exemplaire dès l'écriture) : `__init__.py` documente explicitement ce
+que `FireWeatherCalculator` EST (un indice composite propre à ACF à
+partir de facteurs physiques réels et non-controversés - humidité
+relative, vent, température, sécheresse prolongée) et n'EST PAS (une
+reproduction des coefficients publiés de Fosberg FWI/FWI canadien/
+McArthur FFDI, "safety-relevant" donc délibérément non recopiés sans
+source vérifiable). `calculator.py` lève une vraie `KeyError` plutôt
+que de supposer silencieusement un temps calme pour une donnée
+manquante (température/humidité/vent obligatoires, sans défaut). Aucune
+fabrication, aucune revendication non vérifiée.
+
+**Validation réelle** : aucune modification de code nécessaire pour
+ces 2 zones - lecture complète suffisante à confirmer leur propreté.
+`ruff check` déjà propre (vérifié lors des passes précédentes sur ces
+fichiers, aucune régression introduite).
+
+**Ce qui reste réellement** : 7 zones encore jamais auditées du tout
+(`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
+`surfex`, `workspace`) - `connectors` et `fire_weather` retirés,
+désormais vérifiés.
