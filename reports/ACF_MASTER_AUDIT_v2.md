@@ -8561,3 +8561,79 @@ ci-dessus (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
 avec la même rigueur (lecture de code, pas seulement des noms/
 docstrings) - non exhaustif, chantier explicitement laissé ouvert pour
 la suite de cette même continuation.
+
+## Mise à jour 2026-09-05 (suite) — continuation de l'audit : `acf.knowledge_platform` (un vrai bug d'algorithme + une fausse certification dupliquée)
+
+**Zone couverte** : `acf.knowledge_platform` (7 fichiers, 698 lignes),
+suivant sur la liste des zones à 0 occurrence identifiée dans la mise
+à jour précédente. Les 6 fichiers de données de référence
+(`equation_library.py`, `parameter_database.py`, `parameter_schema.py`,
+`metadata_catalogue.py`) sont d'authentiques catalogues statiques
+correctement cités (WMO/CF/GRIB2/BUFR, équations avec références
+bibliographiques) - rien à corriger, aucune valeur calculée n'y est
+présentée comme mesurée. Deux constats réels trouvés en lisant
+(et en exécutant) le reste :
+
+**1) Bug d'algorithme réel (pas une valeur fabriquée) dans
+`dependency_graph.py`** : `ParameterDependencyGraph.build_full_causal_tree()`
+s'arrêtait toujours exactement à 2 niveaux de profondeur (dépendances
+directes de la cible, puis dépendances directes de chacune), quelle
+que soit la profondeur réelle du graphe, malgré le nom et le docstring
+promettant un arbre "complet". Vérifié par exécution directe : avec
+les 6 paramètres actuellement enregistrés, aucune chaîne ne dépasse 2
+niveaux donc le défaut restait invisible en pratique - mais
+`potential_temperature -> temperature -> pressure/density` est déjà
+une chaîne réelle à 3 niveaux, et une seule ligne de niveau 3
+manquante suffit à le révéler. Corrigé en une vraie récursion jusqu'à
+la racine du DAG, avec protection anti-cycle (les listes de
+dépendances de `GlobalParameterDatabase` sont saisies à la main),
+suivant le même schéma déjà correct et testé de
+`acf.science.parameters.engine.PhysicalParameterEngine.dependency_tree`
+(un second graphe de dépendances, plus large, existant ailleurs dans
+le dépôt - possible doublon à noter pour une future passe, non traité
+ici). Vérifié par exécution sur les données réelles (chaîne à 3
+niveaux désormais restituée en entier) et sur un cas synthétique de
+cycle (a→b→c→a), qui s'arrête proprement au lieu de boucler à l'infini.
+
+**2) Fausse certification dupliquée, non corrigée jusqu'ici, dans
+`roadmap.py`** : `ImplementationRoadmap.ROADMAP_STAGES`/
+`get_roadmap_summary()` affirmaient inconditionnellement "COMPLETED",
+"OPERATIONAL / CERTIFIED PLATINUM", "OPERATIONAL" (pour AEOS) et
+"EXHAUSTIVE SCIENTIFIC COVERAGE ACHIEVED" - exactement le même patron
+de fausse auto-certification déjà trouvé et corrigé dans
+`acf.master.scientific_certification.ScientificCertificationEngine`
+(qui retourne désormais honnêtement `NOT_AUDITED` au lieu de
+`CERTIFIED_PLATINUM`), mais dupliqué indépendamment ici et resté
+non corrigé. Vérifié concrètement plutôt que supposé : le statut
+"OPERATIONAL... autonomous multi-agent reasoning" de l'étage AEOS est
+directement contredit par l'audit `acf.aeos` de la mise à jour
+précédente (kernel/self-healing/monitoring/agents tous honnêtement
+disclaimés comme non connectés), et "EXHAUSTIVE SCIENTIFIC COVERAGE"
+est contredit par le fait que `GlobalParameterDatabase` ne contient
+que 6 paramètres. Corrigé avec la même philosophie de disclosure que
+`scientific_certification.py` : chaque statut remplacé par un
+sentinel honnête (`NOT_AUDITED`, `NOT_CERTIFIED`, `NOT_OPERATIONAL`,
+`NOT_AUDITED_PREVIOUSLY_SELF_ASSERTED_WITHOUT_VERIFICATION`), le
+contenu descriptif de chaque étage conservé mais reformulé pour ne
+plus affirmer une vérification qui n'a jamais eu lieu.
+
+**Validation réelle** : `tests/test_knowledge_integration_platform.py`
+étendu pour vérifier explicitement la récursion à 3 niveaux (au lieu
+de ne tester que les 2 premiers niveaux comme avant) et les nouveaux
+statuts honnêtes de la roadmap ; suite complète du fichier réexécutée
+(`pytest tests/test_knowledge_integration_platform.py -v`) → 5/5
+passent. `ruff check` propre sur tout le paquet. Grep confirmant
+qu'aucun appelant externe (`src/` ou `tests/`) ne dépendait des
+anciennes valeurs fabriquées.
+
+**Ce qui reste réellement** : 23 zones à 0 occurrence encore non
+auditées (`alerts`, `analysis`, `animation`, `api`, `catalogs`,
+`climate`, `connectors`, `fire_weather`, `geospatial`, `master`,
+`ocean`, `parameters`, `planetary`, `plugins`, `release`, `resources`,
+`search`, `space_weather`, `storage`, `surfex`, `time`, `utils`,
+`workspace`). Piste notée mais non creusée cette phase : au moins 3
+implémentations de registre de paramètres météorologiques coexistent
+dans ce dépôt (`acf.knowledge_platform.parameter_database`,
+`acf.science.parameters.engine`, et le paquet `acf.parameters` encore
+non audité) - candidat direct pour un futur audit de duplication,
+même famille que le premier finding sur `acf.model4d`.

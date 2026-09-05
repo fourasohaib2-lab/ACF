@@ -98,6 +98,15 @@ def test_parameter_dependency_graph():
     assert tree["target"] == "potential_temperature"
     assert "temperature" in tree["direct_dependencies"]
 
+    # CORRECTED (2026-09-05 audit de continuation): build_full_causal_tree()
+    # used to always stop after exactly 2 levels regardless of the real
+    # DAG depth, despite the name/docstring claiming a "full" tree.
+    # potential_temperature -> temperature -> pressure/density is a real
+    # 3-level chain in this database - verify it is no longer truncated.
+    temperature_node = next(node for node in tree["dependency_tree"] if node["target"] == "temperature")
+    assert {"pressure", "density"} <= set(temperature_node["direct_dependencies"])
+    assert {n["target"] for n in temperature_node["dependency_tree"]} == {"pressure", "density"}
+
 
 def test_metadata_catalogue_and_roadmap():
     """Test du catalogue d'indexation OMM/CF/GRIB2/NetCDF et de la roadmap d'ingénierie."""
@@ -112,6 +121,15 @@ def test_metadata_catalogue_and_roadmap():
     cat_export = MetadataCatalogue.export_full_catalogue()
     assert cat_export["total_parameters_catalogued"] >= 5
 
+    # CORRECTED (2026-09-05 audit de continuation): overall_status and
+    # each stage's "status" used to unconditionally claim "EXHAUSTIVE
+    # SCIENTIFIC COVERAGE ACHIEVED" / "COMPLETED" / "OPERATIONAL /
+    # CERTIFIED PLATINUM" / "OPERATIONAL" - the same fabricated self-
+    # certification pattern already found and fixed in
+    # acf.master.scientific_certification.ScientificCertificationEngine,
+    # independently duplicated here and left uncorrected until now.
     roadmap = ImplementationRoadmap.get_roadmap_summary()
-    assert roadmap["overall_status"] == "EXHAUSTIVE SCIENTIFIC COVERAGE ACHIEVED"
+    assert roadmap["overall_status"] == "NOT_AUDITED_PREVIOUSLY_SELF_ASSERTED_WITHOUT_VERIFICATION"
     assert len(roadmap["target_centers"]) >= 5
+    stage3 = next(s for s in roadmap["stages"] if "AEOS" in s["stage"])
+    assert stage3["status"] == "NOT_OPERATIONAL"
