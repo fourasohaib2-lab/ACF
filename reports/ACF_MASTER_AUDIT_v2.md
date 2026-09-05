@@ -9001,3 +9001,48 @@ fichiers, aucune régression introduite).
 (`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
 `surfex`, `workspace`) - `connectors` et `fire_weather` retirés,
 désormais vérifiés.
+
+## Mise à jour 2026-09-05 (suite) — `acf.workspace` : 1 `except Exception: pass` silencieux corrigé (3e occurrence du même bug), reste propre
+
+**Zone couverte** : `acf.workspace` (8 fichiers, 580 lignes ; 2/8 déjà
+porteurs de "NOTE (correction)" - `manager.py`, `project.py`). Lus
+intégralement.
+
+- `metadata.py`, `templates.py`, `exceptions.py` (28 lignes chacun) :
+  stubs vides (docstring générique uniquement), même famille que les 4
+  stubs déjà disclosés dans `acf.parameters` - grep confirmant 0 import
+  ailleurs dans le dépôt. Rien à corriger, juste vide.
+- `manager.py`/`project.py` : relus intégralement pour vérifier
+  l'absence de fissure manquée - déjà des corrections réelles et
+  complètes (fuite d'état vers le vrai `~/.acf/recent_projects.json`
+  corrigée via `recent_projects_file` injectable ; `to_dict()`/
+  `from_dict()` ne perdent plus silencieusement les ressources/
+  métadonnées/date de création au round-trip save+load). Aucune
+  fissure supplémentaire.
+- **`recent.py`** (jamais touché avant cette passe) : `RecentProjectsManager
+  .load()` avait un `except Exception: pass` nu qui traitait un
+  `recent_projects.json` réellement présent mais corrompu (écriture
+  tronquée, disque plein, édition manuelle) identiquement à "pas encore
+  de fichier" - aucun log, et le prochain `add()`/`remove()`/
+  `get_projects()` écrasait silencieusement le fichier corrompu par une
+  liste vide (perte de données réelle et silencieuse). **3e occurrence
+  du même bug déjà trouvé et corrigé deux fois dans ce dépôt**
+  (`hpc_workflow/workflow_configuration.py` lors du balayage du
+  2026-09-02, `master/module_manifest.py` lors de la passe `master`) -
+  ce fichier ne date d'aucun des deux balayages, donc jamais couvert.
+  Corrigé avec un vrai `logger.warning(..., exc_info=True)`, même
+  schéma que les 2 fois précédentes.
+
+**Validation réelle** : `tests/test_workspace_manager.py` étendu d'un
+test forçant un JSON réellement invalide et vérifiant (via `caplog`)
+le vrai message de log plus la récupération vers une liste vide (pas
+un crash). Fichier + `tests/test_esoc.py` +
+`tests/test_esoc_workspace_modes_panel.py` +
+`tests/test_esoc_controller_climate.py` +
+`tests/test_esoc_controller_ai_forecast.py` (tous les appelants GUI
+réels de `WorkspaceManager`/`RecentProjectsManager`) ré-exécutés :
+54/54 passent. `ruff check` propre.
+
+**Ce qui reste réellement** : 6 zones encore jamais auditées du tout
+(`geospatial`, `ocean`, `planetary`, `release`, `space_weather`,
+`surfex`) - `workspace` retiré, désormais audité.

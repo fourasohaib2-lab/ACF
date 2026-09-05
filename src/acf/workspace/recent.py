@@ -5,7 +5,10 @@ Gestion des projets récemment ouverts.
 """
 
 import json
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class RecentProjectsManager:
@@ -31,7 +34,22 @@ class RecentProjectsManager:
     ##################################################
 
     def load(self):
-
+        """
+        NOTE (correction, 2026-09-05 - post-model4d audit): this bare
+        `except Exception: pass` used to silently swallow ANY error
+        reading/parsing self.filename - a genuinely present but
+        corrupted recent_projects.json (truncated write, disk full,
+        manual edit) was treated identically to "no file yet", silently
+        discarding the user's real recent-projects list with no log at
+        all. The next add()/remove()/get_projects() call would then
+        overwrite the corrupted file with an empty one - real, silent
+        data loss. Same bug class already found and fixed twice
+        elsewhere in this codebase (hpc_workflow/workflow_configuration.py's
+        config loader, master/module_manifest.py's scan_workspace() -
+        this file predates neither pass, so was never covered by
+        either). Now logs a real warning instead of silently
+        discarding.
+        """
         if not self.filename.exists():
             self.projects = []
 
@@ -44,6 +62,11 @@ class RecentProjectsManager:
             self.projects = data.get("recent_projects", [])
 
         except Exception:
+            logger.warning(
+                "Failed to load recent projects from %s - starting from an empty list instead",
+                self.filename,
+                exc_info=True,
+            )
             self.projects = []
 
     ##################################################

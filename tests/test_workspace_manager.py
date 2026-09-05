@@ -7,7 +7,10 @@ confirmed present on disk from past runs. Now pass an isolated
 recent_projects_file under pytest's own tmp_path.
 """
 
+import logging
+
 from acf.workspace.manager import WorkspaceManager
+from acf.workspace.recent import RecentProjectsManager
 
 
 def test_create_project(tmp_path):
@@ -52,3 +55,22 @@ def test_save_and_reopen_project_preserves_state(tmp_path):
     assert reopened.metadata == {"region": "north_africa"}
     assert reopened.settings == {"units": "metric"}
     assert reopened.created == original_created
+
+
+def test_recent_projects_manager_logs_and_recovers_from_a_corrupted_file(tmp_path, caplog):
+    """
+    Regression guard (2026-09-05, post-model4d audit): load() used to
+    have a bare `except Exception: pass`, silently treating a present
+    but corrupted recent_projects.json identically to "no file yet" -
+    no log at all, and the next save() would overwrite the corrupted
+    file with an empty list. Must now log a real warning and still
+    recover to an empty (not crashed) state.
+    """
+    recent_file = tmp_path / "recent_projects.json"
+    recent_file.write_text("{not valid json", encoding="utf-8")
+
+    with caplog.at_level(logging.WARNING):
+        manager = RecentProjectsManager(filename=recent_file)
+
+    assert manager.projects == []
+    assert any("Failed to load recent projects" in record.message for record in caplog.records)
