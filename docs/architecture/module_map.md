@@ -111,7 +111,16 @@ La fenêtre réellement instanciée par `gui.app` est `acf.gui.main_window.MainW
 | `acf.core.application.Application.start()` | secondaire | Bootstrap console, non relié à la GUI. |
 | `tests/gui/test_map_canvas.py` | démonstration/test | Contient un bloc `__main__`. |
 
-Les scripts racine `test_dashboard.py` et `test_awci_display.py` ont aussi un bloc `__main__`, mais ne sont pas dans le périmètre Pytest configuré.
+Les scripts racine `test_dashboard.py`, `test_awci_display.py`, `test_qt.py`
+et `test_window.py` (chacun avec son propre bloc `__main__` construisant sa
+propre `QApplication`, hors du périmètre Pytest configuré) ont été
+supprimés le 2026-09-06 : c'était la cause directe d'un bug utilisateur
+réel ("plusieurs dashboards s'affichent en même temps") — lancer l'un
+d'eux en parallèle de `acf-gui` ouvrait une fenêtre indépendante, sans
+aucune coordination avec la vraie application (voir la garde mono-instance
+ajoutée dans `acf.gui.single_instance`, qui ne couvre que le vrai point
+d'entrée `acf.gui.app.run()`, pas ces scripts ad hoc). Récupérables via
+git si un besoin de démonstration manuelle réapparaît.
 
 ## Frontières cibles à préserver
 
