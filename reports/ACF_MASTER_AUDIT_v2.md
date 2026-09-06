@@ -10413,3 +10413,44 @@ un docstring template, aucune infrastructure de plugin construite -
 rien à auditer, aucun risque de fabrication (rien n'est exécuté).
 
 **Aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.geology` : 2 surclaims docstring corrigés (4e et 5e occurrences du motif)
+
+**Contexte** : `acf.geology` (18 fichiers, 1191 lignes) - 3 fichiers
+(`geomagnetism.py`, `tectonic_plates.py`, `geology_ai.py`) déjà
+corrigés par une passe antérieure. Les 14 fichiers restants lus
+intégralement.
+
+**Bug réel trouvé et corrigé — 4e occurrence du motif surclaim
+docstring/registre cette session** (`observatories.py`) : l'en-tête
+annonçait 10 agences (USGS, IRIS, ISC, EMSC, GFZ, INGV, BRGM, NOAA,
+UNESCO IOC, JMA) mais `GEOLOGICAL_OBSERVATORIES_REGISTRY` n'en contient
+que 3 (usgs, emsc, gfz) - `get_observatory("iris")`/`("jma")`/etc.
+renvoyaient silencieusement `None` pour 7 des 10 agences pourtant
+annoncées. Corrigé en alignant le docstring sur le registre réel.
+
+**2e correction, plus légère — surclaim de portée** (`hazards.py`) :
+l'en-tête annonçait "Earthquakes, Tsunamis, Volcanoes, Landslides,
+Liquefaction, Subsidence" mais `evaluate_multi_hazard_risk()` ne prend
+aucune entrée volcanique ni de subsidence et n'évalue jamais ces deux
+risques. Corrigé pour ne nommer que les 4 risques genuinement évalués.
+
+**Fichiers vérifiés propres, formules réelles et correctement citées**
+(lus intégralement) : `earthquake_warning.py` (délai P/S réel),
+`seismic_waves.py` (Vp/Vs/Rayleigh/Snell réels), `tsunami_engine.py`
+(célérité √(gd), loi de Green réelle), `volcanic_physics.py` (modèle
+de Mogi 1958, hauteur de panache Mastin et al. 2009), `volcanoes.py`/
+`faults.py`/`geology_database.py` (registres réels PREM/volcans/failles,
+aucun surclaim docstring-registre détecté), `gravity.py` (formule de
+Somigliana WGS84, anomalies air-libre/Bouguer réelles), `landslides.py`
+(facteur de sécurité de pente réel), `geodesy.py` (conversion de phase
+InSAR réelle, vecteur GNSS réel), `seismology.py` (Gutenberg-Richter/
+Omori/Bath réels ; porte déjà sa propre note honnête sur
+`get_sample_earthquake()` - un exemple unique codé en dur, vérifié non
+un bug actif car le seul appelant utilise l'ID par défaut correspondant),
+`awci_geology_dashboard.py` (configuration statique d'interface),
+`__init__.py` (imports uniquement).
+
+**Validation** : `tests/test_geology_platform.py` +
+`tests/test_esoc_volcanoes_panel.py` → 19/19 passent ; `ruff check`
+propre.

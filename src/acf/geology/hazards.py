@@ -2,7 +2,16 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Geological Natural Hazards & Multi-Risk Assessment Module (Phase 14)
-(Earthquakes, Tsunamis, Volcanoes, Landslides, Liquefaction, Subsidence)
+(Earthquakes, Tsunamis, Landslides, Liquefaction)
+
+NOTE (correction — scope overclaim, found during the post-model4d
+audit, 2026-09-06): this header used to also list "Volcanoes" and
+"Subsidence" - evaluate_multi_hazard_risk() below takes no volcanic or
+subsidence-related input at all and never assesses either hazard, no
+matter what is passed in. Corrected to name only the 4 hazard types
+this module's one function genuinely evaluates (earthquake shaking/
+liquefaction, tsunami, earthquake-induced landslides), rather than
+leaving a broader claim than the code delivers.
 """
 
 from typing import Any

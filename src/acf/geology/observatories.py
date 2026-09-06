@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Geological Observatories & Seismological Data Center Registry Module (Phase 15)
-(USGS, IRIS, ISC, EMSC, GFZ, INGV, BRGM, NOAA, UNESCO IOC, JMA)
+(USGS, EMSC, GFZ)
+
+NOTE (correction — registry/docstring overclaim, found during the
+post-model4d audit, 2026-09-06): this header used to also list "IRIS",
+"ISC", "INGV", "BRGM", "NOAA", "UNESCO IOC" and "JMA" - 7 real
+seismological/geological agencies that GEOLOGICAL_OBSERVATORIES_REGISTRY
+below never had entries for (only usgs, emsc and gfz are populated).
+get_observatory("iris")/("jma")/etc. silently returned None for any of
+the 7 falsely-advertised agencies. Corrected to name only what is
+genuinely in the registry, matching the docstring-vs-registry fix
+already applied elsewhere in this audit (geoengineering/aviation/
+hydrology), rather than inventing new GeologicalObservatoryInfo
+entries with unverified API URLs/references.
 """
 
 from dataclasses import dataclass
