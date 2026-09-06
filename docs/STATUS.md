@@ -102,7 +102,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
   individuellement relus)
 - [x] `geoengineering`
 - [x] `planetary`
-- [ ] `fire_weather`
+- [x] `fire_weather`
 - [x] `certification` (voir ARCHITECTURE.md §3 — audité, excellent,
   compose uniquement des composants déjà vérifiés)
 
