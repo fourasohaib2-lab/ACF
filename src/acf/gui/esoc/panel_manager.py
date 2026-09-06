@@ -1,11 +1,13 @@
 """Panel Manager instantiating 28 operational PySide6 dock panels for ESOC (ACF-HPC-001)."""
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import shiboken6
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -322,30 +324,55 @@ class DataAssimilationPanel(BasePanelWidget):
         self.main_layout.addWidget(btn)
 
 
+class _ArgoFetchSignals(QObject):
+    """QRunnable itself cannot be a QObject (no signals) - same
+    companion-object pattern as acf.gui.map.mtg_basemap._MTGFetchSignals."""
+
+    finished = Signal(object)  # ArgoFetchResult
+
+
+class _ArgoFetchWorker(QRunnable):
+    """Runs ArgoFloatsConnector.fetch_recent_profiles() off the GUI
+    thread - a synchronous network call there would freeze the panel."""
+
+    def __init__(self, connector: Any) -> None:
+        super().__init__()
+        self._connector = connector
+        self.signals = _ArgoFetchSignals()
+
+    def run(self) -> None:
+        try:
+            result = self._connector.fetch_recent_profiles()
+            self.signals.finished.emit(result)
+        except Exception:  # pragma: no cover - defensive, mirrors _MTGFetchWorker
+            logging.getLogger("acf.gui.esoc.panel_manager").exception("Argo profile fetch failed in background worker")
+
+
 class EarthMonitoringPanel(BasePanelWidget):
     """9. Live Earth Monitoring Panel.
 
     NOTE (correction, 2026-09-06): every row used to be marked "EXAMPLE"
-    with a fixed illustrative latency, all 6 equally fake - true when
-    written, but ACF gained one real live feed since then in this same
-    session: `acf.gui.map.mtg_basemap.MTGBasemapProvider`, the process-
-    wide singleton already feeding every real map view with live
-    EUMETSAT MTG imagery. The "GOES/MTG Satellites" row now reflects
-    that real provider's actual status/last-fetch time instead of a
-    static placeholder. The other 5 rows (NEXRAD, SYNOP/METAR, ARGO,
-    AMDAR, Lightning Network) have no real connector anywhere in ACF -
-    honestly relabeled "NOT_CONNECTED" rather than left as "EXAMPLE"
-    with invented latency figures. Building real connectors for those
-    5 external networks is a separate, much larger undertaking, not
-    done here.
+    with a fixed illustrative latency, all 6 equally fake. Two real live
+    feeds wired in since: `acf.gui.map.mtg_basemap.MTGBasemapProvider`
+    (the process-wide singleton already feeding every real ACF map view
+    with live EUMETSAT MTG imagery) for "GOES/MTG Satellites", and
+    `acf.connectors.argo_floats.ArgoFloatsConnector` (the real, public,
+    no-auth-required Argovis API - a University of Colorado-hosted
+    mirror of the international Argo program's real-time float profile
+    data) for "ARGO Ocean Floats". The remaining 3 rows (NEXRAD,
+    SYNOP/METAR, AMDAR, Lightning Network - see NOTE, that's 4) have no
+    real connector anywhere in ACF - honestly relabeled "NOT_CONNECTED"
+    rather than left as "EXAMPLE" with invented latency figures.
+    Building real connectors for those remaining external networks is a
+    separate undertaking, not done here.
     """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📡 EARTH OBSERVATION & MONITORING CENTER", "#4FC3F7", registry, dispatcher)
         note = QLabel(
-            "One real live feed below (GOES/MTG, via the same EUMETSAT connector every ACF map "
-            "uses) - the other 5 networks have no real connector in ACF and are honestly marked "
-            "NOT_CONNECTED, not simulated."
+            "Two real live feeds below (GOES/MTG via the same EUMETSAT connector every ACF map "
+            "uses; ARGO via the public Argovis API) - the other 4 networks have no real connector "
+            "in ACF and are honestly marked NOT_CONNECTED, not simulated."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #F57F17; font-style: italic;")
@@ -354,30 +381,36 @@ class EarthMonitoringPanel(BasePanelWidget):
         g_layout = QVBoxLayout(group)
         self.table = QTableWidget(6, 3)
         self.table.setHorizontalHeaderLabels(["Data Source", "Status", "Latency"])
-        self._not_connected_sources = [
-            "Doppler Radar (NEXRAD)",
-            "Surface AWS (SYNOP/METAR)",
-            "ARGO Ocean Floats",
-            "AMDAR Aircraft",
-            "Lightning Network",
-        ]
-        for row, src in enumerate(self._not_connected_sources, start=1):
+        self._not_connected_sources = {
+            1: "Doppler Radar (NEXRAD)",
+            2: "Surface AWS (SYNOP/METAR)",
+            4: "AMDAR Aircraft",
+            5: "Lightning Network",
+        }
+        for row, src in self._not_connected_sources.items():
             self.table.setItem(row, 0, QTableWidgetItem(src))
             self.table.setItem(row, 1, QTableWidgetItem("NOT_CONNECTED"))
             self.table.setItem(row, 2, QTableWidgetItem("N/A"))
+        self.table.setItem(3, 0, QTableWidgetItem("ARGO Ocean Floats"))
+        self.table.setItem(3, 1, QTableWidgetItem("NOT_FETCHED_YET"))
+        self.table.setItem(3, 2, QTableWidgetItem("N/A"))
         g_layout.addWidget(self.table)
         self.main_layout.addWidget(group)
         btn = QPushButton("🔄 Refresh Ingestion Streams")
         btn.clicked.connect(self._refresh)
         self.main_layout.addWidget(btn)
 
+        from acf.connectors.argo_floats import ArgoFloatsConnector
         from acf.gui.dashboard.awci_map_panel import _make_mtg_update_forwarder
         from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
+        self._argo_connector = ArgoFloatsConnector()
+        self._argo_last_result: Any = None
         MTGBasemapProvider.instance().updated.connect(
             _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
         )
         self._refresh_mtg_row()
+        self._fetch_argo_async()
 
     def _refresh(self) -> None:
         self.dispatcher.dispatch("refresh_observations")
@@ -385,6 +418,7 @@ class EarthMonitoringPanel(BasePanelWidget):
 
         MTGBasemapProvider.instance().refresh_async()
         self._refresh_mtg_row()
+        self._fetch_argo_async()
 
     def _on_mtg_basemap_updated(self) -> None:
         self._refresh_mtg_row()
@@ -404,6 +438,25 @@ class EarthMonitoringPanel(BasePanelWidget):
         else:
             self.table.setItem(0, 1, QTableWidgetItem(provider.status))
             self.table.setItem(0, 2, QTableWidgetItem("N/A"))
+
+    def _fetch_argo_async(self) -> None:
+        worker = _ArgoFetchWorker(self._argo_connector)
+        worker.signals.finished.connect(self._on_argo_fetched)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_argo_fetched(self, result: Any) -> None:
+        import time
+
+        if not shiboken6.isValid(self):
+            return  # panel closed/destroyed while this fetch was in flight
+        self._argo_last_result = result
+        self.table.setItem(3, 0, QTableWidgetItem("ARGO Ocean Floats"))
+        if result.is_real_data:
+            self.table.setItem(3, 1, QTableWidgetItem(f"LIVE ({result.profile_count} profiles/48h)"))
+            self.table.setItem(3, 2, QTableWidgetItem(f"{(time.time() - result.fetched_at) / 60.0:.1f} min"))
+        else:
+            self.table.setItem(3, 1, QTableWidgetItem(result.status))
+            self.table.setItem(3, 2, QTableWidgetItem("N/A"))
 
 
 class EarthPhysicsPanel(BasePanelWidget):

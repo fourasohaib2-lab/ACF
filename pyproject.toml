@@ -97,6 +97,13 @@ science = ["metpy"]
 # matplotlib/Cartopy can imshow() - already installed transitively via
 # matplotlib, but was undeclared as a direct import anywhere, the same
 # gap PyYAML's/epygram's own NOTEs above already document.
+#
+# requests (2026-09-06, 2nd real caller): also used by
+# acf.connectors.argo_floats.ArgoFloatsConnector, the real public
+# Argovis API client for the ESOC Earth Monitoring panel's "ARGO Ocean
+# Floats" feed (no API key, so python-dotenv/Pillow are not needed for
+# this second caller) - kept in this same extra rather than a new one,
+# since requests is already the shared dependency.
 satellite = ["requests", "python-dotenv", "Pillow"]
 # Real cluster access (hpc_connector/ssh_connector.py). Also required
 # to import acf.surfex and acf.hpc_workflow - both import

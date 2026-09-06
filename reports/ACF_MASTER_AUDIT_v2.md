@@ -11057,3 +11057,37 @@ jamais crédités sous ce nom dans ce rapport. Rien à corriger.
 très probablement déjà couvert en substance vu son usage omniprésent
 dans les phases GUI/dashboard de ce document, non vérifié
 explicitement comme un paquet à part).
+
+## Mise à jour 2026-09-06 (suite) — Phase 58 : deuxième flux réel dans "Earth Monitoring" - connecteur ARGO réel
+
+**Contexte** : suite directe de la Phase 57 - des 5 réseaux
+d'observation honnêtement marqués `NOT_CONNECTED`, ARGO (flotteurs
+océaniques) est le plus simple à câbler réellement : l'API publique
+Argovis (`https://argovis-api.colorado.edu`, hébergée par l'Université
+du Colorado, miroir temps réel du programme international Argo) est
+gratuite, sans authentification, et répond réellement (vérifié en
+direct : 1101 profils réels sur les dernières 72h lors du test).
+
+**Construit** : `acf.connectors.argo_floats.ArgoFloatsConnector.
+fetch_recent_profiles()` - vrai appel HTTP `requests.get()`, fenêtre
+temporelle réelle (`hours_back`), bbox optionnelle encodée en polygone
+GeoJSON. Honnête sur chaque échec (erreur réseau, statut HTTP non-200,
+JSON malformé, forme de réponse inattendue) - jamais de liste de
+profils fabriquée, même convention que `EUMETSATMTGConnector`. Câblé
+dans `EarthMonitoringPanel` via un worker `QThreadPool` dédié (même
+patron que `_MTGFetchWorker` - signal `finished` sur un objet
+compagnon, jamais d'appel réseau synchrone sur le thread GUI) : la
+ligne "ARGO Ocean Floats" affiche désormais `LIVE (N profiles/48h)` et
+la latence réelle depuis le dernier fetch, ou l'échec honnête réel
+sinon. Il reste maintenant 4 réseaux non connectés (NEXRAD, SYNOP/METAR,
+AMDAR, réseau foudre) au lieu de 5.
+
+**Validation réelle** : `ruff`/`mypy` propres. 6 nouveaux tests
+(`tests/test_argo_floats_connector.py`, réseau simulé via
+`unittest.mock.patch.object(requests, "get", ...)`) couvrant le succès
+réel, l'encodage bbox->polygone, et les 4 chemins d'échec honnêtes. 3
+nouveaux tests de panneau (`tests/test_esoc_earth_monitoring_panel.py`
+mis à jour) - dont un test découvrant un vrai bug de timing pendant
+l'écriture (le signal `finished` mis en file d'attente cross-thread
+Qt n'est livré qu'après un `QApplication.processEvents()`, pas
+seulement `QThreadPool.waitForDone()`). Suite complète confirmée verte.
