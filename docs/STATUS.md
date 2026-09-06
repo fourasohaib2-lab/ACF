@@ -59,7 +59,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `space_weather`
 - [x] `climate`
 - [x] `ai`
-- [~] `ai_expert`
+- [x] `ai_expert`
 - [x] `intelligence`
 - [x] `digital_twin`
 - [x] `aeos`
@@ -136,8 +136,8 @@ tracké ici tant que non expliqué avec certitude.
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
 - Tier C : **16/16 audités — TIER C COMPLET**
-- Tier E : 29/31 audités
-- Total bloquant v1.0 (F+C+E) : 56/58
+- Tier E : 30/31 audités
+- Total bloquant v1.0 (F+C+E) : 57/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape

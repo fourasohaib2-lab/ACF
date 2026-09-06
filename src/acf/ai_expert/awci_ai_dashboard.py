@@ -10,6 +10,14 @@ from typing import Any
 class AWCI_AIDashboard:
     """
     Configuration et métadonnées du tableau de bord 'AUTONOMOUS AI EXPERT CONTROL CENTER' dans AWCI.
+
+    NOTE (Physics Guard, 2026-09-06 Tier E sweep): a static workspace/
+    panel-name descriptor, same pattern as this session's
+    acf.master.awci_master_dashboard.MasterDashboard (see that
+    module's own NOTE) - no status/certification field to fabricate,
+    but verified by grep, not constructed anywhere in src/ outside
+    this package's own tests/test_ai_expert.py. The panel names
+    themselves describe a UI that isn't rendered by any real widget.
     """
 
     @classmethod
