@@ -10889,3 +10889,44 @@ les seuls panneaux "Example Layout" pour lesquels aucun moteur réel
 équivalent n'a été identifié (Air Quality activement recherché et
 confirmé sans moteur caché - voir Phase 54 ; Earth Monitoring non
 encore recherché).
+
+## Mise à jour 2026-09-06 (suite) — Phase 57 : upgrade réel partiel du panneau "Earth Monitoring" (déjà mappé)
+
+**Nature différente des Phases 54-56** : ce panneau ne porte pas des
+formules physiques alimentées par l'opérateur, mais le statut de 6 flux
+d'observation en direct (satellites, radar, stations sol, flotteurs
+ARGO, avions AMDAR, réseau foudre). Aucun moteur "caché" à découvrir
+ici - le vrai travail est de brancher ce qui a un connecteur réel dans
+ACF et de divulguer honnêtement ce qui n'en a pas.
+
+**Construit** : la ligne "GOES/MTG Satellites" reflète maintenant
+l'état réel de `acf.gui.map.mtg_basemap.MTGBasemapProvider` - le même
+singleton déjà utilisé par toutes les vraies vues carte d'ACF (câblé
+plus tôt dans cette session) - statut réel (`LIVE` / `NOT_FETCHED_YET`
+/ échec réel) et latence réelle depuis le dernier fetch, mise à jour en
+direct via son signal `updated` (réutilise le même forwarder par
+weakref que `AWCIMapPanel`, généralisé via un `Protocol` structurel
+pour être partagé entre les deux panneaux sans dépendance de type
+concrète). Petite addition à `MTGBasemapProvider` lui-même :
+`last_fetched_at` (propriété publique), pour que ce panneau n'ait pas à
+lire son état privé `_last_result` directement.
+
+**Divulgation honnête** : les 5 autres réseaux (NEXRAD, SYNOP/METAR,
+ARGO, AMDAR, réseau foudre) n'ont aucun connecteur réel nulle part dans
+ACF - renommés `NOT_CONNECTED`/`N/A` au lieu de l'ancien `EXAMPLE` avec
+des latences inventées. Construire de vrais connecteurs pour ces 5
+réseaux externes est un chantier séparé et bien plus large, non traité
+ici.
+
+**Validation réelle** : `ruff`/`mypy` propres (réseau simulé dans les
+tests, même convention que `tests/test_mtg_basemap.py`). 4 nouveaux
+tests (`tests/test_esoc_earth_monitoring_panel.py`), incluant une garde
+de régression de durée de vie réelle (le panneau doit se mettre à jour
+quand le provider partagé reçoit un nouveau fetch après sa
+construction, pas seulement à la construction).
+
+**Ce qui reste réellement** : Air Quality reste le seul panneau
+"Example Layout" pour lequel aucun moteur réel équivalent n'a été
+identifié (recherché activement, voir Phase 54). Les 5 réseaux
+d'observation non connectés d'Earth Monitoring restent un chantier de
+connecteurs externes distinct, non entamé.

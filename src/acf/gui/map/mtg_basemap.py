@@ -275,6 +275,14 @@ class MTGBasemapProvider(QObject):
         honest fallback basemap)."""
         return self._rgba is not None
 
+    @property
+    def last_fetched_at(self) -> float | None:
+        """Unix timestamp of the last fetch attempt (real or fallback),
+        or None if none has completed yet - lets callers (e.g. the ESOC
+        Earth Monitoring panel) show a real feed latency instead of
+        reaching into this provider's own private state."""
+        return self._last_result.fetched_at if self._last_result is not None else None
+
     def current_image_rgba(self) -> np.ndarray | None:
         return self._rgba
 

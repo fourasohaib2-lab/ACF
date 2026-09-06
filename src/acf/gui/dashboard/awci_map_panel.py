@@ -62,7 +62,7 @@ import json
 import logging
 import weakref
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Protocol
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -132,10 +132,20 @@ def flight_level_ft_to_pressure_hpa(altitude_ft: float) -> float:
     return 1013.25 * (1.0 - altitude_ft / 145366.45) ** (1.0 / 0.190284)
 
 
-def _make_mtg_update_forwarder(panel: "AWCIMapPanel", provider: MTGBasemapProvider) -> Any:
+class _MTGUpdateReceiver(Protocol):
+    """Structural type for _make_mtg_update_forwarder()'s `panel` -
+    anything with this one method, not just AWCIMapPanel (e.g.
+    acf.gui.esoc.panel_manager.EarthMonitoringPanel reuses this same
+    forwarder for the exact same weakref-lifetime reason)."""
+
+    def _on_mtg_basemap_updated(self) -> None: ...
+
+
+def _make_mtg_update_forwarder(panel: "_MTGUpdateReceiver", provider: MTGBasemapProvider) -> Any:
     """Build the callable connected to MTGBasemapProvider.updated for one
-    AWCIMapPanel, without the callable itself holding a real (keep-alive)
-    reference to that panel.
+    receiver (an AWCIMapPanel, or any other QWidget exposing the same
+    `_on_mtg_basemap_updated()` method), without the callable itself
+    holding a real (keep-alive) reference to that receiver.
 
     NOTE (real bug found while integrating this, and a real second bug
     found while first fixing it): MTGBasemapProvider is a process-wide

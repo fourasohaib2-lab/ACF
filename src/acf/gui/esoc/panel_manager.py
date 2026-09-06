@@ -323,36 +323,87 @@ class DataAssimilationPanel(BasePanelWidget):
 
 
 class EarthMonitoringPanel(BasePanelWidget):
-    """9. Live Earth Monitoring Panel."""
+    """9. Live Earth Monitoring Panel.
+
+    NOTE (correction, 2026-09-06): every row used to be marked "EXAMPLE"
+    with a fixed illustrative latency, all 6 equally fake - true when
+    written, but ACF gained one real live feed since then in this same
+    session: `acf.gui.map.mtg_basemap.MTGBasemapProvider`, the process-
+    wide singleton already feeding every real map view with live
+    EUMETSAT MTG imagery. The "GOES/MTG Satellites" row now reflects
+    that real provider's actual status/last-fetch time instead of a
+    static placeholder. The other 5 rows (NEXRAD, SYNOP/METAR, ARGO,
+    AMDAR, Lightning Network) have no real connector anywhere in ACF -
+    honestly relabeled "NOT_CONNECTED" rather than left as "EXAMPLE"
+    with invented latency figures. Building real connectors for those
+    5 external networks is a separate, much larger undertaking, not
+    done here.
+    """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📡 EARTH OBSERVATION & MONITORING CENTER", "#4FC3F7", registry, dispatcher)
-        # NOTE (correction): group box used to be labeled "Live
-        # Observation Feeds" with every source marked ACTIVE/STREAMING/
-        # SYNCED and specific latency figures, with no real feed
-        # connection of any kind. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        group = QGroupBox("Observation Feeds (Example Layout)")
+        note = QLabel(
+            "One real live feed below (GOES/MTG, via the same EUMETSAT connector every ACF map "
+            "uses) - the other 5 networks have no real connector in ACF and are honestly marked "
+            "NOT_CONNECTED, not simulated."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #F57F17; font-style: italic;")
+        self.main_layout.addWidget(note)
+        group = QGroupBox("Observation Feeds")
         g_layout = QVBoxLayout(group)
         self.table = QTableWidget(6, 3)
         self.table.setHorizontalHeaderLabels(["Data Source", "Status", "Latency"])
-        sources = [
-            ("GOES/MTG Satellites", "EXAMPLE", "1.2 min"),
-            ("Doppler Radar (NEXRAD)", "EXAMPLE", "0.5 min"),
-            ("Surface AWS (SYNOP/METAR)", "EXAMPLE", "0.1 min"),
-            ("ARGO Ocean Floats", "EXAMPLE", "12.0 min"),
-            ("AMDAR Aircraft", "EXAMPLE", "0.8 min"),
-            ("Lightning Network", "EXAMPLE", "0.05 min"),
+        self._not_connected_sources = [
+            "Doppler Radar (NEXRAD)",
+            "Surface AWS (SYNOP/METAR)",
+            "ARGO Ocean Floats",
+            "AMDAR Aircraft",
+            "Lightning Network",
         ]
-        for row, (src, st, lat) in enumerate(sources):
+        for row, src in enumerate(self._not_connected_sources, start=1):
             self.table.setItem(row, 0, QTableWidgetItem(src))
-            self.table.setItem(row, 1, QTableWidgetItem(st))
-            self.table.setItem(row, 2, QTableWidgetItem(lat))
+            self.table.setItem(row, 1, QTableWidgetItem("NOT_CONNECTED"))
+            self.table.setItem(row, 2, QTableWidgetItem("N/A"))
         g_layout.addWidget(self.table)
         self.main_layout.addWidget(group)
         btn = QPushButton("🔄 Refresh Ingestion Streams")
-        btn.clicked.connect(lambda: self.dispatcher.dispatch("refresh_observations"))
+        btn.clicked.connect(self._refresh)
         self.main_layout.addWidget(btn)
+
+        from acf.gui.dashboard.awci_map_panel import _make_mtg_update_forwarder
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
+        MTGBasemapProvider.instance().updated.connect(
+            _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
+        )
+        self._refresh_mtg_row()
+
+    def _refresh(self) -> None:
+        self.dispatcher.dispatch("refresh_observations")
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
+        MTGBasemapProvider.instance().refresh_async()
+        self._refresh_mtg_row()
+
+    def _on_mtg_basemap_updated(self) -> None:
+        self._refresh_mtg_row()
+
+    def _refresh_mtg_row(self) -> None:
+        import time
+
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
+        provider = MTGBasemapProvider.instance()
+        self.table.setItem(0, 0, QTableWidgetItem("GOES/MTG Satellites"))
+        if provider.is_live:
+            fetched_at = provider.last_fetched_at
+            latency = f"{(time.time() - fetched_at) / 60.0:.1f} min" if fetched_at else "N/A"
+            self.table.setItem(0, 1, QTableWidgetItem("LIVE"))
+            self.table.setItem(0, 2, QTableWidgetItem(latency))
+        else:
+            self.table.setItem(0, 1, QTableWidgetItem(provider.status))
+            self.table.setItem(0, 2, QTableWidgetItem("N/A"))
 
 
 class EarthPhysicsPanel(BasePanelWidget):
