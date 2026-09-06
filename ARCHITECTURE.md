@@ -95,8 +95,15 @@ disagree here, and that disagreement is the point of having both.
 
 Known cleanup items surfaced by this tiering (tracked in `docs/STATUS.md`,
 not resolved by this edit alone):
-- `catalog/` and `catalogs/` appear to duplicate the same responsibility —
-  needs a consolidation decision during the Tier C sweep.
+- ~~`catalog/` and `catalogs/` appear to duplicate the same
+  responsibility~~ — investigated during the Tier C sweep (2026-09-06):
+  not a duplication. `catalog/` (singular) is the real, load-bearing
+  implementation (verified by grep to be what `acf.gui`/`acf.data`/
+  `acf.importers` actually import); `catalogs/` (plural) is a small
+  CF/ECMWF-specific extension whose own `catalog_manager.py` explicitly
+  forwards to `catalog/`'s manager rather than reimplementing it. Both
+  packages' docstrings now state this relationship explicitly. No
+  consolidation needed — this item is closed.
 - `certification/` (the module, distinct from the archived `docs/`
   certificates) generates completion claims — it must itself be audited
   against the same "no undisclosed stub" rule before it is trusted to

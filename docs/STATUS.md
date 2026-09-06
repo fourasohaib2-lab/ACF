@@ -23,8 +23,8 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 ## Tier C — Core (bloquant v1.0)
 
 - [~] `data`
-- [ ] `catalog`
-- [ ] `catalogs`
+- [x] `catalog`
+- [x] `catalogs`
 - [x] `importers`
 - [ ] `geospatial`
 - [x] `models`
@@ -101,9 +101,9 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 5/16 audités
+- Tier C : 7/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 31/58
+- Total bloquant v1.0 (F+C+E) : 33/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
