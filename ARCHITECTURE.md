@@ -104,12 +104,22 @@ not resolved by this edit alone):
   forwards to `catalog/`'s manager rather than reimplementing it. Both
   packages' docstrings now state this relationship explicitly. No
   consolidation needed — this item is closed.
-- `certification/` (the module, distinct from the archived `docs/`
-  certificates) generates completion claims — it must itself be audited
-  against the same "no undisclosed stub" rule before it is trusted to
-  certify anything else.
-- `src/acf/resources/` is an empty directory — either populate it or remove
-  it (removal to be proposed explicitly, per `AGENTS.md`).
+- ~~`certification/` (the module, distinct from the archived `docs/`
+  certificates) generates completion claims — it must itself be audited~~
+  — audited during the Tier E sweep (2026-09-06): genuinely excellent.
+  `CertificationEngine` composes only already-verified real components
+  (`Dataset.validate()`/`PhysicsGuard`/`ModelSkillDatabase`/
+  `Event.transition_to()` — the Data Contract, Physics Guard,
+  Verification pipeline, and Event Engine, each independently audited
+  elsewhere in this sweep), invents no new pass/fail logic of its own,
+  and its own docstring explicitly distinguishes itself from the
+  earlier, honestly-disclosed-as-unimplemented
+  `ScientificCertificationEngine`. 16 tests passing. This item is closed.
+- ~~`src/acf/resources/` is an empty directory~~ — corrected during the
+  Tier E sweep (2026-09-06): not empty, this tiering's own earlier
+  file-count only checked for `.py` files. It holds real reference data
+  (`standards/cf/cf_standard_names.json`, `standards/ecmwf/parameters.
+  json`). This item is closed.
 
 A module counts as **done** only when all four hold, independent of any
 document: (1) a `git log -- src/acf/<module>` entry tagged `audit(<module>)`

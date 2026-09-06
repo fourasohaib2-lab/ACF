@@ -98,7 +98,8 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `geoengineering`
 - [ ] `planetary`
 - [ ] `fire_weather`
-- [ ] `certification`
+- [x] `certification` (voir ARCHITECTURE.md §3 — audité, excellent,
+  compose uniquement des composants déjà vérifiés)
 
 ## Baseline factuelle
 
@@ -140,14 +141,27 @@ tracké ici tant que non expliqué avec certitude.
 - Total bloquant v1.0 (F+C+E) : **58/58 — TOUT LE PÉRIMÈTRE v1.0 EST AUDITÉ**
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
-## Prochaine étape
+## Sweep Tier F + Tier C + Tier E : TERMINÉ (2026-09-06)
 
-Tier F et Tier C tous deux **complets**. Continuer avec Tier E (15/31
-audités) dans l'ordre de `ARCHITECTURE.md` §3 — modules encore `[ ]` :
-`ocean`, `space_weather`, `climate`, `ai`, `aeos`, `knowledge_platform`,
-`api`, `alerts`, `release`, `connectors`, `master`, `workspace`,
-`search`, `animation` (`ai_expert`/`monitoring` en `[~]` à finir aussi).
-Même patron : `git log -- <module>` d'abord pour ne pas refaire un
-travail déjà honnête, vérifier par grep qu'une classe est réellement
-appelée avant de juger, corriger les vrais surclaims par divulgation
-honnête, tests verts, commit `audit(module): ...`.
+Les 58 modules bloquants v1.0 (Foundation + Core + Extended) sont tous
+individuellement audités, testés et honnêtement documentés. Les deux
+derniers items ouverts d'`ARCHITECTURE.md` §3 (`certification/` et
+`src/acf/resources/`) sont également résolus.
+
+Ce que "terminé" veut dire concrètement ici — et ne veut pas dire :
+un module coché `[x]` a satisfait les 4 critères vérifiables
+d'`ARCHITECTURE.md` §3 (commit d'audit, tests verts, pas de surclaim
+de docstring connu, dépendances déclarées). Ça ne veut pas dire que le
+projet est "fini" au sens produit — ça veut dire que l'écart entre ce
+que le code prétend faire et ce qu'il fait réellement est maintenant
+documenté partout où on l'a cherché, pas qu'il n'existe plus nulle
+part. Prochaines étapes naturelles, non bloquantes :
+- `docs/STATUS.md` doit rester tenu à jour à chaque nouveau changement
+  de code (pas seulement relu une fois).
+- Le reste de `model4d/physics/` (Tier X, ~100 fichiers non
+  individuellement relus) et `planetary`/`fire_weather` (Tier X)
+  restent des réserves non couvertes, explicitement hors périmètre
+  v1.0 — pas oubliées, juste non prioritaires.
+- Tier E est "souhaité", pas figé : tout nouveau module y ajouté doit
+  suivre la même discipline dès son premier commit, pas être audité
+  après coup.
