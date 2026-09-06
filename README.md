@@ -20,9 +20,11 @@ The **Atmospheric Complexity Framework (ACF)** is an Earth System and Meteorolog
 
 ---
 
-## ✅ Verified Status (updated 2 September 2026 — see `ROADMAP.md` for the full history)
+## ✅ Verified Status (updated 6 September 2026 — see [`docs/STATUS.md`](docs/STATUS.md) for the live, authoritative tracking)
 
-The `src/acf` tree (1,345 Python files) compiles cleanly (`python -m compileall src`, 0 errors). Running the full test suite in this repo's own dev environment gives **2895 passed / 0 failed**, stable across repeated runs; `ruff check` and `mypy src` are both clean. The August-2026 audit's original numbers (1,922 passed / 12 failed / 45 uncollectable) are superseded — the 12 failures and the import-order issue behind the 45 uncollectable files were fixed, and the "Physics Guard" sweep documented in `docs/ACF_PHYSICS_GUARD_AUDIT_CHANGELOG.md` since then removed fabricated data across dozens of modules, built a real FastAPI/WebSocket dashboard, real CI/CD forecast automation, a real trained FNO surrogate, and a fully real Complexity Engine (2D/3D/4D fields + dashboard — `docs/ACF_ARCHITECTURE_TARGET_GAP_MAP.md`). `pyproject.toml`'s dependencies are now split into a lean core (`numpy`, `scipy`, `PyYAML`) plus optional extras (`gui`, `geospatial`, `formats`, `science`, `hpc`, `web`, `ai`) — verified with a real fresh-venv install, not assumed (see `ROADMAP.md`). This is a solid, verifiable, reproducible pass rate — but it is still **not** the "100% of 2,100+ tests, fully certified v1.0" state that some documents under `docs/` (release certificates, LTS reports) claim without stating the environment or dependency set those numbers assumed. Treat any completion claim in `docs/`'s older certificate/report files as aspirational until it links to a reproducible run — `ROADMAP.md`'s "Near-Term Priorities" tracks reconciling those documents.
+The `src/acf` tree compiles cleanly and the full test suite gives **4577 passed / 0 failed**, stable across repeated runs (re-confirmed the same day after the changes below, not a stale number carried forward). Since the 2 September status previously recorded here, the project went through a systematic, module-by-module honesty audit rather than another self-issued completion report: [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 now classifies every `src/acf/` submodule into a maturity tier (Foundation/Core/Extended/Experimental), and [`docs/STATUS.md`](docs/STATUS.md) tracks, per module, whether it has (1) a dated audit commit, (2) green tests, (3) no known docstring surclaim, and (4) declared dependencies — the only four criteria that make "done" a checkable claim instead of a declared one. All 58 modules in the Foundation+Core+Extended scope, plus every named Experimental-tier module, have been through this audit as of this date. Real findings from that audit include several fabricated "certified"/"production-ready"/"integrated" status claims removed from live code (not just from `docs/`'s prose - see `docs/STATUS.md` for specifics), and a real user-reported bug (launching the app opened several independent, uncoordinated windows) traced to both a missing single-instance guard and orphaned demo scripts at the repo root - both fixed the same day.
+
+`docs/` still contains ~185 historical sprint/release/"CERTIFIED" documents from before this discipline was in place - archived under [`docs/archive/`](docs/archive/README.md) rather than deleted, explicitly not to be read as current status. Treat any completion claim outside `ARCHITECTURE.md`/`docs/STATUS.md` as historical unless it links to a reproducible run.
 
 ---
 
@@ -75,6 +77,12 @@ acf-gui
 
 ## 📂 Architecture Overview
 
+The tree below is illustrative, not the complete/authoritative module
+list - see [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 for every `src/acf/`
+submodule classified by maturity tier (e.g. `awci/`, the project's
+flagship complexity-index calculator, isn't shown below but is
+extensively covered there and in [`docs/STATUS.md`](docs/STATUS.md)).
+
 ```
 src/acf/
 ├── aeos/             # Atmospheric & Earth Operating System kernel and services
@@ -107,13 +115,17 @@ src/acf/
 
 ## 📚 Documentation
 
-Complete technical documentation, architecture decision records (ADRs), and sprint specifications are available in the [`docs/`](docs/) directory:
+Start here, the two living, currently-maintained sources of truth:
+- **[Architecture & Maturity Tiers](ARCHITECTURE.md)** — the 5-pillar logical architecture plus the Foundation/Core/Extended/Experimental tiering that defines what "done" means.
+- **[Live Status Tracking](docs/STATUS.md)** — per-module audit checklist, updated as work happens, not after the fact.
+
+Governance manuals, ADRs, and technical specifications live in [`docs/`](docs/):
 - **[Complete Technical Documentation](docs/ACF_V1_0_COMPLETE_TECHNICAL_DOCUMENTATION.pdf)**
 - **[Architecture Governance](docs/ACF_ARCHITECTURE_GOVERNANCE.md)**
 - **[Scientific Reference Guide](docs/ACF_SCIENTIFIC_REFERENCE.md)**
 - **[Operational Manual](docs/ACF_OPERATIONAL_MANUAL.md)**
 
-Note: several documents in `docs/` (release certificates, "CERTIFIED" reports) were generated automatically and assert completion without a reproducible test run backing them. See the "Verified Status" section above for numbers that were actually re-run and checked.
+`docs/archive/` holds ~185 historical sprint/release/"CERTIFIED" documents that were generated automatically and asserted completion without a reproducible test run backing them - kept for history, explicitly superseded by the two living sources above, not deleted. See [`docs/archive/README.md`](docs/archive/README.md) for why.
 
 ---
 
