@@ -161,6 +161,53 @@ def test_compute_real_multi_model_disagreement_field_spread_matches_ensemble_man
     assert result["disagreement_spread_field"][i, j] == expected.spread
 
 
+def test_compute_real_weighted_field_fusion_produces_a_real_fused_field():
+    """
+    New (2026-09-06, closure checklist chantier 3 §6, explicit user
+    request "la fusion multi-modèle"): ModelConsensusEngine had no real
+    field-fusion method of its own - acf.awci.multi_model_fusion.
+    compute_real_multi_model_field_fusion() already existed, real and
+    tested, just never reachable from here.
+    """
+    result = ModelConsensusEngine.compute_real_weighted_field_fusion(
+        field_key="temperature_field", models=["ARPEGE", "AROME"], steps=2, target_model="ARPEGE"
+    )
+
+    assert result["status"] == "REAL_MULTI_MODEL_FIELD_FUSION_FROM_ACF_SOLVER"
+    assert result["is_real_data"] is True
+    assert result["target_model"] == "ARPEGE"
+    assert set(result["models_used"]) == {"ARPEGE", "AROME"}
+    assert result["fused_field"].shape == result["target_lats"].shape + result["target_lons"].shape
+    # Equal weights (default, no skill_database supplied) - a real,
+    # deterministic weighted sum, not a placeholder.
+    assert result["weight_source"] == "equal_weights_no_skill_history"
+    assert result["weights"] == {"ARPEGE": 0.5, "AROME": 0.5}
+
+
+def test_compute_real_weighted_field_fusion_delegates_to_the_real_awci_fusion(monkeypatch):
+    """compute_real_weighted_field_fusion() must be a thin wrapper, not a fresh reimplementation with its own logic."""
+    import acf.awci.multi_model_fusion as multi_model_fusion
+
+    calls = []
+    sentinel = {"status": "SENTINEL_FROM_MOCK"}
+
+    def fake_fusion(**kwargs):
+        calls.append(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(multi_model_fusion, "compute_real_multi_model_field_fusion", fake_fusion)
+
+    kwargs = {"field_key": "temperature_field", "models": ["ARPEGE", "AROME"], "steps": 2, "target_model": "ARPEGE"}
+    result = ModelConsensusEngine.compute_real_weighted_field_fusion(**kwargs)
+
+    assert result is sentinel
+    assert len(calls) == 1
+    assert calls[0]["field_key"] == "temperature_field"
+    assert calls[0]["models"] == ["ARPEGE", "AROME"]
+    assert calls[0]["target_model"] == "ARPEGE"
+    assert calls[0]["steps"] == 2
+
+
 def test_model_consensus_and_dashboard():
     """Test du moteur de consensus pondéré et des modes du tableau de bord."""
     # CORRECTED: models_combined_count/weight_sum are genuinely

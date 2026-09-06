@@ -9859,3 +9859,63 @@ de même nature que les autres descripteurs GUI déjà vérifiés propres),
 et les deux `__init__.py` (imports uniquement).
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire.**
+
+**Correction (même jour, passe suivante) : l'affirmation "2 lecteurs
+réels (`grib_reader.py`, `netcdf_reader.py`)" ci-dessus est fausse**,
+reprise du closure checklist sans vérification indépendante - voir la
+mise à jour suivante et `reports/ACF_CLOSURE_CHECKLIST.md` pour le
+détail vérifié (aucun lecteur GRIB/NetCDF réel n'importe
+`physics_guard` ; les 4 vrais consommateurs sont
+`certification/engine.py`, `web/routers/datasets_router.py`,
+`forecast/engine.py` et `awci/{input_adapter,pipeline}.py`).
+
+## Mise à jour 2026-09-06 (suite) — `ModelConsensusEngine` expose enfin la vraie fusion multi-modèle déjà construite (chantier 3 §6, demande explicite de l'utilisateur)
+
+**Demande** : l'utilisateur a explicitement choisi de continuer sur
+"la fusion multi-modèle" (chantier 3 §6 du closure checklist :
+"`ModelConsensusEngine.compute_unified_consensus()` reste un stub
+honnête... aucune fusion réelle de champs").
+
+**Découverte avant toute construction** : en investiguant, la vraie
+fusion de champ complet demandée **existait déjà**, construite et
+testée depuis le 2026-09-02 (voir plus haut dans ce même document,
+section "Fusion multi-modèles en champ complet construite") :
+`acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion()`
+- fusion pondérée réelle (poids égaux ou poids réels issus du skill
+database), avec correction de biais réelle et champ de spread réel,
+sur les 3 vraies configurations `MODEL_CONFIGS`
+(AROME/ALADIN/ARPEGE). Le closure checklist (chantier 3 §6) avait
+manqué cette fonction entièrement - vérifié par grep exhaustif
+(`compute_real_multi_model_field_fusion`) : **zéro appelant réel nulle
+part dans le dépôt**. Le vrai problème n'était donc pas une capacité
+manquante, mais une capacité réelle et testée totalement inatteignable
+depuis `ModelConsensusEngine`, la classe où un appelant chercherait
+naturellement "consensus"/"fusion".
+
+**Corrigé** : ajout de
+`ModelConsensusEngine.compute_real_weighted_field_fusion()` - un pur
+wrapper (aucune logique dupliquée ni réinventée) délégant directement
+à `compute_real_multi_model_field_fusion()`. `compute_unified_consensus()`
+elle-même reste inchangée (son statut `WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED`
+reste honnête et correct pour son propre périmètre à 12 modèles NWP/IA
+majoritairement non implémentés dans ACF) mais son docstring pointe
+désormais vers la vraie méthode pour qui cherche un champ réellement
+fusionné parmi les 3 modèles réels.
+
+**Validation réelle** : `tests/test_ai_forecast_center.py` étendu avec
+2 nouveaux tests - un vérifiant un champ fusionné réel (poids égaux
+par défaut, shape correcte, statut réel), un second verrouillant que
+le wrapper délègue bien à la vraie fonction (`monkeypatch` sur
+`acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion`,
+vérifie les arguments transmis) plutôt que de la réimplémenter.
+Suite complète (`test_ai_forecast_center.py` + `test_multi_model_fusion.py`)
+réexécutée : 33/33 passent. `ruff check` propre.
+
+**Ce qui reste réellement** : l'extension GUI (afficher ce champ
+fusionné pondéré dans le panneau "Multi-Model Lab" existant, qui
+n'affiche aujourd'hui que les champs bruts et leur différence -
+`acf_workstation_multimodel.py`) n'a pas été entreprise cette passe -
+un chantier distinct, plus large (UI PySide6, threading off-GUI,
+nouveau widget de carte), non exécuté ici faute d'un environnement de
+test GUI complet (`libEGL.so.1` absent dans ce sandbox, empêchant une
+validation fiable des changements PySide6).

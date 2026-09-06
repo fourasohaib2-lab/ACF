@@ -318,6 +318,30 @@ fermée ; les 13 items ci-dessus couvrent les 3 clics encore morts plus
    `compute_real_multi_model_disagreement()`, une méthode différente,
    réelle mais scopée à un seul point de grille (Alger, 3 modèles),
    ajoutée séparément. **[PARTIAL]**
+
+   **Correction 2026-09-06 (demande explicite de l'utilisateur : "la
+   fusion multi-modèle") — cet item décrivait mal le vrai gap.** Une
+   fusion de champ complet réelle, pondérée (poids déclarés ou skill
+   database réel), avec correction de biais réelle et spread réel,
+   **existait déjà** depuis le 2026-09-02
+   (`acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion()`,
+   voir `reports/ACF_MASTER_AUDIT_v2.md`) - cet énoncé ne l'avait pas
+   trouvée. Vérifié par grep exhaustif à l'époque : zéro appelant réel
+   nulle part dans le dépôt - le vrai gap était l'INACCESSIBILITÉ de
+   cette capacité déjà réelle depuis `ModelConsensusEngine`, pas son
+   absence. Corrigé : ajout de
+   `ModelConsensusEngine.compute_real_weighted_field_fusion()`, un pur
+   wrapper vers la fonction déjà réelle (aucune logique dupliquée).
+   `compute_unified_consensus()` elle-même reste inchangée à raison -
+   son statut honnête couvre un périmètre différent (12 modèles
+   NWP/IA majoritairement non implémentés dans ACF), pas les 3 modèles
+   réels que la fusion couvre. Validé par 2 nouveaux tests dans
+   `tests/test_ai_forecast_center.py` (33/33 passent), `ruff check`
+   propre. Item réel restant, non traité cette passe : l'extension GUI
+   du panneau "Multi-Model Lab" pour afficher ce champ fusionné
+   pondéré (actuellement il n'affiche que les champs bruts et leur
+   différence) - un chantier PySide6 distinct, non tenté faute
+   d'environnement GUI complet ici (`libEGL.so.1` absent).
 7. **`ForecastComparisonMatrix` reste un stub honnête.** Vérifié
    directement : `src/acf/visualization/ai_forecast_center/
    forecast_comparison.py` ligne 26 retourne

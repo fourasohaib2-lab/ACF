@@ -68,6 +68,17 @@ class ModelConsensusEngine:
         audits exist to catch. If skill history is incomplete for the
         requested models, this falls back to the full declared set
         unchanged, and says so honestly via `weight_source`.
+
+        For a genuine fused FIELD (not just weights) among ACF's 3 real
+        modeled configurations (AROME/ALADIN/ARPEGE - not the 12 mostly-
+        unimplemented names in SUPPORTED_MODELS/this method's own
+        weights_dict, most of which have no real field-producing code
+        anywhere in ACF), see compute_real_weighted_field_fusion()
+        below - a thin wrapper around the already-real, already-tested
+        acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion()
+        (2026-09-02 audit de continuation - closure checklist chantier
+        3 §6 had missed that this real capability already existed
+        elsewhere in the repo, just never exposed from this class).
         """
         if weights_dict is None:
             weights_dict = {
@@ -407,3 +418,82 @@ class ModelConsensusEngine:
                 "small real regridding discretization effect, not a physical signal."
             ),
         }
+
+    @classmethod
+    def compute_real_weighted_field_fusion(
+        cls,
+        field_key: str = "awci_field",
+        models: list[str] | None = None,
+        target_model: str | None = None,
+        steps: int = 8,
+        dt_seconds: float = 60.0,
+        perturbation_scale: float = 2.0,
+        level: int = 0,
+        skill_database: ModelSkillDatabase | None = None,
+        variable: str | None = None,
+        weight_metric: str = "rmse",
+        bias_metric: str = "bias",
+    ) -> dict[str, Any]:
+        """
+        Real skill-weighted, bias-corrected multi-model FIELD fusion -
+        what compute_unified_consensus() above is not (it only ever
+        sums weights, never a real model field) and what
+        compute_real_multi_model_disagreement_field() is not either
+        (real per-model fields and spread, but an unweighted ensemble -
+        no skill weighting, no bias correction).
+
+        NOTE (added 2026-09-06, closure checklist chantier 3 §6 - "vrai
+        gap de fusion multi-modèle", per the user's explicit request):
+        this closes a real GAP IN EXPOSURE, not a gap in capability -
+        the real fusion pipeline this delegates to
+        (acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion(),
+        built 2026-09-02 per reports/ACF_MASTER_AUDIT_v2.md's own "Fusion
+        multi-modèles en champ complet" entry) already existed, complete
+        and tested (tests/test_multi_model_fusion.py), but had zero real
+        caller anywhere in the repo - the closure checklist's own
+        chantier 3 §6 missed it entirely and described the gap as if no
+        real field fusion existed at all. It does; it just was not
+        reachable from ModelConsensusEngine, the class a caller looking
+        for "consensus"/"fusion" would actually look in. This method is
+        a thin wrapper, not a reimplementation - every real behavior
+        (skill-weighted or equal weights, real bias correction from
+        recorded history, real per-point ensemble spread, real nearest-
+        neighbour regridding onto one target model's real grid) is
+        exactly compute_real_multi_model_field_fusion()'s own, unchanged.
+
+        Scope, same honest limitation as
+        compute_real_multi_model_disagreement()/_field() above: `models`
+        must be real acf.forecast.engine.MODEL_CONFIGS entries (today:
+        AROME, ALADIN, ARPEGE - ACF's own CoupledEarthSolver standing in
+        for each at its real grid resolution, not real operational
+        archives) - NOT arbitrary names from SUPPORTED_MODELS/
+        compute_unified_consensus()'s own weights_dict (GraphCast, AIFS,
+        FourCastNet, etc. have no real field-producing code anywhere in
+        ACF, so cannot be genuinely fused here or anywhere else in this
+        codebase).
+
+        Parameters and return value: see
+        acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion()
+        directly - identical signature (n_lat/n_lon/n_levels omitted
+        here since GUI/API callers of ModelConsensusEngine have not
+        needed non-default grid overrides so far; pass them straight to
+        that function directly if ever needed) and identical return
+        dict (fused_field, spread_field, per_model_fields, weights,
+        weight_source, bias_corrected_models, status, is_real_data,
+        honest_limitation, ...).
+        """
+        from acf.awci.multi_model_fusion import compute_real_multi_model_field_fusion
+
+        return compute_real_multi_model_field_fusion(
+            field_key=field_key,
+            models=models,
+            target_model=target_model,
+            steps=steps,
+            dt_seconds=dt_seconds,
+            perturbation_scale=perturbation_scale,
+            level=level,
+            skill_database=skill_database,
+            variable=variable,
+            weight_metric=weight_metric,
+            bias_metric=bias_metric,
+        )
