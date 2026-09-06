@@ -287,6 +287,27 @@ fermée ; les 13 items ci-dessus couvrent les 3 clics encore morts plus
    reste non branché à chaque point d'entrée scientifique du dépôt
    (ce second volet de l'item, hors scope de cette passe, reste ouvert).
 
+   **Correction 2026-09-06 (même passe) — l'affirmation "branché dans
+   `grib_reader.py`/`netcdf_reader.py`" ci-dessus est fausse, vérifiée
+   directement plutôt que reprise telle quelle :** aucun des 3
+   `grib_reader.py` réels du dépôt (`acf.data.grib_reader`,
+   `acf.data.readers.grib_reader`, `acf.importers.readers.grib_reader`)
+   ni des 3 `netcdf_reader.py` équivalents n'importe `physics_guard` ou
+   `core.contracts` (`grep` exhaustif, zéro résultat).
+   `acf.importers.readers.grib_reader.GRIBReader.read()` appelle bien
+   un `dataset.validate()`, mais sur `acf.data.dataset.Dataset` - une
+   classe homonyme et sans rapport, dont `validate()` ne vérifie que la
+   présence d'un nom et d'au moins une variable, sans aucun lien avec
+   Physics Guard. Les 2 points d'intégration réels de
+   `acf.core.contracts.dataset.Dataset.validate()` (le seul `Dataset`
+   dont `validate()` appelle réellement Physics Guard) sont
+   `certification/engine.py` et `web/routers/datasets_router.py`
+   (confirmés) ; les 2 autres appelants réels sont `forecast/engine.py`
+   et `awci/{input_adapter,pipeline}.py` - **pas** les lecteurs
+   GRIB/NetCDF. Compte réel des points d'intégration donc : **4
+   consommateurs réels, 0 lecteur de fichier** - pas "2 lecteurs +
+   certification + API" comme l'énoncé original le disait.
+
 **Multi-modèle / Consensus / Incertitude (§12-15 de l'architecture cible)**
 
 6. **`ModelConsensusEngine.compute_unified_consensus()` reste un stub
