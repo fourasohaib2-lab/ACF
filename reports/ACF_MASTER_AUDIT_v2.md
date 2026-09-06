@@ -10213,6 +10213,32 @@ correcte de GeoTIFF nécessiterait une dépendance géospatiale
 `tests/test_importers_consolidation.py` (17/17) passent ; `ruff check`
 propre.
 
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.reports` et `acf.jobs` : vérifiés propres, qualité exemplaire
+
+**`acf.reports`** (3 fichiers) : `briefings/briefing_generator.py` déjà
+corrigé par une passe antérieure ; les 2 `__init__.py` restants sont
+triviaux (docstrings de package uniquement). Aucune modification
+nécessaire.
+
+**`acf.jobs`** (3 fichiers, 371 lignes) - jamais touché, mais qualité
+remarquable, même discipline d'audit appliquée nativement dès la
+conception : `Job`/`JobEngine` sont une abstraction typée réelle
+au-dessus de `acf.hpc_connector.job_manager.JobManager` (déjà réel,
+testé contre le vrai cluster Fennec) - ne réimplémente aucun appel
+scheduler, délègue systématiquement. `is_real_submission` distingue
+honnêtement un job réellement soumis d'un placeholder
+"NOT_SUBMITTED_...". `progress_pct` reste `None`/0 plutôt que de
+simuler une progression quand aucune donnée réelle n'est disponible.
+`retry()` refuse de relancer un job qui n'a pas atteint un vrai statut
+d'échec terminal (éviterait de dupliquer silencieusement du travail
+HPC réel). Le docstring du paquet documente même honnêtement 3 bugs
+réels corrigés en marge de cette construction (`cancel_job()`
+renvoyant `True` sans résultat SSH réel, `get_job_status()` rapportant
+"RUNNING" pour une sortie `squeue` vide, `pause_job()`/`resume_job()`
+changeant le statut local sans appel scheduler réel).
+
+**Aucune modification de code nécessaire pour ces deux paquets.**
+
 ## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.forecast` : vérifié propre, infrastructure de production réelle
 
 **Contexte** : `acf.forecast` (3 fichiers, 340 lignes) - `forecast_engine.py`
