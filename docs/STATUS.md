@@ -54,7 +54,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 - [x] `aviation`
 - [x] `hydrology`
-- [ ] `ocean`
+- [x] `ocean`
 - [x] `geology`
 - [ ] `space_weather`
 - [ ] `climate`
@@ -136,8 +136,8 @@ tracké ici tant que non expliqué avec certitude.
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
 - Tier C : **16/16 audités — TIER C COMPLET**
-- Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 42/58
+- Tier E : 16/31 audités
+- Total bloquant v1.0 (F+C+E) : 43/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
