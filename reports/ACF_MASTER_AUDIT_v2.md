@@ -10384,3 +10384,32 @@ verticale/temporelle - n'existent nulle part ailleurs dans ACF non
 plus).
 
 **Aucune modification de code nécessaire pour ces deux paquets.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.standards` et `acf.plugins`
+
+**`acf.standards`** (13 fichiers, 347 lignes) - `manager.py`/`hub.py`
+(registre/délégation réels, aucun statut fabriqué), `cf_standard_names.py`
+(9 entrées CF réelles et correctes - unité/catégorie), `ecmwf/manager.py`/
+`converter.py`/`loader.py` (chargement/conversion réels, `KeyError`
+honnête sur un champ manquant plutôt qu'un défaut inventé) - aucune
+fabrication.
+
+**Observation notée, non corrigée** : 5 fichiers
+(`ecmwf_parameters.py`, `grib2_tables.py`, `noaa_parameters.py`,
+`wmo_tables.py`, `ecmwf/catalog.py`) portent un docstring de paquet
+générique annonçant "Standard parameter tables (WMO, GRIB2, ECMWF)"
+mais ne contiennent structurellement aucune donnée réelle
+(`ecmwf/catalog.py` : `ECMWF_PARAMETERS: dict = {}` explicitement vide ;
+les 4 autres n'ont même pas de variable, seulement le docstring
+template). Vérifié par grep qu'aucun code réel de `src/` ne les
+importe ni n'en dépend - des fichiers placeholder inertes, jamais
+appelés avec une fausse promesse de contenu à l'exécution (contrairement
+au motif de fabrication actif recherché par cet audit). Non corrigé :
+les combler nécessiterait de taper de vraies tables WMO/GRIB2/NOAA
+vérifiées, un travail de construction distinct de l'audit.
+
+**`acf.plugins`** (1 fichier, `__init__.py`) : paquet vide, uniquement
+un docstring template, aucune infrastructure de plugin construite -
+rien à auditer, aucun risque de fabrication (rien n'est exécuté).
+
+**Aucune modification de code nécessaire.**
