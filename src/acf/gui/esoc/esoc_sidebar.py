@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.panel_manager import _example_layout_disclaimer
+from acf.gui.widgets.combo_sizing import shrink_combo_min_width
 from acf.gui.widgets.current_page_sizing import CurrentPageTabWidget
 
 
@@ -390,6 +391,14 @@ class ESOCRightSidebar(QWidget):
                 "Streamlines & Vector Fields",
             ]
         )
+        # NOTE (real responsive-sizing fix, 2026-09-05): same bug as
+        # ViewManager's own combos (see acf.gui.widgets.combo_sizing's
+        # module docstring) - "Taylor Diagram (Forecast Verification)"
+        # made this "AI Analysis & Plots" tab the widest of this
+        # sidebar's 7 Inspector tabs (see part 5's own commit, which
+        # fixed the container but left this combo's own inflation in
+        # place).
+        shrink_combo_min_width(self.combo_chart)
         ai_layout.addWidget(self.combo_chart)
 
         btn_gen_chart = QPushButton("📊 Render Plot")

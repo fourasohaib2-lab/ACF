@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.hpc_terminal_panel import HPCTerminalPanel
 from acf.gui.esoc.module_registry import ModuleRegistry
+from acf.gui.widgets.combo_sizing import shrink_combo_min_width
 
 
 def _not_connected_label(key: str) -> QLabel:
@@ -463,6 +464,12 @@ class SimulationPanel(BasePanelWidget):
         self.combo_physics.addItems(
             ["Primitive Equations Core", "Non-Hydrostatic Finite Volume", "Spherical Spectral Wave Solver"]
         )
+        # NOTE (real responsive-sizing fix, 2026-09-05): same bug as
+        # ViewManager's own combos (see acf.gui.widgets.combo_sizing's
+        # module docstring) - "Spherical Spectral Wave Solver" alone
+        # made this SimulationPanel one of the widest of all 44
+        # Operational Command Panels tabs (646px).
+        shrink_combo_min_width(self.combo_physics)
         h_par1.addWidget(self.combo_physics)
 
         h_par1.addWidget(QLabel("Microphysics:"))
@@ -521,6 +528,12 @@ class DigitalTwinPanel(BasePanelWidget):
                 "CMIP6 SSP5-8.5 (Fossil-Fueled)",
             ]
         )
+        # NOTE (real responsive-sizing fix, 2026-09-05): same bug as
+        # ViewManager's own combos (see acf.gui.widgets.combo_sizing's
+        # module docstring) - "CMIP6 SSP5-8.5 (Fossil-Fueled)" and
+        # siblings inflate this combo's own minimum width well past
+        # what it needs to actually work.
+        shrink_combo_min_width(self.combo)
         self.main_layout.addWidget(self.combo)
 
         btn_load = QPushButton("🔮 Load Digital Twin Scenario")
