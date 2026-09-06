@@ -35,6 +35,17 @@ class SolarRadiationManagementEngine:
         Equations:
             \\Delta F = -0.45 \\cdot \\text{SO2}_{\\text{Mt/yr}}
             \\Delta T = \\lambda \\cdot \\Delta F
+
+        NOTE (found, NOT changed — Physics Guard, found during the
+        post-model4d audit, 2026-09-06): the linear forcing-per-Mt-SO2
+        coefficient (-0.45 W/m^2 per Mt/yr) and CLIMATE_SENSITIVITY_LAMBDA
+        (0.8 K per W/m^2) are plausible order-of-magnitude figures for
+        stratospheric aerosol injection, but neither is cited to a
+        specific published source in this module. The result genuinely
+        scales with the requested injection rate (unlike a fixed/
+        input-independent fabrication), so this is disclosed as an
+        unsourced-coefficient limitation rather than a fabricated
+        result - not invented a "properly sourced" replacement number.
         """
         forcing = -0.45 * so2_injection_megatons_per_year
         cooling = abs(CLIMATE_SENSITIVITY_LAMBDA * forcing)

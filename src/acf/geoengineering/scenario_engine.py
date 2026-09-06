@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Climate Scenarios Engine Module (Phase 8)
-(ClimateScenarioEngine modeling CMIP6 SSP1-1.9, SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5, Net Zero, and BAU)
+(ClimateScenarioEngine modeling CMIP6 SSP1-1.9, SSP2-4.5, and SSP5-8.5)
+
+NOTE (correction — registry/docstring overclaim, found during the
+post-model4d audit, 2026-09-06): this header used to also list
+SSP1-2.6, SSP3-7.0, "Net Zero" and "BAU" as modeled scenarios - 4 real,
+named IPCC AR6 pathways/policy framings that SSP_CATALOG below never
+actually had entries for (only SSP1-1.9, SSP2-4.5 and SSP5-8.5 are
+populated). get_scenario("ssp1_26")/("ssp3_70") silently returned None
+for any of the 4 falsely-advertised scenarios. Corrected to name only
+what is genuinely in the registry, matching the docstring-vs-registry
+fix already applied elsewhere in this audit (climate/ocean/planetary/
+space_weather/ai registries), rather than inventing new SSPScenario
+entries with unverified 2100 projection figures.
 """
 
 from dataclasses import dataclass

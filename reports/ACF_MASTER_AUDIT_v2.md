@@ -9775,4 +9775,67 @@ aucun motif de fabrication trouvé) :
 **Validation** : `tests/test_digital_twin_v2.py` (5 tests) passe en
 0.20s après correction ; `ruff check` propre sur les 4 fichiers
 modifiés ; suite complète relancée en tâche de fond pour confirmer
-l'absence de régression.
+l'absence de régression. **Résultat de la suite complète** : 4475
+passed, 18 skipped, 0 failed en 805s - aucune régression introduite
+par cette passe `digital_twin`.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.geoengineering` : 1 surclaim docstring/registre corrigé (SSP scénarios)
+
+**Contexte** : `acf.geoengineering` (10 fichiers, ~650 lignes) jamais
+touché par cette session. 2 fichiers sur 10 déjà corrigés par une passe
+antérieure (`climate_ai.py`, `greenhouse_gases.py`, tous deux porteurs
+de "NOTE (correction" détaillées et honnêtes - pipeline de décision
+climatique et mislabeling silencieux de gaz inconnus). Les 8 fichiers
+restants ont été lus intégralement.
+
+**Bug réel trouvé et corrigé — surclaim docstring/registre, motif déjà
+rencontré 8+ fois cette session** (`scenario_engine.py`) : l'en-tête du
+module annonçait "CMIP6 SSP1-1.9, SSP1-2.6, SSP2-4.5, SSP3-7.0,
+SSP5-8.5, Net Zero, and BAU" (7 scénarios nommés), mais
+`SSP_CATALOG` ne contient que 3 entrées réelles (SSP1-1.9, SSP2-4.5,
+SSP5-8.5) - `get_scenario("ssp1_26")`/`("ssp3_70")` renvoyaient
+silencieusement `None` pour 4 des 7 scénarios pourtant annoncés comme
+modélisés. Corrigé en alignant le docstring sur le contenu réel du
+registre (même traitement que climate/ocean/planetary/space_weather/ai
+plus haut dans ce document), plutôt que d'inventer 4 nouvelles entrées
+`SSPScenario` avec des projections 2100 non vérifiées. Test de
+régression ajouté dans `tests/test_geoengineering_platform.py`
+(`list_scenarios()` == exactement les 3 clés réelles, `get_scenario()`
+sur les 4 clés fantômes renvoie bien `None`).
+
+**Coefficient non sourcé disclosé (non modifié)** - même traitement que
+pour le permafrost/tsunami/Joule heating plus haut :
+`solar_radiation_management.py` -
+`SolarRadiationManagementEngine.simulate_stratospheric_aerosol_injection()` :
+le coefficient de forçage linéaire (-0.45 W/m² par Mt SO2/an) et
+`CLIMATE_SENSITIVITY_LAMBDA` (0.8 K par W/m²) sont des ordres de
+grandeur plausibles pour l'injection d'aérosols stratosphériques, mais
+aucun n'est cité à une source publiée précise dans ce module. Le
+résultat varie authentiquement avec le taux d'injection demandé (pas
+le motif "toujours identique"), donc disclosé comme limite de
+coefficient non sourcé plutôt que traité comme une fabrication.
+
+**Fichiers vérifiés propres, aucune modification** (lus intégralement) :
+- `carbon_removal.py` - DAC et altération forcée des roches (ERW),
+  formules réelles dépendantes des arguments, chiffres techno-
+  économiques représentatifs plausibles, aucun statut fabriqué.
+- `carbon_cycle.py` - 5 réservoirs et 6 flux annuels avec des valeurs
+  de référence réalistes (870 GtC atmosphère, 38000 GtC océan, etc.),
+  bilan net calculé réellement à partir des flux, aucune affirmation
+  de synchronisation/calcul en temps réel.
+- `climate_restoration.py` - séquestration mangroves calculée
+  linéairement à partir des hectares (dépendant réellement de l'entrée).
+- `planetary_boundaries.py` - 9/9 limites planétaires réelles de
+  Rockström/Steffen intégralement peuplées (contrairement à la version
+  `digital_twin.planetary_limits` qui n'en trackait que 5/9, déjà
+  corrigée dans une passe antérieure) - bilan calculé réellement à
+  partir du registre, pas de comptage fabriqué.
+- `awci_geoengineering_dashboard.py` - configuration statique
+  d'interface AWCI, même nature que les autres descripteurs de
+  panneaux GUI déjà vérifiés propres.
+- `__init__.py` - imports uniquement.
+
+**Validation** : `tests/test_geoengineering_platform.py` +
+`tests/test_esoc_geoengineering_panel.py` +
+`tests/test_climate_earth_system_engine.py` → 17/17 passent ; `ruff
+check` propre sur les 3 fichiers modifiés.

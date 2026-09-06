@@ -112,6 +112,14 @@ def test_climate_ai_and_scenario_engine():
     assert isinstance(ssp, SSPScenario)
     assert ssp.warming_mean_2100_c == 2.7
 
+    # CORRECTED: the module docstring used to also name SSP1-2.6,
+    # SSP3-7.0, "Net Zero" and "BAU" as modeled scenarios, but
+    # SSP_CATALOG never had entries for any of them - only these 3 are
+    # genuinely registered.
+    assert set(ClimateScenarioEngine.list_scenarios()) == {"ssp1_19", "ssp2_45", "ssp5_85"}
+    assert ClimateScenarioEngine.get_scenario("ssp1_26") is None
+    assert ClimateScenarioEngine.get_scenario("ssp3_70") is None
+
 
 def test_geoengineering_dashboard_and_query_engine():
     """Test du tableau de bord AWCI Geoengineering et des requêtes du Query Engine."""
