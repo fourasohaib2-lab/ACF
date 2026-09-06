@@ -9839,3 +9839,23 @@ coefficient non sourcé plutôt que traité comme une fabrication.
 `tests/test_esoc_geoengineering_panel.py` +
 `tests/test_climate_earth_system_engine.py` → 17/17 passent ; `ruff
 check` propre sur les 3 fichiers modifiés.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.hazard_operations` : vérifié propre, aucune modification
+
+**Contexte** : `acf.hazard_operations` (16 fichiers) - 12/16 déjà
+corrigés par une passe antérieure (alert_generator, communication_engine,
+crisis_timeline, emergency_manager, evacuation_planner,
+hazard_detection_engine, impact_model, risk_assessment,
+situation_awareness, hazard_overlay, vulnerability_map, et le
+`risk_visualization/__init__.py` d'origine). Les 4 fichiers substantiels
+restants + les 2 `__init__.py` ont été lus intégralement cette passe :
+`early_warning_system.py` (`get_warning_level()` branche réellement
+selon `risk_score`, aucun statut fabriqué), `hazard_dashboard.py`
+(`get_dashboard_profile()` branche réellement selon le profil demandé,
+"PROFILE_ACTIVE" décrit juste la sélection de configuration, pas un
+calcul scientifique), `risk_layers.py` (configuration statique
+d'interface listant les couches de risque disponibles, "RISK_LAYERS_READY"
+de même nature que les autres descripteurs GUI déjà vérifiés propres),
+et les deux `__init__.py` (imports uniquement).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire.**
