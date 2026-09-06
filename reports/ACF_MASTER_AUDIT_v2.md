@@ -9430,3 +9430,58 @@ corrigées, le reste déjà exemplaire). Une extension possible pour une
 future passe : `acf.science`/`acf.simulation_engine`/`acf.earth_physics`
 (le périmètre original de l'audit `model4d`, jamais ré-audité de
 façon exhaustive par cette continuation elle-même).
+
+## Mise à jour 2026-09-06 (extension du périmètre) — `acf.earth_physics` : lu intégralement, 1 fissure réelle trouvée
+
+**Zone couverte** : `acf.earth_physics` (40 fichiers, 729 lignes - 8
+sous-paquets : `atmospheric_dynamics`, `carbon_cycle`,
+`coupled_solver`, `cryosphere_physics`, `land_surface`,
+`ocean_physics`, `radiation`, `thermodynamics`). Lu intégralement,
+fichier par fichier - la quasi-totalité contient de vraies formules de
+physique correctes et citées (Coriolis, équilibre géostrophique,
+vorticité potentielle d'Ertel, équation d'état des gaz parfaits,
+formule de Tetens, loi de Stefan-Boltzmann, constante solaire réelle,
+forçage CO2 de Myhre et al., conversion Gt->mm SLR standard,
+coefficient de transfert gazeux de Wanninkhof pour le CO2 océanique).
+`coupled_solver/conservation.py` et `earth_solver.py` étaient déjà
+honnêtement corrigés (une "vérification" qui renvoyait toujours
+"conservé" sans aucun état à vérifier, un "pas de temps résolu" sans
+aucun calcul réel - tous deux renommés en statuts honnêtes
+`NOT_VERIFIED_.../PLACEHOLDER_...`). `terrestrial_carbon.py` et
+`primitive_equations.py` portaient déjà de vraies corrections
+documentées (modèle de Miami pour la NPP, équation méridienne dv/dt
+manquante). `ocean_physics/mixing.py` était déjà honnêtement un
+`NotImplementedError` documenté (profondeur de couche de mélange non
+réductible à une formule fermée).
+
+**1 fissure réelle trouvée** : `cryosphere_physics/permafrost.py
+.PermafrostThawModel.compute_ch4_emission_megatons()` calculait
+`thaw_depth_increase_m * 14.5` sans aucune source citée pour ce
+coefficient - et plus fondamentalement, une vraie libération globale
+de CH4 par dégel du permafrost dépend de la SURFACE dégelée et du
+stock de carbone organique du sol, pas de la seule profondeur de
+dégel (seul paramètre de cette fonction). Une formule linéaire ne
+dépendant que de la profondeur ne peut honnêtement représenter un
+bilan "global" en mégatonnes, quelle que soit la valeur du
+coefficient - contrairement au flux de chaleur océan-banquise
+(`sea_ice_interaction.py`, formule ΔT × coefficient, forme
+fonctionnelle standard et défendable même sans source citée pour la
+valeur exacte du coefficient) ou au flux gazeux CO2 océanique
+(`ocean_carbon.py`, coefficient 0.251 correspondant réellement à la
+formule de Wanninkhof révisée). Signalé plutôt que remplacé par une
+formule tenant compte de la surface mais elle aussi inventée sans
+source citable (même raisonnement que le M-factor déjà disclosé dans
+`ionosphere_engine.py`) - gardé comme mise à l'échelle illustrative
+uniquement, non validée contre un vrai modèle carbone-permafrost
+publié (ex. PInc-CH4/JULES-permafrost, qui prennent en compte surface
+et stock de carbone).
+
+**Validation réelle** : `tests/test_earth_physics.py` (n'asserte que
+`ch4 > 0.0`, inchangé par le NOTE ajouté) ré-exécuté : 5/5 passent.
+`ruff check` propre sur tout le paquet.
+
+**Ce qui reste pour une éventuelle future passe** : `acf.simulation_engine`
+(33 fichiers, 2444 lignes) et `acf.science` (170 fichiers, ~21000
+lignes - bien trop volumineux pour une lecture exhaustive en une
+passe ; nécessiterait un balayage ciblé par mots-clés plutôt qu'une
+lecture complète).
