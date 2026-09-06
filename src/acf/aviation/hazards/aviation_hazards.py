@@ -2,7 +2,19 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Aviation Meteorological Hazards Engine Module
-(CAT, Mountain Waves, Wind Shear, Airframe Icing, Volcanic Ash, Microburst, Tropopause Folds)
+(CAT, Airframe Icing, Microburst & Low-Level Wind Shear)
+
+NOTE (correction — registry/docstring overclaim, found during the
+post-model4d audit, 2026-09-06): this header used to also list
+"Mountain Waves", "Volcanic Ash" and "Tropopause Folds" - 3 real
+aviation weather hazards that AVIATION_HAZARDS_REGISTRY below never
+had entries for (only cat_turbulence, airframe_icing and
+microburst_windshear are populated). get_hazard("mountain_wave")/
+("volcanic_ash")/("tropopause_fold") silently returned None for any of
+the 3 falsely-advertised hazards. Corrected to name only what is
+genuinely in the registry, matching the docstring-vs-registry fix
+already applied elsewhere in this audit, rather than inventing new
+AviationHazardInfo entries with unverified thresholds/equations.
 """
 
 from dataclasses import dataclass

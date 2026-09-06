@@ -9959,3 +9959,57 @@ affiché (`np.allclose` contre `fused_field`/`spread_field`), et
 coexistence des 2 états (comparaison + fusion) dans le même panneau.
 Suite complète du fichier : 12/12 passent. `ruff check` propre sur les
 2 fichiers modifiés.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.aviation` : 1 surclaim docstring/registre corrigé, reste vérifié propre (qualité remarquable)
+
+**Contexte** : `acf.aviation` (17 fichiers, ~1780 lignes) - 5 fichiers
+déjà corrigés/écrits proprement par une passe antérieure
+(`metar_decoder.py`, `taf_decoder.py`, `products.py`, `cross_section.py`,
+`flight_routing.py`). Les 12 fichiers restants (dont 7 `__init__.py`
+triviaux) lus intégralement cette passe.
+
+**Bug réel trouvé et corrigé — surclaim docstring/registre, motif
+identique à `geoengineering.scenario_engine`** (`hazards/aviation_hazards.py`) :
+l'en-tête du module annonçait "CAT, Mountain Waves, Wind Shear,
+Airframe Icing, Volcanic Ash, Microburst, Tropopause Folds" (7 dangers
+nommés), mais `AVIATION_HAZARDS_REGISTRY` ne contient que 3 entrées
+réelles (cat_turbulence, airframe_icing, microburst_windshear) -
+`get_hazard("mountain_wave")`/`("volcanic_ash")`/`("tropopause_fold")`
+renvoyaient silencieusement `None`. Corrigé en alignant le docstring
+sur le registre réel, plutôt que d'inventer 3 nouvelles entrées
+`AviationHazardInfo` avec des seuils/équations non vérifiés. (Note :
+un moteur de sévérité "mountain wave" réel et distinct existe bien
+ailleurs dans le dépôt - `acf.science.encyclopedia.aviation_extended.
+calculate_mountain_wave_froude_number` / `acf.awci.orographic_froude` -
+mais n'est pas connecté à ce registre-ci ; pas une duplication à
+fusionner, juste une fonctionnalité différente pour un usage différent
+AWCI.) Test préexistant `test_operational_flight_meteorology.py`
+(`len(AVIATION_HAZARDS_REGISTRY) >= 3`) reste vert sans modification.
+
+**Fichiers vérifiés propres, qualité remarquable** (lus intégralement,
+aucune fabrication trouvée) :
+- `performance/aircraft_performance.py` - atmosphère standard OACI
+  (ISA) avec la vraie formule barométrique, composantes de vent
+  (headwind/crosswind) trigonométriquement correctes, altitude-densité
+  via l'approximation standard ~120 ft/°C d'écart ISA - toutes
+  dépendantes des arguments, aucun statut fabriqué.
+- `icao/sigmet_decoder.py` - parseur SIGMET réel et honnête,
+  volontairement conservateur (extraction par regex/mots-clés des
+  champs structurellement fiables, champs non fiables laissés `None`
+  plutôt que devinés) ; documente lui-même explicitement son propre
+  historique de correction (remplace un ancien
+  `ICAOMetDecoder.decode_sigmet()` qui fabriquait un SIGMET identique
+  quel que soit le texte réel, déjà corrigé lors d'une passe antérieure).
+- `icao/live_source.py` - fetch HTTP réel vers l'API publique NOAA
+  Aviation Weather Center (aucune donnée synthétisée), gestion d'échec
+  honnête via `LiveReportUnavailable` (jamais de repli fabriqué),
+  documente même avoir vérifié en direct par curl les stations
+  utilisées et avoir explicitement renoncé à une station devinée
+  (Tripoli/HLLT) faute de réponse réelle confirmée.
+- `airports/airport_database.py` - 3 fiches d'aéroport réelles
+  (CDG/JFK/LHR, pistes/coordonnées plausibles), cohérent avec
+  `REAL_STATIONS` de `live_source.py`.
+- 7 `__init__.py` triviaux (imports uniquement).
+
+**Validation** : `tests/test_operational_flight_meteorology.py` +
+`tests/test_sigmet_decoder.py` → 18/18 passent ; `ruff check` propre.
