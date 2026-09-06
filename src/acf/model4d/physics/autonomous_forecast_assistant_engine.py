@@ -49,6 +49,16 @@ class AutonomousForecastAssistantEngine:
     Autonomous Forecast Assistant Engine
 
     AI assistant layer for Model4D.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    AI/ML component (model, agent, planner) is trained, loaded, or run
+    anywhere in this class - despite "AI assistant" in the name and
+    docstring, model_consensus()/forecast_reliability() are fixed-weight
+    averages and risk_assessment()/assistant_decision() are plain
+    threshold if/elif chains. Real, deterministic rule logic, not the
+    autonomous AI capability the name claims. Not fabricated data -
+    disclosed rather than silently trusted.
     """
 
     def available_models(

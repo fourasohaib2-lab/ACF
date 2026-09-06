@@ -50,6 +50,17 @@ class ProbabilisticExtremeWeatherIntelligenceEngine:
     Probabilistic Extreme Weather Intelligence Engine
 
     AI-oriented extreme weather risk assessment layer.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    probability distribution (PDF, percentile, exceedance probability)
+    and no AI/ML component is computed or run anywhere in this class -
+    despite "Probabilistic"/"AI-oriented Intelligence" in the name,
+    hazard_probability() is a plain unweighted average of 4 anomaly
+    inputs, and risk_level()/alert_level() are threshold if/elif chains.
+    Real, deterministic arithmetic, not the probabilistic/AI capability
+    the name claims. Not fabricated data - disclosed rather than
+    silently trusted.
     """
 
     def hazard_probability(

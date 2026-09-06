@@ -50,6 +50,18 @@ class NaturalLanguageWeatherIntelligenceEngine:
 
     Converts numerical weather prediction outputs
     into meteorological explanations.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    natural-language processing (parsing, generation model, or template
+    grammar beyond a single f-string) exists anywhere in this class -
+    despite "Natural Language ... Intelligence" in the name,
+    generate_weather_explanation() fills one fixed French sentence
+    template with threshold-bucketed labels from hazard_level()/
+    confidence_level()/model_interpretation() (themselves plain if/elif
+    chains). Real, deterministic string formatting, not the NLP
+    capability the name claims. Not fabricated data - disclosed rather
+    than silently trusted.
     """
 
     def hazard_level(

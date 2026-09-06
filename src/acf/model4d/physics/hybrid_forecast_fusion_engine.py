@@ -69,6 +69,19 @@ class HybridForecastFusionEngine:
     Objective
     ---------
     Produce a unique Model4D forecast from multiple NWP models.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): the
+    per-model weight formulas (e.g. arpege_weight()'s 0.55/0.25/0.20
+    split of quality/observation_quality/forecast_consistency) are
+    unsourced - no calibration reference or citation anywhere, same
+    "unexplained coefficient" pattern already found and removed
+    elsewhere in this package's sibling engines. Otherwise the actual
+    mechanism (weighted multi-model averaging, spread, best-model
+    selection) genuinely matches what "Hybrid Forecast Fusion" claims -
+    no AI/ML or fabricated-capability overclaim here, only unsourced
+    weights. Not fabricated data - disclosed rather than silently
+    trusted.
     """
 
     def _clamp(self, value: float) -> float:

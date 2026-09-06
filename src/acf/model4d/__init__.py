@@ -113,4 +113,47 @@ meaningful fraction of this reserve is cosmetic/fabricated-sounding
 scaffolding, not dormant real physics, which is exactly the pattern
 this project's audits exist to flag rather than let sit undocumented
 in a reserve someone might resurrect later while trusting its names.
+
+UPDATE (2026-09-06, ARCHITECTURE.md/docs/STATUS.md tiering sweep -
+finishing what "continue selon ton jugement" started): opened and read
+all 12 of the previously-unverified `*_engine.py` files in full (the
+remaining 12 of 20 total - the docstring above said "21"; the real
+count on disk is 20). Findings, each now disclosed with its own Physics
+Guard NOTE in the file itself:
+
+- 6 are clear name/capability overclaims, same shape as the 2 already
+  found (`self_improving_forecast_neural_engine.py`,
+  `global_weather_knowledge_graph_engine.py`):
+  `adaptive_model4d_forecast_learning_engine.py` ("Learning Engine"
+  with no persisted state), `autonomous_forecast_assistant_engine.py`
+  ("AI assistant" that is threshold if/elif), `natural_language_
+  weather_intelligence_engine.py` ("Natural Language" that is one
+  f-string template), `forecast_explainability_engine.py`
+  ("Explainability" with no attribution technique, just formatting of
+  values it was already handed), `probabilistic_extreme_weather_
+  intelligence_engine.py` ("Probabilistic"/"AI-oriented" with no
+  probability distribution, a plain average), and
+  `observation_bias_correction_engine.py` (doesn't correct any
+  observation value, only returns a diagnostic scalar).
+- 2 more (`observation_quality_control_engine.py`,
+  `hybrid_forecast_fusion_engine.py`) match their name's mechanism
+  reasonably well but use unsourced per-instrument/per-model
+  coefficients with no calibration reference - same "unexplained
+  coefficient" pattern already fixed elsewhere in this package.
+- 1 (`advanced_ensemble_forecast_engine.py`) was read and found to
+  genuinely match its name (real mean/spread/best-model ensemble
+  arithmetic) - no note added, nothing to disclose.
+- The 3 remaining of the 12 (`data_assimilation_engine.py`,
+  `observation_intelligence_engine.py`,
+  `satellite_radar_fusion_engine.py`) turned out to already be fully
+  corrected by an earlier session (fake constants replaced with honest
+  `NotImplementedError`/`is_real_data: False` reporting) - re-verified,
+  nothing left to do.
+
+All 20 `*_engine.py` files in `physics/` are now individually reviewed
+and, where warranted, disclosed. What's NOT yet covered by this pass:
+the other ~131 non-`_engine.py` files under `physics/` (the bulk of
+this package's real physics content), and `model4d/interpolation/`
+(9 files) / `model4d/operators/` (8 files) - tracked as remaining work
+in docs/STATUS.md rather than claimed done here.
 """

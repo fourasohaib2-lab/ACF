@@ -48,6 +48,18 @@ class AdaptiveModel4DForecastLearningEngine:
     Adaptive Model4D Forecast Learning Engine
 
     Continuous learning layer for Model4D.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    model is trained or persisted between calls anywhere in this class -
+    despite "Learning Engine" in the name, every method is stateless,
+    single-call arithmetic (bias_correction() is one proportional-
+    feedback step, previous_bias + error * 0.25; adaptive_model_weight()
+    is likewise a single fixed-rate adjustment). Real, deterministic
+    arithmetic, not the continuous-learning capability the class name
+    claims. Not fabricated data - disclosed rather than silently
+    trusted, same pattern as the 9 sibling *_engine.py files already
+    marked in this package.
     """
 
     def forecast_error(

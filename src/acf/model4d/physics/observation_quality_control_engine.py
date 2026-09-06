@@ -51,6 +51,18 @@ class ObservationQualityControlEngine:
     Model4D Observation Quality Control Engine
 
     Sprint 9.37
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): the
+    per-instrument/consistency coefficients (0.90/0.88/0.92/0.91/0.89/
+    0.95/0.95 in *_quality_score()/temporal_consistency()/
+    spatial_consistency()) are unsourced - no calibration reference or
+    citation anywhere, same "unexplained coefficient" pattern already
+    found and removed elsewhere in this package's sibling engines (see
+    e.g. ai_forecast_decision_engine.py's own Physics Guard NOTE).
+    outlier_detection()'s physical bounds (150-340 K, 0-100% humidity)
+    are, by contrast, genuinely reasonable range checks. Not fabricated
+    data - disclosed rather than silently trusted.
     """
 
     def synop_quality_score(

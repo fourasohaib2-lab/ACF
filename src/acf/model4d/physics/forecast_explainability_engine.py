@@ -51,6 +51,17 @@ class ForecastExplainabilityEngine:
 
     - Produce human readable explanation.
 
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    explainability technique (feature attribution, SHAP/LIME-style
+    analysis, or any inspection of how `decision`/`causes` were
+    actually produced) exists anywhere in this class - despite
+    "Explainability" in the name, every method is threshold-bucketed
+    string formatting of values already handed to it in
+    `ForecastExplainabilityState` (including `causes`, which is an
+    input list echoed back, never derived). Real, deterministic text
+    generation, not the explainability capability the name claims. Not
+    fabricated data - disclosed rather than silently trusted.
     """
 
     # ==========================================================

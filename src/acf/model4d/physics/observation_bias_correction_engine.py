@@ -51,6 +51,22 @@ class ObservationBiasCorrectionEngine:
 
     Sprint 9.38
     Observation Bias Correction Engine
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): two
+    distinct issues, neither previously disclosed. (1) No observation
+    value is ever corrected - despite "Bias Correction" in the name,
+    corrected_observation() returns a diagnostic scalar
+    (systematic_bias - temperature_bias - humidity_bias), it does not
+    transform any of the actual satellite/radar/synop/metar/radiosonde
+    readings in the state. (2) The per-instrument coefficients
+    (0.90/0.88/0.91/0.89/0.93) and the reference temperature 288.0 K in
+    temperature_bias() are unsourced - no calibration reference or
+    citation anywhere, same "unexplained coefficient" pattern already
+    found and removed elsewhere in this package's sibling engines
+    (see e.g. ai_forecast_decision_engine.py's own Physics Guard NOTE
+    on its removed unexplained "-0.75" offset). Not fabricated data -
+    disclosed rather than silently trusted.
     """
 
     # ---------------------------------------------------------
