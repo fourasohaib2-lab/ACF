@@ -1,28 +1,12 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.workspace - project workspace management (manager.py, project.py,
+recent.py, serializer.py - real, tested, already carrying real fix
+disclosures: a silent except-pass swallowing a corrupted recent-
+projects file, and a save/reopen round-trip that silently discarded
+resources/metadata/settings/creation date, both fixed by earlier
+passes). exceptions.py/metadata.py/templates.py are empty stubs - see
+their own docstrings.
 
-WORKSPACE -   Init
-
-Purpose:
---------
-Project workspace management, session tracking, and project serialization.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the workspace subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.workspace module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+No __all__ re-export here - import from the specific submodule
+directly (e.g. `from acf.workspace.manager import WorkspaceManager`).
 """

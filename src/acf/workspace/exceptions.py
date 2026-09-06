@@ -1,28 +1,6 @@
-"""
-Atmospheric Complexity Framework (ACF)
+"""acf.workspace.exceptions - empty stub, no content beyond this file.
 
-WORKSPACE - Exceptions
-
-Purpose:
---------
-Project workspace management, session tracking, and project serialization.
-
-Responsibilities:
------------------
-• Manage exceptions logic and state representations.
-• Integrate with the workspace subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.workspace module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Verified 2026-09-06: not imported anywhere in src/ or tests/. The real
+workspace functionality lives in acf.workspace.manager/project/recent/
+serializer.
 """
