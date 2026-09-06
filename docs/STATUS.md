@@ -106,6 +106,26 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `certification` (voir ARCHITECTURE.md §3 — audité, excellent,
   compose uniquement des composants déjà vérifiés)
 
+## Correctif utilisateur post-sweep (2026-09-06)
+
+Bug réel rapporté par l'utilisateur : "plusieurs dashboard qui
+s'affiche au meme temps" au lancement. Diagnostiqué par reproduction
+directe, pas par supposition :
+1. `acf.gui.app.run() -> ESOCWindow()` vérifié (introspection Qt live)
+   ne crée qu'une seule fenêtre par lancement - pas la cause.
+2. Ajout d'une garde mono-instance réelle (`acf.gui.single_instance.
+   SingleInstanceGuard`, `QLocalServer`/`QLocalSocket`) - vérifiée par
+   3 lancements réels successifs de `python -m acf.gui` (2e et 3e se
+   ferment proprement sans construire de fenêtre).
+3. Cause réelle trouvée ensuite : 4 scripts orphelins à la racine du
+   dépôt (`test_awci_display.py`, `test_dashboard.py`, `test_qt.py`,
+   `test_window.py`), chacun avec son propre `QApplication` hors du
+   périmètre de l'app réelle - supprimés (commit `5d596e6`,
+   récupérables via git).
+
+**Run complet post-suppression : 4577 passed, 0 failed** (4574 baseline
++ 3 nouveaux tests de la garde mono-instance). Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce
