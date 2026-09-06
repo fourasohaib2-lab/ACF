@@ -70,10 +70,28 @@ tier:
 
 | Tier | `src/acf/` submodules |
 |---|---|
-| **F** | `core`, `model4d`, `science`, `physics_guard`, `parameters`, `standards`, `validation`, `normalization`, `time`, `utils`, `earth_physics`, `io` |
+| **F** | `core`, `science`, `physics_guard`, `parameters`, `standards`, `validation`, `normalization`, `time`, `utils`, `earth_physics`, `io` |
 | **C** | `data`, `catalog`, `catalogs`, `importers`, `geospatial`, `models`, `surfex`, `hpc_connector`, `hpc_workflow`, `simulation_engine`, `gui`, `visualization`, `maps`, `awci`, `jobs`, `storage` |
 | **E** | `aviation`, `hydrology`, `ocean`, `geology`, `space_weather`, `climate`, `ai`, `ai_expert`, `intelligence`, `digital_twin`, `aeos`, `knowledge_platform`, `dashboard`, `web`, `api`, `monitoring`, `alerts`, `hazard_operations`, `release`, `verification`, `data_assimilation`, `forecast`, `events`, `connectors`, `master`, `workspace`, `reports`, `search`, `testing`, `plugins`, `animation` |
-| **X** | `geoengineering`, `planetary`, `fire_weather`, `certification` |
+| **X** | `model4d`, `geoengineering`, `planetary`, `fire_weather`, `certification` |
+
+Reclassification made unilaterally during the Tier F sweep (2026-09-06),
+recorded here rather than asked about, per this project's standing
+instruction to keep going without waiting for a check-in except on
+destructive actions: **`model4d` moved from Tier F to Tier X.** Its own
+module docstring (`src/acf/model4d/__init__.py`) already documents why,
+verified by repeated `grep -rl "from acf.model4d"` sweeps across every
+other `src/acf/` package: zero real callers anywhere. It is real,
+tested, honestly-audited code (all 20 `physics/*_engine.py` files, the
+orchestrator, every `operators/`/`interpolation/` file, and a
+representative physics/ sample are individually reviewed — see
+`docs/STATUS.md`), kept in the repository per `AGENTS.md`, but a module
+nothing in the shipped product imports cannot honestly gate a v1.0
+release the way `science`/`core`/`physics_guard` (which real code
+throughout the codebase actually calls) do. Pillar 1 above still lists
+it (`acf.core`, `acf.model4d`, `acf.science`) as a logical-architecture
+statement, not a v1.0-readiness one — the two axes intentionally
+disagree here, and that disagreement is the point of having both.
 
 Known cleanup items surfaced by this tiering (tracked in `docs/STATUS.md`,
 not resolved by this edit alone):

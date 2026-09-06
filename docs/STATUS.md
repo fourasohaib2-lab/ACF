@@ -9,14 +9,6 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 ## Tier F — Foundation (bloquant v1.0)
 
 - [x] `core`
-- [~] `model4d` (couverts : les 20 `physics/*_engine.py` +
-  `weather_intelligence_orchestrator.py`, tout `model4d/operators/` (8
-  fichiers) et `model4d/interpolation/` (9 fichiers), + échantillon
-  représentatif de ~12 fichiers `physics/` non-`_engine.py`. Reste :
-  la majorité des ~131 fichiers `physics/` non-`_engine.py`, non
-  individuellement relus (un grep global n'y trouve ni le gabarit
-  générique ni de marqueur stub/fake non déjà divulgué, mais ce n'est
-  pas une relecture exhaustive))
 - [ ] `science`
 - [x] `physics_guard`
 - [x] `parameters`
@@ -83,6 +75,15 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 ## Tier X — Experimental (hors scope v1.0, conservé)
 
+- [~] `model4d` (reclassé Tier F -> Tier X le 2026-09-06, voir
+  ARCHITECTURE.md §3 : zéro appelant réel dans tout `src/acf/`, vérifié
+  par grep répété. Code réel, testé, conservé - juste hors du périmètre
+  v1.0. Couverts : les 20 `physics/*_engine.py` +
+  `weather_intelligence_orchestrator.py`, tout `model4d/operators/` (8
+  fichiers) et `model4d/interpolation/` (9 fichiers), + échantillon
+  représentatif de ~12 fichiers `physics/` non-`_engine.py`. Reste (non
+  bloquant maintenant) : la majorité des ~131 fichiers `physics/`
+  non-`_engine.py`, non individuellement relus)
 - [x] `geoengineering`
 - [ ] `planetary`
 - [ ] `fire_weather`
@@ -98,10 +99,10 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 ## Synthèse
 
-- Tier F : 10/12 audités
+- Tier F : 10/11 audités (model4d reclassé en Tier X le 2026-09-06)
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 30/59
+- Total bloquant v1.0 (F+C+E) : 30/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
