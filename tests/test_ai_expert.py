@@ -119,7 +119,15 @@ def test_multi_sphere_reasoning_engines():
     assert climate["is_real_data"] is False
 
     ocean = OceanReasoningEngine.analyze_ocean_state()
-    assert ocean["is_real_data"] is False  # fixed earlier this session
+    # CORRECTED (2nd pass, 2026-09-06): this used to only assert
+    # is_real_data is False while the engine still returned specific
+    # plausible-looking fabricated numbers (SST anomaly, mixed layer
+    # depth, wave height, "Gulf Stream speed 1.8 m/s") - the exact
+    # false-confidence risk this same test file's sibling assertions
+    # below already guard against for the other 8 engines. Aligned to
+    # the same "value itself is None" check.
+    assert ocean["sst_anomaly"] is None
+    assert ocean["is_real_data"] is False
 
     hydro = HydrologyReasoningEngine.analyze_hydrology_state()
     assert hydro["flood_alert_level"] is None

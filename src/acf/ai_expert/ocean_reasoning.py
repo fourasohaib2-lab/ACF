@@ -15,25 +15,27 @@ class OceanReasoningEngine:
         """
         Ocean state summary.
 
-        NOTE (correction): this method takes no location/time
-        parameters and has no live ocean data feed wired in — it
-        used to silently return fixed, realistic-looking numbers
-        (SST anomaly, mixed layer depth, wave height, a literal
-        "Gulf Stream speed 1.8 m/s" string) as if they were a real
-        analysis, which is misleading (same class of issue as the
-        fake METAR decoder and DataAssimilationEngine found earlier
-        this session, though here the root cause is "no data source
-        connected" rather than "wrong formula"). The values are kept
-        (as illustrative placeholders, for callers/UIs that already
-        expect these keys) but the dict now says explicitly that
-        they are not derived from real data, rather than presenting
-        them as if they were.
+        NOTE (correction, 2nd pass — the first correction here was
+        weaker than every sibling engine in this package): this method
+        takes no location/time parameters and has no live ocean data
+        feed wired in. A first pass kept the original fixed, realistic-
+        looking numbers (SST anomaly "+0.8°C", mixed layer depth 45.0m,
+        wave height 4.5m, a literal "Gulf Stream speed 1.8 m/s" string)
+        and only added an `is_real_data: False` flag next to them - a
+        caller that displays the values without also checking that flag
+        (nothing forces it to) would still show a specific, plausible-
+        looking ocean state that was never measured, exactly the
+        false-confidence risk this same package's other 8 engines
+        (AviationReasoningEngine, HazardReasoningEngine,
+        AIDecisionSupport, etc.) were already fixed to avoid, by nulling
+        the values themselves rather than tagging them. Aligned to that
+        same convention here.
         """
         return {
-            "sst_anomaly": "+0.8°C",
-            "mixed_layer_depth_m": 45.0,
-            "wave_height_hs_m": 4.5,
-            "currents": "Gulf Stream speed 1.8 m/s",
-            "data_source": "placeholder",
+            "sst_anomaly": None,
+            "mixed_layer_depth_m": None,
+            "wave_height_hs_m": None,
+            "currents": None,
+            "status": "NOT_ANALYZED_NO_OCEAN_DATA_CONNECTED",
             "is_real_data": False,
         }

@@ -10930,3 +10930,78 @@ construction, pas seulement à la construction).
 identifié (recherché activement, voir Phase 54). Les 5 réseaux
 d'observation non connectés d'Earth Monitoring restent un chantier de
 connecteurs externes distinct, non entamé.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.ai_expert` : 27 fichiers lus intégralement, déjà quasi entièrement corrigé, 1 incohérence réelle trouvée
+
+**Contexte** : paquet non mentionné nommément ailleurs dans ce rapport
+malgré son usage réel (`AirQualityReasoningEngine`/
+`HydrologyReasoningEngine` déjà enregistrés dans `ModuleRegistry`,
+`AirQualityReasoningEngine` déjà examiné en Phase 54). Lu intégralement
+- 27 fichiers, ~1000 lignes.
+
+**Déjà propre, à un détail près** : les 26 classes exportées portent
+déjà chacune leur propre note "NOTE (correction)" documentant une
+fabrication antérieure trouvée et corrigée par une passe précédente -
+chaque valeur numérique/texte plausible mais inventée remplacée par
+`None` + un statut honnête du type `NOT_X_NO_Y_DATA_CONNECTED`. Travail
+déjà fait, propre, cohérent sur 25 des 26 classes.
+
+**1 incohérence réelle trouvée** : `OceanReasoningEngine.
+analyze_ocean_state()` avait été corrigé plus faiblement que ses 8
+engines frères - au lieu de mettre les valeurs à `None`, la correction
+précédente avait gardé les nombres fabriqués plausibles ("+0.8°C",
+45.0m, 4.5m, "Gulf Stream speed 1.8 m/s") et ajouté seulement un flag
+`is_real_data: False` à côté. Un appelant affichant les valeurs sans
+vérifier explicitement ce flag (rien ne l'y oblige) verrait toujours un
+état océanique précis et plausible qui n'a jamais été mesuré - exactement
+le risque de fausse confiance que les 8 autres engines de ce même
+paquet ont déjà été corrigés pour éviter. Aligné sur la même convention
+(valeurs à `None`, statut honnête). Le test correspondant
+(`tests/test_ai_expert.py`) n'asserttait que `is_real_data is False`,
+sans vérifier qu'une valeur individuelle était bien `None` comme pour
+tous ses voisins - renforcé de la même façon.
+
+**Validation réelle** : `ruff`/`mypy` propres. `tests/test_ai_expert.py`
+(7/7) re-exécuté et passe.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.catalog`, `acf.catalogs`, `acf.search`, `acf.certification` : vérifiés propres
+
+**`acf.catalog`** (15 fichiers, 1513 lignes) : catalogue statique de
+métadonnées de paramètres (atmosphère, océan, climat, satellite,
+surface) + registre de datasets chargés. Échantillonnage complet des
+5 fichiers de paramètres - noms courts GRIB/CF réels et corrects (`t`,
+`q`, `u`, `v`, `z`, `vo`, canaux satellite `bt_ir108`/`bt_wv062`/
+`bt_vis006` correspondant aux vraies conventions MSG/SEVIRI), unités SI
+correctes, `standard_name` CF corrects. Logique de registre
+(`ScientificCatalog`/`DatasetCatalog`/`CatalogManager`) simple mais
+réelle - `find()`/`search()` interrogent authentiquement les
+sous-catalogues enregistrés, aucune fabrication. Docstrings génériques
+et redondantes (template "Purpose/Responsibilities/..." identique
+fichier après fichier) mais non trompeuses - pas un surclaim, juste un
+style peu informatif, rien à corriger.
+
+**`acf.catalogs`** (10 fichiers, package séparé de `acf.catalog`
+singulier) : `CatalogHub`/`CFCatalog`/`ECMWFCatalog` réels, `CFCatalog`
+charge authentiquement `acf.standards.cf_standard_names.
+CF_STANDARD_NAMES` (déjà vérifié propre dans la passe `standards`).
+`catalog_manager.py` est explicitement disclosé comme "Compatibility
+Layer forwarding to acf.catalog.manager" - pas une duplication cachée.
+
+**`acf.search`** (1 fichier, 23 lignes) : `ScientificSearch` est un fin
+wrapper réel autour de `CatalogHub`, rien à corriger.
+
+**`acf.certification`** (2 fichiers, 306 lignes) : `CertificationEngine`
+implémente réellement le pipeline §32 du Prompt Maître (INPUT VALID ->
+QC PASS -> PHYSICS PASS -> SCIENCE PASS -> PROVENANCE PASS ->
+VERIFICATION STATUS -> CERTIFICATION) en réutilisant exclusivement des
+briques déjà réelles existantes (`Dataset.validate()`/
+`is_fully_documented()`, `PhysicsGuard` via `Dataset.validate()`,
+`Provenance.is_complete()`, `ModelSkillDatabase.mean_skill()`,
+`Event.transition_to()`) - jamais une 6e implémentation parallèle
+d'une vérification déjà faite ailleurs. Chaque étape non applicable
+(ex. `science_pass` sans `VariableContract` fourni) est honnêtement
+marquée `applicable=False`, jamais comptée pour ou contre la décision
+finale. Qualité remarquable, rien à corriger.
+
+**Validation réelle** : `tests/test_certification_engine.py` existe et
+couvre le pipeline réel.
