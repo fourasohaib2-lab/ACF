@@ -10014,6 +10014,50 @@ aucune fabrication trouvée) :
 **Validation** : `tests/test_operational_flight_meteorology.py` +
 `tests/test_sigmet_decoder.py` → 18/18 passent ; `ruff check` propre.
 
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.physics_guard` : vérifié propre, qualité exceptionnelle (infrastructure d'audit elle-même)
+
+**Contexte** : `acf.physics_guard` (10 fichiers, 985 lignes) - l'infrastructure
+de validation runtime section 22 du Prompt Maître (UNIT→DIMENSION→
+RANGE→COORDINATE→VERTICAL→TIME→CONSISTENCY). `range_check.py` déjà
+corrigé par une passe antérieure (conversion `DimensionalityError`→
+`RangeError` catchable). Les 8 fichiers substantiels restants +
+`__init__.py` lus intégralement.
+
+**Aucune fabrication trouvée nulle part - qualité la plus rigoureuse
+rencontrée cette session**, chaque check étant un vrai invariant
+physique incontestable, jamais une heuristique statistique déguisée :
+- `guard.py` (`PhysicsGuard`) : orchestre les checks réels applicables
+  selon les clés présentes, `PhysicsGuardReport.passed=True`
+  uniquement si zéro violation trouvée - jamais de `passed` fabriqué.
+- `coordinate_check.py` : validation lat/lon réelle, directement
+  motivée par un vrai bug lat/lon inversé trouvé et corrigé cette
+  session (`gui/dashboard/awci_dashboard.py`).
+- `dimension_check.py` : vérifie la cohérence de forme champ/coordonnées
+  pour la convention 2D/3D réelle d'ACF, portée honnêtement limitée
+  (pas un moteur d'analyse dimensionnelle générique pour tenseurs
+  arbitraires - explicitement disclosé).
+- `consistency_check.py` : point de rosée ≤ température (identité
+  thermodynamique réelle, jamais un heuristique ACF), humidité relative
+  bornée [0, 110%] (marge de sursaturation documentée, pas un seuil dur
+  arbitraire).
+- `time_check.py` : `valid_time >= forecast_reference_time`, `max_lead_time`
+  optionnel non appliqué par défaut ("aucune limite universelle" -
+  honnête).
+- `unit_check.py` : conversion dimensionnelle réelle via pint (pas une
+  table de correspondance devinée).
+- `vertical_check.py` : monotonicité réelle de la pression avec
+  l'altitude, généralisation d'un test déjà vérifié contre une vraie
+  sortie de solveur.
+- `variable_quality.py` (260 lignes, section 32 du Prompt Maître) :
+  mapping exhaustif et justifié exception→statut, `SUSPECT` jamais
+  produit car "aucune heuristique statistique/climatologique réelle
+  n'existe" (refus explicite d'inventer un seuil non fondé - citation
+  directe du docstring évoquant la section 78 du prompt maître contre
+  les règles non fondées), `classify_guard_exception()` lève
+  `ValueError` plutôt que de deviner pour une exception non mappée.
+
+**Aucune modification de code nécessaire.**
+
 ## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.verification` : vérifié propre, qualité exemplaire
 
 **Contexte** : `acf.verification` (5 fichiers, 600 lignes) - 2 fichiers
@@ -10314,3 +10358,29 @@ audit lui applique a posteriori ailleurs.
   empêcher" (citation directe du docstring).
 
 **Aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.validation` et `acf.normalization` : vérifiés propres
+
+**`acf.validation`** (8 fichiers, 283 lignes) - `anomaly.py`/`verification.py`
+déjà corrigés par une passe antérieure. `bias_analysis.py` (biais réel
+forecast-obs), `rmse.py` (RMSE réel, gère honnêtement une entrée
+invalide sans planter), `rule.py`/`default_rules.py`/`validator.py`
+(bornes opérationnelles réelles et plausibles pour t2m/rh/mslp/
+wind_speed/tp, même nature que `physics_guard.range_check.
+OPERATIONAL_RANGES`) lus intégralement - aucune fabrication.
+
+**`acf.normalization`** (4 fichiers, 295 lignes) - jamais touché,
+qualité exemplaire : `units.convert_unit()` délègue réellement à
+pint/MetPy (pas une table de facteurs devinée), la conversion
+précipitation kg/m²↔mm est dérivée explicitement (densité de l'eau
+1000 kg/m³, une identité météorologique réelle, pas un raccourci
+magique 1:1 caché). `variable_names.to_cf_standard_name()` charge les
+vraies tables JSON `resources/standards/ecmwf/parameters.json` et
+`cf_standard_names.json` (qui existaient déjà mais n'étaient chargées
+par aucun code avant ce paquet - vérifié par grep) et lève `ValueError`
+honnête pour une entrée absente plutôt que de deviner. Portée limitée
+honnêtement disclosée (pas de regridding spatial, pas d'interpolation
+verticale/temporelle - n'existent nulle part ailleurs dans ACF non
+plus).
+
+**Aucune modification de code nécessaire pour ces deux paquets.**
