@@ -10122,3 +10122,39 @@ déjà vérifiés propres.
 **Validation** : `tests/test_monitoring_platform.py` (6/6, incluant 2
 nouvelles assertions de livraison réelle + gestion d'abonné
 défaillant) passe ; `ruff check` propre.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.data_assimilation` : vérifié propre, discipline d'audit déjà exemplaire
+
+**Contexte** : `acf.data_assimilation` (18 fichiers, 393 lignes) - 4
+fichiers déjà corrigés par une passe antérieure
+(`analysis_state.py`, `ocean_observation_ingestor.py`,
+`satellite_ingestor.py`, `surface_station_ingestor.py`, ce dernier
+portant les disclosures "NOT_INGESTED_NO_STATION_DATA_CONNECTION" déjà
+citées ailleurs dans ce document). Les 7 fichiers substantiels restants
+plus 7 `__init__.py` lus intégralement.
+
+**Note de méthode** : 3 fichiers (`var_4d.py`, `enkf.py`,
+`hybrid_da.py`) étaient en réalité déjà corrigés par une passe
+antérieure mais absents du balayage de couverture par grep - ils
+utilisent la formule "NOT IMPLEMENTED (documented gap, not fabricated)"
+plutôt que la chaîne exacte "NOTE (correction"/"NOTE (found" recherchée
+- faux négatif de la métrique de couverture, pas un vrai trou. Ces 3
+fichiers lèvent honnêtement `NotImplementedError` avec une explication
+détaillée plutôt que de renvoyer un statut "SUCCESS"/"CONVERGED"
+fabriqué (4D-Var, EnKF, DA hybride 4DEnVar - tous documentent
+précisément l'infrastructure numérique manquante : modèles
+tangent-linéaire/adjoint, covariances d'erreur B/R, gain de Kalman réel).
+
+**Aucune fabrication trouvée dans les 4 fichiers génuinement jamais
+lus** :
+- `qc_engine.py` - pipeline QC dont le compte de rejets est réellement
+  calculé à partir du batch d'observations fourni (pas un chiffre fixe).
+- `observation_error.py` - écarts-types d'erreur d'observation par
+  type de capteur (0.2K thermomètre SYNOP, 1.2K IR satellite), valeurs
+  plausibles d'ordre de grandeur, genuinement distinctes par capteur.
+- `bias_correction.py` - correction VarBC = valeur brute - biais
+  estimé, arithmétique triviale et correcte.
+- `radar_ingestor.py` - relation Z-R radar (Z=a·R^b, a=200/b=1.6 -
+  coefficients Marshall-Palmer standard réels), formule correcte.
+
+**Aucune modification de code nécessaire.**
