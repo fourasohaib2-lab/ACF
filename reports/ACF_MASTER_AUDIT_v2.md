@@ -11277,3 +11277,43 @@ le nouveau statut honnête, le déclenchement réel de
 le handler ne bloque jamais en attendant le réseau (retour en moins
 d'1 seconde, les workers réels terminent bien en arrière-plan après
 coup). Suite complète confirmée verte.
+
+## Mise à jour 2026-09-06 (suite, "continue selon ton jugement") — Phase 64 : 5e flux réel dans "Earth Monitoring" - PIREP honnêtement distingué d'AMDAR
+
+**Investigation de faisabilité pour AMDAR** : AMDAR (Aircraft
+Meteorological Data Relay - télémétrie automatique embarquée sur avions
+de ligne) est distribué via le GTS/WMO restreint - aucune API publique
+gratuite trouvée. En revanche, `https://aviationweather.gov/api/data/
+pirep` (NOAA, gratuit, sans authentification) répond réellement avec de
+vrais comptes-rendus PIREP (Pilot Report - rapport vocal/texte du
+pilote sur les conditions de vol : turbulence, givrage, plafond) -
+vérifié en direct : 338 rapports réels sur les États-Unis lors du test.
+
+**Distinction honnête, pas une substitution déguisée** : PIREP et AMDAR
+sont deux programmes réels et différents (rapport humain volontaire vs
+télémétrie automatique). Plutôt que de présenter des données PIREP sous
+l'étiquette "AMDAR Aircraft", la ligne est renommée "Aircraft Reports
+(PIREP)" - la même discipline que le renommage du sous-titre de
+`GeologyPanel` en Phase 56.
+
+**Construit** : `acf.connectors.pirep_reports.PIREPConnector.
+fetch_recent_reports()` (même patron que `ArgoFloatsConnector` -
+honnête sur chaque échec réseau/HTTP/JSON), câblé via un
+`_PIREPFetchWorker` (même patron `QThreadPool` que les 4 précédents).
+Mis à jour **dans le même changement** - pour ne pas répéter la leçon
+des Phases 62-63 - les deux autres endroits qui affichent ces flux :
+la boîte de dialogue "Observations" du Workstation et
+`ESOCController.handle_refresh_observations()` (bouton toolbar "Live
+Stream"), tous deux passés de 4 à 5 flux réels.
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests
+(`tests/test_pirep_reports_connector.py`, réseau simulé) couvrant le
+succès réel, l'échec réseau, HTTP non-200, JSON malformé, et forme de
+réponse inattendue. Tests de panneau/dialogue/contrôleur mis à jour en
+cohérence (24 tests concernés, tous verts). Suite complète confirmée
+verte.
+
+**Ce qui reste** : seul "Lightning Network" reste honnêtement
+`NOT_CONNECTED` - aucune API publique gratuite trouvée pour un réseau
+de détection de foudre en temps réel (Blitzortung nécessite une
+authentification/contribution de station).

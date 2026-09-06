@@ -405,6 +405,30 @@ class _NexradFetchWorker(QRunnable):
             logging.getLogger("acf.gui.esoc.panel_manager").exception("NEXRAD station poll failed in background worker")
 
 
+class _PIREPFetchSignals(QObject):
+    """QRunnable itself cannot be a QObject (no signals) - same
+    companion-object pattern as acf.gui.map.mtg_basemap._MTGFetchSignals."""
+
+    finished = Signal(object)  # PIREPFetchResult
+
+
+class _PIREPFetchWorker(QRunnable):
+    """Runs PIREPConnector.fetch_recent_reports() off the GUI thread -
+    a synchronous network call there would freeze the panel."""
+
+    def __init__(self, connector: Any) -> None:
+        super().__init__()
+        self._connector = connector
+        self.signals = _PIREPFetchSignals()
+
+    def run(self) -> None:
+        try:
+            result = self._connector.fetch_recent_reports()
+            self.signals.finished.emit(result)
+        except Exception:  # pragma: no cover - defensive, mirrors _ArgoFetchWorker
+            logging.getLogger("acf.gui.esoc.panel_manager").exception("PIREP fetch failed in background worker")
+
+
 class EarthMonitoringPanel(BasePanelWidget):
     """9. Live Earth Monitoring Panel.
 
@@ -424,22 +448,33 @@ class EarthMonitoringPanel(BasePanelWidget):
     `acf.connectors.nexrad_stations.NEXRADRadarConnector` (the real,
     public, no-auth-required NOAA api.weather.gov radar station status
     endpoint - real operational mode/latency per WSR-88D site, not
-    decoded reflectivity volumes) for "Doppler Radar (NEXRAD)". The
-    remaining 2 rows (AMDAR, Lightning Network) have no real connector
-    anywhere in ACF - honestly relabeled "NOT_CONNECTED" rather than
-    left as "EXAMPLE" with invented latency figures. Building real
-    connectors for those remaining external networks is a separate
-    undertaking, not done here.
+    decoded reflectivity volumes) for "Doppler Radar (NEXRAD)"; and
+    `acf.connectors.pirep_reports.PIREPConnector` (the real, public,
+    no-auth-required NOAA aviationweather.gov PIREP endpoint) for what
+    used to be labeled "AMDAR Aircraft".
+
+    Honest relabeling, not a substitution in disguise: no free public
+    AMDAR (Aircraft Meteorological Data Relay - automated airliner
+    telemetry, distributed via the restricted WMO GTS) feed exists
+    anywhere ACF can reach (confirmed during this investigation).
+    PIREP (Pilot Report - a pilot's own voice/text report of turbulence/
+    icing/cloud conditions) is a real, different, publicly-reachable
+    program - the row is renamed "Aircraft Reports (PIREP)" rather than
+    presented as AMDAR data it is not. Only "Lightning Network" remains
+    with no real connector anywhere in ACF - honestly marked
+    "NOT_CONNECTED" rather than left as "EXAMPLE" with an invented
+    latency figure.
     """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📡 EARTH OBSERVATION & MONITORING CENTER", "#4FC3F7", registry, dispatcher)
         note = QLabel(
-            "Four real live feeds below (GOES/MTG via the same EUMETSAT connector every ACF map "
+            "Five real live feeds below (GOES/MTG via the same EUMETSAT connector every ACF map "
             "uses; ARGO via the public Argovis API; METAR via the same NOAA feed the AWCI "
             "messages/alerts panels already use; NEXRAD via the public NOAA api.weather.gov radar "
-            "station status endpoint) - the other 2 networks have no real connector in ACF and are "
-            "honestly marked NOT_CONNECTED, not simulated."
+            "station status endpoint; PIREP - pilot reports, not AMDAR, which has no free public "
+            "feed ACF can reach) - Lightning Network has no real connector in ACF and is honestly "
+            "marked NOT_CONNECTED, not simulated."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #F57F17; font-style: italic;")
@@ -449,7 +484,6 @@ class EarthMonitoringPanel(BasePanelWidget):
         self.table = QTableWidget(6, 3)
         self.table.setHorizontalHeaderLabels(["Data Source", "Status", "Latency"])
         self._not_connected_sources = {
-            4: "AMDAR Aircraft",
             5: "Lightning Network",
         }
         for row, src in self._not_connected_sources.items():
@@ -465,6 +499,9 @@ class EarthMonitoringPanel(BasePanelWidget):
         self.table.setItem(3, 0, QTableWidgetItem("ARGO Ocean Floats"))
         self.table.setItem(3, 1, QTableWidgetItem("NOT_FETCHED_YET"))
         self.table.setItem(3, 2, QTableWidgetItem("N/A"))
+        self.table.setItem(4, 0, QTableWidgetItem("Aircraft Reports (PIREP)"))
+        self.table.setItem(4, 1, QTableWidgetItem("NOT_FETCHED_YET"))
+        self.table.setItem(4, 2, QTableWidgetItem("N/A"))
         g_layout.addWidget(self.table)
         self.main_layout.addWidget(group)
         btn = QPushButton("🔄 Refresh Ingestion Streams")
@@ -473,11 +510,13 @@ class EarthMonitoringPanel(BasePanelWidget):
 
         from acf.connectors.argo_floats import ArgoFloatsConnector
         from acf.connectors.nexrad_stations import NEXRADRadarConnector
+        from acf.connectors.pirep_reports import PIREPConnector
         from acf.gui.dashboard.awci_map_panel import _make_mtg_update_forwarder
         from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
         self._argo_connector = ArgoFloatsConnector()
         self._nexrad_connector = NEXRADRadarConnector()
+        self._pirep_connector = PIREPConnector()
         self._argo_last_result: Any = None
         self._metar_last_fetch: float | None = None
         MTGBasemapProvider.instance().updated.connect(
@@ -487,6 +526,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         self._fetch_argo_async()
         self._fetch_metar_async()
         self._fetch_nexrad_async()
+        self._fetch_pirep_async()
 
     def _refresh(self) -> None:
         self.dispatcher.dispatch("refresh_observations")
@@ -497,6 +537,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         self._fetch_argo_async()
         self._fetch_metar_async()
         self._fetch_nexrad_async()
+        self._fetch_pirep_async()
 
     def _on_mtg_basemap_updated(self) -> None:
         self._refresh_mtg_row()
@@ -574,6 +615,24 @@ class EarthMonitoringPanel(BasePanelWidget):
         else:
             self.table.setItem(1, 1, QTableWidgetItem(result.status))
             self.table.setItem(1, 2, QTableWidgetItem("N/A"))
+
+    def _fetch_pirep_async(self) -> None:
+        worker = _PIREPFetchWorker(self._pirep_connector)
+        worker.signals.finished.connect(self._on_pirep_fetched)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_pirep_fetched(self, result: Any) -> None:
+        import time
+
+        if not shiboken6.isValid(self):
+            return  # panel closed/destroyed while this fetch was in flight
+        self.table.setItem(4, 0, QTableWidgetItem("Aircraft Reports (PIREP)"))
+        if result.is_real_data:
+            self.table.setItem(4, 1, QTableWidgetItem(f"LIVE ({result.report_count} reports)"))
+            self.table.setItem(4, 2, QTableWidgetItem(f"{(time.time() - result.fetched_at) / 60.0:.1f} min"))
+        else:
+            self.table.setItem(4, 1, QTableWidgetItem(result.status))
+            self.table.setItem(4, 2, QTableWidgetItem("N/A"))
 
 
 class EarthPhysicsPanel(BasePanelWidget):

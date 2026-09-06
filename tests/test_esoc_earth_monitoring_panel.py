@@ -6,16 +6,19 @@ status already feeding every real ACF map view (Phase 57); the "ARGO
 Ocean Floats" row to the real, public Argovis API via
 acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58); the
 "Surface AWS (SYNOP/METAR)" row to the real NOAA feed already trusted
-by acf.aviation.icao.live_source (Phase 59); and the "Doppler Radar
+by acf.aviation.icao.live_source (Phase 59); the "Doppler Radar
 (NEXRAD)" row to the real, public NOAA api.weather.gov radar station
 status endpoint via acf.connectors.nexrad_stations.NEXRADRadarConnector
-(Phase 60) - honestly relabeling the remaining 2 rows (no real
-connector exists for them anywhere in ACF) "NOT_CONNECTED" instead of
-leaving them as an equally fake "EXAMPLE".
+(Phase 60); and the former "AMDAR Aircraft" row, honestly relabeled
+"Aircraft Reports (PIREP)" and wired to acf.connectors.pirep_reports.
+PIREPConnector (Phase 64 - no free public AMDAR feed exists anywhere
+ACF can reach; PIREP is a real, different, publicly-reachable program,
+not a mislabeled stand-in). Only "Lightning Network" remains honestly
+"NOT_CONNECTED" instead of an "EXAMPLE" with an invented latency.
 
 Network access is mocked - same convention as tests/test_mtg_basemap.py,
-tests/test_argo_floats_connector.py, tests/test_nexrad_stations_connector.py
-and tests/test_aviation_live_source.py.
+tests/test_argo_floats_connector.py, tests/test_nexrad_stations_connector.py,
+tests/test_pirep_reports_connector.py and tests/test_aviation_live_source.py.
 """
 
 from __future__ import annotations
@@ -89,14 +92,14 @@ def _fake_disk_bytes() -> bytes:
     return buf.getvalue()
 
 
-def test_the_2_unconnected_networks_are_honestly_labeled_not_connected(qapp, registry):
+def test_the_last_unconnected_network_is_honestly_labeled_not_connected(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
 
-    for row in (4, 5):  # AMDAR, Lightning - rows 1/2/3 are the real NEXRAD/METAR/ARGO feeds
-        assert panel.table.item(row, 1).text() == "NOT_CONNECTED"
-        assert panel.table.item(row, 2).text() == "N/A"
+    assert panel.table.item(5, 0).text() == "Lightning Network"
+    assert panel.table.item(5, 1).text() == "NOT_CONNECTED"
+    assert panel.table.item(5, 2).text() == "N/A"
 
 
 def test_mtg_row_shows_the_real_provider_status_before_any_fetch(qapp, registry):
@@ -220,7 +223,34 @@ def test_nexrad_row_goes_live_with_real_operational_counts_once_fetched(qapp, re
     assert panel.table.item(1, 2).text().endswith(" min")
 
 
-def test_refresh_button_refetches_all_4_real_feeds(qapp, registry):
+def test_pirep_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks the real network with an honest 503,
+    so the PIREP fetch fired at construction time must resolve to that
+    honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(4, 0).text() == "Aircraft Reports (PIREP)"
+    assert "NOT_FETCHED_HTTP_503" in panel.table.item(4, 1).text()
+    assert panel.table.item(4, 2).text() == "N/A"
+
+
+def test_pirep_row_goes_live_with_a_real_report_count_once_fetched(qapp, registry):
+    from acf.connectors.pirep_reports import PIREPFetchResult
+
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    panel._on_pirep_fetched(PIREPFetchResult(is_real_data=True, status="FETCHED_OK", report_count=338))
+
+    assert panel.table.item(4, 1).text() == "LIVE (338 reports)"
+    assert panel.table.item(4, 2).text().endswith(" min")
+
+
+def test_refresh_button_refetches_all_5_real_feeds(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
@@ -229,8 +259,10 @@ def test_refresh_button_refetches_all_4_real_feeds(qapp, registry):
         patch.object(panel, "_fetch_argo_async") as mock_argo,
         patch.object(panel, "_fetch_metar_async") as mock_metar,
         patch.object(panel, "_fetch_nexrad_async") as mock_nexrad,
+        patch.object(panel, "_fetch_pirep_async") as mock_pirep,
     ):
         panel._refresh()
         mock_argo.assert_called_once()
         mock_metar.assert_called_once()
         mock_nexrad.assert_called_once()
+        mock_pirep.assert_called_once()

@@ -1653,26 +1653,46 @@ class ACFWorkstation(QWidget):
         to assert a now-false blanket claim. The underlying physics fields
         elsewhere in this Workstation genuinely still come only from
         CoupledEarthSolver - that half of the original disclosure stands.
+
+        UPDATED (Phase 64, same session): a 5th real feed joined
+        EarthMonitoringPanel - acf.connectors.pirep_reports.PIREPConnector
+        (real NOAA PIREP - pilot reports, not AMDAR, which has no free
+        public feed ACF can reach). Updated here too, in the same commit
+        that adds it, specifically to not repeat the staleness this NOTE
+        itself documents.
         """
         from acf.connectors.argo_floats import ArgoFloatsConnector
         from acf.connectors.nexrad_stations import NEXRADRadarConnector
-        from acf.gui.esoc.panel_manager import _ArgoFetchWorker, _METARFetchWorker, _NexradFetchWorker
+        from acf.connectors.pirep_reports import PIREPConnector
+        from acf.gui.esoc.panel_manager import (
+            _ArgoFetchWorker,
+            _METARFetchWorker,
+            _NexradFetchWorker,
+            _PIREPFetchWorker,
+        )
         from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Observations")
         layout = QVBoxLayout(dialog)
         note = QLabel(
-            "4 real observation feeds below (same connectors as the ESOC Earth Monitoring panel) - "
-            "the physics fields shown elsewhere in this Workstation still come only from a real, "
-            "live CoupledEarthSolver run, never from these observation feeds."
+            "5 real observation feeds below (same connectors as the ESOC Earth Monitoring panel; "
+            "PIREP is pilot reports, not AMDAR, which has no free public feed ACF can reach) - the "
+            "physics fields shown elsewhere in this Workstation still come only from a real, live "
+            "CoupledEarthSolver run, never from these observation feeds."
         )
         note.setWordWrap(True)
         layout.addWidget(note)
 
-        table = QTableWidget(4, 2)
+        table = QTableWidget(5, 2)
         table.setHorizontalHeaderLabels(["Feed", "Status"])
-        rows = ["GOES/MTG Satellites", "ARGO Ocean Floats", "Surface AWS (SYNOP/METAR)", "Doppler Radar (NEXRAD)"]
+        rows = [
+            "GOES/MTG Satellites",
+            "ARGO Ocean Floats",
+            "Surface AWS (SYNOP/METAR)",
+            "Doppler Radar (NEXRAD)",
+            "Aircraft Reports (PIREP)",
+        ]
         for row, name in enumerate(rows):
             table.setItem(row, 0, QTableWidgetItem(name))
             table.setItem(row, 1, QTableWidgetItem("Checking..."))
@@ -1713,6 +1733,12 @@ class ACFWorkstation(QWidget):
             )
             table.setItem(3, 1, QTableWidgetItem(text))
 
+        def _on_pirep(result: Any) -> None:
+            if not shiboken6.isValid(table):
+                return
+            text = f"LIVE ({result.report_count} reports)" if result.is_real_data else result.status
+            table.setItem(4, 1, QTableWidgetItem(text))
+
         argo_worker = _ArgoFetchWorker(ArgoFloatsConnector())
         argo_worker.signals.finished.connect(_on_argo)
         QThreadPool.globalInstance().start(argo_worker)
@@ -1724,6 +1750,10 @@ class ACFWorkstation(QWidget):
         nexrad_worker = _NexradFetchWorker(NEXRADRadarConnector())
         nexrad_worker.signals.finished.connect(_on_nexrad)
         QThreadPool.globalInstance().start(nexrad_worker)
+
+        pirep_worker = _PIREPFetchWorker(PIREPConnector())
+        pirep_worker.signals.finished.connect(_on_pirep)
+        QThreadPool.globalInstance().start(pirep_worker)
 
         dialog.exec()
 

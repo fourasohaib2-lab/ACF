@@ -7,10 +7,10 @@ reach ACF's real observation feeds before this fix but never did.
 CORRECTED (2026-09-06): used to unconditionally report
 NOT_REFRESHED_NO_INGESTION_PIPELINE_CONNECTED - true when written, but
 stale once this same session's Phases 57-60 wired 4 real observation
-connectors (GOES/MTG, ARGO, METAR, NEXRAD) into
-acf.gui.esoc.panel_manager.EarthMonitoringPanel. Now genuinely triggers
-a real, async refresh of all 4 by reusing that panel's own worker
-classes, fire-and-forget via CommandDispatcher.run_async().
+connectors (GOES/MTG, ARGO, METAR, NEXRAD), then a 5th (PIREP, Phase
+64) into acf.gui.esoc.panel_manager.EarthMonitoringPanel. Now genuinely
+triggers a real, async refresh of all 5 by reusing that panel's own
+worker classes, fire-and-forget via CommandDispatcher.run_async().
 
 Network access is mocked - same convention as
 tests/test_esoc_earth_monitoring_panel.py.
@@ -71,8 +71,8 @@ def controller():
 def test_refresh_observations_reports_a_real_trigger_not_a_stale_not_connected_claim(controller):
     result = controller.handle_refresh_observations()
 
-    assert result["status"] == "REFRESH_TRIGGERED_4_REAL_FEEDS_ASYNC_RESULTS_NOT_YET_KNOWN"
-    assert result["feeds_triggered"] == 4
+    assert result["status"] == "REFRESH_TRIGGERED_5_REAL_FEEDS_ASYNC_RESULTS_NOT_YET_KNOWN"
+    assert result["feeds_triggered"] == 5
 
 
 def test_refresh_observations_genuinely_starts_the_mtg_provider_refresh(controller):

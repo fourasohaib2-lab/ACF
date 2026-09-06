@@ -77,13 +77,13 @@ def test_model_data_dialog_shows_the_real_model_configs(qapp, monkeypatch):
     assert shown_models == set(MODEL_CONFIGS.keys())
 
 
-def test_observations_dialog_shows_the_4_real_feeds_honestly(qapp, monkeypatch):
+def test_observations_dialog_shows_the_5_real_feeds_honestly(qapp, monkeypatch):
     """CORRECTED (2026-09-06): this dialog used to unconditionally state
     "No real observation feed is connected" - true when written, stale
     once ESOC's Earth Monitoring panel (same session, Phases 57-60)
-    wired 4 real feeds this dialog never learned about. Now reuses those
-    exact same connectors/workers rather than continuing to assert a
-    now-false claim."""
+    wired 4 real feeds this dialog never learned about, then a 5th
+    (PIREP, Phase 64). Now reuses those exact same connectors/workers
+    rather than continuing to assert a now-false claim."""
     captured = _capture_dialog(monkeypatch)
     ws = ACFWorkstation()
 
@@ -94,17 +94,18 @@ def test_observations_dialog_shows_the_4_real_feeds_honestly(qapp, monkeypatch):
     dialog = captured["dialog"]
     table = dialog.findChild(QTableWidget)
     assert table is not None
-    assert table.rowCount() == 4
-    feed_names = {table.item(row, 0).text() for row in range(4)}
+    assert table.rowCount() == 5
+    feed_names = {table.item(row, 0).text() for row in range(5)}
     assert feed_names == {
         "GOES/MTG Satellites",
         "ARGO Ocean Floats",
         "Surface AWS (SYNOP/METAR)",
         "Doppler Radar (NEXRAD)",
+        "Aircraft Reports (PIREP)",
     }
     # The autouse fixture blocks every real network call, so every
     # status must honestly reflect that - never a fabricated LIVE state.
-    for row in range(4):
+    for row in range(5):
         assert "LIVE" not in table.item(row, 1).text()
 
 
