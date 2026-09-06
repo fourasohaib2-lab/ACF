@@ -10239,6 +10239,17 @@ changeant le statut local sans appel scheduler réel).
 
 **Aucune modification de code nécessaire pour ces deux paquets.**
 
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.testing` : vérifié propre
+
+`acf.testing.golden` (infrastructure de comparaison "golden dataset"
+pour `tests/scientific/regression/test_golden_datasets.py`) : lu
+intégralement, aucune fabrication - comparaison récursive réelle avec
+tolérance flottante (`math.isclose`), erreur nommant le chemin/les
+valeurs exactes du premier mismatch, `write_golden()` jamais appelée
+par un test (une mise à jour de fixture est une décision humaine
+délibérée, jamais un effet de bord automatique d'un run de test).
+Aucune modification de code nécessaire.
+
 ## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.forecast` : vérifié propre, infrastructure de production réelle
 
 **Contexte** : `acf.forecast` (3 fichiers, 340 lignes) - `forecast_engine.py`
