@@ -10520,3 +10520,24 @@ partout où c'est affirmé.
   JS du tableau de bord lit les vrais champs de l'API sans en inventer.
 
 **Aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.hpc` et `acf.hpc_connector` : vérifiés propres
+
+**`acf.hpc`** (10 fichiers, 360 lignes) - 6/10 déjà corrigés par une
+passe antérieure. Les 4 restants (`checkpoint.py` - sérialisation
+pickle réelle, `gpu_solver.py` - bascule CuPy/NumPy honnête selon la
+disponibilité réelle de la bibliothèque, 2 `__init__.py`) lus
+intégralement, aucune fabrication.
+
+**`acf.hpc_connector`** (29 fichiers, déjà largement audité et validé
+contre le vrai cluster Fennec - "HPC: IMPLEMENTED, VALIDATED") - 22/29
+déjà corrigés. Les 7 restants lus intégralement : `slurm_duration.py`
+(parsing réel du format de durée SLURM `[jours-]heures:minutes:secondes`,
+renvoie honnêtement `None` pour `"UNLIMITED"`/non numérique plutôt
+qu'un nombre inventé), `resource_optimizer.py` (`generate_slurm_script()`
+utilise `set -e` donc le message "completed successfully" final n'est
+jamais atteint si `mpirun` échoue réellement - vérifié non fabriqué),
+`output_manager.py`/`queue_manager.py`/`logging.py`/`module_loader.py`
+(plomberie réelle, aucun statut fabriqué), `__init__.py`.
+
+**Aucune modification de code nécessaire pour ces deux paquets.**
