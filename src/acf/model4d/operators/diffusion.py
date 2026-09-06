@@ -19,6 +19,17 @@ class Diffusion:
     - mélange turbulent
     - diffusion thermique
     - transport atmosphérique
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation): the class-level formula above (D = K x nabla^2
+    phi) is only actually applied in calculate(coefficient, laplacian).
+    horizontal(x, y) and vertical(z) skip the diffusion coefficient K
+    entirely and just return the raw Laplacian component(s) unweighted
+    (x+y, z) - so despite their "Diffusion horizontale/verticale"
+    docstrings, they compute a Laplacian, not a diffusion. Minor (no
+    AI/ML overclaim, this package is disconnected from the rest of ACF
+    - see acf.model4d's own module docstring), but disclosed rather
+    than silently trusted.
     """
 
     @staticmethod

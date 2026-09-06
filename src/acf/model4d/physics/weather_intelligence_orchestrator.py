@@ -50,6 +50,17 @@ class WeatherIntelligenceOrchestrator:
     Weather Intelligence Orchestrator
 
     Central coordination layer of Model4D.
+
+    NOTE (Physics Guard, 2026-09-06 model4d duplication/fabrication
+    audit continuation - see acf.model4d's own module docstring): no
+    orchestration (calling, sequencing, or coordinating other
+    model4d.physics engines) happens anywhere in this class - despite
+    "Orchestrator" in the name, every method reads a field already
+    present on the `WeatherIntelligenceInput` it's handed (or applies a
+    fixed-weight average / threshold if/elif chain to those fields
+    directly). Real, deterministic arithmetic, not the coordination
+    capability the name claims. Not fabricated data - disclosed rather
+    than silently trusted.
     """
 
     def active_models(

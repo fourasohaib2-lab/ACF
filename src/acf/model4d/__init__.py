@@ -151,9 +151,33 @@ Guard NOTE in the file itself:
   nothing left to do.
 
 All 20 `*_engine.py` files in `physics/` are now individually reviewed
-and, where warranted, disclosed. What's NOT yet covered by this pass:
-the other ~131 non-`_engine.py` files under `physics/` (the bulk of
-this package's real physics content), and `model4d/interpolation/`
-(9 files) / `model4d/operators/` (8 files) - tracked as remaining work
-in docs/STATUS.md rather than claimed done here.
+and, where warranted, disclosed.
+
+UPDATE (2026-09-06, same-day continuation): also reviewed
+`weather_intelligence_orchestrator.py` (same overclaim pattern -
+"Orchestrator" that does no orchestration, disclosed), all 8 files
+under `model4d/operators/` and all 9 under `model4d/interpolation/`
+in full (3 already carried excellent prior fixes - InterpolationEngine's
+pass-through placeholders, OperatorsEngine's two AttributeError-raising
+delegations, SplineInterpolation's B-spline-vs-natural-spline mislabel;
+1 new minor finding disclosed - `Diffusion.horizontal()`/`vertical()`
+skip the diffusion coefficient K and return a raw Laplacian instead);
+the remaining operators/interpolation files (gradient, divergence,
+curl, advection, laplacian, linear, bilinear, trilinear, cubic,
+temporal, vertical) were read in full and are genuinely correct,
+standard numerical methods matching their names - nothing to disclose.
+142 operators+interpolation tests passed.
+
+Also spot-read ~12 representative non-`_engine.py` physics/ files
+across distinct physical domains (dynamics.py, moisture.py,
+thermodynamics.py, radiation.py, convection.py, cryosphere.py, plus
+the 6 files a suspicious-marker grep surfaced) - all either already
+correctly fixed by an earlier session or genuinely honest as written.
+This was a representative sample, NOT an exhaustive read of all ~131
+non-`_engine.py` physics/ files - most remain individually unreviewed,
+though a repo-wide grep found none of them carrying the generic
+templated-docstring bloat pattern or a stub/fake/placeholder marker
+that isn't already an honest disclosure. Tracked precisely in
+docs/STATUS.md; model4d stays [~], not [x], until the rest of
+physics/ is actually read.
 """

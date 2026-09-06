@@ -9,10 +9,14 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 ## Tier F — Foundation (bloquant v1.0)
 
 - [x] `core`
-- [~] `model4d` (les 20 fichiers `physics/*_engine.py` sont couverts ;
-  restent ~131 fichiers `physics/` non-`_engine.py`,
-  `model4d/interpolation/` (9 fichiers), `model4d/operators/` (8
-  fichiers))
+- [~] `model4d` (couverts : les 20 `physics/*_engine.py` +
+  `weather_intelligence_orchestrator.py`, tout `model4d/operators/` (8
+  fichiers) et `model4d/interpolation/` (9 fichiers), + échantillon
+  représentatif de ~12 fichiers `physics/` non-`_engine.py`. Reste :
+  la majorité des ~131 fichiers `physics/` non-`_engine.py`, non
+  individuellement relus (un grep global n'y trouve ni le gabarit
+  générique ni de marqueur stub/fake non déjà divulgué, mais ce n'est
+  pas une relecture exhaustive))
 - [ ] `science`
 - [x] `physics_guard`
 - [x] `parameters`
