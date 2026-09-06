@@ -10,6 +10,17 @@ from typing import Any
 class AWCIMonitoringDashboard:
     """
     Configuration et métadonnées du tableau de bord 'GLOBAL REAL-TIME EARTH MONITORING MISSION CONTROL' dans AWCI.
+
+    NOTE (Physics Guard, 2026-09-06 Tier E sweep): a static workspace/
+    section/layer-name descriptor, the third instance of the same
+    pattern found this sweep (see acf.master.awci_master_dashboard.
+    MasterDashboard and acf.ai_expert.awci_ai_dashboard.
+    AWCI_AIDashboard's own NOTEs) - no status/certification field to
+    fabricate, but verified by grep, not constructed anywhere in src/
+    outside this package's own tests/test_monitoring_platform.py. The
+    25-layer "live_map_layers" list describes a UI that isn't rendered
+    by any real widget - distinct from acf.monitoring's actually-real,
+    already-audited telemetry/anomaly/health/event-stream engines.
     """
 
     @classmethod
