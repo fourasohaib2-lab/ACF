@@ -10083,3 +10083,42 @@ sans modification.
 
 **Validation** : `tests/test_operational_hydrology_flooding.py`
 (8/8) passe ; `ruff check` propre.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.monitoring` : vrai bug fonctionnel trouvé (pub/sub qui ne délivre jamais), une passe antérieure s'était trompée
+
+**Contexte** : `acf.monitoring` (11 fichiers) - 8/11 déjà corrigés par
+une passe antérieure. Les 2 fichiers substantiels restants
+(`event_stream.py`, `monitoring_dashboard.py`) plus le `__init__.py`
+lus intégralement.
+
+**Vrai bug fonctionnel trouvé et corrigé, pas une fabrication de
+chiffre mais un gap de câblage réel** (`event_stream.py`) :
+`PlanetaryEventStream.publish()` enregistrait bien un historique réel
+et renvoyait `"status": "PUBLISHED"`, mais n'invoquait jamais aucun des
+callbacks que `subscribe()` collecte dans `self.subscribers[event_type]`
+- un abonné qui s'abonne puis un événement publié pour ce même type ne
+recevait jamais rien, alors que c'est la seule raison d'être d'un bus
+pub/sub. Reproduit concrètement (`bus.subscribe(...); bus.publish(...)`
+→ callback jamais appelé). **Une passe d'audit antérieure s'était
+explicitement mais à tort prononcée sur ce point** :
+`tests/test_monitoring_platform.py` portait le commentaire
+"PlanetaryEventStream is a genuine pub/sub implementation - unchanged"
+- vrai pour l'enregistrement d'historique (pas de chiffre fabriqué),
+faux pour la livraison aux abonnés (jamais vérifiée par ce test, qui
+n'appelait jamais `subscribe()`). Corrigé : `publish()` invoque
+désormais réellement chaque callback abonné, capture l'exception d'un
+abonné défaillant sans bloquer la livraison aux autres ni faire
+planter `publish()`, et renvoie `subscribers_notified`/
+`delivery_errors` pour une visibilité honnête. Vérifié qu'aucun
+appelant réel dans `src/` ne dépendait du comportement précédent (bus
+seulement exporté, jamais réellement utilisé ailleurs que dans son
+propre test) - un vrai gap resté inerte, pas un changement de
+comportement pour un appelant existant.
+
+**Fichier vérifié propre** : `monitoring_dashboard.py` - configuration
+statique d'interface AWCI, même nature que les autres tableaux de bord
+déjà vérifiés propres.
+
+**Validation** : `tests/test_monitoring_platform.py` (6/6, incluant 2
+nouvelles assertions de livraison réelle + gestion d'abonné
+défaillant) passe ; `ruff check` propre.

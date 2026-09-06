@@ -75,11 +75,32 @@ def test_websocket_server_and_event_stream():
     assert bcast["broadcast_status"] == "NOT_DISPATCHED_NO_REAL_SERVER_CONNECTED"
     assert ws.stop_server()["status"] == "STOPPED"
 
-    # PlanetaryEventStream is a genuine pub/sub implementation - unchanged.
+    # CORRECTED (2026-09-06): this test used to claim "PlanetaryEventStream
+    # is a genuine pub/sub implementation - unchanged" based only on
+    # publish() genuinely recording history, but publish() never
+    # actually invoked the callbacks subscribe() collects - a real
+    # subscriber never received a real published event. Now verified
+    # directly: a subscribed callback IS called with the real payload.
     bus = PlanetaryEventStream()
+    received: list[dict] = []
+    bus.subscribe("CycloneDetected", received.append)
     pub = bus.publish("CycloneDetected", {"name": "Category 4 Storm"}, priority="HIGH")
     assert pub["status"] == "PUBLISHED"
     assert pub["event"]["event_type"] == "CycloneDetected"
+    assert pub["subscribers_notified"] == 1
+    assert received == [{"name": "Category 4 Storm"}]
+
+    # A subscriber that raises is recorded, not silently swallowed, and
+    # does not prevent other subscribers from being notified.
+    def _broken_subscriber(_payload):
+        raise RuntimeError("boom")
+
+    bus.subscribe("FloodDetected", _broken_subscriber)
+    bus.subscribe("FloodDetected", received.append)
+    flood_pub = bus.publish("FloodDetected", {"river": "Seine"})
+    assert flood_pub["subscribers_notified"] == 1
+    assert len(flood_pub["delivery_errors"]) == 1
+    assert received[-1] == {"river": "Seine"}
 
 
 def test_anomaly_alert_health_and_registry():
