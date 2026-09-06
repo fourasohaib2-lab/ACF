@@ -66,7 +66,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `knowledge_platform`
 - [x] `dashboard`
 - [x] `web`
-- [ ] `api`
+- [x] `api`
 - [~] `monitoring`
 - [ ] `alerts`
 - [x] `hazard_operations`
@@ -136,8 +136,8 @@ tracké ici tant que non expliqué avec certitude.
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
 - Tier C : **16/16 audités — TIER C COMPLET**
-- Tier E : 21/31 audités
-- Total bloquant v1.0 (F+C+E) : 48/58
+- Tier E : 22/31 audités
+- Total bloquant v1.0 (F+C+E) : 49/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
