@@ -22,7 +22,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 ## Tier C — Core (bloquant v1.0)
 
-- [~] `data`
+- [x] `data`
 - [x] `catalog`
 - [x] `catalogs`
 - [x] `importers`
@@ -135,9 +135,9 @@ tracké ici tant que non expliqué avec certitude.
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 13/16 audités
+- Tier C : 14/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 39/58
+- Total bloquant v1.0 (F+C+E) : 40/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
