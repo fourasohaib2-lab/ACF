@@ -24,6 +24,16 @@ class CloudRadiativeFeedback:
         Calculates cloud optical thickness (tau) from liquid water path (g/m2)
         and droplet effective radius (micrometers).
         tau ≈ 3/2 * (LWP / (rho_w * r_eff))
+
+        NOTE (Physics Guard, 2026-09-06 Tier X sweep - model4d/physics/
+        is a real, disconnected reserve, see model4d/__init__.py's own
+        NOTE): the formula above includes the water density rho_w
+        divisor, but the implementation below computes
+        1.5*(LWP/r_eff), omitting rho_w entirely - a real formula-vs-
+        implementation mismatch, not fixed here (disconnected package,
+        would need a documented unit-convention decision - e.g. rho_w
+        folded into an implicit unit choice - rather than a guessed
+        constant), disclosed rather than silently trusted.
         """
         if effective_radius_um <= 0:
             raise ValueError("Effective radius must be positive.")

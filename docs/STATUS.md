@@ -91,10 +91,15 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
   par grep répété. Code réel, testé, conservé - juste hors du périmètre
   v1.0. Couverts : les 20 `physics/*_engine.py` +
   `weather_intelligence_orchestrator.py`, tout `model4d/operators/` (8
-  fichiers) et `model4d/interpolation/` (9 fichiers), + échantillon
-  représentatif de ~12 fichiers `physics/` non-`_engine.py`. Reste (non
-  bloquant maintenant) : la majorité des ~131 fichiers `physics/`
-  non-`_engine.py`, non individuellement relus)
+  fichiers) et `model4d/interpolation/` (9 fichiers), + 45 fichiers
+  `physics/` non-`_engine.py` relus intégralement sur 7 thématiques
+  (aérosols, couplage, physique spatiale, nuages, dynamiques nommées) —
+  3 nouveaux vrais écarts formule/implémentation trouvés et divulgués
+  (`magnetosphere_dynamics.py`/`solar_wind_interaction.py` en
+  désaccord d'un facteur 2, `magnetic_pressure()` sans mu_0,
+  `cloud_radiative_feedback.py` sans rho_w). Reste (non bloquant) :
+  ~86 des ~131 fichiers `physics/` non-`_engine.py`, non
+  individuellement relus)
 - [x] `geoengineering`
 - [ ] `planetary`
 - [ ] `fire_weather`

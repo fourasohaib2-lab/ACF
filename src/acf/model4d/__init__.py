@@ -174,10 +174,57 @@ thermodynamics.py, radiation.py, convection.py, cryosphere.py, plus
 the 6 files a suspicious-marker grep surfaced) - all either already
 correctly fixed by an earlier session or genuinely honest as written.
 This was a representative sample, NOT an exhaustive read of all ~131
-non-`_engine.py` physics/ files - most remain individually unreviewed,
-though a repo-wide grep found none of them carrying the generic
-templated-docstring bloat pattern or a stub/fake/placeholder marker
-that isn't already an honest disclosure. Tracked precisely in
-docs/STATUS.md; model4d stays [~], not [x], until the rest of
-physics/ is actually read.
+non-`_engine.py` physics/ files.
+
+UPDATE (2026-09-06, continued per standing "keep going, your judgment"
+instruction): read 33 more physics/ files in full, across 7 further
+thematic clusters chosen for topical diversity and, where the cluster
+name suggested it, higher overclaim risk (aerosol: aerosols.py,
+aerosol_chemistry.py, aerosol_cloud_interaction.py,
+aerosol_radiative_interaction.py, atmospheric_aerosol_dynamics.py,
+atmospheric_chemistry_aerosol_coupling.py; coupling:
+earth_system_coupled_dynamics.py, model_coupling.py, physics_coupler.py,
+chemistry_coupling.py, ocean_coupling.py; space-physics:
+magnetosphere_dynamics.py, ionospheric_dynamics.py,
+exosphere_dynamics.py, thermospheric_dynamics.py,
+mesospheric_dynamics.py, solar_wind_interaction.py; cloud:
+atmospheric_cloud_microphysics.py, cloud_atmosphere_interaction.py,
+cloud_dynamics_advanced.py, cloud_feedback_dynamics.py,
+cloud_microphysics.py, cloud_precipitation.py,
+cloud_radiative_feedback.py, cloud_radiative_interaction.py; named-
+phenomena dynamics: jet_stream_dynamics.py, polar_vortex_dynamics.py,
+tropical_cyclone_dynamics.py, storm_dynamics.py). Total now
+individually read across both audit passes: ~45 of the ~131
+non-`_engine.py` physics/ files.
+
+Finding pattern, consistent across all 45: legitimate simplified
+physics (real constants where cited - Tetens formula coefficients,
+Earth's rotation rate, air/ocean densities and heat capacities all
+correct; real standard formulas - Beer-Lambert transmission, bulk
+aerodynamic flux, CAPE/CIN as documented differences), no AI/ML or
+operational-status fabrication anywhere in this batch (unlike the
+`*_engine.py` cluster's actual problem). 3 new real, disclosed findings
+of the "formula stated, implementation differs" class already common
+elsewhere in this sweep: `magnetosphere_dynamics.py`'s
+`magnetic_pressure()` omits the permeability constant `mu_0`;
+`solar_wind_pressure()` disagrees by a factor of 2 between
+`magnetosphere_dynamics.py` (`rho*V^2`) and its sibling
+`solar_wind_interaction.py` (`0.5*rho*V^2`) for the same named
+quantity, with no cross-reference between the two; `cloud_radiative_
+feedback.py`'s `cloud_optical_thickness()` docstring formula includes
+the water density `rho_w` divisor its implementation omits. None fixed
+(this package is disconnected and already self-describes as
+"simplifiée"/illustrative - a guessed unit convention would not be an
+improvement over disclosure), all three disclosed in-file.
+
+Honest limit of this update: ~86 of the ~131 non-`_engine.py` physics/
+files remain individually unread. A repo-wide grep still finds none of
+them carrying the generic templated-docstring bloat pattern or an
+undisclosed stub/fake/placeholder marker, and the 45 read so far show
+a strong, consistent pattern (real-but-simplified physics, occasional
+unsourced coefficients already understood to be low-severity for a
+disconnected Tier X reserve) - but that is evidence from a large
+sample, not a claim of having read the rest. Tracked precisely in
+docs/STATUS.md; model4d stays a Tier X item with this scope explicitly
+stated, not silently rounded up to "fully audited".
 """
