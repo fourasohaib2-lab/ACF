@@ -16,7 +16,27 @@ class SSPScenario(Enum):
 
 
 class CMIP6Engine:
-    """CMIP6 Greenhouse Gas & Aerosol Radiative Forcing Pathway Generator.
+    """Illustrative SSP-scenario GHG/ERF trajectory approximation.
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): despite the class
+    name, this does NOT read, replay, or interpolate real CMIP6 model
+    ensemble output or IPCC AR6 assessment-report tables - verified by
+    grep, there is no data file, network call, or CMIP6 archive access
+    anywhere in this class. Each SSP branch below is a hand-written
+    linear/quadratic function whose coefficients were chosen to land
+    near plausible 2100 endpoint values for that scenario, not fitted
+    to or sourced from any specific published CMIP6 model or IPCC
+    table - e.g. the CH4/N2O trends are identical linear ramps shared
+    across all four SSP scenarios, which real CMIP6 projections are
+    not (methane pathways in particular diverge sharply by scenario).
+    The one genuinely standard piece of science here is the ERF->
+    warming relationship consumed downstream in ssp_engine.py
+    (Delta F = 5.35 * ln(CO2/280), the real IPCC AR5/AR6 CO2 forcing
+    formula) - this class only supplies that formula's CO2 input, via
+    an approximation, not real data. Connected to the live ESOC GUI
+    (acf.gui.esoc.esoc_controller.handle_run_climate) - a user
+    selecting a scenario there sees this approximation's numbers, not
+    genuine CMIP6 ensemble output.
 
     Provides projected GHG concentrations (CO2 ppm, CH4 ppb, N2O ppb) and
     effective radiative forcing ERF (W/m^2) for target year [2020..2300].

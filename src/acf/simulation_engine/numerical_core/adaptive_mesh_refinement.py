@@ -16,6 +16,17 @@ class AdaptiveMeshRefinement:
     - Severe convection (vertical shear & moisture flux)
     - Wildfires (heat anomalies)
     - Critical ocean eddies/fronts
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): this identifies
+    WHERE refinement should happen (a z-score gradient/vorticity
+    anomaly mask -> bounding boxes) but does not perform any actual
+    mesh refinement - no higher-resolution subgrid is generated, no
+    physics is recomputed at finer resolution anywhere in this class.
+    get_refined_subgrid_bounds()'s "refinement_ratio": 4 is a fixed
+    label attached to every flagged region, not a value computed from
+    the field or an applied resolution change. A real AMR engine would
+    still need a solver that consumes these bounds and actually
+    integrates at higher resolution there.
     """
 
     def __init__(self, base_grid: EarthGrid, max_refinement_level: int = 3) -> None:

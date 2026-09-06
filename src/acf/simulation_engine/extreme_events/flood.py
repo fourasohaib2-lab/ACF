@@ -13,6 +13,15 @@ class FloodSimulator:
         Runoff Q_surface = max(0, Precip - Infiltration_Capacity)
         Saturated excess overland flow when SoilMoisture >= Porosity
         River discharge routing via Muskingum method proxy
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): despite "River
+    discharge routing via Muskingum method proxy" above, no Muskingum
+    routing (storage coefficient K, weighting factor X, upstream/
+    downstream reach linkage) exists anywhere in simulate_inundation()
+    below - it computes local runoff generation and a slope-based
+    local accumulation depth, not channel routing between reaches.
+    Connected to the live ESOC GUI (acf.gui.esoc.panel_manager,
+    tests/test_esoc_hydrology_panel.py).
     """
 
     def __init__(self, Manning_n: float = 0.035) -> None:

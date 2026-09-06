@@ -31,7 +31,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `surfex`
 - [x] `hpc_connector`
 - [x] `hpc_workflow`
-- [ ] `simulation_engine`
+- [x] `simulation_engine`
 - [ ] `gui`
 - [~] `visualization`
 - [ ] `maps`
@@ -101,9 +101,9 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 9/16 audités
+- Tier C : 10/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 35/58
+- Total bloquant v1.0 (F+C+E) : 36/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape

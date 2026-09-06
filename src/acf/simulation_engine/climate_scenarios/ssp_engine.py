@@ -10,6 +10,22 @@ from acf.simulation_engine.climate_scenarios.cmip6 import CMIP6Engine, SSPScenar
 class SSPEngine:
     """Long-term climate scenario horizon solver (2030, 2050, 2100, 2300).
 
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep - see cmip6.py's own
+    NOTE for the CO2 input this consumes): the CO2->warming step
+    (Delta F = 5.35*ln(CO2/280), Delta T = TCR*Delta F/3.7) is real,
+    standard IPCC AR5/AR6 methodology - climate_sensitivity_tcr = 1.8
+    degC is within the AR6 assessed likely TCR range (1.4-2.2 degC).
+    Everything downstream of Delta T is a single-coefficient linear (or
+    linear-in-time) scaling with no citation - "precipitation +2%/degC",
+    "sea level +0.003 m/yr scaled by Delta T/1.5", "sea-ice -15%/degC",
+    "biodiversity vulnerability = Delta T/4" are illustrative
+    approximations, not IPCC AR6 WG1/WG2 assessed central estimates
+    (real sea-level projections in particular separate thermal
+    expansion from ice-sheet dynamics, which this single formula does
+    not). Connected to the live ESOC GUI (acf.gui.esoc.esoc_controller.
+    handle_run_climate) - disclosed here since a user could otherwise
+    reasonably read these numbers as IPCC-assessed projections.
+
     Computes projected global Earth state anomalies:
     - Global mean surface temperature warming Delta T (°C)
     - Global precipitation change Delta P (%)

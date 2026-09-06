@@ -10,6 +10,18 @@ class SpectralSolver:
 
     Computes spherical harmonics / 2D Fourier transforms to model Rossby waves,
     vorticity transport, and streamfunction-velocity potential inversions.
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): despite "spherical
+    harmonics" above and `truncation_degree` (a spherical-harmonic
+    truncation concept), solve_streamfunction() uses a flat 2D
+    Cartesian FFT (numpy.fft.fft2) on a regular grid, not a spherical
+    harmonic transform (Legendre-polynomial based) - a real planar
+    approximation, not the global-sphere method the name and parameter
+    imply; accuracy degrades toward the poles where the flat-plane
+    assumption breaks down. compute_vorticity() and rossby_dispersion()
+    ARE correct as documented: the beta-plane formula
+    beta = 2*Omega*cos(lat)/R_earth and dispersion relation
+    c = U - beta/(k^2+l^2) are the standard, correct forms.
     """
 
     def __init__(self, grid: EarthGrid, truncation_degree: int = 42) -> None:

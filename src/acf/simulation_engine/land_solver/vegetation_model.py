@@ -10,6 +10,18 @@ class VegetationModel:
     - NDVI: Normalized Difference Vegetation Index ([0, 1])
     - NPP: Net Primary Productivity (g C / m^2 / day)
     - Evapotranspiration (ET) resistance
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): the functional forms
+    below (temperature growth factor peaked at 25 degC, moisture/PAR
+    limitation, LAI->NDVI via a Beer's-law-shaped exponential, NPP as
+    0.5*GPP) are standard, reasonable land-surface-model structures -
+    not a capability overclaim. The specific numeric coefficients
+    (lai_max=6.0, the 20 degC temperature-response width, the
+    0.05-0.35 m^3/m^3 moisture range, the 0.45 PAR fraction, the 12.0
+    GPP scaling) are illustrative and unsourced - not fitted to or
+    cited from a specific PFT parameterization (e.g. ISBA-A-gs,
+    CLM) or literature value. Disclosed for the same reason as
+    ai_forecast_decision_engine.py's unexplained-coefficient findings.
     """
 
     def __init__(self) -> None:

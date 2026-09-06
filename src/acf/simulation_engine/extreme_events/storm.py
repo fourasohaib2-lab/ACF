@@ -28,6 +28,21 @@ class SevereStormSimulator:
 
         STP = (CAPE / 1500) * ((2000 - LCL) / 1000) * (SRH / 150) * (BulkShear / 20)
 
+        NOTE (Physics Guard, 2026-09-06 Tier C sweep): the LCL height
+        term ((2000-LCL)/1000) shown in the formula above is real,
+        standard SPC methodology (a low LCL favors tornadogenesis), but
+        this method has no `lcl` parameter to compute it from - the
+        implementation below silently omits that factor rather than
+        computing the formula it documents. SCP's implementation does
+        match its own documented formula. hail_mesh_mm here is a rough
+        CAPE/shear proxy, not the real Witt et al. (1998) MESH
+        algorithm (see acf.science.precipitation's own honest
+        disclosure: the real MESH integral needs a full vertical
+        profile and primary-source coefficients that were not
+        obtainable). Connected to the live ESOC GUI
+        (acf.gui.esoc.module_registry) - a user reading "STP"/"MESH" in
+        the hazard panel is not seeing the formulas/algorithms named.
+
         Args:
             cape (np.ndarray): CAPE array (J/kg).
             srh_03km (np.ndarray): Storm-relative helicity 0-3km (m^2/s^2).
