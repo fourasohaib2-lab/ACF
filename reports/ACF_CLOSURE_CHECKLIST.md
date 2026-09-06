@@ -261,6 +261,32 @@ fermée ; les 13 items ci-dessus couvrent les 3 clics encore morts plus
    certification et un endpoint API — pas systématiquement à chaque
    point d'entrée scientifique du dépôt. **[PARTIAL — 1 item]**
 
+   **Mise à jour 2026-09-06 (audit de continuation, post-clôture) :**
+   `Dataset.validate()` exécute désormais **5 des 6** vérifications
+   (coordinate, range, dimension, unit, time — dimension et unit
+   ajoutés en réutilisant `acf.physics_guard.dimension_check.
+   check_field_shape()` et `acf.physics_guard.unit_check.check_unit()`
+   déjà existants et déjà testés, aucune nouvelle logique de
+   vérification inventée). Au passage, un vrai bug trouvé et corrigé :
+   `range_check.check_range()` laissait échapper une
+   `pint.errors.DimensionalityError` brute (non déclarée par son
+   propre docstring) au lieu d'une `RangeError` catchable quand `unit`
+   était dimensionnellement incompatible avec l'unité canonique de la
+   variable — ce qui aurait fait planter `Dataset.validate()` au lieu
+   de rapporter une violation, pour n'importe quel Dataset réel dont le
+   champ `unit` serait erroné. `vertical_check` reste délibérément non
+   branché : `coordinates["levels"]` est un simple index de niveau dans
+   l'usage réel de ce contrat (`Dataset.from_real_volume()`), pas un
+   profil de pression réel - brancher `check_pressure_decreases_with_
+   altitude()` dessus validerait silencieusement la mauvaise grandeur
+   physique. Validé par `pytest tests/test_core_contracts.py
+   tests/test_certification_engine.py tests/test_physics_guard.py
+   tests/test_physics_guard_variable_quality.py` (99/99), `ruff check`
+   propre. Item désormais **[PARTIAL, réduit]** : le pipeline
+   `Dataset.validate()` couvre 5/6 vérifications au lieu de 3/6 ; il
+   reste non branché à chaque point d'entrée scientifique du dépôt
+   (ce second volet de l'item, hors scope de cette passe, reste ouvert).
+
 **Multi-modèle / Consensus / Incertitude (§12-15 de l'architecture cible)**
 
 6. **`ModelConsensusEngine.compute_unified_consensus()` reste un stub

@@ -61,6 +61,22 @@ def test_check_range_unknown_variable_raises_value_error_not_guess():
         guard.check_range(1.0, "totally_made_up_variable")
 
 
+def test_check_range_raises_range_error_not_a_raw_pint_exception_on_incompatible_unit():
+    """
+    CORRECTED (2026-09-06 audit de continuation): check_range() used to
+    call convert_unit() with no exception handling - an incompatible
+    unit (e.g. "m s-1" for "air_temperature") raised pint's own raw
+    DimensionalityError, undeclared by this function's own docstring
+    ("Raises: ValueError, RangeError" only) and uncaught by
+    Dataset.validate()'s `except RangeError` - crashing validate()
+    entirely instead of reporting a violation. Found while wiring
+    Dataset.validate()'s new unit check (see dataset.py's own NOTE).
+    """
+    guard = PhysicsGuard()
+    with pytest.raises(RangeError):
+        guard.check_range(288.0, "air_temperature", unit="m s-1")
+
+
 # --------------------------------------------------------- coordinate_check
 
 

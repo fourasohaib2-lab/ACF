@@ -16,6 +16,7 @@ from acf.core.exceptions import (
 )
 from acf.physics_guard.consistency_check import check_dewpoint_not_above_temperature, check_relative_humidity_bounds
 from acf.physics_guard.coordinate_check import check_coordinate_arrays, check_coordinates
+from acf.physics_guard.dimension_check import check_field_shape
 from acf.physics_guard.range_check import OPERATIONAL_RANGES, check_range, check_ranges
 from acf.physics_guard.time_check import check_forecast_time_ordering
 from acf.physics_guard.unit_check import check_unit
@@ -63,6 +64,10 @@ class PhysicsGuard:
 
     def check_vertical(self, pressure_by_level: list[float]) -> None:
         check_pressure_decreases_with_altitude(pressure_by_level)
+
+    def check_dimension(self, field: Any, lats: Any, lons: Any, levels: Any | None = None) -> None:
+        """See acf.physics_guard.dimension_check.check_field_shape()."""
+        check_field_shape(field, lats, lons, levels)
 
     def check_time(
         self, forecast_reference_time: datetime, valid_time: datetime, max_lead_time: timedelta | None = None

@@ -188,7 +188,37 @@ def test_dataset_validate_passes_on_real_valid_data():
     ds = _minimal_dataset()
     report = ds.validate()
     assert report.passed is True
-    assert set(report.checks_run) == {"coordinate", "range", "time"}
+    # CORRECTED (2026-09-06 audit de continuation - closure checklist
+    # chantier 3 §5): validate() used to only ever run 3 of the 6
+    # Physics Guard check families (coordinate, range, time) even
+    # though unit_check/dimension_check were directly applicable to
+    # this Dataset's own fields (unit+variable, values+coordinates).
+    assert set(report.checks_run) == {"coordinate", "range", "dimension", "unit", "time"}
+
+
+def test_dataset_validate_catches_field_shape_mismatch():
+    """New: dimension check now genuinely wired into Dataset.validate()."""
+    ds = _minimal_dataset(values=np.array([[288.0, 289.0, 290.0], [291.0, 292.0, 293.0]]))  # 2x3, but 2 lons declared
+    report = ds.validate()
+    assert report.passed is False
+    assert "dimension" in report.checks_run
+    assert any("longitude" in v.lower() for v in report.violations)
+
+
+def test_dataset_validate_catches_incompatible_declared_unit():
+    """New: unit check now genuinely wired into Dataset.validate() via cf_canonical_unit()."""
+    ds = _minimal_dataset(unit="m s-1")  # air_temperature's real canonical unit is K, not a velocity
+    report = ds.validate()
+    assert report.passed is False
+    assert "unit" in report.checks_run
+    assert any("m s-1" in v or "K" in v for v in report.violations)
+
+
+def test_dataset_validate_skips_unit_check_for_non_cf_variable():
+    """awci_composite_score has no CF entry - unit check must not fabricate a canonical unit for it."""
+    ds = _minimal_dataset(variable="awci_composite_score", unit="")
+    report = ds.validate()
+    assert "unit" not in report.checks_run
 
 
 def test_dataset_validate_catches_swapped_lat_lon():

@@ -92,7 +92,26 @@ def check_range(value: float, standard_name: str, unit: str | None = None) -> No
         here.
     RangeError
         If `value` (after any unit conversion) falls outside the
-        documented bound.
+        documented bound, OR if `unit` is not dimensionally compatible
+        with `standard_name`'s canonical unit (e.g. "m s-1" supplied
+        for "air_temperature") - a genuine, real-world data-entry
+        mistake, reported the same documented-and-catchable way as an
+        out-of-bounds value rather than as an uncaught crash.
+
+        NOTE (correction, 2026-09-06 audit de continuation): this used
+        to call acf.normalization.units.convert_unit() directly with no
+        exception handling - convert_unit() deliberately propagates
+        pint's own raw DimensionalityError on an incompatible unit pair
+        (a documented design choice of that module), which this
+        function's own docstring never declared as something it could
+        raise. In practice this meant a Dataset with a genuinely wrong
+        `unit` field for an OPERATIONAL_RANGES variable crashed
+        Dataset.validate() entirely (an unhandled exception escaping a
+        method whose whole contract is "collect every violation,
+        never crash") instead of reporting one - found while wiring
+        Dataset.validate()'s new unit check (see dataset.py's own
+        NOTE), verified by reproducing the crash with unit="m s-1" for
+        "air_temperature" before this fix.
     """
     if standard_name not in OPERATIONAL_RANGES:
         raise ValueError(
@@ -102,7 +121,13 @@ def check_range(value: float, standard_name: str, unit: str | None = None) -> No
 
     native_unit = cf_canonical_unit(standard_name)
     if unit is not None and unit != native_unit:
-        value = convert_unit(value, unit, native_unit)
+        try:
+            value = convert_unit(value, unit, native_unit)
+        except Exception as exc:
+            raise RangeError(
+                f"Cannot check {standard_name} against its documented range: {unit!r} is not "
+                f"dimensionally compatible with its canonical unit {native_unit!r} ({exc})"
+            ) from exc
 
     low, high = OPERATIONAL_RANGES[standard_name]
     if not (low <= value <= high):

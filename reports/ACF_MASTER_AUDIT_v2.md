@@ -9607,3 +9607,81 @@ lues intégralement), `acf.science` n'a été vérifié que par
 ~140 fichiers non lus individuellement (notamment dans les ~170
 fichiers de `encyclopedia/` au-delà de l'échantillon) reste possible et
 n'a pas été exclue par cette passe.
+
+## Mise à jour 2026-09-06 — après clôture 21/21 : `Dataset.validate()` couvre désormais 5/6 vérifications Physics Guard (chantier 3 §5 de `ACF_CLOSURE_CHECKLIST.md`)
+
+**Contexte** : l'audit fabrication/duplication post-`model4d` est
+confirmé clos 21/21 (voir `reports/ACF_CLOSURE_CHECKLIST.md`, chantier
+1). Ce document liste 2 chantiers distincts et non fermés (câblage GUI
+ESOC - 13 items ; feuille de route v0.2→v1.0 - 12 items), tous deux de
+la construction de fonctionnalité plutôt que de l'audit au sens
+strict. Choix fait, avec l'accord de l'utilisateur ("continue selon
+ton jugement"), de traiter en premier l'item le plus proche de la
+discipline d'audit déjà appliquée tout du long : un vrai gap de
+câblage entre du code déjà réel, testé et existant (pas une nouvelle
+capacité à construire).
+
+**Constat** (chantier 3 §5) : `Dataset.validate()` n'exécutait que 3
+des 6 familles de vérification Physics Guard (coordinate, range,
+time), alors que `unit_check.check_unit()` et
+`dimension_check.check_field_shape()` sont des fonctions réelles,
+déjà testées et déjà utilisées ailleurs dans le dépôt, directement
+applicables aux champs propres de `Dataset` (`unit`/`variable` pour
+l'un, `values`/`coordinates["lats"/"lons"/"levels"]` pour l'autre).
+
+**Corrigé** : les deux vérifications manquantes sont désormais
+branchées, en réutilisant le code existant sans rien réinventer :
+- **dimension** : `guard.check_dimension(values, lats, lons, levels)`
+  quand `values` et `coordinates["lats"/"lons"]` sont présents.
+- **unit** : `guard.check_unit(1.0, unit, cf_canonical_unit(variable))`
+  quand `unit` est renseigné et que `variable` a une entrée CF connue
+  (skip honnête sinon, sans deviner d'unité canonique pour une
+  variable interne ACF comme "awci").
+
+**`vertical_check` délibérément laissé non branché** : vérifié dans le
+code réel que `coordinates["levels"]` n'est, dans l'usage actuel de ce
+contrat (`Dataset.from_real_volume()`), qu'un simple index de niveau
+(`list(range(n_levels))`), pas un vrai profil de pression -
+`check_pressure_decreases_with_altitude()` suppose des valeurs de
+pression réelles ; le brancher ici validerait silencieusement la
+mauvaise grandeur physique. Signalé plutôt que deviné, même précédent
+que le M-factor de `ionosphere_engine.py`.
+
+**Vrai bug trouvé en écrivant les tests, pas en cherchant activement à
+le trouver** : `range_check.check_range()` laissait échapper une
+`pint.errors.DimensionalityError` brute (non déclarée par son propre
+docstring, qui ne promet que `ValueError`/`RangeError`) quand `unit`
+était dimensionnellement incompatible avec l'unité canonique de la
+variable - reproduit concrètement avec `unit="m s-1"` pour
+`"air_temperature"`, qui faisait planter `Dataset.validate()` entier
+au lieu de rapporter une violation (défaisant tout l'intérêt de
+`PhysicsGuardReport`, censé agréger les violations sans jamais
+planter). Corrigé : `check_range()` capture désormais l'échec de
+conversion et lève une vraie `RangeError` catchable, avec un message
+distinguant explicitement une incompatibilité d'unité d'une valeur
+hors-limites.
+
+**Validation réelle** : `pytest tests/test_core_contracts.py
+tests/test_certification_engine.py tests/test_physics_guard.py
+tests/test_physics_guard_variable_quality.py` → 99/99 passent
+(4 nouveaux tests : shape mismatch détecté, unité incompatible
+détectée, variable non-CF honnêtement skip, et le bug
+`DimensionalityError`→`RangeError` lui-même verrouillé par un test
+dédié). Vérifié par ailleurs que tous les appelants réels de
+`Dataset(...)` dans `src/` (`awci/input_adapter.py`,
+`awci/pipeline.py`, `forecast/engine.py`, `web/routers/datasets_router.py`)
+utilisent soit des unités déjà compatibles avec leur variable CF (donc
+aucun faux positif introduit), soit ne renseignent pas
+`coordinates["lats"/"lons"]` (donc le nouveau check dimension ne
+s'applique pas) - vérifié directement via `cf_canonical_unit()` +
+`convert_unit()` pour les 4 couples utilisés par `AWCI_KEY_TO_CF_
+STANDARD_NAME`. `ruff check` propre sur tous les fichiers touchés.
+
+**Ce qui reste réellement** (chantier 3 §5, second volet non traité
+cette passe) : le pipeline Physics Guard, même à 5/6 dans
+`Dataset.validate()`, n'est branché que dans 2 lecteurs réels
+(`grib_reader.py`, `netcdf_reader.py`) plus le moteur de certification
+et un endpoint API - pas systématiquement à chaque point d'entrée
+scientifique du dépôt. Les 12 autres items du chantier 3 et les 13
+items du chantier 2 (`reports/ACF_CLOSURE_CHECKLIST.md`) restent de la
+construction de fonctionnalité non entreprise ici.

@@ -11,7 +11,8 @@ import numpy as np
 from acf.core.contracts.provenance import Provenance
 from acf.core.contracts.quality import QualityInfo
 from acf.core.contracts.uncertainty import UncertaintyInfo
-from acf.core.exceptions import CoordinateError, RangeError, TimeError
+from acf.core.exceptions import CoordinateError, DimensionError, RangeError, TimeError, UnitError
+from acf.normalization.variable_names import cf_canonical_unit
 from acf.physics_guard.guard import PhysicsGuard, PhysicsGuardReport
 from acf.physics_guard.range_check import OPERATIONAL_RANGES
 
@@ -161,8 +162,34 @@ class Dataset:
         Runs whichever checks this Dataset's own fields make possible:
         coordinate check if coordinates has "lats"/"lons"; range check
         if `values` is set and `variable` has a documented operational
-        range; time-ordering check always (forecast_reference_time/
-        valid_time are required fields).
+        range; dimension check if `values` is set alongside "lats"/
+        "lons" (and "levels" for a 3D field); unit check if `unit` is
+        set and `variable` is a real CF standard_name with a known
+        canonical unit; time-ordering check always (forecast_reference_
+        time/valid_time are required fields).
+
+        NOTE (correction, 2026-09-06 audit de continuation - closure
+        checklist chantier 3 §5): this used to only run 3 of the 6
+        Physics Guard check families (coordinate, range, time) despite
+        unit_check/dimension_check existing as real, tested, already-
+        used-elsewhere functions (acf.physics_guard.unit_check,
+        acf.physics_guard.dimension_check) that this Dataset's own
+        fields make directly applicable - `unit`/`variable` are exactly
+        what check_unit() needs (via
+        acf.normalization.variable_names.cf_canonical_unit(), the same
+        canonical-unit lookup range_check.py already uses for the same
+        purpose), and `values`/`coordinates["lats"/"lons"/"levels"]`
+        are exactly what check_field_shape() needs. Wired both in,
+        reusing existing code, not inventing new checks. vertical_check
+        remains deliberately NOT wired here: `coordinates["levels"]` is
+        a plain level INDEX in this Dataset's own real usage (see
+        `from_real_volume()`, which populates it with
+        `list(range(n_levels))`), not a real pressure profile -
+        check_pressure_decreases_with_altitude() assumes actual
+        pressure values, so calling it here would silently validate the
+        wrong physical quantity. Left unwired rather than guessed, same
+        precedent as physics_guard/ionosphere_engine.py's own M-factor
+        disclosure.
         """
         guard = PhysicsGuard()
         violations: list[str] = []
@@ -183,6 +210,35 @@ class Dataset:
                 guard.check_range(float(np.max(self.values)), self.variable, unit=unit)
             except RangeError as exc:
                 violations.append(str(exc))
+
+        if self.values is not None and "lats" in self.coordinates and "lons" in self.coordinates:
+            checks_run.append("dimension")
+            try:
+                guard.check_dimension(
+                    self.values,
+                    self.coordinates["lats"],
+                    self.coordinates["lons"],
+                    self.coordinates.get("levels"),
+                )
+            except DimensionError as exc:
+                violations.append(str(exc))
+
+        if self.unit:
+            try:
+                expected_unit = cf_canonical_unit(self.variable)
+            except ValueError:
+                expected_unit = None
+            if expected_unit is not None:
+                checks_run.append("unit")
+                try:
+                    # Only unit *compatibility* is being verified here (a
+                    # metadata check, independent of `values`) - the
+                    # placeholder magnitude 1.0 is never returned or
+                    # compared, check_unit() is called purely to raise
+                    # UnitError on a dimensionally incompatible pair.
+                    guard.check_unit(1.0, self.unit, expected_unit)
+                except UnitError as exc:
+                    violations.append(str(exc))
 
         checks_run.append("time")
         try:
