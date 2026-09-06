@@ -9,6 +9,17 @@ AEOS Service Registry Module (Phase 2)
 class ServiceRegistry:
     """
     Registre centralisé de tous les microservices scientifiques du système d'exploitation AEOS.
+
+    NOTE (Physics Guard, 2026-09-06 Tier E sweep): despite "Registre" /
+    get_service_info()'s "status": "REGISTERED", no actual service
+    object is ever instantiated or registered here - SERVICES is a
+    fixed class-level list of names, and get_service_info() only
+    checks membership in that list, then reports "REGISTERED"
+    regardless of whether anything real backs that name (none of the
+    15 listed *Service classes exist anywhere in this codebase,
+    verified by grep). Real, deterministic list lookup, not a
+    fabricated numeric result, but "REGISTERED" here means "the name
+    is in a static list", not "a service was actually started".
     """
 
     SERVICES: list[str] = [

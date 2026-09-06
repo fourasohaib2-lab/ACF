@@ -22,7 +22,14 @@ class PlanetaryEvent:
 
 class PlanetaryEventBus:
     """
-    Bus d'événements pub/sub planétaire permettant la communication asynchrone entre tous les microservices.
+    Bus d'événements pub/sub planétaire entre les services enregistrés dans acf.aeos.
+
+    NOTE (Physics Guard, 2026-09-06 Tier E sweep): despite "communication
+    asynchrone" above, publish() calls every subscribed handler
+    synchronously and in-line (no thread/async dispatch) - a real,
+    correct pub/sub pattern, just not asynchronous. Verified by grep:
+    this whole class (like the rest of acf.aeos) is not constructed
+    anywhere in src/ outside its own test, tests/test_aeos_platform.py.
     """
 
     def __init__(self):

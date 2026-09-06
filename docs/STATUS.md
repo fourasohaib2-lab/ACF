@@ -62,7 +62,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [~] `ai_expert`
 - [x] `intelligence`
 - [x] `digital_twin`
-- [ ] `aeos`
+- [x] `aeos`
 - [ ] `knowledge_platform`
 - [x] `dashboard`
 - [x] `web`
@@ -136,8 +136,8 @@ tracké ici tant que non expliqué avec certitude.
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
 - Tier C : **16/16 audités — TIER C COMPLET**
-- Tier E : 19/31 audités
-- Total bloquant v1.0 (F+C+E) : 46/58
+- Tier E : 20/31 audités
+- Total bloquant v1.0 (F+C+E) : 47/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
