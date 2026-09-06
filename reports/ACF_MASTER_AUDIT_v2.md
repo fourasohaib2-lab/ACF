@@ -10158,3 +10158,41 @@ lus** :
   coefficients Marshall-Palmer standard réels), formule correcte.
 
 **Aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.events` : vérifié propre, qualité exemplaire (conçu nativement avec la discipline d'audit)
+
+**Contexte** : `acf.events` (5 fichiers, 482 lignes) - jamais touché,
+mais aucune correction n'a été nécessaire : ce paquet a été
+manifestement écrit dès l'origine avec la même discipline que cet
+audit lui applique a posteriori ailleurs.
+
+**Aucune fabrication trouvée** :
+- `event.py` (`Event`) : machine à états réelle pour le cycle de vie
+  DETECTED→ANALYZED→CONFIRMED→VERIFIED→CERTIFIED→PUBLISHED (ou
+  →REJECTED), `transition_to()` refuse toute transition hors du
+  diagramme (`IllegalEventTransitionError`) - pas un simple champ de
+  statut que n'importe quel appelant pourrait faire sauter directement
+  à CERTIFIED. `to_dict()`/`from_dict()` round-trip sans perte de
+  champ.
+- `detectors/wind_detector.py` : détection de vent fort par seuil réel
+  sur un champ de vitesse de vent réel (sortie `CoupledEarthSolver`),
+  `probability=1.0`/`confidence=0.5` documentés honnêtement comme un
+  défaut conservateur pour une seule simulation déterministe sans
+  ensemble, pas une vraie probabilité de prévision.
+- `detectors/fog_detector.py` : nommage rigoureusement honnête -
+  détecte `"fog_favorable_conditions"` (précondition thermodynamique
+  réelle : humidité quasi-saturée + vent calme, calculée via un vrai
+  appel MetPy), explicitement PAS `"fog"` confirmé, car aucun champ de
+  visibilité/eau liquide n'existe dans la sortie réelle du solveur pour
+  confirmer un brouillard effectif.
+- `__init__.py` du paquet documente lui-même explicitement pourquoi 6
+  des 8 types d'événements de la spécification (Thunderstorm, Cyclone,
+  HeavyRain, Snow, Hail, Dust) n'ont AUCUN détecteur ici : les champs
+  requis (CAPE, suivi de vorticité, précipitations, aérosols)
+  n'existent nulle part dans la sortie réelle du solveur - "construire
+  un détecteur sans donnée réelle à l'appui reviendrait à inventer une
+  formule proxy et à la présenter comme si elle détectait le phénomène
+  nommé, exactement ce que les audits de ce projet existent pour
+  empêcher" (citation directe du docstring).
+
+**Aucune modification de code nécessaire.**
