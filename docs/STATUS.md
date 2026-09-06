@@ -18,7 +18,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `normalization`
 - [x] `time`
 - [x] `utils`
-- [ ] `earth_physics`
+- [x] `earth_physics`
 - [x] `io`
 
 ## Tier C — Core (bloquant v1.0)
@@ -91,10 +91,10 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 ## Synthèse
 
-- Tier F : 7/12 audités
+- Tier F : 8/12 audités
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 27/59
+- Total bloquant v1.0 (F+C+E) : 28/59
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
