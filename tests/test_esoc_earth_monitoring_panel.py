@@ -2,19 +2,21 @@
 Tests for acf.gui.esoc.panel_manager.EarthMonitoringPanel - upgrading
 the "GOES/MTG Satellites" row from a fixed "EXAMPLE"/"1.2 min"
 placeholder to the real, live acf.gui.map.mtg_basemap.MTGBasemapProvider
-status already feeding every real ACF map view (Phase 57), and later
-the "ARGO Ocean Floats" row to the real, public Argovis API via
-acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58) - honestly
-relabeling the remaining 4 rows (no real connector exists for them
-anywhere in ACF) "NOT_CONNECTED" instead of leaving them as an equally
-fake "EXAMPLE".
+status already feeding every real ACF map view (Phase 57); the "ARGO
+Ocean Floats" row to the real, public Argovis API via
+acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58); and the
+"Surface AWS (SYNOP/METAR)" row to the real NOAA feed already trusted
+by acf.aviation.icao.live_source (Phase 59) - honestly relabeling the
+remaining 3 rows (no real connector exists for them anywhere in ACF)
+"NOT_CONNECTED" instead of leaving them as an equally fake "EXAMPLE".
 
-Network access is mocked - same convention as tests/test_mtg_basemap.py
-and tests/test_argo_floats_connector.py.
+Network access is mocked - same convention as tests/test_mtg_basemap.py,
+tests/test_argo_floats_connector.py and tests/test_aviation_live_source.py.
 """
 
 from __future__ import annotations
 
+import urllib.error
 from unittest.mock import patch
 
 import numpy as np
@@ -55,9 +57,15 @@ def _reset_singleton_and_block_real_network():
     # real host during this suite.
     argo_503 = requests.Response()
     argo_503.status_code = 503
+    # acf.aviation.icao.live_source uses urllib directly (see its own
+    # module docstring) - blocked the same way tests/
+    # test_aviation_live_source.py blocks it, defaulting to "every
+    # station unreachable" so the panel's default state is honest and
+    # deterministic in this suite.
     with (
         patch.object(EUMETSATMTGConnector, "fetch_latest_image", return_value=honest_stub),
         patch.object(requests, "get", return_value=argo_503),
+        patch("urllib.request.urlopen", side_effect=urllib.error.URLError("blocked for tests")),
     ):
         yield
     QThreadPool.globalInstance().waitForDone(2000)
@@ -76,12 +84,12 @@ def _fake_disk_bytes() -> bytes:
     return buf.getvalue()
 
 
-def test_the_4_unconnected_networks_are_honestly_labeled_not_connected(qapp, registry):
+def test_the_3_unconnected_networks_are_honestly_labeled_not_connected(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
 
-    for row in (1, 2, 4, 5):  # NEXRAD, SYNOP/METAR, AMDAR, Lightning - row 3 is the real ARGO feed
+    for row in (1, 4, 5):  # NEXRAD, AMDAR, Lightning - rows 2/3 are the real METAR/ARGO feeds
         assert panel.table.item(row, 1).text() == "NOT_CONNECTED"
         assert panel.table.item(row, 2).text() == "N/A"
 
@@ -151,11 +159,42 @@ def test_argo_row_goes_live_with_a_real_profile_count_once_fetched(qapp, registr
     assert panel.table.item(3, 2).text().endswith(" min")
 
 
-def test_refresh_button_refetches_both_real_feeds(qapp, registry):
+def test_metar_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks every real station with an honest
+    URLError, so the METAR poll fired at construction time must resolve
+    to that honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(2, 0).text() == "Surface AWS (SYNOP/METAR)"
+    assert panel.table.item(2, 1).text() == "NOT_REACHABLE_0_STATIONS_REPORTING"
+    assert panel.table.item(2, 2).text() == "N/A"
+
+
+def test_metar_row_goes_live_once_real_stations_report(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
 
-    with patch.object(panel, "_fetch_argo_async") as mock_fetch:
+    from acf.aviation.icao.live_source import REAL_STATIONS
+
+    panel._on_metar_fetched(len(REAL_STATIONS), len(REAL_STATIONS))
+
+    assert panel.table.item(2, 1).text() == f"LIVE ({len(REAL_STATIONS)}/{len(REAL_STATIONS)} stations)"
+    assert panel.table.item(2, 2).text() == "0.0 min"
+
+
+def test_refresh_button_refetches_all_3_real_feeds(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    with (
+        patch.object(panel, "_fetch_argo_async") as mock_argo,
+        patch.object(panel, "_fetch_metar_async") as mock_metar,
+    ):
         panel._refresh()
-        mock_fetch.assert_called_once()
+        mock_argo.assert_called_once()
+        mock_metar.assert_called_once()

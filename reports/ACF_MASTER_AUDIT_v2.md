@@ -11091,3 +11091,34 @@ mis à jour) - dont un test découvrant un vrai bug de timing pendant
 l'écriture (le signal `finished` mis en file d'attente cross-thread
 Qt n'est livré qu'après un `QApplication.processEvents()`, pas
 seulement `QThreadPool.waitForDone()`). Suite complète confirmée verte.
+
+## Mise à jour 2026-09-06 (suite) — Phase 59 : troisième flux réel dans "Earth Monitoring" - réutilisation du connecteur METAR déjà réel
+
+**Découverte, avant de construire quoi que ce soit** : en cherchant un
+connecteur pour la ligne "Surface AWS (SYNOP/METAR)", `acf.aviation.
+icao.live_source` s'est révélé être un vrai connecteur déjà construit
+plus tôt dans cette session (demande explicite antérieure de
+l'utilisateur : "le but est de brancher acf et awci avec des vrais
+station pour nous rendre des vrai reponse instantanément") - flux réel
+NOAA Aviation Weather Center, déjà utilisé par
+`awci_messages_panel.py`/`awci_alerts_panel.py`, mais jamais interrogé
+depuis ce panneau Earth Monitoring. Aucune duplication de connecteur :
+`EarthMonitoringPanel` interroge maintenant les mêmes 4 vraies stations
+(`REAL_STATIONS` : KJFK, LFPG, EGLL, DAAG) que ce module fait déjà
+confiance ailleurs.
+
+**Construit** : nouveau `_METARFetchWorker` (même patron `QThreadPool` +
+objet compagnon de signaux que `_ArgoFetchWorker`/`_MTGFetchWorker`) -
+interroge `fetch_raw_report("metar", ...)` pour chaque station réelle,
+compte combien répondent réellement, jamais d'appel réseau synchrone
+sur le thread GUI. La ligne affiche désormais `LIVE (N/4 stations)` ou
+l'échec honnête `NOT_REACHABLE_0_STATIONS_REPORTING`. Il reste
+maintenant 3 réseaux non connectés (NEXRAD, AMDAR, réseau foudre) au
+lieu de 5 au départ de la Phase 57.
+
+**Validation réelle** : `ruff`/`mypy` propres. Tests de panneau mis à
+jour + 2 nouveaux (réseau simulé via `patch("urllib.request.urlopen",
+...)`, même convention que `tests/test_aviation_live_source.py`) :
+état honnête par défaut (0 station accessible dans cet environnement de
+test) et état LIVE une fois les stations réellement jointes. Suite
+complète confirmée verte.
