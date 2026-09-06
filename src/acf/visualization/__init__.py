@@ -7,6 +7,21 @@ VISUALIZATION - Backward Compatibility Facade Layer
 This package provides 100% backward compatibility for legacy imports by redirecting
 to the canonical `acf.maps` cartographic package using PEP 562 dynamic attributes,
 while exporting the new AWCI 2D/3D/4D visualization workstation engine.
+
+AUDIT NOTE (2026-09-06, Tier C sweep): builds on 5419a58's large sample
+of this package (root shims verified forwarding to acf.maps;
+ai_forecast_center/, layer_engine/, gpu/gpu_backend.py, widgets/
+awci_dashboard.py already carrying their own honest disclosures -
+layer_permissions.py's always-True check_layer_access() correctly left
+as a judgment call, no auth system exists in this single-operator app
+to define a real policy against). This pass independently re-verified
+that finding (no generic docstring-bloat template found anywhere in
+this package - 0 hits) and read the remaining ~20 not specifically
+named files (volume_engine/, camera/, scene/, timeline/, legends/,
+layers/scientific_layers.py, layer.py/layer_group.py/
+layer_collection.py/colormap.py) - all genuinely honest: real,
+correctly-scoped metadata/config/cache classes, no fabricated
+computation. Nothing new to disclose.
 """
 
 import importlib

@@ -44,7 +44,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
   entier non branché, disclosure ajoutée), 11 stubs vides au total
   dans `docks/`/`layer_panel/`/racine corrigés, `view_manager.py`
   (8/15 modes de vue sans projection réelle))
-- [~] `visualization`
+- [x] `visualization`
 - [x] `maps`
 - [~] `awci`
 - [x] `jobs`
@@ -135,9 +135,9 @@ tracké ici tant que non expliqué avec certitude.
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 14/16 audités
+- Tier C : 15/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 40/58
+- Total bloquant v1.0 (F+C+E) : 41/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
