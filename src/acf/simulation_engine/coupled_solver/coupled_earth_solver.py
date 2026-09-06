@@ -98,6 +98,23 @@ class CoupledEarthSolver:
         q_sensible = rho_air * cp_air * c_h * wind_speed * (sst - t_bot)
 
         # Latent heat flux: Q_L = rho_air * L_v * C_e * U * (q_sat(SST) - q_air)
+        #
+        # NOTE (found, NOT changed — Physics Guard, found during the
+        # post-model4d audit, 2026-09-06): the formula's own humidity-
+        # deficit term (q_sat(SST) - q_air) is replaced below by a fixed
+        # 0.005 - so Q_latent only ever varies with wind_speed, never
+        # with how humid the air/ocean surface actually are, even though
+        # both a real q_air (state["q"][0]) and a real SST are available
+        # to the caller (step() below already passes the full state in).
+        # A real fix is possible without inventing a new formula - this
+        # codebase's own acf.earth_physics.thermodynamics.moist_physics.
+        # MoistAtmospherePhysics.saturation_vapor_pressure() (Tetens'
+        # formula) already computes a real e_sat(T) that a real q_sat(SST)
+        # would need - but wiring it here needs the pressure field too
+        # (to convert vapor pressure to specific humidity) and a real
+        # q_air argument threaded through from compute_interfacial_fluxes()'s
+        # caller, a larger change than flagging this in place. Not
+        # invented here without doing that properly.
         l_v = 2.501e6
         c_e = 1.2e-3
         q_latent = rho_air * l_v * c_e * wind_speed * 0.005

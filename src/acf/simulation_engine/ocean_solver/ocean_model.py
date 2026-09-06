@@ -49,6 +49,17 @@ class OceanModel:
             "U_ocean": np.random.normal(0.1, 0.05, size=shape_2d),
             "V_ocean": np.random.normal(0.0, 0.02, size=shape_2d),
             "eta": np.zeros(shape_2d, dtype=np.float64),
+            # Flat, hardcoded constant - this 2-layer/surface-only model has
+            # no full-depth velocity/density field to derive a real
+            # meridional overturning transport from. Never updated by
+            # step() below either. Already honestly disclosed to the user
+            # at the GUI layer (acf.gui.esoc.panel_manager.OceanPanel's
+            # amoc_label explicitly says "flat, hardcoded" - see
+            # tests/test_esoc_ocean_panel.py's
+            # test_amoc_label_honestly_discloses_the_flat_hardcoded_constant)
+            # - noted here too so a caller reading this module directly
+            # (not through that panel) isn't misled by AMOC_strength_sv
+            # sitting alongside genuinely time-evolving fields.
             "AMOC_strength_sv": 18.0,  # Sverdrups (10^6 m^3/s)
         }
         return state

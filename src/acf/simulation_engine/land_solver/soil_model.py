@@ -50,6 +50,25 @@ class SoilModel:
 
         Returns:
             Dict[str, np.ndarray]: Updated soil state.
+
+        NOTE (found, NOT changed — Physics Guard, found during the
+        post-model4d audit, 2026-09-06): despite this class's own
+        docstring naming the Richards equation (vertical moisture
+        transport between layers) and heat conduction equation (both
+        genuinely multi-layer PDEs) as what this model "solves", only
+        soil_moisture[0]/soil_temperature[0] (the surface layer) are
+        ever updated below - layers 1..n_soil_layers-1 are copied
+        unchanged and stay frozen at their initialize_soil_state()
+        values through every real call. A genuine Richards-equation
+        solve needs an unsaturated hydraulic conductivity K(theta)
+        relationship and a real finite-difference discretization across
+        layers - not implemented here, and not invented in this pass
+        without a citable source (same reasoning as this codebase's
+        other undocumented-formula findings). acf.gui.esoc.panel_manager
+        .LandSurfacePanel (the real UI for this model) is updated in
+        the same commit to disclose this, matching the existing
+        acf.gui.esoc.panel_manager.OceanPanel.amoc_label convention for
+        a comparable gap.
         """
         moisture = soil_state["soil_moisture"].copy()
         temp = soil_state["soil_temperature"].copy()

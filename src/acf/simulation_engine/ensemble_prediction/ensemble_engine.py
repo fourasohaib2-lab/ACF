@@ -10,11 +10,26 @@ from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEar
 class EarthEnsembleEngine:
     """Manages multi-member ensemble forecasting (Member 001 to Member N).
 
-    Generates perturbed initial states using singular vector / bred vector proxies,
-    runs parallel ensemble trajectory simulations, and computes ensemble statistical moments:
+    Generates perturbed initial states, runs parallel ensemble trajectory
+    simulations, and computes ensemble statistical moments:
     - Ensemble Mean: bar(X) = 1/N * sum(X_i)
     - Ensemble Spread (Std Dev): sigma_X = sqrt(1/(N-1) * sum((X_i - bar(X))^2))
     - Ensemble Variance
+
+    NOTE (correction — method overclaim, found during the post-model4d
+    audit, 2026-09-06): this docstring used to say perturbations are
+    generated "using singular vector / bred vector proxies" - real,
+    specific operational NWP ensemble-generation techniques (ECMWF's
+    singular vectors, NCEP's bred vectors, both involve growing
+    perturbations along a model's fastest-growing error directions).
+    generate_perturbed_initial_states() below does none of that: it
+    adds simple per-field i.i.d. Gaussian noise scaled by each field's
+    own standard deviation - a real, honest Monte Carlo perturbation
+    scheme, but not a singular-vector or bred-vector method by any
+    definition (neither requires running the model's tangent-linear/
+    adjoint, nor cycling perturbations through prior forecasts). The
+    ensemble statistics computed from it (mean/variance/spread) are
+    genuinely and correctly calculated either way.
     """
 
     def __init__(self, solver: CoupledEarthSolver, n_members: int = 20) -> None:

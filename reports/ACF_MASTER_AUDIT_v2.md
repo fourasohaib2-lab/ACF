@@ -9485,3 +9485,74 @@ et stock de carbone).
 lignes - bien trop volumineux pour une lecture exhaustive en une
 passe ; nécessiterait un balayage ciblé par mots-clés plutôt qu'une
 lecture complète).
+
+## Mise à jour 2026-09-06 (extension du périmètre) — `acf.simulation_engine` : 14/33 fichiers substantiels lus, 4 fissures réelles corrigées + 1 disclosure
+
+**Zone couverte** : `acf.simulation_engine` (33 fichiers, 2444 lignes).
+14 fichiers substantiels lus intégralement cette passe :
+`atmospheric_model.py` (297 lignes - déjà remarquablement documenté,
+un vrai équilibre du vent thermique cité Holton & Hakim avec deux
+simplifications honnêtement disclosées), `cmip6.py`/`ssp_engine.py`
+(vraies trajectoires SSP avec la vraie formule de forçage CO2 de
+Myhre et al. et un vrai cadre TCR/GIEC), `ocean_model.py`,
+`adaptive_mesh_refinement.py`, `spectral_solver.py`,
+`finite_volume_solver.py`, `ensemble_engine.py`, `soil_model.py`,
+`vegetation_model.py`, `storm.py` (vrais indices SCP/STP/MESH
+NOAA SPC), `flood.py`, `probability_engine.py` (vraies statistiques
+d'ensemble), `coupled_earth_solver.py` (solveur maître déjà porteur
+d'une vraie correction du paramètre `forcing`).
+
+**4 fissures réelles trouvées et corrigées** :
+1. `ensemble_engine.py.EarthEnsembleEngine` : le docstring revendiquait
+   des perturbations générées "using singular vector / bred vector
+   proxies" - de vraies techniques opérationnelles PNT spécifiques
+   (ECMWF/NCEP) nécessitant un modèle tangent-linéaire/adjoint - alors
+   que le code ajoute simplement un bruit gaussien i.i.d. par champ
+   (une vraie méthode Monte-Carlo honnête, mais pas un vecteur
+   singulier ni un bred vector par aucune définition). Docstring
+   corrigé, les statistiques d'ensemble calculées restent correctes.
+2. `finite_volume_solver.py.FiniteVolumeSolver` : le docstring
+   affirmait "Guarantees: ... Energy conservation" sans aucune
+   vérification ni schéma numérique conçu pour ça - le schéma d'Euler
+   explicite utilisé ne garantit rien de tel pour un système général/
+   non-linéaire (contrairement à la conservation de la masse, elle,
+   réellement vérifiable via `verify_mass_conservation()`). Revendication
+   retirée.
+3. `ocean_model.py.OceanModel.initialize_state()`/`land_solver/
+   soil_model.py.SoilModel.step()` : deux "fissures dans les coutures"
+   trouvées - `AMOC_strength_sv` reste une constante figée (18.0) jamais
+   mise à jour par `step()`, et seule la couche de surface (`layer 0`)
+   du modèle de sol "4 couches" évolue réellement (les couches 1-3
+   restent gelées). Les deux étaient déjà honnêtement disclosés côté
+   test (`test_amoc_label...`/`test_deeper_layers_are_genuinely_
+   unaffected...`) mais PAS côté interface utilisateur - `OceanPanel`
+   avait déjà son `amoc_label` ("flat, hardcoded"), mais
+   `LandSurfacePanel` n'avait aucun équivalent. Ajouté un `layers_note`
+   à `LandSurfacePanel` suivant exactement la même convention, plus les
+   NOTE de code correspondantes dans les deux modules source.
+4. `coupled_earth_solver.py.compute_interfacial_fluxes()` : le terme de
+   déficit d'humidité `(q_sat(SST) - q_air)` de la formule de flux de
+   chaleur latente est remplacé par une constante fixe `0.005` - alors
+   qu'un vrai `q_air` (`state["q"]`) et une vraie SST sont disponibles
+   dans l'appelant, et qu'une vraie formule de pression de vapeur
+   saturante (Tetens) existe déjà ailleurs dans ce dépôt
+   (`acf.earth_physics.thermodynamics.moist_physics`). Signalé plutôt
+   que câblé ici (nécessiterait de faire transiter aussi le champ de
+   pression et un vrai `q_air`, changement plus large que cette passe).
+
+**Validation réelle** : `tests/test_esoc_land_surface_panel.py` étendu
+d'un test verrouillant le nouveau `layers_note`. `tests/
+test_simulation_engine.py` + `tests/test_esoc_land_surface_panel.py` +
+`tests/test_esoc_ocean_panel.py` + `tests/test_awci_vertical_field.py`
+ré-exécutés : 48/48 passent. `ruff check` propre sur
+`acf.simulation_engine`, `panel_manager.py` et le fichier de test
+touché. Suite complète en cours de re-vérification.
+
+**Ce qui reste réellement** : 19 fichiers substantiels de
+`acf.simulation_engine` non relus cette passe (`convection_engine.py`,
+`microphysics_engine.py`, `carbon_flux.py` (land_solver),
+`earth_grid.py`, `wave_model.py`, `cyclone.py`, `wildfire.py`,
+`netcdf_writer.py`, `zarr_writer.py`, tous déjà porteurs de "NOTE
+(correction" d'une session antérieure) et l'intégralité de
+`acf.science` (170 fichiers, ~21000 lignes) restent pour une
+éventuelle future passe.

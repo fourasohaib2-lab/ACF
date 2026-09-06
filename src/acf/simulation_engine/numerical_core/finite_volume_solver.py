@@ -10,10 +10,23 @@ from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 class FiniteVolumeSolver:
     """Conservative finite volume solver executing: dU/dt + div(F(U)) = S(U).
 
-    Guarantees:
-    - Mass conservation
-    - Energy conservation
-    - CFL numerical stability validation
+    Provides:
+    - A flux-divergence form intended to conserve mass exactly under
+      periodic/closed boundaries (checkable directly via
+      verify_mass_conservation() below - not merely asserted).
+    - CFL numerical stability validation (check_cfl_condition()).
+
+    NOTE (correction — unverified "guarantee", found during the
+    post-model4d audit, 2026-09-06): this docstring used to also list
+    "Energy conservation" as something this class "guarantees" - the
+    explicit first-order Euler update in step() (U(t+dt) = U(t) -
+    dt*div(F) + dt*S) provides no such guarantee for a general/
+    nonlinear system; genuine energy conservation needs a specifically
+    designed energy-conserving discretization (e.g. a symplectic or
+    staggered-energy scheme), not something that falls out of "finite
+    volume" alone. Unlike mass, there is no verify_energy_conservation()
+    here to actually check it either. Removed rather than left as an
+    unverified claim.
     """
 
     def __init__(self, grid: EarthGrid, cfl_target: float = 0.5) -> None:

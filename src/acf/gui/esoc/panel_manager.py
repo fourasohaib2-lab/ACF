@@ -2367,7 +2367,16 @@ class LandSurfacePanel(BasePanelWidget):
     soil_model.SoilModel`, already registered as "soil_model") - shows
     the real initial 4-layer soil state, and lets the operator advance
     it one real time step with real forcing (precipitation,
-    evapotranspiration, surface temperature)."""
+    evapotranspiration, surface temperature).
+
+    NOTE (correction, 2026-09-06 - post-model4d audit): SoilModel.step()
+    only ever updates the surface layer (row 0) - layers 1-3 are
+    genuinely displayed (their real initial values) but never advance,
+    despite this panel's own name and docstring implying all 4 layers
+    are dynamically modeled (see SoilModel.step()'s own NOTE). Disclosed
+    to the operator via self.layers_note below, matching OceanPanel's
+    own amoc_label convention for the analogous AMOC gap.
+    """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("🌱 LAND SURFACE — SOIL MOISTURE & THERMAL DYNAMICS", "#8D6E63", registry, dispatcher)
@@ -2408,6 +2417,15 @@ class LandSurfacePanel(BasePanelWidget):
         self.table = QTableWidget(4, 3)
         self.table.setHorizontalHeaderLabels(["Layer depth (m)", "Soil moisture (m³/m³)", "Soil temperature (K)"])
         self.main_layout.addWidget(self.table)
+
+        self.layers_note = QLabel(
+            "⚠ Only the surface layer (row 1) is dynamically updated by the real SoilModel.step() - "
+            "deeper layers are shown at their real initial values but do not yet evolve (no Richards-equation "
+            "inter-layer transport implemented)."
+        )
+        self.layers_note.setStyleSheet("color: #90A4AE; font-size: 10px; font-style: italic;")
+        self.layers_note.setWordWrap(True)
+        self.main_layout.addWidget(self.layers_note)
 
         self._render()
 

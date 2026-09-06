@@ -85,6 +85,21 @@ def test_deeper_layers_are_genuinely_unaffected_by_one_real_step(qapp, registry)
         assert panel.table.item(layer, 2).text() == "288.15"
 
 
+def test_layers_note_honestly_discloses_the_frozen_deeper_layers(qapp, registry):
+    """Regression guard (2026-09-06, post-model4d audit): the panel's
+    own docstring/name claim a "4-layer soil model", but only the
+    surface layer genuinely updates (see
+    test_deeper_layers_are_genuinely_unaffected_by_one_real_step above,
+    already documented as intentional scope) - this must be disclosed
+    to the operator, matching OceanPanel's amoc_label convention for
+    its own analogous AMOC gap, not just documented in a code comment."""
+    dispatcher = CommandDispatcher()
+    panel = LandSurfacePanel(registry, dispatcher)
+
+    assert "surface layer" in panel.layers_note.text()
+    assert "do not yet evolve" in panel.layers_note.text()
+
+
 def test_panel_shows_an_honest_disconnected_label_when_not_registered(qapp, registry):
     dispatcher = CommandDispatcher()
     registry.modules["soil_model"] = None
