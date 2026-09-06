@@ -11203,3 +11203,47 @@ pour exclure `tab_perf` de la boucle "Example Layout" ; 1 nouveau test
 (`test_esoc_right_sidebar_performance_tab_shows_real_telemetry`),
 même moteur/assertions que `test_monitoring_platform.py::
 test_telemetry_engine`. Suite complète confirmée verte.
+
+## Mise à jour 2026-09-06 (suite) — Phase 62 : la boîte de dialogue "Observations" du Workstation était honnête... jusqu'à ce que cette même session la rende fausse
+
+**Découverte particulière** : `ACFWorkstation._show_observations_dialog()`
+affirmait "No real observation feed is connected to this Workstation"
+- une divulgation honnête et vraie au moment où elle a été écrite. Mais
+les Phases 57-60 de cette même session ont câblé 4 vrais flux
+d'observation (GOES/MTG, ARGO, METAR, NEXRAD) dans le panneau Earth
+Monitoring d'ESOC, sans que cette boîte de dialogue de niveau
+Workstation - un endroit différent du code - en soit informée. Le
+résultat : une affirmation qui était honnête est devenue fausse par
+l'évolution du reste du code, pas par une fabrication d'origine. Ce
+n'est pas le motif habituel de ce rapport (nombre inventé dès le
+départ) mais un motif réel différent : une divulgation honnête qui se
+périme silencieusement.
+
+**Construit** : la boîte de dialogue affiche maintenant les 4 mêmes
+flux réels, en réutilisant exactement les mêmes connecteurs/workers
+(`_ArgoFetchWorker`, `_METARFetchWorker`, `_NexradFetchWorker` importés
+depuis `panel_manager.py`, `MTGBasemapProvider`) - jamais une seconde
+implémentation dupliquée. La moitié restante de la divulgation
+d'origine reste vraie et inchangée : les champs physiques affichés
+ailleurs dans le Workstation viennent toujours uniquement d'un vrai
+run `CoupledEarthSolver`, jamais de ces flux d'observation.
+
+**Bug de sécurité de durée de vie évité en écrivant le correctif** :
+les callbacks des 3 fetches asynchrones vérifient `shiboken6.
+isValid(table)` avant de toucher la table - même discipline que
+`panel_manager.py`'s `_on_argo_fetched`/`_on_metar_fetched`/
+`_on_nexrad_fetched` (voir la note de `_make_mtg_update_forwarder` sur
+le crash réel que cela évite) - une boîte de dialogue modale peut être
+fermée avant que les fetches réseau ne se terminent.
+
+**Validation réelle** : `ruff`/`mypy` propres. Test existant
+(`test_observations_dialog_is_an_honest_not_connected_disclosure`)
+réécrit en `test_observations_dialog_shows_the_4_real_feeds_honestly`
+(réseau simulé, même convention que les tests du panneau Earth
+Monitoring). Suite complète confirmée verte.
+
+**Leçon générale** : une divulgation honnête écrite à un instant T
+peut devenir une fausse affirmation à l'instant T+1 si le reste du code
+évolue sans qu'elle soit mise à jour - à garder à l'esprit pour les
+futures passes d'audit de ce rapport, qui cherchent surtout les
+fabrications d'origine plutôt que les péremptions silencieuses.

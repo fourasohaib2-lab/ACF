@@ -672,6 +672,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+import shiboken6
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -1639,18 +1640,91 @@ class ACFWorkstation(QWidget):
         dialog.exec()
 
     def _show_observations_dialog(self) -> None:
+        """
+        NOTE (correction, 2026-09-06): this dialog used to unconditionally
+        state "No real observation feed is connected to this Workstation" -
+        true when written, but stale by the time of this correction: ESOC's
+        Earth Monitoring panel (acf.gui.esoc.panel_manager.
+        EarthMonitoringPanel, Phases 57-60, same session) wired 4 real
+        observation feeds (GOES/MTG, ARGO ocean floats, NOAA METAR
+        stations, NEXRAD radar status) that this Workstation-level dialog
+        never learned about. Reuses those exact same connectors/workers
+        (never a second, duplicated implementation) rather than continuing
+        to assert a now-false blanket claim. The underlying physics fields
+        elsewhere in this Workstation genuinely still come only from
+        CoupledEarthSolver - that half of the original disclosure stands.
+        """
+        from acf.connectors.argo_floats import ArgoFloatsConnector
+        from acf.connectors.nexrad_stations import NEXRADRadarConnector
+        from acf.gui.esoc.panel_manager import _ArgoFetchWorker, _METARFetchWorker, _NexradFetchWorker
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
         dialog = QDialog(self)
         dialog.setWindowTitle("Observations")
         layout = QVBoxLayout(dialog)
-        label = QLabel(
-            "No real observation feed is connected to this Workstation.\n\n"
-            "Every field shown elsewhere in this Workstation comes from a real, live\n"
-            "CoupledEarthSolver run — never a real or simulated observation network.\n"
-            "This is an honest disclosure, not a placeholder for hidden data."
+        note = QLabel(
+            "4 real observation feeds below (same connectors as the ESOC Earth Monitoring panel) - "
+            "the physics fields shown elsewhere in this Workstation still come only from a real, "
+            "live CoupledEarthSolver run, never from these observation feeds."
         )
-        label.setWordWrap(True)
-        layout.addWidget(label)
-        dialog.resize(420, 160)
+        note.setWordWrap(True)
+        layout.addWidget(note)
+
+        table = QTableWidget(4, 2)
+        table.setHorizontalHeaderLabels(["Feed", "Status"])
+        rows = ["GOES/MTG Satellites", "ARGO Ocean Floats", "Surface AWS (SYNOP/METAR)", "Doppler Radar (NEXRAD)"]
+        for row, name in enumerate(rows):
+            table.setItem(row, 0, QTableWidgetItem(name))
+            table.setItem(row, 1, QTableWidgetItem("Checking..."))
+        table.resizeColumnsToContents()
+        layout.addWidget(table)
+        dialog.resize(520, 220)
+
+        provider = MTGBasemapProvider.instance()
+        table.setItem(0, 1, QTableWidgetItem("LIVE" if provider.is_live else provider.status))
+
+        # NOTE: these 3 fetches run async (same QThreadPool workers as
+        # EarthMonitoringPanel) and their `finished` signal is delivered
+        # on a Qt queued connection - it can arrive after the user has
+        # already closed this dialog. Each callback checks
+        # shiboken6.isValid(table) first, same lifetime-safety discipline
+        # as panel_manager.py's _on_argo_fetched/_on_metar_fetched/
+        # _on_nexrad_fetched (see _make_mtg_update_forwarder's own NOTE
+        # for the crash this guards against).
+        def _on_argo(result: Any) -> None:
+            if not shiboken6.isValid(table):
+                return
+            text = f"LIVE ({result.profile_count} profiles/48h)" if result.is_real_data else result.status
+            table.setItem(1, 1, QTableWidgetItem(text))
+
+        def _on_metar(reporting: int, total: int) -> None:
+            if not shiboken6.isValid(table):
+                return
+            text = f"LIVE ({reporting}/{total} stations)" if reporting > 0 else "NOT_REACHABLE_0_STATIONS_REPORTING"
+            table.setItem(2, 1, QTableWidgetItem(text))
+
+        def _on_nexrad(result: Any) -> None:
+            if not shiboken6.isValid(table):
+                return
+            text = (
+                f"LIVE ({result.stations_operational}/{result.stations_total} sites)"
+                if result.is_real_data
+                else result.status
+            )
+            table.setItem(3, 1, QTableWidgetItem(text))
+
+        argo_worker = _ArgoFetchWorker(ArgoFloatsConnector())
+        argo_worker.signals.finished.connect(_on_argo)
+        QThreadPool.globalInstance().start(argo_worker)
+
+        metar_worker = _METARFetchWorker()
+        metar_worker.signals.finished.connect(_on_metar)
+        QThreadPool.globalInstance().start(metar_worker)
+
+        nexrad_worker = _NexradFetchWorker(NEXRADRadarConnector())
+        nexrad_worker.signals.finished.connect(_on_nexrad)
+        QThreadPool.globalInstance().start(nexrad_worker)
+
         dialog.exec()
 
     def _show_scientific_explorer_dialog(self) -> None:
