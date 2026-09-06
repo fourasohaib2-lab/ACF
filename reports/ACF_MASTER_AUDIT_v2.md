@@ -10454,3 +10454,69 @@ un bug actif car le seul appelant utilise l'ID par défaut correspondant),
 **Validation** : `tests/test_geology_platform.py` +
 `tests/test_esoc_volcanoes_panel.py` → 19/19 passent ; `ruff check`
 propre.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.intelligence` : vérifié propre
+
+`acf.intelligence` (24 fichiers, 612 lignes) - 22/24 déjà corrigés par
+une passe antérieure (agents, anomalies, decision_support,
+explanations, forecast_analysis, hypothesis, knowledge, optimization,
+planner, reports, scientific_reasoning.py). Les 2 fichiers restants
+(`visualization/intelligence_dashboard.py`, `__init__.py`) lus
+intégralement - configuration statique d'interface AWCI et imports
+uniquement, aucune fabrication. Aucune modification de code nécessaire.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.dashboard` : vérifié propre
+
+`acf.dashboard` (13 fichiers, 901 lignes) - `window.py`/`panels/map_panel.py`/
+`panels/status_panel.py` déjà corrigés par une passe antérieure. Les
+10 fichiers restants lus intégralement : `manager.py`/`dashboard.py`
+(plomberie GUI générique - `refresh()`/`shutdown()` sont des no-op
+honnêtes, pas une fausse affirmation d'action effectuée), `layout.py`
+(assemblage réel de docks PySide6), `panels/chart_panel.py`/
+`timeline_panel.py` (widgets Qt statiques, listes de noms sans calcul),
+`panels/explorer_panel.py`/`property_panel.py`/`widgets.py`/2
+`__init__.py` (gabarits vides sans contenu). Aucune fabrication
+possible - ce sont des coquilles d'interface, rien n'y est calculé ni
+affirmé. Aucune modification de code nécessaire.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.web` : vérifié propre, qualité exceptionnelle
+
+**Contexte** : `acf.web` (12 fichiers, 1355 lignes) - jamais touché,
+mais entièrement propre. Surface HTTP/WebSocket FastAPI réelle sur des
+moteurs déjà réels du dépôt (Complexity Engine, Model Adapter Protocol,
+Event Engine, Data Contract, HPCConnectionManager, surrogate FNO
+entraîné, diagnostics du Scientific Workstation) - "no new computation
+is invented here, only real endpoints exposing it" est vérifié vrai
+partout où c'est affirmé.
+
+**Aucune fabrication trouvée**, discipline remarquable :
+- `routers/_solver_guard.py` : garde-fou partagé réel contre une requête
+  HTTP non bornée (grille/pas de temps) avant tout run réel de
+  `CoupledEarthSolver` - limites documentées comme des limites de
+  service, pas des limites scientifiques. `field_to_json_safe_list()`
+  convertit honnêtement les vrais NaN en `null` JSON plutôt que de
+  laisser échapper un token `NaN` invalide.
+- `routers/hpc_router.py` : distingue explicitement `connected` (workflow
+  de connexion à 11 étapes complété, vrai même en mode local/hors-ligne)
+  de `real_ssh_transport` (transport Paramiko réellement confirmé) -
+  cette page ne peut jamais prétendre à une connexion cluster live qui
+  n'a jamais été réellement établie.
+- `routers/datasets_router.py`/`events_router.py` : stockage durable
+  réel via `SqliteDocumentStore` (SQLite standard, WAL activé pour la
+  concurrence réelle d'un serveur ASGI), round-trip exact via les
+  `to_dict()`/`from_dict()` déjà réels des contrats `Dataset`/`Event`.
+  `events_router.py` documente honnêtement pourquoi seuls 2 des 8 types
+  d'événements de la spec ont un vrai détecteur (cf. `acf.events`).
+- `routers/workstation_router.py` (251 lignes) : chaque endpoint appelle
+  exactement les mêmes fonctions Qt-free réelles que les panneaux GUI
+  du Workstation (θ-e Bolton 1980, vorticité/divergence, cisaillement de
+  vent, indices de convection CAPE/CIN/SRH/EHI/SCP/STP, terrain SRTM15+).
+- `routers/models_router.py` : "every real adapter this project has -
+  not a subset", vérifié exact (7 adaptateurs réels listés).
+- `storage.py` (`SqliteDocumentStore`) : SQLite standard, aucune
+  dépendance nouvelle, cohérent avec la convention déjà établie de
+  `ModelSkillDatabase`.
+- `hpc_dashboard_server.py` : assemble une vraie app FastAPI, le
+  JS du tableau de bord lit les vrais champs de l'API sans en inventer.
+
+**Aucune modification de code nécessaire.**
