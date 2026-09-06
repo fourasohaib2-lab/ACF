@@ -12,7 +12,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [ ] `model4d`
 - [ ] `science`
 - [x] `physics_guard`
-- [ ] `parameters`
+- [x] `parameters`
 - [x] `standards`
 - [x] `validation`
 - [x] `normalization`
@@ -91,10 +91,10 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 ## Synthèse
 
-- Tier F : 8/12 audités
+- Tier F : 9/12 audités
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 28/59
+- Total bloquant v1.0 (F+C+E) : 29/59
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
