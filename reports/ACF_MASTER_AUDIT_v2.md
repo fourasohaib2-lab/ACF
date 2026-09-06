@@ -10650,3 +10650,63 @@ risque de fabrication à l'exécution puisque rien n'y est exécuté.
 `test_model_adapter_protocol.py` + `test_module_manifest.py` +
 `test_compatibility_reexports.py` (47/47) passent ; `ruff check` propre ;
 import direct de chaque nouvel export vérifié.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.maps` : bug réel confirmé et corrigé (rendu qui ne rend rien + crash reproductible)
+
+**Contexte** : `acf.maps` (37 fichiers, 1861 lignes) - 6 fichiers déjà
+corrigés par une passe antérieure (`data_renderer.py`,
+`visualization_manager.py`, `scientific_renderer.py`, `canvas.py`,
+`layers/base_layer.py`, et `canvas/map_canvas.py` lui-même, mais
+seulement pour son problème de "canonique dupliqué" - voir ci-dessous).
+Les 31 fichiers restants lus intégralement.
+
+**Bug réel trouvé et corrigé - le plus significatif de cette passe,
+même calibre que le bug `PlanetaryEventStream` trouvé plus tôt dans
+cette session** (`canvas/map_canvas.py`, déjà partiellement audité
+mais ce problème précis était passé inaperçu) :
+- `MapCanvas.draw_raster()`/`draw_contours()` ne dessinaient jamais
+  rien de réel sur le canvas - aucun appel à une primitive matplotlib
+  réelle (`pcolormesh`/`contour`), `self.draw()` jamais invoqué -
+  seul `has_field()` (un booléen indiquant si un champ a été
+  positionné) était renvoyé, faisant croire à un rendu réussi. Reproduit
+  concrètement : `canvas.draw_raster(np.zeros((3,3)))` renvoyait `True`
+  sans qu'un seul pixel du canvas ne change.
+- `MapCanvas.draw_wind(field)` **plantait immédiatement** sur tout
+  appel réel : `WindRenderer.set_field(u, v)` exige deux arguments,
+  `draw_wind()` n'en passait qu'un seul -
+  `TypeError: set_field() missing 1 required positional argument: 'v'`.
+  Reproduit concrètement avant correction.
+- Zéro appelant réel dans tout `src/` et zéro couverture de test pour
+  les trois méthodes (vérifié par grep) - un vrai bug resté invisible,
+  pas un changement de comportement pour un appelant existant.
+- Corrigé : `draw_wind()` accepte désormais `u`/`v` séparément (ne
+  plante plus) ; les trois méthodes renvoient désormais un statut
+  honnête (`"NOT_RENDERED_NO_REAL_DRAW_CALL_WIRED"`) plutôt qu'un
+  booléen trompeur - un vrai rendu nécessiterait de faire transiter de
+  vraies coordonnées lon/lat à travers la signature de ces méthodes
+  (absentes aujourd'hui, seul un champ 2D brut est reçu), un
+  changement d'API plus large que ce que cette passe entreprend. 3
+  nouveaux tests de régression ajoutés (`tests/test_map_canvas_renderers.py`).
+
+**Fichiers vérifiés propres** (lus intégralement) : `field.py`,
+`contours.py`, `projection.py`, `streamlines.py`, `vector.py`,
+`colormap.py`, `exporter.py`, `layer_manager.py`, `map_engine.py`,
+`layers/raster_layer.py`, `layers/vector_layer.py`,
+`projections/projection_manager.py`, `renderers/cartopy_renderer.py`
+(vrai rendu Cartopy réel), `renderers/contour_renderer.py`/
+`raster_renderer.py`/`wind_renderer.py` (conteneurs d'état purs -
+mêmes classes que celles enveloppées, sans bug, par `MapCanvas`
+ci-dessus), `styles/color_table.py`/`colorbar_manager.py`/
+`colormap_manager.py`, `auto_renderer.py`, plus les gabarits vides
+(`animation.py`, `basemap.py`, `map_manager.py`, et 4 `__init__.py`
+triviaux).
+
+**Validation** : `tests/test_map_canvas_renderers.py` (6/6, incluant 3
+nouveaux tests) + `test_canvas.py` + `test_cartopy_renderer.py` +
+`test_raster_renderer.py` + `test_contour_renderer.py` +
+`test_wind_renderer.py` + `test_exporter.py` (39/39) passent (dans un
+contexte où une `QApplication` Qt existe déjà - une exigence
+d'environnement préexistante pour tout test `MapCanvas`, pas liée à ce
+correctif) ; `ruff check` propre. Suite complète confirmée verte pour
+l'ensemble des passes précédentes : 4487 passed, 18 skipped, 0 failed
+en 960s.

@@ -41,6 +41,21 @@ a real, scoped design decision this pass does not make unilaterally.
 Not deleted or merged per project convention - flagged so the "Canonical"
 docstring above isn't mistaken for meaning this is the one live GUI
 consumers actually use.
+
+NOTE (correction — real functional gaps, found during the
+post-model4d audit, 2026-09-06): `draw_raster()`/`draw_contours()`
+used to claim a truthy result with no real matplotlib drawing
+primitive ever called (the canvas visually never changed), and
+`draw_wind()` crashed immediately with a `TypeError` on any real call
+(passed one `field` argument to `WindRenderer.set_field()`, which
+needs `u` AND `v`) - reproduced directly before fixing. Zero real
+callers or tests anywhere in the codebase exercised any of the three
+(verified via grep) - real but previously-inert/unreachable gaps, not
+a behavior change for any existing caller. See each method's own NOTE
+for what was fixed (the crash) versus honestly disclosed (still no
+real drawing primitive wired - would need real lon/lat coordinates
+threaded through these methods' own signatures, a larger API change
+than this pass makes).
 """
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -117,26 +132,57 @@ class MapCanvas(FigureCanvasQTAgg):
     ##################################################
 
     def draw_raster(self, field):
-
+        """
+        NOTE (correction — real functional gap, found during the
+        post-model4d audit, 2026-09-06): this only ever updated
+        `self.raster_renderer`'s tracked field and returned whether a
+        field was set (`RasterRenderer.render()`'s own `has_field()`
+        check) - no real matplotlib drawing primitive
+        (`pcolormesh`/`imshow`) was ever called and `self.draw()` was
+        never invoked, so the canvas visually never changed despite
+        claiming a truthy result. A real fix needs real longitude/
+        latitude coordinate arrays threaded through this method's own
+        signature (not present today - only a bare 2D `field`), a
+        genuinely larger API change than fixing in place here. Zero
+        real callers anywhere in the codebase depend on the previous
+        (non-)rendering behavior (verified via grep, tests included) -
+        a real but previously-inert gap, not a behavior change for any
+        existing caller. Honestly disclosed instead of silently kept.
+        """
         self.raster_renderer.set_field(field)
-
-        return self.raster_renderer.render()
+        field_set = self.raster_renderer.render()
+        return {"field_set": field_set, "rendered": False, "status": "NOT_RENDERED_NO_REAL_DRAW_CALL_WIRED"}
 
     ##################################################
 
     def draw_contours(self, field):
-
+        """Same real gap as draw_raster() - see its own NOTE. No real `contour()`/`contourf()` call is ever made here."""
         self.contour_renderer.set_field(field)
-
-        return self.contour_renderer.render()
+        field_set = self.contour_renderer.render()
+        return {"field_set": field_set, "rendered": False, "status": "NOT_RENDERED_NO_REAL_DRAW_CALL_WIRED"}
 
     ##################################################
 
-    def draw_wind(self, field):
+    def draw_wind(self, u, v):
+        """
+        Same real gap as draw_raster() - see its own NOTE. No real
+        `quiver()`/`streamplot()` call is ever made here.
 
-        self.wind_renderer.set_field(field)
-
-        return self.wind_renderer.render()
+        NOTE (correction — reproducible crash, found during the
+        post-model4d audit, 2026-09-06): this used to take a single
+        `field` argument and pass it alone to
+        `WindRenderer.set_field(u, v)`, which requires two - any real
+        call (`draw_wind(some_array)`) raised `TypeError: set_field()
+        missing 1 required positional argument: 'v'` immediately.
+        Reproduced directly before fixing. Corrected to accept `u`/`v`
+        separately, matching `WindRenderer.set_field()`'s real
+        signature. Zero real callers anywhere in the codebase (verified
+        via grep, tests included), so this was a real but previously-
+        unreachable crash, not a behavior change for any existing caller.
+        """
+        self.wind_renderer.set_field(u, v)
+        field_set = self.wind_renderer.has_field()
+        return {"field_set": field_set, "rendered": False, "status": "NOT_RENDERED_NO_REAL_DRAW_CALL_WIRED"}
 
 
 class Canvas:
