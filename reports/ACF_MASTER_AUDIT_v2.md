@@ -11005,3 +11005,55 @@ finale. Qualité remarquable, rien à corriger.
 
 **Validation réelle** : `tests/test_certification_engine.py` existe et
 couvre le pipeline réel.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.visualization` et `acf.data` : échantillonnage large, déjà entièrement corrigés par des passes antérieures
+
+**Contexte** : deux des derniers paquets substantiels de `src/acf/`
+jamais mentionnés nommément dans ce rapport (`acf.visualization` ~3400
+lignes/65 fichiers, `acf.data` ~3240 lignes/65 fichiers). Échantillonnage
+large plutôt que lecture intégrale ligne à ligne, vu leur taille -
+ciblé sur les fichiers les plus susceptibles de porter le motif déjà
+trouvé des dizaines de fois dans ce rapport (statuts/métriques fixes
+présentés comme mesurés).
+
+**`acf.visualization`** : les shims de compatibilité racine
+(`visualization_manager.py`, `renderer.py`, `data_renderer.py`,
+`auto_renderer.py`) redirigent réellement vers `acf.maps.*` (déjà
+audité, "bug réel confirmé et corrigé"). Le sous-paquet
+`ai_forecast_center/` (le plus gros morceau, incluant
+`model_consensus_engine.py` 499 lignes déjà couvert par la Phase
+"Multi-Model Lab") porte déjà systématiquement ses propres notes
+"NOTE (correction)" - chaque métrique/confiance fabriquée déjà
+remplacée par `None` + statut honnête. Idem pour `layer_engine/`,
+`gpu/gpu_backend.py` (rendu offscreen honnêtement
+`NOT_RENDERED_NO_GPU_BACKEND_CONNECTED`), `widgets/awci_dashboard.py`
+(fps déjà corrigé à `None`, TimelineController's absence de vraie
+boucle d'animation déjà divulguée). `layer_engine/layer_permissions.py`
+porte déjà sa propre note honnête "NOT_CHANGED" sur son `check_layer_
+access()` toujours-`True` - question de politique d'autorisation
+non spécifiée ailleurs dans ACF (application mono-opérateur, aucun
+système d'authentification trouvé), correctement laissée en jugement
+plutôt que "corrigée" arbitrairement. `layer_manager.py`/
+`scene_manager.py`/`timeline_controller.py`/`camera_controller.py`:
+logique Qt réelle et fonctionnelle, aucune fabrication.
+
+**`acf.data`** : la majorité des fichiers (readers/dataset_registry/
+factory) sont des "Compatibility Layer" explicitement disclosés
+redirigeant vers `acf.importers`/`acf.catalog` (déjà audités).
+`readers/epygram_reader.py` (542 lignes, le plus gros fichier réel du
+paquet) porte déjà de nombreuses "NOTE (correction)", dont une "un des
+findings les plus opérationnellement dangereux". `universal_ingestion.py`
+également déjà corrigé (4 notes). Aucun `except: pass` silencieux trouvé
+dans les deux paquets (motif déjà croisé 3 fois ailleurs dans ce
+rapport).
+
+**Conclusion** : aucune nouvelle fabrication trouvée dans les deux
+paquets - déjà entièrement traités par des passes antérieures (menées
+par d'autres sessions travaillant en parallèle sur ce dépôt), simplement
+jamais crédités sous ce nom dans ce rapport. Rien à corriger.
+
+**Ce qui reste non audité nommément dans ce rapport** : `acf.resources`
+(0 fichier `.py` - pas de code à auditer), `acf.awci` (100 mentions,
+très probablement déjà couvert en substance vu son usage omniprésent
+dans les phases GUI/dashboard de ce document, non vérifié
+explicitement comme un paquet à part).
