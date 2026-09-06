@@ -101,3 +101,11 @@ logs/
 project/*.pdf
 project/*.docx
 .aider*
+
+# Personal/reference clutter accidentally dropped at the repo root
+# (spotted 2026-09-06): not ACF source, not build output, just files
+# that landed here by accident. Left in place on disk, only hidden from
+# `git status` so real in-flight work stops being buried under them.
+/metpy-cookbook/
+/*.odt
+
