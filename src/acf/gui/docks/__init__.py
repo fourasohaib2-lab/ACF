@@ -1,28 +1,10 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.gui.docks - dock panel widgets.
 
-GUI -   Init
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+`dataset_panel.py` and `layer_panel.py` (~3-5KB each) are real. Verified
+2026-09-06: `legend_panel.py`, `property_panel.py`, and `timeline_panel.
+py` (~770 bytes each) are empty stubs - no class or function beyond the
+package-wide docstring template, not imported anywhere in src/ or
+tests/. Not compatibility shims for anything real elsewhere; genuinely
+unimplemented.
 """

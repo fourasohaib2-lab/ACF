@@ -4,7 +4,18 @@ Atmospheric Complexity Framework (ACF)
 Map Rendering
 =============
 
-Rendering mixin used by MapCanvas.
+NOTE (Physics Guard, 2026-09-06 Tier C sweep): despite "used by
+MapCanvas" below, `class MapCanvas(EventMixin, QWidget)` in
+map_canvas.py does NOT mix this class in - verified by reading that
+class's own base list. Real, substantial (175 lines), self-consistent
+code, not fabricated - just never wired in, same disconnected-reserve
+situation as this package's own __init__.py already documents for
+layers/renderers/rendering/navigation/projections/. See that
+docstring for the fuller pattern; this file and its siblings
+map_export.py/map_status.py (same false "for MapCanvas" claim) are an
+additional, smaller instance of it.
+
+Rendering mixin - NOT currently used by MapCanvas.
 
 Responsible for drawing every scientific layer.
 """

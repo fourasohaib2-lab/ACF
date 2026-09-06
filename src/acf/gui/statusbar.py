@@ -1,28 +1,8 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.gui.statusbar - empty stub, no content beyond this file.
 
-GUI - Statusbar
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage statusbar logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Verified 2026-09-06: not imported anywhere in src/ or tests/. The real
+status bars ESOC actually shows are acf.gui.esoc.esoc_statusbar and
+acf.gui.main_window.status_bar - this file is not a compatibility shim
+for either, it is genuinely unimplemented.
 """

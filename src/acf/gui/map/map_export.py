@@ -4,7 +4,14 @@ Atmospheric Complexity Framework (ACF)
 Map Export
 ==========
 
-Export mixin for MapCanvas.
+NOTE (Physics Guard, 2026-09-06 Tier C sweep): despite "for MapCanvas"
+below, `class MapCanvas(EventMixin, QWidget)` in map_canvas.py does
+NOT mix this class in - verified by reading that class's own base
+list. Real code, not fabricated, just never wired in - see
+map_rendering.py's own NOTE (same finding, fuller context) and this
+package's __init__.py for the broader disconnected-reserve pattern.
+
+Export mixin - NOT currently used by MapCanvas.
 """
 
 from pathlib import Path

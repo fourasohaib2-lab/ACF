@@ -32,14 +32,17 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `hpc_connector`
 - [x] `hpc_workflow`
 - [x] `simulation_engine`
-- [~] `gui` (~30k lignes, 10 sous-packages. Couverts : `esoc/` (19
-  fichiers - dont un vrai finding produit : 8 des 15 entrées du menu
-  déroulant "vue" de `view_manager.py` n'ont aucune projection réelle
-  associée, retombent silencieusement sur PlateCarree) et `dashboard/`
-  (52 fichiers, déjà quasi-entièrement audité, rien de nouveau). Reste
-  non couvert : `map/` (42 fichiers), `widgets/`, `docks/`,
-  `layer_panel/`, `main_window/`, `dialogs/`, les fichiers en vrac à la
-  racine)
+- [~] `gui` (~30k lignes, 10 sous-packages. Couverts : `esoc/`,
+  `dashboard/`, `map/` (42 fichiers — déjà documenté : 5 sous-packages
+  entiers `layers/`/`renderers/`/`rendering/`/`navigation/`/
+  `projections/` sont une réserve non branchée ; trouvé en plus cette
+  passe : 3 mixins réels `RenderingMixin`/`ExportMixin`/`StatusMixin`
+  prétendaient être utilisés par `MapCanvas` alors qu'ils ne le sont
+  pas — corrigé), `docks/`, `layer_panel/`, plus les stubs vides à la
+  racine (`toolbar.py`, `statusbar.py`) et fichiers réels corrigés
+  (`theme.py`, `splash.py`, `widgets/property_panel.py`). Reste non
+  couvert : `widgets/` (reste), `main_window/`, `dialogs/`, quelques
+  fichiers en vrac à la racine)
 - [~] `visualization`
 - [ ] `maps`
 - [~] `awci`

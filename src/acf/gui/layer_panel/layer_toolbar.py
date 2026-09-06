@@ -1,28 +1,5 @@
-"""
-Atmospheric Complexity Framework (ACF)
+"""layer_toolbar - empty stub, no content beyond this file.
 
-GUI - Layer Toolbar
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage layer toolbar logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Verified 2026-09-06: not imported anywhere in src/ or tests/. See
+acf.gui.layer_panel's own docstring for which files in this package are real.
 """

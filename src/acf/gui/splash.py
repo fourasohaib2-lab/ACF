@@ -1,30 +1,7 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.gui.splash - SplashScreen, the real startup splash screen.
 
-GUI - Splash
-
-Purpose:
---------
-PySide6 Qt GUI components, dock panels, map canvas controllers, and navigation.
-
-Responsibilities:
------------------
-• Manage splash logic and state representations.
-• Integrate with the gui subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• SplashScreen
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.gui module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Verified 2026-09-06: used by acf.gui.app at application startup.
 """
 
 from PySide6.QtCore import Qt
