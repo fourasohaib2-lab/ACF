@@ -214,14 +214,23 @@ def test_packaging_deployment_and_infrastructure():
     dep = DeploymentEngine.deploy("HPC_SLURM")
     assert dep["deployment_status"] == "NOT_DEPLOYED_NO_DEPLOYMENT_BACKEND_CONNECTED"
 
+    # CORRECTED (2026-09-06 Tier E sweep, same pattern as
+    # CloudSupport.get_cloud_config() just below): these 3 used to
+    # return their planned filenames/example values with no "status"
+    # disclosing that nothing is actually written to disk - the same
+    # implied-live-integration gap CloudSupport already had fixed,
+    # missed on these 3 siblings at the time.
     dock = DockerSupport.generate_docker_manifests()
-    assert "Dockerfile" in dock["dockerfile"]
+    assert "Dockerfile" in dock["planned_dockerfile"]
+    assert dock["status"] == "NOT_GENERATED_NO_MANIFEST_WRITTEN"
 
     k8s = KubernetesSupport.generate_k8s_manifests()
-    assert "deployment" in k8s["deployment_yaml"]
+    assert "deployment" in k8s["planned_deployment_yaml"]
+    assert k8s["status"] == "NOT_GENERATED_NO_MANIFEST_WRITTEN"
 
     slurm = SlurmSupport.generate_slurm_script()
-    assert slurm["nodes"] == 16
+    assert slurm["example_nodes"] == 16
+    assert slurm["status"] == "NOT_GENERATED_NO_SCRIPT_WRITTEN"
 
     # CORRECTED: get_cloud_config() used to claim status "CLOUD_READY"
     # implying live cloud integration - no cloud SDK is even a
