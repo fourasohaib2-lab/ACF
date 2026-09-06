@@ -10,6 +10,17 @@ Simulation simplifiée des interactions entre :
 - pression dynamique solaire
 - flux énergétique
 - perturbations spatiales
+
+NOTE (Physics Guard, 2026-09-06 Tier X sweep - model4d/physics/ is a
+real, disconnected reserve, see model4d/__init__.py's own NOTE):
+solar_wind_pressure() below returns 0.5*rho*V^2, but the sibling
+magnetosphere_dynamics.MagnetosphereDynamicsPhysics.solar_wind_pressure()
+returns rho*V^2 (no 1/2 factor - the standard space-physics ram-
+pressure convention) for the same physical quantity - the two
+disagree by a factor of 2, neither cross-references the other. Not
+fixed here (this module is already framed as "simplifiée", and this
+whole package is disconnected - see cross-reference above), disclosed
+rather than silently trusted.
 """
 
 from math import sqrt
