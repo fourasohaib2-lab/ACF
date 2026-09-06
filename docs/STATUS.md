@@ -32,17 +32,18 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `hpc_connector`
 - [x] `hpc_workflow`
 - [x] `simulation_engine`
-- [~] `gui` (~30k lignes, 10 sous-packages. Couverts : `esoc/`,
-  `dashboard/`, `map/` (42 fichiers — déjà documenté : 5 sous-packages
-  entiers `layers/`/`renderers/`/`rendering/`/`navigation/`/
-  `projections/` sont une réserve non branchée ; trouvé en plus cette
-  passe : 3 mixins réels `RenderingMixin`/`ExportMixin`/`StatusMixin`
-  prétendaient être utilisés par `MapCanvas` alors qu'ils ne le sont
-  pas — corrigé), `docks/`, `layer_panel/`, plus les stubs vides à la
-  racine (`toolbar.py`, `statusbar.py`) et fichiers réels corrigés
-  (`theme.py`, `splash.py`, `widgets/property_panel.py`). Reste non
-  couvert : `widgets/` (reste), `main_window/`, `dialogs/`, quelques
-  fichiers en vrac à la racine)
+- [x] `gui` (~30k lignes, 10 sous-packages, tous couverts. Finding le
+  plus important du sweep : `earth_system_operations.py` (exporté dans
+  `gui/__init__.py.__all__`, jamais construit) retournait une
+  auto-certification fabriquée — `"ui_version": "ACF-UI-001 Production
+  Certified"` et `"integration_status": "ALL_45_MISSIONS_INTEGRATED"`
+  — sans aucune UI réelle derrière, et son propre test l'affirmait
+  comme vrai. Corrigé (code + test). Autres findings : `map/` (5
+  sous-packages entiers non branchés, déjà documenté + 3 mixins
+  mal étiquetés corrigés cette passe), `main_window/` (sous-package
+  entier non branché, disclosure ajoutée), 11 stubs vides au total
+  dans `docks/`/`layer_panel/`/racine corrigés, `view_manager.py`
+  (8/15 modes de vue sans projection réelle))
 - [~] `visualization`
 - [ ] `maps`
 - [~] `awci`
@@ -134,9 +135,9 @@ tracké ici tant que non expliqué avec certitude.
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 10/16 audités
+- Tier C : 11/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 36/58
+- Total bloquant v1.0 (F+C+E) : 37/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
