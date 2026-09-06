@@ -9,7 +9,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 ## Tier F — Foundation (bloquant v1.0)
 
 - [x] `core`
-- [ ] `science`
+- [x] `science`
 - [x] `physics_guard`
 - [x] `parameters`
 - [x] `standards`
@@ -99,13 +99,19 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 ## Synthèse
 
-- Tier F : 10/11 audités (model4d reclassé en Tier X le 2026-09-06)
+- Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
+  Tier X le 2026-09-06)
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 30/58
+- Total bloquant v1.0 (F+C+E) : 31/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
 
-Continuer le sweep dans l'ordre Tier F -> Tier C -> Tier E, un module à la
-fois, en suivant le patron des commits `audit(...)` déjà sur `develop`.
+Tier F terminé. Continuer avec Tier C (5/16 audités) : prochains modules
+`catalog`/`catalogs` (décision de consolidation à prendre en premier —
+voir ARCHITECTURE.md §3), `geospatial`, `surfex`, `simulation_engine`,
+`gui`, `maps`, `storage`, puis finir `data`/`visualization`/`awci`
+(actuellement `[~]`). Même patron que Tier F : `git log -- <module>`
+d'abord pour ne pas refaire un travail déjà honnête, corriger les vrais
+surclaims, tests verts, commit `audit(module): ...`.
