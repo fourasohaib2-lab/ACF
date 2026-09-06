@@ -81,6 +81,14 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [ ] `fire_weather`
 - [ ] `certification`
 
+## Baseline factuelle
+
+Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce
+sweep) : **4574 passed, 0 failed**, 480s, 676 warnings (essentiellement des
+`DeprecationWarning` Qt/PySide6 sur des constructeurs `QMouseEvent`, et un
+avertissement de spécification Zarr — aucun échec, mais à nettoyer pendant
+le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
+
 ## Synthèse
 
 - Tier F : 5/12 audités
