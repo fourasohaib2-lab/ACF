@@ -2,7 +2,18 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Hydrological Numerical Models Registry Module (Phase 3)
-(HEC-HMS, HEC-RAS, LISFLOOD, VIC, SWAT, MIKE SHE, WRF-Hydro, CaMa-Flood)
+(HEC-HMS, HEC-RAS, LISFLOOD, VIC)
+
+NOTE (correction — registry/docstring overclaim, found during the
+post-model4d audit, 2026-09-06): this header used to also list "SWAT",
+"MIKE SHE", "WRF-Hydro" and "CaMa-Flood" - 4 real hydrological models
+that HYDROLOGICAL_MODELS_REGISTRY below never had entries for (only
+lisflood, hec_hms, hec_ras and vic are populated). get_model("swat")/
+("wrf_hydro")/("mike_she")/("cama_flood") silently returned None for
+any of the 4 falsely-advertised models. Corrected to name only what is
+genuinely in the registry, matching the docstring-vs-registry fix
+already applied elsewhere in this audit, rather than inventing new
+HydrologicalModelInfo entries with unverified equations/references.
 """
 
 from dataclasses import dataclass

@@ -10013,3 +10013,73 @@ aucune fabrication trouvée) :
 
 **Validation** : `tests/test_operational_flight_meteorology.py` +
 `tests/test_sigmet_decoder.py` → 18/18 passent ; `ruff check` propre.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.verification` : vérifié propre, qualité exemplaire
+
+**Contexte** : `acf.verification` (5 fichiers, 600 lignes) - 2 fichiers
+(`nwp_metrics.py`, `verification_engine.py`) déjà corrigés par une
+passe antérieure ; les 3 restants (`skill_database.py`, `pipeline.py`,
+`__init__.py`) lus intégralement cette passe.
+
+**Aucune fabrication trouvée** - qualité remarquable, discipline
+d'audit déjà appliquée nativement par les auteurs de ce paquet :
+- `skill_database.py` (`ModelSkillDatabase`) : stockage pur + agrégation
+  réelle (moyenne) de résultats de vérification effectivement
+  enregistrés - aucun calcul/devinette de métrique ; `mean_skill()`
+  renvoie honnêtement `None` pour un modèle sans historique,
+  `weights_from_skill()` omet silencieusement les modèles sans
+  historique plutôt que de leur assigner un poids inventé, et renvoie
+  un dict vide plutôt qu'une pondération uniforme fabriquée si aucun
+  modèle n'a d'historique. Documente lui-même honnêtement qu'aucun flux
+  d'observation réel n'est encore branché nulle part dans ACF.
+- `pipeline.py` (`VerificationPipeline`) : exécute réellement les
+  calculateurs de métriques déjà réels (`NWPVerificationMetrics`,
+  `EnsembleManager`) sur une paire prévision/observation réelle fournie
+  par l'appelant, sans réimplémenter aucune métrique ; documente
+  explicitement son propre périmètre honnête (ne se connecte à aucun
+  flux d'observation réel, renvoie vers les disclosures déjà faites
+  dans `acf.data_assimilation.observation_ingestion`).
+- `__init__.py` - imports uniquement.
+
+**Validation** : aucune modification de code, donc aucune re-validation
+nécessaire au-delà de la lecture intégrale.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.hydrology` : 1 surclaim docstring/registre corrigé (3e occurrence du motif)
+
+**Contexte** : `acf.hydrology` (15 fichiers, 502 lignes) - 2 fichiers
+(`flooding/flood_engine.py`, `observations/hydro_obs.py`) déjà
+corrigés par une passe antérieure. Les 5 fichiers substantiels restants
+(`drought_engine.py`, `soil_groundwater.py`, `runoff_engine.py`,
+`hydro_models.py`, `hydro_db.py`) plus 8 `__init__.py` lus intégralement.
+
+**Bug réel trouvé et corrigé — 3e occurrence du motif surclaim
+docstring/registre cette session** (`models/hydro_models.py`) :
+l'en-tête du module annonçait "HEC-HMS, HEC-RAS, LISFLOOD, VIC, SWAT,
+MIKE SHE, WRF-Hydro, CaMa-Flood" (8 modèles nommés), mais
+`HYDROLOGICAL_MODELS_REGISTRY` ne contient que 4 entrées réelles
+(lisflood, hec_hms, hec_ras, vic) - `get_model("swat")`/
+`("wrf_hydro")`/`("mike_she")`/`("cama_flood")` renvoyaient
+silencieusement `None` pour 4 des 8 modèles pourtant annoncés comme
+disponibles. Corrigé en alignant le docstring sur le registre réel
+plutôt que d'inventer 4 nouvelles fiches `HydrologicalModelInfo` avec
+des équations/références non vérifiées. Test préexistant
+`test_operational_hydrology_flooding.py` (`len(...) >= 4`) reste vert
+sans modification.
+
+**Fichiers vérifiés propres, aucune modification** (lus intégralement) :
+- `drought_engine.py` - classification SPI (seuils OMM/McKee et al.
+  1993 standard) et indice de sécheresse des débits (SDI), les deux
+  branchent réellement selon la valeur d'entrée.
+- `soil_groundwater.py` - état hydrique du sol (capacité au champ/point
+  de flétrissement) et loi de Darcy q=-K·(dh/dl), formules réelles et
+  correctes, dépendantes des arguments.
+- `runoff_engine.py` - méthode SCS Curve Number (formule USDA NRCS
+  réelle S=25400/CN-254) et routage de crue de Muskingum (coefficients
+  C0/C1/C2 corrects), garde de cas limite légitime pour CN invalide.
+- `hydro_db.py` - rayon hydraulique Rh=A/P et bilan hydrique
+  ΔS=P-E-Q, formules réelles ; 2 bassins versants réels (Seine, Rhin)
+  avec superficies/longueurs plausibles.
+- 8 `__init__.py` triviaux (imports uniquement).
+
+**Validation** : `tests/test_operational_hydrology_flooding.py`
+(8/8) passe ; `ruff check` propre.
