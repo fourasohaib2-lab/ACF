@@ -31,6 +31,22 @@ Real, on-demand, off-thread (like Confidence Lab and CAPE/CIN)
 -------------------------------------------------------------------------
 Same real cost as Confidence Lab: one real `CoupledEarthSolver` run
 per selected model.
+
+Weighted fusion (added 2026-09-06, explicit user request "la fusion
+multi-modèle")
+-------------------------------------------------------------------------
+Second, independent real computation reusing the SAME 2 selected
+models: `ModelConsensusEngine.compute_real_weighted_field_fusion()`
+(itself a thin wrapper around the already-real, already-tested
+`acf.awci.multi_model_fusion.compute_real_multi_model_field_fusion()`,
+see that module's own docstring for the full real pipeline - regrid,
+weight, bias-correct, spread). Not the same field-key convention as
+the comparison above (`field="T"` on raw `CoupledEarthSolver` state)
+- this uses `compute_real_complexity_field()`'s own real
+`"temperature_field"` output, a different real computation path - so
+this is kept as a genuinely separate result/state in this panel
+(`self._fusion_result`, its own worker, its own 2 display entries),
+not merged into the existing per-model comparison state.
 """
 
 from __future__ import annotations
@@ -79,6 +95,23 @@ class _MultiModelWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _FusionWorker(QRunnable):
+    """Runs ModelConsensusEngine.compute_real_weighted_field_fusion() off the GUI thread."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _WorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = ModelConsensusEngine.compute_real_weighted_field_fusion(**self.kwargs)
+        except Exception as exc:  # noqa: BLE001 - real failure, reported honestly via signal below
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class ACFMultiModelLabPanel(QWidget):
     """Real Multi-Model Lab - raw per-model fields + a real pairwise
     difference map, on-demand. No AWCI content anywhere."""
@@ -88,6 +121,7 @@ class ACFMultiModelLabPanel(QWidget):
         self._volume: dict[str, Any] | None = None
         self._level_index = 0
         self._result: dict[str, Any] | None = None
+        self._fusion_result: dict[str, Any] | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -115,13 +149,31 @@ class ACFMultiModelLabPanel(QWidget):
         )
         self.run_button.clicked.connect(self._start_comparison)
         controls.addWidget(self.run_button)
+
+        self.fusion_button = QPushButton("🔀 Weighted Fusion")
+        self.fusion_button.setToolTip(
+            "Real, off-thread compute_real_weighted_field_fusion() run - one real\n"
+            f"CoupledEarthSolver run per model, regridded onto {_TARGET_MODEL}'s own real\n"
+            "grid, then a real weighted average (equal weights here - no skill database\n"
+            "wired into this GUI yet) with a real per-point spread field. On demand."
+        )
+        self.fusion_button.clicked.connect(self._start_fusion)
+        controls.addWidget(self.fusion_button)
         controls.addStretch()
         layout.addLayout(controls)
 
         display_row = QHBoxLayout()
         display_row.addWidget(self._label("Show:"))
         self.display_selector = QComboBox()
-        self.display_selector.addItems(["Model A field", "Model B field", "Difference (A − B)"])
+        self.display_selector.addItems(
+            [
+                "Model A field",
+                "Model B field",
+                "Difference (A − B)",
+                "Weighted Fusion (A+B)",
+                "Fusion Spread (A vs B)",
+            ]
+        )
         self.display_selector.setEnabled(False)
         self.display_selector.currentTextChanged.connect(lambda _: self._redraw())
         display_row.addWidget(self.display_selector)
@@ -182,16 +234,54 @@ class ACFMultiModelLabPanel(QWidget):
         self.run_button.setEnabled(True)
         self.status_label.setText(f"⚠ Real model comparison failed: {message}")
 
+    def _start_fusion(self) -> None:
+        model_a = self.model_a_selector.currentText()
+        model_b = self.model_b_selector.currentText()
+        if model_a == model_b:
+            self.status_label.setText("⚠ Pick two different real models to fuse.")
+            return
+        self.fusion_button.setEnabled(False)
+        self.status_label.setText(f"⏳ Computing real weighted fusion of {model_a}/{model_b} (a real solver run per model)…")
+        worker = _FusionWorker(
+            field_key="temperature_field", models=[model_a, model_b], target_model=_TARGET_MODEL, steps=3
+        )
+        worker.signals.finished.connect(self._on_fusion_ready)
+        worker.signals.failed.connect(self._on_fusion_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_fusion_ready(self, result: dict[str, Any]) -> None:
+        self.fusion_button.setEnabled(True)
+        self.display_selector.setEnabled(True)
+        self._fusion_result = result
+        weights = ", ".join(f"{model}={weight:.2f}" for model, weight in result["weights"].items())
+        self.status_label.setText(
+            f"✅ Real weighted fusion computed ({result['target_model']} grid, weights: {weights}, "
+            f"source: {result['weight_source']})."
+        )
+        self._redraw()
+
+    def _on_fusion_failed(self, message: str) -> None:
+        self.fusion_button.setEnabled(True)
+        self.status_label.setText(f"⚠ Real weighted fusion failed: {message}")
+
     # ------------------------------------------------------------- redraw
 
+    _FUSION_CHOICES = ("Weighted Fusion (A+B)", "Fusion Spread (A vs B)")
+
     def _redraw(self) -> None:
+        choice = self.display_selector.currentText()
+        if choice in self._FUSION_CHOICES:
+            self._redraw_fusion(choice)
+        else:
+            self._redraw_comparison(choice)
+
+    def _redraw_comparison(self, choice: str) -> None:
         if self._result is None:
             return
         model_a, model_b = self._result["models_compared"]
         field_a = self._result["per_model_field"][model_a]
         field_b = self._result["per_model_field"][model_b]
         unit = "K" if self._result["field"] == "T" else self._result["field"]
-        choice = self.display_selector.currentText()
 
         if choice == "Model A field":
             field, title, cmap = field_a, f"Real {model_a} — {self._result['variable_label']}", "coolwarm"
@@ -215,4 +305,32 @@ class ACFMultiModelLabPanel(QWidget):
             vmin=vmin,
             vmax=vmax,
             colorbar_label=f"{self._result['variable_label']} ({unit})",
+        )
+
+    def _redraw_fusion(self, choice: str) -> None:
+        if self._fusion_result is None:
+            return
+        models_used = " + ".join(self._fusion_result["models_used"])
+        unit = "K" if self._fusion_result["field_key"] == "temperature_field" else self._fusion_result["field_key"]
+
+        if choice == "Weighted Fusion (A+B)":
+            field = self._fusion_result["fused_field"]
+            title = f"Real weighted fusion ({models_used}) — {self._fusion_result['field_key']}"
+            cmap = "coolwarm"
+            vmin, vmax = float(field.min()), float(field.max())
+        else:
+            field = self._fusion_result["spread_field"]
+            title = f"Real fusion spread ({models_used})"
+            cmap = "viridis"
+            vmin, vmax = 0.0, float(field.max()) or 1.0
+
+        self.map_panel.set_external_field(
+            self._fusion_result["target_lons"],
+            self._fusion_result["target_lats"],
+            field,
+            title,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            colorbar_label=f"{self._fusion_result['field_key']} ({unit})",
         )

@@ -103,6 +103,17 @@ Phase 8 (2026-09-04, same "continue" progressive discipline) added:
   Lab's own aggregate spread/mean ("where do these two SPECIFIC models
   actually disagree, and by how much?").
 
+  Update (2026-09-06, explicit user request "la fusion multi-modèle"):
+  the same panel gained a "🔀 Weighted Fusion" button and 2 more
+  display choices, calling `ModelConsensusEngine.
+  compute_real_weighted_field_fusion()` (a thin wrapper around the
+  already-real, already-tested `acf.awci.multi_model_fusion.
+  compute_real_multi_model_field_fusion()`) - a real weighted average
+  of the 2 selected models' fields plus a real per-point spread field,
+  kept as its own independent result state (`self._fusion_result`,
+  distinct field-key convention from the comparison above) rather than
+  merged into it.
+
 Phase 9 (2026-09-04, same "continue" progressive discipline) added:
 - **Real multi-format export** (PNG/SVG/CSV/JSON) on `AWCIMapPanel`
   itself (`awci_map_panel.py`) - so every map in this Workstation (and

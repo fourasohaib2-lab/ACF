@@ -9919,3 +9919,43 @@ un chantier distinct, plus large (UI PySide6, threading off-GUI,
 nouveau widget de carte), non exécuté ici faute d'un environnement de
 test GUI complet (`libEGL.so.1` absent dans ce sandbox, empêchant une
 validation fiable des changements PySide6).
+
+## Mise à jour 2026-09-06 (suite) — l'environnement de test GUI a été réparé ; extension réelle du panneau "Multi-Model Lab" avec la fusion pondérée
+
+**Levée du blocage précédent** : `libEGL.so.1` manquait dans ce
+sandbox (paquet système, pas un paquet Python) - installé via
+`apt-get install libegl1 libegl-mesa0 libgl1 libglx-mesa0`, plus les
+dépendances Python manquantes découvertes ensuite une par une en
+essayant réellement d'importer la chaîne GUI complète (`cartopy`,
+`paramiko`, `fastapi`/`httpx`/`uvicorn`, `pytest-qt`). Vérifié avec
+`QT_QPA_PLATFORM=offscreen` : `tests/gui/test_acf_workstation_multimodel.py`
+(existant, 6 tests utilisant `qtbot` - le vrai event loop Qt, pas un
+appel direct) passe 6/6. Le blocage annoncé dans la mise à jour
+précédente n'est donc plus réel dans cette session.
+
+**Construit** : `ACFMultiModelLabPanel` (`acf_workstation_multimodel.py`)
+gagne un bouton "🔀 Weighted Fusion" et 2 nouveaux choix d'affichage
+("Weighted Fusion (A+B)", "Fusion Spread (A vs B)"), appelant
+`ModelConsensusEngine.compute_real_weighted_field_fusion()` (le
+wrapper ajouté dans la mise à jour précédente) via un nouveau
+`_FusionWorker` off-thread, même discipline que le bouton "🔄 Compare
+Models" existant (`QRunnable`/`Signal`, jamais sur le thread GUI).
+Résultat conservé dans un état séparé (`self._fusion_result`,
+convention de nommage de champ différente - `"temperature_field"` de
+`compute_real_complexity_field()` plutôt que `field="T"` du solveur
+brut) plutôt que fusionné avec `self._result` (comparaison brute) -
+les deux coexistent et restent indépendamment sélectionnables dans le
+même menu déroulant.
+
+**Validation réelle** : `tests/gui/test_acf_workstation_multimodel.py`
+étendu avec 6 nouveaux tests réels (utilisant `qtbot`, pas des appels
+directs) : liste des choix d'affichage, erreur honnête sur modèles
+identiques, exécution off-thread réelle du bouton fusion jusqu'au
+vrai remplissage de la carte, délégation croisée (le résultat du
+panneau doit être identique à un appel direct indépendant à
+`compute_real_multi_model_field_fusion()` avec les mêmes entrées),
+changement d'affichage vers les 2 nouveaux choix avec le vrai champ
+affiché (`np.allclose` contre `fused_field`/`spread_field`), et
+coexistence des 2 états (comparaison + fusion) dans le même panneau.
+Suite complète du fichier : 12/12 passent. `ruff check` propre sur les
+2 fichiers modifiés.
