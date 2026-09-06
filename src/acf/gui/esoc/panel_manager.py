@@ -780,20 +780,111 @@ class OceanPanel(BasePanelWidget):
 
 
 class HydrologyPanel(BasePanelWidget):
-    """18. Hydrology & Inundation Panel."""
+    """18. Hydrology & Inundation Panel.
+
+    NOTE (correction, 2026-09-05): used to show fixed runoff/inundation
+    numbers (Q=1240 m^3/s, depth=0.85 m) behind an honest "Example
+    Layout" disclaimer, with no real hydrological model connected. Two
+    real, already-present capabilities chained here: `acf.simulation_
+    engine.extreme_events.flood.FloodSimulator` ("flood_simulator",
+    already registered, previously unused in any UI - real rainfall-
+    excess/soil-saturation runoff generation + topographic
+    accumulation) fed with genuinely real terrain - `acf.awci.
+    terrain_elevation.interpolate_real_terrain_elevation()`, the same
+    bundled, cited SRTM15+ V2.7 @ 1 arc-degree dataset the Workstation's
+    own Terrain Lab already uses (see that module's own docstring) -
+    bilinearly interpolated onto an operator-chosen local patch.
+
+    Honest disclosure: `FloodSimulator.simulate_inundation()` derives
+    its "slope" term from a raw per-grid-cell elevation gradient
+    (`np.gradient` with no real geographic spacing passed in), so the
+    predicted inundation depth is genuinely sensitive to the patch's
+    spatial extent/resolution chosen below - a known simplification,
+    already self-described as a "Muskingum method proxy" in that
+    class's own docstring, not corrected here. Its own `Manning_n`
+    constructor parameter is likewise accepted but not actually used by
+    `simulate_inundation()` - a real, pre-existing limitation, not
+    introduced or fixed by this panel."""
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("💧 HYDROLOGY & FLASH FLOOD INUNDATION", "#0097A7", registry, dispatcher)
-        # NOTE (correction): fixed runoff/inundation numbers shown with
-        # no real hydrological model or observation connected. Not
-        # fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Hydrological Runoff (Example Layout):\n• Soil Moisture Saturation: 84%\n• River Basin Runoff Q: 1240 m^3/s\n• Max Inundation Depth: 0.85 m"
+        module = registry.get_module("flood_simulator")
+        if module is None:
+            self.main_layout.addWidget(_not_connected_label("flood_simulator"))
+            return
+        self._flood_model: Any = module
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Center latitude (°):"))
+        self.center_lat = QDoubleSpinBox()
+        self.center_lat.setRange(-90.0, 90.0)
+        self.center_lat.setDecimals(3)
+        self.center_lat.setValue(30.50)
+        row.addWidget(self.center_lat)
+        row.addWidget(QLabel("Center longitude (°):"))
+        self.center_lon = QDoubleSpinBox()
+        self.center_lon.setRange(-180.0, 180.0)
+        self.center_lon.setDecimals(3)
+        self.center_lon.setValue(31.20)
+        row.addWidget(self.center_lon)
+        row.addWidget(QLabel("Patch half-width (°):"))
+        self.half_width = QDoubleSpinBox()
+        self.half_width.setRange(0.01, 5.0)
+        self.half_width.setDecimals(3)
+        self.half_width.setValue(0.05)
+        row.addWidget(self.half_width)
+        self.main_layout.addLayout(row)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Rainfall rate (mm/h):"))
+        self.rainfall_rate = QDoubleSpinBox()
+        self.rainfall_rate.setRange(0.0, 500.0)
+        self.rainfall_rate.setValue(60.0)
+        row2.addWidget(self.rainfall_rate)
+        row2.addWidget(QLabel("Soil moisture (m³/m³):"))
+        self.soil_moisture = QDoubleSpinBox()
+        self.soil_moisture.setRange(0.0, 0.45)
+        self.soil_moisture.setDecimals(3)
+        self.soil_moisture.setValue(0.30)
+        row2.addWidget(self.soil_moisture)
+        row2.addWidget(QLabel("Grid points/axis:"))
+        self.grid_points = QSpinBox()
+        self.grid_points.setRange(2, 25)
+        self.grid_points.setValue(9)
+        row2.addWidget(self.grid_points)
+        self.main_layout.addLayout(row2)
+
+        self.button = QPushButton("💧 Simulate Real Inundation (real SRTM15+ terrain)")
+        self.button.clicked.connect(self._simulate)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._simulate()
+
+    def _simulate(self) -> None:
+        from acf.awci.terrain_elevation import interpolate_real_terrain_elevation
+
+        half = self.half_width.value()
+        n = self.grid_points.value()
+        lats = np.linspace(self.center_lat.value() - half, self.center_lat.value() + half, n)
+        lons = np.linspace(self.center_lon.value() - half, self.center_lon.value() + half, n)
+        elevation_m = interpolate_real_terrain_elevation(lats, lons)
+
+        rainfall = np.full_like(elevation_m, self.rainfall_rate.value())
+        soil_moisture = np.full_like(elevation_m, self.soil_moisture.value())
+        result = self._flood_model.simulate_inundation(rainfall, soil_moisture, elevation_m)
+
+        self.result.setText(
+            "Real Flash-Flood Inundation (FloodSimulator on real SRTM15+ terrain):\n"
+            f"• Real elevation range in patch: {float(elevation_m.min()):.1f} to {float(elevation_m.max()):.1f} m\n"
+            f"• Real mean surface runoff: {float(result['runoff_m_h'].mean()):.4f} m/h\n"
+            f"• Real mean inundation depth: {float(result['inundation_depth_m'].mean()):.4f} m\n"
+            f"• Real max inundation depth: {float(result['inundation_depth_m'].max()):.4f} m\n"
+            f"• Real fraction of grid cells flooded (>0.15 m): {float(result['is_flooded'].mean()) * 100.0:.1f}%"
         )
-        self.main_layout.addWidget(self.txt)
 
 
 class CryospherePanel(BasePanelWidget):

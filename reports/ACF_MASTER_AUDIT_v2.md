@@ -10710,3 +10710,59 @@ d'environnement préexistante pour tout test `MapCanvas`, pas liée à ce
 correctif) ; `ruff check` propre. Suite complète confirmée verte pour
 l'ensemble des passes précédentes : 4487 passed, 18 skipped, 0 failed
 en 960s.
+
+## Mise à jour 2026-09-05 (suite) — Phase 53 : upgrade réel du panneau "Hydrology" (déjà mappé)
+
+**Pourquoi** : suite directe de la découverte de la Phase 52 -
+`FloodSimulator` ("flood_simulator") est réellement enregistré et
+inutilisé. Restait à trouver une source réelle d'élévation
+topographique pour alimenter son paramètre `elevation_m` (le
+ruissellement/inondation dépend directement du relief réel du
+terrain). Trouvé : `acf.awci.terrain_elevation.
+interpolate_real_terrain_elevation()`, déjà utilisé par le Terrain Lab
+du Workstation - un vrai jeu de données mondial d'élévation/bathymétrie
+GMT "IGPP Earth Relief" (SRTM15+ V2.7, 1° d'arc, Tozer et al. 2019),
+réellement embarqué (~111 Ko) et cité, interpolé bilinéairement sur
+n'importe quelle grille réelle demandée.
+
+**Construit** : `HydrologyPanel` reconstruit - l'opérateur choisit un
+point central (latitude/longitude), un demi-rayon de patch en degrés,
+une résolution de grille, un taux de pluie (mm/h) et une humidité du
+sol ; le panneau interpole la vraie élévation SRTM15+ sur ce patch
+réel, puis appelle `FloodSimulator.simulate_inundation()` avec cette
+vraie topographie. Vérifié : déplacer le patch d'un delta réel bas-
+relief (Nil, ~30.5°N/31.2°E) vers un massif montagneux réel
+(Alpes, ~45.8°N/6.9°E) change authentiquement l'altitude affichée
+(53-74 m contre 1331-1358 m) ; augmenter la pluie de 20 à 400 mm/h
+augmente authentiquement le ruissellement et la profondeur
+d'inondation calculés.
+
+**Divulgation honnête** : `FloodSimulator.simulate_inundation()`
+calcule sa "pente" à partir d'un simple gradient d'élévation par
+indice de grille (`np.gradient` sans vrai espacement géographique
+passé en argument) - le résultat dépend donc réellement de l'étendue/
+résolution spatiale choisie par l'opérateur, une simplification déjà
+auto-décrite comme "proxy de la méthode de Muskingum" dans la
+docstring de cette classe elle-même, non corrigée ici (hors périmètre
+de ce travail de câblage UI). Découverte additionnelle, également
+divulguée sans être corrigée : le paramètre constructeur `Manning_n`
+de cette même classe est accepté mais jamais utilisé par
+`simulate_inundation()` - une limitation réelle et préexistante du
+moteur, pas introduite par ce panneau.
+
+**Validation réelle** : `ruff`/`mypy` propres sur tout `src/`. 5
+nouveaux tests (`tests/test_esoc_hydrology_panel.py`), incluant une
+vérification directe contre les deux moteurs réels appelés
+indépendamment, une vérification physique que le ruissellement/la
+profondeur augmentent réellement avec la pluie, une vérification que
+déplacer le patch change authentiquement l'altitude réelle affichée
+(delta vs montagne), une garde contre un patch dégénéré à un seul
+point (même leçon que la correction du recadrage de domaine d'une
+phase antérieure), et un test de déconnexion honnête. Aucun nouveau
+test de routage requis (le routage existait déjà, comme pour Ocean/
+Carbon).
+
+**Ce qui reste réellement** : Cryosphere/Air Quality/Earth Monitoring/
+Space Weather/Geology restent des panneaux "Example Layout"
+honnêtement disclaimés ; aucun moteur réel équivalent n'a encore été
+identifié pour eux (recherche non exhaustive).
