@@ -46,7 +46,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
   (8/15 modes de vue sans projection réelle))
 - [x] `visualization`
 - [x] `maps`
-- [~] `awci`
+- [x] `awci`
 - [x] `jobs`
 - [x] `storage`
 
@@ -135,17 +135,19 @@ tracké ici tant que non expliqué avec certitude.
 
 - Tier F : **11/11 audités — TIER F COMPLET** (model4d reclassé en
   Tier X le 2026-09-06)
-- Tier C : 15/16 audités
+- Tier C : **16/16 audités — TIER C COMPLET**
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 41/58
+- Total bloquant v1.0 (F+C+E) : 42/58
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
 
-Tier F terminé. Continuer avec Tier C (5/16 audités) : prochains modules
-`catalog`/`catalogs` (décision de consolidation à prendre en premier —
-voir ARCHITECTURE.md §3), `geospatial`, `surfex`, `simulation_engine`,
-`gui`, `maps`, `storage`, puis finir `data`/`visualization`/`awci`
-(actuellement `[~]`). Même patron que Tier F : `git log -- <module>`
-d'abord pour ne pas refaire un travail déjà honnête, corriger les vrais
-surclaims, tests verts, commit `audit(module): ...`.
+Tier F et Tier C tous deux **complets**. Continuer avec Tier E (15/31
+audités) dans l'ordre de `ARCHITECTURE.md` §3 — modules encore `[ ]` :
+`ocean`, `space_weather`, `climate`, `ai`, `aeos`, `knowledge_platform`,
+`api`, `alerts`, `release`, `connectors`, `master`, `workspace`,
+`search`, `animation` (`ai_expert`/`monitoring` en `[~]` à finir aussi).
+Même patron : `git log -- <module>` d'abord pour ne pas refaire un
+travail déjà honnête, vérifier par grep qu'une classe est réellement
+appelée avant de juger, corriger les vrais surclaims par divulgation
+honnête, tests verts, commit `audit(module): ...`.
