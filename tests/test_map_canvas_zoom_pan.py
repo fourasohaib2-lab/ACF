@@ -47,7 +47,10 @@ def _send_key(canvas: MapCanvas, key: Qt.Key) -> None:
 
 
 def _send_mouse(canvas: MapCanvas, event_type: QEvent.Type, pos: QPointF, button: Qt.MouseButton, buttons: Qt.MouseButton) -> None:
-    event = QMouseEvent(event_type, pos, button, buttons, Qt.KeyboardModifier.NoModifier)
+    # Explicit globalPos (same point - these are synthetic local-widget
+    # events, no real screen position matters) avoids the deprecated
+    # 5-positional-arg QMouseEvent overload (PySide6 6.8+ warning).
+    event = QMouseEvent(event_type, pos, pos, button, buttons, Qt.KeyboardModifier.NoModifier)
     assert QApplication.sendEvent(canvas.canvas, event)
 
 

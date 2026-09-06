@@ -18,7 +18,11 @@ from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 
 
 def _send_mouse(panel: AWCIMapPanel, event_type: QEvent.Type, x: float, y: float) -> None:
-    event = QMouseEvent(event_type, QPointF(x, y), Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+    # Explicit globalPos (same point - these are synthetic local-widget
+    # events, no real screen position matters) avoids the deprecated
+    # 5-positional-arg QMouseEvent overload (PySide6 6.8+ warning).
+    pos = QPointF(x, y)
+    event = QMouseEvent(event_type, pos, pos, Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
     assert QApplication.sendEvent(panel.canvas, event)
 
 
