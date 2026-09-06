@@ -8,7 +8,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 ## Tier F — Foundation (bloquant v1.0)
 
-- [ ] `core`
+- [x] `core`
 - [ ] `model4d`
 - [ ] `science`
 - [x] `physics_guard`
@@ -91,10 +91,10 @@ le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
 ## Synthèse
 
-- Tier F : 9/12 audités
+- Tier F : 10/12 audités
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 29/59
+- Total bloquant v1.0 (F+C+E) : 30/59
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape
