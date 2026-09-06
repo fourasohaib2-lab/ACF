@@ -9556,3 +9556,54 @@ touché. Suite complète en cours de re-vérification.
 (correction" d'une session antérieure) et l'intégralité de
 `acf.science` (170 fichiers, ~21000 lignes) restent pour une
 éventuelle future passe.
+
+## Mise à jour 2026-09-06 (extension du périmètre) — `acf.science` : vérification par échantillonnage + balayage ciblé, aucune fabrication trouvée
+
+**Méthode, honnêtement disclosée** : `acf.science` (170 fichiers,
+~21000 lignes) est bien trop volumineux pour une lecture exhaustive
+fichier par fichier (contrairement à `earth_physics`/`ai` plus haut,
+lus intégralement). Méthode utilisée à la place, non exhaustive :
+(1) balayage par grep de tout le paquet pour les motifs de fabrication
+déjà rencontrés cette session - chaînes "SUCCESS/VERIFIED/CERTIFIED/
+COMPLETE/PASSED/HEALTHY/OPERATIONAL/CONFIRMED/100%" (0 résultat dans
+tout `acf.science`), motif `_REGISTRY: dict`/`_REGISTRY = {}` avec
+docstring à liste nommée façon `climate`/`ocean`/`planetary`/
+`space_weather` (0 résultat - ce paquet n'a structurellement aucun
+registre de ce type), retours numériques fixes sans variable (tous les
+résultats vérifiés sont des gardes de cas limites légitimes, ex.
+`BruntVaisalaFrequency` renvoyant 0 pour un N² non-physique) ; (2)
+lecture intégrale d'un échantillon ciblé sur les fichiers les plus à
+risque (noms génériques "engine"/"registry", indices composites) :
+`engine.py`, `registry.py`, `dynamics.py`, `thermodynamics.py`,
+`severe_weather.py`, `cyclones.py`, `ensemble_uncertainty.py`, un
+échantillon de `encyclopedia/` (`ocean.py` + vérification que 131/261
+entrées `EncyclopediaEntry` ont un `compute_func` réellement dépendant
+de ses arguments), `observations/wmo_code_tables.py` et
+`forward_operators.py`.
+
+**Constat, net contraste avec les autres zones auditées cette
+session** : `acf.science` semble être le paquet le plus rigoureusement
+déjà construit/audité du dépôt. Chaque fichier lu est réel, correct,
+et cité avec précision (SPC mesoanalysis pour SCP/STP, Hart & Korotky
+1991, Thompson et al. 2003, Holton & Hakim 2012, Sanders & Gyakum
+1980, Bolton 1980, Stull 2011, Wilks 2011, COARE 3.0/Fairall et al.
+2003) - jusqu'à documenter explicitement ses propres simplifications
+plutôt que de les cacher (`SevereWeather.summary()` : "This is an
+intentional simplification..."; `ConsensusResult` : "a simple,
+documented ACF convention, not an external published standard").
+`observations/wmo_code_tables.py` porte même déjà une correction
+disclosée pour une fabrication réellement dangereuse en contexte
+aéronautique (un code METAR de visibilité illisible qui renvoyait
+auparavant 10000.0 - "bonne visibilité" - au lieu de lever une erreur).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire**
+dans l'échantillon lu ni dans les motifs recherchés par grep sur
+l'ensemble du paquet.
+
+**Limite honnête de cette conclusion** : contrairement aux zones
+listées plus haut comme "auditées"/"vérifiées propres" (qui ont été
+lues intégralement), `acf.science` n'a été vérifié que par
+échantillonnage + grep ciblé - une fissure isolée dans l'un des
+~140 fichiers non lus individuellement (notamment dans les ~170
+fichiers de `encyclopedia/` au-delà de l'échantillon) reste possible et
+n'a pas été exclue par cette passe.
