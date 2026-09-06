@@ -10,6 +10,16 @@ from typing import Any
 class MasterDashboard:
     """
     Configuration et métadonnées du tableau de bord 'ACF MASTER FRAMEWORK UNIFIED DASHBOARD' dans AWCI.
+
+    NOTE (Physics Guard, 2026-09-06 Tier E sweep): a static workspace/
+    view-name descriptor (no status/certification field to fabricate -
+    unlike this module's siblings ScientificCertificationEngine etc.,
+    already fixed for exactly that). Verified by grep, not constructed
+    anywhere in src/ outside this package's own tests/
+    test_master_framework.py - the "Interstellar"/"Planetary Defense &
+    Cosmic Impact Threat Matrix" workspace this describes is not
+    rendered by any real UI. Disclosed as aspirational/unconnected
+    naming, not a measured-status fabrication.
     """
 
     @classmethod
