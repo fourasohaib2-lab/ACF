@@ -1,28 +1,8 @@
 """
-Atmospheric Complexity Framework (ACF)
-
-ALERTS -   Init
-
-Purpose:
---------
-Weather alert threshold monitoring and warning generation engine.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the alerts subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.alerts module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+acf.alerts - WarningEngine/OperationalWarning (warning_engine.py), a
+real WMO/EUMETNET-CAP-style warning issuance engine (real UUIDs, real
+datetime validity windows). Already carries its own fix disclosures
+(fake AI-confirmation default, fabricated validity window - both
+removed by earlier passes). Genuinely used by acf.geology.
+earthquake_warning (verified by grep) - not disconnected.
 """
