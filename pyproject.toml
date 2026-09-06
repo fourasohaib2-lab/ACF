@@ -137,7 +137,14 @@ all = [
     "psutil",
     "requests", "python-dotenv", "Pillow",
 ]
-dev = ["pytest", "pytest-cov", "pytest-timeout", "black", "ruff", "mypy"]
+# pytest-qt (2026-09-06, found independently by another session's fresh-venv
+# install test - same class of gap as zarr/httpx2/psutil/epygram above):
+# genuinely undeclared despite tests/gui/ and several tests/test_*panel*.py /
+# test_map_*.py modules requiring the `qtbot` fixture at collection time -
+# 164 tests error out with "fixture 'qtbot' not found" without it. Verified
+# fixed: same 164 tests pass once installed (QT_QPA_PLATFORM=offscreen for a
+# headless run - no display server involved otherwise).
+dev = ["pytest", "pytest-cov", "pytest-timeout", "pytest-qt", "black", "ruff", "mypy"]
 
 [project.scripts]
 acf-gui = "acf.gui.app:main"
