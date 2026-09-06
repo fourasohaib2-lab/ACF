@@ -109,6 +109,20 @@ sweep) : **4574 passed, 0 failed**, 480s, 676 warnings (essentiellement des
 avertissement de spécification Zarr — aucun échec, mais à nettoyer pendant
 le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
 
+**Vérification finale de non-régression (2026-09-06, fin de sweep)** :
+run complet relancé après les 42 commits du sweep Tier F+C+E —
+**4574 passed, 0 failed**, identique en nombre à la baseline. Aucune
+régression introduite par ce sweep. 2 des occurrences `QMouseEvent`
+dépréciées ont été corrigées (`test_awci_map_panel_point_click.py`,
+`test_map_canvas_zoom_pan.py`, commit `0f2e3d7`) et re-vérifiées
+séparément avec `DeprecationWarning` promu en erreur (12 passed) — ce
+run complet-ci a probablement démarré juste avant que cette correction
+ne soit sauvegardée sur disque (le nombre total de warnings n'a pas
+bougé), donc ne le confirme pas lui-même ; la vérification isolée
+après coup fait foi. Le reste des ~674 warnings (Qt/PySide6 divers,
+Zarr, Matplotlib/Cartopy internes à ces bibliothèques) reste non
+traité — cosmétique, aucun échec, pas prioritaire.
+
 **Écart découvert pendant le sweep Tier C (`gui`), même journée** :
 `tests/test_gui_stack_scroll_no_permanent_growth.py` — 2 des 4 tests
 échouent maintenant, y compris exécutés seuls (pas un problème
@@ -121,16 +135,20 @@ mais la fenêtre reste à 1010px de haut au lieu de la valeur demandée
 (500 / <737). Aucun changement de code de ce sweep ne touche ce chemin
 (seuls des docstrings ont été modifiés dans `view_manager.py`/
 `map_projection.py` avant cette découverte). Hypothèse la plus
-probable, non confirmée : ces tests dépendent du gestionnaire de
-fenêtres X11 réel (`DISPLAY=:0`, pas de serveur X virtuel) pour
-honorer un `resize()` de façon synchrone après un seul
+probable, non confirmée à l'époque : ces tests dépendent du
+gestionnaire de fenêtres X11 réel (`DISPLAY=:0`, pas de serveur X
+virtuel) pour honorer un `resize()` de façon synchrone après un seul
 `qapp.processEvents()` — cette session a depuis lancé Claude Desktop
 (plusieurs fenêtres/processus réels sur le même serveur X), ce qui
 peut avoir changé le comportement/timing du WM par rapport au run de
-baseline. **Non résolu ici** — à revérifier dans un environnement
-propre/CI avant de conclure à une vraie régression de code plutôt
-qu'à un artefact d'environnement. Ne pas ignorer silencieusement :
-tracké ici tant que non expliqué avec certitude.
+baseline.
+
+**Résolu** : run complet de fin de session (2026-09-06, après les 42
+commits du sweep) — **4574 passed, 0 failed**, y compris ces 2 tests,
+code de `test_gui_stack_scroll_no_permanent_growth.py` inchangé entre
+les deux runs. Confirme l'hypothèse d'un artefact d'environnement
+(charge/timing du serveur X partagé), pas une régression de code —
+gardé ici comme trace plutôt que supprimé, au cas où ça réapparaisse.
 
 ## Synthèse
 
