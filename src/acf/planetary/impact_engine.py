@@ -65,7 +65,18 @@ class ImpactEngine:
 
     @classmethod
     def simulate_impact(cls, diameter_m: float, velocity_km_s: float, mass_kg: float) -> ImpactSeverity:
-        """Simule un impact cosmique et retourne un bilan physique complet."""
+        """Simule un impact cosmique et retourne un bilan physique complet.
+
+        NOTE (Physics Guard, 2026-09-06 Tier X sweep): unlike
+        calculate_kinetic_energy() and estimate_crater_diameter_km()
+        above (real, correctly cited formulas - E=0.5mv^2, Collins et
+        al. 2005's crater scaling law), the overpressure/thermal
+        formulas below (1e5*(mt_tnt)^0.33, 1e4*mt_tnt) carry no
+        citation - real-looking magnitudes for a large impact, but not
+        traced to a specific published blast-scaling source the way
+        the crater formula is. Disclosed rather than presented as
+        equally well-sourced.
+        """
         v_m_s = velocity_km_s * 1000.0
         energy_j = cls.calculate_kinetic_energy(mass_kg, v_m_s)
         mt_tnt = cls.joules_to_megatons(energy_j)

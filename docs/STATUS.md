@@ -101,7 +101,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
   ~86 des ~131 fichiers `physics/` non-`_engine.py`, non
   individuellement relus)
 - [x] `geoengineering`
-- [ ] `planetary`
+- [x] `planetary`
 - [ ] `fire_weather`
 - [x] `certification` (voir ARCHITECTURE.md §3 — audité, excellent,
   compose uniquement des composants déjà vérifiés)
