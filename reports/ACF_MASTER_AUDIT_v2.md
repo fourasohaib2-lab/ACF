@@ -10599,3 +10599,54 @@ compatibilité pures, ré-exportent un vrai code déjà vérifié),
 `test_workflow_notifications.py` + `test_module_manifest.py` +
 `test_workflow_configuration.py` + `test_compatibility_reexports.py`
 (32/32) passent ; `ruff check` propre.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.models` : 5e occurrence du surclaim + réexport manquant corrigés
+
+**Contexte** : `acf.models` (31 fichiers, 1498 lignes) - `base_model.py`
+(217 lignes, introspection réelle) et les 3 adaptateurs
+arome/aladin/arpege `ingestion_adapter.py` déjà corrigés par une passe
+antérieure. Les 26 fichiers restants lus intégralement.
+
+**Bug réel trouvé et corrigé — surclaim docstring + réexport manquant**
+(`models/__init__.py`) : le docstring du package annonçait des drivers
+pour "AROME, ARPEGE, ALADIN, GFS, IFS, ERA5, WRF, and ICON" (8 modèles)
+mais `__all__` n'exposait que 3 adaptateurs (AROME/ALADIN/ARPEGE) plus
+`BaseWeatherModel`/`ForecastConfig`. Vérifié : **GFS n'a de classe
+adaptateur nulle part dans tout le dépôt** (grep exhaustif) - un
+surclaim pur. **IFS** est en réalité couvert par le vrai
+`OpenIFSIngestionAdapter` (ECMWF's own openly-licensed IFS release,
+même code/table de paramètres réels que l'IFS opérationnel). Plus
+important : `WRFIngestionAdapter`/`ICONIngestionAdapter`/
+`OpenIFSIngestionAdapter`/`ERA5Model` sont tous des adaptateurs déjà
+réels et testés (chacun réexporté par son propre sous-paquet
+`acf.models.wrf`/`icon`/`openifs`) mais **jamais réexportés depuis le
+package racine** - `from acf.models import WRFIngestionAdapter` levait
+`ImportError` malgré l'existence réelle de la classe. Corrigé : le
+docstring ne nomme plus que ce qui existe réellement, et les 4
+adaptateurs déjà réels sont désormais réexportés au niveau racine, au
+même titre qu'AROME/ALADIN/ARPEGE - referme un vrai gap de découvrabilité
+plutôt que d'inventer quoi que ce soit (rien n'est fabriqué, les
+classes existaient déjà, testées).
+
+**Fichiers vérifiés propres, qualité remarquable** (lus intégralement) :
+`common/generic_xarray_reader.py` (lecture NetCDF/GRIB réelle via
+xarray/cfgrib, jamais de liste de champs codée en dur par modèle),
+`icon/ingestion_adapter.py`/`wrf/ingestion_adapter.py`/
+`openifs/ingestion_adapter.py` (adaptateurs réels et testés, avec
+disclosures honnêtes détaillées sur les limites de `detect()` et la
+variabilité réelle du nombre de niveaux verticaux selon la
+configuration), `forecast_config.py` (dataclass réelle avec validation
+de positivité), `ensemble.py`/`manager.py`/`hub.py`/`registry.py`/
+`detector.py` (registre/détection réels, aucun statut fabriqué).
+
+**Observation notée, non corrigée** : les 7 fichiers de
+`implementations/` (`gfs.py`, `gefs.py`, `wrf.py`, `icon.py`, `ifs.py`,
+`arpege.py`, `arome.py`) sont des gabarits vides sans code exécutable
+(seul `era5.py` de ce sous-dossier contient une vraie classe) - même
+nature que les gabarits vides déjà notés dans `acf.standards`, aucun
+risque de fabrication à l'exécution puisque rien n'y est exécuté.
+
+**Validation** : `tests/test_wrf_icon_openifs_adapters.py` +
+`test_model_adapter_protocol.py` + `test_module_manifest.py` +
+`test_compatibility_reexports.py` (47/47) passent ; `ruff check` propre ;
+import direct de chaque nouvel export vérifié.
