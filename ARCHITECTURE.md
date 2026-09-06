@@ -48,5 +48,49 @@ The Atmospheric Complexity Framework (ACF) is built upon a layered, decoupled mi
 - Hardware-accelerated 2D/3D map canvas powered by PySide6 and Cartopy/Matplotlib.
 - Volumetric isosurfaces, cross-sections, particle streamline animations, and real-time alerts dashboard.
 
-## 3. Governance and Standards
-For detailed governance manuals, ADRs, and maturity matrices, consult [`docs/ACF_ARCHITECTURE_GOVERNANCE.md`](docs/ACF_ARCHITECTURE_GOVERNANCE.md).
+## 3. Maturity & Scope Tiers
+
+The 5 pillars above describe *where* a module sits logically. They do not
+say whether it is actually finished. As of 2026-09-06 the codebase carries
+~133k lines across 62 `src/acf/` submodules of very uneven maturity (from
+`gui` at ~30k lines to two-file skeletons). To make "finished" a verifiable
+claim rather than a declared one, every submodule is assigned exactly one
+tier:
+
+- **Tier F — Foundation.** Physical/mathematical bedrock. Must be
+  fully audited, zero undisclosed stubs, tests green, before anything else
+  is called done.
+- **Tier C — Core.** The operational spine: ingestion, model execution,
+  HPC, the desktop GUI. Required for a v1.0 release.
+- **Tier E — Extended.** Real, in-scope domain/product features, audited
+  to the same honesty bar, but not release-blocking individually.
+- **Tier X — Experimental / out of v1.0 scope.** Kept in the repository
+  (never deleted without an explicit request — see `AGENTS.md`), but
+  explicitly *not* covered by the v1.0 "done" claim. Revisit post-v1.0.
+
+| Tier | `src/acf/` submodules |
+|---|---|
+| **F** | `core`, `model4d`, `science`, `physics_guard`, `parameters`, `standards`, `validation`, `normalization`, `time`, `utils`, `earth_physics`, `io` |
+| **C** | `data`, `catalog`, `catalogs`, `importers`, `geospatial`, `models`, `surfex`, `hpc_connector`, `hpc_workflow`, `simulation_engine`, `gui`, `visualization`, `maps`, `awci`, `jobs`, `storage` |
+| **E** | `aviation`, `hydrology`, `ocean`, `geology`, `space_weather`, `climate`, `ai`, `ai_expert`, `intelligence`, `digital_twin`, `aeos`, `knowledge_platform`, `dashboard`, `web`, `api`, `monitoring`, `alerts`, `hazard_operations`, `release`, `verification`, `data_assimilation`, `forecast`, `events`, `connectors`, `master`, `workspace`, `reports`, `search`, `testing`, `plugins`, `animation` |
+| **X** | `geoengineering`, `planetary`, `fire_weather`, `certification` |
+
+Known cleanup items surfaced by this tiering (tracked in `docs/STATUS.md`,
+not resolved by this edit alone):
+- `catalog/` and `catalogs/` appear to duplicate the same responsibility —
+  needs a consolidation decision during the Tier C sweep.
+- `certification/` (the module, distinct from the archived `docs/`
+  certificates) generates completion claims — it must itself be audited
+  against the same "no undisclosed stub" rule before it is trusted to
+  certify anything else.
+- `src/acf/resources/` is an empty directory — either populate it or remove
+  it (removal to be proposed explicitly, per `AGENTS.md`).
+
+A module counts as **done** only when all four hold, independent of any
+document: (1) a `git log -- src/acf/<module>` entry tagged `audit(<module>)`
+exists, (2) its tests are green, (3) no docstring claims a capability the
+code doesn't have, (4) every import it uses is declared in `pyproject.toml`.
+Live tracking: [`docs/STATUS.md`](docs/STATUS.md).
+
+## 4. Governance and Standards
+For detailed governance manuals, ADRs, and maturity matrices, consult [`docs/ACF_ARCHITECTURE_GOVERNANCE.md`](docs/ACF_ARCHITECTURE_GOVERNANCE.md). Historical sprint/release/certification documents that predate this tiering have been moved to [`docs/archive/`](docs/archive/README.md) — see that file for why.
