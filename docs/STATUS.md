@@ -16,7 +16,7 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `standards`
 - [x] `validation`
 - [x] `normalization`
-- [ ] `time`
+- [x] `time`
 - [ ] `utils`
 - [ ] `earth_physics`
 - [ ] `io`
@@ -83,10 +83,10 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 ## Synthèse
 
-- Tier F : 4/12 audités
+- Tier F : 5/12 audités
 - Tier C : 5/16 audités
 - Tier E : 15/31 audités
-- Total bloquant v1.0 (F+C+E) : 24/59
+- Total bloquant v1.0 (F+C+E) : 25/59
 - Tier X : hors critère (voir ARCHITECTURE.md §3)
 
 ## Prochaine étape

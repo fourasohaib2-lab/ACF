@@ -1,28 +1,15 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.time - Frame cursor over an externally-supplied time sequence.
 
-TIME -   Init
+What this module actually provides: `TimeManager`, a plain index cursor
+(`current`/`next`/`previous`/`first`/`last`/`count`) over a list handed to it
+via `load()`. It does no date/time parsing, no timezone or calendar
+handling, and has no NumPy or other scientific-stack dependency - pure
+Python standard library. Its one real caller is
+`acf.animation.animation_engine.AnimationEngine`, which uses it to step
+through animation frames.
 
-Purpose:
---------
-Time axis and temporal management.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the time subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.time module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+For an actual physical time axis (calendar-aware, used by the 4D field
+model), see `acf.model4d.time_axis.TimeAxis` instead - a different class in
+a different module, despite the similar name.
 """
