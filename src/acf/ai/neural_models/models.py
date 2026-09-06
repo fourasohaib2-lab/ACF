@@ -2,7 +2,20 @@
 Atmospheric Complexity Framework (ACF)
 
 Neural Weather Prediction Models Registry & Metadata Module
-(GraphCast, FourCastNet, Pangu-Weather, ClimaX, GenCast, NeuralGCM, FengWu, Aurora, AROME-AI, ECMWF-AIFS)
+
+NOTE (correction — docstring overclaim, found during the post-model4d
+audit, 2026-09-05): this header used to name 10 models (GraphCast,
+FourCastNet, Pangu-Weather, ClimaX, GenCast, NeuralGCM, FengWu, Aurora,
+AROME-AI, ECMWF-AIFS) as if all were described here. Only 7 actually
+have a NEURAL_MODELS_REGISTRY entry: GraphCast, FourCastNet,
+Pangu-Weather, GenCast, NeuralGCM, AROME-AI, and ECMWF-AIFS - the other
+3 (ClimaX, FengWu, Aurora) are not implemented anywhere in this module.
+Same class of gap as this session's other registry docstrings
+(acf.climate, acf.ocean, acf.planetary, acf.space_weather) - no code
+behaves incorrectly (NeuralWeatherModelEngine.get_model() honestly
+returns None for any of the 3 missing keys), only the header oversold
+coverage. Corrected to name what NEURAL_MODELS_REGISTRY actually
+contains.
 """
 
 from dataclasses import dataclass
@@ -145,7 +158,19 @@ NEURAL_MODELS_REGISTRY: dict[str, NeuralWeatherModelInfo] = {
 
 
 class NeuralWeatherModelEngine:
-    """Moteur d'exécution et d'interrogation des modèles d'IA météorologiques."""
+    """
+    Moteur d'interrogation du registre des modèles d'IA météorologiques.
+
+    NOTE (correction — verb overclaim, found during the post-model4d
+    audit, 2026-09-05): this docstring used to say "moteur d'EXÉCUTION
+    et d'interrogation" ("execution and query engine") - this class
+    only ever reads NEURAL_MODELS_REGISTRY (get_model()/list_models()),
+    it has no code path that loads, runs, or executes any of these
+    real external models (GraphCast, FourCastNet, etc. are third-party
+    trained networks, not vendored here). Same class of gap as
+    acf.master.module_registry.GlobalModuleRegistry's "discovering"
+    claim - the verb oversold what the class does.
+    """
 
     @classmethod
     def get_model(cls, key: str) -> NeuralWeatherModelInfo | None:

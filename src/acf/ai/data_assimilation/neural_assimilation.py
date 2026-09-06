@@ -25,11 +25,22 @@ class NeuralDataAssimilation:
         could introduce a systematic, undisclosed bias with no way for
         an operator to know it wasn't a real trained model's output. Not
         fabricated.
+
+        NOTE (correction, 2026-09-05 - crack in the seam this same fix
+        missed, found during the post-ai-package continuation of the
+        post-model4d audit): the returned dict still had an
+        "architecture": "Physics-Informed Graph Neural Network
+        (PINN-GNN)" field asserted unconditionally, as if that
+        architecture were actually the one producing this output - but
+        the NOTE right above already discloses no neural network of
+        any kind is trained or evaluated anywhere in this codebase.
+        Renamed to "target_architecture" to make clear this names the
+        intended future architecture, not the one that ran.
         """
         return {
             "innovation_input": innovation_vector,
             "ai_correction_applied": None,
-            "architecture": "Physics-Informed Graph Neural Network (PINN-GNN)",
+            "target_architecture": "Physics-Informed Graph Neural Network (PINN-GNN)",
             "status": "NOT_CORRECTED_NO_TRAINED_MODEL_CONNECTED",
             "is_real_data": False,
         }

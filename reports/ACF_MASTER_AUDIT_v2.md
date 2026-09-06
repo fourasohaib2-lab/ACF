@@ -9364,3 +9364,69 @@ toutes auditées ou vérifiées. Zones avec fabrication réelle corrigée :
 `geospatial`, `catalogs`, `plugins`, `resources`, `search`. Suite
 complète stable tout du long (dernier relevé : 4466 passed, 18
 skipped, 0 failed).
+
+## Mise à jour 2026-09-05 (extension du périmètre) — `acf.ai` : le paquet le mieux déjà audité rencontré, 2 fissures mineures trouvées
+
+**Contexte** : les 21 zones "0 occurrence" initiales étant closes,
+extension au paquet explicitement identifié comme à haut risque par
+l'audit `model4d` lui-même (branding IA/ML) mais hors de la liste
+initiale car déjà partiellement mentionné (10 occurrences). Constat
+immédiat : `acf.ai` (41 fichiers, 1909 lignes) est le paquet **le plus
+densément et le plus soigneusement déjà corrigé** de toute cette
+continuation - une session antérieure (non retracable, dépôt shallow,
+mais visiblement très récente et méthodique) l'a déjà traité fichier
+par fichier avec un luxe de détail rare : `decision_engine.py`/
+`operational_decision.py` documentent même une fissure subtile déjà
+trouvée ET corrigée (des valeurs de repli pour des champs non fournis
+qui dépassaient individuellement les seuils de détection, fabriquant 4
+fausses alertes à partir du seul CAPE réel fourni). Tous les fichiers
+XAI (`attention_analysis.py`, `causal_chain.py`,
+`explanation_generator.py`, `feature_importance.py`), `engine.py`,
+`digital_twin/twin_assistant.py`, `emergency_assistant/
+assistant_engine.py`, `atmosphere_explorer/explorer_engine.py`,
+`uncertainty/uncertainty_engine.py` (z-scores réels, incertitude
+épistémique/aléatoire réellement décomposée par variance d'ensemble)
+lus intégralement : déjà honnêtement corrigés, aucune fissure
+supplémentaire. `simulation/fno_model.py` est même remarquable dans
+l'autre sens : un **vrai** Fourier Neural Operator PyTorch entraînable
+(poids complexes appris, convolution spectrale réelle, architecture de
+Li et al. 2020), dont le docstring documente lui-même honnêtement que
+`neural_operator.py`'s ancien chemin "FNO" (déjà corrigé) n'en était
+pas un.
+
+**2 fissures mineures trouvées et corrigées** :
+1. `neural_models/models.py` : même famille de survente que `climate`/
+   `ocean`/`planetary`/`space_weather` (8e occurrence) - en-tête
+   nommait 10 modèles (GraphCast, FourCastNet, Pangu-Weather, ClimaX,
+   GenCast, NeuralGCM, FengWu, Aurora, AROME-AI, ECMWF-AIFS) ;
+   `NEURAL_MODELS_REGISTRY` n'en contient réellement que 7 (ClimaX,
+   FengWu, Aurora manquants). `NeuralWeatherModelEngine`'s propre
+   docstring survendait aussi le verbe : "moteur d'EXÉCUTION et
+   d'interrogation" alors que la classe ne fait que lire le registre
+   (`get_model()`/`list_models()`) - aucun chemin n'exécute
+   réellement un de ces modèles externes. Les deux corrigés.
+2. `data_assimilation/neural_assimilation.py` : déjà honnêtement
+   corrigé (`compute_ai_correction()` renvoie `None`/
+   `"NOT_CORRECTED_NO_TRAINED_MODEL_CONNECTED"`), mais le dict retourné
+   gardait encore une clé `"architecture": "Physics-Informed Graph
+   Neural Network (PINN-GNN)"` affirmée sans condition, comme si cette
+   architecture était réellement celle produisant le résultat - alors
+   que la NOTE juste au-dessus déclare qu'aucun réseau de neurones
+   n'est entraîné ou évalué nulle part dans ce dépôt. Renommé en
+   `"target_architecture"` pour clarifier qu'il s'agit de
+   l'architecture visée, pas de celle qui a tourné.
+
+**Validation réelle** : `tests/test_ai_forecasting_framework.py`
+(`assert len(NEURAL_MODELS_REGISTRY) >= 7`, inchangé) et
+`tests/test_data_assimilation.py` (n'asserte pas sur la clé
+`"architecture"`, inchangé) ré-exécutés : 11/11 passent. `ruff check`
+propre sur tout le paquet. Grep confirmant qu'aucun appelant ne
+dépend de l'ancienne clé `"architecture"`. Suite complète en cours de
+re-vérification.
+
+**Bilan étendu** : au-delà des 21 zones initiales, `acf.ai` a été lu
+intégralement et est désormais confirmé propre (2 fissures mineures
+corrigées, le reste déjà exemplaire). Une extension possible pour une
+future passe : `acf.science`/`acf.simulation_engine`/`acf.earth_physics`
+(le périmètre original de l'audit `model4d`, jamais ré-audité de
+façon exhaustive par cette continuation elle-même).
