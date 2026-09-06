@@ -10159,6 +10159,33 @@ lus** :
 
 **Aucune modification de code nécessaire.**
 
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.forecast` : vérifié propre, infrastructure de production réelle
+
+**Contexte** : `acf.forecast` (3 fichiers, 340 lignes) - `forecast_engine.py`
+déjà corrigé par une passe antérieure. `engine.py` (256 lignes) et
+`__init__.py` lus intégralement.
+
+**Aucune fabrication trouvée** - infrastructure de production
+authentique et honnête : `engine.py` est le vrai point d'entrée CLI
+que `HPCConnectionManager.execute_one_click_arome()`/`_aladin()`
+soumettent réellement comme job SLURM (`python -m acf.forecast.engine
+--model AROME`) - exécute réellement `CoupledEarthSolver` pour la
+résolution de grille du modèle demandé et écrit un vrai fichier NetCDF
+CF-compliant. Documente honnêtement que `resolution_km` (1.3/7.5/10.0
+km) décrit quel modèle opérationnel ce run remplace, pas une
+prétention que la grille globale lat/lon d'ACF reproduit le domaine
+Lambert conforme réel d'AROME. Exécute un vrai contrôle QC
+(`numpy.isfinite` sur le champ de température final - un vrai mode
+d'échec d'un solveur couplé) et une vraie passe de certification
+(`CertificationEngine`) à chaque cycle réel, avec une distinction
+délibérée et documentée entre `status: "SUCCESS"` (le cycle a
+réellement tourné jusqu'au bout et écrit un fichier) et la décision de
+certification séparée (`CERTIFIED`/rejeté, avec code de sortie 2 dédié
+pour qu'un appelant ne traite jamais silencieusement une prévision
+rejetée comme un succès inconditionnel).
+
+**Aucune modification de code nécessaire.**
+
 ## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.events` : vérifié propre, qualité exemplaire (conçu nativement avec la discipline d'audit)
 
 **Contexte** : `acf.events` (5 fichiers, 482 lignes) - jamais touché,
