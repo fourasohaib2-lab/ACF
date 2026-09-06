@@ -35,7 +35,16 @@ class MapProjection:
 
     @classmethod
     def get_projection(cls, name: str) -> ccrs.CRS:
-        """Resolve a string projection name or view mode to a Cartopy CRS instance."""
+        """Resolve a string projection name or view mode to a Cartopy CRS instance.
+
+        NOTE (Physics Guard, 2026-09-06 Tier C sweep): an unrecognized
+        `name` silently falls back to PlateCarree here, with no error
+        or signal to the caller that the request wasn't honored. This
+        is the real mechanism behind 8 of acf.gui.esoc.view_manager.
+        ViewManager's 15 dropdown entries (e.g. "Digital Twin 4D View",
+        "Historical Replay") appearing to do nothing when selected -
+        see that class's own NOTE for the full list.
+        """
         key = name.strip().lower()
         crs_cls = cls.PROJECTION_REGISTRY.get(key, ccrs.PlateCarree)
         try:

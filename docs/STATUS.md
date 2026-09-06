@@ -32,7 +32,14 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 - [x] `hpc_connector`
 - [x] `hpc_workflow`
 - [x] `simulation_engine`
-- [ ] `gui`
+- [~] `gui` (~30k lignes, 10 sous-packages. Couverts : `esoc/` (19
+  fichiers - dont un vrai finding produit : 8 des 15 entrées du menu
+  déroulant "vue" de `view_manager.py` n'ont aucune projection réelle
+  associée, retombent silencieusement sur PlateCarree) et `dashboard/`
+  (52 fichiers, déjà quasi-entièrement audité, rien de nouveau). Reste
+  non couvert : `map/` (42 fichiers), `widgets/`, `docks/`,
+  `layer_panel/`, `main_window/`, `dialogs/`, les fichiers en vrac à la
+  racine)
 - [~] `visualization`
 - [ ] `maps`
 - [~] `awci`
@@ -96,6 +103,29 @@ sweep) : **4574 passed, 0 failed**, 480s, 676 warnings (essentiellement des
 `DeprecationWarning` Qt/PySide6 sur des constructeurs `QMouseEvent`, et un
 avertissement de spécification Zarr — aucun échec, mais à nettoyer pendant
 le sweep des modules `gui` et `storage`/`simulation_engine` concernés).
+
+**Écart découvert pendant le sweep Tier C (`gui`), même journée** :
+`tests/test_gui_stack_scroll_no_permanent_growth.py` — 2 des 4 tests
+échouent maintenant, y compris exécutés seuls (pas un problème
+d'ordre) :
+`test_esoc_window_can_still_be_explicitly_shrunk_after_visiting_a_large_tab`
+et
+`test_acf_workstation_window_can_still_be_explicitly_shrunk_after_visiting_complexity_explorer`.
+Les deux échouent de la même façon : `window.resize(...)` est appelé
+mais la fenêtre reste à 1010px de haut au lieu de la valeur demandée
+(500 / <737). Aucun changement de code de ce sweep ne touche ce chemin
+(seuls des docstrings ont été modifiés dans `view_manager.py`/
+`map_projection.py` avant cette découverte). Hypothèse la plus
+probable, non confirmée : ces tests dépendent du gestionnaire de
+fenêtres X11 réel (`DISPLAY=:0`, pas de serveur X virtuel) pour
+honorer un `resize()` de façon synchrone après un seul
+`qapp.processEvents()` — cette session a depuis lancé Claude Desktop
+(plusieurs fenêtres/processus réels sur le même serveur X), ce qui
+peut avoir changé le comportement/timing du WM par rapport au run de
+baseline. **Non résolu ici** — à revérifier dans un environnement
+propre/CI avant de conclure à une vraie régression de code plutôt
+qu'à un artefact d'environnement. Ne pas ignorer silencieusement :
+tracké ici tant que non expliqué avec certitude.
 
 ## Synthèse
 

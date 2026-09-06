@@ -29,7 +29,28 @@ from acf.gui.widgets.combo_sizing import shrink_combo_min_width
 
 
 class ViewManager(QWidget):
-    """Manages Phase 3 Earth View Projections & Phase 4 Scientific Layer Catalog."""
+    """Manages Phase 3 Earth View Projections & Phase 4 Scientific Layer Catalog.
+
+    NOTE (Physics Guard, 2026-09-06 Tier C sweep): of the 15 entries in
+    `view_modes` below, only 7 resolve to a distinct real Cartopy
+    projection via acf.gui.map.map_projection.MapProjection.
+    PROJECTION_REGISTRY ("2D Mercator Map", "3D Photorealistic Sphere",
+    "Global Interactive Globe", "Orthographic Projection", "Lambert
+    Conformal Conic", "Polar North/South Stereographic"). The other 8
+    ("Split Screen (Left/Right)", "Comparison View (Obs vs Model)",
+    "Swipe View", "Historical Replay", "Future Projection", "Digital
+    Twin 4D View", "Scenario Viewer", "Earth Animation Player") have no
+    entry in that registry and no other special-case handling anywhere
+    in src/ (verified by grep) - selecting one silently falls back to
+    the default PlateCarree projection with no error, while
+    `_on_view_mode_changed` still updates the map's title label to
+    display the selected mode's name, so the UI visually claims a mode
+    the map canvas does not actually render. Not fixed here (would
+    mean either implementing 8 real view modes or removing dropdown
+    entries, both beyond a docstring-level disclosure) - the user-
+    facing gap between what the dropdown offers and what the canvas
+    renders is what needs disclosing.
+    """
 
     def __init__(self) -> None:
         super().__init__()
