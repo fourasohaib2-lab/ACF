@@ -48,6 +48,54 @@ class ClusterDetector:
         }
 
     @staticmethod
+    def not_detected() -> dict[str, Any]:
+        """Return detect_all()'s exact shape for a cluster that has not been probed at all.
+
+        Used by HPCConnectionManager before a connection exists, so that
+        "we have not asked the cluster anything yet" is representable without
+        firing a single remote command at a connector with no transport (which
+        is what used to happen, producing a confident-looking detection log
+        block minutes before the SSH connection was even attempted). Every
+        is_real_data is False, so any consumer already gating on that flag
+        treats this identically to a failed probe.
+        """
+        return {
+            "os": {
+                "system": None,
+                "release": None,
+                "platform": None,
+                "hostname": None,
+                "architecture": None,
+                "is_real_data": False,
+            },
+            "cpu": {"cores": None, "architecture": None, "processor": None, "is_real_data": False},
+            "gpu": {
+                "has_gpu": False,
+                "type": None,
+                "has_cuda": False,
+                "has_rocm": False,
+                "has_intel": False,
+                "is_real_data": False,
+            },
+            "mpi": {"has_mpi": False, "implementation": None, "executable": None, "is_real_data": False},
+            "scheduler": {"type": "unknown", "has_scheduler": False, "version": None, "is_real_data": False},
+            "containers": {"apptainer": False, "singularity": False, "docker": False, "is_real_data": False},
+            "environment": {
+                "python_version": None,
+                "in_conda": False,
+                "in_virtualenv": False,
+                "is_real_data": False,
+            },
+            "storage": {
+                "scratch_dir": "/scratch/users/sfoura",
+                "home_dir": "/onm/dem/home/sfoura",
+                "filesystem_type": None,
+                "is_real_data": False,
+            },
+            "interconnect": {"type": None, "bandwidth_gbps": None, "is_real_data": False},
+        }
+
+    @staticmethod
     def _is_real(res: dict[str, Any]) -> bool:
         """True only if execute_command() genuinely ran remotely (not the offline-fallback placeholder)."""
         return not res.get("is_simulated", True) and res.get("exit_code", 1) == 0

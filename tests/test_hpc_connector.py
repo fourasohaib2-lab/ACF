@@ -38,9 +38,13 @@ def test_python_resolver_discovery():
     executor = RemoteExecutor()
     resolver = PythonResolver(executor)
 
+    # CORRECTED: discover_python_modules() used to substitute a hardcoded
+    # candidate list ("Python/3.11.5", "python/3.11", ...) described as
+    # "discovered" whenever the scan found nothing - which, with no live
+    # remote transport in this offline test environment, was every run.
+    # It now honestly reports nothing discovered rather than invent a list.
     modules = resolver.discover_python_modules()
-    assert len(modules) > 0
-    assert any("Python" in m or "python" in m for m in modules)
+    assert modules == []
 
     executables = resolver.discover_python_executables()
     assert "python3" in executables or "python3.11" in executables
@@ -151,7 +155,11 @@ def test_cluster_and_arome_detector():
     assert stack["has_eccodes"] is False
     assert stack["eccodes_version"] is None
     assert stack["models_detected"] == []
-    assert stack["operational_mode"] == "STANDARD_NWP"
+    # CORRECTED: operational_mode used to default to the plausible-looking
+    # "STANDARD_NWP" even when nothing was actually detected (no live
+    # remote transport). It now honestly reports that detection never ran,
+    # matching AromeAladinDetector.not_detected()'s own sentinel.
+    assert stack["operational_mode"] == "UNKNOWN_NOT_DETECTED"
 
 
 def test_security_manager():
@@ -312,7 +320,7 @@ def test_remote_terminal_shell_open_shell_honest_when_no_real_channel():
     assert isinstance(output, str)
 
 
-def test_hpc_connection_manager_fennec_workflow():
+def test_hpc_connection_manager_fennec_workflow(monkeypatch):
     hpc = HPCConnectionManager("config/hpc.yaml")
     # CORRECTED: was "university_hpc", a profile name that doesn't
     # exist in config/hpc.yaml - this test's own name ("fennec_workflow")
@@ -329,6 +337,51 @@ def test_hpc_connection_manager_fennec_workflow():
     # NAME resolution (scheduler/module/Python discovery from
     # config/hpc.yaml) without the actual TCP/SSH attempt ever leaving
     # this machine.
+    #
+    # CORRECTED (later still): connect() now aborts the whole workflow
+    # unless SSHConnector.is_real_connection is True (see
+    # test_is_real_connection_false_when_authentication_fails - this is
+    # the fix for the "sfoura@10.16.20.2" bug), and a bare offline
+    # hostname genuinely never authenticates. To still exercise steps
+    # 8-11 (detection, module load, job submission) without any real
+    # network access, mock authentication as successful at the paramiko
+    # boundary - the same boundary the regression test above mocks - but
+    # make exec_command() raise, so every command below still honestly
+    # falls back to SSHConnector.execute()'s "is_simulated" path rather
+    # than fabricate real remote output.
+    import paramiko
+
+    class _FakeTransport:
+        def is_active(self):
+            return True
+
+        def is_authenticated(self):
+            return True
+
+    class _FakeSSHClient:
+        def set_missing_host_key_policy(self, policy):
+            pass
+
+        def connect(self, **kwargs):
+            pass
+
+        def get_transport(self):
+            return _FakeTransport()
+
+        def exec_command(self, *a, **kw):
+            raise OSError("mocked - no real network access, real remote exec is intentionally unavailable")
+
+        def close(self):
+            pass
+
+        def open_sftp(self):
+            raise OSError("mocked - no real SFTP access")
+
+    monkeypatch.setattr(paramiko, "SSHClient", _FakeSSHClient)
+    monkeypatch.setattr(
+        "socket.getaddrinfo", lambda *a, **kw: [(2, 1, 6, "", (OFFLINE_TEST_HOSTNAME, 22))]
+    )
+
     assert hpc.connect("fennec", overrides={"hostname": OFFLINE_TEST_HOSTNAME}) is True
     assert hpc.is_connected is True
     assert "python_path" in hpc.cluster_info

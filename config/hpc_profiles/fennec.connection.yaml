@@ -1,0 +1,11 @@
+profile_name: FENNEC — ONM (login2.fennec.meteo.dz)
+profile_key: fennec
+hostname: login2.fennec.meteo.dz
+username: sfoura
+port: 22
+key_path: ~/.ssh/id_rsa
+scheduler: Slurm
+remote_dir: /onm/dem/home/sfoura/ACF
+scratch_dir: /mnt/beegfs
+mpi_launcher: srun
+gpu_mode: CPU-Only Mode

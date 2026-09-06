@@ -359,8 +359,30 @@ class HPCConnectionDialog(QDialog):
         if not self.input_host.text().strip():
             QMessageBox.warning(self, "Connect HPC", "A hostname / IP is required.")
             return
-        if not self.input_user.text().strip():
+        username = self.input_user.text().strip()
+        if not username:
             QMessageBox.warning(self, "Connect HPC", "A username is required.")
+            return
+        # A username containing "@" is what caused a real, hard-to-read failure:
+        # "sfoura@10.16.20.2" was saved into the profile's username field, so
+        # Paramiko offered that whole string as the account name to
+        # login2.fennec.meteo.dz and every key was rejected - five
+        # "Authentication (publickey) failed" lines with no hint as to why.
+        if "@" in username:
+            account, _, rest = username.partition("@")
+            QMessageBox.warning(
+                self,
+                "Connect HPC",
+                f"The username must be a bare account name, not '{username}'.\n\n"
+                f"The SSH server will treat the whole string as the account name and reject every "
+                f"key or password you offer.\n\n"
+                f"Use '{account}' as the username. If '{rest}' is the machine you log in to, put it "
+                f"in the Hostname / IP field; if it is a gateway you hop through, connect to the "
+                f"gateway itself or configure the jump in your SSH config.",
+            )
+            return
+        if any(c.isspace() for c in username):
+            QMessageBox.warning(self, "Connect HPC", "The username must not contain spaces.")
             return
         self.accept()
 

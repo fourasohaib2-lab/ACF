@@ -1,5 +1,6 @@
 """Production HPC Master Connection Manager for FENNEC (ACF-HPC-100)."""
 
+import sys
 import time
 from typing import Any
 
@@ -36,17 +37,38 @@ class HPCConnectionManager:
         self.resource_monitor = ResourceMonitor(self.executor)
         self.terminal_shell = RemoteTerminalShell(self.ssh_connector)
 
-        self.cluster_info = self.detector.detect_all()
-        self.meteorological_stack = self.arome_detector.detect_meteorological_stack()
+        # NOTE (correction): __init__ used to call detector.detect_all(),
+        # arome_detector.detect_meteorological_stack() and
+        # python_resolver.resolve_python() right here - roughly thirty remote
+        # commands fired at self.ssh_connector before connect() had ever been
+        # called on it, i.e. with no transport in existence at all. Every one of
+        # them took the offline fallback path, yet the run produced a confident
+        # log block ("Discovered Python cluster modules: [...]",
+        # "Meteorological Stack Detection Complete: Mode=STANDARD_NWP, ...",
+        # "Python Resolved: Executable=<the local workstation venv>") two full
+        # minutes BEFORE the "Connecting via Paramiko SSH to ..." line, which
+        # reads as measured cluster facts. Detection now starts as an explicit
+        # not-yet-detected state and only runs for real in connect(), after
+        # authentication is confirmed.
+        self.cluster_info = ClusterDetector.not_detected()
+        self.meteorological_stack = AromeAladinDetector.not_detected()
 
-        # Resolve Python interpreter parameters
-        py_info = self.python_resolver.resolve_python()
-        self.cluster_info["python_path"] = py_info["python_path"]
-        self.cluster_info["python_version"] = py_info["python_version"]
-        self.cluster_info["python_module"] = py_info["python_module"]
+        # The interpreter running ACF locally - a true statement about this
+        # process, explicitly NOT a claim about any remote compute node.
+        self.cluster_info["python_path"] = sys.executable
+        self.cluster_info["python_version"] = (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
+        self.cluster_info["python_module"] = ""
+        self.cluster_info["python_is_remote_verified"] = False
 
-        scheduler_type = self.cluster_info["scheduler"]["type"]
-        self.scheduler: BaseSchedulerInterface = get_scheduler_interface(scheduler_type, self.executor)
+        # Scheduler is deliberately not chosen from an undetected cluster: with
+        # no transport, detect_scheduler() reports type "unknown", which
+        # get_scheduler_interface() maps to LocalScheduler. connect() re-detects
+        # and rebuilds this once the real type is known (see _bind_scheduler()).
+        self.scheduler: BaseSchedulerInterface = get_scheduler_interface(
+            self.cluster_info["scheduler"]["type"], self.executor
+        )
         self.job_manager = JobManager(self.scheduler)
 
         self.is_connected = False
@@ -54,6 +76,27 @@ class HPCConnectionManager:
         log_hpc_event(
             "INFO", f"Initialized FENNEC HPCConnectionManager (Mode={self.meteorological_stack['operational_mode']})"
         )
+
+    def _bind_scheduler(self, detected_type: str, configured_type: str | None = None) -> None:
+        """Point self.scheduler / self.job_manager at the scheduler actually in use.
+
+        Prefers what a live probe detected. If detection could not confirm one
+        but the profile explicitly declares a scheduler, that declaration is used
+        rather than silently degrading to LocalScheduler - submitting a FENNEC
+        job through the local scheduler is worse than trusting the operator's
+        own configuration - and the substitution is logged either way.
+        """
+        chosen = (detected_type or "unknown").lower().strip()
+        if chosen == "unknown" and configured_type:
+            chosen = configured_type.lower().strip()
+            log_hpc_event(
+                "WARNING",
+                f"Scheduler could not be detected on the cluster; falling back to the profile's "
+                f"configured scheduler [{chosen}]. Jobs will be submitted through it.",
+            )
+        self.scheduler = get_scheduler_interface(chosen, self.executor)
+        self.job_manager = JobManager(self.scheduler)
+        log_hpc_event("INFO", f"Scheduler interface bound: {self.scheduler.scheduler_name}")
 
     def connect(self, profile_name: str = "fennec", overrides: dict[str, Any] | None = None) -> bool:
         """
@@ -119,36 +162,75 @@ class HPCConnectionManager:
         # so Steps 5-8 below ran their hostname/whoami/pwd checks over the wrong
         # object. Re-point the executor at the connector we just created.
         self.executor.connector = self.ssh_connector
-        connected = self.ssh_connector.connect()
-        if not connected:
-            log_hpc_event("ERROR", f"Paramiko SSH authentication failed for {username}@{login_node}")
+        self.ssh_connector.connect()
+
+        # NOTE (correction - this is what let a failed login report success):
+        # SSHConnector.connect() returns True on EVERY path by design, to keep
+        # the offline development workflow working (see its own docstring), so
+        # `if not connected` here could never fire. A run whose authentication
+        # genuinely failed - e.g. the malformed saved username "sfoura@10.16.20.2"
+        # that produced five straight "Authentication (publickey) failed" lines -
+        # sailed through steps 4 to 11 and finished on
+        # "SUCCESS: Fully connected to FENNEC HPC Operational Center".
+        # is_real_connection is the honest signal (transport.is_authenticated()).
+        if not self.ssh_connector.is_real_connection:
+            log_hpc_event(
+                "ERROR",
+                f"Paramiko SSH authentication FAILED for {username}@{login_node}:{port} - "
+                f"no authenticated session. Aborting the connection workflow; "
+                f"nothing below was run on the cluster.",
+            )
+            if "@" in username:
+                log_hpc_event(
+                    "ERROR",
+                    f"The configured username [{username}] contains '@'. It must be a bare account "
+                    f"name (e.g. 'sfoura'); a jump/bastion host belongs in its own field, not in the "
+                    f"username.",
+                )
             self.is_connected = False
             return False
 
         # Step 4: Open SFTP Channel
         self.ssh_connector.open_sftp()
 
-        # Step 5: Verify Hostname
-        res_host = self.executor.execute_command("hostname")
-        verified_host = res_host.get("stdout", "").strip() or login_node
-        log_hpc_event("INFO", f"Step 5 Verified Hostname: {verified_host}")
+        # Steps 5-7: verify identity against the cluster.
+        # NOTE (correction): these used to read `res.get("stdout", "").strip() or
+        # <default>`, which accepts anything non-empty - including the offline
+        # fallback placeholder string, which is non-empty. That string would have
+        # been logged verbatim as "Step 5 Verified Hostname: [SIMULATED OFFLINE
+        # FALLBACK ...]". A value is only a verification if it came back over a
+        # real transport.
+        def _verified(command: str, label: str, fallback: str) -> str:
+            res = self.executor.execute_command(command)
+            if res.get("is_simulated", True) or res.get("exit_code", 1) != 0:
+                log_hpc_event("WARNING", f"{label}: NOT VERIFIED (no real remote output); assuming {fallback}")
+                return fallback
+            value = res.get("stdout", "").strip()
+            if not value:
+                log_hpc_event("WARNING", f"{label}: NOT VERIFIED (empty output); assuming {fallback}")
+                return fallback
+            log_hpc_event("INFO", f"{label}: {value}")
+            return value
 
-        # Step 6: Verify Whoami
-        res_user = self.executor.execute_command("whoami")
-        verified_user = res_user.get("stdout", "").strip() or username
-        log_hpc_event("INFO", f"Step 6 Verified User: {verified_user}")
-
-        # Step 7: Verify Working Directory
-        res_pwd = self.executor.execute_command("pwd")
-        work_dir = res_pwd.get("stdout", "").strip() or "/onm/dem/home/sfoura"
-        log_hpc_event("INFO", f"Step 7 Verified Work Dir: {work_dir}")
+        verified_host = _verified("hostname", "Step 5 Verified Hostname", login_node)
+        verified_user = _verified("whoami", "Step 6 Verified User", username)
+        work_dir = _verified("pwd", "Step 7 Verified Work Dir", profile.get("home") or "/onm/dem/home/sfoura")
 
         # Step 8: Detect Scheduler & Hardware
         self.cluster_info = self.detector.detect_all()
+        self.meteorological_stack = self.arome_detector.detect_meteorological_stack()
         py_info = self.python_resolver.resolve_python()
         self.cluster_info["python_path"] = py_info["python_path"]
         self.cluster_info["python_version"] = py_info["python_version"]
         self.cluster_info["python_module"] = py_info["python_module"]
+        self.cluster_info["python_is_remote_verified"] = py_info.get("is_remote_verified", False)
+
+        # NOTE (correction): __init__ picked the scheduler interface from an
+        # undetected cluster (type "unknown" -> LocalScheduler) and connect()
+        # re-detected the real type here but never rebuilt self.scheduler or
+        # self.job_manager - so every job submitted after a genuinely successful
+        # FENNEC login still went through LocalScheduler instead of SlurmScheduler.
+        self._bind_scheduler(self.cluster_info["scheduler"]["type"], profile.get("scheduler"))
 
         # Step 9 & 10: Detect & Load Modules (ecCodes, OpenMPI, Python)
         modules = profile.get("module_loads", ["gcc/12.2.0", "eccodes/2.30.0", "openmpi/4.1.5", "python/3.11.5"])
@@ -161,7 +243,10 @@ class HPCConnectionManager:
         self.is_connected = True
         self.last_heartbeat = time.time()
         log_hpc_event(
-            "INFO", f"SUCCESS: Fully connected to FENNEC HPC Operational Center ({verified_user}@{verified_host})"
+            "INFO",
+            f"SUCCESS: Fully connected to FENNEC HPC Operational Center "
+            f"({verified_user}@{verified_host}:{work_dir}) - scheduler={self.scheduler.scheduler_name}, "
+            f"mode={self.meteorological_stack['operational_mode']}",
         )
         return True
 

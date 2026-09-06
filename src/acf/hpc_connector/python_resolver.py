@@ -19,6 +19,29 @@ class PythonResolver:
         """Dynamically scan `module avail` for Python modules without hardcoding names."""
         log_hpc_event("INFO", "Scanning cluster environment modules for Python installations...")
         res = self.executor.execute_command("module avail 2>&1")
+
+        # NOTE (correction - fabrication): when the scan found nothing this
+        # method substituted a hardcoded list ("Python/3.11.5", "python/3.11",
+        # "Python/3.10", "Python/3.9", "python3") described in the code as
+        # "candidate patterns discovered across FENNEC, Jean Zay, ECMWF and
+        # University HPCs", and logged it as "Discovered Python cluster
+        # modules: [...]". Nothing was discovered - and with no live transport
+        # the scan cannot find anything, so this list was what an offline run
+        # always produced. resolve_python() then takes modules[0] as the
+        # selected module, and SlurmScheduler.generate_batch_script() writes it
+        # into the batch file as `module load Python/3.11.5` - a module name
+        # invented on this workstation, emitted into a job script for a real
+        # cluster. An empty list is the honest answer, and the caller already
+        # handles it (selected_module becomes "", which suppresses the module
+        # load line entirely).
+        if res.get("is_simulated", True):
+            log_hpc_event(
+                "WARNING",
+                "Python module scan skipped: no live remote transport, so `module avail` was never "
+                "really run. Reporting no modules rather than guessing.",
+            )
+            return []
+
         output = res.get("stdout", "") + res.get("stderr", "")
 
         found_modules: list[str] = []
@@ -36,8 +59,8 @@ class PythonResolver:
                             found_modules.append(clean_mod)
 
         if not found_modules:
-            # Fallback candidate patterns discovered across FENNEC, Jean Zay, ECMWF, and University HPCs
-            found_modules = ["Python/3.11.5", "python/3.11", "Python/3.10", "Python/3.9", "python3"]
+            log_hpc_event("INFO", "No Python environment modules found in `module avail` output.")
+            return []
 
         log_hpc_event("INFO", f"Discovered Python cluster modules: {found_modules}")
         return found_modules
