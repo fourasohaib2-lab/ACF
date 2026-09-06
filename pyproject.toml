@@ -95,7 +95,14 @@ all = [
     "fastapi", "uvicorn", "websockets",
     "torch",
 ]
-dev = ["pytest", "pytest-cov", "pytest-timeout", "black", "ruff", "mypy"]
+# pytest-qt (2026-09-06): genuinely undeclared despite tests/gui/ and several
+# tests/test_*panel*.py / test_map_*.py modules requiring the `qtbot` fixture
+# at collection time - found by actually running the full suite from a fresh
+# install (`pip install -e ".[all,dev]"` alone), not guessed: 164 tests error
+# out with "fixture 'qtbot' not found" without it. Verified fixed: same 164
+# tests pass once installed (with QT_QPA_PLATFORM=offscreen for a headless
+# run - no display server involved otherwise).
+dev = ["pytest", "pytest-cov", "pytest-timeout", "pytest-qt", "black", "ruff", "mypy"]
 
 [project.scripts]
 acf-gui = "acf.gui.app:main"
