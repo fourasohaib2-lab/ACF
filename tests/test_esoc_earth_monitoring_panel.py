@@ -4,14 +4,18 @@ the "GOES/MTG Satellites" row from a fixed "EXAMPLE"/"1.2 min"
 placeholder to the real, live acf.gui.map.mtg_basemap.MTGBasemapProvider
 status already feeding every real ACF map view (Phase 57); the "ARGO
 Ocean Floats" row to the real, public Argovis API via
-acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58); and the
+acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58); the
 "Surface AWS (SYNOP/METAR)" row to the real NOAA feed already trusted
-by acf.aviation.icao.live_source (Phase 59) - honestly relabeling the
-remaining 3 rows (no real connector exists for them anywhere in ACF)
-"NOT_CONNECTED" instead of leaving them as an equally fake "EXAMPLE".
+by acf.aviation.icao.live_source (Phase 59); and the "Doppler Radar
+(NEXRAD)" row to the real, public NOAA api.weather.gov radar station
+status endpoint via acf.connectors.nexrad_stations.NEXRADRadarConnector
+(Phase 60) - honestly relabeling the remaining 2 rows (no real
+connector exists for them anywhere in ACF) "NOT_CONNECTED" instead of
+leaving them as an equally fake "EXAMPLE".
 
 Network access is mocked - same convention as tests/test_mtg_basemap.py,
-tests/test_argo_floats_connector.py and tests/test_aviation_live_source.py.
+tests/test_argo_floats_connector.py, tests/test_nexrad_stations_connector.py
+and tests/test_aviation_live_source.py.
 """
 
 from __future__ import annotations
@@ -49,12 +53,13 @@ def registry():
 def _reset_singleton_and_block_real_network():
     MTGBasemapProvider._instance = None
     honest_stub = MTGFetchResult(is_real_data=False, status="NOT_FETCHED_YET", authenticated=False)
-    # ArgoFloatsConnector goes straight through the `requests` module (no
-    # SSH/Paramiko-style "always succeeds offline" convention to lean on),
-    # so its real network call is blocked the same way
-    # tests/test_argo_floats_connector.py blocks it - a 503 honestly
-    # resolves to is_real_data=False rather than hanging or reaching a
-    # real host during this suite.
+    # ArgoFloatsConnector and NEXRADRadarConnector both go straight
+    # through the `requests` module (no SSH/Paramiko-style "always
+    # succeeds offline" convention to lean on), so their real network
+    # calls are blocked the same way tests/test_argo_floats_connector.py
+    # and tests/test_nexrad_stations_connector.py block them - a 503
+    # honestly resolves both to is_real_data=False rather than hanging
+    # or reaching a real host during this suite.
     argo_503 = requests.Response()
     argo_503.status_code = 503
     # acf.aviation.icao.live_source uses urllib directly (see its own
@@ -84,12 +89,12 @@ def _fake_disk_bytes() -> bytes:
     return buf.getvalue()
 
 
-def test_the_3_unconnected_networks_are_honestly_labeled_not_connected(qapp, registry):
+def test_the_2_unconnected_networks_are_honestly_labeled_not_connected(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
 
-    for row in (1, 4, 5):  # NEXRAD, AMDAR, Lightning - rows 2/3 are the real METAR/ARGO feeds
+    for row in (4, 5):  # AMDAR, Lightning - rows 1/2/3 are the real NEXRAD/METAR/ARGO feeds
         assert panel.table.item(row, 1).text() == "NOT_CONNECTED"
         assert panel.table.item(row, 2).text() == "N/A"
 
@@ -186,7 +191,36 @@ def test_metar_row_goes_live_once_real_stations_report(qapp, registry):
     assert panel.table.item(2, 2).text() == "0.0 min"
 
 
-def test_refresh_button_refetches_all_3_real_feeds(qapp, registry):
+def test_nexrad_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks the real network with an honest 503,
+    so the NEXRAD fetch fired at construction time must resolve to that
+    honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(1, 0).text() == "Doppler Radar (NEXRAD)"
+    assert panel.table.item(1, 1).text() == "NOT_FETCHED_NO_STATION_REACHABLE"
+    assert panel.table.item(1, 2).text() == "N/A"
+
+
+def test_nexrad_row_goes_live_with_real_operational_counts_once_fetched(qapp, registry):
+    from acf.connectors.nexrad_stations import NexradFetchResult
+
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    panel._on_nexrad_fetched(
+        NexradFetchResult(is_real_data=True, status="FETCHED_OK", stations_operational=3, stations_total=3)
+    )
+
+    assert panel.table.item(1, 1).text() == "LIVE (3/3 sites)"
+    assert panel.table.item(1, 2).text().endswith(" min")
+
+
+def test_refresh_button_refetches_all_4_real_feeds(qapp, registry):
     dispatcher = CommandDispatcher()
     panel = EarthMonitoringPanel(registry, dispatcher)
     QThreadPool.globalInstance().waitForDone(2000)
@@ -194,7 +228,9 @@ def test_refresh_button_refetches_all_3_real_feeds(qapp, registry):
     with (
         patch.object(panel, "_fetch_argo_async") as mock_argo,
         patch.object(panel, "_fetch_metar_async") as mock_metar,
+        patch.object(panel, "_fetch_nexrad_async") as mock_nexrad,
     ):
         panel._refresh()
         mock_argo.assert_called_once()
         mock_metar.assert_called_once()
+        mock_nexrad.assert_called_once()

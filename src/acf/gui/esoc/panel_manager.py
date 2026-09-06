@@ -380,36 +380,66 @@ class _METARFetchWorker(QRunnable):
             logging.getLogger("acf.gui.esoc.panel_manager").exception("METAR station poll failed in background worker")
 
 
+class _NexradFetchSignals(QObject):
+    """QRunnable itself cannot be a QObject (no signals) - same
+    companion-object pattern as acf.gui.map.mtg_basemap._MTGFetchSignals."""
+
+    finished = Signal(object)  # NexradFetchResult
+
+
+class _NexradFetchWorker(QRunnable):
+    """Runs NEXRADRadarConnector.fetch_station_status() off the GUI
+    thread - several sequential real HTTP calls there would freeze the
+    panel."""
+
+    def __init__(self, connector: Any) -> None:
+        super().__init__()
+        self._connector = connector
+        self.signals = _NexradFetchSignals()
+
+    def run(self) -> None:
+        try:
+            result = self._connector.fetch_station_status()
+            self.signals.finished.emit(result)
+        except Exception:  # pragma: no cover - defensive, mirrors _ArgoFetchWorker
+            logging.getLogger("acf.gui.esoc.panel_manager").exception("NEXRAD station poll failed in background worker")
+
+
 class EarthMonitoringPanel(BasePanelWidget):
     """9. Live Earth Monitoring Panel.
 
     NOTE (correction, 2026-09-06): every row used to be marked "EXAMPLE"
-    with a fixed illustrative latency, all 6 equally fake. Three real
+    with a fixed illustrative latency, all 6 equally fake. Four real
     live feeds wired in since: `acf.gui.map.mtg_basemap.
     MTGBasemapProvider` (the process-wide singleton already feeding
     every real ACF map view with live EUMETSAT MTG imagery) for
     "GOES/MTG Satellites"; `acf.connectors.argo_floats.
     ArgoFloatsConnector` (the real, public, no-auth-required Argovis
-    API) for "ARGO Ocean Floats"; and `acf.aviation.icao.live_source.
+    API) for "ARGO Ocean Floats"; `acf.aviation.icao.live_source.
     fetch_raw_report()` (the real NOAA Aviation Weather Center feed,
     already used by awci_messages_panel.py/awci_alerts_panel.py but
     never polled from this panel before) for "Surface AWS (SYNOP/
     METAR)" - polls the same 4 real stations (REAL_STATIONS: KJFK,
-    LFPG, EGLL, DAAG) that module already trusts. The remaining 2 rows
-    (NEXRAD, AMDAR, Lightning Network - see NOTE, that's 3) have no
-    real connector anywhere in ACF - honestly relabeled "NOT_CONNECTED"
-    rather than left as "EXAMPLE" with invented latency figures.
-    Building real connectors for those remaining external networks is a
-    separate undertaking, not done here.
+    LFPG, EGLL, DAAG) that module already trusts; and
+    `acf.connectors.nexrad_stations.NEXRADRadarConnector` (the real,
+    public, no-auth-required NOAA api.weather.gov radar station status
+    endpoint - real operational mode/latency per WSR-88D site, not
+    decoded reflectivity volumes) for "Doppler Radar (NEXRAD)". The
+    remaining 2 rows (AMDAR, Lightning Network) have no real connector
+    anywhere in ACF - honestly relabeled "NOT_CONNECTED" rather than
+    left as "EXAMPLE" with invented latency figures. Building real
+    connectors for those remaining external networks is a separate
+    undertaking, not done here.
     """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📡 EARTH OBSERVATION & MONITORING CENTER", "#4FC3F7", registry, dispatcher)
         note = QLabel(
-            "Three real live feeds below (GOES/MTG via the same EUMETSAT connector every ACF map "
+            "Four real live feeds below (GOES/MTG via the same EUMETSAT connector every ACF map "
             "uses; ARGO via the public Argovis API; METAR via the same NOAA feed the AWCI "
-            "messages/alerts panels already use) - the other 3 networks have no real connector in "
-            "ACF and are honestly marked NOT_CONNECTED, not simulated."
+            "messages/alerts panels already use; NEXRAD via the public NOAA api.weather.gov radar "
+            "station status endpoint) - the other 2 networks have no real connector in ACF and are "
+            "honestly marked NOT_CONNECTED, not simulated."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #F57F17; font-style: italic;")
@@ -419,7 +449,6 @@ class EarthMonitoringPanel(BasePanelWidget):
         self.table = QTableWidget(6, 3)
         self.table.setHorizontalHeaderLabels(["Data Source", "Status", "Latency"])
         self._not_connected_sources = {
-            1: "Doppler Radar (NEXRAD)",
             4: "AMDAR Aircraft",
             5: "Lightning Network",
         }
@@ -427,6 +456,9 @@ class EarthMonitoringPanel(BasePanelWidget):
             self.table.setItem(row, 0, QTableWidgetItem(src))
             self.table.setItem(row, 1, QTableWidgetItem("NOT_CONNECTED"))
             self.table.setItem(row, 2, QTableWidgetItem("N/A"))
+        self.table.setItem(1, 0, QTableWidgetItem("Doppler Radar (NEXRAD)"))
+        self.table.setItem(1, 1, QTableWidgetItem("NOT_FETCHED_YET"))
+        self.table.setItem(1, 2, QTableWidgetItem("N/A"))
         self.table.setItem(2, 0, QTableWidgetItem("Surface AWS (SYNOP/METAR)"))
         self.table.setItem(2, 1, QTableWidgetItem("NOT_FETCHED_YET"))
         self.table.setItem(2, 2, QTableWidgetItem("N/A"))
@@ -440,10 +472,12 @@ class EarthMonitoringPanel(BasePanelWidget):
         self.main_layout.addWidget(btn)
 
         from acf.connectors.argo_floats import ArgoFloatsConnector
+        from acf.connectors.nexrad_stations import NEXRADRadarConnector
         from acf.gui.dashboard.awci_map_panel import _make_mtg_update_forwarder
         from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
         self._argo_connector = ArgoFloatsConnector()
+        self._nexrad_connector = NEXRADRadarConnector()
         self._argo_last_result: Any = None
         self._metar_last_fetch: float | None = None
         MTGBasemapProvider.instance().updated.connect(
@@ -452,6 +486,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         self._refresh_mtg_row()
         self._fetch_argo_async()
         self._fetch_metar_async()
+        self._fetch_nexrad_async()
 
     def _refresh(self) -> None:
         self.dispatcher.dispatch("refresh_observations")
@@ -461,6 +496,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         self._refresh_mtg_row()
         self._fetch_argo_async()
         self._fetch_metar_async()
+        self._fetch_nexrad_async()
 
     def _on_mtg_basemap_updated(self) -> None:
         self._refresh_mtg_row()
@@ -518,6 +554,26 @@ class EarthMonitoringPanel(BasePanelWidget):
         else:
             self.table.setItem(2, 1, QTableWidgetItem("NOT_REACHABLE_0_STATIONS_REPORTING"))
             self.table.setItem(2, 2, QTableWidgetItem("N/A"))
+
+    def _fetch_nexrad_async(self) -> None:
+        worker = _NexradFetchWorker(self._nexrad_connector)
+        worker.signals.finished.connect(self._on_nexrad_fetched)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_nexrad_fetched(self, result: Any) -> None:
+        import time
+
+        if not shiboken6.isValid(self):
+            return  # panel closed/destroyed while this fetch was in flight
+        self.table.setItem(1, 0, QTableWidgetItem("Doppler Radar (NEXRAD)"))
+        if result.is_real_data:
+            self.table.setItem(
+                1, 1, QTableWidgetItem(f"LIVE ({result.stations_operational}/{result.stations_total} sites)")
+            )
+            self.table.setItem(1, 2, QTableWidgetItem(f"{(time.time() - result.fetched_at) / 60.0:.1f} min"))
+        else:
+            self.table.setItem(1, 1, QTableWidgetItem(result.status))
+            self.table.setItem(1, 2, QTableWidgetItem("N/A"))
 
 
 class EarthPhysicsPanel(BasePanelWidget):

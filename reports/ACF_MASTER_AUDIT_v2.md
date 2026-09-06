@@ -11122,3 +11122,32 @@ jour + 2 nouveaux (réseau simulé via `patch("urllib.request.urlopen",
 état honnête par défaut (0 station accessible dans cet environnement de
 test) et état LIVE une fois les stations réellement jointes. Suite
 complète confirmée verte.
+
+## Mise à jour 2026-09-06 (suite) — Phase 60 : quatrième flux réel dans "Earth Monitoring" - connecteur NEXRAD réel
+
+**Contexte** : `api.weather.gov` (NOAA National Weather Service),
+gratuit et sans authentification, expose un vrai endpoint `/radar/
+stations/{id}` avec le statut opérationnel réel de chaque site WSR-88D
+(mode RDA, dernière réception Level II, résumé d'alarmes) - vérifié en
+direct : KTLX/KOKX/KJAX tous réellement "Operational" avec une
+réception de moins d'une minute lors du test.
+
+**Construit** : `acf.connectors.nexrad_stations.NEXRADRadarConnector.
+fetch_station_status()` - interroge un petit ensemble de sites réels
+(`DEFAULT_STATIONS`: KTLX, KOKX, KJAX), compte combien rapportent
+réellement un mode "Operational". Ne récupère pas les volumes de
+réflectivité/vélocité (chantier bien plus vaste, fichiers Level II/III
+binaires, plusieurs Go/jour/site) - seulement le statut opérationnel
+réel de chaque site, exactement ce qu'une ligne de supervision "ce flux
+est-il vivant" nécessite. Honnête sur chaque échec (réseau, HTTP non-
+200, JSON malformé) - un site qui échoue n'est jamais compté comme
+opérationnel, `is_real_data` n'est vrai que si au moins un site a été
+réellement joint. Câblé via un `_NexradFetchWorker` (même patron
+`QThreadPool` que les 3 précédents). Il ne reste que 2 réseaux non
+connectés (AMDAR, réseau foudre) au lieu de 5 au départ de la Phase 57.
+
+**Validation réelle** : `ruff`/`mypy` propres. 5 nouveaux tests
+(`tests/test_nexrad_stations_connector.py`, réseau simulé) couvrant le
+succès réel, le comptage honnête d'un site non-opérationnel, l'échec
+total honnête, le succès partiel, et le JSON malformé. 2 nouveaux tests
+de panneau. Suite complète confirmée verte.
