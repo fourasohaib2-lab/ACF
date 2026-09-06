@@ -126,6 +126,51 @@ directe, pas par supposition :
 **Run complet post-suppression : 4577 passed, 0 failed** (4574 baseline
 + 3 nouveaux tests de la garde mono-instance). Aucune régression.
 
+**Robustesse de la garde vérifiée séparément (même journée)** : un
+`kill -9` sur le process qui détient le `QLocalServer` (simulant un
+crash réel, sans destructeur Qt) laisse un fichier socket orphelin
+(`/tmp/acf-esoc-single-instance`), mais `SingleInstanceGuard.acquire()`
+appelle déjà `QLocalServer.removeServer()` avant d'écouter - un
+lancement réel suivant récupère bien le rôle de première instance
+(vérifié par un script réel : acquire→kill -9→acquire dans un nouveau
+process → `True`). Pas de risque de blocage permanent après un crash.
+
+## Correctif utilisateur (suite) : champs AWCI réels jetés silencieusement (2026-09-06)
+
+Après le correctif ci-dessus, un smoke-test réel et non trivial des 25
+commandes de la barre d'outils ESOC (`_handle_toolbar_action`, chaque
+dialogue modal bloquant patché en "annulé par l'utilisateur", tout le
+reste du code réel non modifié) a été écrit et exécuté pour chercher
+d'autres bugs du même genre que le multi-dashboard - trouvés par usage
+réel, pas par simple lecture. Résultat : aucun crash sur les 25
+commandes, mais un vrai bug silencieux trouvé dans les logs :
+`compute_real_complexity_field()` calcule bien 9 champs réels par
+module (`AWCICalculator.PHYSICAL_MODULES` + `FORECAST_MODULES` -
+"confidence"/"ensemble_spread"/"model_disagreement"), mais
+`acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS` n'en enregistrait
+que 6 - les 3 champs `FORECAST_MODULES` étaient calculés puis rejetés
+en silence à chaque clic sur "🌪️ AWCI Field" (`MapCanvas.
+set_module_complexity_field()` loguait un WARNING "unknown module_key"
+invisible en usage normal, jamais une exception). Corrigé en
+enregistrant les 3 layers manquants ("Forecast Confidence"/"Ensemble
+Spread"/"Model Disagreement") - `LayerManager` et `LayerTogglePanel`
+les prennent en charge automatiquement (ils itèrent déjà le dict
+dynamiquement), donc aucun autre fichier n'a besoin de changer pour
+que les 3 champs s'affichent réellement. `tests/
+test_map_layers_module_complexity.py` + `tests/test_esoc_awci_field.py`
+(17 tests, qui itèrent déjà `MODULE_COMPLEXITY_LAYERS` dynamiquement)
+verts après coup sans modification. Re-vérifié : le smoke-test des 25
+commandes ne montre plus aucun "unknown module_key".
+
+**Run complet de non-régression : 4577 passed, 0 failed** (664
+warnings, 424s) - identique à la baseline post-sweep, aucune
+régression. Note de méthode : ce run a été lancé juste avant l'ajout
+du nouveau test d'invariant `test_module_complexity_layers_covers_every_real_awci_module`
+à `tests/test_map_layers_module_complexity.py` - sa collecte pytest ne
+l'inclut donc pas (d'où 4577 et non 4578). Ce test précis a été vérifié
+séparément, isolé avec ses 12 voisins du même fichier : **13 passed**
+juste après son ajout. Total réel : 4578 tests, 0 échec.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

@@ -16,8 +16,23 @@ from __future__ import annotations
 import cartopy.crs as ccrs
 import numpy as np
 
+from acf.awci.calculator import AWCICalculator
 from acf.awci.spatial_field import compute_real_complexity_field
 from acf.gui.map.map_layers import MODULE_COMPLEXITY_LAYERS, LayerManager, ModuleComplexityLayer, UncertaintyLayer
+
+
+def test_module_complexity_layers_covers_every_real_awci_module():
+    """NOTE (correction, 2026-09-06): MODULE_COMPLEXITY_LAYERS used to
+    register only AWCICalculator.PHYSICAL_MODULES (6 keys), silently
+    dropping every real AWCICalculator.FORECAST_MODULES field
+    ("confidence"/"ensemble_spread"/"model_disagreement") that
+    compute_real_complexity_field() has always also computed - found by
+    an end-to-end toolbar smoke test, not a code read (see
+    acf.gui.esoc.esoc_window._on_awci_field_ready's own NOTE). This test
+    ties the two together so a future new AWCICalculator module can't
+    silently reintroduce the same gap - it must fail here first."""
+    all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
+    assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules
 
 
 class _FakeAxes:

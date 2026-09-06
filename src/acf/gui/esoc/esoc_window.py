@@ -515,16 +515,27 @@ class ESOCWindow(QMainWindow):
     def _on_awci_field_ready(self, result: dict[str, Any]) -> None:
         map_canvas = self.layout_manager.view_manager.map_canvas
         map_canvas.set_awci_field(result["lons"], result["lats"], result["awci_field"], label="REAL AWCI")
-        # Real per-module complexity fields (docs/ACF_MASTER_PROMPT.md
-        # sections 28-29) come free from this exact same computation -
-        # module_fields/forecast_field were already computed by
-        # compute_real_complexity_field() to produce awci_field above,
-        # so populating the 6 module layers + Uncertainty here costs
-        # nothing extra. activate=False: showing all 7 at once stacked
-        # on top of the combined AWCI layer would be a cluttered,
-        # unreadable overlay - real data is populated and ready for the
-        # user to pick individually via self.layer_toggle_panel's real
-        # checkboxes (built 2026-09-03), not auto-displayed all at once.
+        # Real per-module complexity fields (docs/archive/ACF_MASTER_PROMPT.md
+        # sections 28-29, plus AWCICalculator.FORECAST_MODULES) come free
+        # from this exact same computation - module_fields/forecast_field
+        # were already computed by compute_real_complexity_field() to
+        # produce awci_field above, so populating the 9 module layers +
+        # Uncertainty here costs nothing extra. NOTE (correction,
+        # 2026-09-06): this loop always iterated every key
+        # compute_real_complexity_field() actually returns, but until
+        # today acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS only
+        # registered 6 of the 9 - the 3 FORECAST_MODULES keys
+        # ("confidence"/"ensemble_spread"/"model_disagreement") were
+        # computed and then silently dropped by
+        # set_module_complexity_field() every single time this ran (an
+        # "unknown module_key" WARNING, invisible in normal use) - found
+        # by an end-to-end toolbar smoke test, fixed by registering all 9
+        # in MODULE_COMPLEXITY_LAYERS (see that dict's own NOTE).
+        # activate=False: showing all 10 at once stacked on top of the
+        # combined AWCI layer would be a cluttered, unreadable overlay -
+        # real data is populated and ready for the user to pick
+        # individually via self.layer_toggle_panel's real checkboxes
+        # (built 2026-09-03), not auto-displayed all at once.
         for module_key, field in result["module_fields"].items():
             map_canvas.set_module_complexity_field(module_key, result["lons"], result["lats"], field, activate=False)
         map_canvas.set_uncertainty_field(result["lons"], result["lats"], result["forecast_field"], activate=False)
@@ -537,7 +548,8 @@ class ESOCWindow(QMainWindow):
             "INFO",
             "Real AWCI complexity field displayed on the central map - real per-module "
             "complexity layers (Dynamic/Thermodynamic/Convective/Microphysical/Orographic/"
-            "Temporal/Uncertainty) also populated with real data, ready to display.",
+            "Temporal/Forecast Confidence/Ensemble Spread/Model Disagreement/Uncertainty) "
+            "also populated with real data, ready to display.",
         )
 
     def _on_awci_field_failed(self, message: str) -> None:

@@ -263,17 +263,34 @@ class AWCILayer(BaseMapLayer):
         )
 
 
-#: Real per-module map layers (docs/ACF_MASTER_PROMPT.md sections
-#: 28-29 - "Dynamic complexity, Thermodynamic complexity, Convective
-#: complexity, Microphysical complexity, Orographic complexity,
-#: Temporal complexity" as separate toggleable layers, distinct from
-#: the single combined "AWCI Complexity" layer above). Maps each
-#: user-facing layer name (matching section 28's own wording) to the
-#: real AWCICalculator module key (acf.awci.spatial_field.
-#: compute_real_complexity_field()'s own `module_fields` dict key) it
-#: renders - "Orographic Complexity" is the one name that differs from
-#: its module key ("topographic"), section 28's own chosen wording for
-#: that module.
+#: Real per-module map layers (docs/archive/ACF_MASTER_PROMPT.md
+#: sections 28-29 - "Dynamic complexity, Thermodynamic complexity,
+#: Convective complexity, Microphysical complexity, Orographic
+#: complexity, Temporal complexity" as separate toggleable layers,
+#: distinct from the single combined "AWCI Complexity" layer above).
+#: Maps each user-facing layer name (matching section 28's own
+#: wording, or - for the three entries below the physical modules -
+#: AWCICalculator.FORECAST_MODULES's own key, kept a plain noun phrase
+#: rather than forced into "X Complexity" since these three aren't
+#: physical-complexity modules) to the real AWCICalculator module key
+#: (acf.awci.spatial_field.compute_real_complexity_field()'s own
+#: `module_fields` dict key) it renders - "Orographic Complexity" is
+#: the one physical-module name that differs from its module key
+#: ("topographic"), section 28's own chosen wording for that module.
+#:
+#: NOTE (correction, 2026-09-06): this dict used to cover only
+#: AWCICalculator.PHYSICAL_MODULES (6 keys) - compute_real_complexity_field()
+#: has always also computed the 3 real AWCICalculator.FORECAST_MODULES
+#: fields ("confidence", "ensemble_spread", "model_disagreement" - see
+#: that constant's own docstring) into the same `module_fields` dict,
+#: but nothing here ever registered a map layer for them: every real
+#: call from esoc_window.py._on_awci_field_ready() silently discarded
+#: those 3 arrays (MapCanvas.set_module_complexity_field() logged an
+#: "unknown module_key" WARNING for each, invisible in normal GUI use)
+#: found by an end-to-end smoke test of the toolbar, not a code read.
+#: Registering them here is the fix - LayerManager below and
+#: LayerTogglePanel (which iterates `available_layers` dynamically)
+#: pick them up with no further change needed.
 MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Dynamic Complexity": "dynamic",
     "Thermodynamic Complexity": "thermodynamic",
@@ -281,6 +298,9 @@ MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Microphysical Complexity": "microphysical",
     "Orographic Complexity": "topographic",
     "Temporal Complexity": "temporal",
+    "Forecast Confidence": "confidence",
+    "Ensemble Spread": "ensemble_spread",
+    "Model Disagreement": "model_disagreement",
 }
 
 

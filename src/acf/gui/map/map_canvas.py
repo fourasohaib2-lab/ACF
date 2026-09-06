@@ -304,10 +304,10 @@ class MapCanvas(EventMixin, QWidget):
             `active_layer_names` so it actually renders immediately -
             matches set_awci_field()'s own behavior for a direct,
             single-layer caller. Pass False to populate real data
-            without displaying it yet (e.g. a caller populating all 6
+            without displaying it yet (e.g. a caller populating all 9
             module layers at once from one compute_real_complexity_field()
             result - auto-activating every one of them simultaneously
-            would stack 6 overlapping heatmaps with no way yet to
+            would stack 9 overlapping heatmaps with no way yet to
               choose just one; see esoc_window.py's own use of this).
         """
         layer_name = next((name for name, key in MODULE_COMPLEXITY_LAYERS.items() if key == module_key), None)

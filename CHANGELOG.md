@@ -22,6 +22,27 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   v0.4–v1.0, roadmaps concurrentes, rapports d'audit datés) déplacés vers
   `docs/archive/` (`git mv`, historique préservé, rien supprimé).
 
+### Fixed
+- **Bug utilisateur** : plusieurs dashboards s'affichaient simultanément
+  au lancement de l'application. Deux causes réelles trouvées et
+  corrigées : (1) absence de garde mono-instance - ajout de
+  `acf.gui.single_instance.SingleInstanceGuard` (réel
+  `QLocalServer`/`QLocalSocket`, pas un mock), vérifiée par 3 lancements
+  réels successifs et par un test de robustesse au crash (`kill -9` +
+  relance) ; (2) 4 scripts orphelins à la racine du dépôt
+  (`test_awci_display.py`, `test_dashboard.py`, `test_qt.py`,
+  `test_window.py`), chacun construisant sa propre `QApplication` hors du
+  périmètre de l'app réelle - supprimés (récupérables via git).
+- **Champs AWCI réels jetés silencieusement** : `compute_real_complexity_field()`
+  calcule 9 champs réels par module mais `MODULE_COMPLEXITY_LAYERS`
+  n'en enregistrait que 6 - les 3 champs `FORECAST_MODULES`
+  ("confidence"/"ensemble_spread"/"model_disagreement") étaient
+  calculés puis rejetés en silence à chaque usage du bouton "🌪️ AWCI
+  Field" (WARNING loggé, invisible en usage normal, jamais une
+  exception). Trouvé par un smoke-test réel des 25 commandes de la
+  barre d'outils ESOC, pas par lecture de code. Corrigé en enregistrant
+  les 3 layers manquants.
+
 # [0.2.0-alpha] - 2026-07-23
 
 ## Added
