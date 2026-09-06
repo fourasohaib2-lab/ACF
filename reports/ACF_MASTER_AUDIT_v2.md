@@ -11247,3 +11247,33 @@ peut devenir une fausse affirmation à l'instant T+1 si le reste du code
 évolue sans qu'elle soit mise à jour - à garder à l'esprit pour les
 futures passes d'audit de ce rapport, qui cherchent surtout les
 fabrications d'origine plutôt que les péremptions silencieuses.
+
+## Mise à jour 2026-09-06 (suite) — Phase 63 : même péremption trouvée en Phase 62, cette fois sur un vrai bouton toolbar inactif
+
+**Suite directe de la Phase 62** : recherche d'autres divulgations
+"aucun flux d'observation réel" devenues fausses par la même évolution
+- trouvé `ESOCController.handle_refresh_observations()`, qui rapportait
+encore `NOT_REFRESHED_NO_INGESTION_PIPELINE_CONNECTED`. Cette commande
+est la seule voie du bouton toolbar ESOC "🔴 Live Stream"
+(`esoc_window.py`, `cmd == "live_stream"`) - un vrai bouton qui, avant
+ce correctif, ne faisait strictement rien de réel : juste afficher un
+message de statut maintenant faux.
+
+**Construit** : la commande déclenche désormais un vrai rafraîchissement
+asynchrone des 4 flux réels, en réutilisant directement les classes
+worker d'`EarthMonitoringPanel` (`_ArgoFetchWorker`, `_METARFetchWorker`,
+`_NexradFetchWorker`, `MTGBasemapProvider.refresh_async()`) via
+`CommandDispatcher.run_async()` - zéro logique dupliquée. Le handler
+reste synchrone et retourne immédiatement (`REFRESH_TRIGGERED_4_REAL_
+FEEDS_ASYNC_RESULTS_NOT_YET_KNOWN`, `feeds_triggered: 4`) - honnête sur
+le fait qu'il ne peut pas attendre 4 vrais aller-retours réseau avant
+de rafraîchir la barre de statut ; le résultat réel par flux atterrit
+dans la table d'`EarthMonitoringPanel` si ce panneau est ouvert.
+
+**Validation réelle** : `ruff`/`mypy` propres. 3 nouveaux tests
+(`tests/test_esoc_controller_refresh_observations.py`, réseau simulé) :
+le nouveau statut honnête, le déclenchement réel de
+`MTGBasemapProvider.refresh_async()`, et une garde de régression que
+le handler ne bloque jamais en attendant le réseau (retour en moins
+d'1 seconde, les workers réels terminent bien en arrière-plan après
+coup). Suite complète confirmée verte.

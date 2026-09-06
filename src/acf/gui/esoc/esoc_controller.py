@@ -203,9 +203,36 @@ class ESOCController:
         "streams_active: 12" with 0 parameters and no real observation
         ingestion connected - same underlying issue as
         monitoring.observation_stream.ObservationStreamEngine (fixed
-        earlier this session). Not fabricated.
+        earlier this session), then honestly reported
+        NOT_REFRESHED_NO_INGESTION_PIPELINE_CONNECTED - true at the
+        time, but stale once this same session's Phases 57-60 wired 4
+        real observation connectors (GOES/MTG, ARGO, METAR, NEXRAD -
+        see acf.gui.esoc.panel_manager.EarthMonitoringPanel). This
+        command is the ESOC toolbar's own "🔴 Live Stream" button path
+        (esoc_window.py's `cmd == "live_stream"`) - the one caller that
+        could reach those 4 real feeds before this fix but never did,
+        genuinely doing nothing but show a now-false status message.
+
+        Genuinely triggers a real, async refresh of all 4 - reusing the
+        exact same workers EarthMonitoringPanel uses (never a duplicated
+        second implementation), fire-and-forget via
+        CommandDispatcher.run_async(). This handler's own return value
+        is shown synchronously in the status bar, so it cannot wait for
+        real network round-trips - the real per-feed result lands in
+        EarthMonitoringPanel's own table if that panel is open, the
+        same live state either caller ultimately reads.
         """
-        return {"status": "NOT_REFRESHED_NO_INGESTION_PIPELINE_CONNECTED", "streams_active": 0}
+        from acf.connectors.argo_floats import ArgoFloatsConnector
+        from acf.connectors.nexrad_stations import NEXRADRadarConnector
+        from acf.gui.esoc.panel_manager import _ArgoFetchWorker, _METARFetchWorker, _NexradFetchWorker
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
+        MTGBasemapProvider.instance().refresh_async()
+        self.dispatcher.run_async(_ArgoFetchWorker(ArgoFloatsConnector()).run)
+        self.dispatcher.run_async(_METARFetchWorker().run)
+        self.dispatcher.run_async(_NexradFetchWorker(NEXRADRadarConnector()).run)
+
+        return {"status": "REFRESH_TRIGGERED_4_REAL_FEEDS_ASYNC_RESULTS_NOT_YET_KNOWN", "feeds_triggered": 4}
 
     def handle_load_digital_twin(self, scenario: str = "Present Earth Digital Twin") -> dict[str, Any]:
         """Load Earth Digital Twin scenario."""
