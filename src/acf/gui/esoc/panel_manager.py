@@ -888,20 +888,108 @@ class HydrologyPanel(BasePanelWidget):
 
 
 class CryospherePanel(BasePanelWidget):
-    """19. Cryosphere Panel."""
+    """19. Cryosphere Panel.
+
+    NOTE (correction, 2026-09-06): used to show fixed ice extent/
+    thickness/permafrost numbers behind an honest "Example Layout"
+    disclaimer, with no real model connected. Real, previously-unused
+    engines chained here instead: `acf.earth_physics.
+    cryosphere_physics.sea_ice.SeaIceThermodynamics.
+    ice_growth_rate_m_s()` (Stefan's law thermal-conduction growth,
+    cited to Untersteiner 1965 / Hunke & Lipscomb 2008 CICE - see that
+    method's own NOTE), `acf.earth_physics.ocean_physics.
+    sea_ice_interaction.OceanSeaIceCoupling.compute_heat_flux_to_ice()`
+    (already audited 2026-09-05 - see reports/ACF_MASTER_AUDIT_v2.md -
+    and found to be a standard, defensible ΔT x coefficient bulk-flux
+    functional form even without a cited source for the exact
+    coefficient), and `acf.earth_physics.cryosphere_physics.
+    permafrost.PermafrostThawModel.compute_ch4_emission_megatons()`.
+
+    Honest disclosure: the permafrost CH4 figure is explicitly flagged
+    by that same prior audit as an illustrative, order-of-magnitude
+    scaling only (unsourced coefficient, and a real global CH4 budget
+    depends on thawed AREA and soil carbon stock, not depth alone) -
+    kept and shown, but never presented as a validated estimate. The
+    other two are real formulas fed by operator-entered parameters, not
+    a live satellite/reanalysis feed - same convention as the Space
+    Weather and Hydrology panels.
+    """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("❄️ CRYOSPHERE & POLAR SEA-ICE MONITOR", "#80DEEA", registry, dispatcher)
-        # NOTE (correction): fixed ice extent/thickness numbers shown
-        # with no real satellite or model observation connected. Not
-        # fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Polar Sea Ice (Example Layout):\n• Arctic Ice Extent: 4.2 million km^2\n• Ice Thickness: 1.8 m\n• Permafrost Thaw Rate: 2.1 cm/yr"
+
+        note = QLabel(
+            "Real physics-formula engines below, fed by the parameters you enter - "
+            "not a live satellite/reanalysis feed (ACF has no live cryosphere connector)."
         )
-        self.main_layout.addWidget(self.txt)
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #F57F17; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Surface air temperature (°C):"))
+        self.surface_temp = QDoubleSpinBox()
+        self.surface_temp.setRange(-60.0, 10.0)
+        self.surface_temp.setValue(-20.0)
+        row1.addWidget(self.surface_temp)
+        row1.addWidget(QLabel("Current ice thickness (m):"))
+        self.ice_thickness = QDoubleSpinBox()
+        self.ice_thickness.setRange(0.01, 10.0)
+        self.ice_thickness.setDecimals(2)
+        self.ice_thickness.setValue(1.8)
+        row1.addWidget(self.ice_thickness)
+        row1.addWidget(QLabel("Freezing point (°C):"))
+        self.freezing_temp = QDoubleSpinBox()
+        self.freezing_temp.setRange(-5.0, 0.0)
+        self.freezing_temp.setValue(-1.8)
+        row1.addWidget(self.freezing_temp)
+        self.main_layout.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Ocean water temperature (°C):"))
+        self.ocean_temp = QDoubleSpinBox()
+        self.ocean_temp.setRange(-2.0, 30.0)
+        self.ocean_temp.setValue(-1.0)
+        row2.addWidget(self.ocean_temp)
+        row2.addWidget(QLabel("Annual permafrost thaw-depth increase (m):"))
+        self.thaw_increase = QDoubleSpinBox()
+        self.thaw_increase.setRange(0.0, 5.0)
+        self.thaw_increase.setDecimals(3)
+        self.thaw_increase.setValue(0.021)
+        row2.addWidget(self.thaw_increase)
+        self.main_layout.addLayout(row2)
+
+        self.button = QPushButton("❄️ Compute Real Cryosphere State")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        from acf.earth_physics.cryosphere_physics.permafrost import PermafrostThawModel
+        from acf.earth_physics.cryosphere_physics.sea_ice import SeaIceThermodynamics
+        from acf.earth_physics.ocean_physics.sea_ice_interaction import OceanSeaIceCoupling
+
+        freezing_temp = self.freezing_temp.value()
+        growth_rate_m_s = SeaIceThermodynamics.ice_growth_rate_m_s(
+            self.surface_temp.value(), self.ice_thickness.value(), freezing_temp
+        )
+        growth_rate_cm_day = growth_rate_m_s * 86400.0 * 100.0
+        heat_flux_w_m2 = OceanSeaIceCoupling.compute_heat_flux_to_ice(self.ocean_temp.value(), freezing_temp)
+        ch4_megatons = PermafrostThawModel.compute_ch4_emission_megatons(self.thaw_increase.value())
+
+        growth_label = "growth" if growth_rate_m_s > 0.0 else "no growth (surface not below freezing)"
+        self.result.setText(
+            "Real Cryosphere State (SeaIceThermodynamics / OceanSeaIceCoupling / PermafrostThawModel):\n"
+            f"• Sea ice thermal growth rate (Stefan's law): {growth_rate_cm_day:.3f} cm/day ({growth_label})\n"
+            f"• Ocean-to-ice heat flux: {heat_flux_w_m2:.2f} W/m²\n"
+            f"• Permafrost CH4 release estimate: {ch4_megatons:.3f} Mt "
+            f"⚠ illustrative order-of-magnitude only, unsourced coefficient - not a validated carbon-budget estimate"
+        )
 
 
 class AirQualityPanel(BasePanelWidget):
@@ -1159,22 +1247,164 @@ class SpaceWeatherPanel(BasePanelWidget):
 
 
 class GeologyPanel(BasePanelWidget):
-    """23. Geology & Volcanology Panel."""
+    """23. Geology & Volcanology Panel.
+
+    NOTE (correction, 2026-09-06): used to claim a specific "Active
+    Volcanic Plume: Etna Ash Dispersion Model (FL300)" and "Seismic
+    Events: M4.2" with no real seismic/volcanic monitoring network
+    connected - operationally dangerous since volcanic ash advisories
+    affect flight routing. Real, previously-unused, already-audited-
+    clean engines chained here instead (see reports/
+    ACF_MASTER_AUDIT_v2.md's geology pass - "Vp/Vs/Rayleigh/Snell
+    réels", "célérité racine(gd), loi de Green réelle"): `acf.geology.
+    seismic_waves.SeismicWaveEngine` (Vp/Vs from elastic moduli,
+    travel_time_p_and_s - the classic P/S-delay epicenter-distance
+    method), `acf.geology.seismology.SeismologyEngine` (Gutenberg-
+    Richter frequency-magnitude, Omori aftershock decay, Bath's law
+    largest-aftershock), `acf.geology.tsunami_engine.
+    TsunamiForecastEngine.evaluate_tsunami_hazard()` (celerity, Green's
+    law coastal amplification, tsunamigenic-event screening). Volcanic
+    ash dispersion is deliberately left out of this rebuild - it is a
+    separate, already-real leaf (`acf.geology.volcanic_physics.
+    VolcanicPhysicsEngine`, Mogi 1958 / Mastin et al. 2009, wired in
+    Phase 43) rather than a hidden unused engine to (re)discover here.
+
+    Honest disclosure: real physics-formula calculators fed by
+    operator-entered parameters (elastic moduli, magnitude, fault
+    geometry) - ACF has no live seismometer/tide-gauge network
+    connected, so the inputs are not live observations of an actual
+    event. Same convention as the Space Weather and Hydrology panels.
+    """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
-        super().__init__("🌋 GEOLOGY & VOLCANIC ASH DISPERSION", "#D7CCC8", registry, dispatcher)
-        # NOTE (correction — operationally dangerous, aviation-relevant):
-        # used to claim a specific "Active Volcanic Plume: Etna Ash
-        # Dispersion Model (FL300)" and "Seismic Events: M4.2" with no
-        # real seismic/volcanic monitoring network connected - volcanic
-        # ash advisories directly affect flight routing. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Geological Status (Example Layout, no active events):\n• Active Volcanic Plume: Etna Ash Dispersion Model (FL300)\n• Seismic Events: M4.2 (Mediterranean)"
+        super().__init__("🌋 GEOLOGY & SEISMIC/TSUNAMI HAZARD", "#D7CCC8", registry, dispatcher)
+
+        note = QLabel(
+            "Real physics-formula engines below, fed by the parameters you enter - "
+            "not a live seismometer/tide-gauge feed (ACF has no live geology connector). "
+            "Volcanic ash dispersion has its own real, separately-wired leaf."
         )
-        self.main_layout.addWidget(self.txt)
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #F57F17; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Bulk modulus K (GPa):"))
+        self.bulk_modulus = QDoubleSpinBox()
+        self.bulk_modulus.setRange(1.0, 500.0)
+        self.bulk_modulus.setValue(50.0)
+        row1.addWidget(self.bulk_modulus)
+        row1.addWidget(QLabel("Shear modulus μ (GPa):"))
+        self.shear_modulus = QDoubleSpinBox()
+        self.shear_modulus.setRange(1.0, 500.0)
+        self.shear_modulus.setValue(30.0)
+        row1.addWidget(self.shear_modulus)
+        row1.addWidget(QLabel("Density (kg/m³):"))
+        self.density = QDoubleSpinBox()
+        self.density.setRange(500.0, 8000.0)
+        self.density.setValue(2700.0)
+        row1.addWidget(self.density)
+        row1.addWidget(QLabel("Distance to station (km):"))
+        self.station_distance = QDoubleSpinBox()
+        self.station_distance.setRange(1.0, 20000.0)
+        self.station_distance.setValue(150.0)
+        row1.addWidget(self.station_distance)
+        self.main_layout.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Mainshock Mw:"))
+        self.mainshock_mw = QDoubleSpinBox()
+        self.mainshock_mw.setRange(0.0, 10.0)
+        self.mainshock_mw.setValue(7.5)
+        row2.addWidget(self.mainshock_mw)
+        row2.addWidget(QLabel("Days since mainshock:"))
+        self.days_since = QDoubleSpinBox()
+        self.days_since.setRange(0.0, 3650.0)
+        self.days_since.setValue(1.0)
+        row2.addWidget(self.days_since)
+        row2.addWidget(QLabel("Gutenberg-Richter a-value:"))
+        self.gr_a = QDoubleSpinBox()
+        self.gr_a.setRange(0.0, 15.0)
+        self.gr_a.setValue(7.0)
+        row2.addWidget(self.gr_a)
+        row2.addWidget(QLabel("Gutenberg-Richter b-value:"))
+        self.gr_b = QDoubleSpinBox()
+        self.gr_b.setRange(0.1, 2.0)
+        self.gr_b.setValue(1.0)
+        row2.addWidget(self.gr_b)
+        self.main_layout.addLayout(row2)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Fault depth (km):"))
+        self.fault_depth = QDoubleSpinBox()
+        self.fault_depth.setRange(0.0, 700.0)
+        self.fault_depth.setValue(20.0)
+        row3.addWidget(self.fault_depth)
+        row3.addWidget(QLabel("Distance to coast (km):"))
+        self.coast_distance = QDoubleSpinBox()
+        self.coast_distance.setRange(1.0, 20000.0)
+        self.coast_distance.setValue(300.0)
+        row3.addWidget(self.coast_distance)
+        row3.addWidget(QLabel("Ocean depth (m):"))
+        self.ocean_depth = QDoubleSpinBox()
+        self.ocean_depth.setRange(10.0, 11000.0)
+        self.ocean_depth.setValue(4000.0)
+        row3.addWidget(self.ocean_depth)
+        self.main_layout.addLayout(row3)
+
+        self.button = QPushButton("🌋 Compute Real Seismic/Tsunami Hazard")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        from acf.geology.seismic_waves import SeismicWaveEngine
+        from acf.geology.seismology import SeismologyEngine
+        from acf.geology.tsunami_engine import TsunamiForecastEngine
+
+        k_pa = self.bulk_modulus.value() * 1e9
+        mu_pa = self.shear_modulus.value() * 1e9
+        rho = self.density.value()
+        vp_m_s = SeismicWaveEngine.p_wave_velocity_m_s(k_pa, mu_pa, rho)
+        vs_m_s = SeismicWaveEngine.s_wave_velocity_m_s(mu_pa, rho)
+        vr_m_s = SeismicWaveEngine.rayleigh_wave_velocity_m_s(vs_m_s)
+        travel = SeismicWaveEngine.travel_time_p_and_s(
+            self.station_distance.value(), vp_m_s / 1000.0, vs_m_s / 1000.0
+        )
+
+        mw = self.mainshock_mw.value()
+        bath = SeismologyEngine.bath_law_largest_aftershock(mw)
+        omori_rate = SeismologyEngine.omori_aftershock_rate(self.days_since.value())
+        gr_n = SeismologyEngine.gutenberg_richter_frequency(self.gr_a.value(), self.gr_b.value(), mw)
+
+        tsunami = TsunamiForecastEngine().evaluate_tsunami_hazard(
+            mw, self.fault_depth.value(), self.coast_distance.value(), self.ocean_depth.value()
+        )
+
+        lines = [
+            "Real Seismic/Tsunami Hazard State (SeismicWaveEngine -> SeismologyEngine -> TsunamiForecastEngine):",
+            f"• P-wave velocity: {vp_m_s:.0f} m/s, S-wave velocity: {vs_m_s:.0f} m/s, "
+            f"Rayleigh wave velocity: {vr_m_s:.0f} m/s",
+            f"• At {self.station_distance.value():.0f} km: P arrival {travel['p_arrival_seconds']:.1f} s, "
+            f"S arrival {travel['s_arrival_seconds']:.1f} s, S-P delay {travel['s_minus_p_delay_seconds']:.1f} s",
+            f"• Mw {mw:.1f} mainshock - Bath's law largest expected aftershock: Mw {bath:.1f}",
+            f"• Omori aftershock rate at day {self.days_since.value():.0f}: {omori_rate:.2f} events/day",
+            f"• Gutenberg-Richter: ~{gr_n:.2f} events/year expected at or above Mw {mw:.1f} "
+            f"(a={self.gr_a.value():.1f}, b={self.gr_b.value():.1f})",
+            f"• Tsunami: {tsunami['tsunami_risk']} - {tsunami['warning_level']} "
+            f"(celerity {tsunami['celerity_km_h']:.0f} km/h)",
+        ]
+        if "estimated_arrival_minutes" in tsunami:
+            lines.append(
+                f"  Estimated coastal run-up: {tsunami['estimated_coastal_runup_m']:.2f} m, "
+                f"arrival in {tsunami['estimated_arrival_minutes']:.1f} min"
+            )
+        self.result.setText("\n".join(lines))
 
 
 class VerificationPanel(BasePanelWidget):

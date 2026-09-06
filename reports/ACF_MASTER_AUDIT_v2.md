@@ -10819,3 +10819,73 @@ cryosphere_physics.sea_ice`/`permafrost`) et Geology
 (`acf.geology.seismic_waves`, distinct de `volcanic_physics` déjà câblé
 en Phase 43) restent des candidats réels identifiés mais non encore
 construits.
+
+## Mise à jour 2026-09-06 (suite) — Phase 55 : upgrade réel du panneau "Cryosphere" (déjà mappé)
+
+**Construit** : `CryospherePanel` reconstruit sur 3 moteurs réels
+jamais câblés dans un panneau GUI - `SeaIceThermodynamics.
+ice_growth_rate_m_s()` (loi de Stefan, cité Untersteiner 1965 /
+Hunke & Lipscomb 2008 CICE), `OceanSeaIceCoupling.
+compute_heat_flux_to_ice()` (déjà audité le 2026-09-05 - forme
+fonctionnelle ΔT × coefficient jugée standard et défendable même sans
+source citée pour la valeur exacte du coefficient), et
+`PermafrostThawModel.compute_ch4_emission_megatons()`.
+
+**Divulgation honnête, portée depuis le code jusqu'à l'UI** : le
+chiffre CH4 du permafrost porte déjà, depuis l'audit du 2026-09-05, un
+avertissement explicite ("illustratif, ordre de grandeur uniquement,
+coefficient non sourcé, ne dépend pas de la surface dégelée ni du
+stock de carbone du sol") - ce panneau affiche ce même avertissement
+directement dans le résultat visible à l'opérateur (⚠), pas seulement
+dans une docstring que l'utilisateur final ne lit jamais.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests
+(`tests/test_esoc_cryosphere_panel.py`), incluant une vérification
+directe contre les 3 moteurs appelés indépendamment, une vérification
+physique qu'une glace plus épaisse ralentit réellement la croissance
+(loi de Stefan - exactement le bug qu'un audit antérieur avait trouvé
+et corrigé dans ce même moteur), qu'une température de surface
+au-dessus du point de congélation donne réellement une croissance
+nulle, et qu'un océan plus chaud augmente réellement le flux de
+chaleur calculé.
+
+## Mise à jour 2026-09-06 (suite) — Phase 56 : upgrade réel du panneau "Geology" (déjà mappé)
+
+**Pourquoi séparé de "Volcanoes"** : la dispersion de cendres
+volcaniques a déjà son propre vrai moteur câblé (`VolcanicPhysicsEngine`,
+Phase 43, feuille "Volcanoes" distincte) - ce panneau se concentre sur
+le volet sismique/tsunami, jamais câblé nulle part, plutôt que de
+redécouvrir un moteur déjà réel ailleurs.
+
+**Construit** : `GeologyPanel` reconstruit sur 3 moteurs réels,
+préalablement audités propres (voir passe géologie plus haut dans ce
+rapport - "Vp/Vs/Rayleigh/Snell réels", "célérité √(gd), loi de Green
+réelle") et jamais câblés dans un panneau GUI - `SeismicWaveEngine`
+(vitesses Vp/Vs à partir des modules élastiques, `travel_time_p_and_s`
+- la méthode classique de localisation d'épicentre par délai S-P,
+alimentée par les Vp/Vs réellement calculés ci-dessus plutôt que par
+les valeurs par défaut de la fonction), `SeismologyEngine`
+(fréquence-magnitude de Gutenberg-Richter, décroissance des répliques
+d'Omori, loi de Bath), `TsunamiForecastEngine.
+evaluate_tsunami_hazard()` (célérité, amplification côtière de Green,
+filtrage tsunamigène).
+
+**Divulgation honnête** : renommé le sous-titre du panneau
+("SEISMIC/TSUNAMI HAZARD" au lieu de "VOLCANIC ASH DISPERSION", qui
+n'y est pas traité) et affiché explicitement que la dispersion de
+cendres a sa propre feuille réelle séparée, pour ne pas laisser croire
+que ce panneau la couvre.
+
+**Validation réelle** : `ruff`/`mypy` propres. 4 nouveaux tests
+(`tests/test_esoc_geology_panel.py`), incluant une vérification directe
+contre les 3 moteurs appelés indépendamment, une vérification physique
+qu'un module de cisaillement plus élevé augmente réellement les
+vitesses d'onde, qu'un séisme principal plus grand atteint réellement
+un risque de tsunami plus sévère, et qu'une station plus éloignée
+change réellement le délai S-P calculé.
+
+**Ce qui reste réellement** : Air Quality et Earth Monitoring restent
+les seuls panneaux "Example Layout" pour lesquels aucun moteur réel
+équivalent n'a été identifié (Air Quality activement recherché et
+confirmé sans moteur caché - voir Phase 54 ; Earth Monitoring non
+encore recherché).
