@@ -84,6 +84,20 @@ geospatial = ["cartopy", "pyproj", "matplotlib"]
 formats = ["xarray", "netCDF4", "cfgrib", "eccodes", "epygram", "zarr"]
 # Meteorological unit/calculation helpers used by science/.
 science = ["metpy"]
+# Live EUMETSAT Data Store connector (acf.connectors.eumetsat_mtg) -
+# real MTG (Météosat Troisième Génération / FCI) full-disk imagery used
+# as the map basemap (gui/map/mtg_basemap.py - also needs the gui and
+# geospatial extras below for that Qt+Cartopy/pyproj plumbing; this
+# extra alone is enough for the connector module itself). requests:
+# OAuth2 token + OpenSearch/browse HTTP calls. python-dotenv: loads
+# EUMETSAT_CONSUMER_KEY/SECRET from a local .env (gitignored - see
+# .env.example), matching the HPC Connection Wizard's own "credentials
+# never committed" convention rather than config/*.yaml (tracked in
+# git). Pillow: decodes the fetched JPEG quicklook into an array
+# matplotlib/Cartopy can imshow() - already installed transitively via
+# matplotlib, but was undeclared as a direct import anywhere, the same
+# gap PyYAML's/epygram's own NOTEs above already document.
+satellite = ["requests", "python-dotenv", "Pillow"]
 # Real cluster access (hpc_connector/ssh_connector.py). Also required
 # to import acf.surfex and acf.hpc_workflow - both import
 # HPCConnectionManager at module level (surfex/engine.py couples its
@@ -121,6 +135,7 @@ all = [
     "fastapi", "uvicorn", "websockets", "httpx2",
     "torch",
     "psutil",
+    "requests", "python-dotenv", "Pillow",
 ]
 dev = ["pytest", "pytest-cov", "pytest-timeout", "black", "ruff", "mypy"]
 

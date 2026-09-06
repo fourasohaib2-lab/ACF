@@ -6,6 +6,8 @@ from typing import Any
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
+from acf.gui.map.mtg_basemap import draw_mtg_basemap
+
 logger = logging.getLogger("acf.gui.map.map_renderer")
 
 
@@ -50,39 +52,55 @@ class MapRenderer:
         # 1. Base Canvas Face & Background
         axes.set_facecolor("#0b1220")
 
-        # 2. Oceans
-        try:
-            axes.add_feature(
-                cfeature.OCEAN,
-                facecolor="#121a2b",
-                zorder=0,
-            )
-        except Exception:
-            logger.warning("Failed to render ocean feature", exc_info=True)
+        # 2. Live MTG basemap (explicit user request "je veux que toutes
+        # les maps affiché soient des maps du mtg") - real EUMETSAT Data
+        # Store imagery when available (see acf.gui.map.mtg_basemap and
+        # acf.connectors.eumetsat_mtg for what "real" means here and its
+        # honest limitations). Falls back to the plain Ocean/Land fill
+        # below when no image has been fetched yet (no credentials, no
+        # network, or the first fetch is still pending) - never a
+        # fabricated substitute image.
+        has_mtg_image = draw_mtg_basemap(axes, zorder=0)
 
-        # 3. Land / Continents
-        try:
-            axes.add_feature(
-                cfeature.LAND,
-                facecolor="#1c472a",
-                edgecolor="none",
-                zorder=1,
-            )
-        except Exception:
-            logger.warning("Failed to render land feature", exc_info=True)
+        # 3. Oceans (skipped once the real MTG image is drawn - a solid
+        # fill would just paint over it; coastlines/borders/gridlines
+        # below still draw on top either way for reference).
+        if not has_mtg_image:
+            try:
+                axes.add_feature(
+                    cfeature.OCEAN,
+                    facecolor="#121a2b",
+                    zorder=0,
+                )
+            except Exception:
+                logger.warning("Failed to render ocean feature", exc_info=True)
 
-        # 4. Lakes
-        try:
-            axes.add_feature(
-                cfeature.LAKES,
-                facecolor="#184a6b",
-                edgecolor="none",
-                zorder=2,
-            )
-        except Exception:
-            logger.warning("Failed to render lakes feature", exc_info=True)
+        # 4. Land / Continents (same reasoning as Oceans above)
+        if not has_mtg_image:
+            try:
+                axes.add_feature(
+                    cfeature.LAND,
+                    facecolor="#1c472a",
+                    edgecolor="none",
+                    zorder=1,
+                )
+            except Exception:
+                logger.warning("Failed to render land feature", exc_info=True)
 
-        # 5. Rivers
+        # 5. Lakes (solid fill - same reasoning as Oceans/Land above)
+        if not has_mtg_image:
+            try:
+                axes.add_feature(
+                    cfeature.LAKES,
+                    facecolor="#184a6b",
+                    edgecolor="none",
+                    zorder=2,
+                )
+            except Exception:
+                logger.warning("Failed to render lakes feature", exc_info=True)
+
+        # 6. Rivers (thin lines, not a fill - kept on top of the MTG
+        # image too, same as borders/coastlines/gridlines below)
         try:
             axes.add_feature(
                 cfeature.RIVERS,
@@ -93,7 +111,7 @@ class MapRenderer:
         except Exception:
             logger.warning("Failed to render rivers feature", exc_info=True)
 
-        # 6. Country Borders
+        # 7. Country Borders
         try:
             axes.add_feature(
                 cfeature.BORDERS,
@@ -105,7 +123,7 @@ class MapRenderer:
         except Exception:
             logger.warning("Failed to render country borders feature", exc_info=True)
 
-        # 7. Coastlines
+        # 8. Coastlines
         try:
             axes.coastlines(
                 resolution="110m",
@@ -116,7 +134,7 @@ class MapRenderer:
         except Exception:
             logger.warning("Failed to render coastlines", exc_info=True)
 
-        # 8. Latitude / Longitude Gridlines
+        # 9. Latitude / Longitude Gridlines
         try:
             grid = axes.gridlines(
                 draw_labels=True,
@@ -133,13 +151,13 @@ class MapRenderer:
         except Exception:
             logger.warning("Failed to render lat/lon gridlines", exc_info=True)
 
-        # 9. Render Scientific Layer Overlays
+        # 10. Render Scientific Layer Overlays
         if layer_manager is not None:
             if active_layers is not None:
                 layer_manager.set_active_layers(active_layers)
             layer_manager.render_layers(axes, transform=ccrs.PlateCarree())
 
-        # 10. Map Header Title & Metadata
+        # 11. Map Header Title & Metadata
         if title:
             axes.set_title(
                 title,

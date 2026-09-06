@@ -1,0 +1,19 @@
+# EUMETSAT Data Store - live MTG (Météosat Troisième Génération) basemap
+# configuration (ACF-connectors, acf.connectors.eumetsat_mtg).
+#
+# Real credentials (EUMETSAT_CONSUMER_KEY / EUMETSAT_CONSUMER_SECRET) are
+# deliberately NOT stored here - config/ is tracked in git, and the same
+# "credentials never committed" rule already applied to the HPC
+# Connection Wizard's own password field applies here. Put them in a
+# local .env instead (see .env.example at the repo root, gitignored).
+
+mtg:
+  # EO:EUM:DAT:0662 = "FCI Level 1c Normal Resolution Image Data - MTG -
+  # 0 degree" (confirmed against EUMETSAT's own live collection browse
+  # API, https://api.eumetsat.int/data/browse/collections, not guessed).
+  # EO:EUM:DAT:0665 is the High Resolution counterpart - same product,
+  # heavier download, no benefit for a small basemap thumbnail.
+  collection: "EO:EUM:DAT:0662"
+  # MTG's FCI full-disk repeat cycle is ~10 minutes; no point polling
+  # the Data Store more often than that.
+  refresh_seconds: 600

@@ -20,6 +20,7 @@ CartopyRenderer is the right one and why).
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from acf.gui.map.mtg_basemap import MTGBasemapProvider
 from acf.visualization.cartopy_renderer import CartopyRenderer
 
 
@@ -51,6 +52,19 @@ class MapView(QWidget):
         self.canvas = FigureCanvasQTAgg(figure)
 
         layout.addWidget(self.canvas)
+
+        # Live MTG basemap (explicit user request "je veux que toutes
+        # les maps affiché soient des maps du mtg") - redraw whenever a
+        # fresh EUMETSAT image lands, same wiring as
+        # acf.gui.map.map_canvas.MapCanvas and
+        # acf.gui.dashboard.awci_map_panel.AWCIMapPanel.
+        MTGBasemapProvider.instance().updated.connect(self._on_mtg_basemap_updated)
+
+    ##################################################
+
+    def _on_mtg_basemap_updated(self) -> None:
+        self.renderer.refresh_basemap()
+        self.refresh()
 
     ##################################################
 

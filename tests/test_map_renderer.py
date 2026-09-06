@@ -98,7 +98,21 @@ def test_render_logs_a_real_feature_failure_instead_of_silently_swallowing_it(ca
     with caplog.at_level(logging.WARNING, logger="acf.gui.map.map_renderer"):
         MapRenderer().render(_RaisingAxes(), title="Should still set no crash")  # must not raise
 
-    messages = [r.message for r in caplog.records]
+    # NOTE (correction): caplog.at_level(..., logger=...) only raises that
+    # logger's effective level so ITS records pass through - it does not
+    # filter caplog.records to that logger. caplog's handler sits on the
+    # root logger and captures every propagating record regardless of
+    # origin, so this used to assert an exact count (7) over records from
+    # ANY logger active during the block - genuinely fragile to any
+    # unrelated module logging a warning in the same window (confirmed:
+    # acf.gui.map.mtg_basemap's own real "MTG image unavailable, falling
+    # back" warning - _RaisingAxes has no imshow() either - started
+    # nondeterministically tipping this to 8 once a real MTG fetch had
+    # completed earlier in a full test run, despite being irrelevant to
+    # what this test actually verifies). Filtering to the renderer's own
+    # logger by name is what "logs a real feature failure" actually
+    # means here, and is robust regardless of what else is logging.
+    messages = [r.message for r in caplog.records if r.name == "acf.gui.map.map_renderer"]
     assert any("ocean" in m.lower() for m in messages)
     assert any("land" in m.lower() for m in messages)
     assert any("coastlines" in m.lower() for m in messages)

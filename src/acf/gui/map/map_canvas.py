@@ -45,6 +45,7 @@ from acf.gui.map.map_events import EventMixin
 from acf.gui.map.map_layers import MODULE_COMPLEXITY_LAYERS, LayerManager
 from acf.gui.map.map_projection import MapProjection
 from acf.gui.map.map_renderer import MapRenderer
+from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
 logger = logging.getLogger("acf.gui.map.map_canvas")
 
@@ -155,7 +156,15 @@ class MapCanvas(EventMixin, QWidget):
 
         layout.addWidget(self.canvas)
 
-        # 4. Initial Render
+        # 4. Live MTG basemap redraw - explicit user request "je veux
+        # que toutes les maps affiché soient des maps du mtg": each time
+        # a fresh EUMETSAT image lands (see acf.gui.map.mtg_basemap), the
+        # map redraws to show it, on top of the initial render below
+        # (which likely runs before the very first async fetch
+        # completes, so starts on the plain land/ocean fallback).
+        MTGBasemapProvider.instance().updated.connect(self.draw_map)
+
+        # 5. Initial Render
         self.rebuild_axes()
         self.draw_map()
 

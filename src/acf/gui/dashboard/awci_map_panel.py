@@ -60,6 +60,7 @@ AWCIDashboard's "VIEW MODE" radio buttons.
 import csv
 import json
 import logging
+import weakref
 from datetime import datetime, timezone
 from typing import Any
 
@@ -67,6 +68,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
+import shiboken6
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.patches import Rectangle
 from PySide6.QtCore import QEvent, Qt, Signal
@@ -88,6 +90,7 @@ from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
 from acf.gui.dashboard.awci_synthetic_field import awci_grid, awci_layer_grids
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
+from acf.gui.map.mtg_basemap import MTGBasemapProvider, draw_mtg_basemap
 from acf.gui.theme_tokens import TOKENS, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci_map_panel")
@@ -127,6 +130,43 @@ def flight_level_ft_to_pressure_hpa(altitude_ft: float) -> float:
     """
     altitude_ft = max(0.0, float(altitude_ft))
     return 1013.25 * (1.0 - altitude_ft / 145366.45) ** (1.0 / 0.190284)
+
+
+def _make_mtg_update_forwarder(panel: "AWCIMapPanel", provider: MTGBasemapProvider) -> Any:
+    """Build the callable connected to MTGBasemapProvider.updated for one
+    AWCIMapPanel, without the callable itself holding a real (keep-alive)
+    reference to that panel.
+
+    NOTE (real bug found while integrating this, and a real second bug
+    found while first fixing it): MTGBasemapProvider is a process-wide
+    singleton (see its own docstring) that outlives any single panel - a
+    panel closed/destroyed (or, as
+    tests/test_awci_map_panel_reference_fidelity.py's own failure
+    showed, torn down by qtbot between tests) used to leave its
+    connection live, so the next real EUMETSAT fetch fired straight into
+    a widget whose C++ side was already gone
+    ("libshiboken: ... already deleted" from inside update_data()). The
+    first fix tried disconnecting from this panel's own `destroyed`
+    signal - but `destroyed` fires DURING the QObject's C++ destructor,
+    and even just resolving a bound method of `panel` for
+    Signal.disconnect() to compare against touches the (by then already
+    invalid) C++ side, raising a second, different crash from inside
+    shiboken's own disconnect(). So this holds only a weakref, and
+    checks shiboken6.isValid() on every firing instead of ever trying to
+    disconnect from a QObject lifetime signal - a dead/invalid panel
+    just becomes a permanent no-op instead of being removed, which for a
+    handful of dashboard-lifetime panel opens/closes costs one inert
+    closure each, not a real leak.
+    """
+    panel_ref = weakref.ref(panel)
+
+    def _forward() -> None:
+        live_panel = panel_ref()
+        if live_panel is None or not shiboken6.isValid(live_panel):
+            return
+        live_panel._on_mtg_basemap_updated()
+
+    return _forward
 
 
 class AWCIMapPanel(EventMixin, QWidget):
@@ -327,7 +367,27 @@ class AWCIMapPanel(EventMixin, QWidget):
         if show_layers_panel:
             self._build_layers_panel()
 
+        # Live MTG basemap (explicit user request "je veux que toutes
+        # les maps affiché soient des maps du mtg") - redraw whenever a
+        # fresh EUMETSAT image lands, preserving whatever flight
+        # level/time offset is currently shown rather than resetting to
+        # this constructor's own defaults (same pattern already used by
+        # every other "redraw with current state" caller in this file,
+        # e.g. clear_external_field()). See _make_mtg_update_forwarder()'s
+        # own docstring for why this goes through a weakref forwarder
+        # rather than connecting `self._on_mtg_basemap_updated` directly.
+        MTGBasemapProvider.instance().updated.connect(
+            _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
+        )
+
         self.update_data(flight_level_hpa=300.0)
+
+    def _on_mtg_basemap_updated(self) -> None:
+        """MTGBasemapProvider.updated slot - redraws with whatever
+        flight level/time offset this panel currently shows. A real
+        bound method (not a bare lambda) so the disconnect wired up next
+        to the connect() call above has a stable callable to remove."""
+        self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def eventFilter(self, obj: Any, event: Any) -> bool:
         """See map_canvas.py's identical eventFilter() for the full
@@ -847,8 +907,16 @@ class AWCIMapPanel(EventMixin, QWidget):
             lat_range = (-85.0, 85.0)
             step = 4.0
 
-        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
-        self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
+        # Live MTG basemap (explicit user request "je veux que toutes les
+        # maps affiché soient des maps du mtg") - real EUMETSAT imagery
+        # when available, same acf.gui.map.mtg_basemap every other real
+        # map view uses. Falls back to the plain Ocean/Land fill below
+        # when no image has been fetched yet - never a fabricated
+        # substitute image.
+        has_mtg_image = draw_mtg_basemap(self.axis, zorder=0)
+        if not has_mtg_image:
+            self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
+            self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
         self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
         self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
 
