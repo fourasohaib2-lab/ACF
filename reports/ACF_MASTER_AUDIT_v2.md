@@ -10159,6 +10159,60 @@ lus** :
 
 **Aucune modification de code nécessaire.**
 
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.io` / `acf.importers` : 1 stub non divulgué corrigé (BufrReader)
+
+**Contexte** : `acf.io` (6 fichiers) n'est qu'une pure couche de
+compatibilité qui réexporte `acf.importers` (aucune logique propre,
+rien à auditer). La vraie cible était `acf.importers` (22 fichiers,
+663 lignes) - 1 fichier (`factory.py`) déjà corrigé par une passe
+antérieure (logging au lieu d'un échec silencieux de la découverte de
+lecteurs). Les 21 fichiers restants lus intégralement.
+
+**Bug réel trouvé et corrigé — stub non divulgué** (`readers/bufr_reader.py`,
+`BufrReader`) : `open()` se contente d'enregistrer `self.filename` et
+de mettre `is_open = True` - aucune bibliothèque de décodage BUFR
+(eccodes/pybufrkit) n'est utilisée nulle part dans cette classe.
+`variables()`, `coordinates()`, `attributes()`, `stations()`, `times()`
+et `messages()` renvoient inconditionnellement des valeurs vides/zéro
+quel que soit le contenu réel d'un fichier ouvert - jamais divulgué
+comme tel. Vérifié que cette classe n'est PAS câblée dans
+`ReaderFactory`/`ReaderRegistry`/`DataManager` pour un vrai dispatch
+`.bufr` (aucun appelant réel dans `src/`), et que
+`tests/test_bufr_reader.py` n'exerce que l'état par défaut non-ouvert
+du lecteur - un vrai gap resté inerte, pas un changement de
+comportement pour un appelant existant. Corrigé par divulgation
+honnête en docstring plutôt que par l'invention d'un faux décodage -
+une vraie correction nécessiterait une dépendance de décodage BUFR que
+ce projet n'a pas encore.
+
+**Fichiers vérifiés propres, aucune modification** (lecteurs de
+fichiers réels et fonctionnels) : `readers/grib_reader.py` (ouverture
+xarray/cfgrib réelle), `readers/netcdf_reader.py` (xarray réel +
+détection CF réelle), `readers/cf_detector.py` (détection CF réelle
+par noms/attributs de coordonnées), `ecmwf/importer.py`,
+`cf/importer.py`, `wmo/importer.py` (chargement réel avec vérification
+d'existence de fichier), `manager.py`, `hub.py`, `registry.py` (registre/
+dispatch réels, aucun statut fabriqué), `base/base_reader.py`,
+`base/base_importer.py` (interfaces abstraites).
+
+**Limite honnête notée pour une éventuelle passe future, non corrigée
+ici** : `readers/csv_reader.py` (renvoie le texte brut non parsé) et
+`readers/geotiff_reader.py` (renvoie l'objet `Path` sans lire aucune
+donnée raster) sont tous deux auto-découverts et réellement câblés
+dans `ReaderFactory.get_reader()` pour les extensions `.csv`/`.tif` -
+un appelant qui s'attend à un `Dataset` structuré (comme le produisent
+GRIBReader/NetCDFReader) pour ces formats obtient un contenu minimal
+non structuré. Aucune fausse affirmation de succès n'est faite (pas de
+motif de fabrication au sens strict de cet audit), et aucun test ni
+appelant réel ne dépend actuellement d'un comportement plus riche -
+noté ici pour visibilité plutôt que corrigé, une implémentation
+correcte de GeoTIFF nécessiterait une dépendance géospatiale
+(rasterio) non vérifiée dans ce projet.
+
+**Validation** : `tests/test_bufr_reader.py` +
+`tests/test_importers_consolidation.py` (17/17) passent ; `ruff check`
+propre.
+
 ## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.forecast` : vérifié propre, infrastructure de production réelle
 
 **Contexte** : `acf.forecast` (3 fichiers, 340 lignes) - `forecast_engine.py`
