@@ -496,6 +496,12 @@ def test_esoc_right_sidebar_discloses_illustrative_content(qapp):
     "Render Plot" also used to unconditionally claim a plot was
     generated with no plot ever actually produced. See
     esoc_sidebar.py's own NOTE (correction).
+
+    CORRECTED (2026-09-06): the Performance tab was later wired to the
+    real, previously-unused acf.monitoring.telemetry_engine.
+    TelemetryEngine.collect_telemetry() (real host CPU/RAM via psutil)
+    - excluded from the "still an Example Layout" loop below, checked
+    separately in test_esoc_right_sidebar_performance_tab_shows_real_telemetry.
     """
     sb_right = ESOCRightSidebar()
 
@@ -505,13 +511,28 @@ def test_esoc_right_sidebar_discloses_illustrative_content(qapp):
         sb_right.tab_meta,
         sb_right.tab_sim,
         sb_right.tab_logs,
-        sb_right.tab_perf,
     ):
         assert "Example Layout" in tab.toPlainText()
 
     sb_right._render_plot()
     assert "[NOT IMPLEMENTED]" in sb_right.txt_ai.toPlainText()
     assert "generated successfully" not in sb_right.txt_ai.toPlainText()
+
+
+def test_esoc_right_sidebar_performance_tab_shows_real_telemetry(qapp):
+    """The Performance tab now shows real host CPU/RAM (via psutil,
+    same engine/assertions as test_monitoring_platform.py::
+    test_telemetry_engine) instead of a fixed fabricated GPU/TFLOPS/FPS
+    battery - no "Example Layout" disclaimer needed since this is real."""
+    sb_right = ESOCRightSidebar()
+
+    text = sb_right.tab_perf.toPlainText()
+    assert "Example Layout" not in text
+    assert "Real Host Telemetry" in text
+    assert "not tracked" in text  # GPU/network/cluster - honestly undisclosed, not fabricated
+
+    sb_right._refresh_telemetry()
+    assert "Real Host Telemetry" in sb_right.tab_perf.toPlainText()
 
 
 def test_esoc_controller_and_window(qapp):

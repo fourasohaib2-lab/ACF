@@ -353,21 +353,35 @@ class ESOCRightSidebar(QWidget):
         logs_layout.addWidget(self.tab_logs)
 
         # 6. Performance Tab
+        #
+        # NOTE (correction, 2026-09-06): used to show a fixed fabricated
+        # battery of numbers (14% CPU, "18.4/80.0 GB NVIDIA A100" GPU
+        # memory, "19.5 TFLOPS", "60 FPS", "1.5 TB/s" memory bandwidth)
+        # behind an honest "Example Layout" disclaimer, with no real
+        # probe connected. Real, previously-unused engine wired in
+        # instead: `acf.monitoring.telemetry_engine.TelemetryEngine.
+        # collect_telemetry()` - already real and already honest (own
+        # prior correction: real host CPU/RAM via psutil if installed,
+        # explicit `None`/"NOT_TRACKED..." for GPU/network/cluster/AEOS
+        # metrics this workstation has no real probe for) - verified by
+        # a repo-wide grep to have zero GUI callers anywhere before this.
         tab_perf_container = QWidget()
         perf_layout = QVBoxLayout(tab_perf_container)
         perf_layout.setContentsMargins(0, 0, 0, 0)
-        perf_layout.addWidget(_example_layout_disclaimer())
+        note_perf = QLabel(
+            "Real host CPU/RAM below (via psutil) - GPU/network/cluster/AEOS metrics have no real "
+            "probe connected in this workstation and are honestly reported as not tracked."
+        )
+        note_perf.setWordWrap(True)
+        note_perf.setStyleSheet("color: #F57F17; font-style: italic;")
+        perf_layout.addWidget(note_perf)
         self.tab_perf = QTextEdit()
         self.tab_perf.setReadOnly(True)
-        self.tab_perf.setText(
-            "Example Layout (values below are illustrative, no HPC telemetry feed is connected here):\n"
-            "• CPU Utilization: 14%\n"
-            "• GPU Memory Usage: 18.4 / 80.0 GB (NVIDIA A100)\n"
-            "• Compute Throughput: 19.5 TFLOPS\n"
-            "• Frame Rate: 60 FPS (OpenGL 4.5 Rendering)\n"
-            "• Memory Bandwidth: 1.5 TB/s"
-        )
         perf_layout.addWidget(self.tab_perf)
+        btn_perf_refresh = QPushButton("🔄 Refresh Telemetry")
+        btn_perf_refresh.clicked.connect(self._refresh_telemetry)
+        perf_layout.addWidget(btn_perf_refresh)
+        self._refresh_telemetry()
 
         # 7. AI Analysis & Scientific Plotting Tab
         self.tab_ai_plot = QWidget()
@@ -437,6 +451,24 @@ class ESOCRightSidebar(QWidget):
         """
         chart_type = self.combo_chart.currentText()
         self.txt_ai.append(f"\n[NOT IMPLEMENTED]: no real plotting backend is connected here for '{chart_type}'.")
+
+    def _refresh_telemetry(self) -> None:
+        from acf.monitoring.telemetry_engine import TelemetryEngine
+
+        telemetry = TelemetryEngine.collect_telemetry()
+        if telemetry["is_real_data"]:
+            self.tab_perf.setText(
+                "Real Host Telemetry (TelemetryEngine, psutil):\n"
+                f"• CPU Utilization: {telemetry['cpu_usage_pct']:.1f}%\n"
+                f"• RAM Used: {telemetry['ram_usage_gb']:.2f} GB\n"
+                f"• GPU Usage: {telemetry['gpu_usage_pct'] or 'not tracked'}\n"
+                f"• Network Throughput: {telemetry['network_throughput_gbps'] or 'not tracked'}\n"
+                f"• Cluster Nodes Active: {telemetry['cluster_nodes_active'] or 'not tracked'}\n"
+                f"• AEOS Service Health: {telemetry['aeos_service_health']}\n"
+                f"• Status: {telemetry['system_status']}"
+            )
+        else:
+            self.tab_perf.setText(f"Telemetry unavailable: {telemetry['system_status']}")
 
     def set_properties_text(self, text: str) -> None:
         """Update properties tab display text."""

@@ -11151,3 +11151,55 @@ connectés (AMDAR, réseau foudre) au lieu de 5 au départ de la Phase 57.
 succès réel, le comptage honnête d'un site non-opérationnel, l'échec
 total honnête, le succès partiel, et le JSON malformé. 2 nouveaux tests
 de panneau. Suite complète confirmée verte.
+
+## Mise à jour 2026-09-06 (suite, sur demande explicite de l'utilisateur - "continue avec cette methode pour tout le projet acf et surtout pour awci") — Phase 61 : investigation approfondie d'`acf.awci`, puis onglet "Performance" réel dans `esoc_sidebar.py`
+
+**Investigation d'`acf.awci`** (9137 lignes, 15+ fichiers - jamais
+mentionné nommément dans ce rapport malgré ~100 mentions indirectes) :
+recherche active de fabrication ou de moteur réel inutilisé, comme
+demandé. Conclusion honnête : ce paquet s'est révélé être l'un des plus
+mûrs et déjà rigoureusement audités de tout ACF - chaque
+"placeholder"/"exemple" trouvé (`NotYetImplementedMethod` pour ML/
+Hybrid section 41, `validation_cases.py` délibérément vide,
+`archive_field.py`) porte déjà sa propre divulgation honnête
+construite dès l'origine, pas un oubli à corriger. Vérifié
+spécifiquement : `AWCIMapPanel` (le composant carte utilisé partout
+dans AWCI/Workstation) a déjà une vraie voie de données réelles
+(`set_external_field()`, utilisée par `AWCIDashboard` pour injecter les
+vraies données RESTOR/physique) en plus de son mode démo synthétique
+honnêtement disclosé - pas un gap, une architecture déjà propre. Le
+"trou" ML/Hybrid de `method_comparison.py` a été examiné avec le vrai
+FNO entraîné (`models/fno_surface_temperature_reference.pt`,
+`NeuralOperatorEngine`) comme candidat - mais son interface (champs 2D)
+est fondamentalement incompatible avec celle de `PredictionMethod.
+predict()` (scalaire par cas) sans une reduction spatiale inventée de
+toutes pièces ; laissé tel quel plutôt que de forcer un câblage
+artificiel. Rien à corriger dans `acf.awci` lui-même.
+
+**Élargi la recherche au reste du GUI ESOC** : `grep` sur tout
+`src/acf/gui/` pour `_example_layout_disclaimer()`/"Example Layout" en
+dehors de `panel_manager.py` (déjà entièrement traité) - trouvé
+`esoc_sidebar.py`, avec 7 onglets inspecteurs "Example Layout" jamais
+traités par les phases précédentes.
+
+**Construit** : l'onglet "Performance" de `ESOCRightSidebar` reconstruit
+sur `acf.monitoring.telemetry_engine.TelemetryEngine.
+collect_telemetry()` - moteur réel, déjà honnête (CPU/RAM hôte réels
+via `psutil`, GPU/réseau/cluster/AEOS honnêtement non trackés),
+vérifié par grep : zéro appelant GUI nulle part avant ce changement.
+Bouton "🔄 Refresh Telemetry" ajouté.
+
+**Les 6 autres onglets délibérément laissés tels quels** : Properties/
+Diagnostics/Metadata/Simulation/Logs nécessiteraient un vrai mécanisme
+de sélection (quelle cellule de grille, quel dataset, quelle simulation
+en cours) que cette sidebar n'a structurellement pas - un chantier de
+plomberie bien plus large que "brancher un moteur existant", pas une
+simple omission. AI Analysis (§7) attend un vrai pipeline XAI qui
+n'existe nulle part dans ACF (déjà confirmé ailleurs dans ce rapport).
+
+**Validation réelle** : `ruff`/`mypy` propres. Test existant
+(`test_esoc_right_sidebar_discloses_illustrative_content`) mis à jour
+pour exclure `tab_perf` de la boucle "Example Layout" ; 1 nouveau test
+(`test_esoc_right_sidebar_performance_tab_shows_real_telemetry`),
+même moteur/assertions que `test_monitoring_platform.py::
+test_telemetry_engine`. Suite complète confirmée verte.
