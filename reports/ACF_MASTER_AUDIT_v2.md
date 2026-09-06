@@ -10541,3 +10541,61 @@ jamais atteint si `mpirun` échoue réellement - vérifié non fabriqué),
 (plomberie réelle, aucun statut fabriqué), `__init__.py`.
 
 **Aucune modification de code nécessaire pour ces deux paquets.**
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.hpc_workflow` : 2 gaps non divulgués corrigés (14 classes stub au total)
+
+**Contexte** : `acf.hpc_workflow` (25 fichiers, 1389 lignes) - 6 fichiers
+déjà corrigés par une passe antérieure (`workflow_archive.py`,
+`workflow_executor.py`, `workflow_validator.py`,
+`workflow_notifications.py`, `workflow_configuration.py`, et le très
+substantiel `workflow_engine.py`, 755 lignes, le vrai moteur testé du
+cycle opérationnel à 20 étapes). Les 19 fichiers restants lus
+intégralement.
+
+**2 bugs réels trouvés et corrigés — même motif "stub non divulgué"
+que les 4 déjà corrigés dans ce paquet, jamais détectés par la passe
+précédente** :
+- `workflow_scheduler.py` (`WorkflowScheduler.schedule_cycle()`) :
+  se contentait de fixer `workflow.context.cycle` et de renvoyer
+  inconditionnellement `True` - aucun mécanisme réel de minuterie/cron
+  n'existe pour déclencher effectivement une exécution au cycle
+  demandé. Zéro appelant réel dans tout le dépôt (vérifié par grep,
+  tests inclus). Corrigé : conserve l'effet réel utile (étiqueter le
+  workflow), renvoie désormais un statut honnête
+  `"NOT_SCHEDULED_NO_TIMER_CONNECTED"` plutôt que `True`.
+- `arome/__init__.py` (8 classes) et `aladin/__init__.py` (5 classes) :
+  `AROMERunner.run()`/`AROMEPreProcessor.preprocess()`/`AROMEExecution.
+  execute()`/`AROMEPostProcessor.postprocess()`/`AROMERestartManager.
+  checkpoint()`/`AROMEOutputManager.export()` (et leurs équivalents
+  ALADIN) renvoyaient inconditionnellement `True` ;
+  `AROMEForecastCycle.cycle()`/`AROMEMonitoring.monitor()` (et
+  équivalents ALADIN) renvoyaient inconditionnellement une chaîne
+  fixe ("00UTC"/"RUNNING") - aucune de ces 13 méthodes ne prend un
+  argument ni n'effectue le moindre travail réel (aucune soumission
+  SLURM, aucun I/O fichier, aucune vérification de file d'attente
+  réelle). Le vrai pipeline testé est `AROMEWorkflow`/`ALADINWorkflow`
+  (même paquet, délègue à `BaseWorkflow`/`WorkflowExecutor`/
+  `HPCConnectionManager` déjà audités) et `WorkflowEngine` - ces 13
+  classes forment un ensemble parallèle totalement mort, zéro appelant
+  réel nulle part (vérifié par grep, tests inclus). Conservées (non
+  supprimées, règle constante de cette session) mais chaque méthode
+  documente désormais explicitement qu'elle est un stub inconditionnel
+  sans travail réel - inventer un vrai comportement SLURM/I/O pour 13
+  classes jamais utilisées aurait été une fabrication en soi.
+
+**Fichiers vérifiés propres, aucune modification** (lus intégralement) :
+`workflow_status.py`, `workflow_context.py`, `workflow_registry.py`,
+`workflow.py`, `workflow_manager.py`, `workflow_monitor.py` (interroge
+réellement `HPCConnectionManager.scheduler.get_job_status()`),
+`workflow_factory.py`, `workflow_logger.py`, `arome_workflow.py`/
+`aladin_workflow.py` (héritent réellement de `BaseWorkflow`),
+`workflow_cleanup.py`/`workflow_errors.py`/`workflow_events.py`/
+`workflow_history.py`/`workflow_progress.py` (coquilles de
+compatibilité pures, ré-exportent un vrai code déjà vérifié),
+`__init__.py`.
+
+**Validation** : `tests/test_workflow_validator.py` +
+`test_workflow_engine.py` + `test_workflow_archive.py` +
+`test_workflow_notifications.py` + `test_module_manifest.py` +
+`test_workflow_configuration.py` + `test_compatibility_reexports.py`
+(32/32) passent ; `ruff check` propre.
