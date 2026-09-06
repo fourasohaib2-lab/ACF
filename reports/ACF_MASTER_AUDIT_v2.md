@@ -10766,3 +10766,56 @@ Carbon).
 Space Weather/Geology restent des panneaux "Example Layout"
 honnêtement disclaimés ; aucun moteur réel équivalent n'a encore été
 identifié pour eux (recherche non exhaustive).
+
+## Mise à jour 2026-09-06 — Phase 54 : upgrade réel du panneau "Space Weather" (déjà mappé)
+
+**Pourquoi** : suite du même travail de triage - `acf.space_weather`
+s'est révélé être un package riche et déjà réel/testé
+(`tests/test_space_weather_platform.py`) : `SolarWindEngine`/
+`InterplanetaryMagneticField` (pression dynamique, angle d'horloge IMF,
+risque de reconnexion), `GeomagneticEngine`/`GeomagneticStormScale`
+(distance de la magnétopause selon Shue et al. 1997/1998, échelles de
+tempête Dst/Kp NOAA), `IonosphereEngine`/`RadioBlackoutScale` (retard
+de groupe GNSS, échelle NOAA de coupure radio), `SolarFlareEngine`
+(classification GOES des éruptions) - vérifié par grep sur tout le
+dépôt : jamais câblés dans un panneau GUI avant ce changement.
+
+**Investigation d'abord, avant de construire** : `air_quality`
+(`AirQualityReasoningEngine`, déjà enregistré dans le registre) a été
+examiné en premier comme candidat évident pour `AirQualityPanel`, mais
+sa seule méthode réelle (`analyze_air_quality_state()`) retourne déjà
+honnêtement `NOT_ANALYZED_NO_AIR_QUALITY_DATA_CONNECTED` avec tous les
+champs à `None` - un stub déjà honnête, pas un moteur caché inutilisé.
+Câbler `AirQualityPanel` dessus n'aurait remplacé un placeholder
+honnête que par un autre ; laissé tel quel.
+
+**Construit** : `SpaceWeatherPanel` reconstruit - l'opérateur entre
+vitesse/densité du vent solaire, composantes By/Bz de l'IMF, indices
+Dst/Kp, flux de rayons X GOES, TEC ionosphérique et foF2 ; le panneau
+enchaîne ces 4 moteurs réels et affiche pression dynamique, angle
+d'horloge et risque de reconnexion, distance de la magnétopause,
+sévérité Dst, échelle de tempête NOAA G0-G5, classe d'éruption GOES,
+échelle de coupure radio NOAA R0-R5, retard GNSS et MUF.
+
+**Divulgation honnête** : ce sont de vrais calculateurs de formules
+physiques alimentés par des paramètres saisis par l'opérateur - ACF n'a
+aucun flux temps réel NOAA SWPC/DSCOVR connecté, donc les entrées ne
+sont pas des observations en direct (même convention que les
+panneaux Hydrology et Stability Indices).
+
+**Validation réelle** : `ruff` propre. 5 nouveaux tests
+(`tests/test_esoc_space_weather_panel.py`), incluant une vérification
+directe contre les 4 moteurs appelés indépendamment, une vérification
+physique qu'un Bz plus négatif augmente réellement le risque de
+reconnexion, qu'un TEC plus élevé augmente réellement le retard GNSS,
+et que des Kp/flux de rayons X plus élevés atteignent réellement des
+échelles NOAA plus sévères.
+
+**Ce qui reste réellement** : Cryosphere/Air Quality/Earth Monitoring/
+Geology restent des panneaux "Example Layout" honnêtement disclaimés ;
+Air Quality a maintenant été activement recherché et confirmé sans
+moteur réel équivalent (voir ci-dessus) ; Cryosphere (`acf.earth_physics.
+cryosphere_physics.sea_ice`/`permafrost`) et Geology
+(`acf.geology.seismic_waves`, distinct de `volcanic_physics` déjà câblé
+en Phase 43) restent des candidats réels identifiés mais non encore
+construits.

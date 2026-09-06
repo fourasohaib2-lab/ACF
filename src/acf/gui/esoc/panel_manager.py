@@ -1012,19 +1012,150 @@ class CarbonPanel(BasePanelWidget):
 
 
 class SpaceWeatherPanel(BasePanelWidget):
-    """22. Space Weather Panel."""
+    """22. Space Weather Panel.
+
+    NOTE (correction, 2026-09-06): used to show fixed Kp/solar-wind/TEC
+    numbers behind an honest "Example Layout" disclaimer, with no real
+    engine connected. Real, previously-unused engines chained here
+    instead: `acf.space_weather.solar_wind.solar_wind_engine.
+    SolarWindEngine`/`InterplanetaryMagneticField` (dynamic pressure,
+    IMF clock angle, reconnection risk - Shue et al./standard solar
+    wind hydrodynamics), `acf.space_weather.geomagnetism.
+    geomagnetic_engine.GeomagneticEngine`/`GeomagneticStormScale`
+    (Shue et al. 1997/1998 magnetopause standoff distance, NOAA Dst/Kp
+    storm scales), `acf.space_weather.ionosphere.ionosphere_engine.
+    IonosphereEngine`/`RadioBlackoutScale` (GNSS ionospheric group
+    delay, NOAA radio blackout scale), `acf.space_weather.solar.
+    solar_database.SolarFlareEngine` (GOES X-ray flare classification)
+    - all real, cited, unit-tested formula engines (see
+    tests/test_space_weather_platform.py), never previously wired into
+    any GUI panel (verified by a repo-wide grep before this change).
+
+    Honest disclosure: these are real physics-formula calculators fed
+    by operator-entered space weather parameters (solar wind speed/
+    density, IMF components, Dst/Kp/X-ray/TEC/foF2) - ACF has no live
+    NOAA SWPC/DSCOVR feed wired in, so the inputs are not live
+    observations. Same convention as the Hydrology panel's operator-
+    entered rainfall/soil-moisture and the Stability Indices panel's
+    operator-entered sounding.
+    """
 
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("☀️ SPACE WEATHER & GEOMAGNETIC MONITOR", "#FFF176", registry, dispatcher)
-        # NOTE (correction): fixed Kp/solar-wind numbers shown with no
-        # real geomagnetic observation connected. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.txt = QTextEdit()
-        self.txt.setReadOnly(True)
-        self.txt.setText(
-            "Space Weather Conditions (Example Layout):\n• Geomagnetic Kp Index: Kp = 3 (Quiet)\n• Solar Wind Speed: 420 km/s\n• Ionosphere TEC: 24.5 TECU"
+
+        note = QLabel(
+            "Real physics-formula engines below, fed by the parameters you enter - "
+            "not a live NOAA SWPC feed (ACF has no live space weather connector)."
         )
-        self.main_layout.addWidget(self.txt)
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #F57F17; font-style: italic;")
+        self.main_layout.addWidget(note)
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Solar wind speed (km/s):"))
+        self.sw_speed = QDoubleSpinBox()
+        self.sw_speed.setRange(200.0, 3000.0)
+        self.sw_speed.setValue(420.0)
+        row1.addWidget(self.sw_speed)
+        row1.addWidget(QLabel("Proton density (cm⁻³):"))
+        self.sw_density = QDoubleSpinBox()
+        self.sw_density.setRange(0.1, 100.0)
+        self.sw_density.setValue(5.0)
+        row1.addWidget(self.sw_density)
+        self.main_layout.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("IMF Bz (nT):"))
+        self.imf_bz = QDoubleSpinBox()
+        self.imf_bz.setRange(-60.0, 60.0)
+        self.imf_bz.setValue(-2.0)
+        row2.addWidget(self.imf_bz)
+        row2.addWidget(QLabel("IMF By (nT):"))
+        self.imf_by = QDoubleSpinBox()
+        self.imf_by.setRange(-60.0, 60.0)
+        self.imf_by.setValue(0.0)
+        row2.addWidget(self.imf_by)
+        row2.addWidget(QLabel("Dst index (nT):"))
+        self.dst_index = QDoubleSpinBox()
+        self.dst_index.setRange(-600.0, 50.0)
+        self.dst_index.setValue(-10.0)
+        row2.addWidget(self.dst_index)
+        self.main_layout.addLayout(row2)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Kp index (0-9):"))
+        self.kp_index = QDoubleSpinBox()
+        self.kp_index.setRange(0.0, 9.0)
+        self.kp_index.setValue(3.0)
+        row3.addWidget(self.kp_index)
+        row3.addWidget(QLabel("GOES X-ray flux (W/m²):"))
+        self.xray_flux = QDoubleSpinBox()
+        self.xray_flux.setDecimals(8)
+        self.xray_flux.setRange(0.0, 0.01)
+        self.xray_flux.setValue(0.000005)
+        row3.addWidget(self.xray_flux)
+        self.main_layout.addLayout(row3)
+
+        row4 = QHBoxLayout()
+        row4.addWidget(QLabel("Ionosphere TEC (TECU):"))
+        self.tec = QDoubleSpinBox()
+        self.tec.setRange(0.0, 300.0)
+        self.tec.setValue(24.5)
+        row4.addWidget(self.tec)
+        row4.addWidget(QLabel("foF2 (MHz):"))
+        self.fof2 = QDoubleSpinBox()
+        self.fof2.setRange(1.0, 20.0)
+        self.fof2.setValue(8.0)
+        row4.addWidget(self.fof2)
+        self.main_layout.addLayout(row4)
+
+        self.button = QPushButton("☀️ Compute Real Space Weather State")
+        self.button.clicked.connect(self._compute)
+        self.main_layout.addWidget(self.button)
+
+        self.result = QTextEdit()
+        self.result.setReadOnly(True)
+        self.main_layout.addWidget(self.result)
+
+        self._compute()
+
+    def _compute(self) -> None:
+        from acf.space_weather.geomagnetism.geomagnetic_engine import GeomagneticEngine, GeomagneticStormScale
+        from acf.space_weather.ionosphere.ionosphere_engine import IonosphereEngine, RadioBlackoutScale
+        from acf.space_weather.solar.solar_database import SolarFlareEngine
+        from acf.space_weather.solar_wind.solar_wind_engine import InterplanetaryMagneticField, SolarWindEngine
+
+        speed = self.sw_speed.value()
+        density = self.sw_density.value()
+        bz = self.imf_bz.value()
+        by = self.imf_by.value()
+
+        pdyn = SolarWindEngine.dynamic_pressure_npa(speed, density)
+        total_b = (by**2 + bz**2) ** 0.5
+        imf = InterplanetaryMagneticField(bx_nt=0.0, by_nt=by, bz_nt=bz, total_b_nt=total_b)
+        reconnection = SolarWindEngine.evaluate_reconnection_risk(imf)
+        rmp_re = GeomagneticEngine.magnetopause_standoff_distance_re(pdyn, bz)
+        dst_eval = GeomagneticEngine.evaluate_dst_index_severity(self.dst_index.value())
+        kp_class = GeomagneticStormScale.classify_kp_index(self.kp_index.value())
+        flare = SolarFlareEngine.classify_goes_xray_flare(self.xray_flux.value())
+        blackout = RadioBlackoutScale.classify_xray_radio_blackout(self.xray_flux.value())
+        gnss_delay_m = IonosphereEngine.gnss_range_delay_meters(self.tec.value())
+        muf_mhz = IonosphereEngine.maximum_usable_frequency_muf_mhz(self.fof2.value())
+
+        self.result.setText(
+            "Real Space Weather State (SolarWindEngine -> GeomagneticEngine -> IonosphereEngine):\n"
+            f"• Solar wind dynamic pressure: {pdyn:.3f} nPa\n"
+            f"• IMF clock angle: {reconnection['clock_angle_deg']}° - {reconnection['reconnection_risk']}\n"
+            f"• Magnetopause standoff distance (Shue et al. 1997/1998): {rmp_re:.2f} Re\n"
+            f"• Dst index {dst_eval['dst_nt']:.0f} nT: {dst_eval['severity']}\n"
+            f"• {kp_class['noaa_scale']} (Kp={kp_class['kp_index']})\n"
+            f"  Impacts: {kp_class['operational_impacts']}\n"
+            f"• GOES flare class: {flare['flare_class']} ({flare['severity']})\n"
+            f"• {blackout['radio_blackout_scale']}\n"
+            f"  HF impact: {blackout['hf_operational_impact']}\n"
+            f"• GNSS L1 ionospheric group delay: {gnss_delay_m:.2f} m\n"
+            f"• Maximum usable frequency (MUF, M(3000) standard): {muf_mhz:.2f} MHz"
+        )
 
 
 class GeologyPanel(BasePanelWidget):
