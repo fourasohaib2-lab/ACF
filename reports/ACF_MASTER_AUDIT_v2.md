@@ -9685,3 +9685,94 @@ et un endpoint API - pas systématiquement à chaque point d'entrée
 scientifique du dépôt. Les 12 autres items du chantier 3 et les 13
 items du chantier 2 (`reports/ACF_CLOSURE_CHECKLIST.md`) restent de la
 construction de fonctionnalité non entreprise ici.
+
+## Mise à jour 2026-09-06 (extension du périmètre, selon jugement) — `acf.digital_twin` : 1 vraie fabrication d'agrégateur corrigée + 2 coefficients non sourcés disclosés
+
+**Contexte** : `acf.digital_twin` (39 fichiers, ~1300 lignes) n'avait
+jamais été touché par cette session. Un premier balayage de couverture
+(`grep -L "NOTE (correction\|NOTE (found"`) montrait 20 fichiers "non
+corrigés", mais la lecture a révélé qu'il s'agissait presque tous soit
+de simples `__init__.py` triviaux (imports uniquement), soit de
+fichiers déjà couverts par une passe antérieure au niveau du test
+(`tests/test_digital_twin_v2.py` documente déjà ~10 corrections
+"CORRECTED" pour `CouplingEngine`, `DigitalTwinScenarioEngine`,
+`EarthState`, `PlanetaryBoundariesSimulator`, `GeoengineeringLab`,
+`AIDigitalTwinAssistant`, `ExperimentManager`, `FeedbackEngine`,
+`CalibrationEngine`, `PlanetaryDashboard.get_dashboard_summary()`,
+`SimulationManager`) - confirmant que l'essentiel du paquet avait déjà
+été audité ailleurs, avant cette session.
+
+**Fabrication réelle trouvée et corrigée — `EarthTwinCore.
+run_full_earth_twin_cycle()`** (`src/acf/digital_twin/earth_twin_core.py`) :
+cette méthode orchestre `CouplingEngine.compute_couplings()` et
+`DigitalTwinScenarioEngine.run_scenario()` - deux méthodes qui, comme
+noté ci-dessus, déclarent déjà honnêtement `is_real_data: False` avec
+des statuts `"NOT_COMPUTED_NO_EARTH_SYSTEM_STATE_CONNECTED"` /
+`"NOT_SIMULATED_NO_CLIMATE_MODEL_CONNECTED"` (aucun état Terre réel,
+aucun modèle climatique connecté) - et pourtant `run_full_
+earth_twin_cycle()` renvoyait sans condition `"digital_twin_status":
+"EARTH_DIGITAL_TWIN_OPERATIONAL"`, un agrégateur affirmant "opérationnel"
+alors que ses deux sous-composants disent eux-mêmes explicitement ne
+rien avoir calculé. Exactement le motif de "sur-affirmation d'agrégateur"
+déjà rencontré et corrigé plus tôt cette session (`coupled_earth_solver.py`
+affirmant "SOLVED" pour chaque sous-système sans le vérifier). Corrigé :
+le statut est maintenant dérivé du `is_real_data` réel des deux
+sous-résultats (`is_real_data = couplings["is_real_data"] and
+scenarios["is_real_data"]`), avec un nouveau statut honnête
+`"NOT_OPERATIONAL_COUPLING_AND_SCENARIO_ENGINES_NOT_CONNECTED"` tant
+qu'aucun des deux n'est réel, et un nouveau champ `is_real_data` propagé
+au niveau du cycle complet. Le test préexistant
+`tests/test_digital_twin_v2.py::test_earth_twin_core_and_state`
+affirmait encore littéralement l'ancien statut fabriqué
+(`"EARTH_DIGITAL_TWIN_OPERATIONAL"`) - corrigé pour affirmer le nouveau
+statut honnête, ce qui confirme qu'il s'agissait bien d'un vrai trou
+resté non détecté par la passe précédente, pas d'une fausse alerte.
+
+**Coefficients non sourcés disclosés (non modifiés)** - même traitement
+que le coefficient CH4 du permafrost trouvé plus tôt cette session :
+- `coupling/earthquake_tsunami.py` -
+  `EarthquakeTsunamiCouplingEngine.seafloor_uplift_energy_joules()` :
+  la relation (énergie de soulèvement du fond marin ∝ moment sismique
+  M0) est physiquement valide, mais le coefficient par défaut
+  `coupling_efficiency=0.05` n'est cité nulle part dans le module.
+  C'est un paramètre nommé et redéfinissable par l'appelant (pas une
+  constante interne cachée), ce qui limite la portée du problème.
+  Laissé en l'état, disclosé.
+- `coupling/space_weather_atmosphere.py` -
+  `SpaceWeatherAtmosphereCouplingEngine.joule_heating_rate_gw()` :
+  une relation quadratique Kp → puissance thermosphérique est une
+  classe de modèle empirique réelle et publiée en physique de
+  l'ionosphère/thermosphère, mais le coefficient `15.0` utilisé ici
+  n'est cité nulle part dans le module et n'a pas été vérifié contre
+  une source nommée. Laissé en l'état, disclosé.
+
+**Fichiers vérifiés propres, aucune modification** (lus intégralement,
+aucun motif de fabrication trouvé) :
+- `coupling/atmosphere_ocean.py` - formules réelles (tension de vent
+  τ=ρ·Cd·V², flux de chaleur latente avec Lv=2.5e6, Ce=0.0012),
+  entièrement dépendantes des arguments, sans statut fabriqué.
+- `knowledge_graph/earth_graph.py` - `explain_planetary_link()`
+  branche réellement selon les domaines source/cible avec 3
+  explications physiques spécifiques distinctes (transport d'Ekman,
+  ionisation couche D/chauffage Joule, tsunami c=√(gd)) plus un
+  fallback générique pour les paires non reconnues - varie
+  authentiquement avec l'entrée, pas le motif "toujours identique".
+- `planet_model.py` - `PlanetModel.get_planet_parameters()` renvoie des
+  constantes physiques réelles et invariantes de la Terre
+  (rayon=6371 km, g=9.80665 m/s²) avec `"status": "MODEL_VALID"` - ce
+  champ ne prétend à aucun calcul, synchronisation ou connexion en
+  temps réel (contrairement aux motifs "OPERATIONAL"/"SUCCESS"
+  fabriqués trouvés ailleurs) ; ces constantes sont par nature toujours
+  valides. Jugé non fabriqué, aucune correction nécessaire.
+- `twin_visualizer.py` (`DigitalTwinVisualizer.get_visualization_modes()`)
+  et `visualization/digital_twin_dashboard.py`
+  (`PlanetaryDashboard.get_dashboard_metadata()`) - configuration
+  statique d'interface (listes de vues/panneaux disponibles), de même
+  nature que les descripteurs de panneaux GUI déjà vérifiés propres
+  ailleurs cette session - pas une affirmation de résultat scientifique
+  calculé.
+
+**Validation** : `tests/test_digital_twin_v2.py` (5 tests) passe en
+0.20s après correction ; `ruff check` propre sur les 4 fichiers
+modifiés ; suite complète relancée en tâche de fond pour confirmer
+l'absence de régression.

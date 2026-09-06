@@ -25,7 +25,14 @@ def test_earth_twin_core_and_state():
     """Test du cœur d'orchestration et du vecteur d'état à 6 sphères."""
     core = EarthTwinCore()
     res = core.run_full_earth_twin_cycle()
-    assert res["digital_twin_status"] == "EARTH_DIGITAL_TWIN_OPERATIONAL"
+    # CORRECTED (2026-09-06): used to unconditionally claim
+    # "EARTH_DIGITAL_TWIN_OPERATIONAL" even though its own two
+    # constituent sub-results (couplings, scenario_projections) already
+    # honestly report is_real_data=False - neither the coupling engine
+    # nor the scenario engine is wired to any real Earth-system state
+    # or climate model. The status now genuinely reflects that.
+    assert res["digital_twin_status"] == "NOT_OPERATIONAL_COUPLING_AND_SCENARIO_ENGINES_NOT_CONNECTED"
+    assert res["is_real_data"] is False
     assert res["earth_state"]["coupled_spheres_count"] == 6
 
     state = EarthState()
