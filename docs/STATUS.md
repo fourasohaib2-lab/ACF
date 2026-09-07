@@ -352,6 +352,56 @@ CAPE réel → `AWCICalculator`).
 **Run complet de non-régression : 4606 passed, 0 failed** (664
 warnings, 390s) - 4602 + 4 nouveaux tests. Aucune régression.
 
+## Verrouillage du cycle diurne AWCI 48h en test de régression (2026-09-07)
+
+Vérification manuelle transformée en test permanent : la fonctionnalité
+"Real Archive / 48h Trend" du dashboard AWCI (`_RealArchiveTrendWorker`),
+exécutée bout-en-bout sur les 17 vraies échéances RESTOR pour Alger (0h
+à 48h par pas de 3h), traite tout en ~7s et produit un vrai cycle
+diurne physiquement cohérent : température (et donc CAPE et score
+AWCI) réellement plus élevés aux deux maxima diurnes réels (+12h, +36h,
+~midi local) qu'aux échéances nocturnes environnantes. 1 nouveau test
+(`tests/test_awci_archive_field.py`), vérifié contre une vraie relation
+physique, pas juste "ne plante pas".
+
+## Nouvelle fonctionnalité : AWCI en application autonome (2026-09-07)
+
+Demande explicite de l'utilisateur : "je veux que tu crée un bouton sur
+acf qui affiche awci dans un autre dashboard separer du acf" - précisé
+ensuite comme "une vraie application séparée... pas juste une 2e
+fenêtre Qt dans le même processus".
+
+Le bouton "✈️ AWCI" existant (ouvre `AWCIDashboardWindow` comme une 2e
+fenêtre dans le processus ESOC) ne suffisait pas à cette demande - créé
+un vrai second point d'entrée indépendant :
+
+- **`src/acf/awci_app.py`** (nouveau) : lanceur autonome, sa propre
+  `QApplication`, sa propre `SingleInstanceGuard` avec un nom de
+  serveur distinct de celui d'ESOC (`acf-awci-app-single-instance` vs
+  `acf-esoc-single-instance` - jamais confondus), affiche
+  `AWCIDashboardWindow` comme fenêtre unique.
+- **`acf-awci`** : nouveau point d'entrée terminal (`pyproject.toml`
+  `[project.scripts]`), installé et vérifié (`acf-awci --version`,
+  `--help`).
+- **Bouton "🚀 AWCI (App)"** ajouté dans la barre d'outils ESOC, à côté
+  du bouton existant "✈️ AWCI" (conservé, pas remplacé - deux façons
+  distinctes d'atteindre AWCI selon le besoin). Appelle
+  `subprocess.Popen([sys.executable, "-m", "acf.awci_app"])` -
+  fire-and-forget, processus réellement indépendant.
+- **Vérifié réellement** (pas seulement testé en isolation) : deux vrais
+  processus `acf-awci` lancés successivement en séquence - le premier
+  reste actif, le second est détecté par la vraie garde mono-instance
+  et se ferme proprement (`exit code 0`), logs propres, aucune erreur.
+- 9 nouveaux tests (`tests/test_awci_app.py`,
+  `tests/test_esoc_launch_awci_app_action.py`), couvrant le bouton, le
+  dispatch, la gestion d'échec de lancement, et confirmant qu'aucune
+  fenêtre n'est créée dans le processus ESOC (bien un processus séparé,
+  pas juste une 2e fenêtre).
+
+**Run complet de non-régression : 4616 passed, 0 failed** (704
+warnings, 422s) - 4607 (après le test de cycle diurne) + 9 nouveaux
+tests. Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

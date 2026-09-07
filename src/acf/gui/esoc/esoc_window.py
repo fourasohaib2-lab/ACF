@@ -206,6 +206,8 @@ class ESOCWindow(QMainWindow):
             self._open_classic_dashboard()
         elif cmd == "open_awci_dashboard":
             self._open_awci_dashboard()
+        elif cmd == "launch_awci_app":
+            self._launch_awci_app()
         elif cmd == "open_acf_workstation":
             self._open_acf_workstation()
         elif cmd == "show_awci_field_on_map":
@@ -445,6 +447,40 @@ class ESOCWindow(QMainWindow):
             "AWCI dashboard opened. Meteorological INPUT fields are synthetic "
             "(see acf.gui.dashboard.awci_synthetic_field); the AWCI scores themselves "
             "are real AWCICalculator output over those inputs.",
+        )
+
+    def _launch_awci_app(self) -> None:
+        """Launch AWCI as a genuinely separate, independent application -
+        its own OS process (acf.awci_app), not a second window inside
+        THIS process the way _open_awci_dashboard() above is. Explicit
+        user request ("une vraie application séparée... pas juste une
+        2e fenêtre Qt dans le même processus"): closing ESOC does not
+        close this, closing this does not close ESOC, and it has its
+        own single-instance guard (acf.awci_app's own distinct server
+        name - see that module's own docstring) so it can never be
+        confused with, or interfere with, ESOC's own guard.
+
+        subprocess.Popen (not QProcess): deliberately fire-and-forget -
+        this window has no reason to track the child's lifetime,
+        collect its output, or be notified when it exits, all of which
+        QProcess exists for for a parent that DOES care. sys.executable
+        (not the "acf-awci" console script by name) so this works
+        identically regardless of whether the console script happens
+        to be on PATH - the only real requirement is the same Python
+        environment ESOC itself is already running in.
+        """
+        import subprocess
+        import sys
+
+        try:
+            subprocess.Popen([sys.executable, "-m", "acf.awci_app"])
+        except OSError as exc:
+            self.dispatcher.log_message_emitted.emit("ERROR", f"Failed to launch AWCI app: {exc}")
+            return
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            "AWCI launched as a separate application (its own process, its own "
+            "single-instance guard) - independent of ESOC's own lifecycle.",
         )
 
     def _open_acf_workstation(self) -> None:

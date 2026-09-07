@@ -48,6 +48,14 @@ class ESOCToolbar(QToolBar):
             # reach: the 28th (last) tab of the bottom dock, and a button inside
             # the Classic View window. This opens AWCIDashboardWindow directly.
             ("✈️ AWCI", "open_awci_dashboard"),
+            # Explicit user request ("une vraie application séparée...
+            # pas juste une 2e fenêtre Qt dans le même processus") -
+            # unlike the button above, this launches acf.awci_app as its
+            # own OS process (see esoc_window.py's own
+            # _launch_awci_app()) - genuinely independent lifecycle from
+            # ESOC, its own single-instance guard, keeps running if
+            # ESOC is closed.
+            ("🚀 AWCI (App)", "launch_awci_app"),
             # The real, AWCI-free "ACF Scientific Workstation"
             # (docs/reference/acf_dashboard_reference.jpg) - distinct
             # from the AWCI-only dashboard above. Opens

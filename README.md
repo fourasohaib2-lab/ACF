@@ -22,7 +22,9 @@ The **Atmospheric Complexity Framework (ACF)** is an Earth System and Meteorolog
 
 ## ✅ Verified Status (updated 6 September 2026 — see [`docs/STATUS.md`](docs/STATUS.md) for the live, authoritative tracking)
 
-The `src/acf` tree compiles cleanly and the full test suite gives **4578 passed / 0 failed**, stable across repeated runs (re-confirmed the same day after the changes below, not a stale number carried forward). Since the 2 September status previously recorded here, the project went through a systematic, module-by-module honesty audit rather than another self-issued completion report: [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 now classifies every `src/acf/` submodule into a maturity tier (Foundation/Core/Extended/Experimental), and [`docs/STATUS.md`](docs/STATUS.md) tracks, per module, whether it has (1) a dated audit commit, (2) green tests, (3) no known docstring surclaim, and (4) declared dependencies — the only four criteria that make "done" a checkable claim instead of a declared one. All 58 modules in the Foundation+Core+Extended scope, plus every named Experimental-tier module, have been through this audit as of this date. Real findings from that audit include several fabricated "certified"/"production-ready"/"integrated" status claims removed from live code (not just from `docs/`'s prose - see `docs/STATUS.md` for specifics), a real user-reported bug (launching the app opened several independent, uncoordinated windows) traced to both a missing single-instance guard and orphaned demo scripts at the repo root, and a second real bug found afterward by an end-to-end toolbar smoke-test (not a code read): 3 of the 9 real per-module AWCI fields the app computes were being silently discarded before ever reaching the map. All fixed and covered by new tests the same day.
+The `src/acf` tree compiles cleanly and the full test suite gives **4616 passed / 0 failed** (updated 7 September 2026), stable across repeated runs. [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 classifies every `src/acf/` submodule into a maturity tier (Foundation/Core/Extended/Experimental), and [`docs/STATUS.md`](docs/STATUS.md) tracks, per module, whether it has (1) a dated audit commit, (2) green tests, (3) no known docstring surclaim, and (4) declared dependencies — the only four criteria that make "done" a checkable claim instead of a declared one. All 58 modules in the Foundation+Core+Extended scope are audited, plus `model4d/physics/` (Tier X) has 131/131 files individually reviewed - full package coverage, not a sample.
+
+Beyond the audit, the project has been validated and extended against **real data**: `acf.awci.archive_field` reads genuine Météo-France ALADIN operational forecast output (real FA files, decoded via EPyGrAM, cross-checked against the site's own independent legacy Fortran toolchain), and feeding it straight into the real `AWCICalculator` produces a physically coherent AWCI score and a real 48h diurnal cycle (temperature/CAPE/AWCI all genuinely higher at midday than at the surrounding midnights) - confirming ACF's actual scientific deliverable works end to end on operational data, not only on its own synthetic solver output. Several real bugs were found and fixed this way (not by reading code alone): a missing single-instance guard causing multiple dashboards to open at once, 3 of 9 real per-module AWCI fields being silently discarded before reaching the map, duplicate/mislabeled dataset entries in two GUI panels, a real data file format going unrecognized by the reader, and a project rename leaving an orphaned file on disk. See `docs/STATUS.md` for the full, dated list.
 
 `docs/` still contains ~185 historical sprint/release/"CERTIFIED" documents from before this discipline was in place - archived under [`docs/archive/`](docs/archive/README.md) rather than deleted, explicitly not to be read as current status. Treat any completion claim outside `ARCHITECTURE.md`/`docs/STATUS.md` as historical unless it links to a reproducible run.
 
@@ -72,6 +74,20 @@ mypy src
 ```bash
 acf-gui
 ```
+
+### Launching AWCI as its own standalone application
+
+```bash
+acf-awci
+```
+
+Genuinely independent from `acf-gui` (2026-09-07, explicit user
+request) - its own process, its own window, its own single-instance
+guard. Closing ESOC does not close this, and closing this does not
+close ESOC. ESOC's own toolbar also has two ways to reach AWCI: "✈️
+AWCI" opens the same dashboard as a second window inside ESOC's own
+process (lighter-weight); "🚀 AWCI (App)" launches this exact same
+standalone application as a real separate process instead.
 
 ---
 
