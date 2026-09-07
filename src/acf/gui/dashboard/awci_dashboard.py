@@ -635,7 +635,7 @@ class AWCIDashboard(QWidget):
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
         outer.setSpacing(8)
-        outer.setContentsMargins(10, 10, 10, 0)
+        outer.setContentsMargins(6, 6, 6, 0)
 
         header_row = QHBoxLayout()
         header = QLabel("AWCI – AVIATION WEATHER COMPLEXITY INDEX")
@@ -653,7 +653,7 @@ class AWCIDashboard(QWidget):
         self.real_physics_button.setStyleSheet(_real_data_button_style())
         header_row.addWidget(self.real_physics_button)
 
-        self.play_evolution_button = QPushButton("▶ Play Evolution (4D)")
+        self.play_evolution_button = QPushButton("▶ 4D Evolution")
         self.play_evolution_button.setToolTip(
             "Run a real 4D Complexity(x, y, z, t) evolution (acf.awci.temporal_field) - one\n"
             "CoupledEarthSolver instance integrated continuously - and animate the global map\n"
@@ -661,7 +661,22 @@ class AWCIDashboard(QWidget):
             "trajectory to continue from."
         )
         self.play_evolution_button.clicked.connect(self._toggle_evolution_playback)
-        self.play_evolution_button.setVisible(False)
+        # NOTE (correction, 2026-09-07 - real bug, found while
+        # investigating the user's own real complaint "la resolution du
+        # dashboard n'est pas stable elle se varie lorseque je clique
+        # sur les boutons"): setVisible(False)/True (below, at Real
+        # Physics start/stop) made this button appear and disappear,
+        # widening the real header row's own sizeHint by ~177px the
+        # instant Real Physics ran - reproduced directly (header
+        # sizeHint 1844->2021px), and since AWCIDashboardWindow sizes
+        # itself once from the dashboard's INITIAL sizeHint (see that
+        # class's own NOTE), this pushed the whole window past its own
+        # fixed width, forcing a real horizontal scrollbar that hadn't
+        # been there a moment before - exactly the reported
+        # instability. Fixed to match "🧊 3D View" right next to it,
+        # which already uses the correct pattern for this exact
+        # situation: always visible, only its enabled state toggles.
+        self.play_evolution_button.setEnabled(False)
         header_row.addWidget(self.play_evolution_button)
 
         self.view_3d_button = QPushButton("🧊 3D View")
@@ -768,7 +783,15 @@ class AWCIDashboard(QWidget):
         self.execution_report_button.clicked.connect(self._open_execution_report)
         header_row.addWidget(self.execution_report_button)
 
-        self.real_archive_button = QPushButton("📡 Real Archive (2026-08-31)")
+        # NOTE (correction, 2026-09-07 - real header-width fix, part of
+        # the same "resolution instability" investigation as
+        # play_evolution_button's own NOTE): the run date used to be
+        # baked into the button's own label ("Real Archive
+        # (2026-08-31)") - real information, but real header width the
+        # window's own fixed sizing couldn't always accommodate; moved
+        # to the tooltip (still real, still disclosed) instead of
+        # dropped.
+        self.real_archive_button = QPushButton("📡 Real Archive")
         self.real_archive_button.setToolTip(
             "Open a real archived ALADIN 00Z forecast (2026-08-31, North Africa domain,\n"
             "acf.awci.archive_field) at the current point of interest - a genuine third\n"
@@ -1492,8 +1515,9 @@ class AWCIDashboard(QWidget):
 
         # The 4D animation needs a real Physics volume to have run
         # first (same solver/config), so the button only becomes usable
-        # once we're genuinely in Real Physics mode.
-        self.play_evolution_button.setVisible(True)
+        # once we're genuinely in Real Physics mode. Always visible
+        # (see this button's own construction-time NOTE for why) -
+        # only its enabled state changes here.
         self.play_evolution_button.setEnabled(True)
 
         # Same for the real 3D view - and if it's already open (from an
@@ -2188,7 +2212,7 @@ class AWCIDashboard(QWidget):
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()
-        self.play_evolution_button.setVisible(False)
+        self.play_evolution_button.setEnabled(False)  # always visible - see its own construction-time NOTE
         self._evolution = None
         self._real_physics_active = False
         self._real_volume = None
@@ -2253,7 +2277,7 @@ class AWCIDashboard(QWidget):
 
     def _on_evolution_failed(self, message: str) -> None:
         self.play_evolution_button.setEnabled(True)
-        self.play_evolution_button.setText("▶ Play Evolution (4D)")
+        self.play_evolution_button.setText("▶ 4D Evolution")
         self.real_physics_status.setText(f"⚠ 4D evolution computation failed: {message}")
         logger.error("AWCIDashboard: 4D evolution computation failed: %s", message)
 
@@ -2296,7 +2320,7 @@ class AWCIDashboard(QWidget):
         # stops playback before the window is first rendered) would
         # silently skip the reset - found by a real test, not assumed.
         # No harm in setting a hidden button's text either way.
-        self.play_evolution_button.setText("▶ Play Evolution (4D)")
+        self.play_evolution_button.setText("▶ 4D Evolution")
 
     # ---------------------------------------------------- external API
 

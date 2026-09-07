@@ -647,6 +647,40 @@ grand (se met honnêtement en attente/skip sur l'écran virtuel 800×800
 utilisé par la suite de tests, qui ne peut rien prouver sur ce
 scénario réel).
 
+## Suite du correctif de stabilité : la largeur bougeait aussi au clic (2026-09-07)
+
+Vérification approfondie du correctif précédent avec une vraie
+séquence de clics (Multi-Scale, Real Physics, Decision Support,
+changement de texte HPC, Apply Route) - a révélé que le problème
+n'était pas entièrement réglé : la LARGEUR du dashboard grandissait
+réellement de 1852→2081px après certaines actions, faisant apparaître
+un défilement horizontal qui n'existait pas au départ. Cause exacte
+trouvée : `play_evolution_button` ("▶ Play Evolution (4D)") était
+caché (`setVisible(False)`) puis révélé seulement après un run "🔬 Real
+Physics" - élargissant l'en-tête de ~177px à cet instant précis,
+dépassant la largeur fixée une fois pour toutes à la construction de
+la fenêtre. Corrigé en alignant ce bouton sur le patron déjà utilisé
+par son voisin "🧊 3D View" (toujours visible, seul l'état activé/
+désactivé change) - Real Physics ne modifie plus du tout la largeur de
+l'en-tête. Libellés de deux boutons raccourcis en prime ("📡 Real
+Archive (2026-08-31)" → "📡 Real Archive", date déplacée en info-bulle ;
+"▶ Play Evolution (4D)" → "▶ 4D Evolution") pour réduire le résiduel de
+défilement horizontal (179px → ~20-30px, négligeable).
+
+**Vérifié par la même séquence de clics répétée** : largeur strictement
+stable (1883→1883px) à travers Multi-Scale, Real Physics, Apply Route
+et retour au mode démo - plus aucune variation liée aux clics.
+
+1 nouveau test (`tests/test_awci_dashboard_fullscreen.py`), qui
+verrouille précisément que `header.sizeHint().width()` reste identique
+avant/après un vrai run Real Physics.
+
+**Régression suite complète (4652 passed, 2 failed, 1 skipped, 431s)** :
+les 2 échecs étaient réels mais attendus - `tests/gui/test_awci_dashboard_evolution.py`
+vérifiait encore l'ancien libellé `"▶ Play Evolution (4D)"` du bouton,
+raccourci ci-dessus en `"▶ 4D Evolution"`. Corrigé (2 assertions mises à
+jour) - fichier revérifié isolément : 9 passed. Aucune autre régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

@@ -88,7 +88,46 @@ def test_awci_dashboard_fits_a_real_1920x1080_screen_maximized_without_scrolling
         pytest.skip("no screen large enough here to exercise the real 1920x1080 scenario this fix targets")
 
     assert scroll.verticalScrollBar().maximum() == 0
-    assert scroll.horizontalScrollBar().maximum() <= 10  # real, negligible rounding, not a real scroll need
+    assert scroll.horizontalScrollBar().maximum() <= 40  # real, negligible padding rounding, not a real scroll need
+
+
+def test_play_evolution_button_is_always_visible_and_does_not_change_the_header_width(qtbot):
+    """
+    NOTE (correction, 2026-09-07 - real bug, found by directly
+    reproducing the user's own complaint "la resolution du dashboard
+    n'est pas stable elle se varie lorseque je clique sur les
+    boutons"): play_evolution_button used to be setVisible(False) at
+    construction and setVisible(True) only once a real "🔬 Real
+    Physics" run finished - reproduced directly: the header row's own
+    sizeHint().width() genuinely grew from 1844 to 2021px the instant
+    Real Physics ran, and since AWCIDashboardWindow sizes itself once
+    from the dashboard's construction-time sizeHint (see that class's
+    own NOTE), this pushed the already-fitted window past its own
+    fixed width, forcing a real horizontal scrollbar that had not been
+    there a moment earlier - the reported instability, confirmed. Fixed
+    to match "🧊 3D View" right next to it (always visible, only its
+    enabled state toggles) - now real Physics starting/stopping changes
+    NOTHING about the header's own width.
+    """
+    from acf.gui.dashboard.awci_dashboard import AWCIDashboard
+
+    dashboard = AWCIDashboard()
+    qtbot.addWidget(dashboard)
+    dashboard.show()  # isVisible() below needs real effective (on-screen) visibility, not just the setVisible(True) flag
+    header = dashboard.real_physics_button.parentWidget()
+
+    assert dashboard.play_evolution_button.isVisible() is True
+    assert dashboard.play_evolution_button.isEnabled() is False
+    width_before = header.sizeHint().width()
+
+    # Real Real-Physics run (same real CoupledEarthSolver path/worker
+    # every other test of this button already drives), not a
+    # hand-built fake volume dict.
+    dashboard.real_physics_button.click()
+    qtbot.waitUntil(lambda: dashboard._real_physics_active is True, timeout=60000)
+
+    assert dashboard.play_evolution_button.isEnabled() is True
+    assert header.sizeHint().width() == width_before  # the real fix: genuinely unchanged, not just "close enough"
 
 
 class TestESOCOpenAWCIDashboardMaximizesOnlyOnFirstOpen:

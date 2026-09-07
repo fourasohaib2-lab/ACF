@@ -1,5 +1,5 @@
 """
-Tests for AWCIDashboard's "▶ Play Evolution (4D)" real animation
+Tests for AWCIDashboard's "▶ 4D Evolution" real animation
 (src/acf/gui/dashboard/awci_dashboard.py, explicit user request
 "brancher l'animation 4D dans le dashboard").
 
@@ -115,7 +115,7 @@ def test_toggle_evolution_playback_stops_when_active(qapp):
     dashboard._toggle_evolution_playback()
 
     assert dashboard._evolution_timer.isActive() is False
-    assert dashboard.play_evolution_button.text() == "▶ Play Evolution (4D)"
+    assert dashboard.play_evolution_button.text() == "▶ 4D Evolution"
 
 
 def test_toggle_evolution_playback_resumes_without_recomputing(qapp):
@@ -143,7 +143,7 @@ def test_evolution_failure_reports_error_and_resets_button(qapp):
     dashboard._on_evolution_failed("boom")
 
     assert dashboard.play_evolution_button.isEnabled() is True
-    assert dashboard.play_evolution_button.text() == "▶ Play Evolution (4D)"
+    assert dashboard.play_evolution_button.text() == "▶ 4D Evolution"
     assert "failed" in dashboard.real_physics_status.text().lower()
 
 
