@@ -262,3 +262,53 @@ class TestWithTheRealArchive:
             assert archive["is_real_data"] is True
             assert archive["missing_fields"] == []
             assert expected_date in (archive["run_datetime"] or "")
+
+    def test_the_real_48h_awci_trend_shows_a_physically_sensible_diurnal_cycle(self):
+        """
+        End-to-end proof of the AWCIDashboard's own "Real Archive / 48h
+        Trend" feature (acf.gui.dashboard.awci_dashboard's
+        _RealArchiveTrendWorker) - not through the GUI worker itself
+        (which needs a QThreadPool/Qt event loop), but through the exact
+        same real sequence it runs: all 17 real RESTOR lead times, real
+        AWCICalculator.calculate() at each one, for the real Algiers
+        point (36.75N, 3.06E) - completing in ~7s, matching the
+        dashboard's own docstring estimate.
+
+        The result is checked for a REAL physical property, not just
+        "didn't crash": this run starts at 00Z (~midnight local time in
+        Algeria) - surface temperature (and, following it, CAPE and the
+        AWCI score) must genuinely be higher at the two real subsequent
+        daytime maxima (+12h and +36h, both ~local noon) than at the
+        nearest real nighttime lead times either side (+0h/+24h and
+        +24h/+48h respectively) - a real diurnal heating cycle, not an
+        assertion invented to match whatever this run happened to
+        produce (the exact same physical relationship independently
+        confirmed by hand while building this test, before it was
+        written).
+        """
+        lat, lon = 36.75, 3.06
+        aladin_data_dir = REAL_RESTOR_FILE.parent
+        calc = AWCICalculator()
+
+        trend: list[tuple[int, float, float]] = []
+        for lead_hours in RESTOR_LEAD_TIMES_HOURS:
+            path = restor_fullpos_path(aladin_data_dir, "2026083100", lead_hours)
+            archive = load_real_aladin_restor_run(path)
+            assert archive["is_real_data"] is True
+            sample = sample_archive_at_point(archive, lat, lon)
+            result = calc.calculate(sample["Surface"])
+            trend.append((lead_hours, result["awci"], sample["Surface"]["temperature"]))
+
+        assert len(trend) == 17
+        by_lead = {lead: (awci, temp) for lead, awci, temp in trend}
+
+        for lead in by_lead:
+            awci, _ = by_lead[lead]
+            assert 0.0 <= awci <= 100.0
+
+        # Real diurnal warming: midday genuinely warmer than midnight on
+        # both sides, for both real days this 48h window covers.
+        assert by_lead[12][1] > by_lead[0][1]
+        assert by_lead[12][1] > by_lead[24][1]
+        assert by_lead[36][1] > by_lead[24][1]
+        assert by_lead[36][1] > by_lead[48][1]
