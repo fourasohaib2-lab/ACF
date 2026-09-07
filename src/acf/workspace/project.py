@@ -51,6 +51,15 @@ class Project:
 
     settings: dict = field(default_factory=dict)
 
+    #: Real path this project was last written to or loaded from - set
+    #: by ProjectSerializer, not user-facing data (excluded from
+    #: __repr__/equality so it doesn't change this dataclass's existing
+    #: comparison/printing behavior). Lets ProjectSerializer.save()
+    #: detect a rename (root_path/name changed since the last save) and
+    #: remove the now-stale old file instead of leaving an orphaned
+    #: duplicate .acfproj behind - see that method's own NOTE.
+    _last_saved_path: Path | None = field(default=None, repr=False, compare=False)
+
     # =====================================================
 
     @property

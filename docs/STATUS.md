@@ -281,6 +281,34 @@ bug déjà corrigée pour `ESOCWindow._open_dataset()`). 3 nouveaux tests
 warnings, 389s) - 4583 + 10 nouveaux tests (7 DatasetPanel + 3
 epygram_reader). Aucune régression.
 
+## Correctif : fichier .acfproj orphelin lors d'un renommage de projet (2026-09-07)
+
+Suite naturelle de l'audit RESTOR (même chemin de persistance de
+projet) : `Project.project_file` est calculé depuis le nom courant du
+projet (`root_path / f"{name}.acfproj"`). Un flux réel et atteignable
+(`ProjectPropertiesDialog.update_project()` change `project.name`, puis
+`MenuManager.show_project_properties()` appelle `save_project()` juste
+après) renomme donc le projet, mais `ProjectSerializer.save()`
+écrivait toujours au nouveau chemin sans jamais toucher l'ancien -
+confirmé par reproduction directe : renommer "OriginalName" en
+"RenamedName" et sauvegarder laissait les DEUX fichiers sur le disque,
+l'ancien orphelin et périmé. Corrigé en donnant à `Project` un suivi
+réel du dernier chemin sauvegardé/chargé (`_last_saved_path`, exclu du
+`repr`/de l'égalité du dataclass) : `ProjectSerializer.save()` supprime
+maintenant l'ancien fichier quand le chemin calculé a changé depuis la
+dernière sauvegarde/chargement réelle - un vrai renommage, pas une
+supposition (les deux chemins sont réels, l'un est le fichier que cet
+objet a lui-même écrit en dernier). Vérifié : renommages successifs
+(3 de suite), sauvegarde normale sans renommage (ne supprime rien), et
+le cas `open_project()` réel puis renommage (pas seulement un projet
+créé dans le même process) - les trois fonctionnent correctement.
+`ProjectSerializer` n'avait aucune couverture de test avant ce
+correctif - 9 tests ajoutés (`tests/test_project_serializer.py`,
+couvrant aussi le round-trip save/load de base, déjà correct).
+
+**Run complet de non-régression : 4602 passed, 0 failed** (664
+warnings, 388s) - 4593 + 9 nouveaux tests. Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce
