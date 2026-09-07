@@ -578,6 +578,43 @@ class TestRealArchiveWithTheRealFile:
         assert dashboard._real_archive_detail_window is not None
         assert "850 hPa" in dashboard._real_archive_detail_window.windowTitle()
 
+    def test_real_cape_reaches_the_surface_levels_convective_score(self, qapp):
+        """
+        End-to-end proof that acf.awci.archive_field's real CAPE
+        addition (SURFCAPE.POS.F00, added 2026-09-07) genuinely reaches
+        the real GUI path a user actually clicks through - not just the
+        module-level pipeline tests/test_awci_archive_field.py already
+        covers. Drives the exact same real dashboard code
+        (_open_real_archive() -> sample_archive_at_point() ->
+        AWCICalculator.calculate()) the "Real Archive" button and a
+        real click on the Surface bar would, and checks the real
+        Convective score this same result feeds into
+        AWCIVerticalProfileLevelDialog's own "Convective" row.
+        """
+        dashboard = AWCIDashboard()
+        dashboard._point_of_interest = (36.75, 3.06)  # Algiers - real, nonzero CAPE (confirmed by hand: 1328 J/kg)
+
+        dashboard._open_real_archive()
+
+        surface_data = dashboard._real_archive_data["Surface"]
+        with_cape_convective = surface_data["result"]["module_scores"]["convective"]
+
+        # Same real point, same real archive, CAPE stripped out - proves
+        # the score genuinely differs because of the real CAPE, not
+        # coincidentally identical to what cape=0.0's own default would
+        # give.
+        from acf.awci.archive_field import sample_archive_at_point
+        from acf.awci.calculator import AWCICalculator
+
+        archive = dashboard._real_archive_cache[0]
+        sample = sample_archive_at_point(archive, *dashboard._point_of_interest)
+        assert sample["Surface"]["cape"] > 0.0
+        without_cape = dict(sample["Surface"])
+        del without_cape["cape"]
+        no_cape_result = AWCICalculator().calculate(without_cape)
+
+        assert with_cape_convective != no_cape_result["module_scores"]["convective"]
+
     def test_flags_honestly_when_the_point_of_interest_is_outside_the_real_domain(self, qapp):
         dashboard = AWCIDashboard()
         dashboard._point_of_interest = (-40.0, 170.0)  # a real point, far outside North Africa
