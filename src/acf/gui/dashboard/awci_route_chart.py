@@ -38,7 +38,12 @@ from acf.gui.dashboard.awci_synthetic_field import route_profile
 class AWCIRouteChart(QWidget):
     """Titled AWCI-vs-distance filled chart along a route."""
 
-    def __init__(self, title: str = "ROUTE PLANNING — AWCI along route", parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        title: str = "ROUTE PLANNING — AWCI along route",
+        parent: QWidget | None = None,
+        figsize_scale: float = 1.0,
+    ) -> None:
         super().__init__(parent)
         self._base_title = title
         self._title = title
@@ -72,7 +77,11 @@ class AWCIRouteChart(QWidget):
         # of being squeezed by the layout engine down to partially-
         # clipped text ("Extreme" rendering as "Extrem") - see
         # _RiskRow's own badge label for the matching minimumWidth fix.
-        self.figure = plt.figure(figsize=(5.4, 1.6), facecolor="#0b1220")
+        # figsize_scale (added same day, "assure toi que la resolution
+        # est adaptable selon le type d'ecran") - see
+        # AWCICrossSection's own matching comment.
+        scale = max(0.6, figsize_scale)
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)

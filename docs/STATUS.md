@@ -647,6 +647,139 @@ grand (se met honnêtement en attente/skip sur l'écran virtuel 800×800
 utilisé par la suite de tests, qui ne peut rien prouver sur ce
 scénario réel).
 
+## Ultra-dashboard 2026 : notifications toast + horloge live + flakiness pré-existante documentée (2026-09-07)
+
+Suite à la demande explicite "je veux un ultra dashboard ... style 2026
+... mets tout ce que tu sais pour l'améliorer" :
+
+- **Système de notifications toast réel** (`awci_toast.py`, nouveau) :
+  remplace les `QMessageBox.information()` bloquants pour les
+  retours de routine (route appliquée, connecté/déconnecté HPC,
+  fichier modèle importé) par des pastilles non-bloquantes,
+  auto-disparaissantes, empilées en bas à droite - les vraies
+  erreurs/décisions (connexion HPC échouée, fichier illisible,
+  mauvais choix d'aéroports) restent des `QMessageBox` bloquants,
+  volontairement. **Version initiale avec fondu animé
+  (`QGraphicsOpacityEffect` + `QPropertyAnimation`) abandonnée** -
+  voir le correctif de crash ci-dessous : la version committée
+  affiche/retire le toast directement, sans animation.
+- **Horloge UTC réelle et vivante** dans l'en-tête (`QTimer` 1s,
+  `datetime.now(timezone.utc)`), touche "salle d'opérations" 2026.
+
+**Deux vrais bugs trouvés et corrigés pendant le développement, avant
+tout commit** (suite pytest complète relancée après chaque fix) :
+1. Le `QTimer.singleShot()` du toast n'avait aucun lien de cycle de
+   vie avec le widget - un toast encore visible pendant la
+   destruction du dashboard (cas réel en test) déclenchait
+   `RuntimeError: Signal source has been deleted`, la même classe de
+   bug que le GC race déjà trouvé/corrigé sur `_HPCConnectWorker`
+   cette session. Corrigé en passant `toast` lui-même comme objet de
+   contexte à `singleShot()` (Qt annule l'appel si ce contexte est
+   détruit avant l'échéance).
+2. L'horloge, en battant chaque seconde, changeait la largeur réelle
+   de son propre label selon les glyphes de chiffres affichés (police
+   proportionnelle) - rendant `header.sizeHint()` intermittemment
+   instable, exactement la classe de bug déjà réglée pour
+   `play_evolution_button`. Corrigé avec un `setFixedWidth()` mesuré
+   une fois via `QFontMetrics`.
+
+**Flakiness pré-existante, non introduite aujourd'hui, documentée
+honnêtement** : `test_play_evolution_button_is_always_visible_and_does_not_change_the_header_width`
+échoue de façon intermittente (~1 run sur 2-3) uniquement quand
+exécuté après d'autres fichiers de test créant beaucoup d'instances
+`AWCIDashboard` dans le même process - jamais en isolement complet.
+Reproduit à l'identique sur le dernier commit AVANT les changements
+de cette section (`git stash` + 3 runs), donc confirmé indépendant du
+toast/horloge. Cause probable : un léger écart de rendu des métriques
+de police entre labels (valeurs réelles différentes entre mode démo
+et mode Real Physics) accumulé sur l'ensemble du dashboard, pas
+seulement la ligne d'en-tête - même famille que la flakiness X11 déjà
+documentée pour `test_gui_stack_scroll_no_permanent_growth.py`. Pas
+d'investigation plus poussée aujourd'hui (hors périmètre de cette
+session UI) ; à traiter dans un futur passage dédié à la robustesse
+des tests.
+
+## Investigation d'un crash pytest réel pendant le développement du toast (2026-09-07)
+
+Chronologie honnête, y compris la fausse piste initiale :
+
+1. La toute première version du toast (fondu animé via
+   `QGraphicsOpacityEffect`/`QPropertyAnimation`) a fait planter le
+   process pytest complet ("Fatal Python error: Aborted", "pure
+   virtual method called") lors du tout premier run de régression
+   complet après son ajout. Diagnostic initial (correct en soi, mais
+   incomplet) : un `QPropertyAnimation` ciblant un `QGraphicsEffect`
+   n'a pas le même ordre de destruction garanti que les enfants
+   `QObject` classiques d'un widget - un crash connu de la classe
+   PySide6/Qt. **L'animation a été retirée entièrement** (voir
+   `awci_toast.py`, version committée).
+2. Vérification de robustesse volontaire : exécution de `tests/gui/`
+   seul (pas la suite complète) 3 fois d'affilée pour confirmer
+   l'absence de récidive - a de nouveau planté sur les 3 runs, avec
+   la même signature. Hypothèse à ce moment : pression mémoire réelle
+   (machine à 7.4Gi RAM, déjà 3.3Gi de swap utilisé) causée par 3
+   exécutions consécutives, pas un vrai bug résiduel.
+3. **Cette hypothèse s'est révélée fausse** : un run unique et isolé
+   de `tests/gui/` (sans animation, donc après le retrait de l'étape
+   1) a planté également - "Fatal Python error: Segmentation fault"
+   cette fois, toujours dans `pytestqt/plugin.py::_process_events`
+   (la pompe d'événements Qt appelée après chaque test - un point
+   générique, pas une preuve de cause).
+4. **Test décisif** : `git stash` (retour au dernier commit AVANT
+   tout changement toast/horloge, `d3e3ebf`) puis même run unique de
+   `tests/gui/` seul - **plante à l'identique**. Confirmation
+   factuelle : ce crash est **pré-existant, indépendant du toast/
+   horloge**, et n'a jamais été rencontré auparavant cette session
+   simplement parce que la pratique établie (`pytest -q`, suite
+   complète) entrelace les ~350 tests de `tests/gui/` avec ~4300
+   autres tests non-GUI - jamais concentrés seuls. Cause probable
+   (non confirmée en détail, hors périmètre de cette session UI) :
+   accumulation de ressources matplotlib/Qt (figures non fermées,
+   `RuntimeWarning: More than 20 figures have been opened` déjà
+   observé plusieurs fois) sur un sous-ensemble très dense en widgets
+   graphiques, propre à `tests/gui/` isolé.
+5. Le retrait de l'animation (étape 1) reste conservé - c'est un vrai
+   gain de robustesse indépendant, même s'il n'était pas l'unique
+   cause du crash observé aux étapes 2-3.
+6. **Suite (même jour, après avoir aussi ajouté l'adaptabilité de
+   résolution ci-dessous)** : la suite complète (`pytest -q`, méthode
+   établie du projet) a ensuite planté 4 fois d'affilée, systématiquement
+   autour de 7% - y compris une fois sur le commit de base `d3e3ebf`
+   à nouveau (2e confirmation indépendante que ce n'est pas mon code).
+   Entre la 3e et la 4e tentative, un vrai processus `acf-awci` orphelin
+   (461Mi RSS, laissé par des tests manuels antérieurs de cette même
+   session) a été trouvé tournant EN PARALLÈLE des runs et terminé -
+   hypothèse à ce moment : contention mémoire/ressources Qt réelle.
+   Le crash a persisté même après (4e tentative), avec PLUS de mémoire
+   libre qu'aux tentatives précédentes (4.0Gi libres vs 2.6Gi) -
+   invalidant aussi l'hypothèse "pression mémoire pure". Position de
+   collection identifiée (~7% ≈ position 300-325 sur ~4650 tests) :
+   coïncide avec `tests/gui/test_awci_dashboard_reference_parity.py::
+   TestRealArchiveWithTheRealFile` - des tests réels (non skippés sur
+   cette machine, gardés par `pytest.mark.skipif` sur la présence de
+   l'archive RESTOR) qui décodent plusieurs vrais fichiers FA via
+   EPyGrAM (E/S disque réelle, ~7s pour le test du trend 48h à lui
+   seul) - candidat plausible mais **non confirmé avec certitude
+   absolue** (pas isolé test-par-test faute de budget).
+7. **Décision honnête** : ce point d'infrastructure (crash intermittent
+   de la suite COMPLÈTE en un seul process, précisément autour d'un
+   sous-ensemble de tests réels/lourds en E/S, sur cette machine à
+   7.4Gi RAM) est traité comme un **problème d'environnement connu,
+   non résolu, hors périmètre de cette session** - pas ignoré, mais pas
+   non plus une raison de bloquer indéfiniment un travail par ailleurs
+   entièrement vérifié. Vérification effectivement utilisée pour
+   committer le toast/horloge et l'adaptabilité de résolution : chaque
+   fichier de test directement concerné, exécuté individuellement et à
+   plusieurs reprises (voir leurs propres sections ci-dessus/dessous),
+   tous verts. À reprendre dans un futur passage dédié à la robustesse
+   de la suite de tests (candidats : `plt.close(fig)` systématique,
+   isoler les tests réels/lourds en E/S dans un run séparé).
+
+À traiter dans un futur passage dédié (hors périmètre de cette
+session) : fermeture systématique des figures matplotlib
+(`plt.close(fig)`) à la destruction des panneaux AWCI, pour éliminer
+la cause probable plutôt que seulement contourner le symptôme.
+
 ## Vérification visuelle réelle en conditions 1920x1080 + correctif de texte tronqué (2026-09-07)
 
 Suite au correctif de stabilité ci-dessous, vérification en conditions

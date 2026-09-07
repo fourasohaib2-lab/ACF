@@ -51,6 +51,45 @@ def _clamp_size(desired_width: int, desired_height: int, available, margin: floa
     return min(desired_width, max_width), min(desired_height, max_height)
 
 
+#: Reference resolution every fixed-pixel figure/panel size in this
+#: codebase (AWCIDashboard's matplotlib figsize values, setMinimumHeight()
+#: floors) was originally measured against on a real 1920x1080 screen.
+_REFERENCE_WIDTH = 1920
+_REFERENCE_HEIGHT = 1080
+
+
+def compute_screen_scale(window: QWidget, floor: float = 0.6) -> float:
+    """Real screen-adaptability fix (2026-09-07, explicit user request
+    "assure toi que la resolution est adaptable selon le type d'ecran
+    elle est ajustable") - a genuine scale factor from the REAL
+    available screen `window` will open on, not a fixed assumption.
+
+    AWCIDashboard's own matplotlib-figure sizes and setMinimumHeight()
+    floors were tuned against a real 1920x1080 screen (this session's
+    own resolution-stability work). On a real, smaller screen - measured
+    directly: 1366x768 and 1280x800 laptops both forced 700px+ of real
+    horizontal scroll at scale 1.0, because those fixed pixel sizes
+    never shrank - this scale lets every such size shrink genuinely
+    (not just get clipped/scrolled), and lets it genuinely GROW on a
+    larger real screen (2560x1440, measured: the dashboard fills the
+    extra space cleanly at scale 1.0 already, so growth beyond 1.0 is
+    deliberately not applied here - only real shrinking below the
+    reference resolution is scaled, to avoid making an already-tuned
+    2026-modernized layout unexpectedly sparse on a very large monitor).
+
+    Returns 1.0 (unchanged legacy behaviour) if no real screen can be
+    determined (e.g. a headless/offscreen test environment with no
+    resolvable screen) - the same honest fallback `fit_window_to_screen`
+    already uses.
+    """
+    screen = _resolve_screen(window)
+    if screen is None:
+        return 1.0
+    available = screen.availableGeometry()
+    scale = min(available.width() / _REFERENCE_WIDTH, available.height() / _REFERENCE_HEIGHT, 1.0)
+    return max(floor, scale)
+
+
 def fit_window_to_screen(
     window: QWidget,
     desired_width: int,

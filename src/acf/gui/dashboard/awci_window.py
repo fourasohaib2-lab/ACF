@@ -13,7 +13,7 @@ from typing import Any
 
 from PySide6.QtWidgets import QMainWindow, QScrollArea
 
-from acf.gui_screen_utils import fit_window_to_screen
+from acf.gui_screen_utils import compute_screen_scale, fit_window_to_screen
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
 
@@ -24,7 +24,16 @@ class AWCIDashboardWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("AWCI – Aviation Weather Complexity Index")
 
-        self.awci_dashboard = AWCIDashboard()
+        # Real screen-adaptability fix (2026-09-07, explicit user
+        # request "assure toi que la resolution est adaptable selon le
+        # type d'ecran elle est ajustable") - see compute_screen_scale's
+        # own docstring for the real 1366x768/1280x800/2560x1440
+        # measurements behind this. `self.screen()` already resolves to
+        # a real screen before the window is shown (Qt6 defaults it to
+        # the primary screen), same real resolution mechanism
+        # fit_window_to_screen below already relies on.
+        self._screen_scale = compute_screen_scale(self)
+        self.awci_dashboard = AWCIDashboard(screen_scale=self._screen_scale)
         # NOTE (correction, 2026-09-07 - real bug, found from a real
         # screenshot while modernizing this dashboard's visual design,
         # not a code read): this used to call fit_window_to_screen(self,

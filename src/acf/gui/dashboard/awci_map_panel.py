@@ -200,6 +200,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         show_info_boxes: bool = False,
         show_layers_panel: bool = False,
         show_demo_fallback: bool = True,
+        figsize_scale: float = 1.0,
     ) -> None:
         """
         Parameters
@@ -226,6 +227,11 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._title = title
         self._extent = extent
         self._show_demo_fallback = show_demo_fallback
+        #: Real screen-adaptability fix (2026-09-07, "assure toi que la
+        #: resolution est adaptable selon le type d'ecran") - see
+        #: AWCICrossSection's own matching comment for the real screen
+        #: sizes this was measured against. Floored at 0.6.
+        self._figsize_scale = max(0.6, figsize_scale)
         self._flight_path: list[tuple[float, float, str]] = []  # (lat, lon, label)
         self._city_labels: list[tuple[float, float, str]] = []  # (lat, lon, name) - see set_city_labels()
         self._point_marker: tuple[float, float] | None = None
@@ -309,7 +315,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         button_column.addStretch()
         outer_layout.addLayout(button_column)
 
-        self.figure = plt.figure(figsize=(6, 1.6), facecolor="#0b1220")
+        self.figure = plt.figure(
+            figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor="#0b1220"
+        )
         self.canvas = FigureCanvasQTAgg(self.figure)
         # See map_canvas.py's own comment on why this filter is needed -
         # Qt delivers real mouse/wheel/keyboard events to this child

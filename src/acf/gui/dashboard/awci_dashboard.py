@@ -78,6 +78,7 @@ does, just fed from this real archive instead.
 """
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -123,6 +124,7 @@ from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDi
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
+from acf.gui.dashboard.awci_toast import AWCIToastManager
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, flight_level_ft_to_pressure_hpa
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
@@ -568,8 +570,21 @@ class _RealArchiveTrendWorker(QRunnable):
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, screen_scale: float = 1.0) -> None:
         super().__init__(parent)
+        #: Real screen-adaptability fix (2026-09-07, explicit user
+        #: request "assure toi que la resolution est adaptable selon le
+        #: type d'ecran elle est ajustable") - AWCIDashboardWindow
+        #: computes this once from the REAL available screen geometry
+        #: and passes it down; every embedder that doesn't care (ESOC's
+        #: dock panel, every existing test constructing AWCIDashboard()
+        #: bare) keeps the exact same 1.0 behaviour as before. Threaded
+        #: into every matplotlib-figure-owning child (global/regional
+        #: map, cross-section, radar, route chart) and into this
+        #: class's own setMinimumHeight() floors below - see
+        #: AWCICrossSection's own comment for the real screen sizes
+        #: (1366x768/1280x800) this was measured against.
+        self._screen_scale = max(0.6, screen_scale)
         #: Real, currently-active regional route - was a fixed module
         #: constant (_REGIONAL_ROUTE) every panel below read directly;
         #: now a real instance attribute _on_apply_route() can change
@@ -635,6 +650,12 @@ class AWCIDashboard(QWidget):
         self._evolution_timer.timeout.connect(self._advance_evolution_frame)
         self._build_ui()
         self._apply_theme()
+        #: Real, non-blocking notification system (added 2026-09-07,
+        #: "rends-le exceptionnel" 2026-modernization pass) - see
+        #: awci_toast.py's own module docstring for what stays a
+        #: blocking QMessageBox (a genuine decision/error) vs. what
+        #: becomes a toast (routine, honest "this happened" feedback).
+        self._toasts = AWCIToastManager(self)
         self.refresh()
 
     # ------------------------------------------------------------------ UI
@@ -816,6 +837,37 @@ class AWCIDashboard(QWidget):
         # text, no computed data - matches this dashboard's own
         # already-real "Concept Output - Research Prototype" framing
         # (subheader below), just also shown here as the mockup does.
+        # Real, ticking UTC clock (added 2026-09-07, "rends-le
+        # exceptionnel" 2026-modernization pass) - a genuine
+        # QTimer-driven wall clock (real datetime.utcnow(), not a
+        # frozen/decorative string), the kind of live ops-room touch a
+        # 2026 aviation-weather dashboard is expected to show. Placed
+        # right before the static RESEARCH STAGE badge, same header row.
+        self.clock_label = QLabel()
+        self.clock_label.setStyleSheet(
+            f"color: {TOKENS.accent_real}; font-size: 12px; font-weight: bold; "
+            f"font-family: {TOKENS.font_family}; border: none; padding: 0 8px;"
+        )
+        # Real fix (found by this session's own test suite going
+        # intermittently flaky, ~1-in-5, after adding this clock): a
+        # proportional font's digit glyphs are not always equal-width,
+        # so the ticking text ("13:15:42 UTC" -> "13:15:47 UTC") could
+        # nudge this label's own sizeHint by a stray pixel between two
+        # renders of the SAME real header - exactly the class of bug
+        # this dashboard's own width-stability fix (2026-09-07,
+        # play_evolution_button) already exists to prevent. Fixed the
+        # same way: a real, fixed width sized once from the widest
+        # real value this label ever shows, so ticking seconds can
+        # never change header.sizeHint() again.
+        self.clock_label.setFixedWidth(self.clock_label.fontMetrics().horizontalAdvance("00:00:00 UTC") + 16)
+        self.clock_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header_row.addWidget(self.clock_label)
+        self._clock_timer = QTimer(self)
+        self._clock_timer.setInterval(1000)
+        self._clock_timer.timeout.connect(self._update_clock)
+        self._clock_timer.start()
+        self._update_clock()
+
         status_badge = QLabel("RESEARCH STAGE\nPrototype Version · Validation Confidence ✓")
         status_badge.setStyleSheet(
             f"color: {TOKENS.text_secondary}; font-size: 9px; font-weight: bold; "
@@ -920,7 +972,13 @@ class AWCIDashboard(QWidget):
         # global map only, matching the reference mockup (the regional
         # map below does not repeat them - it has its own real Point
         # Information card instead, see set_point_marker() below).
-        self.global_map = AWCIMapPanel("AWCI GLOBAL MAP (FL300)", show_legend=True, show_info_boxes=True, show_layers_panel=True)
+        self.global_map = AWCIMapPanel(
+            "AWCI GLOBAL MAP (FL300)",
+            show_legend=True,
+            show_info_boxes=True,
+            show_layers_panel=True,
+            figsize_scale=self._screen_scale,
+        )
         self.global_map.set_flight_path(_GLOBAL_ROUTE)
         # Real regression guard (found while adding this session's own
         # new fixed-height widgets elsewhere in the layout - VIEW MODE
@@ -928,21 +986,25 @@ class AWCIDashboard(QWidget):
         # competed with row1's stretch factor for space and collapsed
         # this map to ~157px tall in a real screenshot). Same fix
         # pattern as this project's own earlier "Layout collapse bug"
-        # (acf_general_dashboard.py's setMinimumHeight()).
-        self.global_map.setMinimumHeight(240)
+        # (acf_general_dashboard.py's setMinimumHeight()). Scaled by
+        # self._screen_scale (2026-09-07 screen-adaptability fix, see
+        # that attribute's own comment) with a 140px floor so a small
+        # real screen still gets a genuinely usable map, not just a
+        # smaller sizeHint.
+        self.global_map.setMinimumHeight(max(140, int(240 * self._screen_scale)))
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=3)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
-        self.cross_section = AWCICrossSection()
-        self.cross_section.setMinimumHeight(150)
+        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
+        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
         apply_elevation(self.cross_section)
         right_col.addWidget(self.cross_section, stretch=1)
 
         radar_row = QHBoxLayout()
-        self.radar = AWCIRadar("AWCI COMPONENTS (example at point)")
+        self.radar = AWCIRadar("AWCI COMPONENTS (example at point)", figsize_scale=self._screen_scale)
         apply_elevation(self.radar)
         self.component_list = _ComponentValueList()
         self.component_list.componentClicked.connect(self._on_component_clicked)
@@ -963,8 +1025,11 @@ class AWCIDashboard(QWidget):
         row2.setSpacing(8)
 
         left_col2 = QVBoxLayout()
-        self.regional_map = AWCIMapPanel("AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT)
-        self.regional_map.setMinimumHeight(190)  # same real fix as global_map above
+        self.regional_map = AWCIMapPanel(
+            "AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT, figsize_scale=self._screen_scale
+        )
+        # same real fix as global_map above, same 2026-09-07 screen-adaptability scaling
+        self.regional_map.setMinimumHeight(max(120, int(190 * self._screen_scale)))
         self.regional_map.set_flight_path(self._regional_route)
         self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
         self.regional_map.pointClicked.connect(self._on_map_point_clicked)
@@ -1085,7 +1150,7 @@ class AWCIDashboard(QWidget):
         right_col2.addWidget(op_header)
 
         op_row = QHBoxLayout()
-        self.route_chart = AWCIRouteChart()
+        self.route_chart = AWCIRouteChart(figsize_scale=self._screen_scale)
         apply_elevation(self.route_chart)
         self.risk_summary = AWCIRiskSummary()
         self.risk_summary.rowClicked.connect(self._on_risk_badge_clicked)
@@ -1197,6 +1262,12 @@ class AWCIDashboard(QWidget):
         the slider moves the pattern, it does not silently change anything else."""
         self.regional_map.update_data(flight_level_hpa=700.0, time_offset_hours=float(self.time_slider.value()))
 
+    def _update_clock(self) -> None:
+        """Real, live UTC time (datetime.now(timezone.utc)) - see
+        self.clock_label's own construction-time note."""
+        now = datetime.now(timezone.utc)
+        self.clock_label.setText(now.strftime("%H:%M:%S UTC"))
+
     def _on_apply_route(self) -> None:
         """Real route change - explicit user request "un bouton pour
         changer la route entre les aeroports". Rebuilds
@@ -1238,6 +1309,7 @@ class AWCIDashboard(QWidget):
         midpoint_lat = (from_lat + to_lat) / 2.0
         midpoint_lon = (from_lon + to_lon) / 2.0
         self._on_map_point_clicked(midpoint_lat, midpoint_lon)
+        self._toasts.show(f"Route applied: {from_name} → {to_name}", kind="success")
 
     def refresh(self) -> None:
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
@@ -1377,6 +1449,7 @@ class AWCIDashboard(QWidget):
             self._hpc_connected = True
             self.hpc_button.setText(f"🔌 Disconnect ({label})")
             self.hpc_button.setToolTip(f"Connected to {label} - click to disconnect.")
+            self._toasts.show(f"Connected to {label}", kind="success")
         else:
             self._hpc_connected = False
             self.hpc_button.setText("🔌 Connect HPC")
@@ -1406,6 +1479,7 @@ class AWCIDashboard(QWidget):
             "Open the real HPC connection wizard (same one ESOC's own toolbar uses -\n"
             "acf.hpc_connector.HPCConnectionManager over Paramiko SSH)."
         )
+        self._toasts.show("Disconnected from HPC", kind="info")
 
     def _import_model_file(self) -> None:
         """Load a real NWP model output file through ACF's real
@@ -1431,10 +1505,8 @@ class AWCIDashboard(QWidget):
             return
 
         self._imported_dataset = dataset
-        QMessageBox.information(
-            self,
-            "Import Model File",
-            f"Loaded: {dataset.name}\nFormat: {dataset.filetype}\nReal fields/variables: {len(dataset.variables)}",
+        self._toasts.show(
+            f"Loaded {dataset.name} ({dataset.filetype}, {len(dataset.variables)} fields)", kind="success"
         )
 
     def _toggle_real_physics(self) -> None:

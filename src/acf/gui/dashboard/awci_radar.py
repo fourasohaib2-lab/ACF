@@ -27,7 +27,9 @@ _AXES = [
 class AWCIRadar(QWidget):
     """Titled radar chart of the 6 AWCI module scores (0-100 each)."""
 
-    def __init__(self, title: str = "AWCI COMPONENTS", parent: QWidget | None = None) -> None:
+    def __init__(
+        self, title: str = "AWCI COMPONENTS", parent: QWidget | None = None, figsize_scale: float = 1.0
+    ) -> None:
         super().__init__(parent)
         self._title = title
 
@@ -42,7 +44,13 @@ class AWCIRadar(QWidget):
         # minimumWidth instead of being squeezed by the layout engine
         # down to a partially-clipped digit - see that class's own
         # value_label for the matching minimumWidth fix.
-        self.figure = plt.figure(figsize=(5.4, 1.6), facecolor="#0b1220")
+        #
+        # figsize_scale (added same day, "assure toi que la resolution
+        # est adaptable selon le type d'ecran") - see AWCICrossSection's
+        # own matching comment for the real screen sizes this was
+        # measured against.
+        scale = max(0.6, figsize_scale)
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1, projection="polar")

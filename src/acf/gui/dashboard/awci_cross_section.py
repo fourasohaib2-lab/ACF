@@ -100,7 +100,12 @@ def _hpa_to_ft(hpa: float) -> float:
 class AWCICrossSection(QWidget):
     """Titled altitude-vs-distance AWCI heatmap along a great-circle-ish flight path."""
 
-    def __init__(self, title: str = "VERTICAL CROSS-SECTION ALONG FLIGHT PATH", parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        title: str = "VERTICAL CROSS-SECTION ALONG FLIGHT PATH",
+        parent: QWidget | None = None,
+        figsize_scale: float = 1.0,
+    ) -> None:
         super().__init__(parent)
         self._base_title = title
         self._title = title
@@ -122,7 +127,18 @@ class AWCICrossSection(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(figsize=(6, 1.6), facecolor="#0b1220")
+        # Real screen-adaptability fix (2026-09-07, explicit user
+        # request "assure toi que la resolution est adaptable selon
+        # le type d'ecran") - figsize_scale is computed once by
+        # AWCIDashboardWindow from the REAL available screen geometry
+        # (see that class's own comment) and threaded down here, not
+        # a second guess: a smaller real screen (1366x768, 1280x800 -
+        # both measured directly to force 700px+ of scroll at scale
+        # 1.0) gets a genuinely smaller figure, not a bigger one that
+        # then gets scrolled past. Floored at 0.6 so the figure never
+        # collapses to something unreadable.
+        scale = max(0.6, figsize_scale)
+        self.figure = plt.figure(figsize=(6 * scale, 1.6 * scale), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
