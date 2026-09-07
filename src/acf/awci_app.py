@@ -62,10 +62,24 @@ def run() -> None:
     app.setStyleSheet(theme.stylesheet())
 
     window = AWCIDashboardWindow()
-    window.show()
+    # NOTE (correction, 2026-09-07 - explicit user request "gère moi la
+    # résolution pour que ça soit en plein écran"): was window.show(),
+    # opening at fit_window_to_screen's own fixed size. showMaximized()
+    # fills the real available screen (keeping the OS window chrome/
+    # controls, matching how "plein écran" already reads for every
+    # other real desktop window in this project - not a borderless
+    # kiosk mode).
+    window.showMaximized()
 
     def _activate_existing_window() -> None:
-        window.showNormal()
+        # Only un-minimize (real fix, same turn): showNormal()
+        # unconditionally would silently un-maximize a real second-
+        # instance activation even when the window was never
+        # minimized in the first place - restoring it to
+        # fit_window_to_screen's smaller fixed size instead of leaving
+        # it maximized.
+        if window.isMinimized():
+            window.showNormal()
         window.raise_()
         window.activateWindow()
 

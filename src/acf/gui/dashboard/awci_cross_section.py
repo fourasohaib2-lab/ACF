@@ -122,7 +122,7 @@ class AWCICrossSection(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(6, 1.6), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)

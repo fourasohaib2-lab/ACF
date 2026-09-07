@@ -437,9 +437,20 @@ class ESOCWindow(QMainWindow):
         """
         from acf.gui.dashboard.awci_window import AWCIDashboardWindow
 
-        if self._awci_dashboard_window is None:
+        first_open = self._awci_dashboard_window is None
+        if first_open:
             self._awci_dashboard_window = AWCIDashboardWindow(self)
-        self._awci_dashboard_window.show()
+        if first_open:
+            # NOTE (correction, 2026-09-07 - explicit user request "gère
+            # moi la résolution pour que ça soit en plein écran"): only
+            # on first real open - showMaximized() again on every
+            # re-open (this is an open-OR-raise action, clicked
+            # repeatedly) would silently override an operator's own
+            # manual resize/un-maximize each time, which plain show()
+            # below never did.
+            self._awci_dashboard_window.showMaximized()
+        else:
+            self._awci_dashboard_window.show()
         self._awci_dashboard_window.raise_()
         self._awci_dashboard_window.activateWindow()
         self.dispatcher.log_message_emitted.emit(

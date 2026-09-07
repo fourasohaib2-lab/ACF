@@ -899,7 +899,7 @@ class AWCIDashboard(QWidget):
         # this map to ~157px tall in a real screenshot). Same fix
         # pattern as this project's own earlier "Layout collapse bug"
         # (acf_general_dashboard.py's setMinimumHeight()).
-        self.global_map.setMinimumHeight(340)
+        self.global_map.setMinimumHeight(240)
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=3)
@@ -907,7 +907,7 @@ class AWCIDashboard(QWidget):
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
         self.cross_section = AWCICrossSection()
-        self.cross_section.setMinimumHeight(220)
+        self.cross_section.setMinimumHeight(150)
         apply_elevation(self.cross_section)
         right_col.addWidget(self.cross_section, stretch=1)
 
@@ -934,7 +934,7 @@ class AWCIDashboard(QWidget):
 
         left_col2 = QVBoxLayout()
         self.regional_map = AWCIMapPanel("AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT)
-        self.regional_map.setMinimumHeight(260)  # same real fix as global_map above
+        self.regional_map.setMinimumHeight(190)  # same real fix as global_map above
         self.regional_map.set_flight_path(self._regional_route)
         self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
         self.regional_map.pointClicked.connect(self._on_map_point_clicked)
@@ -1102,6 +1102,7 @@ class AWCIDashboard(QWidget):
 
         # --- Footer ---------------------------------------------------------
         self.footer = AWCIFooter()
+        self.footer.itemClicked.connect(self._on_footer_item_clicked)
         outer.addWidget(self.footer)
 
     def _apply_theme(self) -> None:
@@ -1111,6 +1112,37 @@ class AWCIDashboard(QWidget):
         self.setStyleSheet(dashboard_stylesheet())
 
     # ------------------------------------------------------------- refresh
+
+    def _on_footer_item_clicked(self, key: str) -> None:
+        """Real dispatch for the 5 real footer buttons (AWCIFooter) -
+        see awci_footer.py's own module docstring for why each key maps
+        to the exact existing real dashboard feature its own label
+        already honestly describes, not a new/fabricated action."""
+        if key == "synthetic_view":
+            self._revert_to_demo()
+        elif key == "decision_support":
+            self._open_alerts()
+        elif key == "multi_scale":
+            self._cycle_view_mode()
+        elif key == "adaptive_to_mission":
+            self._open_vertical_profile()
+        elif key == "research_stage":
+            self._open_execution_report()
+
+    def _cycle_view_mode(self) -> None:
+        """Real Global -> Regional -> Vertical Cross-Section -> Global
+        cycle - the real 3 real scales "MULTI-SCALE"'s own label text
+        already names, reusing the exact same real
+        view_mode_group/_on_view_mode_changed() this dashboard's own
+        VIEW MODE radio row already drives (never a second/duplicated
+        view-mode mechanism)."""
+        if self.view_mode_global_radio.isChecked():
+            self.view_mode_regional_radio.setChecked(True)
+        elif self.view_mode_regional_radio.isChecked():
+            self.view_mode_cross_section_radio.setChecked(True)
+        else:
+            self.view_mode_global_radio.setChecked(True)
+        self._on_view_mode_changed()
 
     def _on_view_mode_changed(self) -> None:
         """Real global-map extent change (see the VIEW MODE row's own

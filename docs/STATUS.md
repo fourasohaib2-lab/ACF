@@ -564,6 +564,89 @@ Singapour recentre exactement sur le point médian calculé.
 
 1 nouveau test (`tests/gui/test_awci_dashboard_route_selector.py`).
 
+## Fenêtre AWCI en plein écran (2026-09-07)
+
+Demande explicite : "gère moi la résolution pour que ça soit en plein
+écran". La fenêtre `AWCIDashboardWindow` s'ouvre maintenant maximisée
+(`showMaximized()`, contrôles de fenêtre conservés) sur les deux
+points d'entrée réels : `acf-awci` (application autonome) et le bouton
+"✈️ AWCI" d'ESOC. Précaution : ne maximise qu'au premier lancement -
+une réouverture ne doit jamais écraser un redimensionnement manuel de
+l'opérateur (`isMinimized()` vérifié avant `showNormal()` côté
+standalone ; maximisation conditionnée au premier `show()` côté ESOC).
+Vérifié par capture d'écran réelle (1920×1010, en-tête et panneaux
+visibles sans débordement). 3 nouveaux tests
+(`tests/test_awci_dashboard_fullscreen.py`).
+
+## Boutons du footer AWCI rendus fonctionnels (2026-09-07)
+
+Demande explicite : "la barre d'outils en bas research stage adaptative
+to mission multi scale décision support synthétique view sont des
+boutons je veux les rendre des boutons fonctionnelles". Les 5 cellules
+du footer (`AWCIFooter`) étaient purement décoratives (`QLabel`, aucun
+gestionnaire de clic) malgré leur apparence de boutons dans la maquette
+de référence. Rendues réellement cliquables (`AWCIFooterCell`, curseur
+main, survol visible) et câblées à des fonctionnalités déjà existantes
+et testées du dashboard, correspondant honnêtement à leur description
+(aucune action inventée) :
+- **Synthetic View** → retour au mode démo/synthétique (`_revert_to_demo`)
+- **Decision Support** → alertes réelles actives (`_open_alerts`)
+- **Multi-Scale** → cycle réel Global → Regional → Coupe Verticale
+  (réutilise le mécanisme `view_mode_group` déjà existant)
+- **Adaptive to Mission** → profil vertical réel par niveau de vol
+  (`_open_vertical_profile`)
+- **Research Stage** → rapport d'exécution réel (qualité/diagnostics,
+  `_open_execution_report`)
+
+Vérifié : les 5 clics fonctionnent sans crash, le cycle Multi-Scale
+change réellement l'étendue de la carte (pas juste l'état du bouton
+radio). 9 nouveaux tests (`tests/gui/test_awci_footer_buttons.py`).
+
+## Correctif de stabilité de résolution : plus de défilement forcé (2026-09-07)
+
+Plainte utilisateur explicite : "la resolution du dashboard n'est pas
+stable elle se varie lorsque je clique sur les boutons et note que je
+veux pas scroller l'eccrans et je sens qu'il est dispatcher".
+
+Cause réelle mesurée, pas supposée : `AWCIDashboard.sizeHint()` était
+de **1844×1918px** - presque le double de la hauteur utile d'un vrai
+écran 1920×1080 (~994-1008px, mesuré sur la machine réelle de
+développement de ce projet, double écran). `QScrollArea.
+setWidgetResizable(True)` était censé compresser le widget vers son
+`minimumSizeHint()` plus petit, mais un test empirique direct (forcer
+un `resize()` manuel vers la taille du viewport) montrait qu'il
+revenait systématiquement, en quelques cycles d'événements, exactement
+à `sizeHint()` - pas une supposition, un fait mesuré et reproduit.
+Tracé à la vraie source : 4 vrais panneaux matplotlib
+(`FigureCanvasQTAgg` - carte globale/régionale, coupe verticale,
+radar, graphique de route) sans `figsize` explicite, donc matplotlib
+utilisait sa valeur par défaut (6.4×4.8 pouces à 100 dpi = 640×480px)
+par figure - c'est cette taille par défaut que le layout réaffirmait
+sans cesse.
+
+Corrigé à la source réelle, pas en luttant contre le comportement de
+`QScrollArea` : `figsize=(6, 1.6)` explicite sur les 4 figures, footer
+ramené à une seule ligne (descriptions déplacées en info-bulles),
+hauteurs minimales des cartes réduites modestement. **Vérifié
+concrètement** : sur un vrai écran 1920×1080 maximisé, la taille du
+dashboard correspond maintenant EXACTEMENT à celle du viewport
+(1852×1008), les deux barres de défilement ont un maximum de 0 (rien à
+défiler). Capture d'écran réelle confirmant que tous les graphiques
+restent lisibles à cette taille compacte.
+
+Cette correction répond aussi indirectement à "je sens qu'il est
+dispatcher" et à l'instabilité au clic : la majeure partie de l'effet
+de "saut"/incohérence perçu venait très probablement du contenu qui
+dépassait le viewport et se recalait en défilement à chaque
+rafraîchissement déclenché par un clic - éliminé avec le défilement
+lui-même.
+
+1 nouveau test (`tests/test_awci_dashboard_fullscreen.py`), qui
+vérifie `verticalScrollBar().maximum() == 0` sur un vrai écran assez
+grand (se met honnêtement en attente/skip sur l'écran virtuel 800×800
+utilisé par la suite de tests, qui ne peut rien prouver sur ce
+scénario réel).
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

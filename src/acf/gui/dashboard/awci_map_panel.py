@@ -309,7 +309,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         button_column.addStretch()
         outer_layout.addLayout(button_column)
 
-        self.figure = plt.figure(facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(6, 1.6), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         # See map_canvas.py's own comment on why this filter is needed -
         # Qt delivers real mouse/wheel/keyboard events to this child
