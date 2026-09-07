@@ -309,6 +309,49 @@ couvrant aussi le round-trip save/load de base, déjà correct).
 **Run complet de non-régression : 4602 passed, 0 failed** (664
 warnings, 388s) - 4593 + 9 nouveaux tests. Aucune régression.
 
+## Validation majeure : le calculateur AWCI fonctionne bout-en-bout sur de vraies données Météo-France (2026-09-07)
+
+En poursuivant l'investigation RESTOR, injection directe de vraies
+données ALADIN (Alger, 31/08/2026 00h, point de grille réel le plus
+proche) dans le vrai `AWCICalculator().calculate()` : température
+27.6°C, pression 1013 hPa, humidité spécifique 20 g/kg, vent 1.8 m/s,
+CAPE 1328 J/kg - toutes des valeurs réelles lues du fichier FA, aucune
+synthétique. Résultat : score AWCI 20.5 ("Low"), décomposition
+physiquement cohérente (module thermodynamique dominant vu la
+chaleur/humidité, module convectif reflétant le vrai CAPE). **C'est la
+validation la plus significative de cette investigation** : le cœur
+scientifique du projet fonctionne réellement sur des données
+opérationnelles réelles, pas seulement sur le solveur interne
+synthétique (`CoupledEarthSolver`).
+
+En creusant, découverte qu'une session précédente (2026-09-04, même
+demande utilisateur RESTOR) avait déjà construit un pipeline complet et
+rigoureux pour exactement ça : `acf.awci.archive_field` -
+`load_real_aladin_restor_run()` décode un fichier FA RESTOR réel en
+profils atmosphériques réels par niveau de pression (7 niveaux +
+Surface), avec cross-validation indépendante contre la chaîne Fortran
+EDF historique du site (valeurs identiques au point près). Déjà 14
+tests, dont la comparaison croisée avec la sortie ASCII legacy.
+
+Amélioration réelle apportée : le docstring du module divulguait
+honnêtement "no CAPE/CIN... decoded here". En explorant les 97 champs
+réels du fichier, trouvé `SURFCAPE.POS.F00` - un vrai champ CAPE
+(convention Météo-France "POS" = CAPE positive uniquement, jamais
+négative par définition), valeurs réelles 0-2610 J/kg sur le domaine,
+physiquement plausibles. Ajouté à l'entrée "Surface" de
+`load_real_aladin_restor_run()` (CAPE est un diagnostic de colonne, pas
+par niveau de pression, donc n'appartient pas aux 7 niveaux) et propagé
+par `sample_archive_at_point()`. Vérifié que `AWCICalculator` répond
+réellement au vrai CAPE (score du module convectif différent avec/sans
+CAPE, pas juste présent-mais-ignoré dans le dict). CIN reste
+honnêtement non disponible dans cette archive (aucun champ
+correspondant trouvé). 4 nouveaux tests
+(`tests/test_awci_archive_field.py`, incluant le round-trip complet
+CAPE réel → `AWCICalculator`).
+
+**Run complet de non-régression : 4606 passed, 0 failed** (664
+warnings, 390s) - 4602 + 4 nouveaux tests. Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

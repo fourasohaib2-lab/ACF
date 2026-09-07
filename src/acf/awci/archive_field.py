@@ -230,6 +230,25 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
                 "specific_humidity": cls_specific_humidity,
                 "pressure_hpa": surf_pressure_pa / 100.0,
             }
+            # Real CAPE (2026-09-07 - found while testing ACF against
+            # this exact real archive at explicit user request, not in
+            # the module's original scope: SURFCAPE.POS.F00 genuinely
+            # exists in this real file - real per-point values 0-2610
+            # J/kg, physically plausible for an August North-Africa
+            # domain, real 350x350 grid matching every other field
+            # here). Météo-France FA naming convention: "POS" = the
+            # positive-only convention CAPE is always reported under
+            # (CAPE is non-negative by definition) - not a second,
+            # different quantity from "the" CAPE AWCICalculator expects.
+            # Surface-only (a column-integrated diagnostic, not a
+            # per-level one like temperature/wind/humidity above) - so
+            # added here, not to the 7 constant-pressure levels. CIN
+            # genuinely still has no matching real field in this
+            # archive (the module docstring's own limitation stands for
+            # CIN specifically, not CAPE anymore).
+            cape = _read("SURFCAPE.POS.F00")
+            if cape is not None:
+                levels["Surface"]["cape"] = cape
 
     return {
         "lats": lats,
@@ -244,8 +263,10 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
             "Single archived ALADIN 00Z run (2026-08-31), North Africa domain only - "
             "not a live feed, not multi-model (AROME/ARPEGE were never really fetched "
             "for this archive despite RESTOR's own folder names - see module docstring). "
-            "7 real constant-pressure levels (850-100 hPa) + 1 real surface entry; no "
-            "CAPE/CIN/precipitation-phase per-level fields decoded here."
+            "7 real constant-pressure levels (850-100 hPa) + 1 real surface entry, the "
+            "latter now also carrying real CAPE (SURFCAPE.POS.F00, added 2026-09-07) "
+            "when the field reads successfully; CIN and precipitation-phase still have "
+            "no matching real per-level field in this archive."
         ),
     }
 
@@ -266,6 +287,13 @@ def sample_archive_at_point(archive: dict[str, Any], lat: float, lon: float) -> 
         in AWCICalculator.calculate()'s own real dict-input shape, so
         a caller can pass it straight through:
         `AWCICalculator().calculate(sample_archive_at_point(archive, lat, lon)["850 hPa"])`.
+        The "Surface" entry also carries a real "cape" key when
+        load_real_aladin_restor_run() found one (added 2026-09-07) -
+        AWCICalculator.calculate() reads it via data.get("cape", ...),
+        so this is additive: existing callers ignoring "cape" are
+        unaffected, and AWCICalculator.calculate()'s own "cin" default
+        still applies since no real per-point CIN exists in this
+        archive.
     """
     lats = archive["lats"]
     lons = archive["lons"]
@@ -282,10 +310,13 @@ def sample_archive_at_point(archive: dict[str, Any], lat: float, lon: float) -> 
             pressure_at_point = float(pressure_hpa)
         else:
             pressure_at_point = float(np.asarray(pressure_hpa)[lat_idx, lon_idx])
-        sample[level_label] = {
+        point_sample = {
             "temperature": float(fields["temperature"][lat_idx, lon_idx]),
             "wind_speed": float(fields["wind_speed"][lat_idx, lon_idx]),
             "specific_humidity": float(fields["specific_humidity"][lat_idx, lon_idx]),
             "pressure": pressure_at_point,
         }
+        if "cape" in fields:
+            point_sample["cape"] = float(fields["cape"][lat_idx, lon_idx])
+        sample[level_label] = point_sample
     return sample

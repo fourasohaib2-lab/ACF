@@ -198,6 +198,55 @@ class TestWithTheRealArchive:
         assert "P85000TEMPERATUR" in archive["missing_fields"]
         assert "700 hPa" in archive["levels"]  # everything else still real and present
 
+    def test_surface_carries_real_cape_from_the_real_archive(self, real_archive):
+        """Added 2026-09-07 (found while testing ACF against this exact
+        real archive at the user's explicit request): SURFCAPE.POS.F00
+        genuinely exists in this real file - a real, physically
+        plausible per-point CAPE (Météo-France's own "positive-only"
+        naming convention, not a different quantity from what
+        AWCICalculator expects), added to the Surface entry only (a
+        column diagnostic, not a per-level one)."""
+        assert "cape" in real_archive["levels"]["Surface"]
+        cape_grid = real_archive["levels"]["Surface"]["cape"]
+        assert cape_grid.shape == real_archive["levels"]["Surface"]["temperature"].shape
+        assert np.all(cape_grid >= 0.0)  # real, physical: CAPE is never negative
+
+    def test_pressure_levels_do_not_carry_a_fabricated_cape(self, real_archive):
+        """CAPE is a real column diagnostic (SURFCAPE.POS.F00 has no
+        per-pressure-level equivalent in this archive) - must not appear
+        on the 7 constant-pressure levels, only Surface."""
+        for level_label, fields in real_archive["levels"].items():
+            if level_label == "Surface":
+                continue
+            assert "cape" not in fields
+
+    def test_sample_archive_at_point_carries_the_real_cape_through(self, real_archive):
+        lat, lon = 36.75, 3.06
+        lat_idx = int(np.argmin(np.abs(real_archive["lats"] - lat)))
+        lon_idx = int(np.argmin(np.abs(real_archive["lons"] - lon)))
+        expected_cape = float(real_archive["levels"]["Surface"]["cape"][lat_idx, lon_idx])
+
+        sample = sample_archive_at_point(real_archive, lat, lon)
+
+        assert sample["Surface"]["cape"] == pytest.approx(expected_cape)
+        assert "cape" not in sample["850 hPa"]
+
+    def test_real_awci_convective_module_responds_to_the_real_cape(self, real_archive):
+        """End-to-end proof the real CAPE actually reaches AWCICalculator
+        and changes its output, not just present-but-unused in the dict:
+        the convective module score with real CAPE included must differ
+        from the same real point computed with CAPE stripped out."""
+        sample = sample_archive_at_point(real_archive, lat=36.75, lon=3.06)
+        assert sample["Surface"]["cape"] > 0.0  # this real point's own real CAPE is nonzero
+
+        with_cape = AWCICalculator().calculate(sample["Surface"])
+
+        without_cape = dict(sample["Surface"])
+        del without_cape["cape"]
+        no_cape_result = AWCICalculator().calculate(without_cape)
+
+        assert with_cape["module_scores"]["convective"] != no_cape_result["module_scores"]["convective"]
+
     def test_all_17_real_lead_times_decode_with_a_real_advancing_validity(self, real_archive):
         """Real, direct proof the other 16 real lead times are genuinely
         different forecast hours, not the same file under 17 names -
