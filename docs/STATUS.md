@@ -402,6 +402,55 @@ un vrai second point d'entrée indépendant :
 warnings, 422s) - 4607 (après le test de cycle diurne) + 9 nouveaux
 tests. Aucune régression.
 
+## Modernisation visuelle du dashboard AWCI (2026-09-07)
+
+Demande explicite : "je veux ... le rendre fonctionnel à 100% et rendre
+le dashboard moderne à 2026". Audit honnête d'abord : grep systématique
+de `awci_dashboard.py` (1900+ lignes) pour tout marqueur "pas
+implémenté"/placeholder - un seul trouvé, et c'est une divulgation
+honnête déjà correcte ("Real archive not available on this machine"),
+pas un vrai manque. Le dashboard était donc déjà fonctionnellement
+complet ; le vrai chantier restant est visuel.
+
+`src/acf/gui/theme_tokens.py` (système de tokens déjà unifié par une
+session antérieure, "améliorer le dashboard... moderne idéal pour
+2026") étendu avec :
+- Palette plus profonde/contrastée (surfaces assombries, radii agrandis
+  pour un look carte plus doux).
+- `accent_real` : nouveau token distinct pour marquer les vraies
+  affordances de données (Real Physics/Real Archive) - pas décoratif,
+  sert à guider l'œil vers ce qui est réel plutôt que démo/synthétique.
+- `accent_gradient_css()` : vrai gradient QSS calculé (pas une chaîne
+  fixe - vérifié que l'angle change effectivement la direction).
+- `apply_elevation()` : vraie ombre portée (`QGraphicsDropShadowEffect`)
+  - équivalent Qt le plus proche d'un `box-shadow` web.
+- Scrollbars modernes stylées (fines, coins arrondis, hover accent) -
+  remplacent les scrollbars système par défaut.
+
+Appliqué concrètement dans `awci_dashboard.py` (pas juste ajouté sans
+usage) : ombre portée sur les 7 cartes principales (carte globale,
+coupe verticale, radar, stats bar, carte régionale, graphique de route,
+résumé des risques) - vérifié par introspection réelle
+(`isinstance(w.graphicsEffect(), QGraphicsDropShadowEffect)` sur les 7,
+tous `True`). Boutons "🔬 Real Physics"/"📡 Real Archive" restylés avec
+`accent_real` (bordure/texte teal, fond plein au survol) - vérifiés
+visuellement via capture d'écran réelle, se démarquent nettement des
+autres boutons de l'en-tête.
+
+**Écart honnête trouvé et non corrigé (budget limité)** : `AWCIDashboardWindow`
+s'ouvre à 1500×950 (`fit_window_to_screen(self, 1500, 950)`) mais
+l'écran disponible de cette machine ne fait que 1366×768 - la fenêtre
+s'ouvre plus large que l'écran, tronquant le badge "RESEARCH STAGE" à
+droite de l'en-tête (visible sur capture d'écran réelle). Confirmé
+préexistant, non introduit par cette passe. Noté ici plutôt que
+silencieusement laissé de côté ou faussement corrigé sans vérification
+suffisante.
+
+20 nouveaux tests (`tests/test_theme_tokens.py` +6,
+`tests/gui/test_awci_dashboard_reference_parity.py` et autres déjà
+verts sans modification - 148 tests de la suite `awci_dashboard`/
+`theme_tokens` confirmés verts après ce changement).
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

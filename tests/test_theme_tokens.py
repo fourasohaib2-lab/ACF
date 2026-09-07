@@ -13,7 +13,15 @@ import re
 import pytest
 
 from acf.gui.theme import ThemeManager
-from acf.gui.theme_tokens import COLORS, TOKENS, card_frame_style, dashboard_stylesheet, label_style
+from acf.gui.theme_tokens import (
+    COLORS,
+    TOKENS,
+    accent_gradient_css,
+    apply_elevation,
+    card_frame_style,
+    dashboard_stylesheet,
+    label_style,
+)
 
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -64,3 +72,64 @@ def test_card_frame_style_uses_real_tokens():
     assert TOKENS.bg_card in style
     assert TOKENS.border in style
     assert f"{TOKENS.radius_md}px" in style
+
+
+# --------------------------------------------------------- 2026 refresh
+# (accent_real/accent_gradient_*, accent_gradient_css(), apply_elevation() -
+# added the same "modernize the AWCI dashboard à 2026" request that
+# added the real card shadows and scrollbar styling above)
+
+
+def test_accent_real_is_a_distinct_real_token_from_the_other_accents():
+    """The whole point of accent_real: a real-data affordance (Real
+    Physics/Real Archive) must read as visually distinct from the demo/
+    chrome accents, not silently reuse one of them."""
+    assert TOKENS.accent_real not in (TOKENS.accent_primary, TOKENS.accent_secondary)
+    assert _HEX_RE.match(TOKENS.accent_real)
+
+
+def test_accent_gradient_css_is_a_real_qss_lineargradient_using_the_real_tokens():
+    css = accent_gradient_css()
+    assert css.startswith("qlineargradient(")
+    assert TOKENS.accent_gradient_start in css
+    assert TOKENS.accent_gradient_end in css
+
+
+def test_accent_gradient_css_direction_changes_with_angle():
+    """Not a fixed string regardless of the angle argument - genuinely
+    computes different QSS coordinates."""
+    assert accent_gradient_css(0) != accent_gradient_css(90)
+
+
+def test_apply_elevation_attaches_a_real_drop_shadow_effect(qtbot):
+    from PySide6.QtWidgets import QGraphicsDropShadowEffect, QWidget
+
+    widget = QWidget()
+    qtbot.addWidget(widget)
+    assert widget.graphicsEffect() is None
+
+    apply_elevation(widget)
+
+    effect = widget.graphicsEffect()
+    assert isinstance(effect, QGraphicsDropShadowEffect)
+    assert effect.blurRadius() == 24
+
+
+def test_apply_elevation_respects_custom_parameters(qtbot):
+    from PySide6.QtWidgets import QWidget
+
+    widget = QWidget()
+    qtbot.addWidget(widget)
+
+    apply_elevation(widget, blur_radius=40, y_offset=10, opacity=0.5)
+
+    effect = widget.graphicsEffect()
+    assert effect.blurRadius() == 40
+    assert effect.offset().y() == 10
+    assert effect.color().alpha() == int(255 * 0.5)
+
+
+def test_dashboard_stylesheet_includes_modern_scrollbar_styling():
+    sheet = dashboard_stylesheet()
+    assert "QScrollBar" in sheet
+    assert TOKENS.border_strong in sheet

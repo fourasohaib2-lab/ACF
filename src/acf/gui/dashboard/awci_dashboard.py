@@ -136,7 +136,35 @@ from acf.gui.dashboard.awci_synthetic_field import (
 from acf.gui.dashboard.awci_timeline import AWCITimeline
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
-from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
+from acf.gui.theme_tokens import TOKENS, apply_elevation, dashboard_stylesheet, label_style
+
+
+def _real_data_button_style() -> str:
+    """Real-data affordance styling (added 2026-09-07, "modernize the
+    AWCI dashboard à 2026" request) - "🔬 Real Physics" and "📡 Real
+    Archive" are this dashboard's two genuine-data entry points (vs.
+    the synthetic demo pattern every panel shows until one of them is
+    used), so they get TOKENS.accent_real instead of the flat default
+    QPushButton style every other header button keeps - a real visual
+    priority cue, not decoration for its own sake."""
+    t = TOKENS
+    return f"""
+        QPushButton {{
+            background-color: {t.bg_surface_alt};
+            color: {t.accent_real};
+            border: 1px solid {t.accent_real};
+            border-radius: {t.radius_md}px;
+            padding: {t.spacing_xs}px {t.spacing_md}px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: {t.accent_real};
+            color: {t.bg_root};
+        }}
+        QPushButton:pressed {{
+            background-color: {t.bg_root};
+        }}
+    """
 
 logger = logging.getLogger("acf.gui.dashboard.awci")
 
@@ -532,6 +560,7 @@ class AWCIDashboard(QWidget):
             "section - is sampled from this one real trajectory (acf.awci.path_sampling)."
         )
         self.real_physics_button.clicked.connect(self._toggle_real_physics)
+        self.real_physics_button.setStyleSheet(_real_data_button_style())
         header_row.addWidget(self.real_physics_button)
 
         self.play_evolution_button = QPushButton("▶ Play Evolution (4D)")
@@ -595,6 +624,7 @@ class AWCIDashboard(QWidget):
             "repository) - honestly reports if unavailable here, never a fabricated result."
         )
         self.real_archive_button.clicked.connect(self._open_real_archive)
+        self.real_archive_button.setStyleSheet(_real_data_button_style())
         header_row.addWidget(self.real_archive_button)
 
         # Real, static status badge (added 2026-09-03, docs/reference/
@@ -718,16 +748,19 @@ class AWCIDashboard(QWidget):
         # (acf_general_dashboard.py's setMinimumHeight()).
         self.global_map.setMinimumHeight(340)
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
+        apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=3)
 
         right_col = QVBoxLayout()
         right_col.setSpacing(8)
         self.cross_section = AWCICrossSection()
         self.cross_section.setMinimumHeight(220)
+        apply_elevation(self.cross_section)
         right_col.addWidget(self.cross_section, stretch=1)
 
         radar_row = QHBoxLayout()
         self.radar = AWCIRadar("AWCI COMPONENTS (example at point)")
+        apply_elevation(self.radar)
         self.component_list = _ComponentValueList()
         self.component_list.componentClicked.connect(self._on_component_clicked)
         radar_row.addWidget(self.radar, stretch=2)
@@ -739,6 +772,7 @@ class AWCIDashboard(QWidget):
 
         # --- Stats bar -----------------------------------------------------
         self.stats_bar = AWCIStatsBar()
+        apply_elevation(self.stats_bar, blur_radius=18, y_offset=3, opacity=0.3)
         outer.addWidget(self.stats_bar)
 
         # --- Row 2: regional map (left) + route/risk (right) --------------
@@ -751,6 +785,7 @@ class AWCIDashboard(QWidget):
         self.regional_map.set_flight_path(_REGIONAL_ROUTE)
         self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
         self.regional_map.pointClicked.connect(self._on_map_point_clicked)
+        apply_elevation(self.regional_map)
         # Real awci_score set for real by refresh() right after _build_ui()
         # returns (see __init__) - not left at "no score" here.
         left_col2.addWidget(self.regional_map, stretch=1)
@@ -831,8 +866,10 @@ class AWCIDashboard(QWidget):
 
         op_row = QHBoxLayout()
         self.route_chart = AWCIRouteChart()
+        apply_elevation(self.route_chart)
         self.risk_summary = AWCIRiskSummary()
         self.risk_summary.rowClicked.connect(self._on_risk_badge_clicked)
+        apply_elevation(self.risk_summary)
         op_row.addWidget(self.route_chart, stretch=2)
         op_row.addWidget(self.risk_summary, stretch=1)
         right_col2.addLayout(op_row, stretch=1)

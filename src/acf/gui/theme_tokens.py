@@ -24,39 +24,61 @@ around that data.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
 class _Tokens:
     """Design tokens for the dark theme (ACF's only theme today with a
     fully modern treatment - `light.qss` gets the same shape mirrored
-    to a light ground, see resources/themes/light.qss)."""
+    to a light ground, see resources/themes/light.qss).
 
-    # Surfaces (darkest to lightest)
-    bg_root: str = "#0b1220"
-    bg_surface: str = "#121a2b"
-    bg_surface_alt: str = "#182238"
-    bg_card: str = "#16213e"
-    border: str = "#263450"
-    border_strong: str = "#34445f"
+    Refreshed 2026-09-07 (explicit user request to modernize the AWCI
+    dashboard "à 2026") - deeper, higher-contrast surfaces, a real
+    two-stop accent gradient (`accent_gradient_start/end`, used by
+    `accent_gradient_css()` below for headers/active states instead of
+    a flat accent fill), and a dedicated `accent_real` token so real
+    data affordances (Real Physics/Real Archive) can read as visually
+    distinct from a flat, single-color chrome - all values still consumed
+    through the same `TOKENS`/`COLORS`/`label_style()`/`dashboard_stylesheet()`
+    call sites, so every panel already using them picks this up with no
+    per-panel change required."""
+
+    # Surfaces (darkest to lightest) - deepened slightly for more
+    # contrast against cards, and to read as less "flat grey" on a
+    # modern OLED-friendly dark UI.
+    bg_root: str = "#080d17"
+    bg_surface: str = "#0f1729"
+    bg_surface_alt: str = "#16213a"
+    bg_card: str = "#1a2540"
+    border: str = "#28375a"
+    border_strong: str = "#3c5180"
 
     # Text
-    text_primary: str = "#e8edf5"
-    text_secondary: str = "#9fb0c9"
-    text_muted: str = "#6b7a94"
+    text_primary: str = "#eef2f9"
+    text_secondary: str = "#a7b6d1"
+    text_muted: str = "#71809c"
 
-    # Accents
+    # Accents - primary kept as the established cyan (brand
+    # continuity), secondary a real gradient partner (violet) via
+    # accent_gradient_css() below. accent_real marks a genuine-data
+    # affordance (Real Physics/Real Archive) as distinct from demo/
+    # synthetic ones, on purpose - not decorative.
     accent_primary: str = "#4fc3f7"
     accent_primary_hover: str = "#7ad4ff"
-    accent_secondary: str = "#7c4dff"
-    success: str = "#4caf82"
+    accent_secondary: str = "#8b5cf6"
+    accent_real: str = "#22d3a8"
+    accent_gradient_start: str = "#4fc3f7"
+    accent_gradient_end: str = "#8b5cf6"
+    success: str = "#22d3a8"
     warning: str = "#ffb74d"
     danger: str = "#ff5f6d"
 
-    # Geometry
-    radius_sm: int = 4
-    radius_md: int = 8
-    radius_lg: int = 14
+    # Geometry - slightly larger radii read as a more current, softer
+    # "2026" card language than the previous sharper corners.
+    radius_sm: int = 6
+    radius_md: int = 10
+    radius_lg: int = 16
     spacing_xs: int = 4
     spacing_sm: int = 8
     spacing_md: int = 12
@@ -91,10 +113,52 @@ COLORS: dict[str, str] = {
     "accent_primary": TOKENS.accent_primary,
     "accent_primary_hover": TOKENS.accent_primary_hover,
     "accent_secondary": TOKENS.accent_secondary,
+    "accent_real": TOKENS.accent_real,
     "success": TOKENS.success,
     "warning": TOKENS.warning,
     "danger": TOKENS.danger,
 }
+
+
+def accent_gradient_css(angle_deg: int = 100) -> str:
+    """QSS-syntax linear gradient between the two real accent tokens -
+    for headers/active-tab/primary-button fills that want a real 2026
+    gradient look instead of a flat single-color fill. Qt's QSS only
+    supports `qlineargradient` with x1/y1/x2/y2 in [0,1] normalized
+    coordinates, not a CSS-style angle, so `angle_deg` is converted to
+    the nearest of the 4 cardinal/diagonal directions QSS can actually
+    express (0/45/90/135/180/...) rather than silently producing the
+    wrong gradient direction for an arbitrary angle."""
+    import math
+
+    rad = math.radians(angle_deg % 360)
+    x2 = 0.5 + 0.5 * math.cos(rad)
+    y2 = 0.5 + 0.5 * math.sin(rad)
+    x1, y1 = 1.0 - x2, 1.0 - y2
+    return (
+        f"qlineargradient(x1:{x1:.2f}, y1:{y1:.2f}, x2:{x2:.2f}, y2:{y2:.2f}, "
+        f"stop:0 {TOKENS.accent_gradient_start}, stop:1 {TOKENS.accent_gradient_end})"
+    )
+
+
+def apply_elevation(widget: Any, blur_radius: int = 24, y_offset: int = 6, opacity: float = 0.35) -> None:
+    """Attach a real QGraphicsDropShadowEffect to `widget` - the
+    closest Qt-achievable equivalent to a modern web dashboard's
+    `box-shadow` card elevation (added 2026-09-07, "modernize the AWCI
+    dashboard à 2026" request). Soft, dark, offset downward - reads as
+    the card floating slightly above the root background rather than
+    being flush with it. Safe to call on any QWidget; each widget gets
+    its own effect instance (Qt does not allow sharing one
+    QGraphicsEffect across widgets - reusing one would silently move it
+    to the last widget it was assigned to)."""
+    from PySide6.QtGui import QColor
+    from PySide6.QtWidgets import QGraphicsDropShadowEffect
+
+    effect = QGraphicsDropShadowEffect(widget)
+    effect.setBlurRadius(blur_radius)
+    effect.setOffset(0, y_offset)
+    effect.setColor(QColor(0, 0, 0, int(255 * opacity)))
+    widget.setGraphicsEffect(effect)
 
 
 def label_style(color: str = "text_primary", size: str = "md", weight: str = "normal") -> str:
@@ -175,6 +239,39 @@ def dashboard_stylesheet() -> str:
         QTabBar::tab:selected {{
             background: {t.bg_card};
             color: {t.text_primary};
+            border-bottom: 2px solid {t.accent_primary};
+        }}
+        QScrollBar:vertical {{
+            background: transparent;
+            width: 10px;
+            margin: 0;
+        }}
+        QScrollBar::handle:vertical {{
+            background: {t.border_strong};
+            border-radius: 5px;
+            min-height: 24px;
+        }}
+        QScrollBar::handle:vertical:hover {{
+            background: {t.accent_primary};
+        }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            height: 0px;
+        }}
+        QScrollBar:horizontal {{
+            background: transparent;
+            height: 10px;
+            margin: 0;
+        }}
+        QScrollBar::handle:horizontal {{
+            background: {t.border_strong};
+            border-radius: 5px;
+            min-width: 24px;
+        }}
+        QScrollBar::handle:horizontal:hover {{
+            background: {t.accent_primary};
+        }}
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+            width: 0px;
         }}
         QToolButton {{
             background-color: {t.bg_surface_alt};
