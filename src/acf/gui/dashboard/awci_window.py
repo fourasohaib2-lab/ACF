@@ -23,12 +23,29 @@ class AWCIDashboardWindow(QMainWindow):
     def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("AWCI – Aviation Weather Complexity Index")
-        # NOTE (correction): was a hardcoded self.resize(1500, 950), which
-        # could exceed a smaller screen's available geometry. Clamp to what
-        # the screen actually offers instead (see acf.gui_screen_utils).
-        fit_window_to_screen(self, 1500, 950)
 
         self.awci_dashboard = AWCIDashboard()
+        # NOTE (correction, 2026-09-07 - real bug, found from a real
+        # screenshot while modernizing this dashboard's visual design,
+        # not a code read): this used to call fit_window_to_screen(self,
+        # 1500, 950) BEFORE self.awci_dashboard existed, so the fixed
+        # 1500 guess had no way to know the header row's own real
+        # natural width. Measured directly: the header (title + 🔬 Real
+        # Physics/🧊 3D View/📨 Message/🔔 Alerts/📊 Report/📡 Real
+        # Archive buttons + the RESEARCH STAGE badge) needs ~1533px,
+        # 33px more than the fixed guess - the badge's own right edge
+        # was genuinely clipped, confirmed in a real screenshot, on a
+        # screen plenty large enough to fit either width (1920x1080 -
+        # this was never actually a screen-size problem, despite an
+        # earlier pass in this same session initially misdiagnosing it
+        # as one by comparing against the wrong screen). Now sized from
+        # the dashboard's own real, current sizeHint() - self-correcting
+        # if a future change grows or shrinks the header, instead of a
+        # second guessed constant that would just as easily go stale
+        # again. Still screen-clamped exactly as before (unchanged for
+        # a genuinely small screen, where the QScrollArea below already
+        # takes over, per this class's own next NOTE).
+        fit_window_to_screen(self, self.awci_dashboard.sizeHint().width(), 950)
         # NOTE (real responsive-sizing fix, 2026-09-05): AWCIDashboard's
         # own real, stacked maps/charts (global map, cross-section,
         # regional map, regional trend, ...) give it a genuine minimum

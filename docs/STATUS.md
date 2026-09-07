@@ -437,14 +437,27 @@ tous `True`). Boutons "🔬 Real Physics"/"📡 Real Archive" restylés avec
 visuellement via capture d'écran réelle, se démarquent nettement des
 autres boutons de l'en-tête.
 
-**Écart honnête trouvé et non corrigé (budget limité)** : `AWCIDashboardWindow`
-s'ouvre à 1500×950 (`fit_window_to_screen(self, 1500, 950)`) mais
-l'écran disponible de cette machine ne fait que 1366×768 - la fenêtre
-s'ouvre plus large que l'écran, tronquant le badge "RESEARCH STAGE" à
-droite de l'en-tête (visible sur capture d'écran réelle). Confirmé
-préexistant, non introduit par cette passe. Noté ici plutôt que
-silencieusement laissé de côté ou faussement corrigé sans vérification
-suffisante.
+**Correctif du débordement d'en-tête (2026-09-07, suite immédiate)** :
+le badge "RESEARCH STAGE" tronqué (capture d'écran réelle ci-dessus)
+avait d'abord été mal diagnostiqué comme un problème de taille d'écran
+(`fit_window_to_screen(self, 1500, 950)` vs un écran de 1366×768).
+Re-vérification rigoureuse (`window.screen()` au lieu de
+`app.primaryScreen()`, config double-écran sur cette machine) : le vrai
+écran utilisé fait 1920×1080, largement suffisant - **ce n'était pas un
+problème d'écran**. Cause réelle : `fit_window_to_screen(self, 1500, 950)`
+était appelé AVANT la construction de `self.awci_dashboard`, donc la
+largeur naturelle réelle de l'en-tête (~1533px, mesurée directement) ne
+pouvait pas être connue à ce moment - 33px de trop pour tenir dans les
+1500px. Corrigé en construisant le dashboard d'abord, puis en
+dimensionnant la fenêtre depuis son vrai `sizeHint()` actuel
+(auto-correcteur si l'en-tête change plus tard), toujours borné par
+l'écran comme avant. Vérifié par capture d'écran réelle : badge et
+valeurs du panneau latéral entièrement visibles. 1 nouveau test
+(`tests/test_awci_window_sizing.py`), qui distingue explicitement le
+cas "écran assez large" (fenêtre = largeur naturelle) du cas "écran
+trop petit" (le clamp existant + `QScrollArea` prennent le relais,
+comportement inchangé et toujours correct) - vérifié sur le vrai
+écran ET sur l'écran virtuel 800×800 utilisé par la suite de tests.
 
 20 nouveaux tests (`tests/test_theme_tokens.py` +6,
 `tests/gui/test_awci_dashboard_reference_parity.py` et autres déjà
