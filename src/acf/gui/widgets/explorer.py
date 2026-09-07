@@ -60,6 +60,25 @@ class ExplorerWidget(QTreeWidget):
     ################################################
 
     def refresh_datasets(self, datasets):
+        """
+        NOTE (correction, 2026-09-07 - real bug, found by an end-to-end
+        smoke test of ClassicDashboardWindow's File/Data menu, not a
+        code read): this used to unconditionally addTopLevelItem() a
+        new "Datasets" branch on every call with no removal of any
+        prior one. MenuManager.refresh_dataset_view() (the only real
+        caller) runs this every time a dataset is opened/refreshed -
+        a completely ordinary session opening 2-3 datasets left 2-3
+        duplicate "Datasets" branches stacked in the tree, confirmed by
+        a direct test (topLevelItemCount() grew 1,2,3,4... across 4
+        calls instead of staying at 1). Fixed by removing any existing
+        "Datasets" branch first - deliberately not a blanket clear()
+        the way load_project() uses, since that would also wipe a
+        project tree already loaded above it.
+        """
+
+        for index in reversed(range(self.topLevelItemCount())):
+            if self.topLevelItem(index).text(0) == "🌦 Datasets":
+                self.takeTopLevelItem(index)
 
         dataset_root = QTreeWidgetItem(["🌦 Datasets"])
 

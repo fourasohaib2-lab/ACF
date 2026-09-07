@@ -182,6 +182,41 @@ l'inclut donc pas (d'où 4577 et non 4578). Ce test précis a été vérifié
 séparément, isolé avec ses 12 voisins du même fichier : **13 passed**
 juste après son ajout. Total réel : 4578 tests, 0 échec.
 
+## Correctif utilisateur (suite) : branches "Datasets" dupliquées dans l'Explorer (2026-09-07)
+
+Suite au "attaque le reste" de model4d/physics/, retour à la recherche
+de bugs par usage réel (même méthode que le fix AWCI ci-dessus) sur une
+autre zone : `ClassicDashboardWindow`/`MenuManager`, dont le propre
+docstring admet que `WorkspaceManager`/`DataManager`/`DatasetPanel`
+"existaient, testés isolément, mais rien ne les avait jamais assemblés
+derrière une vraie fenêtre avant" - exactement le profil de code qui a
+produit le bug AWCI. Smoke-test réel des 13 actions du menu
+Fichier/Données (`ClassicDashboardWindow` réelle, dialogues modaux
+bloquants patchés en "annulé"/"rempli", `WorkspaceManager` isolé sur un
+fichier temporaire pour ne pas écrire dans le vrai
+`~/.acf/recent_projects.json` de l'utilisateur) : les 13 actions
+s'exécutent sans exception - mais comme pour le bug AWCI, l'absence de
+crash ne suffit pas. Vérification des effets réels (titre de fenêtre,
+fichier `.acfproj` sur disque, état de `WorkspaceManager`) : 7/8 OK, le
+8e a révélé un vrai bug par un chemin différent - `acf.gui.widgets.
+explorer.ExplorerWidget.refresh_datasets()` empilait une nouvelle
+branche "🌦 Datasets" à chaque appel au lieu de remplacer la
+précédente (`load_project()` fait un `clear()` complet en tête, mais
+rien d'équivalent n'existait pour `refresh_datasets()`). Confirmé par
+test direct : `topLevelItemCount()` croissait 1, 2, 3, 4... sur 4
+appels. `MenuManager.refresh_dataset_view()` est le seul appelant réel,
+invoqué à chaque ouverture de dataset - une session normale ouvrant
+plusieurs jeux de données aurait accumulé des branches dupliquées
+indéfiniment dans l'Explorer. Corrigé en retirant l'ancienne branche
+"Datasets" avant d'ajouter la nouvelle (pas un `clear()` complet, pour
+ne pas effacer un arbre de projet déjà chargé au-dessus). `ExplorerWidget`
+n'avait aucune couverture de test avant ce correctif - 5 nouveaux tests
+ajoutés (`tests/test_explorer_widget.py`), couvrant aussi le cas mixte
+projet+datasets et le remplacement de projet.
+
+**Run complet de non-régression : 4583 passed, 0 failed** (664
+warnings, 391s) - 4578 + 5 nouveaux tests explorer. Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce
