@@ -92,6 +92,30 @@ class CatalogManager:
         return self.datasets.all()
 
     def status(self):
+        """
+        NOTE (correction, 2026-09-07 - found while testing ACF against
+        real Météo-France ALADIN data, RESTOR's own FULLPOS_* archive):
+        "datasets" here is this.datasets (acf.catalog.dataset_catalog.
+        DatasetCatalog, keyed by DatasetEntry) - confirmed by a repo-wide
+        grep to have zero real callers of add_dataset()/DatasetEntry()
+        anywhere in src/acf/, so it is permanently 0 no matter how many
+        datasets are actually loaded. The datasets a user genuinely opens
+        (acf.data.manager.DataManager.open() -> acf.catalog.
+        dataset_registry.DatasetRegistry, exposed as DataManager.
+        datasets()/status()["current_dataset"] in that same manager's own
+        status dict) are a completely separate, real, live-tracked
+        system this CatalogManager never learns about. Not fabricated -
+        this genuinely is this catalog's own real, currently-empty
+        count - but a caller combining both managers' status() dicts
+        (as DataManager.status() itself does) could easily misread
+        "catalog": {"datasets": 0} as "nothing is loaded" while a real
+        dataset sits open right next to it. Disclosed rather than
+        silently force-wired: DatasetEntry's own shape (variables as a
+        list, not the live acf.data.dataset.Dataset's dict) suggests
+        these were designed as two different concepts, not the same one
+        left unfinished - unifying them is a real design decision, not
+        this pass's call to make unilaterally.
+        """
         return {
             "scientific_parameters": len(self.scientific.all()),
             "datasets": self.datasets.count(),
