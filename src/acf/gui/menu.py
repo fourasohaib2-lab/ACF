@@ -221,15 +221,28 @@ class MenuManager:
     ##################################################
 
     def open_dataset(self):
+        """
+        NOTE (correction, 2026-09-07 - same class of bug as
+        esoc_window.py's own already-fixed "je vois les dossiers mais
+        aucun fichier ne s'affiche" NOTE, found while testing this exact
+        dialog against a real Météo-France operational archive, RESTOR/
+        ALADIN's own FULLPOS_* files): the filter used to list only
+        (*.grib *.grib2 *.grb *.nc *.nc4) as the sole, always-active
+        filter - no "All Files" option, and missing ACF's own real FA
+        reader's own extensions entirely (.fa/.lfa/.lfi), plus real
+        FULLPOS_* archive output has no extension at all. A real
+        ACF-readable file (confirmed: acf.data.readers.epygram_reader.
+        EPyGrAMReader genuinely opens RESTOR's FULLPOS files, 97 real
+        fields) could never even be selected here. "All Files (*)" is
+        now the default filter, matching ESOCWindow's own already-fixed
+        dialog, and the named filter now covers .fa/.lfa/.lfi too.
+        """
 
         filename, _ = QFileDialog.getOpenFileName(
             self.window,
             "Open Scientific Dataset",
             "",
-            """
-            Meteorological files
-            (*.grib *.grib2 *.grb *.nc *.nc4)
-            """,
+            "All Files (*);;Meteorological files (*.grib *.grib2 *.grb *.nc *.nc4 *.fa *.lfa *.lfi)",
         )
 
         if not filename:

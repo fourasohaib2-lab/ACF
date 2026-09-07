@@ -280,3 +280,77 @@ def test_fa_adapters_do_not_false_positive_on_shared_extension(tmp_path: Path):
 
     # The model-name substring itself still works, unaffected.
     assert ARPEGEIngestionAdapter().detect(tmp_path / "arpege_run.fa") is True
+
+
+def test_can_read_rejects_a_genuine_non_meteorological_extensionless_file(tmp_path: Path):
+    """
+    NOTE (correction, 2026-09-07): can_read() used to match by
+    extension only. Confirmed against a real Météo-France operational
+    archive (RESTOR/ALADIN's own FULLPOS_* output, which has no
+    extension at all) that this made a genuinely-readable real FA file
+    unreachable via ReaderFactory. The fix adds a content-based
+    fallback (epygram.formats.guess()) for extensionless files - this
+    test checks the fallback doesn't turn into a false-positive trap:
+    a real, ordinary non-meteorological file with no extension must
+    still be rejected (real epygram, no mocking - it genuinely fails
+    to parse this as any known format).
+    """
+    plain_file = tmp_path / "README"
+    plain_file.write_text("just a plain text file, not meteorological data", encoding="utf-8")
+
+    reader = EPyGrAMReader()
+    assert reader.can_read(plain_file) is False
+
+
+def test_can_read_accepts_a_real_fa_file_with_no_extension(tmp_path: Path, monkeypatch):
+    """
+    Same fix as above, positive case: an extensionless file that
+    content-detection genuinely identifies as FA format (the exact
+    real-world shape of RESTOR's own FULLPOS_2026083100_0000 - verified
+    manually against that real file: epygram.formats.guess() returns
+    "FA" for it) must now be recognized. epygram.formats.guess() is
+    mocked here only because no real binary FA fixture ships in this
+    repo - the real file this is modeled on was independently verified
+    by hand, not fabricated from this test's own expectations.
+    """
+    import epygram.formats
+
+    monkeypatch.setattr(epygram.formats, "guess", lambda filename: "FA")
+
+    extensionless_file = tmp_path / "FULLPOS_2026083100_0000"
+    extensionless_file.write_bytes(b"\x00" * 64)
+
+    reader = EPyGrAMReader()
+    assert reader.can_read(extensionless_file) is True
+
+
+def test_read_returns_a_real_dataset_object_not_a_dict(tmp_path: Path):
+    """
+    NOTE (correction, 2026-09-07 - real bug found one step past the
+    can_read() fix above, on the same real RESTOR file): read() used
+    to return a plain dict. Every other reader in this factory
+    (GRIBReader, NetCDFReader, ...) returns a real
+    acf.data.dataset.Dataset, and DatasetRegistry.register() assumes
+    one (`dataset.modified = ...`) - a dict has no settable attributes,
+    so DataManager.open() crashed with AttributeError on the real file
+    even after can_read() correctly found this reader. Uses the same
+    dummy-content-so-epygram-honestly-fails pattern as this file's
+    other tests (real epygram, real failure, 0 real fields) - proving
+    the TYPE of what comes back is now correct without needing a real
+    binary FA fixture.
+    """
+    from acf.data.dataset import Dataset
+
+    fa_file = tmp_path / "arome_test.fa"
+    fa_file.write_text("DUMMY FA CONTENT", encoding="utf-8")
+
+    reader = EPyGrAMReader()
+    dataset = reader.read(fa_file)
+
+    assert isinstance(dataset, Dataset)
+    assert dataset.name == "arome_test"
+    assert dataset.filetype == "FA"
+    assert dataset.source == "epygram"
+    # Real dataset.register() must be able to touch it like any other -
+    # this is the exact call that used to crash with AttributeError.
+    dataset.touch()

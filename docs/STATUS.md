@@ -217,6 +217,70 @@ projet+datasets et le remplacement de projet.
 **Run complet de non-régression : 4583 passed, 0 failed** (664
 warnings, 391s) - 4578 + 5 nouveaux tests explorer. Aucune régression.
 
+## Correctif utilisateur (suite) : DatasetPanel affichait "Unnamed Dataset" (2026-09-07)
+
+Même audit, même fenêtre (`ClassicDashboardWindow`) : `acf.gui.docks.
+dataset_panel.DatasetPanel.refresh()` lisait `registry.datasets` en
+supportant liste ou méthode, mais `acf.catalog.dataset_registry.
+DatasetRegistry.datasets` est une `@property` retournant un **dict**
+(id -> dataset) - jamais callable, donc la branche méthode ne se
+déclenchait jamais pour le vrai registre. Sans traitement du cas dict,
+`for dataset in datasets:` itérait sur les **clés** du dict (des
+chaînes), donc chaque dataset réel s'affichait "Unnamed Dataset" sans
+variable. Corrigé (`.values()` avant itération). Aucune couverture de
+test avant ce correctif - 7 tests ajoutés (`tests/test_dataset_panel.py`).
+
+## Test avec des données réelles RESTOR/ALADIN, à la demande explicite de l'utilisateur (2026-09-07)
+
+L'utilisateur a demandé de tester ACF avec un vrai fichier de données
+("RESTOR c'est des données réelles") - `/home/souhaib/RESTOR`, une
+archive opérationnelle Météo-France réelle (retours d'expérience
+ALADIN/AROME). Deux vrais bugs trouvés et corrigés dans le seul chemin
+d'ingestion réellement câblé de l'application (`DataManager.open()`
+via `ClassicDashboardWindow`'s "Open Dataset" - `ESOCWindow._open_dataset()`,
+le point d'entrée principal, est honnêtement documenté comme non
+connecté à un pipeline de lecture, donc non concerné) :
+
+1. `acf.data.readers.epygram_reader.EPyGrAMReader.can_read()` ne
+   reconnaissait que par extension de fichier - les vrais fichiers
+   `FULLPOS_*` de RESTOR (format FA authentique, `epygram.formats.guess()`
+   confirme "FA") n'ont AUCUNE extension, donc `ReaderFactory.get_reader()`
+   retournait toujours `None` pour eux, bien que ce lecteur lise déjà
+   parfaitement ce format réel (confirmé : 97 champs réels, grille
+   350×350 réelle, température de surface -0.25°C à 39.6°C sur le
+   domaine Algérie/Afrique du Nord). Corrigé par un repli sur la
+   détection par contenu d'epygram - uniquement pour les fichiers sans
+   extension reconnue (coût borné à un vrai clic utilisateur, ce
+   lecteur étant interrogé en dernier par `ReaderFactory`).
+   Attention : `epygram.config.silent_guess_format = True` provoque une
+   redirection de file descriptor bas niveau qui entre en collision
+   avec la capture de sortie de pytest ("I/O operation on closed
+   file") - laissé à sa valeur par défaut (bruyant sur stderr mais
+   jamais un crash).
+2. Une fois le premier corrigé, un second bug est apparu au pas
+   suivant sur le même fichier réel : `EPyGrAMReader.read()` retournait
+   un simple `dict` au lieu d'un `acf.data.dataset.Dataset` - tous les
+   autres lecteurs de la fabrique (GRIBReader, NetCDFReader...) en
+   retournent un vrai, et `DatasetRegistry.register()` fait
+   `dataset.modified = ...` (affectation d'attribut, impossible sur un
+   dict) -> `AttributeError`. Corrigé en construisant un vrai `Dataset`
+   à partir des mêmes données réelles déjà extraites (noms de champs,
+   métadonnées, géométrie) - aucune donnée fabriquée.
+
+Vérifié bout-en-bout avec le vrai fichier
+`/home/souhaib/RESTOR/ALADIN/data/FULLPOS_2026083100_0000` : ouverture
+complète via `DataManager.open()`, 97 champs réels enregistrés,
+`validated: True`, et affichage correct dans `ExplorerWidget` et
+`DatasetPanel` (les deux corrigés plus tôt aujourd'hui). Corrigé aussi
+le filtre du dialogue "Open Dataset" de `MenuManager` (ne listait pas
+`.fa`/`.lfa`/`.lfi`, pas de repli "Tous les fichiers" - même classe de
+bug déjà corrigée pour `ESOCWindow._open_dataset()`). 3 nouveaux tests
+(`tests/test_epygram_reader.py`).
+
+**Run complet de non-régression : 4593 passed, 0 failed** (664
+warnings, 389s) - 4583 + 10 nouveaux tests (7 DatasetPanel + 3
+epygram_reader). Aucune régression.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

@@ -87,12 +87,55 @@ class EPyGrAMReader(BaseReader):
         self._open_failure_reason: str | None = None
 
     def can_read(self, filename: str | Path) -> bool:
-        """Check if the given file format can be read by EPyGrAM."""
+        """Check if the given file format can be read by EPyGrAM.
+
+        NOTE (correction, 2026-09-07 - real bug found by testing ACF
+        against a real Météo-France operational archive, not a
+        synthetic file: /home/souhaib/RESTOR/ALADIN/data/FULLPOS_*,
+        the user's own real ALADIN retour-d'expérience output): this
+        used to match by extension only. FULLPOS_* files - the
+        standard naming convention for FULLPOS-post-processed
+        operational FA output - carry no extension at all, so
+        can_read() always returned False for them and
+        ReaderFactory.get_reader() returned None -
+        DataManager.open() raised "No reader available" even though
+        this reader genuinely opens the file correctly (confirmed: 97
+        real fields, real 350x350 lat/lon grid, real -0.25..39.6°C
+        surface temperature over the real Algeria/North-Africa ALADIN
+        domain). Falls back to epygram's own real content-based
+        detector (epygram.formats.guess(), which actually attempts to
+        open the file with each known backend and catches IOError) only
+        when no known extension matched - the fast extension check
+        above is unchanged for every already-working case, and this
+        reader is queried last by ReaderFactory (after every
+        extension-based reader has already declined), so the slower
+        content probe only ever runs once per genuinely-ambiguous file
+        a user explicitly tries to open.
+        """
         path_str = str(filename).lower()
         for ext in self.extensions:
             if path_str.endswith(ext):
                 return True
-        return False
+
+        if not EPYGRAM_AVAILABLE:
+            return False
+        try:
+            import epygram.formats
+
+            # NOTE: deliberately NOT setting epygram.config.silent_guess_format
+            # = True here - that flag makes guess() wrap its probing in
+            # epygram's own stderr_redirected() (an OS-level fd redirect),
+            # which collided with pytest's own output-capture fd handling
+            # and crashed the test run ("ValueError: I/O operation on
+            # closed file") - confirmed by reproducing it with the flag on
+            # and it disappearing with the flag left at its default
+            # (False). The tradeoff is real: guess() prints epygram's own
+            # low-level format-probe diagnostics (e.g. "LFIOUV...") to the
+            # real stderr fd for a file it can't recognize - noisy, but
+            # never wrong and never a crash, unlike the silenced path.
+            return epygram.formats.guess(str(filename)) != "unknown"
+        except Exception:
+            return False
 
     def open(
         self,
@@ -421,22 +464,53 @@ class EPyGrAMReader(BaseReader):
         self._require_open()
         return []
 
-    def read(self, filename: str | Path) -> dict[str, Any]:
-        """BaseReader interface method: open file and return structured dataset dictionary."""
+    def read(self, filename: str | Path) -> Any:
+        """BaseReader interface method: open file and return a real acf.data.dataset.Dataset.
+
+        NOTE (correction, 2026-09-07 - real bug, found immediately
+        after can_read()'s own fix above, testing against the same
+        real file: /home/souhaib/RESTOR/ALADIN/data/FULLPOS_2026083100_0000,
+        a real Météo-France ALADIN operational output): this used to
+        return a plain dict. Every other reader in this factory
+        (GRIBReader, NetCDFReader, ...) returns a real
+        acf.data.dataset.Dataset instance, and both
+        DatasetRegistry.register() and DataManager assume one
+        (`dataset.modified = ...`, `getattr(dataset, "id", ...)`) - a
+        dict has no settable attributes, so DataManager.open() on this
+        exact real file crashed with `AttributeError: 'dict' object
+        has no attribute 'modified'`, one step past where the
+        can_read() fix above stops failing. Fixed to build a real
+        Dataset wrapping the exact same real data this reader already
+        correctly extracts (field names via list_fields(), real
+        metadata/geometry) - not fabricated fields, and matching every
+        other reader's own "register variable names now, read their
+        data lazily later via read_field()" convention (confirmed
+        against this same real file: 97 real field names, real
+        350x350 grid dimensions, real FA-format metadata).
+        """
+        from acf.data.dataset import Dataset
+
         with self.open(filename) as reader:
             fields = reader.list_fields()
             meta = reader.metadata()
             geom = reader.geometry()
-            vlevels = reader.vertical_levels()
-            return {
-                "format": meta["format"],
-                "filepath": str(filename),
-                "fields": fields,
-                "metadata": meta,
-                "geometry": geom,
-                "vertical_levels_count": len(vlevels),
-                "is_real_data": meta.get("is_real_data", False),
-            }
+
+            dataset = Dataset(
+                name=Path(filename).stem,
+                filepath=Path(filename),
+                filetype=meta.get("format", "UNKNOWN"),
+                source="epygram",
+            )
+            for field_name in fields:
+                dataset.add_variable(field_name)
+            if geom.get("n_lat") is not None:
+                dataset.add_dimension("Y", geom["n_lat"])
+            if geom.get("n_lon") is not None:
+                dataset.add_dimension("X", geom["n_lon"])
+            for key, value in meta.items():
+                dataset.set_metadata(key, value)
+            dataset.validate()
+            return dataset
 
     def _detect_format_from_ext(self, path: Path) -> str:
         path_str = str(path).lower()
