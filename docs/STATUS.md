@@ -86,20 +86,31 @@ mais audit non finalisé. Dernière mise à jour : voir `git log -- docs/STATUS.
 
 ## Tier X — Experimental (hors scope v1.0, conservé)
 
-- [~] `model4d` (reclassé Tier F -> Tier X le 2026-09-06, voir
+- [x] `model4d` (reclassé Tier F -> Tier X le 2026-09-06, voir
   ARCHITECTURE.md §3 : zéro appelant réel dans tout `src/acf/`, vérifié
   par grep répété. Code réel, testé, conservé - juste hors du périmètre
-  v1.0. Couverts : les 20 `physics/*_engine.py` +
-  `weather_intelligence_orchestrator.py`, tout `model4d/operators/` (8
-  fichiers) et `model4d/interpolation/` (9 fichiers), + 45 fichiers
-  `physics/` non-`_engine.py` relus intégralement sur 7 thématiques
-  (aérosols, couplage, physique spatiale, nuages, dynamiques nommées) —
-  3 nouveaux vrais écarts formule/implémentation trouvés et divulgués
-  (`magnetosphere_dynamics.py`/`solar_wind_interaction.py` en
-  désaccord d'un facteur 2, `magnetic_pressure()` sans mu_0,
-  `cloud_radiative_feedback.py` sans rho_w). Reste (non bloquant) :
-  ~86 des ~131 fichiers `physics/` non-`_engine.py`, non
-  individuellement relus)
+  v1.0. **Couverture complète atteinte le 2026-09-07** (suite à la
+  question directe de l'utilisateur "le projet est terminé ?" ->
+  réponse honnête "non" -> "attaque le reste") : les 20
+  `physics/*_engine.py` + `weather_intelligence_orchestrator.py`, tout
+  `model4d/operators/` (8 fichiers) et `model4d/interpolation/` (9
+  fichiers), ET la totalité des 131 fichiers `physics/` non-`_engine.py`
+  sont maintenant individuellement relus (45 lors du sweep du
+  2026-09-06, les 75 restants le 2026-09-07 — le nombre exact
+  s'est avéré 75, pas ~86 comme estimé). Écarts formule/implémentation
+  trouvés et divulgués sur l'ensemble du package : les 3 déjà connus
+  (`magnetosphere_dynamics.py`/`solar_wind_interaction.py` en désaccord
+  d'un facteur 2, `magnetic_pressure()` sans mu_0,
+  `cloud_radiative_feedback.py` sans rho_w) restent les seuls trouvés -
+  les 75 fichiers de la passe du 2026-09-07 n'en ont révélé aucun
+  nouveau : physique "simplifiée" honnêtement labellisée, formules
+  correctement citées (Stefan-Boltzmann, Beer-Lambert, Kalman, Kessler,
+  Goff-Gratch, Coriolis/géostrophique/Rossby), zéro survente IA/ML.
+  `atmospheric_waves.py` s'est avéré déjà excellent (3 corrections
+  antérieures avec citations réelles, marquées "CORRECTED:" plutôt que
+  la convention habituelle "NOTE (correction", d'où l'omission
+  précédente de ce fichier du décompte). Voir le docstring de
+  `src/acf/model4d/__init__.py` pour le détail complet.)
 - [x] `geoengineering`
 - [x] `planetary`
 - [x] `fire_weather`
@@ -246,10 +257,22 @@ documenté partout où on l'a cherché, pas qu'il n'existe plus nulle
 part. Prochaines étapes naturelles, non bloquantes :
 - `docs/STATUS.md` doit rester tenu à jour à chaque nouveau changement
   de code (pas seulement relu une fois).
-- Le reste de `model4d/physics/` (Tier X, ~100 fichiers non
-  individuellement relus) et `planetary`/`fire_weather` (Tier X)
-  restent des réserves non couvertes, explicitement hors périmètre
-  v1.0 — pas oubliées, juste non prioritaires.
 - Tier E est "souhaité", pas figé : tout nouveau module y ajouté doit
   suivre la même discipline dès son premier commit, pas être audité
   après coup.
+
+## Mise à jour (2026-09-07) : couverture complète de model4d/physics/
+
+Suite à la question directe de l'utilisateur "le projet est terminé ?"
+(réponse honnête : non, un projet de cette taille n'a pas de ligne
+d'arrivée en un tour de conversation) et son "attaque le reste" :
+les 75 fichiers `model4d/physics/` non-`_engine.py` restés
+individuellement non lus après le sweep du 2026-09-06 ont tous été
+relus intégralement. Zéro nouvelle fabrication ou écart trouvé — voir
+l'entrée `model4d` de la section Tier X ci-dessus et le docstring de
+`src/acf/model4d/__init__.py` pour le détail. `model4d/physics/` (151
+fichiers : 20 `*_engine.py` + orchestrateur + 130 autres, plus
+`operators/`/`interpolation/`) a maintenant une couverture d'audit à
+100%, une première pour ce package. Reste Tier X (zéro appelant réel
+ailleurs dans `src/acf/`) — la couverture complète change ce qu'on
+sait du code, pas si le produit livré l'utilise réellement.

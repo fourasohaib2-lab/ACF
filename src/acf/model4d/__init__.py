@@ -217,14 +217,48 @@ the water density `rho_w` divisor its implementation omits. None fixed
 "simplifiée"/illustrative - a guessed unit convention would not be an
 improvement over disclosure), all three disclosed in-file.
 
-Honest limit of this update: ~86 of the ~131 non-`_engine.py` physics/
-files remain individually unread. A repo-wide grep still finds none of
-them carrying the generic templated-docstring bloat pattern or an
-undisclosed stub/fake/placeholder marker, and the 45 read so far show
-a strong, consistent pattern (real-but-simplified physics, occasional
-unsourced coefficients already understood to be low-severity for a
-disconnected Tier X reserve) - but that is evidence from a large
-sample, not a claim of having read the rest. Tracked precisely in
-docs/STATUS.md; model4d stays a Tier X item with this scope explicitly
-stated, not silently rounded up to "fully audited".
+UPDATE (2026-09-07, user asked directly "le projet est terminé?",
+answered honestly "non", user replied "attaque le reste" - finishing
+what the prior update's own "~86 remaining" honestly flagged as
+unread): read all remaining 75 non-`_engine.py` physics/ files in full
+(the prior update's "~86" was an approximation; the exact remainder,
+computed by diffing the full 131-file listing against every filename
+named in this docstring plus every file already carrying its own
+Physics Guard/correction note, was 75). Batched by file size, smallest
+first, ~10 files per batch, same audit checklist as every prior pass
+in this file: unsourced-but-undisclosed constants, AI/ML branding
+without the claimed mechanism, formula-vs-implementation mismatches,
+missing physical constants.
+
+Result: zero new findings. All 75 are the same honestly-self-described
+"simplified"/"simplifié" toy physics as the 45 read previously - real,
+correct arithmetic for what each docstring claims (Stefan-Boltzmann,
+Beer-Lambert, Kalman gain, Arrhenius, Kessler autoconversion,
+Goff-Gratch, Atlas et al. terminal velocity, Coriolis/geostrophic/
+Rossby-number formulas all verified correct against their own stated
+equations), no AI/ML/"intelligent" branding anywhere in this batch
+(that failure mode was and remains confined to the `*_engine.py`
+cluster, already fully covered separately). One file worth naming
+positively: `atmospheric_waves.py` already carried 3 excellent,
+citation-backed corrections from an earlier pass (a phase-speed
+inversion bug, a fabricated energy coefficient, a hardcoded fake
+Rossby-speed stub - each replaced with the real formula and a real
+citation, e.g. Vallis 2017) that this docstring's own file-tracking
+had missed crediting because it used a "CORRECTED:" marker instead of
+this project's usual "NOTE (correction". No corrective action needed
+there, just noted for the record.
+
+Combined with every prior pass: **all 131 non-`_engine.py` physics/
+files are now individually read**, alongside the already-complete 20
+`*_engine.py` files, the orchestrator, and every `operators/`/
+`interpolation/` file. `model4d/physics/` full-package coverage is
+therefore complete - not a claim of "nothing could possibly be wrong
+anywhere in 41,000+ lines", but a factual statement that every file in
+this package has now had a real, individual read against this
+project's standing fabrication/mismatch checklist, with the same
+person (this session) applying it consistently end to end. model4d
+stays Tier X (zero real callers elsewhere in `src/acf/`, per the
+grep-verified finding above) - full audit coverage changes what we
+know about the code, not whether anything in the shipped product
+actually uses it.
 """

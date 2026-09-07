@@ -82,10 +82,12 @@ destructive actions: **`model4d` moved from Tier F to Tier X.** Its own
 module docstring (`src/acf/model4d/__init__.py`) already documents why,
 verified by repeated `grep -rl "from acf.model4d"` sweeps across every
 other `src/acf/` package: zero real callers anywhere. It is real,
-tested, honestly-audited code (all 20 `physics/*_engine.py` files, the
-orchestrator, every `operators/`/`interpolation/` file, and a
-representative physics/ sample are individually reviewed — see
-`docs/STATUS.md`), kept in the repository per `AGENTS.md`, but a module
+tested, honestly-audited code — as of 2026-09-07, all 20
+`physics/*_engine.py` files, the orchestrator, every
+`operators/`/`interpolation/` file, AND all 131 remaining
+non-`_engine.py` `physics/` files have been individually read (not a
+sample — full coverage; see `docs/STATUS.md`) — kept in the repository
+per `AGENTS.md`, but a module
 nothing in the shipped product imports cannot honestly gate a v1.0
 release the way `science`/`core`/`physics_guard` (which real code
 throughout the codebase actually calls) do. Pillar 1 above still lists
