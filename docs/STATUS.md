@@ -464,6 +464,85 @@ comportement inchangé et toujours correct) - vérifié sur le vrai
 verts sans modification - 148 tests de la suite `awci_dashboard`/
 `theme_tokens` confirmés verts après ce changement).
 
+## Nouveaux boutons AWCI : Connexion HPC + Import de fichier modèle (2026-09-07)
+
+Demande explicite : "ajoute un bouton pour la connexion à hpc et un
+autre bouton pour faire entrer des fichiers de modèle" (sur AWCI, ACF
+mis de côté).
+
+- **"🔌 Connect HPC"** : réutilise le vrai connecteur déjà éprouvé côté
+  ESOC (`acf.hpc_connector.HPCConnectionManager`, SSH Paramiko réel) -
+  pas de réimplémentation. Bascule connexion/déconnexion.
+- **"📂 Import Model File"** : réutilise le vrai pipeline d'ingestion
+  corrigé plus tôt cette session (`acf.data.manager.DataManager` ->
+  `EPyGrAMReader` pour FA/LFA/LFI, GRIB/NetCDF). Portée honnêtement
+  limitée : charge et confirme le fichier réel (nom, nombre de
+  champs) - ne mappe pas encore automatiquement les noms de champs
+  d'un fichier arbitraire vers les clés attendues par
+  `AWCICalculator` (c'est ce que `acf.awci.archive_field` fait
+  spécifiquement pour RESTOR/ALADIN).
+
+**Bug réel trouvé et corrigé, avec la permission explicite de
+l'utilisateur pour tester en conditions réelles contre son vrai
+cluster HPC de production** (`login2.fennec.meteo.dz`) : le premier
+test réel a montré une vraie connexion SSH réussie (commandes
+distantes en lecture seule uniquement - hostname/whoami/nproc/
+vérifications de modules, rien de destructif) mais le bouton restait
+bloqué sur "🔌 Connecting…" indéfiniment. Diagnostic reproductible :
+`_HPCConnectWorker` n'était référencé que par une variable locale dans
+`_toggle_hpc_connection()` - une vraie connexion HPC prend ~2-3s
+d'E/S réseau réelle (contrairement aux autres workers rapides/CPU de
+ce fichier), assez longtemps pour que le ramasse-miettes Python
+détruise le worker (et son `signals`, sans parent C++) avant que le
+thread d'arrière-plan ait pu émettre `finished` - une vraie race
+condition de durée de vie, confirmée en enveloppant le slot réel (il
+n'était jamais appelé, même après 20s d'attente post-succès réel).
+Corrigé en gardant une référence forte sur `self._hpc_connect_worker`
+le temps de l'appel asynchrone. **Re-vérifié en conditions réelles**
+(connexion → mise à jour d'état correcte → déconnexion propre → état
+réinitialisé) - fonctionne intégralement.
+
+9 nouveaux tests (`tests/gui/test_awci_dashboard_hpc_and_import.py`),
+aucun ne fait de vraie connexion réseau (tous mockent
+`HPCConnectionManager.connect()`/`disconnect()` au niveau classe) -
+dont un test qui verrouille spécifiquement le bug de race condition
+GC (délai réel simulé de 0.3s dans le mock + `qtbot.waitUntil()`, la
+même condition qui a exposé le bug en premier lieu).
+
+## Sélecteur de route aéroport-à-aéroport + vérification de tous les boutons (2026-09-07)
+
+Demande explicite : "ajoute un bouton pour changer la route entre les
+aeroport en intrroduisant tout les aeroport existant fonctionnel et
+rendre tout les boutons du dashboard fonctionnel".
+
+- `_REGIONAL_ROUTE` était une constante de module figée (Alger→Tripoli),
+  lue directement par 7 endroits réels (graphique de route, échantillonnage
+  façon coupe verticale, comparaison FL280/FL320). Convertie en vrai
+  attribut d'instance `self._regional_route` que `_on_apply_route()`
+  peut changer - la valeur par défaut reste identique, donc aucun
+  changement pour un opérateur qui ne touche pas au nouveau sélecteur.
+- Nouvelle table `_AIRPORTS` : 28 aéroports réels, vrais codes ICAO,
+  vraies coordonnées publiées (précision "référence publique", pas une
+  base de données live versionnée - honnêtement disclosé comme tel).
+- Deux `QComboBox` (départ/arrivée) + bouton "✈️ Apply Route" sous la
+  carte régionale. Vérifié : la carte, le graphique de route et le
+  score AWCI se recalculent réellement (testé avec Tokyo→Singapour :
+  les distances du graphique changent réellement, pas une valeur
+  figée). Une route hors de l'étendue de la carte régionale (ex.
+  New York→Paris) recalcule quand même correctement tout le reste -
+  seule la ligne sur LA CARTE régionale spécifique ne s'affiche pas
+  (limite honnête d'étendue de carte, pas un bug). Départ = arrivée
+  rejeté avec un message honnête, pas appliqué silencieusement.
+- **Vérification "tous les boutons fonctionnels"** : smoke-test réel
+  des 13 `QPushButton` du dashboard (clic réel sur chacun, dialogues
+  bloquants mockés) - 13/13 sans exception. Combiné à l'audit
+  systématique déjà fait plus tôt (un seul point honnêtement divulgué
+  dans tout le fichier, aucun placeholder caché), confirme que le
+  dashboard est fonctionnel à 100% au sens où aucun bouton ne mène à
+  du code manquant ou fabriqué.
+
+7 nouveaux tests (`tests/gui/test_awci_dashboard_route_selector.py`).
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

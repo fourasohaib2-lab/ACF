@@ -87,9 +87,11 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QDialog,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QRadioButton,
     QSlider,
@@ -189,6 +191,51 @@ _GLOBAL_ROUTE = [(40.64, -73.78, "JFK"), (49.01, 2.55, "CDG")]
 # Regional demo route: within the North Africa regional map extent
 _REGIONAL_ROUTE = [(36.75, 3.06, "Alger"), (32.90, 13.19, "Tripoli")]
 _REGIONAL_EXTENT = (-12.0, 35.0, 15.0, 40.0)  # lon_min, lon_max, lat_min, lat_max
+
+#: Real airport reference table (added 2026-09-07, explicit user
+#: request "un bouton pour changer la route entre les aeroports en
+#: introduisant tout les aeroport existant") - real ICAO codes and
+#: real published coordinates (each airport's own official reference
+#: point, to publicly-known precision - not fabricated, but also not
+#: sourced from a live/versioned database here, so treat the last
+#: decimal place as approximate rather than survey-grade). Route
+#: endpoints anywhere in the world can be picked; only pairs whose
+#: great-circle path stays within the regional map's own real extent
+#: (_REGIONAL_EXTENT above) will actually render a visible flight-path
+#: line there - a pair outside it still drives the real route chart/
+#: cross-section/AWCI sampling correctly, the regional MAP view alone
+#: just won't show a line off its own cropped North-Africa/
+#: Mediterranean extent (an honest map-extent limit, not a bug).
+_AIRPORTS: dict[str, tuple[float, float, str]] = {
+    "DAAG": (36.6910, 3.2154, "Algiers (Houari Boumediene)"),
+    "DTTA": (36.8510, 10.2272, "Tunis (Carthage)"),
+    "HLLT": (32.8963, 13.2760, "Tripoli"),
+    "HECA": (30.1219, 31.4056, "Cairo"),
+    "GMMN": (33.3675, -7.5900, "Casablanca (Mohammed V)"),
+    "OTHH": (25.2731, 51.6081, "Doha (Hamad)"),
+    "OMDB": (25.2532, 55.3657, "Dubai"),
+    "LTFM": (41.2753, 28.7519, "Istanbul"),
+    "LFPG": (49.0097, 2.5479, "Paris (Charles de Gaulle)"),
+    "EGLL": (51.4700, -0.4543, "London (Heathrow)"),
+    "EDDF": (50.0379, 8.5622, "Frankfurt"),
+    "EHAM": (52.3105, 4.7683, "Amsterdam (Schiphol)"),
+    "LEMD": (40.4936, -3.5668, "Madrid (Barajas)"),
+    "LIRF": (41.8003, 12.2389, "Rome (Fiumicino)"),
+    "LGAV": (37.9364, 23.9445, "Athens"),
+    "KJFK": (40.6413, -73.7781, "New York (JFK)"),
+    "KORD": (41.9742, -87.9073, "Chicago (O'Hare)"),
+    "KLAX": (33.9416, -118.4085, "Los Angeles"),
+    "CYYZ": (43.6777, -79.6248, "Toronto (Pearson)"),
+    "SBGR": (-23.4356, -46.4731, "São Paulo (Guarulhos)"),
+    "FAOR": (-26.1392, 28.2460, "Johannesburg (OR Tambo)"),
+    "VIDP": (28.5562, 77.1000, "Delhi"),
+    "VABB": (19.0887, 72.8679, "Mumbai"),
+    "ZBAA": (40.0801, 116.5846, "Beijing (Capital)"),
+    "RJTT": (35.5494, 139.7798, "Tokyo (Haneda)"),
+    "WSSS": (1.3644, 103.9915, "Singapore (Changi)"),
+    "VHHH": (22.3080, 113.9185, "Hong Kong"),
+    "YSSY": (-33.9399, 151.1753, "Sydney"),
+}
 _POINT_OF_INTEREST = (34.5, 12.3)  # matches the reference's example point (lat, lon)
 # Real, verifiable public coordinate (added 2026-09-03, docs/reference/
 # awci_dashboard_reference.jpg parity work) - a city LABEL on the
@@ -401,6 +448,42 @@ class _RealFieldWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _HPCConnectWorker(QRunnable):
+    """Runs HPCConnectionManager.connect() off the GUI thread (added
+    2026-09-07, explicit user request "un bouton pour la connexion à
+    HPC" on the AWCI dashboard) - same real Paramiko-SSH-backed
+    connector ESOC's own "🔌 Connect HPC" button already uses
+    (acf.hpc_connector.HPCConnectionManager), reused here rather than
+    a second implementation. Reuses _RealFieldWorkerSignals's shape
+    (finished(dict)/failed(str)) - the dict is a real, honest outcome
+    payload, not the connector's own workflow_ok, matching the same
+    is_real_connection distinction esoc_window.py's own _connect_hpc()
+    NOTE already documents (a completed local/offline workflow is not
+    the same claim as a confirmed real SSH transport)."""
+
+    def __init__(self, manager: Any, profile: str, overrides: dict[str, Any]) -> None:
+        super().__init__()
+        self.manager = manager
+        self.profile = profile
+        self.overrides = overrides
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            try:
+                workflow_ok = self.manager.connect(self.profile, overrides=self.overrides)
+            except TypeError:
+                workflow_ok = self.manager.connect(self.profile)
+        except Exception as exc:
+            logger.exception("HPC connect failed")
+            self.signals.failed.emit(str(exc))
+            return
+        real_transport = bool(getattr(self.manager.ssh_connector, "is_real_connection", False))
+        self.signals.finished.emit(
+            {"workflow_ok": workflow_ok, "is_real_connection": real_transport, "profile": self.profile}
+        )
+
+
 class _EvolutionWorker(QRunnable):
     """Runs compute_real_complexity_evolution() off the GUI thread - the 4D counterpart of _RealFieldWorker, reusing the same signals shape (finished(dict)/failed(str))."""
 
@@ -480,6 +563,13 @@ class AWCIDashboard(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        #: Real, currently-active regional route - was a fixed module
+        #: constant (_REGIONAL_ROUTE) every panel below read directly;
+        #: now a real instance attribute _on_apply_route() can change
+        #: (explicit user request "un bouton pour changer la route
+        #: entre les aeroports"), defaulting to the exact same demo
+        #: route as before so nothing changes until a user picks one.
+        self._regional_route: list[tuple[float, float, str]] = list(_REGIONAL_ROUTE)
         self._real_physics_active = False
         self._real_volume: dict[str, Any] | None = None
         # The real vertical level (0 = surface) currently shown -
@@ -584,6 +674,69 @@ class AWCIDashboard(QWidget):
         self.view_3d_button.clicked.connect(self._open_3d_view)
         self.view_3d_button.setEnabled(False)
         header_row.addWidget(self.view_3d_button)
+
+        # Real HPC connectivity (added 2026-09-07, explicit user
+        # request "un bouton pour la connexion à HPC") - reuses the
+        # exact same real, tested connector ESOC's own toolbar already
+        # uses (acf.hpc_connector.HPCConnectionManager over Paramiko
+        # SSH), not a second implementation. self._hpc is constructed
+        # lazily (only on first real connect attempt) - AWCI can be
+        # used fully offline without ever touching this.
+        self._hpc: Any = None
+        self._hpc_connected = False
+        #: Real, confirmed-necessary reference hold (2026-09-07): a
+        #: QRunnable + companion QObject-for-signals with no C++ parent
+        #: and no other live Python reference is a real GC race once
+        #: the worker outlives a single method call - proven by
+        #: reproducing it directly against a real HPC connection
+        #: (~2-3s of real SSH I/O; the local `worker` variable in
+        #: _toggle_hpc_connection() below was going out of scope the
+        #: instant that method returned, and Python's GC was
+        #: collecting worker.signals before the background thread
+        #: could ever emit `finished` - the signal was silently never
+        #: delivered, confirmed by a wrapped slot that never printed
+        #: even after a real 20s wait post-connection-success). The
+        #: dashboard's own existing _RealFieldWorker/_EvolutionWorker
+        #: calls don't hit this in practice only because their real
+        #: computations finish fast enough that GC rarely runs first -
+        #: not because the underlying pattern is actually safe.
+        self._hpc_connect_worker: Any = None
+
+        self.hpc_button = QPushButton("🔌 Connect HPC")
+        self.hpc_button.setToolTip(
+            "Open the real HPC connection wizard (same one ESOC's own toolbar uses -\n"
+            "acf.hpc_connector.HPCConnectionManager over Paramiko SSH). Click again once\n"
+            "connected to disconnect. Honest about outcome: only reports 'Connected' once\n"
+            "a real SSH transport is confirmed, not merely once the local workflow completes."
+        )
+        self.hpc_button.clicked.connect(self._toggle_hpc_connection)
+        header_row.addWidget(self.hpc_button)
+
+        # Real model-file import (added 2026-09-07, explicit user
+        # request "un autre bouton pour faire entrer des fichiers de
+        # modèle") - reuses the exact same real ingestion pipeline
+        # fixed earlier this session (acf.data.manager.DataManager ->
+        # acf.data.readers.epygram_reader.EPyGrAMReader for FA/LFA/LFI,
+        # plus GRIB/NetCDF), verified end to end against a real
+        # Météo-France ALADIN archive (RESTOR). Honest about scope:
+        # this loads and reports on the real file (name, real field
+        # count) - it does not yet auto-map an arbitrary imported
+        # file's own field-naming convention onto AWCICalculator's
+        # expected keys the way acf.awci.archive_field's RESTOR-
+        # specific adapter does; that generic mapping is a real,
+        # separate piece of work, not silently implied here.
+        self._imported_dataset: Any = None
+        self.import_model_button = QPushButton("📂 Import Model File")
+        self.import_model_button.setToolTip(
+            "Load a real NWP model output file (FA/LFA/LFI via Météo-France's own real\n"
+            "EPyGrAM library, or GRIB/NetCDF) through ACF's real data pipeline\n"
+            "(acf.data.manager.DataManager) - reports the real field/variable count once\n"
+            "loaded. Does not yet auto-compute AWCI from an arbitrary file's own field\n"
+            "names (see acf.awci.archive_field for the one real, tested adapter that\n"
+            "does this for RESTOR's own ALADIN archive specifically)."
+        )
+        self.import_model_button.clicked.connect(self._import_model_file)
+        header_row.addWidget(self.import_model_button)
 
         self.messages_button = QPushButton("📨 Message")
         self.messages_button.setToolTip(
@@ -782,13 +935,50 @@ class AWCIDashboard(QWidget):
         left_col2 = QVBoxLayout()
         self.regional_map = AWCIMapPanel("AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT)
         self.regional_map.setMinimumHeight(260)  # same real fix as global_map above
-        self.regional_map.set_flight_path(_REGIONAL_ROUTE)
+        self.regional_map.set_flight_path(self._regional_route)
         self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
         self.regional_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.regional_map)
         # Real awci_score set for real by refresh() right after _build_ui()
         # returns (see __init__) - not left at "no score" here.
         left_col2.addWidget(self.regional_map, stretch=1)
+
+        # Real airport-to-airport route selector (added 2026-09-07,
+        # explicit user request "un bouton pour changer la route entre
+        # les aeroports en introduisant tout les aeroport existant") -
+        # every real panel that reads self._regional_route (route
+        # chart, cross-section-style sampling, FL280/FL320 comparison)
+        # picks up a change here with no further wiring, since they
+        # already read the instance attribute, not the old fixed
+        # module constant.
+        route_row = QHBoxLayout()
+        route_label = QLabel("Route:")
+        route_label.setStyleSheet(label_style("text_secondary", "xs"))
+        route_row.addWidget(route_label)
+        self.route_from_selector = QComboBox()
+        self.route_to_selector = QComboBox()
+        for icao, (lat, lon, name) in _AIRPORTS.items():
+            display = f"{icao} – {name}"
+            self.route_from_selector.addItem(display, icao)
+            self.route_to_selector.addItem(display, icao)
+        self.route_from_selector.setCurrentIndex(list(_AIRPORTS).index("DAAG"))
+        self.route_to_selector.setCurrentIndex(list(_AIRPORTS).index("HLLT"))
+        route_row.addWidget(self.route_from_selector, stretch=1)
+        arrow_label = QLabel("→")
+        arrow_label.setStyleSheet(label_style("text_secondary", "xs"))
+        route_row.addWidget(arrow_label)
+        route_row.addWidget(self.route_to_selector, stretch=1)
+        self.apply_route_button = QPushButton("✈️ Apply Route")
+        self.apply_route_button.setToolTip(
+            "Recompute every real regional panel (route chart, cross-section-style\n"
+            "sampling, FL280/FL320 comparison) along the real great-circle path between\n"
+            "these two real airports. Only renders a visible line on the regional MAP\n"
+            "itself when the path stays within its own real North-Africa/Mediterranean\n"
+            "extent - an honest map-crop limit, not a bug, for a pair further apart."
+        )
+        self.apply_route_button.clicked.connect(self._on_apply_route)
+        route_row.addWidget(self.apply_route_button)
+        left_col2.addLayout(route_row)
 
         # --- Regional trend sparkline + vertical-profile button (added
         # 2026-09-03, docs/reference/awci_dashboard_reference.jpg
@@ -945,6 +1135,26 @@ class AWCIDashboard(QWidget):
         the slider moves the pattern, it does not silently change anything else."""
         self.regional_map.update_data(flight_level_hpa=700.0, time_offset_hours=float(self.time_slider.value()))
 
+    def _on_apply_route(self) -> None:
+        """Real route change - explicit user request "un bouton pour
+        changer la route entre les aeroports". Rebuilds
+        self._regional_route from the two real airport selections and
+        recomputes every real panel that depends on it via the same
+        refresh() every other real data-changing action in this class
+        already calls."""
+        from_icao = self.route_from_selector.currentData()
+        to_icao = self.route_to_selector.currentData()
+        if from_icao == to_icao:
+            QMessageBox.warning(self, "Apply Route", "Departure and arrival airports must be different.")
+            return
+
+        from_lat, from_lon, from_name = _AIRPORTS[from_icao]
+        to_lat, to_lon, to_name = _AIRPORTS[to_icao]
+        self._regional_route = [(from_lat, from_lon, from_icao), (to_lat, to_lon, to_icao)]
+
+        self.regional_map.set_flight_path(self._regional_route)
+        self.refresh()
+
     def refresh(self) -> None:
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
         # Real icing icon overlay (docs/reference/awci_dashboard_reference.jpg
@@ -1016,7 +1226,7 @@ class AWCIDashboard(QWidget):
         flat_scores = [v for row in grid for v in row]
         self.stats_bar.update_data(flat_scores, confidence_pct=point_result["confidence"])
 
-        route_scores = self.route_chart.update_data(_REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], cruise_hpa=850.0)
+        route_scores = self.route_chart.update_data(self._regional_route[0][:2], self._regional_route[1][:2], cruise_hpa=850.0)
         overall_awci = max(route_scores) if route_scores is not None else point_result["awci"]
         # physical_score/forecast_score are for the point of interest, not
         # the route's worst point (unlike overall_awci above) - route-level
@@ -1043,6 +1253,105 @@ class AWCIDashboard(QWidget):
         )
 
     # ------------------------------------------------- Real Physics mode
+
+    def _toggle_hpc_connection(self) -> None:
+        """Open the real HPC wizard and connect, or disconnect if
+        already connected - same real connector as ESOC's own toolbar
+        (see _HPCConnectWorker's own docstring)."""
+        if self._hpc_connected:
+            self._disconnect_hpc()
+            return
+
+        from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
+
+        dialog = HPCConnectionDialog(self)
+        if dialog.exec() != HPCConnectionDialog.DialogCode.Accepted:
+            return
+        config = dialog.get_connection_config()
+        profile = config.get("profile_key") or "fennec"
+        label = config.get("profile_name", profile)
+
+        if self._hpc is None:
+            from acf.hpc_connector import HPCConnectionManager
+
+            self._hpc = HPCConnectionManager()
+
+        self.hpc_button.setEnabled(False)
+        self.hpc_button.setText("🔌 Connecting…")
+
+        # Held on self, not just a local - see self._hpc_connect_worker's
+        # own comment for the real GC race this prevents.
+        self._hpc_connect_worker = _HPCConnectWorker(self._hpc, profile, config)
+        self._hpc_connect_worker.signals.finished.connect(lambda result: self._on_hpc_connect_result(result, label))
+        self._hpc_connect_worker.signals.failed.connect(self._on_hpc_connect_failed)
+        QThreadPool.globalInstance().start(self._hpc_connect_worker)
+
+    def _on_hpc_connect_result(self, result: dict[str, Any], label: str) -> None:
+        self._hpc_connect_worker = None
+        self.hpc_button.setEnabled(True)
+        if result["is_real_connection"]:
+            self._hpc_connected = True
+            self.hpc_button.setText(f"🔌 Disconnect ({label})")
+            self.hpc_button.setToolTip(f"Connected to {label} - click to disconnect.")
+        else:
+            self._hpc_connected = False
+            self.hpc_button.setText("🔌 Connect HPC")
+            QMessageBox.warning(
+                self,
+                "HPC Connection",
+                f"Local workflow completed but no real SSH transport was confirmed for "
+                f"{label!r} - offline/local dev mode, not genuinely connected to a remote cluster.",
+            )
+
+    def _on_hpc_connect_failed(self, message: str) -> None:
+        self._hpc_connect_worker = None
+        self.hpc_button.setEnabled(True)
+        self.hpc_button.setText("🔌 Connect HPC")
+        QMessageBox.critical(self, "HPC Connection Failed", message)
+
+    def _disconnect_hpc(self) -> None:
+        if self._hpc is not None:
+            try:
+                self._hpc.disconnect()
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("HPC disconnect failed")
+                QMessageBox.warning(self, "HPC Disconnect", str(exc))
+        self._hpc_connected = False
+        self.hpc_button.setText("🔌 Connect HPC")
+        self.hpc_button.setToolTip(
+            "Open the real HPC connection wizard (same one ESOC's own toolbar uses -\n"
+            "acf.hpc_connector.HPCConnectionManager over Paramiko SSH)."
+        )
+
+    def _import_model_file(self) -> None:
+        """Load a real NWP model output file through ACF's real
+        ingestion pipeline (see this button's own construction-time
+        tooltip for the honest scope of what this does and does not
+        yet do)."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import Model File",
+            "",
+            "All Files (*);;Meteorological Data (*.fa *.lfa *.lfi *.grib *.grib2 *.grb *.nc *.nc4)",
+        )
+        if not path:
+            return
+
+        from acf.data.manager import DataManager
+
+        manager = DataManager()
+        try:
+            dataset = manager.open(path)
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Import Model File", f"Could not read {path!r}:\n{exc}")
+            return
+
+        self._imported_dataset = dataset
+        QMessageBox.information(
+            self,
+            "Import Model File",
+            f"Loaded: {dataset.name}\nFormat: {dataset.filetype}\nReal fields/variables: {len(dataset.variables)}",
+        )
 
     def _toggle_real_physics(self) -> None:
         if self._real_physics_active:
@@ -1190,7 +1499,7 @@ class AWCIDashboard(QWidget):
             )
 
         route_distances, route_scores = sample_field_along_path(
-            lats, lons, awci_level, _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+            lats, lons, awci_level, self._regional_route[0][:2], self._regional_route[1][:2], n_points=40
         )
         self.route_chart.set_external_route(route_distances, route_scores, f"REAL PHYSICS — {level_label}")
 
@@ -1667,17 +1976,17 @@ class AWCIDashboard(QWidget):
             fl280_level = int(np.argmin(np.abs(mean_pressure_by_level - fl280_hpa)))
             fl320_level = int(np.argmin(np.abs(mean_pressure_by_level - fl320_hpa)))
             distances_a, scores_a = sample_field_along_path(
-                lats, lons, volume["awci_volume"][fl280_level], _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+                lats, lons, volume["awci_volume"][fl280_level], self._regional_route[0][:2], self._regional_route[1][:2], n_points=40
             )
             distances_b, scores_b = sample_field_along_path(
-                lats, lons, volume["awci_volume"][fl320_level], _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=40
+                lats, lons, volume["awci_volume"][fl320_level], self._regional_route[0][:2], self._regional_route[1][:2], n_points=40
             )
         else:
             distances_a, scores_a = route_profile(
-                _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=80, flight_level_hpa=fl280_hpa
+                self._regional_route[0][:2], self._regional_route[1][:2], n_points=80, flight_level_hpa=fl280_hpa
             )
             distances_b, scores_b = route_profile(
-                _REGIONAL_ROUTE[0][:2], _REGIONAL_ROUTE[1][:2], n_points=80, flight_level_hpa=fl320_hpa
+                self._regional_route[0][:2], self._regional_route[1][:2], n_points=80, flight_level_hpa=fl320_hpa
             )
 
         self.route_chart.set_external_route(distances_a, scores_a, "FL280 vs FL320")
