@@ -106,6 +106,16 @@ class _RiskRow(QFrame):
 
         self.badge = QLabel("—")
         self.badge.setStyleSheet("color: #6b7a94; font-size: 10px; font-weight: bold; border: none;")
+        # Real fix (2026-09-07, found by rendering the dashboard at a
+        # real 1920x1080 size and looking at the screenshot - not just
+        # checking scrollbar metrics): with no floor here, a tight
+        # layout squeeze was clipping the longest real band names
+        # ("Extreme", "Very High") mid-word instead of shrinking a
+        # wider sibling first - see AWCIRouteChart's own figsize note
+        # for the matching space freed for this column. 60px fits the
+        # real widest band name ("Very High"/"Moderate", measured
+        # ~55px at this font) with a small margin.
+        self.badge.setMinimumWidth(60)
         row_layout.addWidget(self.badge)
 
     def mousePressEvent(self, event: Any) -> None:

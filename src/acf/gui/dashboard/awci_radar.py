@@ -34,7 +34,15 @@ class AWCIRadar(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(figsize=(6, 1.6), facecolor="#0b1220")
+        # figsize width trimmed 6.0->5.4in (2026-09-07, real bug found by
+        # rendering the dashboard at a real 1920x1080 size and looking at
+        # the screenshot, not just checking scrollbar metrics): the
+        # ~60px this frees lets _ComponentValueList's value column
+        # (radar_row, right next to this canvas) keep its real
+        # minimumWidth instead of being squeezed by the layout engine
+        # down to a partially-clipped digit - see that class's own
+        # value_label for the matching minimumWidth fix.
+        self.figure = plt.figure(figsize=(5.4, 1.6), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1, projection="polar")

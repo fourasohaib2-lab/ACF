@@ -342,6 +342,13 @@ class _ComponentRow(QFrame):
         row_layout.addStretch()
         self.value_label = QLabel("—")
         self.value_label.setStyleSheet(label_style("text_primary", "sm", "bold"))
+        # Real fix (2026-09-07, found by rendering at a real 1920x1080
+        # size and looking at the screenshot, not just checking
+        # scrollbar metrics): with no floor here, a tight layout squeeze
+        # clipped this value mid-digit instead of shrinking a wider
+        # sibling first - see AWCIRadar's own figsize note for the
+        # matching space freed for this column.
+        self.value_label.setMinimumWidth(36)
         row_layout.addWidget(self.value_label)
 
     def mousePressEvent(self, event: Any) -> None:

@@ -647,6 +647,42 @@ grand (se met honnêtement en attente/skip sur l'écran virtuel 800×800
 utilisé par la suite de tests, qui ne peut rien prouver sur ce
 scénario réel).
 
+## Vérification visuelle réelle en conditions 1920x1080 + correctif de texte tronqué (2026-09-07)
+
+Suite au correctif de stabilité ci-dessous, vérification en conditions
+**réelles** (pas seulement via les métriques de test) : rendu du
+dashboard hors-écran mais à une vraie taille 1920x1080 (plugin Qt
+`vnc`, aucun serveur X ni bibliothèque `libxcb-cursor0` requis), export
+d'une vraie capture d'écran PNG et lecture visuelle de l'image, comme
+le ferait un utilisateur réel.
+
+Résultat : `vscroll max = 0`, `hscroll max = 29` (conforme au seuil de
+40px déjà accepté par le test de non-scroll) - mais l'inspection de
+l'image elle-même a révélé que ce résidu de 29px, bien que
+négligeable pour la largeur globale de la fenêtre, suffisait à
+**tronquer visuellement** le texte de deux colonnes étroites situées
+tout à droite : le badge de sévérité du panneau RISK SUMMARY
+("Extreme" affiché "Extrem", "Low" affiché "L", "Moderate" affiché
+"Moderat") et, dans une moindre mesure, la colonne de valeurs de
+`_ComponentValueList` à côté du radar. Le layout Qt, contraint par la
+largeur fixe de la fenêtre, préférait comprimer ces deux colonnes à
+faible stretch factor plutôt que réduire un widget voisin plus large -
+un vrai bug visuel, distinct du bug de scroll déjà corrigé, jamais
+signalé explicitement par l'utilisateur mais trouvé en regardant
+réellement le rendu (pas seulement les métriques automatisées).
+
+Corrigé sans rouvrir l'instabilité de largeur déjà réglée : la largeur
+de figure matplotlib de `AWCIRadar` et `AWCIRouteChart` réduite de
+6.0in à 5.4in chacune (~60px libérés chacune, mesurés), et un
+`setMinimumWidth()` réel ajouté sur `_ComponentRow.value_label` (36px)
+et `_RiskRow.badge` (60px, mesuré via `QFontMetrics` pour couvrir la
+chaîne réelle la plus large, "Very High"/"Moderate" ~55px à cette
+police) - un simple redéploiement de l'espace déjà disponible dans la
+même ligne, pas un changement de largeur totale (vscroll/hscroll
+inchangés : toujours 0/29px après correctif). Revérifié par une
+nouvelle capture d'écran réelle : les deux colonnes affichent
+maintenant leur texte complet et lisible.
+
 ## Suite du correctif de stabilité : la largeur bougeait aussi au clic (2026-09-07)
 
 Vérification approfondie du correctif précédent avec une vraie
