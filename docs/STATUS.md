@@ -543,6 +543,27 @@ rendre tout les boutons du dashboard fonctionnel".
 
 7 nouveaux tests (`tests/gui/test_awci_dashboard_route_selector.py`).
 
+## Correctif de cohérence : point d'intérêt vs route (2026-09-07)
+
+Trouvé par ma propre revue juste après avoir livré le sélecteur de
+route, pas signalé par l'utilisateur. `self._point_of_interest` (ce
+que le radar, la liste de composants, la tendance régionale, le
+résumé des risques, le dialogue Real Archive et le profil vertical
+analysent réellement - voir la convention de source unique déjà
+documentée dans `_on_map_point_clicked`) restait figé après un
+changement de route : choisir Tokyo→Singapour déplaçait bien la carte
+et le graphique de route, mais tous les panneaux par point continuaient
+d'analyser l'ancien point resté en Méditerranée. Corrigé en recentrant
+`self._point_of_interest` sur le point médian réel de la nouvelle
+route (moyenne simple des deux coordonnées, honnêtement disclosée
+comme une approximation du vrai point médian géodésique, pas prétendue
+exacte), en réutilisant le chemin de mise à jour déjà établi par
+`_on_map_point_clicked` (re-tranche Real Physics si actif, sinon
+`refresh()`) plutôt qu'un second chemin dupliqué. Vérifié : Tokyo→
+Singapour recentre exactement sur le point médian calculé.
+
+1 nouveau test (`tests/gui/test_awci_dashboard_route_selector.py`).
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

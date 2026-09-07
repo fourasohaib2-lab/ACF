@@ -63,6 +63,31 @@ def test_applying_a_new_route_updates_the_real_regional_route(qtbot):
     assert dashboard._regional_route[1][:2] == _AIRPORTS["LFPG"][:2]
 
 
+def test_applying_a_new_route_recenters_the_point_of_interest_on_it(qtbot):
+    """
+    NOTE (correction, 2026-09-07 - real coherence gap): every per-point
+    panel (radar, Real Archive dialog, Vertical Profile, risk summary -
+    see _on_map_point_clicked's own docstring) reads
+    self._point_of_interest, not self._regional_route directly. Before
+    this fix, applying a brand-new route left it wherever it was (the
+    fixed demo default, or a stale map click) - picking Tokyo-Singapore
+    moved the map and route chart for real while every per-point panel
+    kept analyzing an unrelated point back in the Mediterranean.
+    """
+    dashboard = AWCIDashboard()
+    qtbot.addWidget(dashboard)
+
+    from_icao, to_icao = "RJTT", "WSSS"
+    dashboard.route_from_selector.setCurrentIndex(list(_AIRPORTS).index(from_icao))
+    dashboard.route_to_selector.setCurrentIndex(list(_AIRPORTS).index(to_icao))
+
+    dashboard._on_apply_route()
+
+    expected_lat = (_AIRPORTS[from_icao][0] + _AIRPORTS[to_icao][0]) / 2.0
+    expected_lon = (_AIRPORTS[from_icao][1] + _AIRPORTS[to_icao][1]) / 2.0
+    assert dashboard._point_of_interest == (expected_lat, expected_lon)
+
+
 def test_applying_a_route_genuinely_updates_the_map_flight_path(qtbot):
     dashboard = AWCIDashboard()
     qtbot.addWidget(dashboard)

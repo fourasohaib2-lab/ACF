@@ -1141,7 +1141,27 @@ class AWCIDashboard(QWidget):
         self._regional_route from the two real airport selections and
         recomputes every real panel that depends on it via the same
         refresh() every other real data-changing action in this class
-        already calls."""
+        already calls.
+
+        NOTE (correction, 2026-09-07 - real coherence gap, found while
+        reviewing this feature right after adding it, not reported by
+        the user): self._point_of_interest (what the radar/component
+        list/regional trend/risk summary/Real Archive dialog/Vertical
+        Profile all actually analyze - see _on_map_point_clicked's own
+        docstring for that real single-source-of-truth convention) used
+        to stay wherever it was left (the fixed demo default, or the
+        last real map click) after applying a brand-new route - so
+        picking Tokyo->Singapore would move the map and route chart
+        for real, while every per-point panel kept analyzing a stale
+        point back in the Mediterranean, unrelated to the new route.
+        Now re-centers self._point_of_interest on the new route's own
+        simple midpoint (a plain lat/lon average of the two real
+        endpoints - an honest, disclosed approximation of the real
+        great-circle midpoint, not claimed to be geodesically exact),
+        reusing _on_map_point_clicked's own exact real update path
+        (Real Physics re-slice if active, refresh() otherwise) rather
+        than a second/duplicated one.
+        """
         from_icao = self.route_from_selector.currentData()
         to_icao = self.route_to_selector.currentData()
         if from_icao == to_icao:
@@ -1153,7 +1173,9 @@ class AWCIDashboard(QWidget):
         self._regional_route = [(from_lat, from_lon, from_icao), (to_lat, to_lon, to_icao)]
 
         self.regional_map.set_flight_path(self._regional_route)
-        self.refresh()
+        midpoint_lat = (from_lat + to_lat) / 2.0
+        midpoint_lon = (from_lon + to_lon) / 2.0
+        self._on_map_point_clicked(midpoint_lat, midpoint_lon)
 
     def refresh(self) -> None:
         """(Re)compute every panel from the real AWCICalculator (see module docstring)."""
