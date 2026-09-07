@@ -86,9 +86,26 @@ class DatasetPanel(QDockWidget):
         #
         # registry.datasets      -> liste
         # registry.datasets()    -> méthode
+        # registry.datasets      -> dict (id -> dataset), ex. le vrai
+        #                            DatasetRegistry.datasets (@property)
         #
+        # NOTE (correction, 2026-09-07 - real bug, found by an end-to-end
+        # verification of DatasetPanel wired to a real DataManager, not a
+        # code read): acf.catalog.dataset_registry.DatasetRegistry.datasets
+        # is a @property returning a dict (id -> dataset object), which
+        # is never callable() - so the method-call branch above never
+        # actually fires for the real registry this panel is always
+        # bound to (acf.data.manager.DataManager.registry). Without this
+        # dict check, `for dataset in datasets:` iterated the dict's
+        # KEYS (plain id strings), so every real dataset showed up here
+        # as "Unnamed Dataset" with zero variable children - confirmed
+        # by a direct test with 2 real datasets registered, both
+        # displayed wrong before this fix.
         if callable(datasets):
             datasets = datasets()
+
+        if isinstance(datasets, dict):
+            datasets = datasets.values()
 
         for dataset in datasets:
             dataset_item = QTreeWidgetItem(self.tree)
