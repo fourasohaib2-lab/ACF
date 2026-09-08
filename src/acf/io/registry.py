@@ -1,17 +1,9 @@
-class ReaderRegistry:
+"""
+Atmospheric Complexity Framework (ACF)
 
-    def __init__(self):
+IO - Registry (Compatibility Layer forwarding to acf.importers.registry)
+"""
 
-        self._readers = []
+from acf.importers.registry import ReaderRegistry
 
-    def register(self, reader):
-
-        self._readers.append(reader)
-
-    def readers(self):
-
-        return list(self._readers)
-
-    def count(self):
-
-        return len(self._readers)
+__all__ = ["ReaderRegistry"]

@@ -1,0 +1,235 @@
+"""
+Atmospheric Complexity Framework (ACF)
+
+Atmospheric Chemistry, Photochemistry & Aerosols Encyclopedia Module
+"""
+
+from acf.science.encyclopedia.entry import EncyclopediaEntry
+from acf.science.encyclopedia.registry import EncyclopediaRegistry
+
+
+def calculate_heterogeneous_uptake_rate(uptake_coefficient: float, thermal_velocity: float, aerosol_surface_area: float, gas_concentration: float) -> float:
+    """
+    Taux de perte de gaz par réaction hétérogène sur des aérosols :
+    dn/dt = -0.25*gamma*v_th*A_aer*C_gas, en molec/(cm^3*s).
+
+    NOTE (correction): equation field is fully explicit but this entry
+    had no compute_func. Sign per the entry's own latex_equation
+    (dC_gas/dt = -...) - a loss rate, negative by convention.
+    """
+    if not (0.0 <= uptake_coefficient <= 1.0):
+        raise ValueError("uptake_coefficient (gamma) must be in [0, 1].")
+    return -0.25 * uptake_coefficient * thermal_velocity * aerosol_surface_area * gas_concentration
+
+
+ENTRIES: list[EncyclopediaEntry] = [
+    # --- GASES ---
+    EncyclopediaEntry(
+        key="ozone_gas_o3",
+        name="Ozone Atmosphérique (O3)",
+        domain="Chimie Atmosphérique",
+        subdomain="Gaz à effet de serre et polluants",
+        equation="O3 (Troposphérique: polluant secondaire, Stratosphérique: bouclier UV)",
+        latex_equation=r"\text{O}_3 \quad [\text{ppm / DU}]",
+        variables={
+            "Troposphère": "Polluant photochimique toxique",
+            "Stratosphère": "Couche protectrice absorbant les UV-B/UV-C",
+        },
+        units={"O3": "DU (Dobson Units) / ppm"},
+        description="Gaz triatomique présent principalement dans la stratosphère (90% de la colonne) et dans la troposphère comme composé oxydant majeur.",
+        application_conditions=["Stratosphère et chimie de la pollution de l'air (Copernicus CAMS)"],
+        limitations=["Cycle de vie dépendant de l'insolation et des composés précurseurs (NOx, COV)"],
+        references=["WMO/UNEP Scientific Assessment of Ozone Depletion", "Seinfeld & Pandis (2016)"],
+    ),
+    EncyclopediaEntry(
+        key="carbon_dioxide_co2",
+        name="Dioxyde de Carbone (CO2)",
+        domain="Chimie Atmosphérique",
+        subdomain="Gaz à effet de serre",
+        equation="CO2 Concentration: > 420 ppm (croissance ~ 2.5 ppm/an)",
+        latex_equation=r"\text{CO}_2 \quad [\text{ppm}]",
+        variables={"Concentration": "> 420 ppm (2026)", "Forçage radiatif": "~ 2.16 W/m²"},
+        units={"CO2": "ppm (parties par million)"},
+        description="Gaz à effet de serre à longue durée de vie principal responsable du réchauffement climatique anthropique moderne.",
+        application_conditions=["Cycle global du carbone et modélisation climatique (IPCC AR6)"],
+        limitations=["Bien mélangé dans toute la troposphère"],
+        references=["IPCC AR6 WG1 Physical Science Basis", "NOAA Global Monitoring Laboratory"],
+    ),
+    EncyclopediaEntry(
+        key="methane_gas_ch4",
+        name="Méthane (CH4)",
+        domain="Chimie Atmosphérique",
+        subdomain="Gaz à effet de serre",
+        equation="CH4 + OH -> CH3 + H2O (Durée de vie ~ 9-12 ans)",
+        latex_equation=r"\text{CH}_4 + \text{OH} \rightarrow \text{CH}_3 + \text{H}_2\text{O}, \quad \text{GWP}_{100} \approx 28",
+        variables={"GWP100": "Potentiel de réchauffement global à 100 ans (~28x CO2)"},
+        units={"CH4": "ppb"},
+        description="Puissant gaz à effet de serre troposphérique émis par des sources naturelles (zones humides) et anthropiques (agriculture, combustibles fossiles).",
+        application_conditions=["Chimie atmosphérique globale et puits d'OH"],
+        limitations=["Destruction dominée par la réaction avec le radical hydroxyle OH"],
+        references=["IPCC AR6 WG1", "WMO Greenhouse Gas Bulletin"],
+    ),
+    EncyclopediaEntry(
+        key="nitrogen_oxides_nox",
+        name="Oxydes d'Azote (NOx = NO + NO2)",
+        domain="Chimie Atmosphérique",
+        subdomain="Pollution & Photographie",
+        equation="NO + O3 -> NO2 + O2,  NO2 + hnu -> NO + O",
+        latex_equation=r"\text{NO}_x = \text{NO} + \text{NO}_2, \quad \text{NO}_2 + h\nu \xrightarrow{\lambda < 420\text{nm}} \text{NO} + \text{O}(^3P)",
+        variables={"NO": "Monoxyde d'azote", "NO2": "Dioxyde d'azote"},
+        units={"NOx": "ppb / ug/m³"},
+        description="Composés azotés hautement réactifs émis par la combustion (transports, usines, éclairs) jouant un rôle clé dans la formation de l'ozone smog troposphérique.",
+        application_conditions=["Qualité de l'air urbaine et régionale"],
+        limitations=["Courte durée de vie en basse couche (quelques heures)"],
+        references=["Seinfeld & Pandis (2016)", "EEA Air Quality Guidelines"],
+    ),
+    EncyclopediaEntry(
+        key="sulfur_dioxide_so2",
+        name="Dioxyde de Soufre (SO2)",
+        domain="Chimie Atmosphérique",
+        subdomain="Aérosols & Chimie acide",
+        equation="SO2 + OH (+M) -> HSO3 -> ... -> H2SO4 (Aérosol Sulfate)",
+        latex_equation=r"\text{SO}_2 + \text{OH} \xrightarrow{\text{O}_2, \text{H}_2\text{O}} \text{H}_2\text{SO}_4 \rightarrow \text{SO}_4^{2-}",
+        variables={"SO2": "Précurseur de l'acide sulfurique et des aérosols de sulfate"},
+        units={"SO2": "ppb"},
+        description="Gaz émis par le volcanisme et les centrales thermiques, responsable des pluies acides et précurseur des aérosols de sulfate réflecteurs de lumière.",
+        application_conditions=["Plumes volcaniques et éruptions stratosphériques (forçage refroidissant)"],
+        limitations=["Oxydation rapide en phase aqueuse nuageuse par H2O2 et O3"],
+        references=["Seinfeld & Pandis (2016)", "WMO Volcano Hazards Guide"],
+    ),
+    # --- PROCESSES ---
+    EncyclopediaEntry(
+        key="chapman_stratospheric_cycle",
+        name="Cycle Photochimique de Chapman (Ozone Stratosphérique)",
+        domain="Chimie Atmosphérique",
+        subdomain="Photo-chimie de l'ozone",
+        equation="O2 + hnu -> 2O ; O + O2 + M -> O3 + M ; O3 + hnu -> O2 + O ; O + O3 -> 2 O2",
+        latex_equation=r"\text{O}_2 + h\nu \xrightarrow{\lambda < 242\text{nm}} 2\text{O}, \quad \text{O} + \text{O}_2 + \text{M} \rightarrow \text{O}_3 + \text{M}",
+        variables={"hnu": "UV solaire (lambda < 242 nm)"},
+        units={"O3": "DU"},
+        description="Ensemble des 4 réactions photochimiques fondamentales expliquant l'existence de la couche d'ozone stratosphérique absorbeuse de rayons UV nocifs.",
+        application_conditions=["Stratosphère (15 - 50 km)"],
+        limitations=["Ne prend pas en compte les cycles catalytiques de destruction par ClOx, BrOx, NOx, HOx"],
+        references=["Chapman (1930) Mem. R. Meteorol. Soc.", "Seinfeld & Pandis (2016)"],
+    ),
+    EncyclopediaEntry(
+        key="photochemistry_photolysis_rate",
+        name="Taux de Photolyse Photochimique (J-values)",
+        domain="Chimie Atmosphérique",
+        subdomain="Photo-chimie",
+        equation="J = int Flux_actinique(lambda) * Section_efficace(lambda) * Rendement_quantique(lambda) dlambda",
+        latex_equation=r"J_i = \int \Phi_\lambda(\lambda) \sigma_i(\lambda, T) q_i(\lambda, T) d\lambda",
+        variables={
+            "Phi": "Flux actinique solaire (photons/(cm²·s·nm))",
+            "sigma": "Section efficace d'absorption",
+            "q": "Rendement quantique",
+        },
+        units={"J": "s⁻¹"},
+        description="Taux de dissociation photochimique d'un composé chimique sous l'action du rayonnement solaire incident.",
+        application_conditions=["Modèles de chimie-transport (CTM ex: MOCAGE, WRF-Chem, CAMS)"],
+        limitations=["Calcul dépendant de la couverture nuageuse et des aérosols sous-jacents"],
+        references=["Madronich (1987)", "Seinfeld & Pandis (2016)"],
+    ),
+    EncyclopediaEntry(
+        key="heterogeneous_aerosol_interaction",
+        name="Interactions Chimie-Aérosols Hétérogènes",
+        domain="Chimie Atmosphérique",
+        subdomain="Chimie hétérogène",
+        equation="dn_i/dt = gamma * 0.25 * v_thermal * Area_aerosol * Conc_gas",
+        latex_equation=r"\frac{dC_{\text{gas}}}{dt} = -\frac{1}{4} \gamma v_{\text{th}} A_{\text{aer}} C_{\text{gas}}",
+        variables={
+            "gamma": "Coefficient d'accommodation (uptake coefficient)",
+            "vth": "Vitesse thermique moléculaire",
+            "Aaer": "Surface massique d'aérosol",
+        },
+        units={"rate": "molec/(cm³·s)"},
+        description="Réactions chimiques se produisant à la surface des aérosols solides ou liquides (ex: hydrolyse de N2O5 sur les aérosols sulfates, trou d'ozone polaire sur les PSC).",
+        application_conditions=["Nuages Stratosphériques Polaires (PSC) et aérosols troposphériques"],
+        limitations=["Incertitudes sur les coefficients d'accommodation gamma"],
+        references=["Jacob (1999) Atmos. Environ.", "IPCC AR6"],
+        compute_func=calculate_heterogeneous_uptake_rate,
+    ),
+    # --- AEROSOLS ---
+    EncyclopediaEntry(
+        key="mineral_dust_aerosol",
+        name="Aérosols de Poussières Minérales (Dust)",
+        domain="Chimie Atmosphérique",
+        subdomain="Aérosols naturels",
+        # NOTE (correction): this plain-text "equation" field used to say
+        # "Flux_dust = C * U_star^3 * (1 - RH)" - inconsistent with this
+        # entry's OWN latex_equation, which uses a friction-velocity
+        # saltation-threshold ratio (u*t/u*), not relative humidity, and
+        # the two are not algebraically related (RH cannot substitute for
+        # u*t/u*) - almost certainly a transcription error. Corrected to
+        # match the latex form. compute_func deliberately NOT added:
+        # WebSearch on Gillette & Passi (1988) confirmed their empirical
+        # scheme is a power-law in u*/u*t with exponent n~=4, but did not
+        # yield a single, fully-specified, precisely-citable closed form
+        # matching either version of this entry's equation text - several
+        # different dust-emission schemes (Gillette & Passi 1988, White
+        # 1979, Marticorena & Bergametti 1995) use different exact forms.
+        # Implementing a specific numeric formula here without a verified
+        # primary-source match would be exactly the kind of fabrication
+        # this project's rules forbid - left honestly undefined, same
+        # treatment as the FWI/MEHS gap noted in science/surface_fire.py
+        # and science/precipitation.py.
+        equation="Érosion éolienne des déserts: Flux_dust = C * u_star^3 * (1 - u_star_t/u_star)",
+        latex_equation=r"F_{\text{dust}} = C \cdot u_*^3 \left(1 - \frac{u_{*t}}{u_*}\right)",
+        variables={"u_star": "Vitesse de frottement au sol", "u_star_t": "Seuil de saltation"},
+        units={"Flux": "kg/(m²·s)"},
+        description="Particules minérales soulevées par le vent dans les régions arides (Sahara, Gobi) transportées sur des milliers de kilomètres, absorbant le rayonnement solaire et servant de noyaux glaçogènes (IN).",
+        application_conditions=["Transport transatlantique et épisodes de poussières sahariennes en Europe"],
+        limitations=[
+            "Large gamme de tailles (0.1 µm à 50 µm) difficile à discrétiser",
+            "Forme numérique exacte non re-vérifiée contre la source primaire (plusieurs "
+            "schémas distincts existent dans la littérature) - non implémentée pour éviter "
+            "de fabriquer une formule non vérifiée.",
+        ],
+        references=["Gillette & Passi (1988)", "Copernicus CAMS Dust Forecasts"],
+    ),
+    EncyclopediaEntry(
+        key="sulfate_aerosol_so4",
+        name="Aérosols de Sulfate (SO4 2-)",
+        domain="Chimie Atmosphérique",
+        subdomain="Aérosols secondaires",
+        equation="Oxydation de SO2 -> particules d'acide sulfurique et de sulfate d'ammonium",
+        latex_equation=r"\text{SO}_4^{2-} \quad (\text{Diffusion efficace de la lumière visible, albedo high})",
+        variables={"Albedo": "Refroidissement du climat (effet direct & indirect)"},
+        units={"Refroidissement": "W/m²"},
+        description="Aérosols secondaires submicroniques diffusant fortement le rayonnement solaire court et agissant comme de très efficaces noyaux de condensation nuageuse (CCN).",
+        application_conditions=["Forçage radiatif négatif du climat"],
+        limitations=["Sensible aux conditions d'humidité relative (hygroscopicités)"],
+        references=["Charlson et al. (1992) Science", "IPCC AR6 WG1 Report"],
+    ),
+    EncyclopediaEntry(
+        key="black_carbon_soot",
+        name="Aérosols de Carbone Suie (Black Carbon - BC)",
+        domain="Chimie Atmosphérique",
+        subdomain="Aérosols absorbants",
+        equation="Combustion incomplète de biomasse et pyrolyse",
+        latex_equation=r"\text{BC} \quad (\text{Absorption optique intense } \sigma_{\text{abs}} \sim 7.5 \text{ m}^2/\text{g})",
+        variables={"MAC": "Mass Absorption Cross-section (~7.5 m²/g à 550 nm)"},
+        units={"Absorption": "W/m²"},
+        description="Aérosols primaires noirs issus de la combustion incomplète (feux de forêt, moteurs diesel) absorbant fortement la lumière solaire et réchauffant les couches atmosphériques environnantes.",
+        application_conditions=["Qualité de l'air et forçage radiatif positif (réchauffant)"],
+        limitations=["Diminution de l'albedo des neiges et glaciers lors du dépôt"],
+        references=["Bond et al. (2013) J. Geophys. Res.", "IPCC AR6"],
+    ),
+    EncyclopediaEntry(
+        key="sea_salt_aerosol",
+        name="Aérosols de Sel Marin (Sea Salt)",
+        domain="Chimie Atmosphérique",
+        subdomain="Aérosols naturels",
+        equation="Émission par déferlement des vagues (Whitecaps): Flux = f(U10^3.41)",
+        latex_equation=r"F_{\text{seasalt}} = C \cdot U_{10}^{3.41}",
+        variables={"U10": "Vent à 10m au-dessus de l'océan"},
+        units={"Flux": "kg/(m²·s)"},
+        description="Aérosols primaires marins produits par l'éclatement des bulles d'air et les gouttes d'arrachement sur les vagues, constituant les principaux CCN en milieu océanique.",
+        application_conditions=["Couche limite marine"],
+        limitations=["Comportement très hygroscopique augmentant considérablement leur taille avec l'humidité"],
+        references=["Monahan et al. (1986)", "Copernicus CAMS Marine Aerosols"],
+    ),
+]
+
+for entry in ENTRIES:
+    EncyclopediaRegistry.register(entry)

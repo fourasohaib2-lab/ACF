@@ -1,0 +1,8 @@
+surfex:
+  version: "8.1"
+  mode: "operational"
+  schemes:
+    land: "ISBA"
+    snow: "CROCUS"
+    urban: "TEB"
+    water: "FLAKE"

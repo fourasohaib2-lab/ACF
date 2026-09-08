@@ -1,0 +1,84 @@
+To resolve the import errors and ensure the project functions correctly, the following corrections are required. These changes address outdated or incorrect import paths, unused imports, and missing class definitions.
+
+---
+
+### **1. Fix Incorrect Module Paths in Test Files**
+#### **a. `test_epygram_reader.py`**
+- **Error**: `ImportError: No module named 'acf.models.aladin'`
+- **Fix**: Update the import to use the correct module path.
+- **Before**:
+  ```python
+  from acf.models.aladin import ...
+  ```
+- **After**:
+  ```python
+  from acf.models.arpege import ...
+  ```
+
+#### **b. `test_simulation_engine.py`**
+- **Error**: `ModuleNotFoundError: No module named 'acf.simulation_engine'`
+- **Fix**: Update the import to use the correct module path.
+- **Before**:
+  ```python
+  from acf.simulation_engine.output.netcdf_writer import ...
+  ```
+- **After**:
+  ```python
+  from acf.data.writers.netcdf_writer import ...
+  ```
+
+#### **c. `test_grid4d.py` and `test_vertical_axis.py`**
+- **Error**: `ImportError: No name 'VerticalAxis' in module 'acf.model4d.vertical_axis'`
+- **Fix**: Ensure the `VerticalAxis` class exists in `vertical_axis.py`. If not, define it or adjust the import path.
+- **Example**:
+  ```python
+  from acf.model4d.vertical_axis import VerticalAxis
+  ```
+
+---
+
+### **2. Remove Unused Imports**
+#### **a. `test_grid4d.py`**
+- **Error**: Unused import of `pathlib.Path`
+- **Fix**: Remove the unused import.
+- **Before**:
+  ```python
+  import pathlib
+  ```
+- **After**:
+  ```python
+  # Remove this line
+  ```
+
+---
+
+### **3. Ensure Correct Module Structure**
+- **Check**: Ensure `vertical_axis.py` in `model4d/` contains the `VerticalAxis` class.
+- **Example**:
+  ```python
+  # src/acf/model4d/vertical_axis.py
+  class VerticalAxis:
+      def __init__(self):
+          pass
+  ```
+
+---
+
+### **4. Verify All Imports**
+After applying the above fixes, run the tests to ensure:
+- All imports resolve correctly.
+- No `ModuleNotFoundError` or `ImportError` occurs.
+- Unused imports are removed.
+
+---
+
+### **Summary of Changes**
+| File                          | Fix Description                          |
+|-------------------------------|-------------------------------------------|
+| `test_epygram_reader.py`      | Update import from `aladin` to `arpege`  |
+| `test_simulation_engine.py`   | Update import path to `data.writers`     |
+| `test_grid4d.py`              | Ensure `VerticalAxis` class exists       |
+| `test_vertical_axis.py`       | Ensure `VerticalAxis` class exists       |
+| `test_grid4d.py`              | Remove unused `pathlib` import           |
+
+These changes align the project with its current module structure and eliminate redundant or incorrect imports.

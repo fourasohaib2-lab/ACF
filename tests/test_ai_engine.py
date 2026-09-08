@@ -28,3 +28,17 @@ def test_history():
     engine.clear_history()
 
     assert engine.history_count() == 0
+
+
+def test_analyze_does_not_fake_success():
+    """
+    CORRECTED: analyze() used to unconditionally report
+    "status": "success" regardless of the dataset - no model is ever
+    actually invoked. See engine.py's own NOTE (correction).
+    """
+    engine = AIEngine()
+
+    result = engine.analyze({"t2m": [1, 2, 3]})
+
+    assert result["status"] != "success"
+    assert result["status"] == "NOT_ANALYZED_NO_MODEL_INVOKED"

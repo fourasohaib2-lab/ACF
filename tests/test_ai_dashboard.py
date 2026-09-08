@@ -16,12 +16,6 @@ def test_parameters(qtbot):
 
     qtbot.addWidget(widget)
 
-    widget.set_parameters(
-        [
-            "Temperature",
-            "Humidity",
-            "Wind"
-        ]
-    )
+    widget.set_parameters(["Temperature", "Humidity", "Wind"])
 
     assert "Temperature" in widget.parameters.toPlainText()

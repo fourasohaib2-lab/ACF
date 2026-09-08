@@ -21,11 +21,7 @@ class PotentialVorticity:
         PV = -g (ζ + f) dθ/dp
         """
 
-        return (
-            -PotentialVorticity.GRAVITY
-            * (relative_vorticity + coriolis)
-            * dtheta_dp
-        )
+        return -PotentialVorticity.GRAVITY * (relative_vorticity + coriolis) * dtheta_dp
 
     @staticmethod
     def category(value: float) -> str:

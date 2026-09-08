@@ -5,7 +5,6 @@ Projection Manager
 
 
 class ProjectionManager:
-
     def __init__(self):
         self._projections = {}
         self._default = None
@@ -52,7 +51,4 @@ class ProjectionManager:
         self._default = None
 
     def __repr__(self):
-        return (
-            f"ProjectionManager("
-            f"count={len(self._projections)})"
-        )
+        return f"ProjectionManager(count={len(self._projections)})"

@@ -1,0 +1,9 @@
+model: "ALADIN"
+resolution_km: 7.5
+domain: "Algerie_Global"
+physics_scheme: "ALADIN_NWP"
+surface_model: "ISBA"
+default_nodes: 2
+default_ntasks: 16
+default_gpus: 0
+walltime: "03:00:00"

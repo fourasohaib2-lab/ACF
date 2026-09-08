@@ -1,0 +1,12 @@
+name: "University HPC"
+hostname: "hpc.university.edu"
+user: "researcher"
+port: 22
+ssh_key: "~/.ssh/id_rsa"
+scheduler: "slurm"
+partition: "gpu"
+remote_dir: "/home/researcher/acf"
+scratch_dir: "/scratch/researcher/acf"
+mpi_launcher: "srun"
+gpu_mode: "CUDA (NVIDIA A100)"
+active: false

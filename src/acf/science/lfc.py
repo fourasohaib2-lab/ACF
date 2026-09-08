@@ -27,4 +27,3 @@ class LFC:
             return lcl_height
 
         return float("nan")
-

@@ -1,14 +1,9 @@
-class ReaderFactory:
+"""
+Atmospheric Complexity Framework (ACF)
 
-    def __init__(self, registry):
+IO - Factory (Compatibility Layer forwarding to acf.importers.factory)
+"""
 
-        self.registry = registry
+from acf.importers.factory import ReaderFactory
 
-    def get_reader(self, filename):
-
-        for reader in self.registry.readers():
-
-            if reader.can_read(filename):
-                return reader
-
-        return None
+__all__ = ["ReaderFactory"]

@@ -1,0 +1,97 @@
+\section{Ensemble Kalman Filter}
+
+
+
+The ACF Ensemble Kalman Filter (EnKF) provides a probabilistic
+data assimilation framework based on multiple model realizations.
+
+
+
+The EnKF represents the Earth system state as an ensemble:
+
+
+\[
+X=
+\{x_1,x_2,...,x_N\}
+\]
+
+
+
+where each member represents a possible state of the system.
+
+
+
+The ensemble approach provides:
+
+
+\begin{itemize}
+
+\item State uncertainty estimation
+
+\item Probabilistic forecasting
+
+\item Error covariance estimation
+
+\item Nonlinear assimilation capability
+
+\end{itemize}
+
+
+
+The analysis update:
+
+
+\[
+x_a=x_f+K(y-H(x_f))
+\]
+
+
+
+where:
+
+
+\begin{itemize}
+
+\item $x_a$ is the analysis state
+
+\item $x_f$ is the forecast state
+
+\item $K$ is the Kalman gain
+
+\item $y$ represents observations
+
+\end{itemize}
+
+
+
+ACF EnKF applications:
+
+
+\begin{itemize}
+
+\item Ensemble weather prediction
+
+\item Extreme event forecasting
+
+\item Climate uncertainty analysis
+
+\item Digital Twin uncertainty management
+
+\item Ocean-atmosphere coupling
+
+\end{itemize}
+
+
+
+Operational cycle:
+
+
+\[
+Ensemble\ Forecast
+\rightarrow
+Observation
+\rightarrow
+Analysis
+\rightarrow
+Updated\ Ensemble
+\]

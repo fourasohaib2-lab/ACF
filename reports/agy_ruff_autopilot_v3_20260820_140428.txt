@@ -1,0 +1,31 @@
+================================================================================
+ACF RUFF AUTOPILOT V3 REPORT
+================================================================================
+Timestamp: 20260820_140428
+Initial TARGET errors: 0
+Final TARGET errors: 0
+Fixed: 0
+Failed: 0
+Skipped: 0
+
+TARGET CODES SUMMARY (Fixed / Target):
+C401      : fixed=0, remaining=0
+C414      : fixed=0, remaining=0
+DTZ003    : fixed=0, remaining=0
+DTZ005    : fixed=0, remaining=0
+F811      : fixed=0, remaining=0
+F821      : fixed=0, remaining=0
+F841      : fixed=0, remaining=0
+I001      : fixed=0, remaining=0
+PIE810    : fixed=0, remaining=0
+PLW1510   : fixed=0, remaining=0
+RUF012    : fixed=0, remaining=0
+RUF013    : fixed=0, remaining=0
+UP007     : fixed=0, remaining=0
+
+IGNORED CODES SUMMARY:
+BLE001    : 0
+E722      : 0
+S110      : 0
+
+ITERATION LOGS:

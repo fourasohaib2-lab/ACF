@@ -2,11 +2,8 @@
 Time Manager
 """
 
-from datetime import datetime
-
 
 class TimeManager:
-
     def __init__(self):
 
         self.times = []
@@ -35,7 +32,6 @@ class TimeManager:
     def next(self):
 
         if self.index < len(self.times) - 1:
-
             self.index += 1
 
         return self.current()
@@ -45,7 +41,6 @@ class TimeManager:
     def previous(self):
 
         if self.index > 0:
-
             self.index -= 1
 
         return self.current()
@@ -63,7 +58,6 @@ class TimeManager:
     def last(self):
 
         if self.times:
-
             self.index = len(self.times) - 1
 
         return self.current()

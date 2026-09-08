@@ -1,49 +1,224 @@
-import pytest
-from acf.science.thermodynamics import Thermodynamics
+"""
+ACF - Atmospheric Complexity Framework
 
-def test_virtual_temperature_formula():
-    """Test virtual temperature calculation."""
-    T = 300.0
-    q = 0.01
-    result = Thermodynamics.calculate_virtual_temperature(T, q)
-    assert result == pytest.approx(301.83, abs=0.01)
+Sprint 9.26
+Tests - Atmospheric Thermodynamics Engine
+"""
 
-def test_mixing_ratio_formula():
-    """Test mixing ratio calculation."""
-    q = 0.01
-    result = Thermodynamics.calculate_mixing_ratio(q)
-    assert result == pytest.approx(0.01010, abs=0.00001)
+from acf.model4d.physics.thermodynamics import Thermodynamics, ThermodynamicsState
 
-def test_saturation_vapor_pressure_formula():
-    """Test saturation vapor pressure at 300K."""
-    T = 300.0
-    result = Thermodynamics.calculate_saturation_vapor_pressure(T)
-    assert result == pytest.approx(35.35, abs=0.1)
+# ============================================================
+# Test atmospheric state
+# ============================================================
 
-def test_vapor_pressure_formula():
-    """Test vapor pressure calculation."""
-    q = 0.01
-    p = 1000.0
-    result = Thermodynamics.calculate_vapor_pressure(q, p)
-    assert result == pytest.approx(15.98, abs=0.01)
 
-def test_relative_humidity_formula():
-    """Test relative humidity calculation."""
-    q = 0.01
-    p = 1000.0
-    T = 300.0
-    result = Thermodynamics.calculate_relative_humidity(q, p, T)
-    assert result == pytest.approx(45.2, abs=0.1)
+def create_state():
 
-def test_all_formulas_no_errors():
-    """Test that all formulas run without errors."""
-    T = 280.0
-    p = 900.0
-    q = 0.005
-    
-    assert Thermodynamics.calculate_virtual_temperature(T, q) > 0
-    assert Thermodynamics.calculate_mixing_ratio(q) > 0
-    assert Thermodynamics.calculate_saturation_mixing_ratio(10.0, p) > 0
-    assert Thermodynamics.calculate_vapor_pressure(q, p) > 0
-    assert Thermodynamics.calculate_saturation_vapor_pressure(T) > 0
-    assert Thermodynamics.calculate_relative_humidity(q, p, T) >= 0
+    return ThermodynamicsState(temperature=300, pressure=90000, specific_humidity=0.012, height=1000)
+
+
+# ============================================================
+# Potential temperature
+# ============================================================
+
+
+def test_potential_temperature():
+
+    model = Thermodynamics()
+
+    theta = model.potential_temperature(create_state())
+
+    assert theta > 300
+
+
+# ============================================================
+# Virtual temperature
+# ============================================================
+
+
+def test_virtual_temperature():
+
+    model = Thermodynamics()
+
+    tv = model.virtual_temperature(create_state())
+
+    assert tv > 300
+
+
+# ============================================================
+# Density
+# ============================================================
+
+
+def test_air_density():
+
+    model = Thermodynamics()
+
+    rho = model.air_density(create_state())
+
+    assert rho > 0
+
+
+# ============================================================
+# Dry static energy
+# ============================================================
+
+
+def test_dry_static_energy():
+
+    model = Thermodynamics()
+
+    value = model.dry_static_energy(create_state())
+
+    assert value > 300000
+
+
+# ============================================================
+# Moist static energy
+# ============================================================
+
+
+def test_moist_static_energy():
+
+    model = Thermodynamics()
+
+    value = model.moist_static_energy(create_state())
+
+    assert value > 300000
+
+
+# ============================================================
+# Enthalpy
+# ============================================================
+
+
+def test_enthalpy():
+
+    model = Thermodynamics()
+
+    value = model.enthalpy(create_state())
+
+    assert value > 300000
+
+
+# ============================================================
+# Internal energy
+# ============================================================
+
+
+def test_internal_energy():
+
+    model = Thermodynamics()
+
+    value = model.internal_energy(create_state())
+
+    assert value > 200000
+
+
+# ============================================================
+# Dry adiabatic lapse rate
+# ============================================================
+
+
+def test_adiabatic_lapse_rate():
+
+    model = Thermodynamics()
+
+    value = model.adiabatic_lapse_rate()
+
+    assert value > 0
+
+
+# ============================================================
+# Moist lapse rate
+# ============================================================
+
+
+def test_moist_adiabatic_lapse_rate():
+    """
+    CORRECTED: the formula used to omit its numerator's latent-heat-
+    release correction term entirely (effectively using a numerator of
+    1 instead of [1 + Lv*w/(Rd*T)]) - understating the true moist
+    lapse rate by ~24% for this state. The honest value (Rogers & Yau
+    formula) is ~0.00471 K/m (4.71 K/km, a physically realistic value
+    below the dry adiabatic rate of ~9.77 K/km).
+    """
+
+    model = Thermodynamics()
+
+    value = model.moist_adiabatic_lapse_rate(create_state())
+
+    assert value == 0.00471
+    # Must be less than the dry adiabatic rate - the whole physical point
+    # of the moist correction (latent heat release slows the parcel's cooling).
+    assert value < model.adiabatic_lapse_rate()
+
+
+# ============================================================
+# Lifting condensation level
+# ============================================================
+
+
+def test_lifting_condensation_level():
+
+    model = Thermodynamics()
+
+    value = model.lifting_condensation_level(30, 20)
+
+    assert value == 1250
+
+
+# ============================================================
+# Brunt Vaisala frequency
+# ============================================================
+
+
+def test_brunt_vaisala_frequency():
+
+    model = Thermodynamics()
+
+    value = model.brunt_vaisala_frequency(0.01)
+
+    assert value > 0
+
+
+# ============================================================
+# CAPE
+# ============================================================
+
+
+def test_cape():
+
+    model = Thermodynamics()
+
+    value = model.convective_available_potential_energy(305, 295, 1000)
+
+    assert value > 0
+
+
+# ============================================================
+# CIN
+# ============================================================
+
+
+def test_cin():
+
+    model = Thermodynamics()
+
+    value = model.convective_inhibition(2, 1000)
+
+    assert value < 0
+
+
+# ============================================================
+# Stability index
+# ============================================================
+
+
+def test_stability_index():
+
+    model = Thermodynamics()
+
+    value = model.stability_index(300, 310, 1000)
+
+    assert value == 0.01

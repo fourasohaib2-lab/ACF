@@ -1,0 +1,53 @@
+================================================================================
+ACF RUFF AUTOPILOT V3 REPORT
+================================================================================
+Timestamp: 20260817_091938
+Initial TARGET errors: 20
+Final TARGET errors: 18
+Fixed: 2
+Failed: 0
+Skipped: 0
+
+TARGET CODES SUMMARY (Fixed / Target):
+C401      : fixed=0, remaining=0
+C414      : fixed=0, remaining=0
+DTZ003    : fixed=0, remaining=0
+DTZ005    : fixed=0, remaining=0
+F811      : fixed=0, remaining=8
+F821      : fixed=0, remaining=3
+F841      : fixed=2, remaining=7
+I001      : fixed=0, remaining=0
+PIE810    : fixed=0, remaining=0
+PLW1510   : fixed=0, remaining=0
+RUF012    : fixed=0, remaining=0
+RUF013    : fixed=0, remaining=0
+UP007     : fixed=0, remaining=0
+
+IGNORED CODES SUMMARY:
+BLE001    : 0
+E722      : 1
+S110      : 0
+
+ITERATION LOGS:
+[0001] FIXED                | F841     | src/acf/gui/dashboard/awci_timeline.py:64 | 8.66s | PASS | 
+[0002] FIXED                | F841     | src/acf/gui/dashboard/awci_vertical_profile.py:101 | 7.04s | PASS | 
+
+REMAINING TARGET ERRORS:
+ - F841     /home/souhaib/ACF/src/acf/gui/docks/layer_panel.py:108:9 | Local variable `satellite` is assigned to but never used
+ - F841     /home/souhaib/ACF/src/acf/gui/docks/layer_panel.py:113:9 | Local variable `radar` is assigned to but never used
+ - F841     /home/souhaib/ACF/src/acf/gui/docks/layer_panel.py:118:9 | Local variable `ocean` is assigned to but never used
+ - F841     /home/souhaib/ACF/src/acf/gui/docks/layer_panel.py:123:9 | Local variable `terrain` is assigned to but never used
+ - F841     /home/souhaib/ACF/src/acf/gui/esoc/hpc_execution_panel.py:110:9 | Local variable `res` is assigned to but never used
+ - F811     /home/souhaib/ACF/src/acf/gui/map/projections/projection_manager.py:137:9 | Redefinition of unused `status` from line 123: `status` redefined here
+ - F821     /home/souhaib/ACF/src/acf/models/arpege/ingestion_adapter.py:23:34 | Undefined name `Optional`
+ - F821     /home/souhaib/ACF/src/acf/models/arpege/ingestion_adapter.py:24:24 | Undefined name `Optional`
+ - F821     /home/souhaib/ACF/src/acf/verification/nwp_metrics.py:44:83 | Undefined name `Optional`
+ - F811     /home/souhaib/ACF/tests/test_cache_manager.py:33:5 | Redefinition of unused `test_cache` from line 7: `test_cache` redefined here
+ - F811     /home/souhaib/ACF/tests/test_csv_adapter.py:27:5 | Redefinition of unused `test_csv_adapter` from line 6: `test_csv_adapter` redefined here
+ - F811     /home/souhaib/ACF/tests/test_csv_adapter.py:37:5 | Redefinition of unused `test_csv_support` from line 17: `test_csv_support` redefined here
+ - F811     /home/souhaib/ACF/tests/test_dataset_validator.py:30:47 | Redefinition of unused `DatasetValidator` from line 4: `DatasetValidator` redefined here
+ - F811     /home/souhaib/ACF/tests/test_dataset_validator.py:44:5 | Redefinition of unused `test_validator` from line 7: `test_validator` redefined here
+ - F811     /home/souhaib/ACF/tests/test_divergence.py:31:46 | Redefinition of unused `Divergence` from line 3: `Divergence` redefined here
+ - F811     /home/souhaib/ACF/tests/test_divergence.py:50:5 | Redefinition of unused `test_negative` from line 16: `test_negative` redefined here
+ - F841     /home/souhaib/ACF/tests/test_epygram_reader.py:119:5 | Local variable `r` is assigned to but never used
+ - F841     /home/souhaib/ACF/tests/test_forecast_config.py:22:5 | Local variable `json_str` is assigned to but never used

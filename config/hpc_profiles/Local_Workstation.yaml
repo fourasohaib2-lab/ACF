@@ -1,0 +1,11 @@
+name: "Local Workstation"
+hostname: "localhost"
+user: "localuser"
+port: 22
+ssh_key: "~/.ssh/id_rsa"
+scheduler: "local"
+remote_dir: "/tmp/acf_run"
+scratch_dir: "/tmp/acf_scratch"
+mpi_launcher: "mpirun"
+gpu_mode: "CUDA"
+active: true

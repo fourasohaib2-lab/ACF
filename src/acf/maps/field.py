@@ -33,8 +33,4 @@ class WeatherField:
         self.values.clear()
 
     def __repr__(self):
-        return (
-            f"WeatherField(name={self.name!r}, "
-            f"count={self.count()}, units={self.units!r})"
-        )
-
+        return f"WeatherField(name={self.name!r}, count={self.count()}, units={self.units!r})"

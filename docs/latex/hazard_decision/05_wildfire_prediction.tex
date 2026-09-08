@@ -1,0 +1,746 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACF-DOC-039.05
+% Wildfire Prediction System
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Wildfire Prediction System}
+
+\subsection{Executive Summary}
+
+The ACF Wildfire Prediction System is a global environmental intelligence
+module dedicated to wildfire detection, prediction, risk assessment and
+operational response.
+
+Wildfires are complex Earth system events resulting from interactions
+between:
+
+\begin{itemize}
+
+\item Atmospheric conditions
+
+\item Vegetation state
+
+\item Soil moisture
+
+\item Land surface properties
+
+\item Human activities
+
+\item Climate variability
+
+\end{itemize}
+
+
+The ACF Wildfire System integrates:
+
+\begin{itemize}
+
+\item Numerical Weather Prediction
+
+\item Fire danger indices
+
+\item Satellite observations
+
+\item Land surface models
+
+\item Artificial intelligence
+
+\item Earth System Digital Twin
+
+\item Emergency management systems
+
+\end{itemize}
+
+
+The objectives are:
+
+\begin{itemize}
+
+\item Early wildfire detection
+
+\item Fire danger forecasting
+
+\item Fire propagation simulation
+
+\item Smoke impact analysis
+
+\item Emergency decision support
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Introduction}
+
+Wildfires represent one of the most important environmental hazards
+affecting ecosystems, populations and atmospheric composition.
+
+A wildfire requires three fundamental elements:
+
+\[
+Fire =
+Fuel
++
+Oxygen
++
+Heat
+\]
+
+
+The ACF system analyzes the complete fire environment:
+
+\[
+Weather
++
+Vegetation
++
+Terrain
++
+HumanFactors
+\rightarrow
+FireRisk
+\]
+
+
+The wildfire prediction chain is:
+
+\[
+Observation
+\rightarrow
+RiskAnalysis
+\rightarrow
+Detection
+\rightarrow
+PropagationModel
+\rightarrow
+Warning
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Wildfire Earth System Concept}
+
+The ACF wildfire module connects multiple Earth components:
+
+\begin{itemize}
+
+\item Atmosphere
+
+\item Biosphere
+
+\item Land surface
+
+\item Carbon cycle
+
+\item Atmospheric chemistry
+
+\item Human exposure
+
+\end{itemize}
+
+
+The system represents wildfire as a coupled
+atmosphere--land--chemistry process.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Fire Weather Analysis}
+
+Weather conditions strongly influence wildfire probability.
+
+The ACF Fire Weather Engine monitors:
+
+\begin{itemize}
+
+\item Temperature
+
+\item Relative humidity
+
+\item Wind speed
+
+\item Wind direction
+
+\item Precipitation deficit
+
+\item Atmospheric stability
+
+\end{itemize}
+
+
+High wildfire danger occurs when:
+
+\[
+FireDanger
+=
+f(T,RH,W,P)
+\]
+
+
+where:
+
+\begin{itemize}
+
+\item $T$ = temperature
+
+\item $RH$ = relative humidity
+
+\item $W$ = wind
+
+\item $P$ = precipitation conditions
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Fire Danger Index}
+
+The ACF Fire Danger Engine calculates wildfire probability using
+meteorological and environmental variables.
+
+The system integrates classical fire danger indices with artificial
+intelligence corrections.
+
+
+The main indicators are:
+
+\begin{itemize}
+
+\item Canadian Fire Weather Index (FWI)
+
+\item Keetch-Byram Drought Index (KBDI)
+
+\item Burning Index (BI)
+
+\item Energy Release Component (ERC)
+
+\item Fire Potential Index (FPI)
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Canadian Fire Weather Index}
+
+The Fire Weather Index evaluates the potential intensity of wildfire
+development.
+
+The general formulation is:
+
+\[
+FWI=f(M_f,T,RH,W)
+\]
+
+
+where:
+
+\begin{itemize}
+
+\item $M_f$ = fuel moisture
+
+\item $T$ = temperature
+
+\item $RH$ = relative humidity
+
+\item $W$ = wind speed
+
+\end{itemize}
+
+
+The ACF implementation calculates:
+
+\begin{itemize}
+
+\item Fine fuel moisture
+
+\item Duff moisture
+
+\item Drought conditions
+
+\item Fire spread potential
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Fuel Moisture Monitoring}
+
+Fuel moisture is a key parameter controlling wildfire ignition.
+
+The ACF system monitors:
+
+\begin{itemize}
+
+\item Dead vegetation moisture
+
+\item Live vegetation moisture
+
+\item Soil moisture
+
+\item Leaf water content
+
+\item Biomass availability
+
+\end{itemize}
+
+
+Fuel dryness increases when:
+
+\[
+FuelDryness
+=
+Temperature
+-
+Humidity
+-
+Precipitation
+\]
+
+
+The model receives data from:
+
+\begin{itemize}
+
+\item Satellite observations
+
+\item Land surface models
+
+\item Meteorological forecasts
+
+\item Vegetation models
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Vegetation and Biomass Analysis}
+
+Vegetation represents the available fuel for wildfire propagation.
+
+The ACF biosphere module evaluates:
+
+\begin{itemize}
+
+\item Vegetation type
+
+\item Biomass density
+
+\item Leaf area index
+
+\item Vegetation health
+
+\item Carbon content
+
+\end{itemize}
+
+
+Important parameters:
+
+\[
+FuelLoad=f(Biomass,Vegetation,Moisture)
+\]
+
+
+The system generates:
+
+\begin{itemize}
+
+\item Fuel availability maps
+
+\item Vegetation stress maps
+
+\item Ignition probability maps
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Fire Ignition Probability}
+
+Wildfire ignition can result from natural and human causes.
+
+The ACF ignition model considers:
+
+\begin{itemize}
+
+\item Lightning activity
+
+\item Temperature extremes
+
+\item Dry vegetation
+
+\item Human activity
+
+\item Wind conditions
+
+\end{itemize}
+
+
+The ignition probability is:
+
+\[
+P_{fire}
+=
+f(Weather,Fuel,Ignition)
+\]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Fire Propagation Modeling}
+
+Once ignition occurs, fire evolution depends on environmental
+conditions.
+
+The ACF Fire Dynamics Model simulates:
+
+\begin{itemize}
+
+\item Fire front movement
+
+\item Rate of spread
+
+\item Fire intensity
+
+\item Burned area expansion
+
+\end{itemize}
+
+
+The fire spread velocity is represented by:
+
+\[
+V_f=f(W,S,F,M)
+\]
+
+
+where:
+
+\begin{itemize}
+
+\item $W$ = wind
+
+\item $S$ = slope
+
+\item $F$ = fuel properties
+
+\item $M$ = moisture
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Terrain Influence}
+
+Topography strongly affects wildfire behavior.
+
+The ACF terrain model includes:
+
+\begin{itemize}
+
+\item Elevation
+
+\item Slope
+
+\item Aspect
+
+\item Terrain channels
+
+\item Mountain effects
+
+\end{itemize}
+
+
+Fire usually propagates faster uphill due to:
+
+\begin{itemize}
+
+\item Increased heating
+
+\item Better fuel exposure
+
+\item Wind acceleration
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Satellite Wildfire Detection}
+
+Satellite observation provides global and continuous wildfire
+monitoring capability.
+
+The ACF Earth Observation System integrates:
+
+\begin{itemize}
+
+\item Thermal infrared observations
+
+\item Optical satellite imagery
+
+\item Vegetation monitoring
+
+\item Burned area products
+
+\item Aerosol observations
+
+\end{itemize}
+
+
+The main satellite sources include:
+
+\begin{itemize}
+
+\item MODIS fire products
+
+\item VIIRS active fire detection
+
+\item Sentinel optical observations
+
+\item Geostationary satellite monitoring
+
+\end{itemize}
+
+
+Satellite observations provide:
+
+\begin{itemize}
+
+\item Active fire location
+
+\item Fire intensity estimation
+
+\item Burned area mapping
+
+\item Fire evolution monitoring
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Thermal Anomaly Detection}
+
+Active fires generate strong thermal signatures.
+
+The ACF detection system analyzes:
+
+\begin{itemize}
+
+\item Land surface temperature anomalies
+
+\item Infrared radiation
+
+\item Thermal contrast
+
+\item Night-time fire signals
+
+\end{itemize}
+
+
+The thermal anomaly is:
+
+\[
+A_T=
+T_{fire}
+-
+T_{background}
+\]
+
+
+where:
+
+\begin{itemize}
+
+\item $T_{fire}$ = fire temperature
+
+\item $T_{background}$ = surrounding temperature
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Smoke and Atmospheric Chemistry Impact}
+
+Wildfires modify atmospheric composition.
+
+The ACF Atmospheric Chemistry Module simulates:
+
+\begin{itemize}
+
+\item Smoke transport
+
+\item Aerosol emissions
+
+\item Carbon monoxide
+
+\item Carbon dioxide
+
+\item Particulate matter
+
+\end{itemize}
+
+
+Fire emissions are represented as:
+
+\[
+Emission=
+BurnedArea
+\times
+FuelLoad
+\times
+EmissionFactor
+\]
+
+
+The system predicts:
+
+\begin{itemize}
+
+\item Air quality degradation
+
+\item Visibility reduction
+
+\item Population exposure
+
+\item Long-range smoke transport
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Artificial Intelligence Fire Detection Engine}
+
+The ACF AI Fire Engine improves wildfire detection and forecasting.
+
+The hybrid architecture combines:
+
+\[
+Prediction=
+PhysicsModel
++
+SatelliteData
++
+AI
+\]
+
+
+The AI system performs:
+
+\begin{itemize}
+
+\item Satellite image classification
+
+\item Fire hotspot detection
+
+\item Smoke recognition
+
+\item Fire spread prediction
+
+\item Damage estimation
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Deep Learning Fire Models}
+
+The wildfire AI framework includes:
+
+\begin{itemize}
+
+\item Convolutional Neural Networks for satellite images
+
+\item Vision Transformers for Earth observation
+
+\item Recurrent networks for fire evolution
+
+\item Graph Neural Networks for landscape connectivity
+
+\end{itemize}
+
+
+Input variables:
+
+\begin{itemize}
+
+\item Satellite imagery
+
+\item Weather forecasts
+
+\item Wind fields
+
+\item Vegetation maps
+
+\item Terrain information
+
+\end{itemize}
+
+
+AI outputs:
+
+\begin{itemize}
+
+\item Fire probability maps
+
+\item Fire perimeter prediction
+
+\item Spread uncertainty
+
+\item Impact estimation
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Earth System Digital Twin Integration}
+
+The ACF Wildfire System is integrated into the Earth System Digital Twin.
+
+The Digital Twin provides:
+
+\begin{itemize}
+
+\item Atmospheric forecast
+
+\item Land surface state
+
+\item Vegetation condition
+
+\item Carbon cycle information
+
+\item Climate scenarios
+
+\end{itemize}
+
+
+The coupling enables:
+
+\begin{itemize}
+
+\item Real-time fire simulation
+
+\item Future wildfire scenarios
+
+\item Climate change impact analysis
+
+\item Ecosystem recovery monitoring
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

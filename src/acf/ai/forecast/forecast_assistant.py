@@ -27,7 +27,6 @@ class ForecastAssistant:
         ##################################################
 
         if "temperature" in analysis:
-
             mean = analysis["temperature"]["mean"]
 
             if mean < 0:
@@ -47,7 +46,6 @@ class ForecastAssistant:
         ##################################################
 
         if "pressure" in analysis:
-
             pressure = analysis["pressure"]["mean"]
 
             if pressure < 1000:
@@ -61,7 +59,6 @@ class ForecastAssistant:
         ##################################################
 
         if "humidity" in analysis:
-
             humidity = analysis["humidity"]["mean"]
 
             if humidity > 80:

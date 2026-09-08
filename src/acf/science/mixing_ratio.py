@@ -10,19 +10,20 @@ where:
     q = specific humidity (kg/kg)
 """
 
+
 class MixingRatio:
     """Mixing ratio calculator."""
-    
+
     @staticmethod
     def calculate(specific_humidity: float) -> float:
         """
         Calculate mixing ratio from specific humidity.
-        
+
         Parameters
         ----------
         specific_humidity : float
             Specific humidity (kg/kg) in [0, 1)
-            
+
         Returns
         -------
         float

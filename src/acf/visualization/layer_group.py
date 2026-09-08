@@ -46,20 +46,14 @@ class LayerGroup:
 
     def remove_group(self, name):
 
-        self.groups = [
-            group
-            for group in self.groups
-            if group.name != name
-        ]
+        self.groups = [group for group in self.groups if group.name != name]
 
     ##################################################
 
     def get_group(self, name):
 
         for group in self.groups:
-
             if group.name == name:
-
                 return group
 
         return None
@@ -71,11 +65,9 @@ class LayerGroup:
         self.visible = True
 
         for layer in self.layers:
-
             layer.visible = True
 
         for group in self.groups:
-
             group.show()
 
     ##################################################
@@ -85,11 +77,9 @@ class LayerGroup:
         self.visible = False
 
         for layer in self.layers:
-
             layer.visible = False
 
         for group in self.groups:
-
             group.hide()
 
     ##################################################
@@ -97,18 +87,10 @@ class LayerGroup:
     def summary(self):
 
         return {
-
             "name": self.name,
-
             "visible": self.visible,
-
             "layers": self.layers.summary(),
-
-            "groups": [
-                group.name
-                for group in self.groups
-            ],
-
+            "groups": [group.name for group in self.groups],
         }
 
     ##################################################
@@ -121,9 +103,4 @@ class LayerGroup:
 
     def __repr__(self):
 
-        return (
-            f"LayerGroup("
-            f"name='{self.name}', "
-            f"layers={len(self.layers)}, "
-            f"groups={len(self.groups)})"
-        )
+        return f"LayerGroup(name='{self.name}', layers={len(self.layers)}, groups={len(self.groups)})"

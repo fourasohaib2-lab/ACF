@@ -1,57 +1,9 @@
-from acf.core.parameter import Parameter
+"""
+Atmospheric Complexity Framework (ACF)
 
+CORE - Parameter Registry (Compatibility Layer forwarding to acf.parameters.registry)
+"""
 
-class ParameterRegistry:
+from acf.parameters.registry import ParameterRegistry
 
-    def __init__(self):
-
-        self.parameters = {}
-
-    ##############################################
-
-    def register(self, parameter):
-
-        self.parameters[parameter.id] = parameter
-
-    ##############################################
-
-    def get(self, parameter_id):
-
-        return self.parameters.get(parameter_id)
-
-    ##############################################
-
-    def exists(self, parameter_id):
-
-        return parameter_id in self.parameters
-
-    ##############################################
-
-    def all(self):
-
-        return list(self.parameters.values())
-
-    ##############################################
-
-    def categories(self):
-
-        return sorted(
-            {
-                p.category
-                for p in self.parameters.values()
-            }
-        )
-
-    ##############################################
-
-    def by_category(self, category):
-
-        return [
-
-            p
-
-            for p in self.parameters.values()
-
-            if p.category == category
-
-        ]
+__all__ = ["ParameterRegistry"]

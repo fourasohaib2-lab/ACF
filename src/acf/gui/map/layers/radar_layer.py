@@ -76,24 +76,13 @@ class RadarLayer(BaseLayer):
     def status(self):
 
         return {
-
             "name": self.name,
-
             "type": self.type,
-
             "visible": self.visible,
-
             "opacity": self.opacity,
-
             "has_data": self.data is not None,
-
             "colormap": self.colormap,
-
             "alpha": self.alpha,
-
             "reflectivity_min": self.reflectivity_min,
-
             "reflectivity_max": self.reflectivity_max,
-
         }
-

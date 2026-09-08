@@ -43,35 +43,26 @@ class ZoomController(QObject):
 
     def zoom_in(self):
 
-        self.set_zoom(
-            self.zoom * self.factor
-        )
+        self.set_zoom(self.zoom * self.factor)
 
     ##################################################
 
     def zoom_out(self):
 
-        self.set_zoom(
-            self.zoom / self.factor
-        )
+        self.set_zoom(self.zoom / self.factor)
 
     ##################################################
 
     def set_zoom(self, value):
 
-        value = max(
-            self.minimum,
-            min(self.maximum, float(value))
-        )
+        value = max(self.minimum, min(self.maximum, float(value)))
 
         if value == self.zoom:
             return
 
         self.zoom = value
 
-        self.zoomChanged.emit(
-            self.zoom
-        )
+        self.zoomChanged.emit(self.zoom)
 
     ##################################################
 
@@ -84,13 +75,8 @@ class ZoomController(QObject):
     def status(self):
 
         return {
-
             "zoom": self.zoom,
-
             "minimum": self.minimum,
-
             "maximum": self.maximum,
-
             "factor": self.factor,
-
         }

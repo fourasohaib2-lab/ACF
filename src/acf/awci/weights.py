@@ -5,31 +5,45 @@ AWCI Weights Manager
 Manages weights for each module contributing to AWCI.
 """
 
-from typing import Dict, Optional
+from acf.awci.scientific_status import WeightStatusEntry, get_module_weight_status
 
 
 class WeightsManager:
     """
     Manages weights for AWCI module contributions.
-    
+
     Default weights are based on expert knowledge and can be
     adjusted during calibration phase.
     """
-    
+
     DEFAULT_WEIGHTS = {
-        'dynamic': 0.20,
-        'thermodynamic': 0.25,
-        'convective': 0.20,
-        'microphysical': 0.15,
-        'topographic': 0.10,
-        'temporal': 0.05,
-        'confidence': 0.05,
+        "dynamic": 0.20,
+        "thermodynamic": 0.25,
+        "convective": 0.20,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.05,
+        "confidence": 0.05,
+        # Real ensemble-spread-derived forecast complexity (see
+        # AWCICalculator.calculate_module_scores()). Default weight is
+        # 0.0 (opt-in, not 0.0 as "zero disagreement") so every existing
+        # caller that never supplies ensemble_members - and every
+        # existing test - gets a bit-identical awci/level/decomposition
+        # to before this module existed. A caller with real ensemble
+        # data should raise this weight explicitly, e.g. via
+        # update_weights({"ensemble_spread": 0.10, "confidence": 0.0}).
+        "ensemble_spread": 0.0,
+        # Real multi-model disagreement (see AWCICalculator's
+        # calculate_module_scores() and ModelConsensusEngine.
+        # compute_real_multi_model_disagreement()). Same opt-in
+        # convention as ensemble_spread above: 0.0 by default.
+        "model_disagreement": 0.0,
     }
-    
-    def __init__(self, weights: Optional[Dict[str, float]] = None):
+
+    def __init__(self, weights: dict[str, float] | None = None):
         """
         Initialize weights manager.
-        
+
         Parameters
         ----------
         weights : dict, optional
@@ -38,33 +52,66 @@ class WeightsManager:
         """
         self.weights = weights or self.DEFAULT_WEIGHTS.copy()
         self._validate_weights()
-    
+
     def _validate_weights(self):
         """Validate that weights sum to 1.0."""
         total = sum(self.weights.values())
         if not (0.99 <= total <= 1.01):
             raise ValueError(f"Weights must sum to 1.0. Current sum: {total}")
-    
+
     def get_weight(self, module: str) -> float:
         """Get weight for a specific module."""
         return self.weights.get(module, 0.0)
-    
+
+    def get_weight_status(self, module: str) -> WeightStatusEntry:
+        """
+        Real scientific status of this weight (docs/ACF_MASTER_PROMPT.md
+        section 80 - "chaque poids doit avoir un statut : initial,
+        expert-based, calibrated, validated") - see
+        acf.awci.scientific_status for the real classification and its
+        rationale. Never CALIBRATED/VALIDATED today - honestly reflects
+        that no weight in this codebase has been through a real
+        calibration/validation pipeline yet.
+        """
+        return get_module_weight_status(module)
+
     def set_weight(self, module: str, value: float):
         """
-        Set weight for a specific module.
-        
-        Note: This modifies the weight and immediately validates.
-        To change multiple weights at once, use update_weights().
+        Set weight for a specific module, proportionally rescaling every
+        other weight so the total still sums to 1.0.
+
+        NOTE (correction): this used to set only the requested weight
+        and then validate that ALL weights summed to 1.0 - which fails
+        for virtually any real single-weight change, since the other
+        modules' weights are left untouched (e.g. raising "dynamic"
+        from 0.20 to 0.30 leaves the other 6 weights as-is, so the
+        total becomes 1.10 and _validate_weights() raises immediately).
+        The method could never succeed for its own stated purpose. It
+        now redistributes the remaining budget (1 - value) across the
+        other weights proportionally to their current share, so the
+        total stays at 1.0.
+
+        Note: To set several weights to specific chosen values at once
+        (without this proportional rescaling of the rest), use
+        update_weights() instead.
         """
         if value < 0 or value > 1:
             raise ValueError(f"Weight must be between 0 and 1. Got: {value}")
+
+        others = {m: w for m, w in self.weights.items() if m != module}
+        others_total = sum(others.values())
+        remaining = 1.0 - value
+        if others_total > 0:
+            scale = remaining / others_total
+            for m in others:
+                self.weights[m] = others[m] * scale
         self.weights[module] = value
         self._validate_weights()
-    
-    def update_weights(self, updates: Dict[str, float]):
+
+    def update_weights(self, updates: dict[str, float]):
         """
         Update multiple weights at once, then validate.
-        
+
         Parameters
         ----------
         updates : dict
@@ -75,11 +122,11 @@ class WeightsManager:
                 raise ValueError(f"Weight for '{module}' must be between 0 and 1. Got: {value}")
             self.weights[module] = value
         self._validate_weights()
-    
-    def get_all_weights(self) -> Dict[str, float]:
+
+    def get_all_weights(self) -> dict[str, float]:
         """Get all weights."""
         return self.weights.copy()
-    
+
     def reset(self):
         """Reset to default weights."""
         self.weights = self.DEFAULT_WEIGHTS.copy()

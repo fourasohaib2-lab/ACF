@@ -24,4 +24,3 @@ def test_dashboard_loading():
     loaded = manager.load("weather")
 
     assert loaded.name == "Weather"
-

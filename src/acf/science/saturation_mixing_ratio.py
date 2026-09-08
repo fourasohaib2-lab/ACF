@@ -37,13 +37,6 @@ class SaturationMixingRatio:
             Saturation mixing ratio (kg/kg)
         """
         if saturation_vapor_pressure >= pressure:
-            raise ValueError(
-                "saturation_vapor_pressure must be smaller than pressure."
-            )
+            raise ValueError("saturation_vapor_pressure must be smaller than pressure.")
 
-        return (
-            0.622
-            * saturation_vapor_pressure
-            / (pressure - saturation_vapor_pressure)
-        )
-
+        return 0.622 * saturation_vapor_pressure / (pressure - saturation_vapor_pressure)

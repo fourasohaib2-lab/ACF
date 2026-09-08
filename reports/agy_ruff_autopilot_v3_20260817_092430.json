@@ -1,0 +1,289 @@
+{
+  "timestamp": "20260817_092430",
+  "start_time": "2026-08-17T09:19:45.328277+00:00",
+  "configuration": {
+    "MAX_ITERATIONS": 1000,
+    "MAX_CONTEXT_LINES": 10,
+    "MAX_TOKENS": 96,
+    "TIMEOUT": 420,
+    "SLEEP_AFTER_TIMEOUT": 60,
+    "MAX_FILE_BYTES": 2097152,
+    "TARGET_CODES": [
+      "C401",
+      "C414",
+      "DTZ003",
+      "DTZ005",
+      "F811",
+      "F821",
+      "F841",
+      "I001",
+      "PIE810",
+      "PLW1510",
+      "RUF012",
+      "RUF013",
+      "UP007"
+    ],
+    "IGNORE_CODES": [
+      "BLE001",
+      "E722",
+      "S110"
+    ],
+    "RUFF_AUTOFIX_CODES": [
+      "C401",
+      "C414",
+      "I001",
+      "PIE810",
+      "UP007"
+    ]
+  },
+  "iterations": 19,
+  "initial_target_errors": 18,
+  "final_target_errors": 1,
+  "fixed": 16,
+  "failed": 3,
+  "skipped": 0,
+  "ignored": 1,
+  "other_errors": 6,
+  "fixed_by_target_code": {
+    "F811": 7,
+    "F821": 2,
+    "F841": 7,
+    "I001": 0,
+    "RUF012": 0,
+    "RUF013": 0,
+    "PIE810": 0,
+    "PLW1510": 0,
+    "C414": 0,
+    "DTZ003": 0,
+    "DTZ005": 0,
+    "UP007": 0,
+    "C401": 0
+  },
+  "ignored_by_code": {
+    "S110": 0,
+    "E722": 1,
+    "BLE001": 0
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/docks/layer_panel.py",
+      "line": 108,
+      "message": "Local variable `satellite` is assigned to but never used",
+      "duration": 9.51664152299054,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 2,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/docks/layer_panel.py",
+      "line": 112,
+      "message": "Local variable `radar` is assigned to but never used",
+      "duration": 7.2433686570002465,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 3,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/docks/layer_panel.py",
+      "line": 115,
+      "message": "Local variable `ocean` is assigned to but never used",
+      "duration": 6.847844354997505,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 4,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/docks/layer_panel.py",
+      "line": 119,
+      "message": "Local variable `terrain` is assigned to but never used",
+      "duration": 6.184532020997722,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 5,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/esoc/hpc_execution_panel.py",
+      "line": 110,
+      "message": "Local variable `res` is assigned to but never used",
+      "duration": 8.306858462994569,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 6,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "tests/test_epygram_reader.py",
+      "line": 119,
+      "message": "Local variable `r` is assigned to but never used",
+      "duration": 11.418960745999357,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 7,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "tests/test_forecast_config.py",
+      "line": 22,
+      "message": "Local variable `json_str` is assigned to but never used",
+      "duration": 6.148650350995013,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 8,
+      "status": "EMPTY_RESPONSE",
+      "code": "F811",
+      "filename": "src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "duration": 29.472830415004864,
+      "validation": "FAIL",
+      "detail": "AGY status: EMPTY_RESPONSE"
+    },
+    {
+      "iteration": 9,
+      "status": "EMPTY_RESPONSE",
+      "code": "F811",
+      "filename": "src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "duration": 29.42003701500653,
+      "validation": "FAIL",
+      "detail": "AGY status: EMPTY_RESPONSE"
+    },
+    {
+      "iteration": 10,
+      "status": "EMPTY_RESPONSE",
+      "code": "F811",
+      "filename": "src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "duration": 43.01877040200634,
+      "validation": "FAIL",
+      "detail": "AGY status: EMPTY_RESPONSE"
+    },
+    {
+      "iteration": 11,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_cache_manager.py",
+      "line": 33,
+      "message": "Redefinition of unused `test_cache` from line 7: `test_cache` redefined here",
+      "duration": 34.434315784994396,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 12,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_csv_adapter.py",
+      "line": 27,
+      "message": "Redefinition of unused `test_csv_adapter` from line 6: `test_csv_adapter` redefined here",
+      "duration": 8.432861159992171,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 13,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_csv_adapter.py",
+      "line": 36,
+      "message": "Redefinition of unused `test_csv_support` from line 17: `test_csv_support` redefined here",
+      "duration": 14.174895867996383,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 14,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_dataset_validator.py",
+      "line": 30,
+      "message": "Redefinition of unused `DatasetValidator` from line 4: `DatasetValidator` redefined here",
+      "duration": 8.55575667899393,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 15,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_dataset_validator.py",
+      "line": 42,
+      "message": "Redefinition of unused `test_validator` from line 7: `test_validator` redefined here",
+      "duration": 18.24761739501264,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 16,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_divergence.py",
+      "line": 31,
+      "message": "Redefinition of unused `Divergence` from line 3: `Divergence` redefined here",
+      "duration": 8.402348806004738,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 17,
+      "status": "FIXED",
+      "code": "F811",
+      "filename": "tests/test_divergence.py",
+      "line": 49,
+      "message": "Redefinition of unused `test_negative` from line 16: `test_negative` redefined here",
+      "duration": 12.920349325999268,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 18,
+      "status": "FIXED",
+      "code": "F821",
+      "filename": "src/acf/models/arpege/ingestion_adapter.py",
+      "line": 23,
+      "message": "Undefined name `Optional`",
+      "duration": 10.901050134998513,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 19,
+      "status": "FIXED",
+      "code": "F821",
+      "filename": "src/acf/verification/nwp_metrics.py",
+      "line": 44,
+      "message": "Undefined name `Optional`",
+      "duration": 9.558143716989434,
+      "validation": "PASS",
+      "detail": ""
+    }
+  ],
+  "remaining_errors": [
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "filename": "/home/souhaib/ACF/src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "column": 9,
+      "end_line": 137,
+      "end_column": 15
+    }
+  ]
+}

@@ -2,12 +2,11 @@
 Standards Hub
 """
 
-from acf.standards.manager import StandardsManager
 from acf.standards.ecmwf.manager import ECMWFManager
+from acf.standards.manager import StandardsManager
 
 
 class StandardsHub:
-
     def __init__(self):
 
         self.manager = StandardsManager()

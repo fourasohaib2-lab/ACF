@@ -60,9 +60,25 @@ logs/
 *.log
 
 # Runtime
-output/
-tmp/
-temp/
+# NOTE (correction): "output/" (no leading slash) matched ANY directory
+# named "output" anywhere in the tree, not just a repo-root runtime
+# artifacts dir - this silently excluded the real source package
+# src/acf/simulation_engine/output/ (NetcdfWriter, ZarrWriter) from git
+# entirely, for the project's whole history (git log shows zero commits
+# ever touching those files despite them being real, tested code - see
+# tests/test_simulation_engine.py::test_output_writers). Anchored to
+# the repo root so it only matches the intended runtime dir.
+/output/
+# Anchored for the same reason as /output/ above - defends against a
+# future src/ (or tests/tools/etc.) module/package that happens to be
+# named "tmp" or "temp" from being silently excluded the same way.
+/tmp/
+/temp/
+# Real runtime SQLite stores for the /api/v1/events, /api/v1/datasets
+# durable persistence (acf.web.storage.SqliteDocumentStore's default
+# paths) - genuine per-deployment data, not source. Anchored at the
+# repo root for the same /output/-bug reason as above.
+/data/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -84,3 +100,12 @@ temp/
 # Project files
 project/*.pdf
 project/*.docx
+.aider*
+
+# Personal/reference clutter accidentally dropped at the repo root
+# (spotted 2026-09-06): not ACF source, not build output, just files
+# that landed here by accident. Left in place on disk, only hidden from
+# `git status` so real in-flight work stops being buried under them.
+/metpy-cookbook/
+/*.odt
+

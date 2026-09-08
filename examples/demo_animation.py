@@ -5,10 +5,7 @@ from acf.time.time_manager import TimeManager
 
 manager = TimeManager()
 
-manager.load([
-    datetime(2026,1,1,0)+timedelta(hours=3*i)
-    for i in range(8)
-])
+manager.load([datetime(2026, 1, 1, 0) + timedelta(hours=3 * i) for i in range(8)])
 
 engine = AnimationEngine(manager)
 

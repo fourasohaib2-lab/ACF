@@ -49,9 +49,7 @@ class LayerManager(QObject):
         """
 
         for layer in self._layers:
-
             if layer.id == layer_id:
-
                 self._layers.remove(layer)
 
                 self.layerRemoved.emit(layer_id)
@@ -70,7 +68,6 @@ class LayerManager(QObject):
         """
 
         for layer in self._layers:
-
             if layer.id == layer_id:
                 return layer
 
@@ -92,11 +89,7 @@ class LayerManager(QObject):
         Return only visible layers.
         """
 
-        return [
-            layer
-            for layer in self._layers
-            if layer.visible
-        ]
+        return [layer for layer in self._layers if layer.visible]
 
     ##################################################
 
@@ -117,9 +110,7 @@ class LayerManager(QObject):
         """
 
         for i, layer in enumerate(self._layers):
-
             if layer.id == layer_id and i < len(self._layers) - 1:
-
                 self._layers[i], self._layers[i + 1] = (
                     self._layers[i + 1],
                     self._layers[i],
@@ -137,9 +128,7 @@ class LayerManager(QObject):
         """
 
         for i, layer in enumerate(self._layers):
-
             if layer.id == layer_id and i > 0:
-
                 self._layers[i], self._layers[i - 1] = (
                     self._layers[i - 1],
                     self._layers[i],
@@ -154,15 +143,7 @@ class LayerManager(QObject):
     def status(self):
 
         return {
-
             "layers": len(self._layers),
-
             "visible": len(self.visible_layers()),
-
-            "names": [
-                layer.name
-                for layer in self._layers
-            ],
-
+            "names": [layer.name for layer in self._layers],
         }
-

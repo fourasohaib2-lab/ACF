@@ -5,7 +5,6 @@ Colormap Manager
 
 
 class ColormapManager:
-
     def __init__(self):
 
         self._maps = {}

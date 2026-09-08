@@ -3,6 +3,7 @@ Virtual Potential Temperature
 =============================
 """
 
+
 class VirtualPotentialTemperature:
     """Virtual potential temperature calculator."""
 
@@ -16,16 +17,9 @@ class VirtualPotentialTemperature:
         """
 
         if potential_temperature <= 0:
-            raise ValueError(
-                "potential_temperature must be positive."
-            )
+            raise ValueError("potential_temperature must be positive.")
 
         if mixing_ratio < 0:
-            raise ValueError(
-                "mixing_ratio must be non-negative."
-            )
+            raise ValueError("mixing_ratio must be non-negative.")
 
-        return potential_temperature * (
-            1.0 + 0.61 * mixing_ratio
-        )
-
+        return potential_temperature * (1.0 + 0.61 * mixing_ratio)

@@ -6,19 +6,18 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QTextEdit,
-    QPushButton,
-    QFileDialog,
     QMessageBox,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
 )
 
 
 class NewProjectDialog(QDialog):
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -114,7 +113,6 @@ class NewProjectDialog(QDialog):
     def validate(self):
 
         if not self.name_edit.text().strip():
-
             QMessageBox.warning(
                 self,
                 "Missing name",

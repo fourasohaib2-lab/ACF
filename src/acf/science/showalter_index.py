@@ -19,10 +19,7 @@ class ShowalterIndex:
              - T_parcel(500 hPa)
         """
 
-        return (
-            environment_temperature_500
-            - parcel_temperature_500
-        )
+        return environment_temperature_500 - parcel_temperature_500
 
     @staticmethod
     def category(si: float) -> str:
@@ -46,4 +43,3 @@ class ShowalterIndex:
             return "Very Unstable"
 
         return "Extreme Instability"
-

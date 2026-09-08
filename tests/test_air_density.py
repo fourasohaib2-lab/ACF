@@ -1,6 +1,6 @@
-from acf.science.air_density import AirDensity
-
 import pytest
+
+from acf.science.air_density import AirDensity
 
 
 def test_air_density():

@@ -5,9 +5,7 @@ def test_ecmwf_catalog():
 
     catalog = ECMWFCatalog()
 
-    catalog.load(
-        "src/acf/resources/standards/ecmwf/parameters.json"
-    )
+    catalog.load("src/acf/resources/standards/ecmwf/parameters.json")
 
     assert catalog.count() >= 4
     assert catalog.exists("t2m")

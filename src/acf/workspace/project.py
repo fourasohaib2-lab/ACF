@@ -27,13 +27,9 @@ class Project:
 
     version: str = "0.1.0"
 
-    created: str = field(
-        default_factory=lambda: datetime.now().isoformat()
-    )
+    created: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    modified: str = field(
-        default_factory=lambda: datetime.now().isoformat()
-    )
+    modified: str = field(default_factory=lambda: datetime.now().isoformat())
 
     # =====================================================
     # Ressources
@@ -98,7 +94,17 @@ class Project:
     # =====================================================
 
     def to_dict(self):
-
+        """
+        NOTE (correction): used to omit datasets/maps/models/reports/
+        scripts/plugins entirely, and from_dict() (see below) silently
+        dropped even the fields that were here (metadata, settings,
+        created) - every ProjectSerializer.save()+load() round-trip
+        (the only persistence path WorkspaceManager uses) silently
+        discarded a project's resource lists, metadata, settings, and
+        original creation date, replacing "created" with a fresh
+        "now" timestamp. Now included so save()+load() is a faithful
+        round-trip.
+        """
         return {
             "name": self.name,
             "author": self.author,
@@ -107,6 +113,12 @@ class Project:
             "root_path": str(self.root_path),
             "created": self.created,
             "modified": self.modified,
+            "datasets": self.datasets,
+            "maps": self.maps,
+            "models": self.models,
+            "reports": self.reports,
+            "scripts": self.scripts,
+            "plugins": self.plugins,
             "metadata": self.metadata,
             "settings": self.settings,
         }
@@ -116,7 +128,7 @@ class Project:
     @classmethod
     def from_dict(cls, data):
 
-        return cls(
+        project = cls(
             name=data.get("name", ""),
             root_path=Path(data.get("root_path", ".")),
             author=data.get("author", ""),
@@ -124,12 +136,23 @@ class Project:
             version=data.get("version", "0.1.0"),
         )
 
+        if "created" in data:
+            project.created = data["created"]
+        if "modified" in data:
+            project.modified = data["modified"]
+        project.datasets = data.get("datasets", [])
+        project.maps = data.get("maps", [])
+        project.models = data.get("models", [])
+        project.reports = data.get("reports", [])
+        project.scripts = data.get("scripts", [])
+        project.plugins = data.get("plugins", [])
+        project.metadata = data.get("metadata", {})
+        project.settings = data.get("settings", {})
+
+        return project
+
     # =====================================================
 
     def __repr__(self):
 
-        return (
-            f"Project("
-            f"name='{self.name}', "
-            f"version='{self.version}')"
-        )
+        return f"Project(name='{self.name}', version='{self.version}')"

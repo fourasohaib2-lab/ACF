@@ -27,11 +27,8 @@ class RelativeHumidity:
             Relative humidity (0-1)
         """
         if saturation_vapor_pressure <= 0:
-            raise ValueError(
-                "saturation_vapor_pressure must be positive."
-            )
+            raise ValueError("saturation_vapor_pressure must be positive.")
 
         rh = vapor_pressure / saturation_vapor_pressure
 
         return max(0.0, min(1.0, rh))
-

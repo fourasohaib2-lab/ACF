@@ -6,10 +6,10 @@ Scientific constants used throughout ACF.
 # Thermodynamics
 # ------------------------------------------------------------------
 
-RD = 287.05          # J kg-1 K-1
-RV = 461.50          # J kg-1 K-1
-CP = 1004.0          # J kg-1 K-1
-CV = 717.0           # J kg-1 K-1
+RD = 287.05  # J kg-1 K-1
+RV = 461.50  # J kg-1 K-1
+CP = 1004.0  # J kg-1 K-1
+CV = 717.0  # J kg-1 K-1
 
 KAPPA = RD / CP
 EPSILON = RD / RV
@@ -18,26 +18,33 @@ EPSILON = RD / RV
 # Gravity
 # ------------------------------------------------------------------
 
-G = 9.80665          # m s-2
+G = 9.80665  # m s-2
 
 # ------------------------------------------------------------------
 # Reference atmosphere
 # ------------------------------------------------------------------
 
-P0 = 100000.0        # Pa
-T0 = 273.15          # K
+P0 = 100000.0  # Pa
+T0 = 273.15  # K
 
 STANDARD_PRESSURE = 101325.0
 STANDARD_TEMPERATURE = 288.15
 STANDARD_DENSITY = 1.225
 
 # ------------------------------------------------------------------
+# Water
+# ------------------------------------------------------------------
+
+RHO_WATER = 1000.0  # kg m-3 (liquid water density, standard reference value)
+RHO_ICE = 917.0  # kg m-3 (bulk ice density at 0 degC)
+
+# ------------------------------------------------------------------
 # Latent heat
 # ------------------------------------------------------------------
 
-LV = 2.5e6           # J kg-1
-LF = 3.34e5          # J kg-1
-LS = 2.834e6         # J kg-1
+LV = 2.5e6  # J kg-1
+LF = 3.34e5  # J kg-1
+LS = 2.834e6  # J kg-1
 
 # ------------------------------------------------------------------
 # Earth
@@ -54,3 +61,24 @@ MOLAR_MASS_DRY_AIR = 0.0289644
 MOLAR_MASS_WATER = 0.01801528
 
 UNIVERSAL_GAS_CONSTANT = 8.314462618
+
+# ------------------------------------------------------------------
+# Numerical tolerances
+# ------------------------------------------------------------------
+
+#: Real, disclosed floating-point tolerance (K) for "dewpoint cannot
+#: exceed temperature" validation (2026-09-04, found while smoke-
+#: testing the ACF Scientific Workstation's real level-slider sweep):
+#: dewpoint is mathematically derived FROM relative humidity, itself
+#: clipped to a real, physical 100% ceiling (Thermodynamics.
+#: calculate_relative_humidity()'s own `min(100.0, ...)`) - at a
+#: genuinely saturated real point (RH clipped to exactly 100.0), the
+#: Magnus-Tetens dewpoint inversion (acf.science.dewpoint.DewPoint.
+#: calculate()) can round-trip to a dewpoint a few ULPs (~1e-15 K,
+#: verified) ABOVE the input temperature - a real IEEE-754 rounding
+#: artifact of the round trip, not a genuine physical violation. A
+#: strict `>` comparison with no tolerance rejected this real, benign
+#: case; 1e-6 K is many orders of magnitude larger than any plausible
+#: floating-point noise here, yet many orders of magnitude smaller
+#: than any real caller-input error this check exists to catch.
+DEWPOINT_EXCEEDS_TEMPERATURE_TOLERANCE_K = 1e-6

@@ -1,7 +1,7 @@
 """Base Renderer - Abstract class for all renderers."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Any
 
 
 class BaseRenderer(ABC):
@@ -15,14 +15,12 @@ class BaseRenderer(ABC):
         self._data = None
 
     @abstractmethod
-    def render(self, ax: Any, data: Optional[Any] = None, **kwargs) -> Any:
+    def render(self, ax: Any, data: Any | None = None, **kwargs) -> Any:
         """Render data on the given axes."""
-        pass
 
     @abstractmethod
     def clear(self) -> None:
         """Clear rendered content."""
-        pass
 
     def set_visible(self, visible: bool) -> None:
         """Set visibility of the renderer."""

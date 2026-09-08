@@ -2,7 +2,6 @@ from acf.models.registry import ModelRegistry
 
 
 class DummyModel:
-
     name = "ERA5"
 
 

@@ -11,7 +11,6 @@ from pathlib import Path
 
 
 class ExportMixin:
-
     ##################################################
     # PNG
     ##################################################
@@ -86,20 +85,17 @@ class ExportMixin:
         extension = Path(filename).suffix.lower()
 
         if extension == ".png":
-
             return self.export_png(
                 filename,
                 dpi,
             )
 
         elif extension == ".pdf":
-
             return self.export_pdf(
                 filename,
             )
 
         elif extension == ".svg":
-
             return self.export_svg(
                 filename,
             )

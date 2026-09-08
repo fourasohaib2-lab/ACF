@@ -28,7 +28,6 @@ def test_zero_cin():
 def test_invalid():
 
     with pytest.raises(ValueError):
-
         CIN.calculate(
             [20],
             [20, 18],

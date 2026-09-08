@@ -1,0 +1,37 @@
+\section{Parallel Computing}
+
+
+Numerical weather prediction models require distributed
+computing approaches.
+
+
+
+ACF supports:
+
+
+\begin{itemize}
+
+\item MPI distributed memory computing
+
+\item OpenMP shared memory computing
+
+\item Hybrid MPI/OpenMP architectures
+
+\end{itemize}
+
+
+
+\section{Domain Decomposition}
+
+
+Atmospheric models divide the Earth domain into smaller regions:
+
+
+\begin{equation}
+Domain =
+D_1+D_2+D_3+...+D_n
+\end{equation}
+
+
+Each computational process solves a sub-domain and exchanges
+boundary information.

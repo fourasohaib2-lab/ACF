@@ -1,0 +1,78 @@
+{
+  "description": "One real, fully deterministic AWCICalculator().calculate() reference case - fixed realistic meteorological input (no RNG, no solver stepping - AWCICalculator.calculate() is a pure function of its input dict), locking the real output so a future accidental change to a normalization curve, module weight, or the interaction-term formula is caught by this regression test, not silently reintroduced.",
+  "expected_output": {
+    "awci": 30.3,
+    "confidence": 70.0,
+    "decomposition": {
+      "confidence": 1.4,
+      "conv_thermo_interaction": 0.6,
+      "convective": 4.3,
+      "dynamic": 6.5,
+      "ensemble_spread": 0.0,
+      "microphysical": 1.6,
+      "model_disagreement": 0.0,
+      "temporal": 0.7,
+      "thermodynamic": 12.4,
+      "topographic": 2.4,
+      "wind_topo_interaction": 0.4
+    },
+    "explanation": [
+      "Thermodynamique (temp\u00e9rature/humidit\u00e9) : 12.4 points sur 100",
+      "Dynamique (vent) : 6.5 points sur 100",
+      "Convectif (CAPE/CIN) : 4.3 points sur 100",
+      "Topographique (altitude) : 2.4 points sur 100",
+      "Microphysique (pr\u00e9cipitations) : 1.6 points sur 100",
+      "Incertitude de pr\u00e9vision : 1.4 points sur 100",
+      "\u00c9volution temporelle : 0.7 points sur 100",
+      "Interaction Convection x Thermodynamique : 0.6 points sur 100"
+    ],
+    "forecast_level": "Low",
+    "forecast_score": 30.8,
+    "interaction_scores": {
+      "conv_thermo_interaction": 12.7,
+      "wind_topo_interaction": 9.6
+    },
+    "level": "Low",
+    "module_scores": {
+      "confidence": 30.0,
+      "convective": 23.4,
+      "dynamic": 36.0,
+      "ensemble_spread": 26.9,
+      "microphysical": 12.0,
+      "model_disagreement": 26.0,
+      "temporal": 15.0,
+      "thermodynamic": 54.4,
+      "topographic": 26.7
+    },
+    "physical_level": "Low",
+    "physical_score": 30.3
+  },
+  "input": {
+    "altitude": 800.0,
+    "cape": 1500.0,
+    "cin": -40.0,
+    "confidence": 70.0,
+    "ensemble_members": {
+      "cape": [
+        1200.0,
+        1800.0,
+        900.0,
+        1600.0
+      ]
+    },
+    "model_realizations": {
+      "temperature": [
+        298.8,
+        297.6,
+        296.2
+      ]
+    },
+    "precipitation": 6.0,
+    "pressure": 950.0,
+    "specific_humidity": 0.012,
+    "temperature": 298.15,
+    "temporal_change": 3.0,
+    "wind_speed": 18.0
+  },
+  "source": "acf.awci.calculator.AWCICalculator.calculate"
+}

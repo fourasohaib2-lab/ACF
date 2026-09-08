@@ -4,7 +4,6 @@ Metadata Inspector
 
 
 class MetadataInspector:
-
     def inspect(self, dataset):
 
         info = {
@@ -14,7 +13,7 @@ class MetadataInspector:
             "variables": [],
             "dimensions": {},
             "metadata": {},
-            "summary": {}
+            "summary": {},
         }
 
         # Variables

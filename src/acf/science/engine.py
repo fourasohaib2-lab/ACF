@@ -5,9 +5,9 @@ Science Engine
 Main scientific engine of ACF.
 """
 
-from acf.science.thermodynamics import Thermodynamics
 from acf.science.dynamics import Dynamics
 from acf.science.severe_weather import SevereWeather
+from acf.science.thermodynamics import Thermodynamics
 
 
 class ScienceEngine:

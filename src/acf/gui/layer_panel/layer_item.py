@@ -8,12 +8,11 @@ One graphical item representing a layer.
 """
 
 from PySide6.QtCore import Signal
-
 from PySide6.QtWidgets import (
-    QWidget,
+    QCheckBox,
     QHBoxLayout,
     QLabel,
-    QCheckBox,
+    QWidget,
 )
 
 
@@ -59,31 +58,19 @@ class LayerItem(QWidget):
 
         self.checkbox = QCheckBox()
 
-        self.checkbox.setChecked(
-            self.visible
-        )
+        self.checkbox.setChecked(self.visible)
 
-        self.checkbox.toggled.connect(
-            self.visibilityChanged.emit
-        )
+        self.checkbox.toggled.connect(self.visibilityChanged.emit)
 
         self.icon_label = QLabel(self.icon)
 
-        self.name_label = QLabel(
-            self.layer_name
-        )
+        self.name_label = QLabel(self.layer_name)
 
-        layout.addWidget(
-            self.checkbox
-        )
+        layout.addWidget(self.checkbox)
 
-        layout.addWidget(
-            self.icon_label
-        )
+        layout.addWidget(self.icon_label)
 
-        layout.addWidget(
-            self.name_label
-        )
+        layout.addWidget(self.name_label)
 
         layout.addStretch()
 

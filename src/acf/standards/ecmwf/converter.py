@@ -6,7 +6,6 @@ from acf.parameters.parameter import Parameter
 
 
 class ECMWFConverter:
-
     def convert(self, code, data):
 
         return Parameter(

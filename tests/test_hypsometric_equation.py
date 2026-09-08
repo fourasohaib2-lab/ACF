@@ -1,8 +1,8 @@
+import pytest
+
 from acf.science.hypsometric_equation import (
     HypsometricEquation,
 )
-
-import pytest
 
 
 def test_hypsometric():

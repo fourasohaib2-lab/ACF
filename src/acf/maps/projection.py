@@ -45,4 +45,3 @@ class Projection:
 
     def reset(self):
         self._current = "PlateCarree"
-

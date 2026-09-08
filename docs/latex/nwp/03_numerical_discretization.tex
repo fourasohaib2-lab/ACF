@@ -1,0 +1,55 @@
+\section{Numerical Discretization}
+
+
+The ACF numerical weather prediction model transforms the
+continuous atmospheric equations into a computational system.
+
+
+
+The numerical discretization includes:
+
+
+\begin{itemize}
+
+\item Spatial discretization
+
+\item Temporal integration
+
+\item Numerical stability control
+
+\item Conservation algorithms
+
+\end{itemize}
+
+
+
+The atmospheric state is represented as:
+
+
+\[
+X(x,y,z,t)
+\]
+
+
+where:
+
+
+\begin{itemize}
+
+\item $x,y,z$ represent spatial coordinates
+
+\item $t$ represents time
+
+\end{itemize}
+
+
+
+The model integration follows:
+
+
+\[
+X_{t+\Delta t}=M(X_t)
+\]
+
+
+where $M$ is the numerical model operator.

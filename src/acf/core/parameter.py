@@ -1,21 +1,9 @@
-from dataclasses import dataclass, field
+"""
+Atmospheric Complexity Framework (ACF)
 
+CORE - Parameter (Compatibility Layer forwarding to acf.parameters.parameter)
+"""
 
-@dataclass(slots=True)
-class Parameter:
+from acf.parameters.parameter import Parameter
 
-    id: str
-
-    name: str
-
-    units: str
-
-    category: str
-
-    renderer: str
-
-    colormap: str
-
-    description: str = ""
-
-    alert_levels: dict = field(default_factory=dict)
+__all__ = ["Parameter"]

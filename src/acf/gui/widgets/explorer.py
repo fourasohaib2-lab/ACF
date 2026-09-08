@@ -10,197 +10,79 @@ from PySide6.QtWidgets import (
 )
 
 
-
 class ExplorerWidget(QTreeWidget):
-
-
     def __init__(self):
 
         super().__init__()
 
-        self.setHeaderLabel(
-            "Workspace"
-        )
+        self.setHeaderLabel("Workspace")
 
-        self.setAnimated(
-            True
-        )
+        self.setAnimated(True)
 
-        self.setAlternatingRowColors(
-            True
-        )
-
-
+        self.setAlternatingRowColors(True)
 
     ################################################
-
 
     def load_project(self, project):
 
         self.clear()
 
-
         if project is None:
-
             return
 
+        root = QTreeWidgetItem([project.name])
 
+        self.addTopLevelItem(root)
 
-        root = QTreeWidgetItem(
-            [
-                project.name
-            ]
-        )
+        self.populate(root, project.root_path)
 
-
-        self.addTopLevelItem(
-            root
-        )
-
-
-        self.populate(
-            root,
-            project.root_path
-        )
-
-
-        root.setExpanded(
-            True
-        )
-
-
+        root.setExpanded(True)
 
     ################################################
 
-
-    def populate(self,parent,path):
+    def populate(self, parent, path):
 
         path = Path(path)
 
-
         if not path.exists():
-
             return
 
+        for item in sorted(path.iterdir()):
+            node = QTreeWidgetItem([item.name])
 
-
-        for item in sorted(
-            path.iterdir()
-        ):
-
-
-            node = QTreeWidgetItem(
-                [
-                    item.name
-                ]
-            )
-
-
-            parent.addChild(
-                node
-            )
-
+            parent.addChild(node)
 
             if item.is_dir():
-
-                self.populate(
-                    node,
-                    item
-                )
-
-
+                self.populate(node, item)
 
     ################################################
     # DATASETS
     ################################################
 
+    def refresh_datasets(self, datasets):
 
-    def refresh_datasets(
-        self,
-        datasets
-    ):
+        dataset_root = QTreeWidgetItem(["🌦 Datasets"])
 
-
-        dataset_root = QTreeWidgetItem(
-            [
-                "🌦 Datasets"
-            ]
-        )
-
-
-        self.addTopLevelItem(
-            dataset_root
-        )
-
-
+        self.addTopLevelItem(dataset_root)
 
         for dataset in datasets:
+            node = QTreeWidgetItem([dataset.name])
 
+            dataset_root.addChild(node)
 
-            node = QTreeWidgetItem(
-                [
-                    dataset.name
-                ]
-            )
+            variables = QTreeWidgetItem(["Variables"])
 
-
-            dataset_root.addChild(
-                node
-            )
-
-
-
-            variables = QTreeWidgetItem(
-                [
-                    "Variables"
-                ]
-            )
-
-
-            node.addChild(
-                variables
-            )
-
-
+            node.addChild(variables)
 
             for var in dataset.variable_names:
+                variables.addChild(QTreeWidgetItem([var]))
 
+            metadata = QTreeWidgetItem(["Metadata"])
 
-                variables.addChild(
-                    QTreeWidgetItem(
-                        [
-                            var
-                        ]
-                    )
-                )
+            node.addChild(metadata)
 
+            dimensions = QTreeWidgetItem(["Dimensions"])
 
+            node.addChild(dimensions)
 
-            metadata = QTreeWidgetItem(
-                [
-                    "Metadata"
-                ]
-            )
-
-
-            node.addChild(
-                metadata
-            )
-
-
-            dimensions = QTreeWidgetItem(
-                [
-                    "Dimensions"
-                ]
-            )
-
-
-            node.addChild(
-                dimensions
-            )
-
-
-
-        dataset_root.setExpanded(
-            True
-        )
+        dataset_root.setExpanded(True)

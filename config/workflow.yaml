@@ -1,0 +1,6 @@
+workflow_engine:
+  mode: "operational"
+  supported_cycles: ["00UTC", "06UTC", "12UTC", "18UTC"]
+  supported_forecast_lengths: ["6h", "12h", "24h", "48h", "72h", "96h", "120h"]
+  auto_restart: true
+  max_retries: 3

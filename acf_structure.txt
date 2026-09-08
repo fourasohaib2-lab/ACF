@@ -1,0 +1,1306 @@
+.
+├── acf_structure.txt
+├── cache
+├── CHANGELOG.md
+├── CODE_OF_CONDUCT.md
+├── config
+│   └── config.yaml
+├── CONTRIBUTING.md
+├── docs
+│   ├── ACF_Vision_1.0.md
+│   ├── adr
+│   │   └── __init__.py
+│   ├── architecture
+│   │   └── __init__.py
+│   ├── developer
+│   │   └── __init__.py
+│   ├── __init__.py
+│   ├── specifications
+│   │   └── __init__.py
+│   └── user
+│       └── __init__.py
+├── examples
+│   ├── demo_ai_dashboard.py
+│   ├── demo_ai_engine.py
+│   ├── demo_ai_plugin.py
+│   ├── demo_animation.py
+│   ├── demo_api.py
+│   ├── demo_contour.py
+│   ├── demo_dataset_analyzer.py
+│   ├── demo_forecast_assistant.py
+│   ├── demo_parameter_registry.py
+│   ├── demo_raster.py
+│   ├── demo_time_manager.py
+│   ├── demo_weather_alert.py
+│   ├── demo_wind.py
+│   └── __init__.py
+├── exports
+├── imports
+├── __init__.py
+├── install.sh
+├── LICENSE
+├── logs
+│   └── acf.log
+├── Makefile
+├── nano
+├── plugins
+│   └── example_plugin
+│       └── __init__.py
+├── project
+│   ├── cahier de charge.odt
+│   ├── Charte officielle du projet.odt
+│   ├── document de charge$.odt
+│   ├── feuille de route.odt
+│   └── noyau d'ACF.odt
+├── __pycache__
+│   └── __init__.cpython-312.pyc
+├── pyproject.toml
+├── README.md
+├── repair_acf_environment.sh
+├── requirements-dev.txt
+├── requirements.txt
+├── resources
+│   ├── data
+│   │   └── grib
+│   └── __init__.py
+├── ROADMAP.md
+├── scripts
+│   ├── fix_dashboard_manager.sh
+│   ├── fix_dashboard.sh
+│   ├── fix_main_window.sh
+│   ├── __init__.py
+│   ├── sprint_02_part1.sh
+│   ├── sprint_02_part2.sh
+│   ├── sprint_02_part3.sh
+│   ├── sprint_03_part1.sh
+│   ├── sprint_03_part2.sh
+│   ├── sprint_03_part3.sh
+│   ├── sprint_03_part4.sh
+│   ├── sprint_03_part5.sh
+│   ├── sprint_03_part6.sh
+│   ├── sprint_04_part1.sh
+│   ├── sprint_05_part1.sh
+│   ├── sprint_05_part4.sh
+│   ├── sprint_05_part5.sh
+│   ├── sprint_06_part1.sh
+│   ├── sprint_06_part2.sh
+│   ├── sprint_06_part3.sh
+│   ├── sprint_06_part4.sh
+│   ├── sprint_06_part5.sh
+│   ├── sprint_06_part6.sh
+│   ├── sprint_06_part7.sh
+│   ├── sprint_06_part8.sh
+│   ├── sprint_07_part1.sh
+│   ├── sprint_07_part2.sh
+│   ├── sprint_07_part3.sh
+│   ├── sprint_07_part4.sh
+│   ├── sprint_07_part5.sh
+│   ├── sprint_07_part6.sh
+│   ├── sprint_08_part1.sh
+│   ├── sprint_08_part2.sh
+│   ├── sprint_08_part3.sh
+│   ├── sprint_08_part4.sh
+│   ├── sprint_08_part5.sh
+│   ├── sprint_08_part6.sh
+│   ├── sprint_08_part7.sh
+│   ├── sprint_09_part1.sh
+│   ├── sprint_09_part2.sh
+│   ├── sprint_09_part3.sh
+│   ├── sprint_09_part4.sh
+│   ├── sprint_09_part5.sh
+│   ├── sprint_09_part6.sh
+│   ├── sprint_09_part7.sh
+│   ├── sprint_09_part8.sh
+│   ├── sprint_10_part1.sh
+│   ├── sprint_10_part2.sh
+│   ├── sprint_10_part3.sh
+│   ├── sprint_10_part4.sh
+│   ├── sprint_10_part5.sh
+│   ├── sprint_10_part6.sh
+│   ├── sprint_10_part7.sh
+│   ├── sprint_10_part8.sh
+│   ├── sprint_11_part1.sh
+│   └── sprint_11_part2.sh
+├── src
+│   ├── acf
+│   │   ├── ai
+│   │   │   ├── alerts
+│   │   │   ├── analyzers
+│   │   │   ├── engine.py
+│   │   │   ├── forecast
+│   │   │   ├── __init__.py
+│   │   │   └── plugins
+│   │   ├── alerts
+│   │   │   └── __init__.py
+│   │   ├── analysis
+│   │   │   └── __init__.py
+│   │   ├── animation
+│   │   │   ├── animation_engine.py
+│   │   │   └── __init__.py
+│   │   ├── api
+│   │   │   ├── api.py
+│   │   │   └── __init__.py
+│   │   ├── awci
+│   │   │   ├── calculator.py
+│   │   │   ├── __init__.py
+│   │   │   ├── normalizer.py
+│   │   │   └── weights.py
+│   │   ├── catalog
+│   │   │   ├── atmospheric_parameters.py
+│   │   │   ├── catalog_entry.py
+│   │   │   ├── catalog.py
+│   │   │   ├── climate_parameters.py
+│   │   │   ├── dataset_catalog.py
+│   │   │   ├── dataset_entry.py
+│   │   │   ├── dataset_registry.py
+│   │   │   ├── default_catalog.py
+│   │   │   ├── default_mapping.py
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py
+│   │   │   ├── ocean_parameters.py
+│   │   │   ├── parameter_mapper.py
+│   │   │   ├── satellite_parameters.py
+│   │   │   └── surface_parameters.py
+│   │   ├── catalogs
+│   │   │   ├── base_catalog.py
+│   │   │   ├── catalog_manager.py
+│   │   │   ├── cf
+│   │   │   ├── ecmwf
+│   │   │   ├── hub.py
+│   │   │   ├── __init__.py
+│   │   │   ├── loaders
+│   │   │   ├── managers
+│   │   │   └── resources
+│   │   ├── core
+│   │   │   ├── application.py
+│   │   │   ├── bootstrap.py
+│   │   │   ├── config.py
+│   │   │   ├── constants.py
+│   │   │   ├── default_parameters.py
+│   │   │   ├── environment.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── __init__.py
+│   │   │   ├── logger.py
+│   │   │   ├── metadata.py
+│   │   │   ├── parameter.py
+│   │   │   ├── parameter_registry.py
+│   │   │   ├── plugin_manager.py
+│   │   │   ├── service_manager.py
+│   │   │   └── version.py
+│   │   ├── dashboard
+│   │   │   ├── dashboard.py
+│   │   │   ├── __init__.py
+│   │   │   ├── layout.py
+│   │   │   ├── manager.py
+│   │   │   ├── panels
+│   │   │   └── widgets.py
+│   │   ├── data
+│   │   │   ├── bufr_reader_basic.py
+│   │   │   ├── bufr_reader.py
+│   │   │   ├── bufr_reader_v1.py
+│   │   │   ├── cache_manager.py
+│   │   │   ├── dataset.py
+│   │   │   ├── dataset_registry.py
+│   │   │   ├── dataset_validator.py
+│   │   │   ├── detector.py
+│   │   │   ├── engine
+│   │   │   ├── engine.py
+│   │   │   ├── factory.py
+│   │   │   ├── fusion
+│   │   │   ├── grib_reader.py
+│   │   │   ├── __init__.py
+│   │   │   ├── integration
+│   │   │   ├── manager.py
+│   │   │   ├── metadata_inspector.py
+│   │   │   ├── metadata.py
+│   │   │   ├── netcdf_reader.py
+│   │   │   ├── readers
+│   │   │   ├── unit_converter.py
+│   │   │   ├── validator.py
+│   │   │   ├── workflow.py
+│   │   │   └── writers
+│   │   ├── gui
+│   │   │   ├── app.py
+│   │   │   ├── dashboard
+│   │   │   ├── data_menu.py
+│   │   │   ├── dialogs
+│   │   │   ├── docks
+│   │   │   ├── __init__.py
+│   │   │   ├── layer_panel
+│   │   │   ├── main_window
+│   │   │   ├── main_window.py
+│   │   │   ├── map
+│   │   │   ├── menu.py
+│   │   │   ├── resources
+│   │   │   ├── splash.py
+│   │   │   ├── statusbar.py
+│   │   │   ├── theme.py
+│   │   │   ├── toolbar.py
+│   │   │   ├── widgets
+│   │   │   └── windows
+│   │   ├── importers
+│   │   │   ├── base
+│   │   │   ├── cf
+│   │   │   ├── ecmwf
+│   │   │   ├── hub.py
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py
+│   │   │   └── wmo
+│   │   ├── __init__.py
+│   │   ├── io
+│   │   │   ├── base_reader.py
+│   │   │   ├── factory.py
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py
+│   │   │   ├── readers
+│   │   │   └── registry.py
+│   │   ├── main.py
+│   │   ├── maps
+│   │   │   ├── animation.py
+│   │   │   ├── basemap.py
+│   │   │   ├── canvas
+│   │   │   ├── canvas.py
+│   │   │   ├── colormap.py
+│   │   │   ├── contours.py
+│   │   │   ├── engine.py
+│   │   │   ├── exporter.py
+│   │   │   ├── field.py
+│   │   │   ├── __init__.py
+│   │   │   ├── layer_manager.py
+│   │   │   ├── layers
+│   │   │   ├── map_engine.py
+│   │   │   ├── map_manager.py
+│   │   │   ├── projection.py
+│   │   │   ├── projections
+│   │   │   ├── renderers
+│   │   │   ├── shapefile.py
+│   │   │   ├── streamlines.py
+│   │   │   ├── styles
+│   │   │   └── vector.py
+│   │   ├── model4d
+│   │   │   ├── constants.py
+│   │   │   ├── domain4d.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── field4d.py
+│   │   │   ├── grid4d.py
+│   │   │   ├── __init__.py
+│   │   │   ├── interpolation
+│   │   │   ├── interpolation.py
+│   │   │   ├── operators
+│   │   │   ├── operators.py
+│   │   │   ├── physics
+│   │   │   ├── time_axis.py
+│   │   │   └── vertical_axis.py
+│   │   ├── models
+│   │   │   ├── base_model.py
+│   │   │   ├── detector.py
+│   │   │   ├── ensemble.py
+│   │   │   ├── hub.py
+│   │   │   ├── implementations
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py
+│   │   │   └── registry.py
+│   │   ├── parameters
+│   │   │   ├── aliases.py
+│   │   │   ├── catalog.py
+│   │   │   ├── categories.py
+│   │   │   ├── converter.py
+│   │   │   ├── hub.py
+│   │   │   ├── index.py
+│   │   │   ├── __init__.py
+│   │   │   ├── parameter.py
+│   │   │   ├── registry.py
+│   │   │   ├── search.py
+│   │   │   ├── units.py
+│   │   │   └── validator.py
+│   │   ├── plugins
+│   │   │   └── __init__.py
+│   │   ├── reports
+│   │   │   └── __init__.py
+│   │   ├── resources
+│   │   │   └── standards
+│   │   ├── science
+│   │   │   ├── air_density.py
+│   │   │   ├── bulk_richardson_number.py
+│   │   │   ├── bulk_wind_shear.py
+│   │   │   ├── cape.py
+│   │   │   ├── cin.py
+│   │   │   ├── constants.py
+│   │   │   ├── dewpoint.py
+│   │   │   ├── divergence.py
+│   │   │   ├── dry_static_energy.py
+│   │   │   ├── dynamics.py
+│   │   │   ├── engine.py
+│   │   │   ├── equivalent_potential_temperature.py
+│   │   │   ├── frontogenesis.py
+│   │   │   ├── geopotential_height.py
+│   │   │   ├── humidity.py
+│   │   │   ├── hypsometric_equation.py
+│   │   │   ├── __init__.py
+│   │   │   ├── k_index.py
+│   │   │   ├── lcl.py
+│   │   │   ├── lfc.py
+│   │   │   ├── lifted_index.py
+│   │   │   ├── mixing_ratio.py
+│   │   │   ├── moist_static_energy.py
+│   │   │   ├── potential_temperature.py
+│   │   │   ├── potential_vorticity.py
+│   │   │   ├── pressure.py
+│   │   │   ├── relative_humidity.py
+│   │   │   ├── saturation_mixing_ratio.py
+│   │   │   ├── saturation_vapor_pressure.py
+│   │   │   ├── severe_weather.py
+│   │   │   ├── showalter_index.py
+│   │   │   ├── specific_humidity.py
+│   │   │   ├── storm_motion.py
+│   │   │   ├── storm_relative_helicity.py
+│   │   │   ├── sweat_index.py
+│   │   │   ├── temperature.py
+│   │   │   ├── thermodynamics.py
+│   │   │   ├── total_totals.py
+│   │   │   ├── vapor_pressure.py
+│   │   │   ├── virtual_potential_temperature.py
+│   │   │   ├── virtual_temperature.py
+│   │   │   ├── vorticity.py
+│   │   │   ├── wet_bulb_temperature.py
+│   │   │   └── wind.py
+│   │   ├── search
+│   │   │   ├── __init__.py
+│   │   │   └── scientific_search.py
+│   │   ├── standards
+│   │   │   ├── cf_standard_names.py
+│   │   │   ├── ecmwf
+│   │   │   ├── ecmwf_parameters.py
+│   │   │   ├── grib2_tables.py
+│   │   │   ├── hub.py
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py
+│   │   │   ├── noaa_parameters.py
+│   │   │   └── wmo_tables.py
+│   │   ├── time
+│   │   │   ├── __init__.py
+│   │   │   └── time_manager.py
+│   │   ├── utils
+│   │   │   ├── files.py
+│   │   │   ├── __init__.py
+│   │   │   ├── paths.py
+│   │   │   ├── system.py
+│   │   │   ├── time.py
+│   │   │   └── validators.py
+│   │   ├── validation
+│   │   │   ├── default_rules.py
+│   │   │   ├── __init__.py
+│   │   │   ├── rule.py
+│   │   │   └── validator.py
+│   │   ├── visualization
+│   │   │   ├── auto_renderer.py
+│   │   │   ├── cartopy_renderer.py
+│   │   │   ├── colormap.py
+│   │   │   ├── data_renderer.py
+│   │   │   ├── __init__.py
+│   │   │   ├── layer_collection.py
+│   │   │   ├── layer_group.py
+│   │   │   ├── layer_manager.py
+│   │   │   ├── layer.py
+│   │   │   ├── renderer.py
+│   │   │   └── visualization_manager.py
+│   │   └── workspace
+│   │       ├── exceptions.py
+│   │       ├── __init__.py
+│   │       ├── manager.py
+│   │       ├── metadata.py
+│   │       ├── project.py
+│   │       ├── recent.py
+│   │       ├── serializer.py
+│   │       └── templates.py
+│   └── acf.egg-info
+│       ├── dependency_links.txt
+│       ├── PKG-INFO
+│       ├── requires.txt
+│       ├── SOURCES.txt
+│       └── top_level.txt
+├── temp
+├── test_awci_display.py
+├── test_dashboard.py
+├── test_qt.py
+├── tests
+│   ├── gui
+│   │   ├── __pycache__
+│   │   │   ├── test_map_canvas.cpython-312-pytest-7.4.4.pyc
+│   │   │   └── test_map_canvas.cpython-312-pytest-9.1.1.pyc
+│   │   └── test_map_canvas.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── test_adapter_factory.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_adapter_factory.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_advanced_parameterization.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_advanced_parameterization.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_advection.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_advection.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_aerosol_chemistry.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_aerosol_chemistry.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_aerosol_cloud_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_aerosol_cloud_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_aerosol_radiative_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_aerosol_radiative_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_aerosols.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_aerosols.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ai_dashboard.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ai_dashboard.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ai_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ai_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ai_plugin_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ai_plugin_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_air_density.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_air_density.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_animation_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_animation_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_api.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_api.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_arctic_atmosphere_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_arctic_atmosphere_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_aerosol_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_aerosol_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_aerosols.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_aerosols.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_boundary_layer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_boundary_layer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_boundary_layer_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_boundary_layer_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_carbon_cycle_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_carbon_cycle_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_chemistry_aerosol_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_chemistry_aerosol_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_chemistry.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_chemistry.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_chemistry_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_cloud_microphysics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_cloud_microphysics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_cloud_microphysics_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_composition_transport.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_composition_transport.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_convection.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_convection.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_convection_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_convection_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_front_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_front_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_fronts.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_fronts.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_gravity_waves.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_gravity_waves.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_greenhouse_effect.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_greenhouse_effect.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_moisture.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_moisture.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_moisture_cycle_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_moisture_cycle_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_moisture_feedback_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_moisture_feedback_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_precipitation_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_precipitation_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_radiation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_radiation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_radiation_transfer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_radiation_transfer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_radiative_balance.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_radiative_balance.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_stability.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_stability.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_thermodynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_thermodynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_turbulence_closure.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_turbulence_closure.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_climate_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_climate_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_climate_ocean_feedback.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_climate_ocean_feedback.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_energy_transfer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_energy_transfer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_feedback_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_feedback_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_interaction_network.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_interaction_network.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_ocean_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_ocean_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_propagation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_propagation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_waves.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_waves.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_atmospheric_wave_source_generation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_atmospheric_wave_source_generation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_awci_calculator.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_awci_calculator.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_basemap.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_basemap.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_bilinear_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_bilinear_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_boundary_layer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_boundary_layer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_boundary_layer_physics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_boundary_layer_physics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_bufr_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_bufr_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_bufr_reader.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_bufr_reader.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_bulk_richardson_number.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_bulk_richardson_number.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_bulk_wind_shear.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_bulk_wind_shear.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cache_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cache_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_canvas.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_canvas.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cape.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cape.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cartopy_renderer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cartopy_renderer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_catalog_hub.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_catalog_hub.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_catalog_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_catalog_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_catalog_manager_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_catalog_manager_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_catalog_search.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_catalog_search.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_catalog_search_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_catalog_search_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cf_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cf_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cf_importer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cf_importer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cf_standard_names.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cf_standard_names.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_chemistry_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_chemistry_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_chemistry.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_chemistry.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cin.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cin.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_climate_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_climate_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_climate_sensitivity_parameter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_climate_sensitivity_parameter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_dynamics_advanced.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_dynamics_advanced.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_feedback_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_feedback_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_microphysics_climate_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_microphysics_climate_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_microphysics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_microphysics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_precipitation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_precipitation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_radiative_feedback.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_radiative_feedback.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cloud_radiative_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cloud_radiative_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_colorbar_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_colorbar_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_colormap.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_colormap.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_colormap_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_colormap_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_color_table.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_color_table.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_constants.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_constants.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_contour_renderer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_contour_renderer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_contours.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_contours.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_convection.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_convection.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_coordinate_detector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_coordinate_detector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cryosphere_climate_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cryosphere_climate_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cryosphere.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cryosphere.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cryosphere_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cryosphere_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_csv_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_csv_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_cubic_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_cubic_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_curl.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_curl.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dashboard_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dashboard_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_data_assimilation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_data_assimilation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_data_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_data_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_data_fusion_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_data_fusion_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_data_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_data_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_analyzer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_analyzer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_classifier.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_classifier.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_inspector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_inspector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_mapper.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_mapper.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_metadata.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_metadata.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dataset_validator.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dataset_validator.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dewpoint.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dewpoint.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_diffusion.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_diffusion.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_divergence.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_divergence.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_domain4d.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_domain4d.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dry_static_energy.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dry_static_energy.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_earth_system_coupled_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_earth_system_coupled_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ecmwf_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ecmwf_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ecmwf_catalog_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ecmwf_catalog_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ecmwf_converter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ecmwf_converter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ecmwf_loader.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ecmwf_loader.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ecmwf_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ecmwf_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ensemble.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ensemble.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ensemble_forecast.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ensemble_forecast.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_environment.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_environment.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_equivalent_potential_temperature.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_equivalent_potential_temperature.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_exosphere_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_exosphere_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_exporter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_exporter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_field4d.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_field4d.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_field.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_field.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_forecast_assistant.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_forecast_assistant.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_frontogenesis.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_frontogenesis.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_geopotential_height.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_geopotential_height.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_geotiff_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_geotiff_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_glacier_atmosphere_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_glacier_atmosphere_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_global_climate_energy_transport.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_global_climate_energy_transport.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_gradient.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_gradient.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_gravity_waves.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_gravity_waves.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_grib_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_grib_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_grib_reader.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_grib_reader.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_grid4d.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_grid4d.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_grid_detector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_grid_detector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_hdf5_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_hdf5_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_hurricane_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_hurricane_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_hydrology_atmosphere_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_hydrology_atmosphere_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_hypsometric_equation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_hypsometric_equation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_importer_auto.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_importer_auto.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_importer_hub.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_importer_hub.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_importer_hub_load.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_importer_hub_load.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_importer_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_importer_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_importer_manager_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_importer_manager_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_integration_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_integration_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_interpolation_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_interpolation_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_io_framework.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_io_framework.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ionospheric_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ionospheric_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_jet_stream_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_jet_stream_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_json_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_json_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_k_index.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_k_index.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_land_surface_atmosphere_exchange.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_land_surface_atmosphere_exchange.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_land_surface.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_land_surface.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_land_surface_model.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_land_surface_model.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_laplacian.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_laplacian.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_layer_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_layer_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_lcl.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_lcl.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_lfc.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_lfc.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_lifted_index.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_lifted_index.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_lightning.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_lightning.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_linear_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_linear_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_magnetosphere_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_magnetosphere_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_map_canvas.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_map_canvas.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_map_canvas_renderers.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_map_canvas_renderers.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_map_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_map_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_mesoscale_convective_systems.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_mesoscale_convective_systems.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_mesoscale_environment.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_mesoscale_environment.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_mesospheric_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_mesospheric_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_metadata.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_metadata.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_metadata_inspector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_metadata_inspector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_mixing_ratio.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_mixing_ratio.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_model_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_model_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_model_detector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_model_detector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_model_hub.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_model_hub.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_model_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_model_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_model_registry.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_model_registry.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_moist_static_energy.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_moist_static_energy.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_moisture.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_moisture.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_mountain_physics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_mountain_physics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_netcdf_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_netcdf_adapter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_netcdf_reader.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_netcdf_reader.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ocean_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ocean_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ocean_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ocean_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_ocean_heat_uptake_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_ocean_heat_uptake_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_operators_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_operators_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_aliases.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_aliases.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_catalog_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_catalog_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_hub.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_hub.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_index.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_index.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_mapper.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_mapper.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_registry.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_registry.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_registry_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_registry_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_parameter_search.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_parameter_search.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_permafrost_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_permafrost_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_planetary_climate_feedback_loops.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_planetary_climate_feedback_loops.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_polar_vortex_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_polar_vortex_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_potential_temperature.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_potential_temperature.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_potential_vorticity.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_potential_vorticity.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_precipitation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_precipitation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_project.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_project.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_projection.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_projection.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_projection_detector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_projection_detector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_projection_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_projection_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_radiation_balance.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_radiation_balance.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_radiation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_radiation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_radiative_balance_equation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_radiative_balance_equation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_radiative_transfer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_radiative_transfer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_radiative_transfer_model.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_radiative_transfer_model.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_raster_layer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_raster_layer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_raster_renderer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_raster_renderer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_reader_discovery.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_reader_discovery.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_reader_factory.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_reader_factory.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_relative_humidity.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_relative_humidity.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_satellite_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_satellite_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_saturation_mixing_ratio.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_saturation_mixing_ratio.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_saturation_vapor_pressure.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_saturation_vapor_pressure.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_science_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_science_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_scientific_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_scientific_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_scientific_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_scientific_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_scientific_search.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_scientific_search.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_severe_weather.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_severe_weather.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_shapefile.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_shapefile.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_showalter_index.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_showalter_index.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_snow_ice_atmosphere_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_snow_ice_atmosphere_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_soil_atmosphere_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_soil_atmosphere_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_solar_radiation_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_solar_radiation_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_solar_wind_interaction.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_solar_wind_interaction.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_specific_humidity.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_specific_humidity.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_spectral_physics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_spectral_physics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_spline_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_spline_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_stability.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_stability.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_standards_hub.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_standards_hub.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_standards_hub_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_standards_hub_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_standards_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_standards_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_standards_manager_v2.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_standards_manager_v2.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_state_equations.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_state_equations.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_storm_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_storm_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_storm_motion.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_storm_motion.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_storm_relative_helicity.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_storm_relative_helicity.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_stratospheric_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_stratospheric_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_streamlines.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_streamlines.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_surface_catalog.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_surface_catalog.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_surface_flux.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_surface_flux.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_surface_layer_physics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_surface_layer_physics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_sweat_index.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_sweat_index.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_temporal_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_temporal_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_thermodynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_thermodynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_thermospheric_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_thermospheric_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_time_axis.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_time_axis.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_time_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_time_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_tornado_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_tornado_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_total_totals.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_total_totals.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_trilinear_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_trilinear_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_tropical_cyclone_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_tropical_cyclone_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_tropopause_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_tropopause_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_turbulence.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_turbulence.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_turbulence_dynamics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_turbulence_dynamics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_unit_converter.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_unit_converter.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_urban_physics.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_urban_physics.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_utils.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_utils.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_validator.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_validator.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vapor_pressure.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vapor_pressure.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vector.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vector.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vector_layer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vector_layer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vegetation_atmosphere_coupling.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vegetation_atmosphere_coupling.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_version.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_version.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vertical_axis.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vertical_axis.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vertical_interpolation.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vertical_interpolation.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_virtual_potential_temperature.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_virtual_potential_temperature.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_virtual_temperature.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_virtual_temperature.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_vorticity.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_vorticity.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_waves.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_waves.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_weather_alert_engine.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_weather_alert_engine.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_wet_bulb_temperature.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_wet_bulb_temperature.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_wind_renderer.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_wind_renderer.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_workflow.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_workflow.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_workspace_manager.cpython-312-pytest-7.4.4.pyc
+│   │   ├── test_workspace_manager.cpython-312-pytest-9.1.1.pyc
+│   │   ├── test_xml_adapter.cpython-312-pytest-7.4.4.pyc
+│   │   └── test_xml_adapter.cpython-312-pytest-9.1.1.pyc
+│   ├── test_adapter_factory.py
+│   ├── test_advanced_parameterization.py
+│   ├── test_advection.py
+│   ├── test_aerosol_chemistry.py
+│   ├── test_aerosol_cloud_interaction.py
+│   ├── test_aerosol_radiative_interaction.py
+│   ├── test_aerosols.py
+│   ├── test_ai_dashboard.py
+│   ├── test_ai_engine.py
+│   ├── test_ai_plugin_manager.py
+│   ├── test_air_density.py
+│   ├── test_animation_engine.py
+│   ├── test_api.py
+│   ├── test_arctic_atmosphere_dynamics.py
+│   ├── test_atmospheric_aerosol_dynamics.py
+│   ├── test_atmospheric_aerosols.py
+│   ├── test_atmospheric_boundary_layer_dynamics.py
+│   ├── test_atmospheric_boundary_layer.py
+│   ├── test_atmospheric_carbon_cycle_dynamics.py
+│   ├── test_atmospheric_catalog.py
+│   ├── test_atmospheric_chemistry_aerosol_coupling.py
+│   ├── test_atmospheric_chemistry_dynamics.py
+│   ├── test_atmospheric_chemistry.py
+│   ├── test_atmospheric_cloud_microphysics_dynamics.py
+│   ├── test_atmospheric_cloud_microphysics.py
+│   ├── test_atmospheric_composition_transport.py
+│   ├── test_atmospheric_convection_dynamics.py
+│   ├── test_atmospheric_convection.py
+│   ├── test_atmospheric_dynamics.py
+│   ├── test_atmospheric_front_dynamics.py
+│   ├── test_atmospheric_fronts.py
+│   ├── test_atmospheric_gravity_waves.py
+│   ├── test_atmospheric_greenhouse_effect.py
+│   ├── test_atmospheric_moisture_cycle_dynamics.py
+│   ├── test_atmospheric_moisture_feedback_dynamics.py
+│   ├── test_atmospheric_moisture.py
+│   ├── test_atmospheric_precipitation_dynamics.py
+│   ├── test_atmospheric_radiation.py
+│   ├── test_atmospheric_radiation_transfer.py
+│   ├── test_atmospheric_radiative_balance.py
+│   ├── test_atmospheric_stability.py
+│   ├── test_atmospheric_thermodynamics.py
+│   ├── test_atmospheric_turbulence_closure.py
+│   ├── test_atmospheric_wave_climate_interaction.py
+│   ├── test_atmospheric_wave_climate_ocean_feedback.py
+│   ├── test_atmospheric_wave_coupling.py
+│   ├── test_atmospheric_wave_energy_transfer.py
+│   ├── test_atmospheric_wave_feedback_dynamics.py
+│   ├── test_atmospheric_wave_interaction_network.py
+│   ├── test_atmospheric_wave_ocean_coupling.py
+│   ├── test_atmospheric_wave_propagation.py
+│   ├── test_atmospheric_wave_source_generation.py
+│   ├── test_atmospheric_waves.py
+│   ├── test_awci_calculator.py
+│   ├── test_basemap.py
+│   ├── test_bilinear_interpolation.py
+│   ├── test_boundary_layer_physics.py
+│   ├── test_boundary_layer.py
+│   ├── test_bufr_adapter.py
+│   ├── test_bufr_reader.py
+│   ├── test_bulk_richardson_number.py
+│   ├── test_bulk_wind_shear.py
+│   ├── test_cache_manager.py
+│   ├── test_canvas.py
+│   ├── test_cape.py
+│   ├── test_cartopy_renderer.py
+│   ├── test_catalog_hub.py
+│   ├── test_catalog_manager.py
+│   ├── test_catalog_manager_v2.py
+│   ├── test_catalog_search.py
+│   ├── test_catalog_search_v2.py
+│   ├── test_cf_catalog.py
+│   ├── test_cf_importer.py
+│   ├── test_cf_standard_names.py
+│   ├── test_chemistry_coupling.py
+│   ├── test_chemistry.py
+│   ├── test_cin.py
+│   ├── test_climate_catalog.py
+│   ├── test_climate_sensitivity_parameter.py
+│   ├── test_cloud_dynamics_advanced.py
+│   ├── test_cloud_dynamics.py
+│   ├── test_cloud_feedback_dynamics.py
+│   ├── test_cloud_microphysics_climate_dynamics.py
+│   ├── test_cloud_microphysics.py
+│   ├── test_cloud_precipitation.py
+│   ├── test_cloud_radiative_feedback.py
+│   ├── test_cloud_radiative_interaction.py
+│   ├── test_colorbar_manager.py
+│   ├── test_colormap_manager.py
+│   ├── test_colormap.py
+│   ├── test_color_table.py
+│   ├── test_constants.py
+│   ├── test_contour_renderer.py
+│   ├── test_contours.py
+│   ├── test_convection.py
+│   ├── test_coordinate_detector.py
+│   ├── test_cryosphere_climate_dynamics.py
+│   ├── test_cryosphere_dynamics.py
+│   ├── test_cryosphere.py
+│   ├── test_csv_adapter.py
+│   ├── test_cubic_interpolation.py
+│   ├── test_curl.py
+│   ├── test_dashboard_manager.py
+│   ├── test_data_assimilation.py
+│   ├── test_data_engine.py
+│   ├── test_data_fusion_engine.py
+│   ├── test_data_manager.py
+│   ├── test_dataset_analyzer.py
+│   ├── test_dataset_classifier.py
+│   ├── test_dataset_inspector.py
+│   ├── test_dataset_mapper.py
+│   ├── test_dataset_metadata.py
+│   ├── test_dataset.py
+│   ├── test_dataset_validator.py
+│   ├── test_dewpoint.py
+│   ├── test_diffusion.py
+│   ├── test_divergence.py
+│   ├── test_domain4d.py
+│   ├── test_dry_static_energy.py
+│   ├── test_dynamics.py
+│   ├── test_earth_system_coupled_dynamics.py
+│   ├── test_ecmwf_catalog.py
+│   ├── test_ecmwf_catalog_v2.py
+│   ├── test_ecmwf_converter.py
+│   ├── test_ecmwf_loader.py
+│   ├── test_ecmwf_manager.py
+│   ├── test_ensemble_forecast.py
+│   ├── test_ensemble.py
+│   ├── test_environment.py
+│   ├── test_equivalent_potential_temperature.py
+│   ├── test_exosphere_dynamics.py
+│   ├── test_exporter.py
+│   ├── test_field4d.py
+│   ├── test_field.py
+│   ├── test_forecast_assistant.py
+│   ├── test_frontogenesis.py
+│   ├── test_geopotential_height.py
+│   ├── test_geotiff_adapter.py
+│   ├── test_glacier_atmosphere_coupling.py
+│   ├── test_global_climate_energy_transport.py
+│   ├── test_gradient.py
+│   ├── test_gravity_waves.py
+│   ├── test_grib_adapter.py
+│   ├── test_grib_reader.py
+│   ├── test_grid4d.py
+│   ├── test_grid_detector.py
+│   ├── test_hdf5_adapter.py
+│   ├── test_hurricane_dynamics.py
+│   ├── test_hydrology_atmosphere_interaction.py
+│   ├── test_hypsometric_equation.py
+│   ├── test_importer_auto.py
+│   ├── test_importer_hub_load.py
+│   ├── test_importer_hub.py
+│   ├── test_importer_manager.py
+│   ├── test_importer_manager_v2.py
+│   ├── test_integration_engine.py
+│   ├── test_interpolation_engine.py
+│   ├── test_io_framework.py
+│   ├── test_ionospheric_dynamics.py
+│   ├── test_jet_stream_dynamics.py
+│   ├── test_json_adapter.py
+│   ├── test_k_index.py
+│   ├── test_land_surface_atmosphere_exchange.py
+│   ├── test_land_surface_model.py
+│   ├── test_land_surface.py
+│   ├── test_laplacian.py
+│   ├── test_layer_manager.py
+│   ├── test_lcl.py
+│   ├── test_lfc.py
+│   ├── test_lifted_index.py
+│   ├── test_lightning.py
+│   ├── test_linear_interpolation.py
+│   ├── test_magnetosphere_dynamics.py
+│   ├── test_map_canvas.py
+│   ├── test_map_canvas_renderers.py
+│   ├── test_map_engine.py
+│   ├── test_mesoscale_convective_systems.py
+│   ├── test_mesoscale_environment.py
+│   ├── test_mesospheric_dynamics.py
+│   ├── test_metadata_inspector.py
+│   ├── test_metadata.py
+│   ├── test_mixing_ratio.py
+│   ├── test_model_coupling.py
+│   ├── test_model_detector.py
+│   ├── test_model_hub.py
+│   ├── test_model_manager.py
+│   ├── test_model_registry.py
+│   ├── test_moist_static_energy.py
+│   ├── test_moisture.py
+│   ├── test_mountain_physics.py
+│   ├── test_netcdf_adapter.py
+│   ├── test_netcdf_reader.py
+│   ├── test_ocean_catalog.py
+│   ├── test_ocean_coupling.py
+│   ├── test_ocean_heat_uptake_dynamics.py
+│   ├── test_operators_engine.py
+│   ├── test_parameter_aliases.py
+│   ├── test_parameter_catalog_v2.py
+│   ├── test_parameter_hub.py
+│   ├── test_parameter_index.py
+│   ├── test_parameter_mapper.py
+│   ├── test_parameter_registry.py
+│   ├── test_parameter_registry_v2.py
+│   ├── test_parameter_search.py
+│   ├── test_permafrost_dynamics.py
+│   ├── test_planetary_climate_feedback_loops.py
+│   ├── test_polar_vortex_dynamics.py
+│   ├── test_potential_temperature.py
+│   ├── test_potential_vorticity.py
+│   ├── test_precipitation.py
+│   ├── test_projection_detector.py
+│   ├── test_projection_manager.py
+│   ├── test_projection.py
+│   ├── test_project.py
+│   ├── test_radiation_balance.py
+│   ├── test_radiation.py
+│   ├── test_radiative_balance_equation.py
+│   ├── test_radiative_transfer_model.py
+│   ├── test_radiative_transfer.py
+│   ├── test_raster_layer.py
+│   ├── test_raster_renderer.py
+│   ├── test_reader_discovery.py
+│   ├── test_reader_factory.py
+│   ├── test_relative_humidity.py
+│   ├── test_satellite_catalog.py
+│   ├── test_saturation_mixing_ratio.py
+│   ├── test_saturation_vapor_pressure.py
+│   ├── test_science_engine.py
+│   ├── test_scientific_catalog.py
+│   ├── test_scientific_engine.py
+│   ├── test_scientific_search.py
+│   ├── test_severe_weather.py
+│   ├── test_shapefile.py
+│   ├── test_showalter_index.py
+│   ├── test_snow_ice_atmosphere_interaction.py
+│   ├── test_soil_atmosphere_interaction.py
+│   ├── test_solar_radiation_dynamics.py
+│   ├── test_solar_wind_interaction.py
+│   ├── test_specific_humidity.py
+│   ├── test_spectral_physics.py
+│   ├── test_spline_interpolation.py
+│   ├── test_stability.py
+│   ├── test_standards_hub.py
+│   ├── test_standards_hub_v2.py
+│   ├── test_standards_manager.py
+│   ├── test_standards_manager_v2.py
+│   ├── test_state_equations.py
+│   ├── test_storm_dynamics.py
+│   ├── test_storm_motion.py
+│   ├── test_storm_relative_helicity.py
+│   ├── test_stratospheric_dynamics.py
+│   ├── test_streamlines.py
+│   ├── test_surface_catalog.py
+│   ├── test_surface_flux.py
+│   ├── test_surface_layer_physics.py
+│   ├── test_sweat_index.py
+│   ├── test_temporal_interpolation.py
+│   ├── test_thermodynamics.py
+│   ├── test_thermospheric_dynamics.py
+│   ├── test_thermospheric_dynamics.py~
+│   ├── test_time_axis.py
+│   ├── test_time_manager.py
+│   ├── test_tornado_dynamics.py
+│   ├── test_total_totals.py
+│   ├── test_trilinear_interpolation.py
+│   ├── test_tropical_cyclone_dynamics.py
+│   ├── test_tropopause_dynamics.py
+│   ├── test_turbulence_dynamics.py
+│   ├── test_turbulence.py
+│   ├── test_unit_converter.py
+│   ├── test_urban_physics.py
+│   ├── test_utils.py
+│   ├── test_validator.py
+│   ├── test_vapor_pressure.py
+│   ├── test_vector_layer.py
+│   ├── test_vector.py
+│   ├── test_vegetation_atmosphere_coupling.py
+│   ├── test_version.py
+│   ├── test_vertical_axis.py
+│   ├── test_vertical_interpolation.py
+│   ├── test_virtual_potential_temperature.py
+│   ├── test_virtual_temperature.py
+│   ├── test_vorticity.py
+│   ├── test_waves.py
+│   ├── test_weather_alert_engine.py
+│   ├── test_wet_bulb_temperature.py
+│   ├── test_wind_renderer.py
+│   ├── test_workflow.py
+│   ├── test_workspace_manager.py
+│   └── test_xml_adapter.py
+├── test_window.py
+├── tools
+│   └── __init__.py
+└── workspace
+
+100 directories, 1204 files

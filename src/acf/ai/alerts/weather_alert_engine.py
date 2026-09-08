@@ -6,7 +6,6 @@ import numpy as np
 
 
 class WeatherAlertEngine:
-
     def __init__(self):
 
         self.rules = []
@@ -15,12 +14,7 @@ class WeatherAlertEngine:
 
     def register_rule(self, variable, threshold, level, message):
 
-        self.rules.append({
-            "variable": variable,
-            "threshold": threshold,
-            "level": level,
-            "message": message
-        })
+        self.rules.append({"variable": variable, "threshold": threshold, "level": level, "message": message})
 
     ##################################################
 
@@ -29,7 +23,6 @@ class WeatherAlertEngine:
         alerts = []
 
         for rule in self.rules:
-
             variable = rule["variable"]
 
             if variable not in dataset:
@@ -40,12 +33,8 @@ class WeatherAlertEngine:
             maximum = float(np.nanmax(values))
 
             if maximum >= rule["threshold"]:
-
-                alerts.append({
-                    "variable": variable,
-                    "level": rule["level"],
-                    "value": maximum,
-                    "message": rule["message"]
-                })
+                alerts.append(
+                    {"variable": variable, "level": rule["level"], "value": maximum, "message": rule["message"]}
+                )
 
         return alerts

@@ -2,7 +2,7 @@
 Artificial Intelligence Engine
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 class AIEngine:
@@ -33,11 +33,19 @@ class AIEngine:
     ##################################################
 
     def analyze(self, dataset):
-
+        """
+        NOTE (correction): this used to unconditionally report
+        "status": "success" regardless of what dataset was passed -
+        no analysis is actually performed here at all (self.loaded_models
+        is never consulted, dataset's contents are never inspected
+        beyond its type name). A caller could believe a real AI
+        analysis had run and succeeded when nothing was analyzed.
+        Honestly reports that instead.
+        """
         result = {
-            "timestamp": datetime.utcnow(),
-            "status": "success",
-            "dataset": str(type(dataset).__name__)
+            "timestamp": datetime.now(UTC),
+            "status": "NOT_ANALYZED_NO_MODEL_INVOKED",
+            "dataset": str(type(dataset).__name__),
         }
 
         self.history.append(result)

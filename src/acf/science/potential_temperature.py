@@ -6,9 +6,8 @@ import math
 
 
 class PotentialTemperature:
-
-    P0 = 1000.0      # hPa
-    RD_CP = 0.286    # R/Cp
+    P0 = 1000.0  # hPa
+    RD_CP = 0.286  # R/Cp
 
     @staticmethod
     def calculate(temperature_k, pressure_hpa):

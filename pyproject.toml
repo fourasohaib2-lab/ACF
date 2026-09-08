@@ -13,22 +13,149 @@ authors = [
     {name="Sohaib Foura"}
 ]
 
+# Lean core: what science/model4d/earth_physics/data_assimilation
+# actually import (verified 2026-09-02 by grepping every import/from
+# statement across all of src/ and tests/ - not guessed). numpy is
+# used everywhere; scipy has no real call site today (only a
+# scipy.optimize.minimize suggestion in a docstring - see
+# data_assimilation/assimilation/variational/var_4d.py) but is kept
+# here because release/dependency_validator.py's own
+# validate_all_dependencies() already treats it as a required core
+# package, and it's the obvious next real numerical dependency for
+# that module's future minimizer.
+#
+# pandas, shapely, rasterio and h5py were previously declared here but
+# are matched by ZERO import statement anywhere in src/ or tests/ (no
+# lazy/dynamic imports either) - genuinely unused, not just optional;
+# removed rather than moved to an extra. Add one back the day
+# something actually imports it.
+#
+# PyYAML was previously undeclared ANYWHERE (not in this file, not in
+# requirements.txt) despite core/config.py importing it directly - only
+# worked in this dev environment because some other installed package
+# happened to pull it in transitively. Found by actually installing
+# this lean dependency list into a fresh venv and import-smoke-testing
+# every acf submodule (not assumed) - see docs/ROADMAP.md.
+#
+# loguru: same real bug, found the same way epygram's own (see
+# `formats` extra below) was - a repo-wide grep of every real
+# import/from statement (not a re-run of the fresh-venv smoke test
+# above, disclosed honestly rather than implied) found
+# acf/core/logger.py importing it unconditionally, with zero
+# declaration anywhere; acf.core.application/bootstrap/plugin_manager
+# import that module directly, so this is real core-adjacent
+# infrastructure, not an isolated leaf module.
 dependencies = [
     "numpy",
     "scipy",
-    "pandas",
-    "xarray",
-    "netCDF4",
-    "cfgrib",
-    "eccodes",
-    "matplotlib",
-    "cartopy",
-    "pyproj",
-    "shapely",
-    "rasterio",
-    "h5py",
-    "PySide6",
+    "PyYAML",
+    "loguru",
 ]
+
+[project.optional-dependencies]
+# Desktop GUI (ESOC window, AWCI/classic dashboards - matplotlib
+# figures embedded via FigureCanvasQTAgg throughout gui/dashboard/).
+gui = ["PySide6", "matplotlib"]
+# Map rendering and coordinate/geometry transforms (gui/maps/
+# visualization panels, geospatial/ package).
+geospatial = ["cartopy", "pyproj", "matplotlib"]
+# NWP/observation file I/O: xarray is the direct import (importers/,
+# simulation_engine/); netCDF4/cfgrib/eccodes are xarray's own NetCDF/
+# GRIB backends - required for real file I/O to work even though ACF
+# code never imports them directly. epygram (Météo-France FA/LFA/LFI
+# reader, acf.data.readers.epygram_reader) was previously undeclared
+# ANYWHERE in this file despite tests/test_epygram_reader.py importing
+# it unconditionally at module level - the exact same class of gap
+# PyYAML's own NOTE above already documents (only worked in this dev
+# environment because it happened to already be installed; a fresh
+# venv from this file alone would not have it). Found by checking, not
+# assumed: `pip index versions epygram` confirms it's a real, normal
+# PyPI package (2.1.0), not something needing a special index.
+#
+# zarr (2026-09-05): same class of gap again, found the same way - not
+# guessed - by actually running the full test suite in a fresh venv built
+# from this file. xarray's own Zarr backend (acf.simulation_engine.output.
+# zarr_writer.ZarrWriter, exercised by tests/test_simulation_engine.py,
+# tests/test_storage.py, tests/test_esoc_output_panel.py) needs it to
+# round-trip a store it just wrote (xr.open_zarr) - without it xarray
+# raises "The zarr package is required for working with Zarr stores" and
+# those 3 tests fail. Declared here rather than under "science"/"hpc" since
+# it's the same NWP-output-format family as netCDF4/cfgrib/eccodes above.
+formats = ["xarray", "netCDF4", "cfgrib", "eccodes", "epygram", "zarr"]
+# Meteorological unit/calculation helpers used by science/.
+science = ["metpy"]
+# Live EUMETSAT Data Store connector (acf.connectors.eumetsat_mtg) -
+# real MTG (Météosat Troisième Génération / FCI) full-disk imagery used
+# as the map basemap (gui/map/mtg_basemap.py - also needs the gui and
+# geospatial extras below for that Qt+Cartopy/pyproj plumbing; this
+# extra alone is enough for the connector module itself). requests:
+# OAuth2 token + OpenSearch/browse HTTP calls. python-dotenv: loads
+# EUMETSAT_CONSUMER_KEY/SECRET from a local .env (gitignored - see
+# .env.example), matching the HPC Connection Wizard's own "credentials
+# never committed" convention rather than config/*.yaml (tracked in
+# git). Pillow: decodes the fetched JPEG quicklook into an array
+# matplotlib/Cartopy can imshow() - already installed transitively via
+# matplotlib, but was undeclared as a direct import anywhere, the same
+# gap PyYAML's/epygram's own NOTEs above already document.
+#
+# requests (2026-09-06, 2nd real caller): also used by
+# acf.connectors.argo_floats.ArgoFloatsConnector, the real public
+# Argovis API client for the ESOC Earth Monitoring panel's "ARGO Ocean
+# Floats" feed (no API key, so python-dotenv/Pillow are not needed for
+# this second caller) - kept in this same extra rather than a new one,
+# since requests is already the shared dependency.
+satellite = ["requests", "python-dotenv", "Pillow"]
+# Real cluster access (hpc_connector/ssh_connector.py). Also required
+# to import acf.surfex and acf.hpc_workflow - both import
+# HPCConnectionManager at module level (surfex/engine.py couples its
+# SLURM job submission to the same land-surface engine module that
+# holds its physics; found via a real fresh-venv import smoke test,
+# not fixed here - untangling that coupling is a separate refactor).
+hpc = ["paramiko"]
+# FastAPI/WebSocket HPC dashboard (acf-web entry point). httpx2 (2026-09-05,
+# same fresh-venv-test finding as zarr above) is needed too:
+# tests/test_web_*.py import fastapi.testclient.TestClient, and starlette's
+# TestClient now requires httpx2 (falling back to the older httpx with a
+# deprecation warning only if httpx2 is absent, and hard-failing if neither
+# is installed) - genuinely undeclared here despite being needed to even
+# collect those test modules.
+web = ["fastapi", "uvicorn", "websockets", "httpx2"]
+# Fourier Neural Operator surrogate (ai/simulation/, master/, release/).
+ai = ["torch"]
+# Real host CPU/RAM introspection (acf.monitoring.telemetry_engine).
+# Deliberately optional-import in that module (TelemetryEngine.
+# collect_telemetry() degrades to cpu_usage_pct/ram_usage_gb=None,
+# system_status="UNKNOWN_PSUTIL_NOT_INSTALLED" when absent, rather than
+# requiring it outright) - kept as its own extra rather than a core
+# dependency for that reason - but genuinely undeclared anywhere in this
+# file, so tests/test_monitoring_platform.py::test_telemetry_engine (which
+# asserts the real-data happy path, cpu_usage_pct is not None) fails
+# without it. Found the same way as zarr/httpx2 above (2026-09-05).
+monitoring = ["psutil"]
+# Everything above - convenience for a full desktop+HPC+web install.
+all = [
+    "PySide6", "matplotlib",
+    "cartopy", "pyproj",
+    "xarray", "netCDF4", "cfgrib", "eccodes", "epygram", "zarr",
+    "metpy",
+    "paramiko",
+    "fastapi", "uvicorn", "websockets", "httpx2",
+    "torch",
+    "psutil",
+    "requests", "python-dotenv", "Pillow",
+]
+# pytest-qt (2026-09-06, found independently by another session's fresh-venv
+# install test - same class of gap as zarr/httpx2/psutil/epygram above):
+# genuinely undeclared despite tests/gui/ and several tests/test_*panel*.py /
+# test_map_*.py modules requiring the `qtbot` fixture at collection time -
+# 164 tests error out with "fixture 'qtbot' not found" without it. Verified
+# fixed: same 164 tests pass once installed (QT_QPA_PLATFORM=offscreen for a
+# headless run - no display server involved otherwise).
+dev = ["pytest", "pytest-cov", "pytest-timeout", "pytest-qt", "black", "ruff", "mypy"]
+
+[project.scripts]
+acf-gui = "acf.gui.app:main"
+acf-web = "acf.web.hpc_dashboard_server:run"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -36,6 +163,45 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+# Real, small, static reference data bundled with the package (not
+# runtime-generated state - see /data/'s own .gitignore entry and
+# src/acf/awci/data/NOTICE.md for this file's real provenance/license).
+"acf.awci" = ["data/*.nc", "data/*.md"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# A per-test safety net, not a performance target: this session found a real
+# test (test_hpc_dialog.py) that could hang forever on a genuinely blocking
+# Qt modal dialog once the code path it exercised started doing real network
+# I/O - no local failure ever surfaced, only a silently-stuck CI/dev run.
+# 60s is generous headroom above any single test's real runtime; it exists
+# so a future regression like that one fails loudly and fast instead of
+# hanging indefinitely.
+timeout = 60
+
+[tool.ruff]
+line-length = 120
+exclude = [
+    ".git",
+    ".venv",
+    "reports",
+    "logs",
+    "temp",
+    "tmp",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "W"]
+ignore = ["E501"]
+
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+ignore_missing_imports = true
+namespace_packages = true
+explicit_package_bases = true

@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 
 
 class BaseImporter(ABC):
-
     @abstractmethod
     def load(self, filename):
         """Charge un catalogue."""
@@ -16,4 +15,3 @@ class BaseImporter(ABC):
     def validate(self, filename):
         """Valide un fichier."""
         raise NotImplementedError
-

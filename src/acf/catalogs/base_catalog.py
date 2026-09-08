@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 
 
 class BaseCatalog(ABC):
-
     @abstractmethod
     def load(self):
         """Charge le catalogue."""
@@ -16,4 +15,3 @@ class BaseCatalog(ABC):
     def count(self):
         """Retourne le nombre d'éléments."""
         raise NotImplementedError
-

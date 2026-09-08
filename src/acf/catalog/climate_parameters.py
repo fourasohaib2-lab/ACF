@@ -1,14 +1,41 @@
+"""
+Atmospheric Complexity Framework (ACF)
+
+CATALOG - Climate Parameters
+
+Purpose:
+--------
+Provides parameter and dataset cataloging, indexing, and search capabilities.
+
+Responsibilities:
+-----------------
+• Manage climate parameters logic and state representations.
+• Integrate with the catalog subsystem of the ACF scientific engine.
+
+Major Components:
+-----------------
+• Module functions and constants
+
+Dependencies:
+-------------
+• Python Standard Library and NumPy/Scientific Python Stack.
+• Internal acf.catalog module infrastructure.
+
+Scientific Context:
+-------------------
+Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
+physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+"""
+
 from acf.catalog.catalog_entry import CatalogEntry
 
 
 def register_climate(catalog):
 
     parameters = [
-
         ####################################################
         # CLIMATE INDICES
         ####################################################
-
         CatalogEntry(
             parameter_id="enso",
             standard_name="enso_index",
@@ -17,9 +44,8 @@ def register_climate(catalog):
             category="Climate",
             level_type="Global",
             renderer="TimeSeries",
-            colormap="enso"
+            colormap="enso",
         ),
-
         CatalogEntry(
             parameter_id="nao",
             standard_name="north_atlantic_oscillation",
@@ -28,9 +54,8 @@ def register_climate(catalog):
             category="Climate",
             level_type="Global",
             renderer="TimeSeries",
-            colormap="nao"
+            colormap="nao",
         ),
-
         CatalogEntry(
             parameter_id="ao",
             standard_name="arctic_oscillation",
@@ -39,9 +64,8 @@ def register_climate(catalog):
             category="Climate",
             level_type="Global",
             renderer="TimeSeries",
-            colormap="ao"
+            colormap="ao",
         ),
-
         CatalogEntry(
             parameter_id="mjo",
             standard_name="madden_julian_oscillation",
@@ -50,13 +74,11 @@ def register_climate(catalog):
             category="Climate",
             level_type="Global",
             renderer="TimeSeries",
-            colormap="mjo"
+            colormap="mjo",
         ),
-
         ####################################################
         # AIR QUALITY
         ####################################################
-
         CatalogEntry(
             parameter_id="pm25",
             standard_name="pm2p5_mass_concentration",
@@ -65,9 +87,8 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="pollution"
+            colormap="pollution",
         ),
-
         CatalogEntry(
             parameter_id="pm10",
             standard_name="pm10_mass_concentration",
@@ -76,9 +97,8 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="pollution"
+            colormap="pollution",
         ),
-
         CatalogEntry(
             parameter_id="o3",
             standard_name="ozone_mass_concentration",
@@ -87,9 +107,8 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="ozone"
+            colormap="ozone",
         ),
-
         CatalogEntry(
             parameter_id="no2",
             standard_name="nitrogen_dioxide_mass_concentration",
@@ -98,9 +117,8 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="pollution"
+            colormap="pollution",
         ),
-
         CatalogEntry(
             parameter_id="so2",
             standard_name="sulfur_dioxide_mass_concentration",
@@ -109,9 +127,8 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="pollution"
+            colormap="pollution",
         ),
-
         CatalogEntry(
             parameter_id="co",
             standard_name="carbon_monoxide_mass_concentration",
@@ -120,13 +137,11 @@ def register_climate(catalog):
             category="Air Quality",
             level_type="Surface",
             renderer="Raster",
-            colormap="pollution"
+            colormap="pollution",
         ),
-
         ####################################################
         # GREENHOUSE GASES
         ####################################################
-
         CatalogEntry(
             parameter_id="co2",
             standard_name="carbon_dioxide_mole_fraction",
@@ -135,9 +150,8 @@ def register_climate(catalog):
             category="Greenhouse Gas",
             level_type="Atmosphere",
             renderer="Raster",
-            colormap="co2"
+            colormap="co2",
         ),
-
         CatalogEntry(
             parameter_id="ch4",
             standard_name="methane_mole_fraction",
@@ -146,13 +160,11 @@ def register_climate(catalog):
             category="Greenhouse Gas",
             level_type="Atmosphere",
             renderer="Raster",
-            colormap="methane"
+            colormap="methane",
         ),
-
         ####################################################
         # AEROSOLS
         ####################################################
-
         CatalogEntry(
             parameter_id="aod550",
             standard_name="atmosphere_optical_thickness_due_to_ambient_aerosol",
@@ -161,9 +173,8 @@ def register_climate(catalog):
             category="Aerosol",
             level_type="Column",
             renderer="Raster",
-            colormap="dust"
-        )
-
+            colormap="dust",
+        ),
     ]
 
     for p in parameters:

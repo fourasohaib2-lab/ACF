@@ -16,12 +16,10 @@ from acf.gui.dialogs.new_project_dialog import NewProjectDialog
 from acf.gui.dialogs.project_properties_dialog import ProjectPropertiesDialog
 
 
-
 class MenuManager:
     """
     Gestionnaire des menus ACF.
     """
-
 
     def __init__(self, window):
 
@@ -31,234 +29,132 @@ class MenuManager:
 
         self.create()
 
-
-
     ##################################################
     # CREATE MENUS
     ##################################################
 
     def create(self):
-
+        """
+        NOTE (investigated, not a real bug): every QMenu/QAction created
+        here used to be a bare local variable with no `self.` reference
+        kept after create() returned. This was investigated as a possible
+        real crash - `menu_bar.actions()[i].menu()` on a menu built this
+        way does raise "libshiboken: Internal C++ object (QMenu) already
+        deleted" when queried from Python under this PySide6 6.11.1 /
+        offscreen-platform combination - but further testing showed that
+        access pattern itself is the unreliable part, not the object's
+        lifetime: the SAME menu, queried via win.menuBar().findChildren
+        (QMenu) - i.e. via Qt's own real child-traversal, the mechanism
+        actually used when a menu bar is shown and clicked - is fully
+        intact with all its actions, with or without any Python reference
+        kept, confirmed by direct reproduction on the original bare-local
+        pattern. So this was not, in fact, liable to crash for an
+        operator actually using the menu. Kept as instance attributes
+        anyway as better practice (makes every menu/action independently
+        addressable - e.g. from tests - without relying on
+        findChildren()), not because it was fixing a proven defect.
+        """
         menu_bar = self.window.menuBar()
-
 
         ##################################################
         # FILE
         ##################################################
 
-        file_menu = menu_bar.addMenu(
-            "File"
-        )
+        self.file_menu = menu_bar.addMenu("File")
 
+        self.new_action = QAction("New Project...", self.window)
 
-        new_action = QAction(
-            "New Project...",
-            self.window
-        )
+        self.open_action = QAction("Open Project...", self.window)
 
+        self.recent_menu = self.file_menu.addMenu("Recent Projects")
 
-        open_action = QAction(
-            "Open Project...",
-            self.window
-        )
+        self.properties_action = QAction("Project Properties", self.window)
 
+        self.save_action = QAction("Save Project", self.window)
 
-        self.recent_menu = file_menu.addMenu(
-            "Recent Projects"
-        )
+        self.close_action = QAction("Close Project", self.window)
 
+        self.exit_action = QAction("Exit", self.window)
 
-        properties_action = QAction(
-            "Project Properties",
-            self.window
-        )
+        self.new_action.triggered.connect(self.new_project)
 
+        self.open_action.triggered.connect(self.open_project)
 
-        save_action = QAction(
-            "Save Project",
-            self.window
-        )
+        self.properties_action.triggered.connect(self.show_project_properties)
 
+        self.save_action.triggered.connect(self.save_project)
 
-        close_action = QAction(
-            "Close Project",
-            self.window
-        )
+        self.close_action.triggered.connect(self.close_project)
 
+        self.exit_action.triggered.connect(self.window.close)
 
-        exit_action = QAction(
-            "Exit",
-            self.window
-        )
+        self.file_menu.addAction(self.new_action)
 
+        self.file_menu.addAction(self.open_action)
 
+        self.file_menu.addSeparator()
 
-        new_action.triggered.connect(
-            self.new_project
-        )
+        self.file_menu.addMenu(self.recent_menu)
 
-        open_action.triggered.connect(
-            self.open_project
-        )
+        self.file_menu.addSeparator()
 
-        properties_action.triggered.connect(
-            self.show_project_properties
-        )
+        self.file_menu.addAction(self.properties_action)
 
-        save_action.triggered.connect(
-            self.save_project
-        )
+        self.file_menu.addAction(self.save_action)
 
-        close_action.triggered.connect(
-            self.close_project
-        )
+        self.file_menu.addAction(self.close_action)
 
-        exit_action.triggered.connect(
-            self.window.close
-        )
+        self.file_menu.addSeparator()
 
-
-
-        file_menu.addAction(
-            new_action
-        )
-
-        file_menu.addAction(
-            open_action
-        )
-
-        file_menu.addSeparator()
-
-        file_menu.addMenu(
-            self.recent_menu
-        )
-
-        file_menu.addSeparator()
-
-        file_menu.addAction(
-            properties_action
-        )
-
-        file_menu.addAction(
-            save_action
-        )
-
-        file_menu.addAction(
-            close_action
-        )
-
-        file_menu.addSeparator()
-
-        file_menu.addAction(
-            exit_action
-        )
-
-
+        self.file_menu.addAction(self.exit_action)
 
         ##################################################
         # DATA MENU
         ##################################################
 
-        data_menu = menu_bar.addMenu(
-            "Data"
-        )
+        self.data_menu = menu_bar.addMenu("Data")
 
+        self.open_dataset_action = QAction("Open Dataset...", self.window)
 
-        open_dataset_action = QAction(
-            "Open Dataset...",
-            self.window
-        )
+        self.close_dataset_action = QAction("Close Dataset", self.window)
 
+        self.dataset_info_action = QAction("Dataset Information", self.window)
 
-        close_dataset_action = QAction(
-            "Close Dataset",
-            self.window
-        )
+        self.refresh_dataset_action = QAction("Refresh Dataset View", self.window)
 
+        self.open_dataset_action.triggered.connect(self.open_dataset)
 
-        dataset_info_action = QAction(
-            "Dataset Information",
-            self.window
-        )
+        self.close_dataset_action.triggered.connect(self.close_dataset)
 
+        self.dataset_info_action.triggered.connect(self.dataset_information)
 
-        refresh_dataset_action = QAction(
-            "Refresh Dataset View",
-            self.window
-        )
+        self.refresh_dataset_action.triggered.connect(self.refresh_dataset_view)
 
+        self.data_menu.addAction(self.open_dataset_action)
 
+        self.data_menu.addAction(self.close_dataset_action)
 
-        open_dataset_action.triggered.connect(
-            self.open_dataset
-        )
+        self.data_menu.addSeparator()
 
+        self.data_menu.addAction(self.dataset_info_action)
 
-        close_dataset_action.triggered.connect(
-            self.close_dataset
-        )
-
-
-        dataset_info_action.triggered.connect(
-            self.dataset_information
-        )
-
-
-        refresh_dataset_action.triggered.connect(
-            self.refresh_dataset_view
-        )
-
-
-
-        data_menu.addAction(
-            open_dataset_action
-        )
-
-        data_menu.addAction(
-            close_dataset_action
-        )
-
-        data_menu.addSeparator()
-
-        data_menu.addAction(
-            dataset_info_action
-        )
-
-        data_menu.addAction(
-            refresh_dataset_action
-        )
-
-
+        self.data_menu.addAction(self.refresh_dataset_action)
 
         ##################################################
         # OTHER MENUS
         ##################################################
 
-        menu_bar.addMenu(
-            "Edit"
-        )
+        self.edit_menu = menu_bar.addMenu("Edit")
 
-        menu_bar.addMenu(
-            "View"
-        )
+        self.view_menu = menu_bar.addMenu("View")
 
-        menu_bar.addMenu(
-            "Tools"
-        )
+        self.tools_menu = menu_bar.addMenu("Tools")
 
-        menu_bar.addMenu(
-            "Plugins"
-        )
+        self.plugins_menu = menu_bar.addMenu("Plugins")
 
-        menu_bar.addMenu(
-            "Help"
-        )
-
-
+        self.help_menu = menu_bar.addMenu("Help")
 
         self.update_recent_projects()
-
-
 
     ##################################################
     # PROJECT
@@ -266,116 +162,59 @@ class MenuManager:
 
     def new_project(self):
 
-        dialog = NewProjectDialog(
-            self.window
-        )
-
+        dialog = NewProjectDialog(self.window)
 
         if dialog.exec():
-
             data = dialog.project_data()
 
-
-            project = (
-                self.window.workspace
-                .create_project(
-                    name=data["name"],
-                    directory=data["directory"],
-                    author=data["author"],
-                    description=data["description"],
-                )
+            project = self.window.workspace.create_project(
+                name=data["name"],
+                directory=data["directory"],
+                author=data["author"],
+                description=data["description"],
             )
 
-
-            self.load_project_to_interface(
-                project
-            )
-
-
+            self.load_project_to_interface(project)
 
     ##################################################
-
 
     def open_project(self):
 
-        filename,_ = QFileDialog.getOpenFileName(
-            self.window,
-            "Open ACF Project",
-            "",
-            "ACF Project (*.acf)"
-        )
-
+        filename, _ = QFileDialog.getOpenFileName(self.window, "Open ACF Project", "", "ACF Project (*.acf)")
 
         if not filename:
-
             return
 
+        project = self.window.workspace.open_project(filename)
 
-        project = (
-            self.window.workspace
-            .open_project(filename)
-        )
-
-
-        self.load_project_to_interface(
-            project
-        )
-
-
+        self.load_project_to_interface(project)
 
     ##################################################
-
 
     def save_project(self):
 
         try:
-
             self.window.workspace.save_project()
 
-            self.window.statusBar().showMessage(
-                "Project saved"
-            )
-
+            self.window.statusBar().showMessage("Project saved")
 
         except Exception as error:
-
-            QMessageBox.warning(
-                self.window,
-                "Save Error",
-                str(error)
-            )
-
-
+            QMessageBox.warning(self.window, "Save Error", str(error))
 
     ##################################################
-
 
     def close_project(self):
 
         self.window.workspace.close_project()
 
-
-        explorer = (
-            self.window.dashboard
-            .get_panel("explorer")
-        )
-
+        explorer = self.window.dashboard.get_panel("explorer")
 
         if explorer:
-
             explorer.clear()
 
+        self.window.setWindowTitle("Atmospheric Complexity Framework")
 
-        self.window.setWindowTitle(
-            "Atmospheric Complexity Framework"
-        )
-
-
-        self.window.statusBar().showMessage(
-            "Project closed"
-        )
-
-
+        self.window.statusBar().showMessage("Project closed")
 
     ##################################################
     # DATA MANAGEMENT
@@ -383,120 +222,70 @@ class MenuManager:
 
     def open_dataset(self):
 
-
-        filename,_ = QFileDialog.getOpenFileName(
+        filename, _ = QFileDialog.getOpenFileName(
             self.window,
             "Open Scientific Dataset",
             "",
             """
             Meteorological files
             (*.grib *.grib2 *.grb *.nc *.nc4)
-            """
+            """,
         )
 
-
         if not filename:
-
             return
 
-
-
         try:
-
-
-            dataset = (
-                self.window.data
-                .open(filename)
-            )
-
-
+            dataset = self.window.data.open(filename)
 
             self.refresh_dataset_view()
 
-
-
-            self.window.statusBar().showMessage(
-                f"Dataset loaded : {dataset.name}"
-            )
-
-
+            self.window.statusBar().showMessage(f"Dataset loaded : {dataset.name}")
 
         except Exception as error:
-
-
-            QMessageBox.critical(
-                self.window,
-                "Dataset Error",
-                str(error)
-            )
-
-
+            QMessageBox.critical(self.window, "Dataset Error", str(error))
 
     ##################################################
-
 
     def close_dataset(self):
 
         self.window.data.close()
 
-
-
-        self.window.statusBar().showMessage(
-            "Dataset closed"
-        )
-
-
+        self.window.statusBar().showMessage("Dataset closed")
 
     ##################################################
-
 
     def dataset_information(self):
 
-        dataset = (
-            self.window.data.current_dataset
-        )
-
+        dataset = self.window.data.current_dataset
 
         if dataset is None:
-
-            QMessageBox.information(
-                self.window,
-                "Dataset Information",
-                "No dataset loaded."
-            )
+            QMessageBox.information(self.window, "Dataset Information", "No dataset loaded.")
 
             return
 
-
-
-        QMessageBox.information(
-            self.window,
-            "Dataset Information",
-            str(
-                dataset.summary()
-            )
-        )
-
-
+        QMessageBox.information(self.window, "Dataset Information", str(dataset.summary()))
 
     ##################################################
 
-
     def refresh_dataset_view(self):
 
-        explorer = (
-            self.window.dashboard
-            .get_panel("explorer")
-        )
-
+        explorer = self.window.dashboard.get_panel("explorer")
 
         if explorer:
+            explorer.refresh_datasets(self.window.data.datasets())
 
-            explorer.refresh_datasets(
-                self.window.data.datasets()
-            )
+        # NOTE: dataset_panel is optional - only ClassicDashboardWindow
+        # currently attaches one (acf.gui.docks.dataset_panel.DatasetPanel,
+        # this session's finding: a real, correct QDockWidget that was
+        # never constructed anywhere before). Guarded with getattr so
+        # MenuManager keeps working against any window that doesn't have
+        # one, matching the pattern already used for other optional
+        # window attributes throughout this class.
+        dataset_panel = getattr(self.window, "dataset_panel", None)
 
-
+        if dataset_panel:
+            dataset_panel.refresh()
 
     ##################################################
     # PROJECT PROPERTIES
@@ -504,131 +293,75 @@ class MenuManager:
 
     def show_project_properties(self):
 
-        project = (
-            self.window.workspace.project()
-        )
-
+        project = self.window.workspace.project()
 
         if project is None:
-
-            QMessageBox.warning(
-                self.window,
-                "Project Properties",
-                "No project opened."
-            )
+            QMessageBox.warning(self.window, "Project Properties", "No project opened.")
 
             return
 
-
-
-        dialog = ProjectPropertiesDialog(
-            project,
-            self.window
-        )
-
+        dialog = ProjectPropertiesDialog(project, self.window)
 
         if dialog.exec():
-
             dialog.update_project()
 
             self.window.workspace.save_project()
-
-
 
     ##################################################
     # LOAD PROJECT UI
     ##################################################
 
-    def load_project_to_interface(
-        self,
-        project
-    ):
+    def load_project_to_interface(self, project):
 
-
-        explorer = (
-            self.window.dashboard
-            .get_panel("explorer")
-        )
-
+        explorer = self.window.dashboard.get_panel("explorer")
 
         if explorer:
+            explorer.load_project(project)
 
-            explorer.load_project(
-                project
-            )
-
-
-        self.window.setWindowTitle(
-            "Atmospheric Complexity Framework - "
-            + project.name
-        )
-
-
+        self.window.setWindowTitle("Atmospheric Complexity Framework - " + project.name)
 
     ##################################################
     # RECENT
     ##################################################
 
     def update_recent_projects(self):
-
+        """
+        NOTE (same investigated-not-proven category as create()'s own
+        NOTE): these dynamically-built QAction objects used to be bare
+        local variables inside the loop. Kept in self._recent_actions as
+        the same better-practice precaution, not because a real defect
+        was proven here either.
+        """
         self.recent_menu.clear()
 
+        self._recent_actions: list[QAction] = []
 
-        projects = (
-            self.window.workspace
-            .recent_projects()
-        )
-
+        projects = self.window.workspace.recent_projects()
 
         if not projects:
+            action = QAction("No recent projects", self.window)
 
-            action = QAction(
-                "No recent projects",
-                self.window
-            )
+            action.setEnabled(False)
 
-            action.setEnabled(
-                False
-            )
+            self.recent_menu.addAction(action)
 
-            self.recent_menu.addAction(
-                action
-            )
+            self._recent_actions.append(action)
 
             return
 
-
-
         for item in projects:
-
             path = Path(item)
 
-            action = QAction(
-                path.parent.name,
-                self.window
-            )
+            action = QAction(path.parent.name, self.window)
 
+            action.triggered.connect(lambda checked=False, file=item: self.open_project_file(file))
 
-            action.triggered.connect(
-                lambda checked=False,
-                file=item:
-                self.open_project_file(file)
-            )
+            self.recent_menu.addAction(action)
 
+            self._recent_actions.append(action)
 
-            self.recent_menu.addAction(
-                action
-            )
+    def open_project_file(self, filename):
 
+        project = self.window.workspace.open_project(filename)
 
-
-    def open_project_file(self,filename):
-
-        project = (
-            self.window.workspace
-            .open_project(filename)
-        )
-
-        self.load_project_to_interface(
-            project
-        )
+        self.load_project_to_interface(project)

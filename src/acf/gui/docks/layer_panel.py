@@ -10,10 +10,10 @@ Professional layer manager.
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDockWidget,
-    QWidget,
-    QVBoxLayout,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -27,6 +27,7 @@ class LayerPanel(QDockWidget):
         super().__init__("Layers", parent)
 
         self.layer_manager = None
+        self.tree: QTreeWidget | None = None
 
         self._build_ui()
 
@@ -46,13 +47,9 @@ class LayerPanel(QDockWidget):
 
         self.tree.setAlternatingRowColors(True)
 
-        self.tree.itemChanged.connect(
-            self._item_changed
-        )
+        self.tree.itemChanged.connect(self._item_changed)
 
-        self.tree.currentItemChanged.connect(
-            self._current_item_changed
-        )
+        self.tree.currentItemChanged.connect(self._current_item_changed)
         layout.addWidget(self.tree)
 
         self.setWidget(container)
@@ -69,94 +66,57 @@ class LayerPanel(QDockWidget):
         if self.layer_manager is None:
             return
 
-        self.layer_manager.layerAdded.connect(
-            self._on_layer_added
-        )
+        self.layer_manager.layerAdded.connect(self._on_layer_added)
 
-        self.layer_manager.layerRemoved.connect(
-            self._on_layer_removed
-        )
+        self.layer_manager.layerRemoved.connect(self._on_layer_removed)
 
-        self.layer_manager.layerChanged.connect(
-            self._on_layer_changed
-        )
+        self.layer_manager.layerChanged.connect(self._on_layer_changed)
 
-        self.layer_manager.layersCleared.connect(
-            self.refresh
-        )
+        self.layer_manager.layersCleared.connect(self.refresh)
 
-        self.layer_manager.currentLayerChanged.connect(
-            self._on_current_layer_changed
-        )
+        self.layer_manager.currentLayerChanged.connect(self._on_current_layer_changed)
 
         self.refresh()
 
     ##################################################
 
     def refresh(self):
+        """
+        NOTE (correction): this used to create 5 fixed category headers
+        (Meteorology, Satellite, Radar, Ocean, Terrain) but route every
+        real layer under "Meteorology" regardless of its actual nature
+        - the underlying layer objects (acf.gui.map.layers.layer_manager.LayerManager)
+        carry no category/domain attribute at all, so the other 4
+        headers could never be populated and would always render as
+        permanently empty, misleading category nodes. Not fabricated
+        data, but a misleading UI structure implying a categorization
+        capability that doesn't exist in the data model. Fixed to list
+        layers directly at the tree root rather than inventing a
+        categorization scheme with no real data behind it. This class
+        is currently unused/unwired anywhere else in the codebase
+        (verified via grep), so this had no live-app impact.
+        """
+
+        if self.tree is None:
+            return
 
         self.tree.clear()
 
         if self.layer_manager is None:
             return
 
-        meteorology = QTreeWidgetItem(
-            self.tree,
-            ["Meteorology"]
-        )
-
-        satellite = QTreeWidgetItem(
-            self.tree,
-            ["Satellite"]
-        )
-
-        radar = QTreeWidgetItem(
-            self.tree,
-            ["Radar"]
-        )
-
-        ocean = QTreeWidgetItem(
-            self.tree,
-            ["Ocean"]
-        )
-
-        terrain = QTreeWidgetItem(
-            self.tree,
-            ["Terrain"]
-        )
-
         for layer in self.layer_manager.layers():
+            item = QTreeWidgetItem(self.tree, [layer.name])
 
-            item = QTreeWidgetItem(
-                meteorology,
-                [layer.name]
-            )
+            item.setData(0, Qt.ItemDataRole.UserRole, layer.id)
 
-            item.setData(
-                0,
-                Qt.UserRole,
-                layer.id
-            )
-
-            item.setFlags(
-                item.flags()
-                | Qt.ItemIsUserCheckable
-                | Qt.ItemIsSelectable
-            )
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsSelectable)
 
             if layer.visible:
-
-                item.setCheckState(
-                    0,
-                    Qt.Checked
-                )
+                item.setCheckState(0, Qt.CheckState.Checked)
 
             else:
-
-                item.setCheckState(
-                    0,
-                    Qt.Unchecked
-                )
+                item.setCheckState(0, Qt.CheckState.Unchecked)
 
         self.tree.expandAll()
 
@@ -164,15 +124,15 @@ class LayerPanel(QDockWidget):
 
     def selected_layer(self):
 
+        if self.tree is None:
+            return None
+
         item = self.tree.currentItem()
 
         if item is None:
             return None
 
-        return item.data(
-            0,
-            Qt.UserRole
-        )
+        return item.data(0, Qt.ItemDataRole.UserRole)
 
     ##################################################
 
@@ -181,26 +141,18 @@ class LayerPanel(QDockWidget):
         if self.layer_manager is None:
             return
 
-        layer_id = item.data(
-            0,
-            Qt.UserRole
-        )
+        layer_id = item.data(0, Qt.ItemDataRole.UserRole)
 
         if layer_id is None:
             return
 
-        if item.checkState(0) == Qt.Checked:
-
-            self.layer_manager.show_layer(
-                layer_id
-            )
+        if item.checkState(0) == Qt.CheckState.Checked:
+            self.layer_manager.show_layer(layer_id)
 
         else:
+            self.layer_manager.hide_layer(layer_id)
 
-            self.layer_manager.hide_layer(
-                layer_id
-            )
-##################################################
+    ##################################################
 
     def _current_item_changed(
         self,
@@ -214,37 +166,32 @@ class LayerPanel(QDockWidget):
         if current is None:
             return
 
-        layer_id = current.data(
-            0,
-            Qt.UserRole
-        )
+        layer_id = current.data(0, Qt.UserRole)
 
         if layer_id is None:
             return
 
-        self.layer_manager.set_current_layer(
-            layer_id
-        )
+        self.layer_manager.set_current_layer(layer_id)
 
-##################################################
+    ##################################################
 
     def _on_layer_added(self, layer):
 
         self.refresh()
 
-##################################################
+    ##################################################
 
     def _on_layer_removed(self, layer_id):
 
         self.refresh()
 
-##################################################
+    ##################################################
 
     def _on_layer_changed(self, layer):
 
         self.refresh()
 
-##################################################
+    ##################################################
 
     def _on_current_layer_changed(self, layer):
 
@@ -254,7 +201,7 @@ class LayerPanel(QDockWidget):
 
         self._select_layer(layer.id)
 
-##################################################
+    ##################################################
 
     def _select_layer(self, layer_id):
 
@@ -263,18 +210,12 @@ class LayerPanel(QDockWidget):
         stack = [root]
 
         while stack:
-
             parent = stack.pop()
 
             for i in range(parent.childCount()):
-
                 child = parent.child(i)
 
-                if child.data(
-                    0,
-                    Qt.UserRole
-                ) == layer_id:
-
+                if child.data(0, Qt.UserRole) == layer_id:
                     self.tree.setCurrentItem(child)
 
                     return

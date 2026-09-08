@@ -5,9 +5,9 @@ Wind Renderer
 
 
 class WindRenderer:
+    def __init__(self, canvas=None):
 
-    def __init__(self):
-
+        self.canvas = canvas
         self.u = None
         self.v = None
 
@@ -36,17 +36,13 @@ class WindRenderer:
 
         self.scale = scale
 
-    def render(self):
+    def render(self, u=None, v=None, *args, **kwargs):
 
-        if not self.has_field():
-            return False
+        if u is not None and v is not None:
+            self.set_field(u, v)
 
-        return True
+        return self.has_field()
 
     def __repr__(self):
 
-        return (
-            f"WindRenderer("
-            f"color='{self.color}', "
-            f"scale={self.scale})"
-        )
+        return f"WindRenderer(color='{self.color}', scale={self.scale})"

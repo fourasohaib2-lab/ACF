@@ -1,0 +1,190 @@
+"""
+Tests for acf.web.hpc_dashboard_server - the real FastAPI/WebSocket HPC
+dashboard server (docs/ACF_HPC_005_NEXT_ROADMAP.md's "Dashboard Web
+FastAPI / WebSocket" objective).
+
+A single HPCConnectionManager is constructed once for the whole module
+(it does real local probing at construction time - slow to repeat per
+test) and injected into create_app(), rather than letting the app build
+its own lazily.
+
+Paths updated to /api/v1/hpc/*, /api/v1/fno/* (migrated from their
+original unprefixed /api/hpc/*, /api/fno/*, /ws/hpc/status - see
+acf.web.routers.hpc_router/fno_router's own docstrings for why).
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from acf.ai.simulation.neural_operator import NeuralOperatorEngine
+from acf.hpc_connector.connection_manager import HPCConnectionManager
+from acf.web.hpc_dashboard_server import DEFAULT_FNO_CHECKPOINT, create_app
+
+
+@pytest.fixture(scope="module")
+def hpc():
+    return HPCConnectionManager()
+
+
+@pytest.fixture(scope="module")
+def client(hpc):
+    app = create_app(hpc=hpc)
+    with TestClient(app) as c:
+        yield c
+
+
+def test_index_page_serves_html(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "ACF HPC Web Dashboard" in res.text
+    assert "/api/v1/hpc/ws" in res.text
+
+
+def test_status_endpoint_reflects_real_manager_state(client, hpc):
+    res = client.get("/api/v1/hpc/status")
+    assert res.status_code == 200
+    data = res.json()
+
+    # Every field must trace back to the real HPCConnectionManager - not
+    # be fabricated by the web layer.
+    assert data["connected"] == hpc.is_connected
+    assert data["scheduler"] == hpc.scheduler.scheduler_name
+    assert "telemetry" in data
+    assert "gpu_info" in data
+    assert "heartbeat" in data
+    assert data["heartbeat"]["status"] in ("HEALTHY", "DISCONNECTED")
+
+
+def test_status_never_claims_real_transport_without_one(client, hpc):
+    """CORRECTED (caught before it shipped, same discipline as this
+    session's ESOC toolbar fix): a naive implementation could read
+    `connected` (HPCConnectionManager.connect()'s own workflow-completed
+    flag, true even in offline/local dev mode - see its own NOTE) and
+    have the web page claim a live cluster connection that was never
+    really established. real_ssh_transport must reflect the honest
+    ssh_connector.is_real_connection flag instead."""
+    res = client.get("/api/v1/hpc/status")
+    data = res.json()
+    assert data["real_ssh_transport"] == bool(getattr(hpc.ssh_connector, "is_real_connection", False))
+
+
+def test_connect_endpoint_returns_real_outcome(client, hpc, monkeypatch):
+    """
+    CORRECTED: this used to call the real /api/v1/hpc/connect with
+    profile="fennec" - config/hpc.yaml's real "fennec" profile hostname
+    (login2.fennec.meteo.dz), which on an ONM-networked machine (this
+    one) resolves to a real, reachable 10.16.20.2 - see
+    tests/test_hpc_connector.py's OFFLINE_TEST_HOSTNAME comment for the
+    same issue found there. This endpoint only accepts a profile NAME
+    (no hostname override) over HTTP, so - to keep testing the endpoint's
+    own wiring (does it call connect() and shape the JSON response
+    correctly) without ever letting a unit test touch real production
+    network access - hpc.connect is monkeypatched to a fast, fully local
+    stub. HPCConnectionManager.connect() itself, and its real network
+    behavior, are exercised safely elsewhere (test_hpc_connector.py).
+    """
+
+    def _fake_connect(profile_name="fennec", overrides=None):
+        # Must mirror the real connect()'s own side effect (setting
+        # is_connected) - _hpc_status() reads that attribute directly,
+        # not this stub's return value.
+        hpc.is_connected = True
+        return True
+
+    monkeypatch.setattr(hpc, "connect", _fake_connect)
+
+    res = client.post("/api/v1/hpc/connect", params={"profile": "fennec"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connected"] is True
+    # The stub above never touches ssh_connector, so is_real_connection
+    # stays at its real, honest default (unset/False) - still a genuine
+    # assertion about this endpoint never claiming a transport that
+    # wasn't established, just via a safe stub instead of a real socket.
+    assert data["real_ssh_transport"] is False
+
+
+def test_disconnect_endpoint(client, hpc, monkeypatch):
+    def _fake_connect(profile_name="fennec", overrides=None):
+        hpc.is_connected = True
+        return True
+
+    monkeypatch.setattr(hpc, "connect", _fake_connect)
+    client.post("/api/v1/hpc/connect", params={"profile": "fennec"})
+    res = client.post("/api/v1/hpc/disconnect")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connected"] is False
+
+
+def test_websocket_streams_real_status(client):
+    with client.websocket_connect("/api/v1/hpc/ws") as ws:
+        payload = ws.receive_json()
+        assert "connected" in payload
+        assert "telemetry" in payload
+        # A second push confirms this is a genuine loop, not a one-shot reply.
+        payload2 = ws.receive_json()
+        assert "connected" in payload2
+
+
+def test_create_app_without_injected_hpc_lazily_builds_one():
+    """create_app(hpc=None) (the real application path, acf-web's own
+    entry point) must not construct HPCConnectionManager at app-creation
+    time - only on first actual request - so importing/creating the app
+    stays fast and side-effect-free until it's really used."""
+    app = create_app()
+    assert app.state.hpc is None
+
+
+def test_reference_fno_checkpoint_exists_and_is_used_by_default():
+    """The reference checkpoint trained by scripts/train_fno_surrogate.py
+    (this session's FNO axis) is committed at this exact path - the demo
+    endpoint below depends on it actually being found by default."""
+    assert DEFAULT_FNO_CHECKPOINT.exists()
+
+
+def test_fno_predict_demo_uses_the_real_trained_surrogate(client):
+    res = client.post("/api/v1/fno/predict_demo", params={"n_lat": 16, "n_lon": 32})
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["status"] == "PREDICTED_BY_TRAINED_SURROGATE"
+    assert data["surrogate_final_train_loss"] is not None
+    assert "predicted_field_mean_k" in data
+    # Real physical temperature range, not a placeholder.
+    assert 150.0 < data["predicted_field_mean_k"] < 400.0
+
+
+def test_fno_predict_demo_honest_without_a_checkpoint():
+    """CORRECTED (caught before it shipped): if no trained checkpoint is
+    configured, this endpoint must say so plainly - not silently fall
+    back to some other value."""
+    app = create_app(hpc=HPCConnectionManager(), fno_checkpoint_path=None)
+    with TestClient(app) as c:
+        res = c.post("/api/v1/fno/predict_demo")
+    data = res.json()
+    assert data["status"] == "NOT_PREDICTED_NO_TRAINED_SURROGATE_LOADED"
+    assert "predicted_field_mean_k" not in data
+
+
+def test_create_app_accepts_an_injected_neural_engine():
+    engine = NeuralOperatorEngine()  # no checkpoint loaded
+    app = create_app(hpc=HPCConnectionManager(), neural_engine=engine)
+    assert app.state.neural_engine is engine
+
+
+# ------------------------------------------------------------------ migration proof
+
+
+def test_old_unprefixed_paths_are_genuinely_gone(client):
+    """Real proof of the /api/v1 migration, not just that the new paths work - the old ones must be really retired, not left as an untested duplicate."""
+    assert client.get("/api/hpc/status").status_code == 404
+    assert client.post("/api/hpc/connect").status_code == 404
+    assert client.post("/api/hpc/disconnect").status_code == 404
+    assert client.post("/api/fno/predict_demo").status_code == 404
+
+
+def test_old_websocket_path_is_genuinely_gone(client):
+    with pytest.raises(Exception):  # noqa: B017, PT011 - starlette raises on a websocket handshake to a route that doesn't exist
+        with client.websocket_connect("/ws/hpc/status"):
+            pass

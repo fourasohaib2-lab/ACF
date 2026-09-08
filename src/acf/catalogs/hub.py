@@ -8,7 +8,6 @@ from acf.catalogs.ecmwf.catalog import ECMWFCatalog
 
 
 class CatalogHub:
-
     def __init__(self):
 
         self.manager = CatalogManager()

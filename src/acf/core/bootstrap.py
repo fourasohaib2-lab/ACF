@@ -9,7 +9,6 @@ from acf.core.service_manager import ServiceManager
 
 
 class Bootstrap:
-
     def __init__(self):
         self.logger = get_logger()
         self.config = ConfigManager()

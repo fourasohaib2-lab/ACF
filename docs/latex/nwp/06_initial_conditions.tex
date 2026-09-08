@@ -1,0 +1,66 @@
+\section{Initial Conditions}
+
+
+The quality of numerical weather prediction depends strongly on
+the accuracy of the initial atmospheric state.
+
+
+
+ACF generates initial conditions using:
+
+
+\begin{itemize}
+
+\item Surface observations
+
+\item Satellite measurements
+
+\item Radar observations
+
+\item Radiosondes
+
+\item Aircraft observations
+
+\item Ocean observations
+
+\end{itemize}
+
+
+
+The atmospheric state vector is:
+
+
+\[
+X_0 =
+(T,P,U,V,Q)
+\]
+
+
+where:
+
+
+\begin{itemize}
+
+\item $T$ : temperature
+
+\item $P$ : pressure
+
+\item $U,V$ : wind components
+
+\item $Q$ : moisture variables
+
+\end{itemize}
+
+
+
+Initial conditions are improved through:
+
+
+\[
+Observation
++
+Model
+=
+Analysis
+\]
+

@@ -9,4 +9,3 @@ def test_geopotential_height():
 
 def test_zero():
     assert GeopotentialHeight.calculate(0.0) == 0.0
-

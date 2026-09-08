@@ -3,12 +3,11 @@ Weather Model Manager
 """
 
 from acf.models.detector import ModelDetector
-from acf.models.registry import ModelRegistry
 from acf.models.implementations.era5 import ERA5Model
+from acf.models.registry import ModelRegistry
 
 
 class ModelManager:
-
     def __init__(self):
 
         self.registry = ModelRegistry()

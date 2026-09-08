@@ -13,16 +13,9 @@ def test_showalter():
 
 def test_category():
 
-    assert (
-        ShowalterIndex.category(-4.0)
-        == "Very Unstable"
-    )
+    assert ShowalterIndex.category(-4.0) == "Very Unstable"
 
 
 def test_stable():
 
-    assert (
-        ShowalterIndex.category(5.0)
-        == "Stable"
-    )
-
+    assert ShowalterIndex.category(5.0) == "Stable"

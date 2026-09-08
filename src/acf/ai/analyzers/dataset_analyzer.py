@@ -15,7 +15,6 @@ class DatasetAnalyzer:
         report = {}
 
         for name, values in dataset.items():
-
             array = np.asarray(values)
 
             report[name] = {

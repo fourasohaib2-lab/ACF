@@ -5,7 +5,6 @@ ColorBar Manager
 
 
 class ColorBarManager:
-
     def __init__(self):
 
         self._bars = {}

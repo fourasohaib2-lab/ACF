@@ -21,7 +21,6 @@ class DashboardManager:
         self._dashboards = {}
 
         if window is not None:
-
             self.dashboard = Dashboard(window)
 
     ##################################################
@@ -83,7 +82,6 @@ class DashboardManager:
     def initialize(self):
 
         if self.dashboard is not None:
-
             self.dashboard.initialize()
 
     ##################################################
@@ -91,7 +89,6 @@ class DashboardManager:
     def get_panel(self, name):
 
         if self.dashboard is not None:
-
             return self.dashboard.get_panel(name)
 
         return None
@@ -101,7 +98,6 @@ class DashboardManager:
     def clear_project(self):
 
         if self.dashboard is not None:
-
             self.dashboard.clear_project()
 
     ##################################################
@@ -109,7 +105,6 @@ class DashboardManager:
     def refresh(self):
 
         if self.dashboard is not None:
-
             self.dashboard.refresh()
 
     ##################################################
@@ -117,7 +112,6 @@ class DashboardManager:
     def shutdown(self):
 
         if self.dashboard is not None:
-
             self.dashboard.shutdown()
 
     ##################################################
@@ -125,11 +119,7 @@ class DashboardManager:
     def status(self):
 
         return {
-
             "window": self.window is not None,
-
             "dashboard": self.dashboard is not None,
-
             "registered_dashboards": len(self._dashboards),
-
         }

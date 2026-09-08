@@ -8,13 +8,9 @@ def test_report():
     assistant = ForecastAssistant()
 
     dataset = {
-
-        "temperature": np.array([30,31,32]),
-
-        "pressure": np.array([995,997,998]),
-
-        "humidity": np.array([85,88,90])
-
+        "temperature": np.array([30, 31, 32]),
+        "pressure": np.array([995, 997, 998]),
+        "humidity": np.array([85, 88, 90]),
     }
 
     report = assistant.generate_report(dataset)

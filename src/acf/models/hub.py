@@ -6,7 +6,6 @@ from acf.models.manager import ModelManager
 
 
 class ModelHub:
-
     def __init__(self):
 
         self.manager = ModelManager()
@@ -22,4 +21,3 @@ class ModelHub:
     def has_model(self, name):
 
         return name in self.available_models()
-

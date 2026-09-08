@@ -1,14 +1,9 @@
-from abc import ABC, abstractmethod
+"""
+Atmospheric Complexity Framework (ACF)
 
+IO - Base Reader (Compatibility Layer forwarding to acf.importers.base.base_reader)
+"""
 
-class BaseReader(ABC):
+from acf.importers.base.base_reader import BaseReader
 
-    extensions = []
-
-    @abstractmethod
-    def can_read(self, filename: str) -> bool:
-        pass
-
-    @abstractmethod
-    def read(self, filename: str):
-        pass
+__all__ = ["BaseReader"]

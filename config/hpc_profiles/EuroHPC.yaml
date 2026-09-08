@@ -1,0 +1,12 @@
+name: "EuroHPC Supercomputer"
+hostname: "lumi.eurohpc.eu"
+user: "eurohpc_user"
+port: 22
+ssh_key: "~/.ssh/id_rsa"
+scheduler: "slurm"
+partition: "standard-g"
+remote_dir: "/project/acf"
+scratch_dir: "/scratch/acf"
+mpi_launcher: "srun"
+gpu_mode: "ROCm (AMD MI250X)"
+active: false

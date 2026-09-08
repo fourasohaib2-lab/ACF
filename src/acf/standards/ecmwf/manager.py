@@ -7,7 +7,6 @@ from acf.standards.ecmwf.loader import ECMWFLoader
 
 
 class ECMWFManager:
-
     def __init__(self):
 
         self.loader = ECMWFLoader()
@@ -20,8 +19,6 @@ class ECMWFManager:
         parameters = []
 
         for code, values in data.items():
-            parameters.append(
-                self.converter.convert(code, values)
-            )
+            parameters.append(self.converter.convert(code, values))
 
         return parameters

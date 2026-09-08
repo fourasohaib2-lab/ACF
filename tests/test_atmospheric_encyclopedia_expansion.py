@@ -1,0 +1,297 @@
+"""
+Tests for MISSION ACF-021 Complete Atmospheric Scientific Encyclopedia Expansion
+"""
+
+import pytest
+
+from acf.science import EncyclopediaRegistry
+from acf.science.encyclopedia.cloud_microphysics import WMOCloudClassifier
+from acf.science.encyclopedia.knowledge_sources import KnowledgeSourcesIndexer
+from acf.science.physics_ai import PhysicsInformedAIArchitectures, ScientificReasoningEngine
+
+
+def test_expanded_encyclopedia_entries_count():
+    count = EncyclopediaRegistry.count()
+    assert count >= 60, f"Expected at least 60 entries, found {count}"
+
+
+def test_no_encyclopedia_module_silently_failed_to_import():
+    """
+    All ~60 encyclopedia submodules must import cleanly - a broken import
+    in any one of them would silently shrink the encyclopedia (its entries
+    just never register) without count() >= 60 above necessarily catching
+    it, since the encyclopedia holds ~300 entries total. failed_modules()
+    surfaces exactly which module(s) failed, rather than an invisible gap.
+    """
+    failed = EncyclopediaRegistry.failed_modules()
+    assert failed == [], f"Encyclopedia modules failed to import (entries missing): {failed}"
+
+
+def test_wmo_cloud_classifier():
+    classifier = WMOCloudClassifier()
+    cb = classifier.classify_genre(base_m=1000.0, temp_c=-10.0, vertical_extension_m=10000.0)
+    assert "Cumulonimbus" in cb
+    ns = classifier.classify_genre(base_m=1000.0, temp_c=5.0, vertical_extension_m=4000.0)
+    assert "Nimbostratus" in ns
+    ci = classifier.classify_genre(base_m=7000.0, temp_c=-40.0, vertical_extension_m=500.0)
+    assert "Cirrus" in ci
+
+
+def test_cloud_microphysics_calculations():
+    # LCL
+    lcl = EncyclopediaRegistry.calculate("lcl_height_equation", temp_c=25.0, dewpoint_c=15.0)
+    assert lcl == 1250.0
+
+    # Bergeron-Findeisen
+    delta_e = EncyclopediaRegistry.calculate("bergeron_findeisen_process", temp_c=-15.0)
+    assert delta_e > 0.0
+
+    # Kessler autoconversion
+    dqr_dt = EncyclopediaRegistry.calculate("kessler_autoconversion_process", qc=0.002, qc0=0.001)
+    assert dqr_dt > 0.0
+
+
+def test_nwp_microphysics_schemes():
+    thompson = EncyclopediaRegistry.get("wrf_thompson_scheme")
+    assert thompson is not None
+    assert "NCAR" in thompson.references[0] or "Thompson" in thompson.references[0]
+
+    ice4 = EncyclopediaRegistry.get("arome_ice4_scheme")
+    assert ice4 is not None
+    assert "grêle" in ice4.description.lower() or "qh" in ice4.equation
+
+    ifs_cloud = EncyclopediaRegistry.get("ecmwf_ifs_cloud_scheme")
+    assert ifs_cloud is not None
+
+    seifert = EncyclopediaRegistry.get("icon_seifert_beheng")
+    assert seifert is not None
+
+
+def test_convective_indices_and_calculations():
+    # CAPE & CIN
+    tv_p = [300.0, 298.0, 295.0, 290.0]
+    tv_e = [298.0, 295.0, 294.0, 292.0]
+    cape = EncyclopediaRegistry.calculate("cape_convective_energy", tv_parcel=tv_p, tv_env=tv_e, dz=100.0)
+    assert cape > 0.0
+
+    cin = EncyclopediaRegistry.calculate("cin_convective_inhibition", tv_parcel=tv_p, tv_env=tv_e, dz=100.0)
+    assert cin >= 0.0
+
+    # Lifted Index
+    li = EncyclopediaRegistry.calculate("lifted_index_li", t_env_500_c=-15.0, t_parcel_500_c=-10.0)
+    assert li == -5.0
+
+    # K Index
+    ki = EncyclopediaRegistry.calculate("k_index_ki", t850_c=18.0, t500_c=-12.0, td850_c=14.0, t700_c=8.0, td700_c=4.0)
+    assert ki == (18.0 - (-12.0)) + 14.0 - (8.0 - 4.0)
+
+    # STP
+    stp = EncyclopediaRegistry.calculate("stp_index_tornado", cape=3000.0, srh1km=300.0, lcl_m=800.0, shear6km=25.0)
+    assert stp > 1.0
+
+    # SCP
+    scp = EncyclopediaRegistry.calculate("scp_supercell_composite", cape=2000.0, srh3km=200.0, bwd6km=25.0)
+    assert scp > 1.0
+
+
+def test_scp_and_stp_now_use_spc_verified_capping():
+    """
+    Regression guard: scp_supercell_composite/stp_index_tornado used to
+    be naive reimplementations without the shear-term capping (and, for
+    SCP, the CIN term) verified against the SPC's own published
+    formula in science/severe_weather.py. They now delegate to it.
+    """
+    # SCP: bwd6km=40 (>20) must be capped at ebwd_term=1.0, not 40/20=2.0.
+    scp_capped = EncyclopediaRegistry.calculate("scp_supercell_composite", cape=1000.0, srh3km=50.0, bwd6km=40.0)
+    scp_naive_would_be = (1000.0 / 1000.0) * (50.0 / 50.0) * (40.0 / 20.0)  # = 2.0
+    assert scp_capped < scp_naive_would_be
+    assert scp_capped == pytest.approx(1.0)  # capped ebwd_term=1.0, cin_term defaults to 1.0
+
+    # STP: shear6km=50 (>30) must be capped at shear_term=1.5, not 50/20=2.5.
+    stp_capped = EncyclopediaRegistry.calculate(
+        "stp_index_tornado", cape=1500.0, srh1km=150.0, lcl_m=500.0, shear6km=50.0
+    )
+    stp_naive_would_be = (1500.0 / 1500.0) * (150.0 / 150.0) * ((2000.0 - 500.0) / 1000.0) * (50.0 / 20.0)
+    assert stp_capped < stp_naive_would_be
+    # lcl_m=500 < 1000 -> lcl_term capped at 1.0 (not the naive (2000-500)/1000=1.5);
+    # shear6km=50 > 30 -> shear_term capped at 1.5 (not the naive 50/20=2.5).
+    assert stp_capped == pytest.approx(1.0 * 1.0 * 1.0 * 1.5)
+
+
+def test_lightning_and_tles():
+    rate_land = EncyclopediaRegistry.calculate(
+        "lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=False
+    )
+    assert rate_land > 10.0
+
+    rate_sea = EncyclopediaRegistry.calculate(
+        "lightning_flash_rate_price_rind", cloud_top_height_km=14.0, is_marine=True
+    )
+    assert rate_sea < rate_land
+
+    sprite = EncyclopediaRegistry.get("sprites_tles_mesosphere")
+    assert sprite is not None
+    assert (
+        "Mésosphère" in sprite.domain
+        or "Mésosphère" in sprite.equation
+        or "Mésosphère" in sprite.subdomain
+        or "Mésosphère" in sprite.description
+    )
+
+
+def test_severe_weather_and_srh():
+    u_prof = [0.0, 5.0, 10.0, 15.0, 20.0]
+    v_prof = [0.0, 5.0, 10.0, 15.0, 20.0]
+    srh = EncyclopediaRegistry.calculate(
+        "storm_relative_helicity_srh", u_profile=u_prof, v_profile=v_prof, storm_u=5.0, storm_v=5.0, dz=500.0
+    )
+    assert isinstance(srh, float)
+
+    mesh_desc = EncyclopediaRegistry.calculate("hail_size_estimation_mesh", mesh_mm=55.0)
+    assert "tennis" in mesh_desc.lower() or "grosse grêle" in mesh_desc.lower()
+
+
+def test_turbulence_and_richardson():
+    e_k = EncyclopediaRegistry.calculate("kolmogorov_5_3_spectrum", k=0.1, epsilon=0.01)
+    assert e_k > 0.0
+
+    ri = EncyclopediaRegistry.calculate("richardson_number_gradient", g_over_theta=0.033, dtheta_dz=0.005, du_dz=0.02)
+    assert ri > 0.0
+
+    edr = EncyclopediaRegistry.calculate("aviation_edr_turbulence", epsilon=0.064)
+    assert pytest.approx(edr, 0.01) == 0.4
+
+
+def test_ocean_atmosphere_fluxes():
+    h = EncyclopediaRegistry.calculate("sensible_heat_flux_bulk", rho=1.2, cp=1004.0, u10=10.0, ts_k=295.0, ta_k=290.0)
+    assert h > 0.0
+
+    le = EncyclopediaRegistry.calculate("latent_heat_flux_bulk", rho=1.2, lv=2.5e6, u10=10.0, qs=0.015, qa=0.010)
+    assert le > 0.0
+
+    nao = EncyclopediaRegistry.calculate("north_atlantic_oscillation_nao", slp_azores_hpa=1025.0, slp_iceland_hpa=990.0)
+    assert nao > 0.0
+
+
+def test_chemistry_and_aerosols():
+    o3 = EncyclopediaRegistry.get("chapman_stratospheric_cycle")
+    assert o3 is not None
+    assert "Ozone" in o3.name
+
+    dust = EncyclopediaRegistry.get("mineral_dust_aerosol")
+    assert dust is not None
+
+
+def test_satellite_and_radar():
+    # Radar Z-R
+    z = EncyclopediaRegistry.calculate("radar_reflectivity_z_r_relation", r_mm_h=10.0)
+    assert z > 0.0
+
+    r = EncyclopediaRegistry.calculate("qpe_quantitative_precipitation_estimation", z_dbz=40.0)
+    assert r > 0.0
+
+    # Satellite CTT
+    ctt = EncyclopediaRegistry.get("cloud_top_temperature_retrieval")
+    assert ctt is not None
+
+
+def test_nwp_models_documentation():
+    ifs = EncyclopediaRegistry.get("nwp_ecmwf_ifs_specifications")
+    assert ifs is not None
+    assert "TCo1279" in ifs.variables.get("Résolution", "")
+
+    arome = EncyclopediaRegistry.get("nwp_meteo_france_arome_specifications")
+    assert arome is not None
+    assert "1.3 km" in arome.variables.get("Résolution", "")
+
+    wrf = EncyclopediaRegistry.get("nwp_wrf_arw_specifications")
+    assert wrf is not None
+
+    icon = EncyclopediaRegistry.get("nwp_dwd_icon_specifications")
+    assert icon is not None
+
+
+def test_data_assimilation_and_mathematics():
+    # 3D-Var Cost function
+    x = [1.0, 2.0]
+    xb = [0.0, 0.0]
+    b_inv = [[1.0, 0.0], [0.0, 1.0]]
+    y = [3.0]
+    hx = [2.0]
+    r_inv = [[1.0]]
+
+    j_val = EncyclopediaRegistry.calculate(
+        "cost_function_variational_assimilation", x=x, xb=xb, b_inv=b_inv, y=y, hx=hx, r_inv=r_inv
+    )
+    assert j_val == 3.0
+
+    # Semi-Lagrangian departure point
+    x_dep = EncyclopediaRegistry.calculate("semi_lagrangian_advection_scheme", x_arrival=10.0, u_arrival=2.0, dt=1.0)
+    assert x_dep == 8.0
+
+
+def test_physics_ai_reasoning_engine():
+    engine = ScientificReasoningEngine()
+    res = engine.explain_forecast_chain({"cape": 2500.0, "rh": 85.0, "shear": 25.0})
+    assert "CAPE élevé" in res["explanation"]
+    assert "Cumulonimbus" in res["explanation"]
+    assert "foudre" in res["explanation"]
+    assert "fortes pluies" in res["explanation"]
+    assert "grêle & supercellule" in res["explanation"]
+
+    pinn_loss = PhysicsInformedAIArchitectures.pinn_loss_formulation(data_loss=0.01, pde_residual_loss=0.005)
+    assert pinn_loss == 0.015
+
+    fno_specs = PhysicsInformedAIArchitectures.fourier_neural_operator_specs()
+    assert fno_specs["resolution_invariant"] is True
+
+    gnn_specs = PhysicsInformedAIArchitectures.graph_neural_network_weather_specs()
+    assert "GraphCast" in gnn_specs["name"]
+
+
+def test_knowledge_sources_indexer():
+    sources = KnowledgeSourcesIndexer.search_sources("WMO")
+    assert len(sources) >= 3
+
+    ecmwf_sources = KnowledgeSourcesIndexer.search_sources("ECMWF")
+    assert len(ecmwf_sources) >= 1
+
+    noaa_sources = KnowledgeSourcesIndexer.search_sources("NOAA")
+    assert len(noaa_sources) >= 1
+
+
+def test_thermodynamics_encyclopedia_entries_missing_compute_func_now_wired():
+    """
+    CORRECTED: an AST scan for EncyclopediaEntry()s with no compute_func
+    found 6 entries in physical_laws/thermodynamics_laws.py whose own
+    "equation" field already documented a fully explicit, directly
+    computable formula - .calculate() unnecessarily raised
+    NotImplementedError for each. Same class of gap already fixed this
+    session for monin_obukhov_length/planck_law/ice_crystal_nucleation.
+    """
+    import math
+
+    first_law = EncyclopediaRegistry.get("first_law_thermodynamics_atmos")
+    assert first_law.calculate(cp=1004.0, dT=5.0, alpha=0.8, dp=-500.0) == pytest.approx(5420.0)
+
+    entropy = EncyclopediaRegistry.get("atmospheric_entropy_law")
+    assert entropy.calculate(theta_k=300.0) == pytest.approx(1004.0 * math.log(300.0))
+
+    enthalpy = EncyclopediaRegistry.get("enthalpy_atmospheric_law")
+    assert enthalpy.calculate(temp_k=300.0) == pytest.approx(301200.0)
+
+    internal_energy = EncyclopediaRegistry.get("internal_energy_atmospheric")
+    assert internal_energy.calculate(temp_k=300.0) == pytest.approx(215400.0)
+
+    # Standard textbook dry adiabatic lapse rate: ~9.8 K/km.
+    dry_lapse = EncyclopediaRegistry.get("dry_adiabatic_process_law")
+    assert dry_lapse.calculate() * 1000.0 == pytest.approx(9.8, abs=0.05)
+
+    # Round-trip check: feeding the Bolton/Tetens es(20 degC) (already
+    # verified against SaturationVaporPressure.calculate() elsewhere)
+    # back through the analytically-derived inverse must return 20.0
+    # exactly - a direct algebraic verification, not just a plausible
+    # number.
+    es_20c_pa = 6.112 * math.exp(17.67 * 20.0 / (20.0 + 243.5)) * 100.0
+    dewpoint = EncyclopediaRegistry.get("dewpoint_temperature_law")
+    assert dewpoint.calculate(vapor_pressure_pa=es_20c_pa) == pytest.approx(20.0, abs=1e-6)

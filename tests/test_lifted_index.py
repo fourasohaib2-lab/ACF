@@ -13,15 +13,9 @@ def test_lifted_index():
 
 def test_category():
 
-    assert (
-        LiftedIndex.category(-5.0)
-        == "Very Unstable"
-    )
+    assert LiftedIndex.category(-5.0) == "Very Unstable"
 
 
 def test_stable():
 
-    assert (
-        LiftedIndex.category(5.0)
-        == "Stable"
-    )
+    assert LiftedIndex.category(5.0) == "Stable"

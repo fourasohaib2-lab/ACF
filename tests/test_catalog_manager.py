@@ -10,4 +10,3 @@ def test_catalog_manager():
     assert manager.exists("cf")
     assert manager.count() == 1
     assert "cf" in manager.list_catalogs()
-

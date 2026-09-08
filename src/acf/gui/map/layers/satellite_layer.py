@@ -71,21 +71,12 @@ class SatelliteLayer(BaseLayer):
     def status(self):
 
         return {
-
             "name": self.name,
-
             "type": self.type,
-
             "visible": self.visible,
-
             "opacity": self.opacity,
-
             "channel": self.channel,
-
             "has_data": self.data is not None,
-
             "colormap": self.colormap,
-
             "alpha": self.alpha,
-
         }

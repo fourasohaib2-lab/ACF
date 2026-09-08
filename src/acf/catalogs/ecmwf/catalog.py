@@ -7,7 +7,6 @@ from acf.standards.ecmwf.manager import ECMWFManager
 
 
 class ECMWFCatalog(BaseCatalog):
-
     def __init__(self):
 
         self.manager = ECMWFManager()
@@ -37,4 +36,3 @@ class ECMWFCatalog(BaseCatalog):
     def list(self):
 
         return sorted(self._parameters.keys())
-

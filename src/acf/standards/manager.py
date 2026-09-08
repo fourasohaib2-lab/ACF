@@ -6,7 +6,6 @@ from acf.standards.cf_standard_names import CF_STANDARD_NAMES
 
 
 class StandardsManager:
-
     def __init__(self):
 
         self.cf = CF_STANDARD_NAMES

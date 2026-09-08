@@ -2,21 +2,26 @@
 ACF Scientific Map View
 
 Widget cartographique principal.
+
+NOTE (correction — wrong CartopyRenderer, name collision): this
+imported acf.maps.CartopyRenderer (re-exported from
+acf.maps.renderers.cartopy_renderer), whose __init__ requires a real
+GUI canvas object with no default and which has no create_map()/
+status() methods - not what this widget calls. MapView() crashed
+immediately on construction (TypeError: missing 1 required positional
+argument: 'canvas'), which meant DashboardLayout.build() - and so
+DashboardManager.initialize(), the real GUI dashboard's setup path -
+crashed too, with zero test coverage anywhere in this chain (same
+bug family, and the same fix, as acf/maps/data_renderer.py's own
+NOTE (correction) - see that module for the full explanation of which
+CartopyRenderer is the right one and why).
 """
 
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
-
-from matplotlib.backends.backend_qtagg import (
-    FigureCanvasQTAgg
-)
-
-
-from acf.visualization.cartopy_renderer import (
-    CartopyRenderer
-)
-
+from acf.gui.map.mtg_basemap import MTGBasemapProvider
+from acf.visualization.cartopy_renderer import CartopyRenderer
 
 
 class MapView(QWidget):
@@ -28,77 +33,54 @@ class MapView(QWidget):
 
         super().__init__()
 
-
         self.renderer = CartopyRenderer()
 
         self.canvas = None
 
-
         self.build()
 
-
-
     ##################################################
-
 
     def build(self):
 
-        layout = QVBoxLayout(
-            self
-        )
+        layout = QVBoxLayout(self)
 
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        layout.setContentsMargins(
-            0,0,0,0
-        )
+        figure, axis = self.renderer.create_map()
 
+        self.canvas = FigureCanvasQTAgg(figure)
 
-        figure, axis = (
-            self.renderer.create_map()
-        )
+        layout.addWidget(self.canvas)
 
-
-        self.canvas = FigureCanvasQTAgg(
-            figure
-        )
-
-
-        layout.addWidget(
-            self.canvas
-        )
-
-
+        # Live MTG basemap (explicit user request "je veux que toutes
+        # les maps affiché soient des maps du mtg") - redraw whenever a
+        # fresh EUMETSAT image lands, same wiring as
+        # acf.gui.map.map_canvas.MapCanvas and
+        # acf.gui.dashboard.awci_map_panel.AWCIMapPanel.
+        MTGBasemapProvider.instance().updated.connect(self._on_mtg_basemap_updated)
 
     ##################################################
 
+    def _on_mtg_basemap_updated(self) -> None:
+        self.renderer.refresh_basemap()
+        self.refresh()
+
+    ##################################################
 
     def clear(self):
 
         self.renderer.clear()
 
-
-
     ##################################################
-
 
     def refresh(self):
 
         if self.canvas:
-
             self.canvas.draw()
-
-
 
     ##################################################
 
-
     def status(self):
 
-        return {
-
-            "widget": "MapView",
-
-            "renderer":
-                self.renderer.status()
-
-        }
+        return {"widget": "MapView", "renderer": self.renderer.status()}

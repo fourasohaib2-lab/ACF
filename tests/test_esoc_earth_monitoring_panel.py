@@ -1,0 +1,268 @@
+"""
+Tests for acf.gui.esoc.panel_manager.EarthMonitoringPanel - upgrading
+the "GOES/MTG Satellites" row from a fixed "EXAMPLE"/"1.2 min"
+placeholder to the real, live acf.gui.map.mtg_basemap.MTGBasemapProvider
+status already feeding every real ACF map view (Phase 57); the "ARGO
+Ocean Floats" row to the real, public Argovis API via
+acf.connectors.argo_floats.ArgoFloatsConnector (Phase 58); the
+"Surface AWS (SYNOP/METAR)" row to the real NOAA feed already trusted
+by acf.aviation.icao.live_source (Phase 59); the "Doppler Radar
+(NEXRAD)" row to the real, public NOAA api.weather.gov radar station
+status endpoint via acf.connectors.nexrad_stations.NEXRADRadarConnector
+(Phase 60); and the former "AMDAR Aircraft" row, honestly relabeled
+"Aircraft Reports (PIREP)" and wired to acf.connectors.pirep_reports.
+PIREPConnector (Phase 64 - no free public AMDAR feed exists anywhere
+ACF can reach; PIREP is a real, different, publicly-reachable program,
+not a mislabeled stand-in). Only "Lightning Network" remains honestly
+"NOT_CONNECTED" instead of an "EXAMPLE" with an invented latency.
+
+Network access is mocked - same convention as tests/test_mtg_basemap.py,
+tests/test_argo_floats_connector.py, tests/test_nexrad_stations_connector.py,
+tests/test_pirep_reports_connector.py and tests/test_aviation_live_source.py.
+"""
+
+from __future__ import annotations
+
+import urllib.error
+from unittest.mock import patch
+
+import numpy as np
+import pytest
+import requests
+from PySide6.QtCore import QThreadPool
+from PySide6.QtWidgets import QApplication
+
+from acf.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
+from acf.gui.esoc.command_dispatcher import CommandDispatcher
+from acf.gui.esoc.module_registry import ModuleRegistry
+from acf.gui.esoc.panel_manager import EarthMonitoringPanel
+from acf.gui.map.mtg_basemap import MTGBasemapProvider
+
+
+@pytest.fixture(scope="session")
+def qapp():
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    return app
+
+
+@pytest.fixture()
+def registry():
+    return ModuleRegistry()
+
+
+@pytest.fixture(autouse=True)
+def _reset_singleton_and_block_real_network():
+    MTGBasemapProvider._instance = None
+    honest_stub = MTGFetchResult(is_real_data=False, status="NOT_FETCHED_YET", authenticated=False)
+    # ArgoFloatsConnector and NEXRADRadarConnector both go straight
+    # through the `requests` module (no SSH/Paramiko-style "always
+    # succeeds offline" convention to lean on), so their real network
+    # calls are blocked the same way tests/test_argo_floats_connector.py
+    # and tests/test_nexrad_stations_connector.py block them - a 503
+    # honestly resolves both to is_real_data=False rather than hanging
+    # or reaching a real host during this suite.
+    argo_503 = requests.Response()
+    argo_503.status_code = 503
+    # acf.aviation.icao.live_source uses urllib directly (see its own
+    # module docstring) - blocked the same way tests/
+    # test_aviation_live_source.py blocks it, defaulting to "every
+    # station unreachable" so the panel's default state is honest and
+    # deterministic in this suite.
+    with (
+        patch.object(EUMETSATMTGConnector, "fetch_latest_image", return_value=honest_stub),
+        patch.object(requests, "get", return_value=argo_503),
+        patch("urllib.request.urlopen", side_effect=urllib.error.URLError("blocked for tests")),
+    ):
+        yield
+    QThreadPool.globalInstance().waitForDone(2000)
+    MTGBasemapProvider._instance = None
+
+
+def _fake_disk_bytes() -> bytes:
+    import io
+
+    from PIL import Image
+
+    rgba = np.full((9, 9, 4), 255, dtype=np.uint8)
+    rgba[2:7, 2:7] = [40, 60, 80, 255]
+    buf = io.BytesIO()
+    Image.fromarray(rgba, mode="RGBA").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_the_last_unconnected_network_is_honestly_labeled_not_connected(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    assert panel.table.item(5, 0).text() == "Lightning Network"
+    assert panel.table.item(5, 1).text() == "NOT_CONNECTED"
+    assert panel.table.item(5, 2).text() == "N/A"
+
+
+def test_mtg_row_shows_the_real_provider_status_before_any_fetch(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+
+    assert panel.table.item(0, 0).text() == "GOES/MTG Satellites"
+    assert panel.table.item(0, 1).text() == "NOT_FETCHED_YET"
+    assert panel.table.item(0, 2).text() == "N/A"
+
+
+def test_mtg_row_goes_live_once_the_real_provider_has_a_real_image(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+
+    provider = MTGBasemapProvider.instance()
+    provider._on_fetched(
+        MTGFetchResult(is_real_data=True, status="FETCHED_OK", authenticated=False, image_bytes=_fake_disk_bytes())
+    )
+
+    assert panel.table.item(0, 1).text() == "LIVE"
+    assert panel.table.item(0, 2).text().endswith(" min")
+
+
+def test_panel_updates_live_when_the_shared_provider_fetches_after_construction(qapp, registry):
+    """Real regression guard for the same lifetime pattern already fixed
+    in AWCIMapPanel (weakref forwarder, see _make_mtg_update_forwarder):
+    this panel must react to MTGBasemapProvider's own `updated` signal,
+    not only reflect state computed once at construction time."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    assert panel.table.item(0, 1).text() != "LIVE"
+
+    MTGBasemapProvider.instance()._on_fetched(
+        MTGFetchResult(is_real_data=True, status="FETCHED_OK", authenticated=False, image_bytes=_fake_disk_bytes())
+    )
+
+    assert panel.table.item(0, 1).text() == "LIVE"
+
+
+def test_argo_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks the real network with an honest 503,
+    so the ARGO fetch fired at construction time must resolve to that
+    honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(3, 0).text() == "ARGO Ocean Floats"
+    assert "NOT_FETCHED_HTTP_503" in panel.table.item(3, 1).text()
+    assert panel.table.item(3, 2).text() == "N/A"
+
+
+def test_argo_row_goes_live_with_a_real_profile_count_once_fetched(qapp, registry):
+    from acf.connectors.argo_floats import ArgoFetchResult
+
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    panel._on_argo_fetched(ArgoFetchResult(is_real_data=True, status="FETCHED_OK", profile_count=1101))
+
+    assert panel.table.item(3, 1).text() == "LIVE (1101 profiles/48h)"
+    assert panel.table.item(3, 2).text().endswith(" min")
+
+
+def test_metar_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks every real station with an honest
+    URLError, so the METAR poll fired at construction time must resolve
+    to that honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(2, 0).text() == "Surface AWS (SYNOP/METAR)"
+    assert panel.table.item(2, 1).text() == "NOT_REACHABLE_0_STATIONS_REPORTING"
+    assert panel.table.item(2, 2).text() == "N/A"
+
+
+def test_metar_row_goes_live_once_real_stations_report(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    from acf.aviation.icao.live_source import REAL_STATIONS
+
+    panel._on_metar_fetched(len(REAL_STATIONS), len(REAL_STATIONS))
+
+    assert panel.table.item(2, 1).text() == f"LIVE ({len(REAL_STATIONS)}/{len(REAL_STATIONS)} stations)"
+    assert panel.table.item(2, 2).text() == "0.0 min"
+
+
+def test_nexrad_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks the real network with an honest 503,
+    so the NEXRAD fetch fired at construction time must resolve to that
+    honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(1, 0).text() == "Doppler Radar (NEXRAD)"
+    assert panel.table.item(1, 1).text() == "NOT_FETCHED_NO_STATION_REACHABLE"
+    assert panel.table.item(1, 2).text() == "N/A"
+
+
+def test_nexrad_row_goes_live_with_real_operational_counts_once_fetched(qapp, registry):
+    from acf.connectors.nexrad_stations import NexradFetchResult
+
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    panel._on_nexrad_fetched(
+        NexradFetchResult(is_real_data=True, status="FETCHED_OK", stations_operational=3, stations_total=3)
+    )
+
+    assert panel.table.item(1, 1).text() == "LIVE (3/3 sites)"
+    assert panel.table.item(1, 2).text().endswith(" min")
+
+
+def test_pirep_row_shows_the_real_connector_status_after_construction(qapp, registry):
+    """The autouse fixture blocks the real network with an honest 503,
+    so the PIREP fetch fired at construction time must resolve to that
+    honest failure, never a fabricated LIVE state."""
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+    qapp.processEvents()  # deliver the queued cross-thread `finished` signal
+
+    assert panel.table.item(4, 0).text() == "Aircraft Reports (PIREP)"
+    assert "NOT_FETCHED_HTTP_503" in panel.table.item(4, 1).text()
+    assert panel.table.item(4, 2).text() == "N/A"
+
+
+def test_pirep_row_goes_live_with_a_real_report_count_once_fetched(qapp, registry):
+    from acf.connectors.pirep_reports import PIREPFetchResult
+
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    panel._on_pirep_fetched(PIREPFetchResult(is_real_data=True, status="FETCHED_OK", report_count=338))
+
+    assert panel.table.item(4, 1).text() == "LIVE (338 reports)"
+    assert panel.table.item(4, 2).text().endswith(" min")
+
+
+def test_refresh_button_refetches_all_5_real_feeds(qapp, registry):
+    dispatcher = CommandDispatcher()
+    panel = EarthMonitoringPanel(registry, dispatcher)
+    QThreadPool.globalInstance().waitForDone(2000)
+
+    with (
+        patch.object(panel, "_fetch_argo_async") as mock_argo,
+        patch.object(panel, "_fetch_metar_async") as mock_metar,
+        patch.object(panel, "_fetch_nexrad_async") as mock_nexrad,
+        patch.object(panel, "_fetch_pirep_async") as mock_pirep,
+    ):
+        panel._refresh()
+        mock_argo.assert_called_once()
+        mock_metar.assert_called_once()
+        mock_nexrad.assert_called_once()
+        mock_pirep.assert_called_once()

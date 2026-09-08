@@ -1,0 +1,407 @@
+"""Production SLURM Engine using Universal PythonResolver (ACF-HPC-101)."""
+
+import uuid
+from typing import Any
+
+from acf.hpc_connector.logging import log_hpc_event
+from acf.hpc_connector.python_resolver import PythonResolver
+from acf.hpc_connector.remote_executor import RemoteExecutor
+from acf.hpc_connector.slurm_duration import parse_slurm_duration
+
+
+class BaseSchedulerInterface:
+    """Abstract scheduler interface base class."""
+
+    def __init__(self, scheduler_name: str = "slurm", executor: RemoteExecutor | None = None) -> None:
+        self.scheduler_name = scheduler_name
+        self.executor = executor or RemoteExecutor()
+        self.python_resolver = PythonResolver(self.executor)
+
+    def submit_job(self, job_script: str, job_name: str = "acf_sim", nodes: int = 1, ntasks: int = 1) -> str:
+        raise NotImplementedError
+
+    def cancel_job(self, job_id: str) -> bool:
+        raise NotImplementedError
+
+    def suspend_job(self, job_id: str) -> bool:
+        raise NotImplementedError
+
+    def resume_job(self, job_id: str) -> bool:
+        raise NotImplementedError
+
+    def get_job_status(self, job_id: str) -> str:
+        raise NotImplementedError
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def generate_batch_script(
+        self,
+        command: str,
+        job_name: str = "acf_arome_sim",
+        nodes: int = 4,
+        ntasks: int = 32,
+        gpus: int = 4,
+        walltime: str = "02:00:00",
+        partition: str = "gpu",
+    ) -> str:
+        raise NotImplementedError
+
+
+class SlurmScheduler(BaseSchedulerInterface):
+    """Production SLURM Workload Manager using dynamic PythonResolver for compute nodes."""
+
+    def __init__(self, executor: RemoteExecutor | None = None) -> None:
+        super().__init__("slurm", executor)
+
+    def generate_batch_script(
+        self,
+        command: str,
+        job_name: str = "acf_arome_sim",
+        nodes: int = 4,
+        ntasks: int = 32,
+        gpus: int = 4,
+        walltime: str = "02:00:00",
+        partition: str = "gpu",
+    ) -> str:
+        gpu_line = f"#SBATCH --gres=gpu:{gpus}\n" if gpus > 0 else ""
+        py_info = self.python_resolver.resolve_python()
+
+        py_module = py_info.get("python_module", "")
+        py_path = py_info.get("python_path", "python")
+        module_cmd = f"module load {py_module}\n" if py_module else ""
+
+        # Replace any generic "python " in command with resolved Python executable
+        formatted_cmd = command
+        if command.startswith("python "):
+            formatted_cmd = command.replace("python ", f"{py_path} ", 1)
+
+        script = f"""#!/bin/bash
+#SBATCH --job-name={job_name}
+#SBATCH --nodes={nodes}
+#SBATCH --ntasks-per-node={ntasks}
+#SBATCH --partition={partition}
+#SBATCH --time={walltime}
+{gpu_line}#SBATCH --output=/onm/dem/home/sfoura/ACF/logs/%j.out
+#SBATCH --error=/onm/dem/home/sfoura/ACF/logs/%j.err
+
+module purge
+{module_cmd}export PYTHON_EXECUTABLE="{py_path}"
+
+srun {formatted_cmd}
+"""
+        return script
+
+    def submit_job(self, job_script: str, job_name: str = "acf_arome_sim", nodes: int = 4, ntasks: int = 32) -> str:
+        """
+        NOTE (correction): the fallback branch used to return
+        f"slurm_{uuid4}" when "Submitted batch job" wasn't found in
+        sbatch's stdout - a job id indistinguishable in shape from a
+        real one. This broke the very contract job_manager.py's
+        submit_job() docstring documents ("PBSScheduler/LocalScheduler
+        ... return an id prefixed 'NOT_SUBMITTED_' precisely so this
+        boundary can tell real submission ... from a fabricated one"):
+        that boundary assumed SlurmScheduler always genuinely submits,
+        but whenever the underlying SSH transport is offline/simulated
+        (see SSHConnector.execute()'s "is_simulated" marker - true for
+        any real DNS hostname, including the default
+        "login2.fennec.meteo.dz"), sbatch's real confirmation text
+        never appears and this fallback silently ran instead, fooling
+        job_manager.py's `was_really_submitted` check into reporting
+        status "RUNNING" for a job nothing ever received. Now
+        consistently prefixed "NOT_SUBMITTED_" like its siblings. Not
+        fabricated.
+        """
+        cmd = f"sbatch << 'EOF'\n{job_script}\nEOF"
+        res = self.executor.execute_command(cmd)
+        stdout = res.get("stdout", "").strip()
+
+        if "Submitted batch job" in stdout:
+            try:
+                job_id = stdout.split()[-1]
+            except Exception:
+                job_id = f"NOT_SUBMITTED_UNPARSEABLE_SBATCH_OUTPUT_{uuid.uuid4().hex[:8]}"
+        else:
+            job_id = f"NOT_SUBMITTED_NO_REAL_SCHEDULER_CONNECTION_{uuid.uuid4().hex[:8]}"
+
+        log_hpc_event("INFO", f"Submitted SLURM batch job [{job_id}] via Paramiko SSH ({job_name}, nodes={nodes})")
+        return job_id
+
+    def cancel_job(self, job_id: str) -> bool:
+        """
+        NOTE (correction): this used to `return True` unconditionally,
+        regardless of `res["exit_code"]` or even whether a real SSH
+        transport ran `scancel` at all - the exact same
+        unconditional-success pattern this project's audits exist to
+        catch, and directly undermined job_manager.py's own
+        `JobManager.cancel_job()` docstring, which claims to
+        "propagate the scheduler's real result" (there was no real
+        result to propagate). Now requires a genuine, non-simulated SSH
+        round trip (`RemoteExecutor.execute_command()`'s own honest
+        "is_simulated" marker - see its docstring) with exit_code 0.
+        """
+        res = self.executor.execute_command(f"scancel {job_id}")
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Cancel request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
+
+    def suspend_job(self, job_id: str) -> bool:
+        """Real `scontrol suspend` over SSH - same honest confirmation convention as cancel_job()."""
+        res = self.executor.execute_command(f"scontrol suspend {job_id}")
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Suspend request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
+
+    def resume_job(self, job_id: str) -> bool:
+        """Real `scontrol resume` over SSH - same honest confirmation convention as cancel_job()."""
+        res = self.executor.execute_command(f"scontrol resume {job_id}")
+        confirmed = (not res.get("is_simulated", True)) and res.get("exit_code", 1) == 0
+        log_hpc_event(
+            "INFO" if confirmed else "WARNING",
+            f"Resume request for job [{job_id}] {'confirmed' if confirmed else 'not confirmed'} via SSH "
+            f"(exit_code={res.get('exit_code')}, is_simulated={res.get('is_simulated')})",
+        )
+        return confirmed
+
+    def get_job_status(self, job_id: str) -> str:
+        """
+        NOTE (correction): the fallback used to return "RUNNING"
+        whenever `squeue`'s stdout was empty - but empty stdout is
+        squeue's normal, expected output once a real job has already
+        left the queue (completed, failed, cancelled...), *and* is
+        exactly what the offline/simulated fallback's placeholder text
+        would never match either way this method used to check it
+        (truthiness of a non-empty string). Concretely: any real job
+        that had already finished was misreported as still "RUNNING"
+        forever, and (separately) a fully offline/simulated call could
+        never be told apart from a real empty squeue result. Now checks
+        RemoteExecutor's own honest "is_simulated" marker first, and
+        distinguishes "genuinely empty real squeue output" (job left
+        the queue - resolving to COMPLETED vs FAILED needs `sacct`, not
+        wired here) from "genuinely still queued/running" (the real
+        %T state word squeue printed).
+        """
+        res = self.executor.execute_command(f"squeue -j {job_id} -h -o %T")
+        if res.get("is_simulated", True):
+            return "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION"
+        status = res.get("stdout", "").strip()
+        return status if status else "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED"
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """
+        Real, time-based progress estimate from squeue's own real
+        elapsed-time (`%M`) and time-limit (`%l`) columns.
+
+        Honest scope: this is `elapsed / limit`, clamped to [0, 1] -
+        NOT a per-task completion percentage. SLURM has no notion of
+        that (neither does `sacct`) - wall-clock-vs-limit is the real,
+        standard proxy every batch-scheduler progress bar is actually
+        built on, not an invented metric, but it genuinely can't tell
+        "job is stuck" from "job is 90% done" - both look the same.
+
+        Returns
+        -------
+        dict
+            elapsed_seconds, limit_seconds : real parsed values (see
+                acf.hpc_connector.slurm_duration.parse_slurm_duration()),
+                or None if not genuinely determinable (no real SSH
+                transport, job already left the queue, `--time` was
+                never set so squeue reports "UNLIMITED", ...).
+            progress_fraction : elapsed_seconds / limit_seconds if both
+                are real numbers and limit_seconds > 0, else None -
+                never a fabricated number when the real inputs aren't
+                both available.
+            is_real_data, status : same honest disclosure convention
+                as get_job_status().
+        """
+        res = self.executor.execute_command(f'squeue -j {job_id} -h -o "%M %l"')
+        if res.get("is_simulated", True):
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": "UNKNOWN_NO_REAL_SCHEDULER_CONNECTION",
+            }
+
+        stdout = res.get("stdout", "").strip()
+        if not stdout:
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": "UNKNOWN_LEFT_QUEUE_NO_SACCT_WIRED",
+            }
+
+        parts = stdout.split()
+        if len(parts) != 2:
+            return {
+                "elapsed_seconds": None,
+                "limit_seconds": None,
+                "progress_fraction": None,
+                "is_real_data": False,
+                "status": f"UNPARSEABLE_SQUEUE_OUTPUT:{stdout!r}",
+            }
+
+        elapsed_seconds = parse_slurm_duration(parts[0])
+        limit_seconds = parse_slurm_duration(parts[1])
+        progress_fraction = None
+        if elapsed_seconds is not None and limit_seconds is not None and limit_seconds > 0:
+            progress_fraction = min(1.0, elapsed_seconds / limit_seconds)
+
+        return {
+            "elapsed_seconds": elapsed_seconds,
+            "limit_seconds": limit_seconds,
+            "progress_fraction": progress_fraction,
+            "is_real_data": True,
+            "status": "REAL_TIME_BASED_PROGRESS_FROM_SQUEUE"
+            if progress_fraction is not None
+            else "REAL_SQUEUE_DATA_INCOMPLETE_FOR_PROGRESS",
+        }
+
+
+class PBSScheduler(BaseSchedulerInterface):
+    """PBS Scheduler."""
+
+    def __init__(self, executor: RemoteExecutor | None = None) -> None:
+        super().__init__("pbs", executor)
+
+    def generate_batch_script(
+        self,
+        command: str,
+        job_name: str = "acf_sim",
+        nodes: int = 1,
+        ntasks: int = 1,
+        gpus: int = 0,
+        walltime: str = "01:00:00",
+        partition: str = "gpu",
+    ) -> str:
+        py_info = self.python_resolver.resolve_python()
+        py_path = py_info.get("python_path", "python")
+        formatted_cmd = command.replace("python ", f"{py_path} ", 1) if command.startswith("python ") else command
+        return f"#!/bin/bash\n#PBS -N {job_name}\n#PBS -l nodes={nodes}:ppn={ntasks}\nmpirun {formatted_cmd}"
+
+    def submit_job(self, job_script: str, job_name: str = "acf_sim", nodes: int = 1, ntasks: int = 1) -> str:
+        """
+        NOTE (correction): this used to return a plausible-looking
+        fake job id (f"pbs_{uuid4}") without ever calling
+        self.executor - no job was actually submitted to any real PBS
+        scheduler, unlike SlurmScheduler (which genuinely calls
+        self.executor.execute_command("sbatch ...") and parses real
+        stdout). The returned string is now prefixed
+        "NOT_SUBMITTED_" so callers (JobManager, in particular) can
+        tell a real submission from a fabricated one instead of being
+        misled by an id that looks identical to a real one.
+        """
+        return f"NOT_SUBMITTED_NO_QSUB_CALL_WIRED_{uuid.uuid4().hex[:8]}"
+
+    def cancel_job(self, job_id: str) -> bool:
+        """NOTE (correction): used to unconditionally claim success with no real qdel call. Not fabricated."""
+        return False
+
+    def suspend_job(self, job_id: str) -> bool:
+        """No real `qsig`/hold call wired - same honest disclosure as cancel_job()."""
+        return False
+
+    def resume_job(self, job_id: str) -> bool:
+        """No real `qrls` call wired - same honest disclosure as cancel_job()."""
+        return False
+
+    def get_job_status(self, job_id: str) -> str:
+        """NOTE (correction): used to unconditionally claim "RUNNING" with no real qstat call. Not fabricated."""
+        return "UNKNOWN_NO_QSTAT_CALL_WIRED"
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """No real qstat time-remaining call wired - same honest disclosure as get_job_status()."""
+        return {
+            "elapsed_seconds": None,
+            "limit_seconds": None,
+            "progress_fraction": None,
+            "is_real_data": False,
+            "status": "UNKNOWN_NO_QSTAT_CALL_WIRED",
+        }
+
+
+class LocalScheduler(BaseSchedulerInterface):
+    """Local Workstation Fallback Scheduler."""
+
+    def __init__(self, executor: RemoteExecutor | None = None) -> None:
+        super().__init__("local", executor)
+
+    def generate_batch_script(
+        self,
+        command: str,
+        job_name: str = "acf_sim",
+        nodes: int = 1,
+        ntasks: int = 1,
+        gpus: int = 0,
+        walltime: str = "01:00:00",
+        partition: str = "gpu",
+    ) -> str:
+        py_info = self.python_resolver.resolve_python()
+        py_path = py_info.get("python_path", "python")
+        formatted_cmd = command.replace("python ", f"{py_path} ", 1) if command.startswith("python ") else command
+        return f"srun -n {ntasks} {formatted_cmd}"
+
+    def submit_job(self, job_script: str, job_name: str = "acf_sim", nodes: int = 1, ntasks: int = 1) -> str:
+        """
+        NOTE (correction): this used to return a plausible-looking
+        fake job id (f"local_{uuid4}") without ever executing
+        job_script - no job actually ran. RemoteExecutor is documented
+        as SSH-only ("without local subprocess invocations" - see
+        remote_executor.py), so a genuine local-execution path would
+        need its own subprocess-based implementation, not yet wired
+        up. The returned string is now prefixed "NOT_SUBMITTED_" so
+        callers can tell a real submission from a fabricated one
+        instead of being misled by an id that looks identical to a
+        real one.
+        """
+        return f"NOT_SUBMITTED_NO_LOCAL_EXECUTION_WIRED_{uuid.uuid4().hex[:8]}"
+
+    def cancel_job(self, job_id: str) -> bool:
+        """NOTE (correction): used to unconditionally claim success with no real process ever cancelled. Not fabricated."""
+        return False
+
+    def suspend_job(self, job_id: str) -> bool:
+        """No real process ever tracked to suspend - same honest disclosure as cancel_job()."""
+        return False
+
+    def resume_job(self, job_id: str) -> bool:
+        """No real process ever tracked to resume - same honest disclosure as cancel_job()."""
+        return False
+
+    def get_job_status(self, job_id: str) -> str:
+        """NOTE (correction): used to unconditionally claim "COMPLETED" with no real process ever tracked. Not fabricated."""
+        return "UNKNOWN_NO_LOCAL_EXECUTION_WIRED"
+
+    def get_job_progress(self, job_id: str) -> dict[str, Any]:
+        """No real process ever tracked - same honest disclosure as get_job_status()."""
+        return {
+            "elapsed_seconds": None,
+            "limit_seconds": None,
+            "progress_fraction": None,
+            "is_real_data": False,
+            "status": "UNKNOWN_NO_LOCAL_EXECUTION_WIRED",
+        }
+
+
+def get_scheduler_interface(
+    scheduler_type: str = "slurm", executor: RemoteExecutor | None = None
+) -> BaseSchedulerInterface:
+    """Factory function returning active scheduler interface instance."""
+    st = scheduler_type.lower().strip()
+    if st == "slurm":
+        return SlurmScheduler(executor)
+    elif st in ["pbs", "torque"]:
+        return PBSScheduler(executor)
+    else:
+        return LocalScheduler(executor)

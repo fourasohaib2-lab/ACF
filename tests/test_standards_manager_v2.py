@@ -12,4 +12,3 @@ def test_manager():
     assert manager.exists("ecmwf")
     assert manager.count() == 2
     assert manager.names() == ["cf", "ecmwf"]
-

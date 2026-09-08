@@ -4,6 +4,8 @@ Configuration Manager
 """
 
 from pathlib import Path
+from typing import Any
+
 import yaml
 
 
@@ -12,7 +14,7 @@ class ConfigManager:
 
     def __init__(self, filename: str = "config/config.yaml"):
         self.path = Path(filename)
-        self.data = {}
+        self.data: dict[str, Any] = {}
 
     def load(self) -> None:
         """Load configuration from YAML file."""

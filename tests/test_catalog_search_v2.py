@@ -14,4 +14,3 @@ def test_catalog_search():
     results = manager.search("temperature")
 
     assert len(results) > 0
-

@@ -16,15 +16,9 @@ def test_k_index():
 
 def test_category_extreme():
 
-    assert (
-        KIndex.category(42.0)
-        == "Extreme"
-    )
+    assert KIndex.category(42.0) == "Extreme"
 
 
 def test_category_low():
 
-    assert (
-        KIndex.category(20.0)
-        == "Low"
-    )
+    assert KIndex.category(20.0) == "Low"

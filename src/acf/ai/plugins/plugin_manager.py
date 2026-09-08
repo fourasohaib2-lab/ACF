@@ -6,7 +6,6 @@ from acf.ai.plugins.base_plugin import AIPlugin
 
 
 class PluginManager:
-
     def __init__(self):
 
         self.plugins = {}
@@ -36,8 +35,6 @@ class PluginManager:
         plugin = self.get(plugin_name)
 
         if plugin is None:
-            raise ValueError(
-                f"Plugin '{plugin_name}' not found."
-            )
+            raise ValueError(f"Plugin '{plugin_name}' not found.")
 
         return plugin.analyze(dataset)

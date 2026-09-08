@@ -1,0 +1,96 @@
+\section{4D-Var Assimilation System}
+
+
+
+The ACF 4D-Var system extends three-dimensional variational
+assimilation by introducing the time dimension.
+
+
+
+The method optimizes the model trajectory over an assimilation
+window.
+
+
+
+The 4D-Var framework combines:
+
+
+\begin{itemize}
+
+\item Initial model state
+
+\item Time evolving observations
+
+\item Forecast model dynamics
+
+\item Adjoint model information
+
+\end{itemize}
+
+
+
+The 4D-Var objective function:
+
+
+\[
+J(x_0)=
+\frac{1}{2}(x_0-x_b)^TB^{-1}(x_0-x_b)
++
+\frac{1}{2}
+\sum_{i=0}^{n}
+(y_i-H_i(x_i))^TR^{-1}
+(y_i-H_i(x_i))
+\]
+
+
+
+where:
+
+
+\begin{itemize}
+
+\item $x_0$ is the initial atmospheric state
+
+\item $x_i$ represents model evolution
+
+\item $H_i$ is the observation operator
+
+\item $y_i$ represents observations
+
+\end{itemize}
+
+
+
+ACF 4D-Var applications:
+
+
+\begin{itemize}
+
+\item High resolution weather forecasting
+
+\item Severe weather prediction
+
+\item Global atmospheric analysis
+
+\item Digital Twin synchronization
+
+\item Ocean-atmosphere coupled assimilation
+
+\end{itemize}
+
+
+
+Assimilation workflow:
+
+
+\[
+Initial\ State
+\rightarrow
+Model\ Integration
+\rightarrow
+Observation\ Comparison
+\rightarrow
+Optimization
+\rightarrow
+Updated\ State
+\]

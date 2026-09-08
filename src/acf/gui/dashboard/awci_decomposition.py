@@ -3,46 +3,54 @@ AWCI Decomposition Widget
 =========================
 
 Bar chart showing AWCI decomposition by module.
+
+NOTE (found, NOT changed - RÈGLE D'OR / single source of truth): as of the
+AWCI dashboard rebuild (awci_dashboard.py), this widget is no longer
+instantiated by anything - the rebuilt AWCIDashboard uses AWCIRadar (a
+matplotlib polar chart) plus a plain numeric list instead of this
+horizontal-bar view, to match the reference mockup's radar chart. Still
+re-exported by this package's __init__.py and fully correct/self-contained,
+just currently unreachable from any real UI. Not deleted per project
+convention - flagged so nobody mistakes it for live code. Same situation
+as data/engine.py's NOTE.
 """
 
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush
-
-from typing import Dict, Optional
 
 
 class AWCIDecomposition(QWidget):
     """Widget displaying AWCI decomposition as horizontal bars."""
 
     MODULE_COLORS = {
-        'dynamic': QColor(66, 133, 244),      # Blue
-        'thermodynamic': QColor(234, 67, 53), # Red
-        'convective': QColor(251, 188, 5),    # Yellow
-        'microphysical': QColor(52, 168, 83), # Green
-        'topographic': QColor(156, 39, 176),  # Purple
-        'temporal': QColor(255, 152, 0),      # Orange
-        'confidence': QColor(0, 188, 212),    # Cyan
+        "dynamic": QColor(66, 133, 244),  # Blue
+        "thermodynamic": QColor(234, 67, 53),  # Red
+        "convective": QColor(251, 188, 5),  # Yellow
+        "microphysical": QColor(52, 168, 83),  # Green
+        "topographic": QColor(156, 39, 176),  # Purple
+        "temporal": QColor(255, 152, 0),  # Orange
+        "confidence": QColor(0, 188, 212),  # Cyan
     }
 
     MODULE_LABELS = {
-        'dynamic': 'Dynamic Complexity',
-        'thermodynamic': 'Thermodynamic Complexity',
-        'convective': 'Convective Complexity',
-        'microphysical': 'Microphysical Complexity',
-        'topographic': 'Topographic Complexity',
-        'temporal': 'Temporal Complexity',
-        'confidence': 'Uncertainty',
+        "dynamic": "Dynamic Complexity",
+        "thermodynamic": "Thermodynamic Complexity",
+        "convective": "Convective Complexity",
+        "microphysical": "Microphysical Complexity",
+        "topographic": "Topographic Complexity",
+        "temporal": "Temporal Complexity",
+        "confidence": "Uncertainty",
     }
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._decomposition = {}
+        self._decomposition: dict[str, float] = {}
         self._title = "AWCI Components"
         self.setMinimumSize(280, 250)
         self.setStyleSheet("background: transparent;")
 
-    def set_decomposition(self, decomposition: Dict[str, float]):
+    def set_decomposition(self, decomposition: dict[str, float]):
         self._decomposition = decomposition
         self.update()
 
@@ -52,7 +60,7 @@ class AWCIDecomposition(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect()
         width = rect.width() - 20
@@ -92,16 +100,25 @@ class AWCIDecomposition(QWidget):
 
             # Bar
             painter.setBrush(QBrush(color))
-            painter.setPen(QPen(Qt.NoPen))
+            painter.setPen(QPen(Qt.PenStyle.NoPen))
             painter.drawRect(10, y, int(bar_width), bar_height)
 
             # Label
             painter.setPen(QPen(QColor(200, 200, 220), 1))
-            painter.drawText(10, y, 100, bar_height, Qt.AlignRight | Qt.AlignVCenter, label)
+            painter.drawText(
+                10, y, 100, bar_height, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, label
+            )
 
             # Value
             painter.setPen(QPen(QColor(200, 200, 220), 1))
-            painter.drawText(10 + int(bar_width) + 5, y, 40, bar_height, Qt.AlignLeft | Qt.AlignVCenter, f"{int(value)}%")
+            painter.drawText(
+                10 + int(bar_width) + 5,
+                y,
+                40,
+                bar_height,
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                f"{int(value)}%",
+            )
 
         painter.end()
 

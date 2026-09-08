@@ -1,17 +1,9 @@
-from acf.io.factory import ReaderFactory
+"""
+Atmospheric Complexity Framework (ACF)
 
+IO - Manager (Compatibility Layer forwarding to acf.importers.manager)
+"""
 
-class DataManager:
+from acf.importers.manager import DataManager
 
-    def __init__(self, registry):
-
-        self.factory = ReaderFactory(registry)
-
-    def open(self, filename):
-
-        reader = self.factory.get_reader(filename)
-
-        if reader is None:
-            raise ValueError(f"No reader available for {filename}")
-
-        return reader.read(filename)
+__all__ = ["DataManager"]

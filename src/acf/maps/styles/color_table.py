@@ -5,7 +5,6 @@ Color Table
 
 
 class ColorTable:
-
     def __init__(self):
 
         self._table = {}
@@ -41,4 +40,3 @@ class ColorTable:
     def __repr__(self):
 
         return f"ColorTable(count={self.count()})"
-

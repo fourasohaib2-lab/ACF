@@ -19,11 +19,7 @@ class TotalTotals:
         TT = T850 + Td850 - 2*T500
         """
 
-        return (
-            t850
-            + td850
-            - (2 * t500)
-        )
+        return t850 + td850 - (2 * t500)
 
     @staticmethod
     def category(tt: float) -> str:
@@ -41,4 +37,3 @@ class TotalTotals:
             return "High"
 
         return "Extreme"
-

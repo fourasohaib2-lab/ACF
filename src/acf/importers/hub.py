@@ -6,7 +6,6 @@ from acf.importers.manager import ImporterManager
 
 
 class ImporterHub:
-
     def __init__(self):
 
         self.manager = ImporterManager()
@@ -31,6 +30,7 @@ class ImporterHub:
             raise ValueError(f"Unknown importer: {importer_name}")
 
         return importer.load(filename)
+
     def auto_load(self, filename):
 
         importer = self.manager.detect_importer(filename)

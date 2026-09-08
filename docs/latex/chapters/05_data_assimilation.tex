@@ -1,0 +1,90 @@
+\section{Atmospheric Data Assimilation}
+
+Data assimilation combines observations and numerical models
+to produce an optimal estimate of the atmospheric state.
+
+The general formulation is:
+
+\begin{equation}
+x_a = x_b + K(y-H(x_b))
+\end{equation}
+
+where:
+
+\begin{itemize}
+\item $x_a$ is the analysis state
+\item $x_b$ is the background forecast
+\item $y$ represents observations
+\item $H$ is the observation operator
+\item $K$ is the gain matrix
+\end{itemize}
+
+
+
+\section{Observation Systems}
+
+ACF integrates multiple observation sources:
+
+\begin{itemize}
+\item Satellite measurements
+\item Weather radar
+\item Radiosondes
+\item Surface meteorological stations
+\item Aircraft observations
+\item Ocean observations
+\end{itemize}
+
+
+
+\section{Variational Data Assimilation}
+
+
+\subsection{3DVAR}
+
+The 3DVAR method minimizes a cost function:
+
+\begin{equation}
+J(x)=
+\frac{1}{2}(x-x_b)^TB^{-1}(x-x_b)
++
+\frac{1}{2}(y-H(x))^TR^{-1}(y-H(x))
+\end{equation}
+
+
+where:
+
+\begin{itemize}
+\item $B$ is the background error covariance
+\item $R$ is the observation error covariance
+\end{itemize}
+
+
+
+\subsection{4DVAR}
+
+4DVAR introduces the time dimension:
+
+\begin{equation}
+J(x)=
+J_b+
+\sum_{i=0}^{n}
+J_i
+\end{equation}
+
+
+It optimizes the atmospheric trajectory over a time window.
+
+
+
+\section{Ensemble Methods}
+
+Ensemble Kalman Filters estimate uncertainty using multiple
+forecast realizations.
+
+Applications:
+
+\begin{itemize}
+\item Probabilistic forecasting
+\item Uncertainty estimation
+\item Extreme event prediction
+\end{itemize}

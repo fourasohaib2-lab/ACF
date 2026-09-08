@@ -8,8 +8,8 @@ Professional layer tree widget.
 """
 
 from PySide6.QtWidgets import (
-    QWidget,
     QVBoxLayout,
+    QWidget,
 )
 
 from .layer_item import LayerItem
@@ -28,20 +28,20 @@ class LayerTree(QWidget):
 
         self.items = []
 
-        self.layout = QVBoxLayout()
+        self._vbox = QVBoxLayout()
 
-        self.layout.setContentsMargins(
+        self._vbox.setContentsMargins(
             4,
             4,
             4,
             4,
         )
 
-        self.layout.setSpacing(2)
+        self._vbox.setSpacing(2)
 
-        self.layout.addStretch()
+        self._vbox.addStretch()
 
-        self.setLayout(self.layout)
+        self.setLayout(self._vbox)
 
     ##################################################
 
@@ -63,8 +63,8 @@ class LayerTree(QWidget):
 
         self.items.append(item)
 
-        self.layout.insertWidget(
-            self.layout.count() - 1,
+        self._vbox.insertWidget(
+            self._vbox.count() - 1,
             item,
         )
 
@@ -78,10 +78,8 @@ class LayerTree(QWidget):
         """
 
         for item in self.items[:]:
-
             if item.name() == name:
-
-                self.layout.removeWidget(item)
+                self._vbox.removeWidget(item)
 
                 item.deleteLater()
 
@@ -97,8 +95,7 @@ class LayerTree(QWidget):
         """
 
         for item in self.items:
-
-            self.layout.removeWidget(item)
+            self._vbox.removeWidget(item)
 
             item.deleteLater()
 
@@ -108,10 +105,7 @@ class LayerTree(QWidget):
 
     def layer_names(self):
 
-        return [
-            item.name()
-            for item in self.items
-        ]
+        return [item.name() for item in self.items]
 
     ##################################################
 

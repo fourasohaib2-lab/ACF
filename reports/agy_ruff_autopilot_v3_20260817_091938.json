@@ -1,0 +1,255 @@
+{
+  "timestamp": "20260817_091938",
+  "start_time": "2026-08-17T09:19:22.168095+00:00",
+  "configuration": {
+    "MAX_ITERATIONS": 1000,
+    "MAX_CONTEXT_LINES": 10,
+    "MAX_TOKENS": 96,
+    "TIMEOUT": 420,
+    "SLEEP_AFTER_TIMEOUT": 60,
+    "MAX_FILE_BYTES": 2097152,
+    "TARGET_CODES": [
+      "C401",
+      "C414",
+      "DTZ003",
+      "DTZ005",
+      "F811",
+      "F821",
+      "F841",
+      "I001",
+      "PIE810",
+      "PLW1510",
+      "RUF012",
+      "RUF013",
+      "UP007"
+    ],
+    "IGNORE_CODES": [
+      "BLE001",
+      "E722",
+      "S110"
+    ],
+    "RUFF_AUTOFIX_CODES": [
+      "C401",
+      "C414",
+      "I001",
+      "PIE810",
+      "UP007"
+    ]
+  },
+  "iterations": 2,
+  "initial_target_errors": 20,
+  "final_target_errors": 18,
+  "fixed": 2,
+  "failed": 0,
+  "skipped": 0,
+  "ignored": 1,
+  "other_errors": 8,
+  "fixed_by_target_code": {
+    "PIE810": 0,
+    "C401": 0,
+    "UP007": 0,
+    "PLW1510": 0,
+    "C414": 0,
+    "DTZ003": 0,
+    "F841": 2,
+    "F821": 0,
+    "RUF013": 0,
+    "I001": 0,
+    "RUF012": 0,
+    "DTZ005": 0,
+    "F811": 0
+  },
+  "ignored_by_code": {
+    "E722": 1,
+    "BLE001": 0,
+    "S110": 0
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/dashboard/awci_timeline.py",
+      "line": 64,
+      "message": "Local variable `min_score` is assigned to but never used",
+      "duration": 8.657439654998598,
+      "validation": "PASS",
+      "detail": ""
+    },
+    {
+      "iteration": 2,
+      "status": "FIXED",
+      "code": "F841",
+      "filename": "src/acf/gui/dashboard/awci_vertical_profile.py",
+      "line": 101,
+      "message": "Local variable `min_score` is assigned to but never used",
+      "duration": 7.042066858994076,
+      "validation": "PASS",
+      "detail": ""
+    }
+  ],
+  "remaining_errors": [
+    {
+      "code": "F841",
+      "message": "Local variable `satellite` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/src/acf/gui/docks/layer_panel.py",
+      "line": 108,
+      "column": 9,
+      "end_line": 108,
+      "end_column": 18
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `radar` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/src/acf/gui/docks/layer_panel.py",
+      "line": 113,
+      "column": 9,
+      "end_line": 113,
+      "end_column": 14
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `ocean` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/src/acf/gui/docks/layer_panel.py",
+      "line": 118,
+      "column": 9,
+      "end_line": 118,
+      "end_column": 14
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `terrain` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/src/acf/gui/docks/layer_panel.py",
+      "line": 123,
+      "column": 9,
+      "end_line": 123,
+      "end_column": 16
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `res` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/src/acf/gui/esoc/hpc_execution_panel.py",
+      "line": 110,
+      "column": 9,
+      "end_line": 110,
+      "end_column": 12
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `status` from line 123: `status` redefined here",
+      "filename": "/home/souhaib/ACF/src/acf/gui/map/projections/projection_manager.py",
+      "line": 137,
+      "column": 9,
+      "end_line": 137,
+      "end_column": 15
+    },
+    {
+      "code": "F821",
+      "message": "Undefined name `Optional`",
+      "filename": "/home/souhaib/ACF/src/acf/models/arpege/ingestion_adapter.py",
+      "line": 23,
+      "column": 34,
+      "end_line": 23,
+      "end_column": 42
+    },
+    {
+      "code": "F821",
+      "message": "Undefined name `Optional`",
+      "filename": "/home/souhaib/ACF/src/acf/models/arpege/ingestion_adapter.py",
+      "line": 24,
+      "column": 24,
+      "end_line": 24,
+      "end_column": 32
+    },
+    {
+      "code": "F821",
+      "message": "Undefined name `Optional`",
+      "filename": "/home/souhaib/ACF/src/acf/verification/nwp_metrics.py",
+      "line": 44,
+      "column": 83,
+      "end_line": 44,
+      "end_column": 91
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `test_cache` from line 7: `test_cache` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_cache_manager.py",
+      "line": 33,
+      "column": 5,
+      "end_line": 33,
+      "end_column": 15
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `test_csv_adapter` from line 6: `test_csv_adapter` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_csv_adapter.py",
+      "line": 27,
+      "column": 5,
+      "end_line": 27,
+      "end_column": 21
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `test_csv_support` from line 17: `test_csv_support` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_csv_adapter.py",
+      "line": 37,
+      "column": 5,
+      "end_line": 37,
+      "end_column": 21
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `DatasetValidator` from line 4: `DatasetValidator` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_dataset_validator.py",
+      "line": 30,
+      "column": 47,
+      "end_line": 30,
+      "end_column": 63
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `test_validator` from line 7: `test_validator` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_dataset_validator.py",
+      "line": 44,
+      "column": 5,
+      "end_line": 44,
+      "end_column": 19
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `Divergence` from line 3: `Divergence` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_divergence.py",
+      "line": 31,
+      "column": 46,
+      "end_line": 31,
+      "end_column": 56
+    },
+    {
+      "code": "F811",
+      "message": "Redefinition of unused `test_negative` from line 16: `test_negative` redefined here",
+      "filename": "/home/souhaib/ACF/tests/test_divergence.py",
+      "line": 50,
+      "column": 5,
+      "end_line": 50,
+      "end_column": 18
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `r` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/tests/test_epygram_reader.py",
+      "line": 119,
+      "column": 5,
+      "end_line": 119,
+      "end_column": 6
+    },
+    {
+      "code": "F841",
+      "message": "Local variable `json_str` is assigned to but never used",
+      "filename": "/home/souhaib/ACF/tests/test_forecast_config.py",
+      "line": 22,
+      "column": 5,
+      "end_line": 22,
+      "end_column": 13
+    }
+  ]
+}
