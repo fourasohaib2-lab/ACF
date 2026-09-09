@@ -511,6 +511,71 @@ class _EvolutionWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _ImportedEvolutionWorker(QRunnable):
+    """Runs compute_awci_evolution_from_imported_dataset() off the GUI
+    thread (added 2026-09-09, "4D over imported data") - the imported-
+    model counterpart of _EvolutionWorker: every frame is a genuine
+    per-grid-cell AWCICalculator pass over the imported file's own
+    fields at that valid time, which takes real time for real-sized
+    grids (~0.03 ms/cell measured => up to ~1 s for 8 frames of a
+    20x40 grid) and must not freeze the dashboard. Reuses the same
+    signals shape (finished(dict)/failed(str)) and the same
+    "compute off-thread, apply on-thread" discipline."""
+
+    def __init__(self, dataset: Any, level_hpa: float) -> None:
+        super().__init__()
+        self.dataset = dataset
+        self.level_hpa = level_hpa
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        from acf.awci.model_import_evolution import compute_awci_evolution_from_imported_dataset
+
+        try:
+            result = compute_awci_evolution_from_imported_dataset(
+                self.dataset, level_hpa=self.level_hpa
+            )
+        except Exception as exc:
+            logger.exception("Imported-model 4D evolution computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
+class _ImportedCrossSectionWorker(QRunnable):
+    """Runs compute_awci_cross_section_from_imported_dataset() off the
+    GUI thread (added 2026-09-09, "vertical cross-sections from
+    imported pressure-level data") - the imported-model counterpart of
+    the Real Physics cross-section computed in _on_real_physics_ready().
+    Even path-only scoring is n_levels x n_along real calculator calls
+    plus full-volume nearest-neighbour indexing, so it must not run on
+    the GUI thread. Same signals shape and same "compute off-thread,
+    apply on-thread" discipline as _ImportedEvolutionWorker; the
+    emitting payload carries the dataset identity so the GUI-thread
+    handler can drop a stale result for a since-replaced file (the same
+    race-hazard discipline _RealArchiveTrendWorker documents)."""
+
+    def __init__(self, dataset: Any) -> None:
+        super().__init__()
+        self.dataset = dataset
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        from acf.awci.model_import_cross_section import (
+            compute_awci_cross_section_from_imported_dataset,
+        )
+
+        try:
+            result = compute_awci_cross_section_from_imported_dataset(
+                self.dataset, _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=40
+            )
+        except Exception as exc:
+            logger.exception("Imported-model cross-section computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit({"cross_section": result, "dataset": self.dataset})
+
+
 class _RealArchiveTrendWorker(QRunnable):
     """Loads whichever real RESTOR lead-time archives aren't already
     cached (added 2026-09-04, "continue" - closes the real forecast-
@@ -627,7 +692,11 @@ class AWCIDashboard(QWidget):
         # badge's detail popup opens from the SAME real inputs already
         # computed for that row, never a second/guessed value.
         self._last_point_raw_data: dict[str, Any] = {}
-        self._last_point_mode: Literal["demo", "real_physics"] = "demo"
+        # "imported_model" is the third real per-point mode (added
+        # 2026-09-08, see _refresh_imported_model()'s own docstring) -
+        # a plain str here (not the Literal below) because it arrives
+        # back off a Qt Signal that only carries str.
+        self._last_point_mode: Literal["demo", "real_physics", "imported_model"] = "demo"
         # Real single source of truth for the point-of-interest pipeline's
         # own flight level (radar/component list/regional trend/stats-bar
         # grid scan) in demo mode - see _FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA's
@@ -644,6 +713,26 @@ class AWCIDashboard(QWidget):
         # field, since the real volume only has discrete native levels.
         self._current_flight_level_hpa: float = _FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA["FL300"]
         self._evolution: dict[str, Any] | None = None
+        #: Real imported-model 4D evolution (added 2026-09-09, "4D over
+        #: imported data") - the compute_awci_evolution_from_imported_dataset()
+        #: result for the CURRENTLY imported dataset at the flight level
+        #: it was computed at. None until the ▶ 4D Evolution button first
+        #: computes it (lazy, off-thread via _ImportedEvolutionWorker);
+        #: cleared whenever the imported dataset or flight level changes
+        #: so a stale-level evolution is never replayed.
+        self._imported_evolution: dict[str, Any] | None = None
+        #: Real imported-model vertical cross-section (added 2026-09-09,
+        #: "vertical cross-sections from imported pressure-level data")
+        #: - the compute_awci_cross_section_from_imported_dataset()
+        #: result for the CURRENTLY imported dataset along the
+        #: dashboard's own route. None until first computed; cleared
+        #: ONLY when the imported dataset changes (the cross-section
+        #: spans the file's every declared level - it is not
+        #: flight-level specific, exactly like the Real Physics
+        #: cross-section computed once in _on_real_physics_ready - and
+        #: it samples the fixed route, not the point of interest, so
+        #: neither a level change nor a map click invalidates it).
+        self._imported_cross_section: dict[str, Any] | None = None
         self._evolution_frame_index = 0
         self._evolution_timer = QTimer(self)
         self._evolution_timer.setInterval(800)  # ms between real frames while playing
@@ -686,7 +775,12 @@ class AWCIDashboard(QWidget):
             "Run a real 4D Complexity(x, y, z, t) evolution (acf.awci.temporal_field) - one\n"
             "CoupledEarthSolver instance integrated continuously - and animate the global map\n"
             "through its real frames. Only available once '🔬 Real Physics' has produced a real\n"
-            "trajectory to continue from."
+            "trajectory to continue from.\n\n"
+            "With an imported model file active instead: computes and animates the real\n"
+            "per-grid-cell AWCI evolution of that file's own valid times\n"
+            "(acf.awci.model_import_evolution) - every frame is a real AWCICalculator pass\n"
+            "over the file's own fields at that time; re-computed when the file or the\n"
+            "flight level changes."
         )
         self.play_evolution_button.clicked.connect(self._toggle_evolution_playback)
         # NOTE (correction, 2026-09-07 - real bug, found while
@@ -761,22 +855,27 @@ class AWCIDashboard(QWidget):
         # fixed earlier this session (acf.data.manager.DataManager ->
         # acf.data.readers.epygram_reader.EPyGrAMReader for FA/LFA/LFI,
         # plus GRIB/NetCDF), verified end to end against a real
-        # Météo-France ALADIN archive (RESTOR). Honest about scope:
-        # this loads and reports on the real file (name, real field
-        # count) - it does not yet auto-map an arbitrary imported
-        # file's own field-naming convention onto AWCICalculator's
-        # expected keys the way acf.awci.archive_field's RESTOR-
-        # specific adapter does; that generic mapping is a real,
-        # separate piece of work, not silently implied here.
+        # Météo-France ALADIN archive (RESTOR). Since 2026-09-08 it
+        # goes further than loading: the generic field-name mapping
+        # that used to be disclosed as "separate piece of work" is
+        # implemented in acf.awci.model_import (the generic
+        # counterpart to archive_field's RESTOR-specific adapter) and
+        # every import feeds the real per-point AWCI pipeline - see
+        # _import_model_file/_refresh_imported_model below and
+        # tests/gui/test_awci_dashboard_imported_model.py.
         self._imported_dataset: Any = None
         self.import_model_button = QPushButton("📂 Import Model File")
         self.import_model_button.setToolTip(
             "Load a real NWP model output file (FA/LFA/LFI via Météo-France's own real\n"
             "EPyGrAM library, or GRIB/NetCDF) through ACF's real data pipeline\n"
-            "(acf.data.manager.DataManager) - reports the real field/variable count once\n"
-            "loaded. Does not yet auto-compute AWCI from an arbitrary file's own field\n"
-            "names (see acf.awci.archive_field for the one real, tested adapter that\n"
-            "does this for RESTOR's own ALADIN archive specifically)."
+            "(acf.data.manager.DataManager), then compute real AWCI from it at the\n"
+            "current point of interest/flight level via acf.awci.model_import -\n"
+            "variables matched through ACF's own real alias machinery + real unit\n"
+            "conversion; variables the file genuinely lacks keep AWCICalculator's\n"
+            "own defaults, and the status line reports what was matched/missing.\n"
+            "Re-samples on every map click / flight-level change while active.\n"
+            "A file that genuinely carries a pressure-level coordinate also drives\n"
+            "the vertical cross-section panel (real per-cell AWCI along the route)."
         )
         self.import_model_button.clicked.connect(self._import_model_file)
         header_row.addWidget(self.import_model_button)
@@ -1483,9 +1582,23 @@ class AWCIDashboard(QWidget):
 
     def _import_model_file(self) -> None:
         """Load a real NWP model output file through ACF's real
-        ingestion pipeline (see this button's own construction-time
-        tooltip for the honest scope of what this does and does not
-        yet do)."""
+        ingestion pipeline, then compute real AWCI from it.
+
+        Closes (2026-09-08) the real, disclosed gap this button's own
+        tooltip has carried since it was added ("Does not yet
+        auto-compute AWCI from an arbitrary file's own field names"):
+        the loaded dataset is now fed through
+        acf.awci.model_import.compute_awci_from_imported_dataset() -
+        the real, generic adapter (ACF's own ParameterMapper aliases +
+        each variable's real standard_name metadata + real unit
+        conversion) - at the dashboard's own current point of
+        interest/flight level, and the resulting real score drives the
+        exact same per-point panels every other data tier drives
+        (radar, component list, risk summary, Point Information card).
+        Variables the file genuinely lacks stay absent -
+        AWCICalculator's own defaults apply; the import status line
+        reports what was matched/missing, never a fabricated value.
+        """
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Import Model File",
@@ -1505,9 +1618,172 @@ class AWCIDashboard(QWidget):
             return
 
         self._imported_dataset = dataset
+        # A new import invalidates the previous file's 4D evolution and
+        # cross-section - a stale-file product is never replayed (same
+        # real cache-invalidation discipline as the level change below).
+        self._invalidate_imported_evolution()
+        self._invalidate_imported_cross_section()
         self._toasts.show(
             f"Loaded {dataset.name} ({dataset.filetype}, {len(dataset.variables)} fields)", kind="success"
         )
+        self._refresh_imported_model()
+        self._maybe_show_imported_cross_section()
+
+    def _refresh_imported_model(self) -> None:
+        """Real AWCI computation from the currently imported model
+        dataset at the current point of interest/flight level - the
+        "imported model" data tier's own update path, exactly parallel
+        to refresh()'s demo path and _apply_volume_at_level()'s Real
+        Physics path (added 2026-09-08, closes the import button's own
+        disclosed "loads but never computes" gap). Re-run on every map
+        click/flight-level change while an imported dataset is active
+        (see _on_map_point_clicked/_on_flight_level_selector_changed).
+        """
+        dataset = self._imported_dataset
+        if dataset is None or not getattr(dataset, "variables", None):
+            return
+
+        from acf.awci.model_import import ModelImportError, compute_awci_from_imported_dataset
+
+        lat, lon = self._point_of_interest
+        try:
+            outcome = compute_awci_from_imported_dataset(
+                dataset, lat, lon, level_hpa=self._current_flight_level_hpa
+            )
+        except ModelImportError as exc:
+            self.real_physics_status.setText(f"⚠ Imported model cannot feed AWCI: {exc}")
+            self._toasts.show(f"Imported model unusable: {exc}", kind="error")
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Imported-model AWCI computation failed")
+            self.real_physics_status.setText(f"⚠ Imported-model AWCI computation failed: {exc}")
+            return
+
+        result = outcome["result"]
+        extraction = outcome["extraction"]
+        self._last_point_raw_data = dict(result.get("raw_variables", extraction["inputs"]))
+        self._last_point_mode = "imported_model"
+        self._last_awci_result = build_awci_result(
+            result,
+            raw_variables=extraction["inputs"],
+            lead_time_hours=None,
+            quality=quality_for_awci_point_data(extraction["inputs"]),
+        )
+
+        point_result = result
+        self.radar.update_data(point_result["module_scores"])
+        self.component_list.update_data(
+            point_result["module_scores"], raw_data=extraction["inputs"], mode="imported_model"
+ )
+        self.regional_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
+        self.risk_summary.update_data(
+            point_result["module_scores"],
+            point_result["awci"],
+            physical_score=point_result["physical_score"],
+            forecast_score=point_result["forecast_score"],
+        )
+        self._last_risk_inputs = (
+            point_result["module_scores"],
+            point_result["awci"],
+            point_result["physical_score"],
+            point_result["forecast_score"],
+        )
+        self._refresh_alerts_badge()
+
+        matched = extraction["matched_variables"]
+        missing = extraction["missing_variables"]
+        summary = (
+            f"📂 IMPORTED MODEL — {dataset.name} ({dataset.filetype}) at ({lat:.2f}, {lon:.2f}). "
+            f"Matched: {len(matched)} variable(s) ({', '.join(sorted(matched)) or 'none'}); "
+            f"absent (real AWCICalculator defaults applied): {', '.join(sorted(missing)) or 'none'}."
+        )
+        if extraction["notes"]:
+            summary += " Notes: " + " ".join(extraction["notes"])
+        self.real_physics_status.setText(summary)
+        self._toasts.show(
+            f"AWCI {point_result['awci']:.0f} ({point_result['level']}) computed from imported model at ({lat:.1f}, {lon:.1f})",
+            kind="success",
+        )
+
+    # --------------------------------- imported-model vertical cross-section
+
+    def _invalidate_imported_cross_section(self) -> None:
+        """Drop the imported-model cross-section (a new file was imported
+        - a stale-file cross-section is never replayed)."""
+        self._imported_cross_section = None
+
+    def _maybe_show_imported_cross_section(self) -> None:
+        """Real imported-model vertical cross-section (added 2026-09-09,
+        "vertical cross-sections from imported pressure-level data") -
+        the import tier's own vertical product, exactly parallel to the
+        Real Physics cross-section computed in _on_real_physics_ready().
+
+        Drives AWCICrossSection via its existing
+        set_external_cross_section()/set_hazard_overlay() machinery and
+        acf.awci.path_sampling's own real nearest-neighbour conventions
+        - no new science. A file without a genuine pressure-level
+        coordinate is refused honestly (the panel keeps its previous
+        content) - a surface-only file has no real vertical transect to
+        show; the per-point import path still samples that file.
+        """
+        from acf.awci.model_import_cross_section import has_pressure_level_coordinate
+
+        dataset = self._imported_dataset
+        if dataset is None or not getattr(dataset, "variables", None):
+            return
+        if not has_pressure_level_coordinate(dataset):
+            self.real_physics_status.setText(
+                "📂 IMPORTED MODEL — no pressure-level coordinate in this file, so no real "
+                "vertical cross-section can be drawn (the point/4D import paths still work)."
+            )
+            return
+        worker = _ImportedCrossSectionWorker(dataset)
+        worker.signals.finished.connect(self._on_imported_cross_section_ready)
+        worker.signals.failed.connect(self._on_imported_cross_section_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_imported_cross_section_ready(self, payload: dict[str, Any]) -> None:
+        """GUI-thread handler: cache + draw the freshly computed imported
+        cross-section (stale results for a since-replaced file are
+        dropped - the worker's payload carries the dataset identity)."""
+        result = payload["cross_section"]
+        if payload["dataset"] is not self._imported_dataset:
+            return  # a stale-file result - never drawn
+        self._imported_cross_section = result
+        self._draw_imported_cross_section(result)
+
+        matched = sorted(result["matched_variables"])
+        summary = (
+            f"📂 IMPORTED MODEL — vertical cross-section from {result['source_file']} "
+            f"({len(result['levels_hpa'])} declared levels, {len(result['distances_km'])} path samples). "
+            f"Matched: {len(matched)} variable(s) ({', '.join(matched) or 'none'})."
+        )
+        notes = list(result.get("notes", ()))
+        if notes:
+            summary += " Notes: " + " ".join(notes)
+        self.real_physics_status.setText(summary)
+        self._toasts.show(
+            f"Imported-model cross-section ready ({len(result['levels_hpa'])} levels)",
+            kind="success",
+        )
+
+    def _draw_imported_cross_section(self, result: dict[str, Any]) -> None:
+        """Draw a computed imported cross-section result (freshly computed
+        or from the cache) into AWCICrossSection - the single draw site,
+        shared by the worker handler and _revert_to_demo's cache redraw."""
+        overlay = result.get("hazard_overlay")
+        self.cross_section.set_external_cross_section(
+            result["distances_km"], result["levels_hpa"], result["awci_grid"],
+            f"IMPORTED MODEL ({result['source_file']})",
+            hazard_overlay=overlay,
+        )
+
+    def _on_imported_cross_section_failed(self, message: str) -> None:
+        """GUI-thread handler: an unusable file (no coordinates, no core
+        variable, inconsistent shapes) is reported honestly - the panel
+        keeps its previous content, never a fabricated transect."""
+        self.real_physics_status.setText(f"⚠ Imported-model cross-section unavailable: {message}")
+        self._toasts.show(f"Imported-model cross-section unavailable: {message}", kind="error")
 
     def _toggle_real_physics(self) -> None:
         if self._real_physics_active:
@@ -1744,8 +2020,14 @@ class AWCIDashboard(QWidget):
         already used for the old point, at the new one, never a second/
         fabricated calculation path."""
         self._point_of_interest = (lat, lon)
+        # The imported-model tier re-samples at the new point too (its
+        # own real update path, same discipline as the Real Physics
+        # branch below) - but never pre-empts Real Physics mode, which
+        # stays the active tier until the user reverts it.
         if self._real_physics_active and self._real_volume is not None:
             self._apply_volume_at_level(self._current_level_index)
+        elif self._imported_dataset is not None:
+            self._refresh_imported_model()
         else:
             self.refresh()
 
@@ -1772,6 +2054,12 @@ class AWCIDashboard(QWidget):
         if hpa is None:
             return  # not a real, known option - never guess one
         self._current_flight_level_hpa = hpa
+        # A flight-level change invalidates the imported-model 4D
+        # evolution computed at the previous level (same real
+        # cache-invalidation discipline as the dataset change in
+        # _import_model_file) - a stale-level evolution is never
+        # replayed.
+        self._invalidate_imported_evolution()
         if self._real_physics_active and self._real_volume is not None:
             mean_pressure_by_level = self._real_volume["pressure_volume_hpa"].mean(axis=(1, 2))
             nearest_level_idx = int(np.argmin(np.abs(mean_pressure_by_level - hpa)))
@@ -1779,6 +2067,8 @@ class AWCIDashboard(QWidget):
             self.level_slider.setValue(nearest_level_idx)
             self.level_slider.blockSignals(False)
             self._apply_volume_at_level(nearest_level_idx)
+        elif self._imported_dataset is not None:
+            self._refresh_imported_model()
         else:
             self.refresh()
 
@@ -2251,12 +2541,23 @@ class AWCIDashboard(QWidget):
         if self._component_detail_window is None:
             self._component_detail_window = AWCIComponentDetailDialog(parent=self)
         # mode arrives as a plain str off a Qt Signal (componentClicked
-        # only ever emits the two real literal values _ComponentValueList
+        # only ever emits the real literal values _ComponentValueList
         # itself sets via update_data()'s mode parameter) - validated
         # here rather than blindly cast, so a genuinely unexpected value
-        # fails loudly instead of being silently treated as "demo".
-        real_mode: Literal["demo", "real_physics"] = "real_physics" if mode == "real_physics" else "demo"
+        # is never silently treated as "demo" without going through the
+        # same validated table every real mode passes through.
+        real_mode = self._VALID_COMPONENT_MODES.get(mode, "demo")
         self._component_detail_window.show_component(key, score, raw_data, real_mode, self._last_awci_result)
+
+    #: Plain-string Qt-Signal mode -> the validated Literal mode
+    #: (dict typing keeps mypy's Literal checking happy where `in`/
+    #: `==` narrowing of a plain str does not). Unknown values fall
+    #: back to "demo" exactly as before.
+    _VALID_COMPONENT_MODES: dict[str, Literal["demo", "real_physics", "imported_model"]] = {
+        "demo": "demo",
+        "real_physics": "real_physics",
+        "imported_model": "imported_model",
+    }
 
     #: Risk-badge row key -> the real AWCICalculator module it is
     #: directly derived from (docs/awci/AWCI_INTERACTION_MATRIX.md) -
@@ -2312,6 +2613,12 @@ class AWCIDashboard(QWidget):
         self.regional_map.clear_external_field()
         self.route_chart.clear_external_route()
         self.cross_section.clear_external_cross_section()
+        # An imported-model cross-section survives the demo revert (it
+        # belongs to the import tier, like the per-point imported
+        # panels) - redraw it from the cache instead of leaving the
+        # synthetic pattern under an active imported file.
+        if self._imported_cross_section is not None:
+            self._draw_imported_cross_section(self._imported_cross_section)
         self.stats_bar.model_box.set_value("ACF Demo Grid")
         # The evolution playback may have left time_readout showing a
         # real elapsed-time label ("t+2.4h") - restore the synthetic
@@ -2329,8 +2636,82 @@ class AWCIDashboard(QWidget):
             self._evolution_frame_index = 0
             self._evolution_timer.start()
             self.play_evolution_button.setText("⏸ Stop Animation")
+        elif self._imported_evolution is not None:
+            self._play_imported_evolution()
+        elif self._imported_dataset is not None:
+            # 4D over imported data (added 2026-09-09): compute the real
+            # per-cell AWCI evolution from the imported file - the same
+            # animation machinery, a genuinely different data source.
+            self._start_imported_evolution()
         else:
             self._start_evolution()
+
+    # ------------------------------------- imported-model 4D evolution
+
+    def _start_imported_evolution(self) -> None:
+        """Compute the real AWCI(x, y, t) evolution of the currently
+        imported model file off the GUI thread (_ImportedEvolutionWorker)
+        - every frame is a genuine per-grid-cell AWCICalculator pass over
+        the file's own fields at that valid time (added 2026-09-09,
+        "4D over imported data")."""
+        self.play_evolution_button.setEnabled(False)
+        self.play_evolution_button.setText("⏳ Computing imported-model 4D evolution…")
+        self.real_physics_status.setText(
+            "📂 Computing a real per-grid-cell AWCI evolution from the imported model file…"
+        )
+        worker = _ImportedEvolutionWorker(self._imported_dataset, self._current_flight_level_hpa)
+        worker.signals.finished.connect(self._on_imported_evolution_ready)
+        worker.signals.failed.connect(self._on_imported_evolution_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _play_imported_evolution(self) -> None:
+        """Replay the already-computed imported-model evolution - same
+        playback machinery as the solver evolution (self._evolution is
+        the single structure _advance/_render/_stop read)."""
+        self._evolution = self._imported_evolution
+        self._evolution_frame_index = 0
+        self._evolution_timer.start()
+        self.play_evolution_button.setText("⏸ Stop Animation")
+        self._render_evolution_frame(0)
+
+    def _on_imported_evolution_ready(self, evolution: dict[str, Any]) -> None:
+        self._imported_evolution = evolution
+        self._evolution = evolution
+        self._evolution_frame_index = 0
+        self.play_evolution_button.setEnabled(True)
+        self.play_evolution_button.setText("⏸ Stop Animation")
+        self._evolution_timer.start()
+        self._render_evolution_frame(0)
+        shape = evolution["awci_evolution"].shape
+        summary = (
+            f"🕓 IMPORTED MODEL 4D — {evolution['n_frames']} real frame(s) over a "
+            f"{shape[2]}x{shape[3]} grid, each cell a real AWCICalculator pass at its own valid time."
+        )
+        if evolution.get("notes"):
+            summary += " Notes: " + " ".join(evolution["notes"])
+        self.real_physics_status.setText(summary)
+        self._toasts.show(
+            f"Imported-model 4D evolution ready ({evolution['n_frames']} frames)", kind="success"
+        )
+
+    def _on_imported_evolution_failed(self, message: str) -> None:
+        self.play_evolution_button.setEnabled(True)
+        self.play_evolution_button.setText("▶ 4D Evolution")
+        self.real_physics_status.setText(f"⚠ Imported-model 4D evolution failed: {message}")
+        logger.warning("AWCIDashboard: imported-model 4D evolution failed: %s", message)
+
+    def _invalidate_imported_evolution(self) -> None:
+        """Drop the cached imported-model evolution (dataset or flight
+        level changed) - a stale-level or stale-file evolution is never
+        replayed. If it is the one currently animating, stop playback
+        honestly instead of animating data that no longer corresponds
+        to the active import."""
+        was_current = self._imported_evolution is not None and self._evolution is self._imported_evolution
+        self._imported_evolution = None
+        if was_current:
+            self._stop_evolution_playback()
+            self._evolution = None
+            self._evolution_frame_index = 0
 
     def _start_evolution(self) -> None:
         self.play_evolution_button.setEnabled(False)
@@ -2383,8 +2764,17 @@ class AWCIDashboard(QWidget):
         level_idx = max(0, min(self._current_level_index, n_levels - 1))
         awci_frame = evolution["awci_evolution"][frame_index, level_idx]
         valid_time_h = evolution["valid_time_seconds"][frame_index] / 3600.0
+        # Source-aware title (2026-09-09): an imported-model evolution
+        # animates through the SAME machinery but is a different real
+        # data source - labelling it "REAL PHYSICS" would misattribute
+        # its provenance (both are real; the label names the source).
+        source_label = (
+            "IMPORTED MODEL"
+            if (self._imported_evolution is not None and evolution is self._imported_evolution)
+            else "REAL PHYSICS"
+        )
         self.global_map.set_external_field(
-            evolution["lons"], evolution["lats"], awci_frame, f"REAL PHYSICS — L{level_idx} — t+{valid_time_h:.2f}h"
+            evolution["lons"], evolution["lats"], awci_frame, f"{source_label} — L{level_idx} — t+{valid_time_h:.2f}h"
         )
         self.time_readout.setText(f"t+{valid_time_h:.2f}h")
 

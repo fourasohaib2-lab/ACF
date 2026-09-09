@@ -55,7 +55,7 @@ _DIAGNOSTIC_REGISTRY_KEY_FOR_MODULE: dict[str, str] = {
 if TYPE_CHECKING:
     from acf.awci.result import AWCIResult
 
-Mode = Literal["demo", "real_physics"]
+Mode = Literal["demo", "real_physics", "imported_model"]
 
 
 @dataclass(frozen=True)
@@ -256,9 +256,21 @@ class AWCIComponentDetailDialog(QDialog):
         self.description_label.setText(info.description)
         self.score_label.setText(f"Current score: {score:.1f} / 100")
 
-        is_real = True if mode == "demo" else info.real_in_real_physics
+        # "imported_model" (added 2026-09-08): every input the imported
+        # file genuinely supplied IS real (matched through ACF's own
+        # ParameterMapper aliases + real unit conversion - see
+        # acf.awci.model_import); anything the file lacked fell back to
+        # AWCICalculator's own default, disclosed per-input below, so
+        # the badge is real the same way demo mode's is, with the
+        # file's own name as the honest source label.
+        if mode == "demo":
+            is_real, source_label = True, "demo synthetic pattern"
+        elif mode == "imported_model":
+            is_real, source_label = True, "imported model file (acf.awci.model_import)"
+        else:
+            is_real, source_label = info.real_in_real_physics, "Real Physics solver"
         if is_real:
-            self.badge_label.setText(f"✅ REAL - genuinely computed ({'demo synthetic pattern' if mode == 'demo' else 'Real Physics solver'})")
+            self.badge_label.setText(f"✅ REAL - genuinely computed ({source_label})")
             self.badge_label.setStyleSheet(f"color: {TOKENS.success}; font-size: 10px; font-weight: bold;")
         else:
             self.badge_label.setText(
