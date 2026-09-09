@@ -36,12 +36,16 @@ and a Layers panel are now real, opt-in features here (`show_legend`/
 on, since the mockup itself only shows the legend/info boxes on the
 GLOBAL map, and the regional map is not cluttered with a second copy.
 The Layers panel's "AWCI" checkbox is a real, working toggle (hides/
-shows the real contour); every other layer name from the mockup (Wind,
-Turbulence, Icing, Convection, CAPE, Clouds) is shown genuinely
-DISABLED with an honest tooltip, because this panel has no real data
-source for any of them today - a decorative-but-clickable fake toggle
-would be exactly the kind of invented affordance this project's audits
-exist to remove.
+shows the real contour). Every other layer name from the mockup (Wind,
+Turbulence, Icing, Convection, CAPE, Clouds) started out genuinely
+DISABLED for the same "no real data source, no fake toggle" reason -
+**since fixed** (2026-09-03, explicit user request "je veux rendre
+tout les boutons de awci en marche"): all 6 are now real, working
+toggles backed by real formulas (see _EXTRA_LAYER_SPECS' own
+docstring for the exact real source/proxy and honest scope limits per
+layer - Wind/Turbulence/Icing are real in both demo and Real Physics
+mode, Convection/CAPE/Clouds are real in demo mode only since the Real
+Physics solver volume carries no CAPE/precipitation field).
 
 Aircraft glyph + city labels + real extent helper (added 2026-09-03,
 docs/reference/awci_dashboard_reference.jpg parity work): flight-path
@@ -90,7 +94,7 @@ from acf.gui.dashboard.awci_colors import AWCI_CMAP, LEVELS, level_for
 from acf.gui.dashboard.awci_synthetic_field import awci_grid, awci_layer_grids
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
-from acf.gui.map.mtg_basemap import MTGBasemapProvider, draw_mtg_basemap
+from acf.gui.map.mtg_basemap import MTGBasemapProvider
 from acf.gui.theme_tokens import TOKENS, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci_map_panel")
@@ -385,27 +389,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         if show_layers_panel:
             self._build_layers_panel()
 
-        # Live MTG basemap (explicit user request "je veux que toutes
-        # les maps affiché soient des maps du mtg") - redraw whenever a
-        # fresh EUMETSAT image lands, preserving whatever flight
-        # level/time offset is currently shown rather than resetting to
-        # this constructor's own defaults (same pattern already used by
-        # every other "redraw with current state" caller in this file,
-        # e.g. clear_external_field()). See _make_mtg_update_forwarder()'s
-        # own docstring for why this goes through a weakref forwarder
-        # rather than connecting `self._on_mtg_basemap_updated` directly.
-        MTGBasemapProvider.instance().updated.connect(
-            _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
-        )
-
         self.update_data(flight_level_hpa=300.0)
-
-    def _on_mtg_basemap_updated(self) -> None:
-        """MTGBasemapProvider.updated slot - redraws with whatever
-        flight level/time offset this panel currently shows. A real
-        bound method (not a bare lambda) so the disconnect wired up next
-        to the connect() call above has a stable callable to remove."""
-        self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def eventFilter(self, obj: Any, event: Any) -> bool:
         """See map_canvas.py's identical eventFilter() for the full
@@ -925,16 +909,24 @@ class AWCIMapPanel(EventMixin, QWidget):
             lat_range = (-85.0, 85.0)
             step = 4.0
 
-        # Live MTG basemap (explicit user request "je veux que toutes les
-        # maps affiché soient des maps du mtg") - real EUMETSAT imagery
-        # when available, same acf.gui.map.mtg_basemap every other real
-        # map view uses. Falls back to the plain Ocean/Land fill below
-        # when no image has been fetched yet - never a fabricated
-        # substitute image.
-        has_mtg_image = draw_mtg_basemap(self.axis, zorder=0)
-        if not has_mtg_image:
-            self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
-            self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
+        # NOTE (correction, 2026-09-07 - explicit user request "enleve
+        # le MTG ... trouve moi une solution pour afficher des cartes
+        # reel et fonctionnel a 100%"): this used to draw a live MTG
+        # (EUMETSAT FCI Level 1c) basemap image here first, falling
+        # back to plain Ocean/Land fill only when no image had been
+        # fetched yet. Removed - MTG's own honest, already-documented
+        # limitations (mtg_basemap.py's own docstring: "thumbnail
+        # resolution, approximate geolocation", plus a real network
+        # dependency that can leave the map blank until the first
+        # successful fetch, or unauthenticated/degraded depending on
+        # config/eumetsat.yaml) made this less reliable than the real
+        # alternative already available for free: Cartopy's own
+        # Natural Earth vector geography (OCEAN/LAND/COASTLINE/BORDERS
+        # below), which is 100% real, always available offline, has no
+        # network dependency, and needs no authentication - genuinely
+        # functional on every launch, not just when EUMETSAT answers.
+        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
+        self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
         self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
         self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
 
