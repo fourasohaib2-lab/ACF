@@ -57,6 +57,16 @@ def test_a_toast_auto_dismisses_after_its_real_duration(qtbot):
     manager.show("Disconnected from HPC", kind="info", duration_ms=50)
 
     qtbot.waitUntil(lambda: len(manager._active) == 0, timeout=2000)
+    # Flush the toast's queued deleteLater BEFORE the test ends
+    # (2026-09-09: intermittent native segfaults traced to the deferred
+    # deletion instead executing inside pytest-qt's teardown/next-test
+    # event processing, where host+toast are already being destroyed).
+    # Deterministically drain the deleteLater queue here so teardown
+    # never inherits it.
+    from PySide6.QtCore import QCoreApplication, QEvent
+
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    QCoreApplication.processEvents()
 
 
 def test_destroying_the_host_while_a_toast_is_still_pending_does_not_raise(qtbot):
@@ -78,3 +88,34 @@ def test_destroying_the_host_while_a_toast_is_still_pending_does_not_raise(qtbot
     # qtbot.wait() itself already pumps the event loop where a
     # dangling callback would have raised.
     qtbot.wait(150)
+
+
+def test_dismiss_touching_a_toast_whose_cpp_object_died_does_not_crash(qtbot):
+    """Real regression test for the 2026-09-09 `free(): invalid pointer`
+    native crash found by the full GUI suite (position varies between
+    runs, always inside pytest-qt's event processing after this file's
+    auto-dismiss test): a toast's C++ object can die WITH its host in
+    the same event-loop window the dismiss timer fires in - the
+    context-object overload cancels only when the toast itself is
+    gone BEFORE the timer, not when host and toast die together
+    between timer setup and callback. _dismiss must therefore check
+    shiboken validity before deleteLater() (and _reposition before
+    touching any survivor) - without that guard this test aborts the
+    process at the deleteLater() call.
+    """
+    host = QWidget()
+    qtbot.addWidget(host)
+    host.resize(800, 600)
+    host.show()
+    manager = AWCIToastManager(host)
+
+    manager.show("Host dying with toast alive", kind="info", duration_ms=200)
+    toast = manager._active[0]
+    # Force exactly the state the crash ran into: wrapper alive in
+    # Python, C++ object already destroyed (with the host).
+    from shiboken6 import invalidate
+
+    invalidate(toast)
+    manager._dismiss(toast)  # must not raise OR touch the dead pointer
+
+    assert manager._active == []

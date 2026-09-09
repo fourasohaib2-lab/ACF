@@ -47,6 +47,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
+from shiboken6 import isValid
 
 from acf.gui.theme_tokens import TOKENS
 
@@ -115,11 +116,27 @@ class AWCIToastManager:
         if toast not in self._active:
             return
         self._active.remove(toast)
-        toast.deleteLater()
+        # Second lifetime guard (2026-09-09, real `free(): invalid
+        # pointer` native crash found by the full GUI suite): the
+        # context-object overload cancels the timer callback when the
+        # toast's C++ object is destroyed, but nothing prevented
+        # calling into a wrapper whose C++ part died WITH ITS HOST in
+        # the same event-loop window (host torn down between the
+        # singleShot firing and this running). isValid() is the
+        # canonical shiboken guard for exactly that state - a dead
+        # C++ object needs no deleteLater, and touching it is the
+        # crash itself.
+        if isValid(toast):
+            toast.deleteLater()
         self._reposition()
 
     def _reposition(self) -> None:
+        # Drop wrappers whose C++ objects died with a destroyed host
+        # before repositioning the survivors - same guard as _dismiss.
+        self._active = [toast for toast in self._active if isValid(toast)]
         top_level = self._host.window()
+        if not isValid(top_level):
+            return
         margin = 16
         y = top_level.height() - margin
         for toast in reversed(self._active):

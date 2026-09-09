@@ -44,13 +44,31 @@ def test_disconnecting_hpc_shows_an_info_toast(qtbot):
 
 def test_importing_a_real_file_shows_a_success_toast_not_a_blocking_dialog(qtbot, tmp_path):
     """The old behavior (QMessageBox.information) is gone - a real
-    import success no longer blocks the operator."""
+    import success no longer blocks the operator.
+
+    Updated 2026-09-08 for the import button's new end-to-end wiring:
+    a usable file now also computes real AWCI (a second success toast),
+    so this test builds a genuinely extractable dataset (the exact
+    shape ACF's real NetCDFReader produces) and asserts both toasts;
+    a file that matches nothing still toasts once with an error kind
+    (see test_awci_dashboard_imported_model.py for the wiring tests)."""
+    import numpy as np
+
+    from acf.data.dataset import Dataset
     from acf.data.manager import DataManager
 
-    fake_dataset = MagicMock()
-    fake_dataset.name = "test.grib"
-    fake_dataset.filetype = "GRIB"
-    fake_dataset.variables = {"t2m": None, "msl": None}
+    fake_dataset = Dataset(name="test.grib", filetype="GRIB", source="xarray")
+    lats = np.linspace(20.0, 44.0, 25)
+    lons = np.linspace(-8.0, 15.0, 20)
+    LAT, LON = np.meshgrid(lats, lons, indexing="ij")
+    fake_dataset.add_variable("latitude", lats)
+    fake_dataset.add_variable("longitude", lons)
+    fake_dataset.add_variable("t2m", 288.0 + 0.3 * LAT - 0.02 * LON)
+    fake_dataset.add_variable("u10", 3.0 + 0.05 * LON)
+    fake_dataset.add_variable("v10", 1.0 + 0.02 * LAT)
+    fake_dataset.add_variable("sp", np.full_like(LAT, 1013.0))
+    for name, unit in (("t2m", "K"), ("u10", "m s-1"), ("v10", "m s-1"), ("sp", "hPa")):
+        fake_dataset.set_metadata(f"{name}_units", unit)
 
     dashboard = AWCIDashboard()
     qtbot.addWidget(dashboard)
@@ -63,7 +81,9 @@ def test_importing_a_real_file_shows_a_success_toast_not_a_blocking_dialog(qtbot
         dashboard._import_model_file()
 
     mock_info.assert_not_called()
-    assert len(dashboard._toasts._active) == 1
+    # Toast 1: load success. Toast 2: real AWCI computed from it.
+    assert len(dashboard._toasts._active) == 2
+    assert dashboard._last_point_mode == "imported_model"
 
 
 def test_clock_label_shows_a_real_ticking_utc_time_and_has_a_fixed_width(qtbot):
