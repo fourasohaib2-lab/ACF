@@ -850,6 +850,92 @@ vérifiait encore l'ancien libellé `"▶ Play Evolution (4D)"` du bouton,
 raccourci ci-dessus en `"▶ 4D Evolution"`. Corrigé (2 assertions mises à
 jour) - fichier revérifié isolément : 9 passed. Aucune autre régression.
 
+## Stabilisation de la suite GUI : les crashes natifs réglés (2026-09-09, commit fe92bff)
+
+Le "futur passage dédié à la robustesse des tests" différé à trois
+reprises ci-dessus (crash de la suite GUI isolée, crash de la suite
+complète à ~7% de collection, figures matplotlib non fermées) est
+réalisé. Trois causes racines, chacune vérifiée par A/B contre le code
+vierge :
+
+1. La plateforme Qt par défaut en run headless est instable :
+   `QT_QPA_PLATFORM=offscreen` par défaut dans `tests/conftest.py`
+   (une surcharge explicite de l'environnement reste prioritaire),
+   selon la propre guidance headless documentée du projet. C'est ce
+   qui réglait les segfaults récurrents de la suite AWCI.
+2. Les figures pyplot qui fuyaient s'accumulaient d'un test à l'autre
+   ("More than 20 figures have been opened") : les figures matplotlib
+   sont maintenant fermées après chaque test dans le conftest racine.
+   C'est le `plt.close(fig)` systématique annoncé comme candidat depuis
+   le 2026-09-07.
+3. Le test d'auto-dismiss du toast se terminait alors le `deleteLater`
+   du toast était encore en file, si bien que la suppression différée
+   s'exécutait dans le teardown de pytest-qt et corrompait le tas
+   (`free(): invalid pointer`) : les événements DeferredDelete sont
+   maintenant purgés avant teardown dans ce test.
+
+`awci_toast.py` reçoit aussi une vraie correction de robustesse de la
+classe exacte que son propre docstring met en garde :
+`_dismiss`/`_reposition` vérifient désormais `shiboken.isValid()` avant
+de toucher des wrappers de toast dont l'objet C++ peut déjà avoir été
+détruit avec leur hôte, avec un test de régression.
+
+**Résultat vérifié** : la suite GUI complète passe 3+ runs consécutifs
+(précédemment aborting à 92%) et la suite AWCI passe de façon répétée.
+
+## Nettoyage : câblage MTG mort retiré du panneau carte AWCI (2026-09-09, commit 9622c12)
+
+L'intégration basemap MTG avait été retirée du panneau carte AWCI (le
+fournisseur générique reste la source des basemaps dans ce panneau) :
+`AWCIMapPanel` n'importe plus `draw_mtg_basemap` et ne s'abonne plus
+aux mises à jour de `MTGBasemapProvider`. `MTGBasemapProvider` lui-même
+reste : le `EarthMonitoringPanel` d'ESOC l'utilise toujours. Un test
+nouveau (`tests/test_awci_map_panel_no_mtg.py`, 78 lignes) verrouille
+l'intention : `update_data` ne dessine jamais de basemap MTG.
+
+## Nouvelle fonctionnalité : les fichiers de modèle importés deviennent un niveau de données complet (2026-09-09, commit c82ecd5)
+
+Le bouton "📂 Import Model File" chargeait un fichier réel et s'arrêtait
+là (limitation honnêtement divulguée à l'époque). Trois nouveaux
+modules `acf.awci` composent les primitives ACF existantes (aucun
+module scientifique modifié) pour qu'un fichier importé quelconque
+(NetCDF/GRIB/FA via le vrai DataManager) pilote AWCI de bout en bout :
+
+- **`model_import.py`** : adaptateur générique par point - matching
+  d'alias par le propre ParameterMapper d'ACF + métadonnées réelles
+  standard_name/units de chaque variable, conversion d'unités réelle
+  (resolve_volume_conversion, rendue publique et capable de tableaux),
+  dérivation réelle u/v -> vitesse de vent et RH -> humidité spécifique
+  via la chaîne Moisture testée existante, et CAPE/CIN de colonne réels
+  via le pipeline MetPy convective_energy quand le fichier porte une
+  colonne complète. Le dashboard calcule un AWCI réel dessus au point
+  courant et re-échantillonne à chaque clic carte et changement de
+  niveau de vol.
+- **`model_import_evolution.py`** : AWCI(x, y, t) réel par cellule de
+  grille pour les fichiers portant une dimension temporelle - décodage
+  CF du temps réel, sélection de trames first/last inclusive, calculé
+  hors-thread et rejoué via le mécanisme de lecture 4D existant.
+- **`model_import_cross_section.py`** : coupe verticale AWCI réelle le
+  long de la route du dashboard pour les fichiers portant un axe de
+  niveaux de pression - l'axe déclaré par le fichier lui-même (jamais
+  une liste de niveaux devinée), l'échantillonnage nearest-neighbour
+  réel de path_sampling et ses overlays de danger, seules les colonnes
+  du chemin sont scorées, les fichiers 4-D (time, level, lat, lon)
+  montrés honnêtement à leur première échéance valide, et un fichier
+  surface-seulement refusé en nommant les alternatives.
+
+Les variables réellement absentes restent absentes (les défauts réels
+d'AWCICalculator s'appliquent) - jamais fabriquées ; variables
+matched/missing/skipped et notes honnêtes rapportées dans la ligne de
+statut.
+
+**Vérification du 2026-09-10** (cette session, aujourd'hui) : les 52
+tests des 6 nouveaux fichiers de test verts en isolation, et run
+complet `pytest -q` : **4729 passed, 1 skipped, 0 failed** (838
+warnings, 469s). Aucun échec - confirme aussi sur la machine actuelle
+que le crash de collection à ~7% documenté au 2026-09-07 est bien
+résolu par la stabilisation ci-dessus.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce
