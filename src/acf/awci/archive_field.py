@@ -80,6 +80,51 @@ A field that genuinely fails to read (missing from this particular
 real file, or an `EPyGrAMReader` failure) is honestly OMITTED from the
 returned level — never fabricated — and named in the result's own
 `missing_fields` list.
+
+**Update 2026-09-10 ("wire real CIN or another missing variable into
+the Real Archive pipeline")**: CIN was re-verified ABSENT first — the
+full 97-field list of this real file (read fresh, not from the
+2026-09-07 session's notes) contains exactly one convective
+diagnostic, `SURFCAPE.POS.F00` (already wired 2026-09-07); no CIN
+field of any naming convention exists, so CIN stays honestly unfed and
+`AWCICalculator`'s own documented default keeps applying. Two OTHER
+real variables WERE wired, after verifying each candidate against the
+file itself:
+
+- **Precipitation rate** (Surface): `SURFPREC.EAU.CON` (convective) +
+  `SURFPREC.EAU.GEC` (large-scale) are real per-grid accumulations in
+  mm. Their accumulation window was determined from the FILE'S OWN
+  metadata, not guessed: opening the FA resource directly with
+  EPyGrAM, every lead ≥ +3h declares GRIB2 productDefinitionTemplateNumber 8
+  (statistical processing over a time interval) with
+  `cumulativeduration() == 3:00:00` — i.e. accumulation over the
+  PRECEDING 3 hours, not since run start (an empirical cross-check
+  agrees: max values plateau at exactly 34.53 mm across the 4 leads
+  +21h..+30h, impossible for a run-total). The +0h analysis declares a
+  zero-length interval and stores genuine zeros; the rate derived from
+  them (0.0 mm/h) is reported as-is — vacuously true (nothing could
+  have accumulated over an empty interval), and identical to the
+  no-signal default the microphysical module already had. Rate fed to
+  AWCICalculator = accumulated mm / 3 h.
+- **Bulk wind shear 850→500 hPa** ("850 hPa" level): the real
+  u/v at the two real pressure levels, combined through the same
+  already-existing, already-correct
+  `acf.science.bulk_wind_shear.BulkWindShear.calculate()` formula the
+  solver path uses (`sqrt(du^2 + dv^2)`), applied to the whole real
+  grid (numpy-vectorized — mathematically identical, no new physics).
+  This is a real pressure-layer shear, NOT the operationally common
+  0-6 km AGL layer (see acf.awci.wind_shear's own docstring for the
+  same honest scope distinction, made there for solver levels).
+
+Deliberately NOT wired, with the evidence that decided it: altitude.
+The only elevation-like field in the file, `P00000GEOPOTENTI`, was
+checked against real terrain before being trusted — at the Hoggar
+mountains (~23N, 7.5E; true elevation ~2900 m) it reads 1223 m2/s2 ≈
+125 m, and its whole-domain max (2158.8 m2/s2 ≈ 220 m) is below known
+Saharan massif elevations — it does NOT follow real terrain, so feeding
+it to the topographic module would inject wrong data rather than no
+data. It stays unfed; the topographic module's altitude default keeps
+applying in Real Archive mode.
 """
 
 from __future__ import annotations
@@ -111,6 +156,17 @@ RESTOR_PRESSURE_LEVELS_HPA: dict[str, float] = {
 #: to +48h - 17 real values, all spot-checked to decode fully (see
 #: module docstring's 2026-09-04 update).
 RESTOR_LEAD_TIMES_HOURS: list[int] = list(range(0, 49, 3))
+
+#: Real accumulation window of the SURFPREC.EAU.* / SURFPREC.NEI.*
+#: fields (added 2026-09-10 — see the module docstring's update note
+#: for the verification: EPyGrAM's own cumulativeduration() == 3h at
+#: every lead >= +3h, read from the FA resource's own GRIB2 PDT-8
+#: timing metadata, plus the empirical plateau cross-check). Precip
+#: rate fed to AWCICalculator = accumulated mm over this window / its
+#: length in hours. NOT read from the file at runtime (EPyGrAMReader
+#: does not expose field timing metadata) — a verified property of
+#: this archive's real fields, documented here as the constant it is.
+RESTOR_PRECIP_INTERVAL_HOURS: float = 3.0
 
 
 def restor_fullpos_path(aladin_data_dir: str | Path, run_datetime: str, lead_hours: int) -> Path:
@@ -192,6 +248,7 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
             return None
 
         # Real 7 constant-pressure levels.
+        u_850 = v_850 = u_500 = v_500 = None
         for code, pressure_hpa in RESTOR_PRESSURE_LEVELS_HPA.items():
             temperature = _read(f"P{code}TEMPERATUR")
             u = _read(f"P{code}VENT_ZONAL")
@@ -209,6 +266,13 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
                 "specific_humidity": specific_humidity,
                 "pressure_hpa": pressure_hpa,
             }
+            # Keep the real u/v of the 850/500 hPa levels for the real
+            # 850->500 hPa bulk wind shear below (added 2026-09-10 —
+            # see module docstring's update note).
+            if code == "85000":
+                u_850, v_850 = u, v
+            elif code == "50000":
+                u_500, v_500 = u, v
 
         # Real surface entry - CLS screen-level diagnostics + the
         # real local SURFPRESSION (Pa -> hPa), not a guessed constant.
@@ -250,6 +314,49 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
             if cape is not None:
                 levels["Surface"]["cape"] = cape
 
+            # Real precipitation rate (added 2026-09-10 — see module
+            # docstring's update note): SURFPREC.EAU.CON + .GEC are the
+            # real convective + large-scale accumulation fields (mm) over
+            # the file's own real 3h interval (RESTOR_PRECIP_INTERVAL_HOURS,
+            # verified from the FA metadata itself). Surface-only, like
+            # CAPE — a surface diagnostic, not a per-pressure-level one.
+            # The sum is the real total precipitation; divided by the real
+            # window length it becomes the mm/h RATE AWCICalculator's
+            # microphysical module expects (Normalizer.normalize_precipitation's
+            # own documented unit). At the +0h analysis the file declares a
+            # zero-length interval and stores genuine zeros — the 0.0 rate
+            # derived from them is reported as-is (see module docstring).
+            precip_convective_mm = _read("SURFPREC.EAU.CON")
+            precip_largescale_mm = _read("SURFPREC.EAU.GEC")
+            if precip_convective_mm is not None and precip_largescale_mm is not None:
+                total_mm = precip_convective_mm + precip_largescale_mm
+                levels["Surface"]["precipitation"] = total_mm / RESTOR_PRECIP_INTERVAL_HOURS
+
+        # Real 850->500 hPa bulk wind shear (added 2026-09-10 — see
+        # module docstring's update note): the same real
+        # BulkWindShear.calculate() formula the solver path uses
+        # (sqrt(du^2 + dv^2)), numpy-vectorized over the real grid —
+        # mathematically identical, no new physics. Carried on the
+        # "850 hPa" entry (the layer's real bottom level); AWCICalculator
+        # reads it via data.get("wind_shear") and blends it 50/50 with
+        # wind speed in its dynamic module. NOT computed when either
+        # real level's u/v genuinely failed to read (honest omission,
+        # same discipline as every other field here) — and deliberately
+        # NOT a 0-6 km AGL layer (see acf.awci.wind_shear's own docstring
+        # for the same real scope distinction).
+        # ("850 hPa" in levels guards the edge case where the level's
+        # own u/v read fine but another field of that level did not —
+        # the level was then honestly omitted as a whole, and the shear
+        # must not re-create a partial entry.)
+        if (
+            "850 hPa" in levels
+            and u_850 is not None
+            and v_850 is not None
+            and u_500 is not None
+            and v_500 is not None
+        ):
+            levels["850 hPa"]["wind_shear"] = np.hypot(u_500 - u_850, v_500 - v_850)
+
     return {
         "lats": lats,
         "lons": lons,
@@ -264,9 +371,15 @@ def load_real_aladin_restor_run(fa_filepath: str | Path) -> dict[str, Any]:
             "not a live feed, not multi-model (AROME/ARPEGE were never really fetched "
             "for this archive despite RESTOR's own folder names - see module docstring). "
             "7 real constant-pressure levels (850-100 hPa) + 1 real surface entry, the "
-            "latter now also carrying real CAPE (SURFCAPE.POS.F00, added 2026-09-07) "
-            "when the field reads successfully; CIN and precipitation-phase still have "
-            "no matching real per-level field in this archive."
+            "latter also carrying real CAPE (SURFCAPE.POS.F00, added 2026-09-07) and a "
+            "real 3h-interval precipitation rate (SURFPREC.EAU.CON+GEC / 3h, added "
+            "2026-09-10) when those fields read successfully, and the 850 hPa entry a "
+            "real 850->500 hPa bulk wind shear from the file's own real u/v (added "
+            "2026-09-10); CIN (no matching field — re-verified against the full "
+            "97-field list 2026-09-10) and precipitation-phase severity still have no "
+            "matching real field in this archive, and the file's P00000GEOPOTENTI was "
+            "checked against real terrain and does NOT follow it (Hoggar reads ~125 m "
+            "vs the real ~2900 m) so it is deliberately not fed as altitude."
         ),
     }
 
@@ -287,13 +400,17 @@ def sample_archive_at_point(archive: dict[str, Any], lat: float, lon: float) -> 
         in AWCICalculator.calculate()'s own real dict-input shape, so
         a caller can pass it straight through:
         `AWCICalculator().calculate(sample_archive_at_point(archive, lat, lon)["850 hPa"])`.
-        The "Surface" entry also carries a real "cape" key when
-        load_real_aladin_restor_run() found one (added 2026-09-07) -
-        AWCICalculator.calculate() reads it via data.get("cape", ...),
-        so this is additive: existing callers ignoring "cape" are
-        unaffected, and AWCICalculator.calculate()'s own "cin" default
-        still applies since no real per-point CIN exists in this
-        archive.
+        Additive real keys carried through when present (each read via
+        data.get() by AWCICalculator.calculate(), so existing callers
+        ignoring them are unaffected): "cape" on "Surface" (added
+        2026-09-07), "precipitation" (real mm/h rate from the archive's
+        own 3h-interval accumulations, added 2026-09-10) on "Surface",
+        and "wind_shear" (real 850->500 hPa bulk shear in m/s, added
+        2026-09-10) on "850 hPa" only. AWCICalculator.calculate()'s own
+        "cin" default still applies since no real per-point CIN exists
+        in this archive, and its altitude default too since the file's
+        only elevation-like field does not follow real terrain (see
+        load_real_aladin_restor_run()'s docstring).
     """
     lats = archive["lats"]
     lons = archive["lons"]
@@ -318,5 +435,13 @@ def sample_archive_at_point(archive: dict[str, Any], lat: float, lon: float) -> 
         }
         if "cape" in fields:
             point_sample["cape"] = float(fields["cape"][lat_idx, lon_idx])
+        # Real precipitation rate (mm/h) and 850->500 hPa bulk shear
+        # (m/s), added 2026-09-10 — forwarded the same additive way as
+        # "cape" above ("wind_shear" only ever exists on the "850 hPa"
+        # entry, so it is forwarded only there by construction).
+        if "precipitation" in fields:
+            point_sample["precipitation"] = float(fields["precipitation"][lat_idx, lon_idx])
+        if "wind_shear" in fields:
+            point_sample["wind_shear"] = float(fields["wind_shear"][lat_idx, lon_idx])
         sample[level_label] = point_sample
     return sample

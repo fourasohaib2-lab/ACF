@@ -936,6 +936,71 @@ warnings, 469s). Aucun échec - confirme aussi sur la machine actuelle
 que le crash de collection à ~7% documenté au 2026-09-07 est bien
 résolu par la stabilisation ci-dessus.
 
+## Real Archive : précipitation et cisaillement réels câblés, CIN re-vérifié absent (2026-09-10)
+
+Demande : "wire real CIN or another missing variable into the Real
+Archive pipeline". Méthode d'abord, pas de câblage au jugement : le
+fichier FA réel a été rouvert et ses 97 champs listés à neuf (pas depuis
+les notes du 2026-09-07).
+
+- **CIN : reste honnêtement absent.** La liste complète confirme un
+  seul diagnostic convectif dans tout le fichier, `SURFCAPE.POS.F00`
+  (déjà câblé le 2026-09-07). Aucun champ CIN de quelque convention de
+  nommage que ce soit - refus de fabiquer, le défaut documenté
+  d'`AWCICalculator` s'applique toujours. Verrouillé par un test.
+- **Altitude : refusée avec preuve.** Seul champ pseudo-élévation du
+  fichier, `P00000GEOPOTENTI`, vérifié contre le vrai terrain avant
+  tout usage : à l'Hoggar (~23N, 7.5E, élévation réelle ~2900 m) il
+  lit 1223 m²/s² ≈ 125 m, et le maximum de tout le domaine (2158.8
+  m²/s² ≈ 220 m) est sous les massifs sahariens connus - il ne suit
+  PAS le terrain réel (probablement un niveau du modèle, pas une
+  surface orographique). Le câbler injecterait des données fausses
+  plutôt que pas de données ; le module topographique garde son défaut.
+  Preuve conservée comme pin de régression dans un test.
+- **Précipitation : câblée (Surface).** `SURFPREC.EAU.CON` (convective)
+  + `SURFPREC.EAU.GEC` (à grande échelle), additions réelles en mm.
+  Leur fenêtre d'accumulation a été déterminée depuis les MÉTADONNÉES
+  du fichier lui-même, pas devinée : en ouvrant la ressource FA
+  directement avec EPyGrAM, chaque échéance >= +3h déclare un champ
+  GRIB2 PDT-8 (traitement statistique sur intervalle) avec
+  `cumulativeduration() == 3:00:00` - accumulation sur les 3 heures
+  PRÉCÉDENTES, pas depuis le début de run (contre-vérification
+  empirique : les maxima plafonnent à exactement 34.53 mm sur les 4
+  échéances +21h..+30h, impossible pour un cumul de run ; et le
+  paradoxe apparent de cellules qui redescendent à zéro s'explique -
+  la cellule a plu dans une fenêtre de 3h, pas dans la suivante).
+  L'analyse +0h déclare un intervalle de longueur nulle et stocke des
+  zéros réels ; le taux 0.0 dérivé est rapporté tel quel (vacueusement
+  vrai, identique au défaut sans-signal du module microphysique).
+  Taux fourni à `AWCICalculator` = mm accumulés / 3 h (l'unité mm/h
+  documentée de `normalize_precipitation`).
+- **Cisaillement 850->500 hPa : câblé (niveau "850 hPa").** Même
+  formule réelle `BulkWindShear.calculate()` (sqrt(du²+dv²)) que le
+  chemin solveur, vectorisée numpy sur la grille réelle u/v des deux
+  vrais niveaux de pression - mathématiquement identique, aucune
+  nouvelle physique. Honnêteté de périmètre : ce n'est PAS la couche
+  opérationnelle 0-6 km AGL (même distinction que le docstring
+  d'`acf.awci.wind_shear`).
+
+Aucun module scientifique modifié ; `sample_archive_at_point()`
+transmet les deux nouvelles clés de façon additive (comme "cape"
+déjà), donc les deux chemins dashboard Real Archive (profil + trend
+48h) reçoivent les signaux réels sans aucun changement côté GUI, et
+tout appelant ignorant des nouvelles clés garde le comportement exact
+d'avant. Plages réelles mesurées à +12h : précip 0-10.7 mm/h,
+cisaillement 0.05-24.5 m/s ; preuve de réponse réelle du calculateur
+verrouillée par test (scores dynamic/microphysical différents
+avec/sans la clé, au point réel le plus pluvieux de la grille).
+
+**Non-régression** : tests du fichier archive_field 28/28 verts (9
+nouveaux), fichier GUI Real Archive + model_import 73 verts, suite
+complète en deux moitiés (méthode : le sandbox de cette session tue
+les processus en fond et borne chaque commande à 10 min, le run unique
+`pytest -q` d'aujourd'hui ayant déjà dépassé ce budget à 469s + un
+timeout) - `--ignore=tests/gui` : **4340 passed, 1 skipped** (245s),
+`tests/gui` : **398 passed** (299s), soit 4738+1 = 4729 d'hier + 9
+nouveaux, 0 échec. `mypy` et `ruff` propres sur les fichiers touchés.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

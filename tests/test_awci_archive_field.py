@@ -20,6 +20,7 @@ import pytest
 
 from acf.awci.archive_field import (
     RESTOR_LEAD_TIMES_HOURS,
+    RESTOR_PRECIP_INTERVAL_HOURS,
     RESTOR_PRESSURE_LEVELS_HPA,
     load_real_aladin_restor_run,
     restor_fullpos_path,
@@ -246,6 +247,165 @@ class TestWithTheRealArchive:
         no_cape_result = AWCICalculator().calculate(without_cape)
 
         assert with_cape["module_scores"]["convective"] != no_cape_result["module_scores"]["convective"]
+
+    def test_surface_carries_real_precipitation_rate_from_the_3h_interval_accumulations(self, real_archive):
+        """Added 2026-09-10: SURFPREC.EAU.CON + .GEC are real per-grid
+        accumulations over the file's own real 3h interval (verified
+        from the FA resource's own GRIB2 PDT-8 timing metadata -
+        EPyGrAM's cumulativeduration() == 3:00:00 at every lead >= +3h;
+        see archive_field's module docstring). The module must report
+        the mm/h RATE the microphysical module expects, matching an
+        independent re-derivation straight from the raw reader."""
+        assert RESTOR_PRECIP_INTERVAL_HOURS == 3.0
+        fields = real_archive["levels"]["Surface"]
+        assert "precipitation" in fields
+        rate_grid = fields["precipitation"]
+        assert rate_grid.shape == fields["temperature"].shape
+        assert np.all(rate_grid >= 0.0)  # real, physical: accumulated precip is never negative
+
+        # Independent re-derivation at one real point, straight from
+        # the raw reader (not through archive_field's own plumbing).
+        lat, lon = 18.54, -10.71
+        lat_idx = int(np.argmin(np.abs(real_archive["lats"] - lat)))
+        lon_idx = int(np.argmin(np.abs(real_archive["lons"] - lon)))
+        with EPyGrAMReader(REAL_RESTOR_FILE) as reader:
+            con = np.asarray(reader.read_field("SURFPREC.EAU.CON")["data"])
+            gec = np.asarray(reader.read_field("SURFPREC.EAU.GEC")["data"])
+        expected_rate = (con[lat_idx, lon_idx] + gec[lat_idx, lon_idx]) / 3.0
+        assert rate_grid[lat_idx, lon_idx] == pytest.approx(expected_rate)
+
+    def test_lead_0_carries_the_honest_zero_precipitation_rate(self):
+        """The +0h analysis declares a ZERO-length accumulation interval
+        in the file's own timing metadata and stores genuine zeros - the
+        0.0 mm/h rate derived from them is reported as-is, not omitted
+        and not fabricated into rain that never fell."""
+        archive = load_real_aladin_restor_run(REAL_RESTOR_FILE)
+        rate_grid = archive["levels"]["Surface"]["precipitation"]
+        assert float(rate_grid.max()) == 0.0
+
+    def test_precipitation_is_surface_only_like_cape(self, real_archive):
+        """Precipitation accumulations are real SURF* fields (surface
+        diagnostics) - must not appear on the 7 constant-pressure
+        levels, same convention as CAPE."""
+        for level_label, fields in real_archive["levels"].items():
+            if level_label == "Surface":
+                continue
+            assert "precipitation" not in fields
+
+    def test_850hpa_carries_real_bulk_shear_from_the_file_uv(self, real_archive):
+        """Added 2026-09-10: real 850->500 hPa bulk wind shear from the
+        file's own real u/v at those two real levels, through the same
+        BulkWindShear formula the solver path uses - verified here
+        against an independent re-derivation straight from the raw
+        reader at one real point."""
+        fields = real_archive["levels"]["850 hPa"]
+        assert "wind_shear" in fields
+        shear_grid = fields["wind_shear"]
+        assert shear_grid.shape == fields["temperature"].shape
+        assert np.all(shear_grid >= 0.0)  # a magnitude is never negative
+
+        lat, lon = 36.75, 3.06
+        lat_idx = int(np.argmin(np.abs(real_archive["lats"] - lat)))
+        lon_idx = int(np.argmin(np.abs(real_archive["lons"] - lon)))
+        with EPyGrAMReader(REAL_RESTOR_FILE) as reader:
+            u850 = np.asarray(reader.read_field("P85000VENT_ZONAL")["data"])
+            v850 = np.asarray(reader.read_field("P85000VENT_MERID")["data"])
+            u500 = np.asarray(reader.read_field("P50000VENT_ZONAL")["data"])
+            v500 = np.asarray(reader.read_field("P50000VENT_MERID")["data"])
+        from acf.science.bulk_wind_shear import BulkWindShear
+
+        expected = BulkWindShear.calculate(
+            float(u850[lat_idx, lon_idx]),
+            float(v850[lat_idx, lon_idx]),
+            float(u500[lat_idx, lon_idx]),
+            float(v500[lat_idx, lon_idx]),
+        )
+        assert shear_grid[lat_idx, lon_idx] == pytest.approx(expected)
+
+    def test_wind_shear_is_carried_on_the_850hpa_level_only(self, real_archive):
+        """The 850->500 hPa layer's bottom level carries the shear; no
+        other level may claim it (a per-level shear column would be a
+        different, undocumented quantity)."""
+        for level_label, fields in real_archive["levels"].items():
+            if level_label == "850 hPa":
+                continue
+            assert "wind_shear" not in fields
+
+    def test_no_cin_is_fed_from_this_archive(self, real_archive):
+        """Deliberate refusal, pinned (2026-09-10): no CIN field of any
+        naming convention exists in this real file's full 97-field list
+        (re-verified fresh, not from the 2026-09-07 session's notes),
+        so no level may ever carry a "cin" key - AWCICalculator's own
+        documented default keeps applying instead of a fabricated value."""
+        for fields in real_archive["levels"].values():
+            assert "cin" not in fields
+
+    def test_altitude_is_not_fed_from_the_terrain_implausible_geopotential(self, real_archive):
+        """Deliberate refusal, pinned with the evidence that decided it
+        (2026-09-10): the file's only elevation-like field,
+        P00000GEOPOTENTI, does NOT follow real terrain - at the Hoggar
+        mountains (~23N, 7.5E, true elevation ~2900 m) it reads ~125 m,
+        and its whole-domain max is ~220 m, below the known Saharan
+        massifs. Feeding it as altitude would inject wrong data, so no
+        level may ever carry an "altitude" key."""
+        for fields in real_archive["levels"].values():
+            assert "altitude" not in fields
+
+        # The decisive evidence itself, kept as a regression pin against
+        # a future "helpful" wiring: re-read the field straight from the
+        # raw reader and confirm the terrain mismatch is real.
+        lat, lon = 23.0, 7.5  # Hoggar mountains, true elevation ~2900 m
+        lat_idx = int(np.argmin(np.abs(real_archive["lats"] - lat)))
+        lon_idx = int(np.argmin(np.abs(real_archive["lons"] - lon)))
+        with EPyGrAMReader(REAL_RESTOR_FILE) as reader:
+            geopot = np.asarray(reader.read_field("P00000GEOPOTENTI")["data"])
+        elevation_m = float(geopot[lat_idx, lon_idx]) / 9.80665
+        assert elevation_m < 500.0  # real Hoggar is ~2900 m - this field is not terrain
+
+    def test_sample_archive_at_point_carries_precip_and_shear_through(self, real_archive):
+        lat, lon = 36.75, 3.06
+        lat_idx = int(np.argmin(np.abs(real_archive["lats"] - lat)))
+        lon_idx = int(np.argmin(np.abs(real_archive["lons"] - lon)))
+        expected_precip = float(real_archive["levels"]["Surface"]["precipitation"][lat_idx, lon_idx])
+        expected_shear = float(real_archive["levels"]["850 hPa"]["wind_shear"][lat_idx, lon_idx])
+
+        sample = sample_archive_at_point(real_archive, lat, lon)
+
+        assert sample["Surface"]["precipitation"] == pytest.approx(expected_precip)
+        assert sample["850 hPa"]["wind_shear"] == pytest.approx(expected_shear)
+        assert "wind_shear" not in sample["Surface"]
+
+    def test_real_awci_microphysical_and_dynamic_modules_respond_to_the_new_real_inputs(self, real_archive):
+        """End-to-end proof (same discipline as the CAPE response test
+        above) that both new real inputs actually reach AWCICalculator
+        and change its output, not just present-but-unused in the dict."""
+        sample = sample_archive_at_point(real_archive, lat=36.75, lon=3.06)
+        assert sample["850 hPa"]["wind_shear"] > 0.0  # this real point's own real shear is nonzero
+
+        with_shear = AWCICalculator().calculate(sample["850 hPa"])
+        without_shear = dict(sample["850 hPa"])
+        del without_shear["wind_shear"]
+        no_shear_result = AWCICalculator().calculate(without_shear)
+        assert with_shear["module_scores"]["dynamic"] != no_shear_result["module_scores"]["dynamic"]
+
+        # Precipitation: the +0h analysis the class fixture loads is
+        # genuinely DRY (zero-length accumulation interval - see the
+        # lead-0 test above), so the response check uses the real +12h
+        # lead, whose 3h window contains genuine rain. Samples the real
+        # grid's own rainiest cell of that lead.
+        lead12 = load_real_aladin_restor_run(restor_fullpos_path(REAL_RESTOR_FILE.parent, "2026083100", 12))
+        precip_grid = lead12["levels"]["Surface"]["precipitation"]
+        assert float(precip_grid.max()) > 0.0  # this real lead contains genuine rain
+        wet_i, wet_j = np.unravel_index(int(np.argmax(precip_grid)), precip_grid.shape)
+        wet_sample = sample_archive_at_point(
+            lead12, float(lead12["lats"][wet_i]), float(lead12["lons"][wet_j])
+        )["Surface"]
+        assert wet_sample["precipitation"] == pytest.approx(float(precip_grid.max()))
+        with_precip = AWCICalculator().calculate(wet_sample)
+        without_precip = dict(wet_sample)
+        del without_precip["precipitation"]
+        no_precip_result = AWCICalculator().calculate(without_precip)
+        assert with_precip["module_scores"]["microphysical"] != no_precip_result["module_scores"]["microphysical"]
 
     def test_all_17_real_lead_times_decode_with_a_real_advancing_validity(self, real_archive):
         """Real, direct proof the other 16 real lead times are genuinely
