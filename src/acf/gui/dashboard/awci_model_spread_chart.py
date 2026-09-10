@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -36,7 +36,13 @@ class AWCIModelSpreadChart(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor=TOKENS.bg_root)
+        # Bare Figure (not plt.figure): never registers with the global
+        # pyplot state machine, so many short-lived AWCIModelSpreadChart
+        # instances (every dashboard construction in the GUI test suite)
+        # cannot leak registered figures or trigger the "More than 20
+        # figures have been opened" RuntimeWarning. Standard
+        # Qt-embedding pattern; FigureCanvasQTAgg owns the real lifecycle.
+        self.figure = Figure(facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)

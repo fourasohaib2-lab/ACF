@@ -48,6 +48,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtCore import QSettings
 
+# Third-party/environment warning-noise filters live in pyproject.toml's
+# [tool.pytest.ini_options] filterwarnings (2026-09-10 sweep): interpreter-
+# level filters installed here are shadowed by pytest's own per-test
+# simplefilter("always") - verified empirically when this exact approach
+# filtered nothing - whereas ini filterwarnings entries are applied INSIDE
+# pytest's context and actually take effect.
+
 
 @pytest.fixture(autouse=True)
 def _close_leaked_pyplot_figures():

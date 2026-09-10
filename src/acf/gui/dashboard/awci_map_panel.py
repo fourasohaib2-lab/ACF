@@ -70,7 +70,8 @@ from typing import Any, Protocol
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: F401  (re-exported for backward compat)
+from matplotlib.figure import Figure
 import numpy as np
 import shiboken6
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -319,7 +320,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         button_column.addStretch()
         outer_layout.addLayout(button_column)
 
-        self.figure = plt.figure(
+        # Bare Figure (not plt.figure): never registers with the global
+        # pyplot state machine, so many short-lived AWCIMapPanel instances
+        # (every dashboard construction in the GUI test suite) cannot leak
+        # registered figures or trigger the "More than 20 figures have
+        # been opened" RuntimeWarning. Standard Qt-embedding pattern; the
+        # FigureCanvasQTAgg below owns the figure's real lifecycle, and
+        # closeEvent()'s plt.close() stays correct for a bare Figure too.
+        self.figure = Figure(
             figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor="#0b1220"
         )
         self.canvas = FigureCanvasQTAgg(self.figure)

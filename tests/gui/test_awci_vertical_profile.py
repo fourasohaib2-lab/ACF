@@ -24,8 +24,12 @@ def qapp():
 
 
 def _click_at(widget, x, y):
+    # Explicit globalPos (same point - synthetic local-widget event, no
+    # real screen position matters) avoids the deprecated
+    # 5-positional-arg QMouseEvent overload (PySide6 6.8+ warning).
+    pos = QPointF(x, y)
     event = QMouseEvent(
-        QEvent.Type.MouseButtonPress, QPointF(x, y), Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier
+        QEvent.Type.MouseButtonPress, pos, pos, Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier
     )
     widget.mousePressEvent(event)
 

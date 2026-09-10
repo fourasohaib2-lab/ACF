@@ -31,7 +31,11 @@ def _real_volume(**overrides):
 
 
 def _press(row):
-    event = QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(5, 5), Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+    # Explicit globalPos (same point - synthetic local-widget event, no
+    # real screen position matters) avoids the deprecated
+    # 5-positional-arg QMouseEvent overload (PySide6 6.8+ warning).
+    pos = QPointF(5, 5)
+    event = QMouseEvent(QEvent.Type.MouseButtonPress, pos, pos, Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
     row.mousePressEvent(event)
 
 

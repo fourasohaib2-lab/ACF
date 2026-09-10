@@ -303,8 +303,12 @@ def test_clicking_a_real_bar_via_a_real_mouse_event_opens_the_dialog(qapp):
     assert widget._bar_geometry  # real geometry ready before the click
 
     level, x, bar_width = widget._bar_geometry[0]
+    # Explicit globalPos (same point - synthetic local-widget event, no
+    # real screen position matters) avoids the deprecated
+    # 5-positional-arg QMouseEvent overload (PySide6 6.8+ warning).
+    pos = QPointF(x + bar_width / 2, 100)
     event = QMouseEvent(
-        QEvent.Type.MouseButtonPress, QPointF(x + bar_width / 2, 100),
+        QEvent.Type.MouseButtonPress, pos, pos,
         QtCore_Qt.MouseButton.LeftButton, QtCore_Qt.MouseButton.LeftButton, QtCore_Qt.KeyboardModifier.NoModifier,
     )
     widget.mousePressEvent(event)

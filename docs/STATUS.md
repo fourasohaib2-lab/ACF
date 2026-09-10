@@ -1001,6 +1001,82 @@ timeout) - `--ignore=tests/gui` : **4340 passed, 1 skipped** (245s),
 `tests/gui` : **398 passed** (299s), soit 4738+1 = 4729 d'hier + 9
 nouveaux, 0 échec. `mypy` et `ruff` propres sur les fichiers touchés.
 
+## Sweep des 838 warnings de test : 838 -> 0 (2026-09-10)
+
+Demande : "Start a cleanup sweep of the 838 test warnings". Inventaire
+complet d'abord (2 runs capturés, categorisation origine par origine),
+puis 4 familles traitées différemment selon leur vraie nature -
+acune ne généralisée en "ignorer tout" :
+
+1. **ACF-possédées, corrigées dans le code** :
+   - Surcharge `QMouseEvent` dépréciée (PySide6 6.8+) : 3 helpers de
+     test restaient sur le constructeur 5-args déjà corrigé ailleurs par
+     le commit `0f2e3d7` (test_awci_vertical_profile,
+     test_awci_dashboard_reference_parity,
+     test_awci_dashboard_component_clicks) - même fix : globalPos
+     explicite (le même point, événements synthétiques locaux). Vérifié
+     par les 3 fichiers relancés avec `-W error::DeprecationWarning` :
+     61 passed.
+   - Figures pyplot qui fuyaient : `awci_map_panel.py`,
+     `awci_model_spread_chart.py` et `acf_workstation_thumbnail_strip.py`
+     construisaient leurs figures via `plt.figure()` (enregistrement
+     global pyplot -> warning "More than 20 figures" dans la suite).
+     Remplacés par des `Figure()` nus (pattern standard d'embedding Qt,
+     jamais enregistrés dans pyplot) - les 2 premiers fichiers étaient
+     les seuls émetteurs observés, le 3e est apparu dans les runs finaux
+     une fois les autres sources éteintes. `plt.close()` de
+     `map_canvas.closeEvent()` reste correct pour une Figure nue ; le
+     fixture conftest `plt.close("all")` reste en place comme ceinture
+     de sécurité pour les 11 autres sites `plt.figure()` (jamais
+     observés au-delà du seuil de 20).
+   - Warning MetPy "Interpolation point out of data bounds" :
+     sondes d'interpolation légitimes vers/hors bornes (vers LFC/EL)
+     dont ACF clippe déjà le résultat physique (voir le return du
+     module) - `catch_warnings` ciblé autour du seul appel, PAS un
+     filtre global (tout autre warning MetPy reste visible). Valeurs
+     identiques avec/sans suppression, vérifié.
+2. **Tierce partie, filtrées par message** (pyproject.toml
+   `[tool.pytest.ini_options] filterwarnings`, chaque entrée étroite) :
+   interne cartopy/mpl/ticker vs Matplotlib 3.11 (~500 occurrences, la
+   plus grosse source, code cartopy à corriger), notice
+   consolidated-metadata de zarr sur chaque écriture Format 3,
+   glyphes emoji absents de DejaVu (fait de la machine de test sans
+   fonte emoji, pas un défaut du code).
+3. **Laissé volontairement visible** : le `PytestUnraisableExceptionWarning`
+   unique (peut signaler un vrai bug de durée de vie de ressources).
+
+**Vrai bug trouvé au passage, corrigé** : tracebacks stderr
+`RuntimeError: Signal source has been deleted` depuis
+`panel_manager.py` après des runs pourtant verts (A/B-vérifiés
+pré-existants sur HEAD vierge - invisibles jusque-là car noyés dans le
+bruit). Famille GC-lifetime du fix `_HPCConnectWorker` (`c787022`),
+mais avec DEUX chemins de destruction distincts, établis par
+reproduction, pas par supposition : (a) panneau détruit pendant un
+fetch réseau réel encore en vol - `QThreadPool` possède le côté C++ du
+runnable mais PAS le wrapper Python ni son compagnon signals sans
+parent ; (b) fin de process avec worker encore en file - l'exécution a
+lieu pendant le démontage de l'interpréteur, APRÈS que les globals de
+module ont été nettoyés (chronologie prouvée : les tracebacks
+apparaissent APRÈS la ligne finale "N passed" de pytest). Le fix est
+couché en 3 couches : registre module-level pris au `start()` jamais
+libéré (couvre a), drain `atexit` du pool (couvre b, borne 5s), et
+emit sécurisé `_emit_if_receivers_alive()` (couvre le résidu : un
+fetch qui finit sans récepteur est un non-événement attendu, loggé
+DEBUG au lieu d'un faux "fetch failed" ERROR ; tout autre RuntimeError
+propage). Deux tentatives intermédiaires honnêtement documentées comme
+insuffisantes (liste par-panneau, registre add/discard au vol) -
+vérifiées inutiles par reproduction avant d'être remplacées.
+
+Note de méthode : deux faux départs d'édition dans ce fichier ont été
+corrigés en relisant l'état réel du fichier avant de continuer
+(remplacement tronqué, ancre inexacte) - aucune hypothèse sur le
+contenu, toujours relire après une édition signalee ambiguë.
+
+**Non-régression finale** : `--ignore=tests/gui` : **4340 passed,
+1 skipped, 0 warning** (240s) ; `tests/gui` : **398 passed, 0
+warning** (173s), 0 traceback stderr. `mypy` et `ruff` propres sur
+tous les fichiers touchés.
+
 ## Baseline factuelle
 
 Run complet `pytest -q` du 2026-09-06 (avant tout changement de code de ce

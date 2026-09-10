@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtCore import Qt, Signal
@@ -47,7 +47,14 @@ class _Thumbnail(QWidget):
         layout.setContentsMargins(2, 2, 2, 2)
         layout.setSpacing(2)
 
-        self.figure = plt.figure(figsize=(1.3, 0.95), facecolor=TOKENS.bg_root)
+        # Bare Figure (not plt.figure): never registers with the global
+        # pyplot state machine, so many short-lived thumbnail widgets in
+        # the GUI test suite cannot leak registered figures or trigger the
+        # "More than 20 figures have been opened" RuntimeWarning - the
+        # last remaining ACF-owned instance after the 2026-09-10 sweep
+        # fixed awci_map_panel/awci_model_spread_chart the same way.
+        # FigureCanvasQTAgg owns the figure's real lifecycle.
+        self.figure = Figure(figsize=(1.3, 0.95), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setFixedSize(96, 70)
         layout.addWidget(self.canvas)

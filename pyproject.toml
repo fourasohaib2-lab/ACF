@@ -181,6 +181,29 @@ testpaths = ["tests"]
 # so a future regression like that one fails loudly and fast instead of
 # hanging indefinitely.
 timeout = 60
+# Message-scoped warning filters (2026-09-10 sweep of the suite's then-838
+# warnings - see docs/STATUS.md). Each entry is deliberately NARROW: it
+# hides exactly one verified third-party-internal or environment-only noise
+# source, and nothing else. No broad "ignore all warnings" filter anywhere;
+# ACF-owned warnings are fixed in code instead (leaked pyplot figures ->
+# bare Figure() in the two emitting panels, deprecated QMouseEvent overload
+# -> explicit-globalPos constructor in the 3 remaining test helpers, MetPy
+# bounds probing -> targeted catch_warnings at its call site), and the lone
+# PytestUnraisableExceptionWarning is deliberately NOT filtered (it can
+# flag a real resource-lifetime bug).
+filterwarnings = [
+    # cartopy/mpl/ticker.py's own internals hitting a Matplotlib 3.11
+    # deprecation - cartopy's code to fix, not ACF's (~500 occurrences,
+    # the single largest source of suite noise).
+    "ignore:The locs attribute was deprecated:matplotlib.MatplotlibDeprecationWarning",
+    # zarr's own consolidated-metadata notice on every Format-3 store
+    # write - upstream informational warning, written values unaffected.
+    "ignore:Consolidated metadata is currently not part::",
+    # Emoji glyphs in real Qt window/button titles rendered with DejaVu
+    # (headless/offscreen test hosts have no emoji font installed) - a
+    # font-availability fact of the test machine, not a code defect.
+    "ignore:Glyph \\d+ .* missing from font::",
+]
 
 [tool.ruff]
 line-length = 120

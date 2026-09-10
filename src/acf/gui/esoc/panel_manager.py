@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 import shiboken6
 
+import atexit
+
 from PySide6.QtCore import QObject, QRunnable, QSettings, Qt, QThreadPool, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -324,6 +326,79 @@ class DataAssimilationPanel(BasePanelWidget):
         self.main_layout.addWidget(btn)
 
 
+# Module-level registry of every fetch worker EVER started (2026-09-10,
+# same GC-lifetime race family as commit c787022's _HPCConnectWorker fix,
+# but with a different failure timing discovered by reproduction: the
+# tracebacks appear AFTER pytest's final "N passed" line, i.e. during
+# INTERPRETER SHUTDOWN). Two distinct destruction paths, and only this
+# design covers both:
+# 1. Panel destroyed mid-fetch: QThreadPool.start() owns the worker's C++
+#    side but NOT its Python QRunnable wrapper - the wrapper and its
+#    parentless signals companion get garbage-collected while run() is
+#    still in flight, and the emit raises "RuntimeError: Signal source has
+#    been deleted".
+# 2. Test ends before a queued worker ever starts (network still in flight
+#    from a previous panel): the C++ runnable stays queued; at shutdown it
+#    executes into a Python wrapper whose method table is already torn
+#    down - the same RuntimeError, emitted from run()'s line at shutdown.
+# A run()-time add/discard registry was verified useless against path 2
+# (run() exits before the queue reaches the worker, so the set empties
+# before shutdown), and a per-panel list was verified useless against
+# path 1 (the panel is gone). The only working reference is one taken at
+# START time and never released: workers are small, hold no resources
+# beyond the panel-owned connectors, and are created only on panel
+# construction and explicit refresh clicks - process-lifetime retention
+# is the accepted, documented price of a clean shutdown.
+_FETCH_WORKERS: set = set()
+
+
+def _emit_if_receivers_alive(signal: Any, *args: Any) -> None:
+    """Emit a fetch worker's finished signal, treating "Signal source has
+    been deleted" as the expected non-error outcome it is (2026-09-10).
+
+    It happens exactly when the receiving panel was destroyed before the
+    fetch completed (test teardown, panel close, or interpreter shutdown
+    with a still-queued/in-flight worker - the atexit drain below bounds
+    but cannot eliminate that case, a real 4-station sequential HTTP poll
+    can outlast any bounded wait). The result then has no receiver and
+    nothing could consume it - dropping is the only correct behavior, so
+    this logs it at DEBUG instead of letting it surface as a misleading
+    "fetch failed" ERROR traceback (the fetch itself had succeeded).
+    Any OTHER RuntimeError still propagates - real bugs stay visible.
+    """
+    try:
+        signal.emit(*args)
+    except RuntimeError as exc:
+        if "Signal source has been deleted" not in str(exc):
+            raise
+        logging.getLogger("acf.gui.esoc.panel_manager").debug(
+            "Fetch worker finished after its receiver was destroyed - result dropped"
+        )
+
+
+def _drain_fetch_workers_at_shutdown() -> None:
+    """Drain the global thread pool BEFORE interpreter teardown clears this
+    module's globals (atexit handlers run first, verified ordering).
+
+    Without this, workers still queued at process exit (e.g. a test ended
+    while a real network fetch was still pending) execute during C++
+    static destruction - AFTER Python has already cleared module globals
+    and garbage-collected the Python QRunnable wrappers and their signals
+    companions - so their emit raises "RuntimeError: Signal source has
+    been deleted" on stderr (observed after otherwise-green pytest runs;
+    A/B-verified pre-existing on pristine HEAD). clear() drops the
+    not-yet-started runnables; waitForDone() lets the in-flight ones
+    finish and emit normally. Best-effort bounded wait: a hung fetch
+    delays exit by at most 5s instead of blocking forever.
+    """
+    pool = QThreadPool.globalInstance()
+    pool.clear()
+    pool.waitForDone(5000)
+
+
+atexit.register(_drain_fetch_workers_at_shutdown)
+
+
 class _ArgoFetchSignals(QObject):
     """QRunnable itself cannot be a QObject (no signals) - same
     companion-object pattern as acf.gui.map.mtg_basemap._MTGFetchSignals."""
@@ -343,7 +418,7 @@ class _ArgoFetchWorker(QRunnable):
     def run(self) -> None:
         try:
             result = self._connector.fetch_recent_profiles()
-            self.signals.finished.emit(result)
+            _emit_if_receivers_alive(self.signals.finished, result)
         except Exception:  # pragma: no cover - defensive, mirrors _MTGFetchWorker
             logging.getLogger("acf.gui.esoc.panel_manager").exception("Argo profile fetch failed in background worker")
 
@@ -375,7 +450,7 @@ class _METARFetchWorker(QRunnable):
                     reporting += 1
                 except LiveReportUnavailable:
                     pass  # this one station has no current report - not a fetch-wide failure
-            self.signals.finished.emit(reporting, len(REAL_STATIONS))
+            _emit_if_receivers_alive(self.signals.finished, reporting, len(REAL_STATIONS))
         except Exception:  # pragma: no cover - defensive, mirrors _ArgoFetchWorker
             logging.getLogger("acf.gui.esoc.panel_manager").exception("METAR station poll failed in background worker")
 
@@ -400,7 +475,7 @@ class _NexradFetchWorker(QRunnable):
     def run(self) -> None:
         try:
             result = self._connector.fetch_station_status()
-            self.signals.finished.emit(result)
+            _emit_if_receivers_alive(self.signals.finished, result)
         except Exception:  # pragma: no cover - defensive, mirrors _ArgoFetchWorker
             logging.getLogger("acf.gui.esoc.panel_manager").exception("NEXRAD station poll failed in background worker")
 
@@ -424,7 +499,7 @@ class _PIREPFetchWorker(QRunnable):
     def run(self) -> None:
         try:
             result = self._connector.fetch_recent_reports()
-            self.signals.finished.emit(result)
+            _emit_if_receivers_alive(self.signals.finished, result)
         except Exception:  # pragma: no cover - defensive, mirrors _ArgoFetchWorker
             logging.getLogger("acf.gui.esoc.panel_manager").exception("PIREP fetch failed in background worker")
 
@@ -519,6 +594,14 @@ class EarthMonitoringPanel(BasePanelWidget):
         self._pirep_connector = PIREPConnector()
         self._argo_last_result: Any = None
         self._metar_last_fetch: float | None = None
+        # Worker GC-lifetime handling is module-level (_FETCH_WORKERS in
+        # this module's header comment) - not per-panel: a per-panel list
+        # cannot cover the destroyed-panel case (verified by reproduction),
+        # and a run()-time registry cannot cover the shutdown case
+        # (verified by reproduction). This per-panel list only covers the
+        # panel-alive window between start() and the pool's own C++
+        # ownership taking over.
+        self._fetch_workers: list[Any] = []
         MTGBasemapProvider.instance().updated.connect(
             _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
         )
@@ -561,6 +644,8 @@ class EarthMonitoringPanel(BasePanelWidget):
     def _fetch_argo_async(self) -> None:
         worker = _ArgoFetchWorker(self._argo_connector)
         worker.signals.finished.connect(self._on_argo_fetched)
+        self._fetch_workers.append(worker)  # panel-alive lifetime - see __init__ comment
+        _FETCH_WORKERS.add(worker)  # process-lifetime - see module header comment
         QThreadPool.globalInstance().start(worker)
 
     def _on_argo_fetched(self, result: Any) -> None:
@@ -580,6 +665,8 @@ class EarthMonitoringPanel(BasePanelWidget):
     def _fetch_metar_async(self) -> None:
         worker = _METARFetchWorker()
         worker.signals.finished.connect(self._on_metar_fetched)
+        self._fetch_workers.append(worker)  # panel-alive lifetime - see __init__ comment
+        _FETCH_WORKERS.add(worker)  # process-lifetime - see module header comment
         QThreadPool.globalInstance().start(worker)
 
     def _on_metar_fetched(self, stations_reporting: int, stations_total: int) -> None:
@@ -599,6 +686,8 @@ class EarthMonitoringPanel(BasePanelWidget):
     def _fetch_nexrad_async(self) -> None:
         worker = _NexradFetchWorker(self._nexrad_connector)
         worker.signals.finished.connect(self._on_nexrad_fetched)
+        self._fetch_workers.append(worker)  # panel-alive lifetime - see __init__ comment
+        _FETCH_WORKERS.add(worker)  # process-lifetime - see module header comment
         QThreadPool.globalInstance().start(worker)
 
     def _on_nexrad_fetched(self, result: Any) -> None:
@@ -619,6 +708,8 @@ class EarthMonitoringPanel(BasePanelWidget):
     def _fetch_pirep_async(self) -> None:
         worker = _PIREPFetchWorker(self._pirep_connector)
         worker.signals.finished.connect(self._on_pirep_fetched)
+        self._fetch_workers.append(worker)  # panel-alive lifetime - see __init__ comment
+        _FETCH_WORKERS.add(worker)  # process-lifetime - see module header comment
         QThreadPool.globalInstance().start(worker)
 
     def _on_pirep_fetched(self, result: Any) -> None:

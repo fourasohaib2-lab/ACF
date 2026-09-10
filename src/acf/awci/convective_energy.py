@@ -117,6 +117,7 @@ convention via `abs()`, same as every other caller in this codebase.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import metpy.calc as mpcalc
@@ -204,7 +205,19 @@ def compute_real_cape_cin_at_point(
     # correctly stops CIN at the real LFC (and correctly reports 0.0
     # for both when no real LFC/EL exists at all, i.e. a genuinely
     # stable profile).
-    cape, cin = mpcalc.surface_based_cape_cin(pressure, temperature.to("degC"), dewpoint.to("degC"))
+    # MetPy's grid interpolation legitimately probes slightly outside
+    # the real input grid (extrapolation toward LFC/EL) and emits one
+    # UserWarning per such probe, which made real multi-column runs and
+    # their tests noisy. ACF already clips the real CAPE/CIN result to
+    # physical bounds (see return block below), so the warning is
+    # informational here, not actionable - suppressed ONLY around this
+    # call (a targeted catch_warnings scope, not a global filter, so
+    # any OTHER MetPy warning still surfaces). Verified 2026-09-10:
+    # values are identical with and without the suppression - only the
+    # log noise differs.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Interpolation point out of data bounds", category=UserWarning)
+        cape, cin = mpcalc.surface_based_cape_cin(pressure, temperature.to("degC"), dewpoint.to("degC"))
 
     return {
         # CAPE is a real potential-energy magnitude, never physically
