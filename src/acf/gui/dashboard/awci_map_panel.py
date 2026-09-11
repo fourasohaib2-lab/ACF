@@ -43,9 +43,11 @@ DISABLED for the same "no real data source, no fake toggle" reason -
 tout les boutons de awci en marche"): all 6 are now real, working
 toggles backed by real formulas (see _EXTRA_LAYER_SPECS' own
 docstring for the exact real source/proxy and honest scope limits per
-layer - Wind/Turbulence/Icing are real in both demo and Real Physics
-mode, Convection/CAPE/Clouds are real in demo mode only since the Real
-Physics solver volume carries no CAPE/precipitation field).
+layer - Wind/Turbulence/Icing/Convection/CAPE are real in BOTH demo
+and Real Physics mode (Convection/CAPE closed 2026-09-11, see
+`acf.awci.path_sampling.real_layer_grids_at_level()`'s own docstring);
+Clouds is real in demo mode only - no precipitation field exists
+anywhere in this pipeline, Real Physics mode included).
 
 Aircraft glyph + city labels + real extent helper (added 2026-09-03,
 docs/reference/awci_dashboard_reference.jpg parity work): flight-path
@@ -369,8 +371,8 @@ class AWCIMapPanel(EventMixin, QWidget):
         #: awci_layer_grids() call in update_data() - set via
         #: set_external_layer_grids() (acf.awci.path_sampling.
         #: real_layer_grids_at_level()'s own dict: "lats"/"lons"/
-        #: "wind"/"turbulence"/"icing" only - see that function's own
-        #: docstring for why "CAPE"/"Convection"/"Clouds" have no real
+        #: "wind"/"turbulence"/"icing"/"cape"/"convection" - see that
+        #: function's own docstring for why "clouds" has no real
         #: counterpart there).
         self._external_layer_grids: dict[str, Any] | None = None
         self._base_title = title
@@ -624,13 +626,14 @@ class AWCIMapPanel(EventMixin, QWidget):
     #: en marche" (the pre-implementation audit's own §12/
     #: AWCI_COMPONENT_INVENTORY.md #12 gap: these 6 checkboxes were
     #: honestly disabled, no real data source wired in). Wind/
-    #: Turbulence/Icing are real in BOTH demo and Real Physics mode
-    #: (see set_external_layer_grids()); Convection/CAPE/Clouds are
-    #: real in demo mode only - the real solver volume carries no
-    #: CAPE/precipitation field (same disclosed limitation already
-    #: documented for the AWCI module scores themselves in Real
-    #: Physics mode), so those 3 checkboxes stay enabled but a real
-    #: no-op there rather than a fabricated contour.
+    #: Turbulence/Icing/Convection/CAPE are real in BOTH demo and Real
+    #: Physics mode (see set_external_layer_grids()'s own docstring -
+    #: Convection/CAPE closed 2026-09-11, reusing the real full-column
+    #: CAPE formula already used elsewhere in this codebase). Clouds
+    #: stays real in demo mode only - no real precipitation field
+    #: exists anywhere in this pipeline - so that one checkbox stays
+    #: enabled but a real no-op in Real Physics mode rather than a
+    #: fabricated contour.
     _EXTRA_LAYER_SPECS: dict[str, tuple[str, str, str]] = {
         "Wind": (
             "wind", "Blues",
@@ -649,13 +652,15 @@ class AWCIMapPanel(EventMixin, QWidget):
         "Convection": (
             "convection", "Oranges",
             "Real acf.awci.updraft maximum theoretical updraft velocity (m/s) - a real, disclosed nonlinear "
-            "function of CAPE (w_max=sqrt(2*CAPE)), not independent information from the CAPE layer. "
-            "Demo mode only - the real solver volume carries no CAPE field.",
+            "function of CAPE (w_max=sqrt(2*CAPE)), not independent information from the CAPE layer. Real in "
+            "both demo and Real Physics mode (the latter's real full-column CAPE, independent of the flight "
+            "level being viewed).",
         ),
         "CAPE": (
             "cape", "YlOrRd",
-            "Real Convective Available Potential Energy (J/kg), raw. Demo mode only - the real solver "
-            "volume carries no CAPE field.",
+            "Real Convective Available Potential Energy (J/kg), raw. Real in both demo and Real Physics "
+            "mode (the latter from the real solver's own full vertical column, independent of the flight "
+            "level being viewed - real CAPE describes a whole sounding, not one level).",
         ),
         "Clouds": (
             "clouds", "Greys",
@@ -724,9 +729,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         key, cmap, _tooltip = self._EXTRA_LAYER_SPECS[name]
         if key not in self._last_layer_grids:
             # Real, disclosed scope limit (see set_external_layer_grids()'s
-            # own docstring) - e.g. "CAPE" while Real Physics mode is
-            # active, whose real volume carries no CAPE field. A real
-            # no-op, never a fabricated contour.
+            # own docstring) - e.g. "Clouds" while Real Physics mode is
+            # active, which has no real precipitation field anywhere in
+            # this pipeline. A real no-op, never a fabricated contour.
             return
         artist = self.axis.contourf(
             self._last_layer_grids["lons"],
@@ -870,14 +875,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def set_external_layer_grids(self, layer_grids: dict[str, Any]) -> None:
-        """Real Physics mode's own Wind/Turbulence/Icing LAYERS data
-        (acf.awci.path_sampling.real_layer_grids_at_level()'s own
-        dict) - call alongside set_external_field(), before or after,
-        either order (both redraw via update_data()). CAPE/Convection/
-        Clouds have no real counterpart in Real Physics mode - see
-        that function's own docstring - so those 3 checkboxes stay a
-        real no-op (self._extra_layer_contours has no entry for them)
-        rather than drawing a fabricated contour."""
+        """Real Physics mode's own Wind/Turbulence/Icing/Convection/CAPE
+        LAYERS data (acf.awci.path_sampling.real_layer_grids_at_level()'s
+        own dict) - call alongside set_external_field(), before or
+        after, either order (both redraw via update_data()). Clouds has
+        no real counterpart in Real Physics mode - see that function's
+        own docstring - so that one checkbox stays a real no-op
+        (self._extra_layer_contours has no entry for it) rather than
+        drawing a fabricated contour."""
         self._external_layer_grids = layer_grids
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
@@ -1023,10 +1028,13 @@ class AWCIMapPanel(EventMixin, QWidget):
 
         # Real extra layers (Wind/Turbulence/Icing/Convection/CAPE/
         # Clouds) - see _EXTRA_LAYER_SPECS' own docstring. Demo mode:
-        # all 6 real, from awci_layer_grids(). Real Physics mode: only
-        # Wind/Turbulence/Icing have a real counterpart (see
-        # set_external_layer_grids()'s own docstring) - CAPE/
-        # Convection/Clouds stay a real no-op there, not fabricated.
+        # all 6 real, from awci_layer_grids(). Real Physics mode: 5 of
+        # 6 have a real counterpart (see set_external_layer_grids()'s
+        # own docstring) - only Clouds stays a real no-op there, not
+        # fabricated. Both branches below key off whether the real
+        # layer_grids dict actually HAS this layer's key, never a
+        # hardcoded name list, so a future real closure (or narrowing)
+        # of either mode's own real coverage needs no change here.
         #
         # Lazily built (added 2026-09-03, real performance pass - a
         # profiled full refresh() was building all 6 real matplotlib
@@ -1068,11 +1076,15 @@ class AWCIMapPanel(EventMixin, QWidget):
                     self._extra_layer_contours[name] = artist
             elif self._external_layer_grids is not None:
                 self._last_layer_grids = self._external_layer_grids
-                for name in ("Wind", "Turbulence", "Icing"):
+                for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
                     if not self.extra_layer_checkboxes[name].isChecked():
                         continue
-                    key = self._EXTRA_LAYER_SPECS[name][0]
-                    cmap = self._EXTRA_LAYER_SPECS[name][1]
+                    if key not in self._external_layer_grids:
+                        # Real, disclosed scope limit (e.g. "Clouds" -
+                        # see set_external_layer_grids()'s own
+                        # docstring) - a real no-op, never a fabricated
+                        # contour.
+                        continue
                     artist = self.axis.contourf(
                         self._external_layer_grids["lons"],
                         self._external_layer_grids["lats"],

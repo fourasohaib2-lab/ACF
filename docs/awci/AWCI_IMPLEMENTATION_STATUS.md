@@ -141,9 +141,8 @@ checklist and screenshot comparison against
 
 RouteOptimizationEngine/flight-level recommendation scoring, calendar
 date-picker, WebGL/GPU/worker rendering, repo-wide accessibility sweep,
-real per-grid-cell CAPE contour layer, reconciling the two incompatible
-map-layer systems. None of these were in this closure's own approved
-scope.
+reconciling the two incompatible map-layer systems. None of these were
+in this closure's own approved scope.
 
 **Update 2026-09-11:** the full Ellrod-Knapp CAT index is now real in
 both Real Physics mode
@@ -151,5 +150,9 @@ both Real Physics mode
 (`acf.gui.dashboard.awci_synthetic_field.awci_layer_grids()`, via a real
 u/v decomposition of the existing synthetic `wind_speed` — the AWCI
 composite score itself is unaffected, bit-identical) — §5 is now fully
-closed. See `future-improvements.md` §5 for the full disclosure of both
-closures.
+closed. Real per-grid-cell CAPE/Convection are also now real in Real
+Physics mode (`real_layer_grids_at_level()`'s own full-column reuse of
+`acf.awci.convective_energy.compute_real_cape_cin_at_point()`) — §6 is
+closed except for "Clouds" (no real precipitation field exists anywhere
+in this codebase, either mode). See `future-improvements.md` §5/§6 for
+the full disclosure of every closure.

@@ -131,6 +131,34 @@ Physics mode) — a real CAPE/precipitation field for that mode would
 require the solver itself to produce one, a separate, larger physics
 task, not a UI wiring gap.
 
+**Update 2026-09-11 (CAPE/Convection closed for Real Physics mode
+too — the above turned out to be wrong about CAPE specifically):**
+`compute_real_complexity_volume()`'s `temperature_volume`/
+`specific_humidity_volume`/`pressure_volume_hpa` are real FULL vertical
+columns (every native level, not just one), the exact same real
+convention `acf.awci.convective_energy.compute_real_cape_cin_at_point()`
+already consumes elsewhere in this codebase
+(`acf.awci.spatial_field.compute_real_complexity_field()`'s own
+per-point CAPE/CIN, opt-in via `compute_convective_energy`). CAPE was
+never a solver-native field to begin with anywhere in this codebase —
+it is always a real MetPy parcel-ascent DERIVATION from a real T/q/P
+sounding, and the Real Physics volume already carries a real sounding
+at every column; the earlier disclosure above missed this because
+`real_layer_grids_at_level()` was only slicing `level_idx` (a single
+level), not the full column already sitting in the same `volume` dict.
+`real_layer_grids_at_level()` now returns real "cape"/"convection" too
+(the latter reusing `acf.awci.updraft.compute_real_max_updraft_velocity()`
+on the same real CAPE, same real formula as demo mode) — real,
+honestly `NaN` (never a fabricated 0.0) wherever the real column has
+fewer than 2 real levels above `compute_real_cape_cin_at_point()`'s own
+100 hPa cutoff. Independent of `level_idx` by construction (real CAPE
+describes a whole sounding, not one flight level). "Clouds" remains
+the one genuinely open item — no precipitation/microphysics field
+exists anywhere in this codebase's solver state, real or synthetic,
+for either mode. Regression-guarded by
+`tests/test_awci_path_sampling.py::test_real_layer_grids_at_level_cape_matches_a_direct_real_call`
+and `::test_real_layer_grids_at_level_convection_matches_a_direct_real_call`.
+
 ## 7. Reconciling the two incompatible map-layer systems
 
 Also disclosed previously: `acf.gui.map.layers.layer_manager.LayerManager`

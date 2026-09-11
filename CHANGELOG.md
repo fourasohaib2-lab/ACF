@@ -11,6 +11,20 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 ## [Unreleased] - 2026-09-11
 
 ### Added
+- Couches carte AWCI "CAPE"/"Convection" en mode Real Physics :
+  `acf.awci.path_sampling.real_layer_grids_at_level()` calcule maintenant
+  le vrai CAPE de surface (formule MetPy parcel-ascent déjà utilisée
+  ailleurs dans le codebase — `compute_real_cape_cin_at_point()`) à partir
+  de la colonne verticale complète déjà présente dans le volume solveur
+  (`temperature_volume`/`specific_humidity_volume`/`pressure_volume_hpa`,
+  jusque-là seulement tranchés par niveau) — pas une nouvelle formule,
+  une réutilisation d'une colonne réelle déjà disponible mais non
+  exploitée pour cet usage. "Convection" réutilise ce même CAPE réel
+  (`compute_real_max_updraft_velocity`). Honnêtement `NaN` (jamais 0.0
+  fabriqué) là où trop peu de niveaux réels subsistent au-dessus du seuil
+  de 100 hPa. "Clouds" reste un vrai no-op (aucun champ de précipitation
+  nulle part dans ce pipeline, mode démo ou Real Physics). Voir
+  `docs/awci/future-improvements.md` §6.
 - AWCI "turbulence" map layer (Real Physics mode) : indice de turbulence
   en air clair Ellrod-Knapp (1992) complet (`CATIndex.ti1`), remplaçant le
   proxy de gradient de norme du vent utilisé jusque-là — cisaillement
