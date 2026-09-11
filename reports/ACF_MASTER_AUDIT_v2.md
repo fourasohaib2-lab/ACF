@@ -11317,3 +11317,51 @@ verte.
 `NOT_CONNECTED` - aucune API publique gratuite trouvée pour un réseau
 de détection de foudre en temps réel (Blitzortung nécessite une
 authentification/contribution de station).
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — `acf.fire_weather`, `acf.geospatial`, `acf.knowledge_platform`, `acf.core` : tous vérifiés propres
+
+Reprise de l'audit après un test de fonctionnalité complet des cartes
+AWCI (voir échange utilisateur du jour - `AWCIMapPanel`, rendu réel
+Cartopy/contourf confirmé par capture d'écran, zoom/pan/clic/export
+tous fonctionnels, 137/137 tests carte AWCI verts).
+
+**`acf.fire_weather`** (3 fichiers, 244 lignes) - jamais touché, qualité
+exemplaire : `FireWeatherCalculator` est un indice composite conçu par
+ACF (poids/normalisations documentés comme choix propres à ACF, PAS
+une reproduction de Fosberg FWI/FWI canadien/McArthur FFDI - disclosure
+explicite du docstring sur pourquoi reproduire leurs coefficients
+publiés serait risqué sans vérification indépendante possible en
+environnement offline). Entrées requises sans défaut "calme" fabriqué
+(`KeyError` explicite plutôt que supposer un risque faible en absence
+de données réelles - un choix de sécurité, pas une commodité).
+
+**`acf.geospatial`** (6 fichiers, 1402 lignes) - `projections.py`/
+`distortion.py` déjà corrigés ; les 4 restants (`reprojection.py`,
+`crs_manager.py`, `metadata.py`, `__init__.py`) lus intégralement,
+qualité remarquable : toute transformation réelle passe par pyproj/PROJ
+(jamais de formule de projection réinventée), `detect_crs()`/
+`validate_crs()` échouent fermés ("STOP -> diagnostic explicite")
+plutôt que de deviner un CRS ambigu, `describe_crs()` ne fabrique
+jamais un paramètre de projection absent (laissé `None`).
+
+**`acf.knowledge_platform`** (7 fichiers, 757 lignes) - `dependency_graph.py`/
+`roadmap.py` déjà corrigés ; les 5 restants lus intégralement :
+`equation_library.py` (8 équations physiques réelles et correctement
+citées - Navier-Stokes, Clausius-Clapeyron, Planck, TKE, coût 4D-Var),
+`parameter_database.py`/`parameter_schema.py` (schéma à exactement 28
+attributs - vérifié champ par champ contre la prétention du docstring,
+aucun surclaim), `metadata_catalogue.py` (comptage réel via `len()`,
+pas de chiffre fabriqué).
+
+**`acf.core`** (21 fichiers, 1187 lignes) - `dataset.py`/`application.py`/
+`plugin_manager.py` déjà corrigés ; les 18 restants lus intégralement,
+plomberie applicative honnête : `ConfigManager.load()` lève une vraie
+`FileNotFoundError` (pas de succès silencieux), `Bootstrap.initialize()`
+ne journalise "ACF is ready" qu'après que chaque étape a réellement
+réussi (aucun try/except masquant un échec). Le docstring du paquet
+lui-même disclaims explicitement "no claim of integrating with a
+scientific engine" et documente que `Bootstrap` "never actually
+constructed anywhere" (`acf-gui` lance `ESOCWindow` directement).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire
+pour ces quatre paquets.**
