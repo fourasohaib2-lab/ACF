@@ -12028,3 +12028,75 @@ cette session (produit/UX, pas des trous de diagnostic physique) :
 optimisation de niveau de vol, AWCI spécifique aéroport/corridors,
 logique de persistance des alertes, calibration réelle des poids
 contre des observations.
+
+## Mise à jour 2026-09-11 (suite, priorité #4 du cross-check ChatGPT) — Câblage du microburst : connexion d'une encyclopédie déjà réelle à un diagnostic vivant
+
+**Contexte** : le dernier écart identifié dans le cross-check ("le
+registre `acf.aviation.hazards` contient déjà une connaissance réelle
+et citée sur le microburst/cisaillement de basse altitude, mais n'est
+jamais appelé par le pipeline de score AWCI"). Contrairement aux
+fermetures précédentes, il ne s'agissait pas de construire une nouvelle
+physique mais de **connecter** une connaissance déjà réelle et déjà
+citée (registre `AVIATION_HAZARDS_REGISTRY["microburst_windshear"]`,
+formule, seuils ICAO, références) à un diagnostic exploitable.
+
+**`src/acf/awci/microburst.py`** - réutilise directement le seuil réel
+et cité du registre (`icao_thresholds["MICROBURST_ALERT"]` : ICAO
+Doc 9837 / FAA AC 00-54, cisaillement de 30 kt sous 1500 ft AGL,
+converti en SI - 15.4333 m/s et 457.2 m, **pas des valeurs ACF
+indépendantes**). Combine par **multiplication** (même raisonnement AND
+que `dust.py`) trois préconditions réelles : proximité au seuil
+d'alerte de cisaillement, proximité d'une source convective réelle
+(CAPE, via `Normalizer.normalize_cape()` déjà existant, réutilisé), et
+pertinence de la phase de vol à basse altitude. Honnêtement disclosé
+comme un **proxy de proximité à l'alerte**, pas une détection réelle de
+microburst le long d'une trajectoire (qui nécessiterait une série
+temporelle réelle qu'aucun diagnostic ponctuel ne peut reconstruire).
+`get_microburst_hazard_reference()` expose l'entrée complète du
+registre pour traçabilité complète entre le score et sa source
+documentaire.
+
+**Câblage** : même motif exact (`data["microburst_risk"]`, poids 0.0
+par défaut dans `WeightsManager.DEFAULT_WEIGHTS`, module `microburst`
+ajouté à `PHYSICAL_MODULES` - 14 modules réels au total). Statut
+scientifique : les deux seuils réutilisés (30 kt, 1500 ft) sont
+**CONFIRMED** (valeurs opérationnelles citées, déjà présentes dans le
+registre avant ce module), mais la rampe multiplicative combinant les
+trois proximités en un proxy continu reste HYPOTHESIS (choix ACF
+disclosé, pas une formule publiée pour ce composite).
+
+**Extension du câblage `spatial_field.py`** : au-delà de la fermeture
+initiale (modules opt-in consommant une valeur pré-calculée fournie par
+l'appelant), `compute_real_complexity_field()` a été étendu avec 3
+nouveaux drapeaux opt-in (`compute_ceiling`, `compute_visibility`,
+`compute_dust`), suivant exactement le motif déjà établi pour
+`compute_theta_e`/`compute_precipitation_phase` : calcul réel
+point-par-point à partir des champs déjà produits par le solveur
+(température/humidité spécifique/pression/vent, déjà disponibles à
+chaque point de grille - aucune nouvelle capacité solveur nécessaire).
+Limite honnête disclosée pour `compute_visibility` : `precipitation_
+mm_h` est toujours passé à `0.0` (aucun champ de précipitation réel
+n'existe dans l'état de `CoupledEarthSolver`), donc seule la moitié
+"proximité de brouillard" du proxy de visibilité est réellement captée
+ici. Ces 3 champs restent à poids nul par défaut (aucun changement de
+comportement pour `awci_field`/`physical_field` tant que l'appelant ne
+relève pas explicitement le poids réel correspondant) mais
+`module_fields["ceiling"]`/`["visibility"]`/`["dust"]` deviennent
+désormais réellement non-uniformes lorsque ces drapeaux sont activés -
+première étape concrète vers un futur enregistrement de ces couches
+sur la carte, une fois cette voie jugée mature.
+
+**Tests** : `tests/test_awci_microburst.py` (98 lignes),
+`tests/test_awci_calculator_microburst.py` (79 lignes) - déjà présents
+et vérifiés complets - plus un nouveau fichier dédié,
+`tests/test_awci_spatial_field_ceiling_visibility_dust.py` (14 tests),
+vérifiant pour chacun des 3 nouveaux drapeaux : absence par défaut,
+présence et réalisme (variation spatiale non nulle) quand activé,
+correspondance exacte avec un appel direct de la fonction point-à-point
+sur les mêmes données de champ, correspondance avec `module_fields`,
+et non-impact sur `awci_field` tant que le poids réel n'est pas relevé
+(vérifié en comparant, au sein d'une seule exécution réelle du solveur,
+deux appels `AWCICalculator().calculate()` sur les mêmes données
+extraites avec/sans la clé optionnelle - jamais deux exécutions
+séparées du solveur, qui ne reproduisent pas de façon bit-identique
+même à graine égale, comme déjà documenté par ce module).

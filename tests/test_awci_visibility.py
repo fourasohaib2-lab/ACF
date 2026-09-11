@@ -7,7 +7,6 @@ audit, 2026-09-11).
 from __future__ import annotations
 
 from acf.awci.visibility import (
-    FOG_RH_CEILING_PCT,
     FOG_RH_FLOOR_PCT,
     WMO_HEAVY_RAIN_MM_H,
     compute_real_visibility_risk_at_point,

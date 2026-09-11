@@ -53,10 +53,13 @@ from typing import Any
 import numpy as np
 
 from acf.awci.calculator import AWCICalculator
+from acf.awci.ceiling import compute_real_ceiling_at_point
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
+from acf.awci.dust import compute_real_dust_risk_at_point
 from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.updraft import compute_real_max_updraft_velocity
+from acf.awci.visibility import compute_real_visibility_risk_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.science.clouds.dynamics import CloudDynamicsEngine
@@ -82,6 +85,15 @@ _UPDRAFT_VELOCITY_FIELDS_USED = ("updraft_velocity",)
 #: Added when `compute_precipitation_phase=True` - see that parameter's
 #: own docstring and `acf.awci.hydrometeor_phase`.
 _PRECIPITATION_PHASE_FIELDS_USED = ("precipitation_phase_severity",)
+#: Added when `compute_ceiling=True` - see that parameter's own
+#: docstring and `acf.awci.ceiling`.
+_CEILING_FIELDS_USED = ("ceiling_height_m",)
+#: Added when `compute_visibility=True` - see that parameter's own
+#: docstring and `acf.awci.visibility`.
+_VISIBILITY_FIELDS_USED = ("visibility_risk",)
+#: Added when `compute_dust=True` - see that parameter's own docstring
+#: and `acf.awci.dust`.
+_DUST_FIELDS_USED = ("dust_risk",)
 
 
 def compute_real_complexity_field(
@@ -100,6 +112,9 @@ def compute_real_complexity_field(
     compute_theta_e: bool = False,
     compute_updraft_velocity: bool = False,
     compute_precipitation_phase: bool = False,
+    compute_ceiling: bool = False,
+    compute_visibility: bool = False,
+    compute_dust: bool = False,
     validate_physics: bool = False,
 ) -> dict[str, Any]:
     """
@@ -210,6 +225,45 @@ def compute_real_complexity_field(
         unchanged unless explicitly requested (a single-level
         computation, real but not free - 3 real formula calls per grid
         point, same cost class as `compute_theta_e`).
+    compute_ceiling : bool
+        When True, genuinely computes a real per-point estimated
+        ceiling height (see `acf.awci.ceiling.
+        compute_real_ceiling_at_point()` - the real LCL-approximation
+        formula) from each grid point's real temperature/specific
+        humidity/pressure at `level`, and feeds it into
+        AWCICalculator's opt-in `ceiling` module (closing AWCI's
+        "visibilité et plafond" gap, post-model4d audit, 2026-09-11 -
+        see that module's own docstring). Off by default - the
+        default output is unchanged unless explicitly requested (same
+        real-cost class as `compute_theta_e`). Note: `ceiling`'s
+        AWCICalculator weight is still 0.0 by default (see
+        `WeightsManager.DEFAULT_WEIGHTS`) - enabling this flag makes
+        `module_fields["ceiling"]` genuinely non-zero, but a caller
+        must also raise the real weight (via the `weights` parameter
+        above) for it to affect `awci_field`/`physical_field`.
+    compute_visibility : bool
+        When True, genuinely computes a real per-point visibility-
+        degradation risk proxy (see `acf.awci.visibility.
+        compute_real_visibility_risk_at_point()`) from each grid
+        point's real temperature/specific humidity/pressure at
+        `level`, and feeds it into AWCICalculator's opt-in
+        `visibility` module. Off by default, same convention as
+        `compute_ceiling` above (including the separate real-weight
+        requirement). Honest limitation specific to this field: no
+        real precipitation field exists anywhere in `CoupledEarthSolver`'s
+        state (see this module's own "Honest limitation" docstring
+        section), so `precipitation_mm_h` is passed as `0.0` at every
+        point - only the real relative-humidity/fog-proximity half of
+        `acf.awci.visibility`'s risk proxy is genuinely captured here,
+        never its precipitation-intensity half.
+    compute_dust : bool
+        When True, genuinely computes a real per-point dust/sand-storm
+        emission-favorable-conditions risk proxy (see `acf.awci.dust.
+        compute_real_dust_risk_at_point()`) from each grid point's
+        real temperature/specific humidity/pressure/wind speed at
+        `level`, and feeds it into AWCICalculator's opt-in `dust`
+        module. Off by default, same convention as `compute_ceiling`
+        above (including the separate real-weight requirement).
     validate_physics : bool
         When True, propagates a real, opt-in PhysicsGuard sanity check
         (docs/ACF_MASTER_PROMPT.md section 11) into every
@@ -305,6 +359,22 @@ def compute_real_complexity_field(
             PHASE_SEVERITY for the real, disclosed ranking). Always
             real (never np.nan) - the underlying formula chain never
             fails to produce a phase, unlike theta_e/CAPE above.
+        ceiling_field : 2D numpy array (m), present only when
+            `compute_ceiling=True` - real per-point estimated ceiling
+            height from `acf.awci.ceiling`, `numpy.nan` (never a
+            fabricated value) wherever the real computed relative
+            humidity was non-positive at that point.
+        visibility_risk_field : 2D numpy array ([0, 1]), present only
+            when `compute_visibility=True` - real per-point visibility-
+            degradation risk proxy from `acf.awci.visibility`, with
+            precipitation always 0.0 (see `compute_visibility`'s own
+            docstring for why), `numpy.nan` wherever the real computed
+            relative humidity was non-positive.
+        dust_risk_field : 2D numpy array ([0, 1]), present only when
+            `compute_dust=True` - real per-point dust/sand-storm
+            emission-favorable-conditions risk proxy from
+            `acf.awci.dust`, `numpy.nan` wherever the real computed
+            relative humidity was non-positive.
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
@@ -399,6 +469,29 @@ def compute_real_complexity_field(
     precipitation_phase_severity_field = (
         np.zeros((n_lat_actual, n_lon_actual)) if compute_precipitation_phase else None
     )
+    # Real per-point estimated ceiling height, only when
+    # compute_ceiling=True (closing AWCI's "visibilité et plafond" gap,
+    # post-model4d audit, 2026-09-11) - np.nan (not a fabricated value)
+    # wherever compute_real_ceiling_at_point() itself honestly reports
+    # "not computed" (non-positive real relative humidity), same
+    # discipline as theta_e_field above.
+    ceiling_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_ceiling else None
+    # Real per-point visibility-degradation risk proxy, only when
+    # compute_visibility=True (same gap-closing session as ceiling
+    # above) - np.nan wherever compute_real_visibility_risk_at_point()
+    # itself honestly reports "not computed". Precipitation is always
+    # passed as 0.0 here (no real precipitation field exists anywhere
+    # in CoupledEarthSolver's state - see this function's own "Honest
+    # limitation" docstring section), so only the real relative-
+    # humidity/fog-proximity half of that module's risk proxy is
+    # genuinely captured.
+    visibility_risk_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_visibility else None
+    # Real per-point dust/sand-storm emission-favorable-conditions risk
+    # proxy, only when compute_dust=True (same gap-closing session as
+    # ceiling/visibility above) - np.nan wherever
+    # compute_real_dust_risk_at_point() itself honestly reports "not
+    # computed".
+    dust_risk_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_dust else None
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -511,6 +604,59 @@ def compute_real_complexity_field(
                 precipitation_phase_field[i, j] = phase["phase"]
                 precipitation_phase_severity_field[i, j] = phase["phase_severity"]
 
+            if compute_ceiling:
+                # Real single-level T/q/P at this point - same already-
+                # available values as compute_theta_e above.
+                ceiling = compute_real_ceiling_at_point(
+                    temperature_k=float(temperature[i, j]),
+                    specific_humidity=float(specific_humidity[i, j]),
+                    pressure_hpa=float(pressure_hpa[i, j]),
+                    validate_physics=validate_physics,
+                )
+                assert ceiling_field is not None  # for mypy - real whenever compute_ceiling
+                if ceiling["is_real_data"]:
+                    data["ceiling_height_m"] = ceiling["ceiling_height_m"]
+                    ceiling_field[i, j] = ceiling["ceiling_height_m"]
+                # else: honestly leave data["ceiling_height_m"] unset (AWCICalculator's
+                # own "no signal supplied" default applies) and ceiling_field
+                # stays np.nan - never a fabricated value for a point with
+                # non-positive real relative humidity.
+
+            if compute_visibility:
+                # Real single-level T/q/P at this point, real
+                # precipitation_mm_h=0.0 (no real precipitation field
+                # exists - see this function's own docstring).
+                visibility = compute_real_visibility_risk_at_point(
+                    temperature_k=float(temperature[i, j]),
+                    specific_humidity=float(specific_humidity[i, j]),
+                    pressure_hpa=float(pressure_hpa[i, j]),
+                    precipitation_mm_h=0.0,
+                )
+                assert visibility_risk_field is not None  # for mypy - real whenever compute_visibility
+                if visibility["is_real_data"]:
+                    data["visibility_risk"] = visibility["visibility_risk_score"]
+                    visibility_risk_field[i, j] = visibility["visibility_risk_score"]
+                # else: honestly leave data["visibility_risk"] unset and
+                # visibility_risk_field stays np.nan - same discipline as
+                # compute_ceiling above.
+
+            if compute_dust:
+                # Real single-level T/q/P/wind_speed at this point - all
+                # already available above.
+                dust = compute_real_dust_risk_at_point(
+                    temperature_k=float(temperature[i, j]),
+                    specific_humidity=float(specific_humidity[i, j]),
+                    pressure_hpa=float(pressure_hpa[i, j]),
+                    wind_speed_m_s=float(wind_speed[i, j]),
+                )
+                assert dust_risk_field is not None  # for mypy - real whenever compute_dust
+                if dust["is_real_data"]:
+                    data["dust_risk"] = dust["dust_risk_score"]
+                    dust_risk_field[i, j] = dust["dust_risk_score"]
+                # else: honestly leave data["dust_risk"] unset and
+                # dust_risk_field stays np.nan - same discipline as
+                # compute_ceiling above.
+
             result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
@@ -530,6 +676,12 @@ def compute_real_complexity_field(
         fields_used = fields_used + _UPDRAFT_VELOCITY_FIELDS_USED
     if compute_precipitation_phase:
         fields_used = fields_used + _PRECIPITATION_PHASE_FIELDS_USED
+    if compute_ceiling:
+        fields_used = fields_used + _CEILING_FIELDS_USED
+    if compute_visibility:
+        fields_used = fields_used + _VISIBILITY_FIELDS_USED
+    if compute_dust:
+        fields_used = fields_used + _DUST_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -589,5 +741,14 @@ def compute_real_complexity_field(
     if compute_precipitation_phase:
         output["precipitation_phase_field"] = precipitation_phase_field
         output["precipitation_phase_severity_field"] = precipitation_phase_severity_field
+
+    if compute_ceiling:
+        output["ceiling_field"] = ceiling_field
+
+    if compute_visibility:
+        output["visibility_risk_field"] = visibility_risk_field
+
+    if compute_dust:
+        output["dust_risk_field"] = dust_risk_field
 
     return output
