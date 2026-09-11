@@ -11638,3 +11638,67 @@ paquet (`time_axis.py`, `interpolation.py`, `vertical_axis.py`,
 `constants.py`, `grid4d.py`, `exceptions.py`, `domain4d.py`,
 `operators.py`) n'ont pas encore été relus individuellement à cette
 passe - à couvrir lors d'une prochaine extension du périmètre.
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement, "continue l'audit sur les paquets restants") — `acf.io`, `acf.plugins`, `acf.forecast`, `acf.jobs`, `acf.testing`, `acf.validation`, `acf.normalization`, `acf.hpc`, `acf.data_assimilation`, `acf.standards` : tous vérifiés propres, 5 survendications de capacité trouvées et corrigées
+
+**Méthode** : lecture intégrale de tous les fichiers Python de ces
+10 paquets (io, plugins, forecast, jobs, testing, validation,
+normalization, hpc, data_assimilation, standards - environ 90 fichiers
+au total), sélectionnés par taille croissante parmi les paquets de
+premier niveau sans marqueur de disclosure détecté dans leur
+`__init__.py`.
+
+**5 fichiers corrigés - survendication de capacité sur fichier vide**
+(pattern nouveau, pas encore rencontré dans les passes précédentes) :
+`acf.plugins/__init__.py`, `acf.standards/ecmwf_parameters.py`,
+`acf.standards/grib2_tables.py`, `acf.standards/noaa_parameters.py`,
+`acf.standards/wmo_tables.py` - ces 5 fichiers ne contenaient aucun
+code (ni fonction, ni classe, ni table) au-delà du gabarit générique
+auto-généré du projet ("Provides foundational capabilities for
+numerical weather prediction, atmospheric data processing, physical
+modeling, and spatial-temporal analysis..."), présent tel quel sur
+221 fichiers du projet - inoffensif sur la grande majorité d'entre eux
+car ils ont un vrai contenu correspondant, mais ici une survendication
+réelle : ces 5 fichiers sont vides et n'ont aucun importeur nulle part
+dans `src/`/`tests/` (vérifié par grep). Corrigés par une disclosure
+honnête de stub vide, cohérente avec la convention déjà établie
+ailleurs (`acf.workspace.metadata`/`exceptions`/`templates`,
+`acf.io.readers`).
+
+**1 finding additionnel, laissé en l'état (pas une fabrication)** :
+`acf.standards.ecmwf.catalog.ECMWF_PARAMETERS` est un dict vide réel,
+non fabriqué mais déconnecté du vrai chemin de chargement ECMWF du
+même paquet (`acf.standards.ecmwf.manager.ECMWFManager`/
+`acf.standards.hub.StandardsHub.load_ecmwf()`, qui charge réellement
+`resources/standards/ecmwf/parameters.json` via
+`acf.importers.ecmwf.importer.ECMWFImporter`, réel et testé). Zéro
+appelant au-delà de son propre test qui ne vérifie que le type (dict).
+NOTE (found, NOT changed) ajoutée.
+
+**Reste vérifié propre, déjà corrigé par des passes antérieures** :
+`acf.data_assimilation` (18 fichiers - `analysis_state.py`,
+`assimilation/ensemble/enkf.py`, `assimilation/hybrid/hybrid_da.py`,
+`assimilation/variational/var_4d.py` honnêtement `NotImplementedError`
+pour l'EnKF/4D-Var/hybride réels au lieu de résultats fabriqués;
+`observation_ingestion/*.py` et `quality_control/*.py` - QC réel avec
+bornes physiquement plausibles, VarBC réel, `radar_ingestor.py` avec
+la vraie relation Marshall-Palmer Z=200·R^1.6). `acf.hpc` (14 fichiers
+- `distributed_grid.py`/`mpi_solver.py`/`parallel_scheduler.py` déjà
+honnêtement corrigés en "NOT_CONNECTED"; `gpu_acceleration.py` avec un
+vrai probe cupy; `hpc/simulation/*.py` réel fallback CuPy/NumPy,
+checkpointing réel, `mpi_domain.py` honnêtement `NotImplementedError`
+pour l'échange de halos MPI réel). `acf.forecast` (déjà corrigé -
+`engine.py` réel CLI/solver/NetCDF, `forecast_engine.py` déjà
+disclosé). `acf.jobs` (déjà extensivement corrigé et documenté,
+`Job`/`JobEngine` réels délégant à `JobManager`/`SlurmScheduler`).
+`acf.testing` (infrastructure de test réelle et correcte,
+`golden.py`). `acf.validation` (déjà corrigé - `rmse.py`/`anomaly.py`/
+`bias_analysis.py`/`default_rules.py`/`rule.py`/`validator.py`/
+`verification.py` tous réels ou déjà honnêtement disclosés).
+`acf.normalization` (excellemment documenté et honnête sur ses
+limites, `units.py`/`variable_names.py`/`normalizer.py` réels via
+MetPy/pint et les vraies tables JSON CF/ECMWF). `acf.io` (couche de
+compatibilité pure vers `acf.importers`, déjà disclosée). `acf.standards`
+(`hub.py`/`manager.py`/`cf_standard_names.py`/`ecmwf/manager.py`/
+`ecmwf/loader.py`/`ecmwf/converter.py` tous réels et corrects, noms CF
+et unités canoniques vérifiés exacts).

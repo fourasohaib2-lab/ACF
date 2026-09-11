@@ -1,28 +1,17 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.plugins - empty stub, no content beyond this file.
 
-PLUGINS -   Init
-
-Purpose:
---------
-Provides   Init   functionality for the ACF framework.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the plugins subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.plugins module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+NOTE (found, corrected — post-model4d audit, 2026-09-11): this file
+previously carried the project's generic auto-generated module
+boilerplate ("Provides foundational capabilities for numerical weather
+prediction, atmospheric data processing, physical modeling, and
+spatial-temporal analysis..."), the same template text present on 221
+files project-wide. On most of those files the claim is harmless
+because the file has real content matching it; here it was a genuine
+capability overclaim, since acf.plugins contains zero functions,
+classes, or any other content, and has zero importers anywhere in
+src/ or tests/ (verified by grep). Replaced with an honest stub
+disclosure, consistent with the equivalent empty-stub packages already
+disclosed this way elsewhere (e.g. acf.workspace.metadata/exceptions/
+templates, acf.io.readers).
 """

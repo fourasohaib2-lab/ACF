@@ -1,28 +1,14 @@
 """
-Atmospheric Complexity Framework (ACF)
+acf.standards.wmo_tables - empty stub, no content beyond this file.
 
-STANDARDS - Wmo Tables
-
-Purpose:
---------
-Standard parameter tables (WMO, GRIB2, ECMWF) and CF standard names.
-
-Responsibilities:
------------------
-• Manage wmo tables logic and state representations.
-• Integrate with the standards subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.standards module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+NOTE (found, corrected — post-model4d audit, 2026-09-11): previously
+carried the project's generic auto-generated boilerplate ("Provides
+foundational capabilities for numerical weather prediction..."), which
+here was a genuine capability overclaim: this file has zero tables,
+functions, or classes, and zero importers anywhere in src/ or tests/
+(verified by grep). No real WMO parameter table exists anywhere in
+this package today - see acf.standards.ecmwf_parameters's own
+docstring for where the real ECMWF-specific parameter loading lives.
+Same finding and fix applied to this file's three siblings
+(ecmwf_parameters.py, grib2_tables.py, noaa_parameters.py).
 """
