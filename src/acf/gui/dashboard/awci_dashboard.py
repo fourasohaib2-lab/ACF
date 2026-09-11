@@ -1638,6 +1638,27 @@ class AWCIDashboard(QWidget):
             return
 
         self._imported_dataset = dataset
+        # BUG FIX (2026-09-11, found during a full AWCI rescan): this
+        # button's own tooltip has always advertised a real, distinct
+        # import-tier capability ("With an imported model file active
+        # instead: computes and animates the real per-grid-cell AWCI
+        # evolution of that file's own valid times") but nothing ever
+        # called setEnabled(True) for the import-only path (only
+        # _on_real_physics_ready() did) - the button stayed permanently
+        # disabled for a user who imports a file without ever running
+        # "🔬 Real Physics" first, making _toggle_evolution_playback()'s
+        # own `elif self._imported_dataset is not None` branch
+        # unreachable from the real UI. `_toggle_evolution_playback()`
+        # itself already handles a dataset with no real usable time
+        # dimension honestly (a real exception surfaces via
+        # _on_imported_evolution_failed(), never a silent no-op) - same
+        # "let the real computation report failure honestly" discipline
+        # already used for a coordinate-less/variable-less import
+        # elsewhere in this method, so enabling unconditionally here
+        # (once a dataset with real variables exists) does not risk a
+        # dead click.
+        if getattr(dataset, "variables", None):
+            self.play_evolution_button.setEnabled(True)
         # A new import invalidates the previous file's 4D evolution and
         # cross-section - a stale-file product is never replayed (same
         # real cache-invalidation discipline as the level change below).
@@ -2612,7 +2633,16 @@ class AWCIDashboard(QWidget):
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()
-        self.play_evolution_button.setEnabled(False)  # always visible - see its own construction-time NOTE
+        # BUG FIX (2026-09-11, full AWCI rescan): this used to
+        # unconditionally disable the button, even though the import
+        # tier's own evolution/dataset are deliberately kept alive by
+        # this same method (see "survives the demo revert" below and
+        # test_imported_evolution_survives_revert_to_demo) - disabling
+        # it here made that surviving state unreachable from the real
+        # UI, the same real bug as _import_model_file()'s own missing
+        # setEnabled(True) (see that method's own comment). Only really
+        # disable when there is no import tier left to fall back to.
+        self.play_evolution_button.setEnabled(self._imported_dataset is not None)  # always visible - see its own construction-time NOTE
         self._evolution = None
         self._real_physics_active = False
         self._real_volume = None

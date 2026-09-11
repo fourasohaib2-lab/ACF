@@ -157,6 +157,63 @@ class TestImportModelFileButton:
 
         mock_critical.assert_called_once()
         assert dashboard._imported_dataset is None
+        assert dashboard.play_evolution_button.isEnabled() is False
+
+    def test_a_successful_import_enables_the_4d_evolution_button(self, qtbot):
+        """Regression guard for a real bug found 2026-09-11 (full AWCI
+        rescan): this button's own tooltip has always advertised a real
+        import-tier 4D evolution capability ("With an imported model
+        file active instead: computes and animates the real per-grid-
+        cell AWCI evolution...") but nothing ever called
+        setEnabled(True) for that path - only _on_real_physics_ready()
+        did, making the import-only path unreachable from the real UI.
+        DataManager.open() is mocked (matching this file's own
+        established convention) to return a real, valid Dataset rather
+        than requiring a real model file on disk."""
+        from acf.data.dataset import Dataset
+
+        dataset = Dataset(name="mock-import", filetype="NetCDF", source="xarray")
+        dataset.add_variable("t2m", [[288.0, 289.0], [290.0, 291.0]])
+        dataset.add_variable("latitude", [30.0, 31.0])
+        dataset.add_variable("longitude", [0.0, 1.0])
+
+        dashboard = AWCIDashboard()
+        qtbot.addWidget(dashboard)
+        assert dashboard.play_evolution_button.isEnabled() is False
+
+        with patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=("fake.nc", "")), patch(
+            "acf.data.manager.DataManager.open", return_value=dataset
+        ):
+            dashboard._import_model_file()
+
+        assert dashboard._imported_dataset is dataset
+        assert dashboard.play_evolution_button.isEnabled() is True
+
+    def test_reverting_to_demo_keeps_the_button_enabled_while_an_import_is_still_active(self, qtbot):
+        """Same real bug as above, second half: _revert_to_demo() used
+        to unconditionally disable this button even though the import
+        tier's own dataset/evolution are deliberately kept alive by
+        that same method (see test_imported_evolution_survives_revert_
+        to_demo) - disabling it made that surviving state unreachable
+        too."""
+        from acf.data.dataset import Dataset
+
+        dashboard = AWCIDashboard()
+        qtbot.addWidget(dashboard)
+        dashboard._imported_dataset = Dataset(name="d", filetype="NetCDF", source="xarray")
+
+        dashboard._revert_to_demo()
+
+        assert dashboard.play_evolution_button.isEnabled() is True
+
+    def test_reverting_to_demo_disables_the_button_when_no_import_is_active(self, qtbot):
+        dashboard = AWCIDashboard()
+        qtbot.addWidget(dashboard)
+        assert dashboard._imported_dataset is None
+
+        dashboard._revert_to_demo()
+
+        assert dashboard.play_evolution_button.isEnabled() is False
 
     @pytest.mark.skipif(
         not __import__("pathlib").Path.home().joinpath("RESTOR/ALADIN/data/FULLPOS_2026083100_0000").exists(),
