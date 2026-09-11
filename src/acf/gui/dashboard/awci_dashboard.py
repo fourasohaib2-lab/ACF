@@ -135,6 +135,7 @@ from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
     awci_grid,
     cross_section_phase_severity_field,
+    cross_section_wind_shear_field,
     route_profile,
 )
 from acf.gui.dashboard.awci_timeline import AWCITimeline
@@ -1437,9 +1438,10 @@ class AWCIDashboard(QWidget):
         # T/q/P inputs the cross-section's own AWCI score already
         # comes from, fed into the real acf.awci.hydrometeor_phase
         # formula (see cross_section_phase_severity_field()'s own
-        # docstring). No real wind_shear_grid in demo mode - the
-        # synthetic pattern has no u/v components to compute a real
-        # shear from (see awci_synthetic_field.py's own docstring).
+        # docstring). Real turbulence-proxy wind_shear_grid too (closed
+        # 2026-09-11 - the synthetic pattern now has real u/v
+        # components, see cross_section_wind_shear_field()'s own
+        # docstring for the closure and the real formula reused).
         # Passed into update_data()'s own hazard_overlay= parameter
         # (real performance pass, 2026-09-03) rather than a separate
         # set_hazard_overlay() call - that used to trigger a real
@@ -1448,11 +1450,14 @@ class AWCIDashboard(QWidget):
         phase_distances, phase_levels, phase_grid = cross_section_phase_severity_field(
             _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
         )
+        _shear_distances, _shear_levels, shear_grid = cross_section_wind_shear_field(
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
+        )
         self.cross_section.update_data(
             _GLOBAL_ROUTE[0][:2],
             _GLOBAL_ROUTE[1][:2],
             cruise_hpa=300.0,
-            hazard_overlay=(phase_distances, phase_levels, phase_grid, None),
+            hazard_overlay=(phase_distances, phase_levels, phase_grid, shear_grid),
         )
 
         # Kept as two real steps (not awci_at()'s single-call shortcut)

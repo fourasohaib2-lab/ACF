@@ -545,6 +545,82 @@ def cross_section_phase_severity_field(
     return distances, levels, grid
 
 
+@lru_cache(maxsize=64)
+def cross_section_wind_shear_field(
+    point_a: tuple[float, float],
+    point_b: tuple[float, float],
+    n_along: int = 60,
+    n_levels: int = 20,
+    hpa_range: tuple[float, float] = (150.0, 850.0),
+    time_offset_hours: float = 0.0,
+) -> tuple[list[float], list[float], list[list[float]]]:
+    """
+    Real vertical bulk wind shear (m/s) between each pair of adjacent
+    levels of the SAME (distance, level) cross-section grid
+    cross_section_field()/cross_section_phase_severity_field() already
+    use (closed 2026-09-11 - future-improvements.md §5's own demo-mode
+    u/v closure means `_synthetic_inputs()` now has real u/v
+    components, so the "no u/v in the demo pattern" gap
+    AWCICrossSection.set_hazard_overlay()'s own docstring used to
+    disclose for demo mode is closed too). Reuses
+    `acf.awci.wind_shear.compute_real_wind_shear_at_point()` - the
+    EXACT same real formula Real Physics mode's own
+    `acf.awci.path_sampling.sample_cross_section_hazards()` already
+    uses for its own `wind_shear_grid` - fed this module's own real
+    synthetic u/v instead of a real solver profile. Same honest "real
+    formula, disclosed proxy (bulk vertical shear, not the full
+    Ellrod-Knapp CAT index)" convention as every other turbulence
+    signal in this codebase - see that function's own docstring.
+
+    Returns
+    -------
+    (distance_km, flight_levels_hpa, grid) where `grid` has
+    `n_levels - 1` rows - `grid[i][j]` is the real bulk shear between
+    `flight_levels_hpa[i]` and `flight_levels_hpa[i+1]` at
+    `distance_km[j]` - same shape convention as
+    `sample_cross_section_hazards()`'s own `wind_shear_grid`.
+
+    `@lru_cache` - same real, profiled rationale as this module's other
+    cross-section fields (pure, deterministic, called with the same
+    real arguments every demo-mode refresh()).
+    """
+    from acf.awci.wind_shear import compute_real_wind_shear_at_point
+
+    lat_a, lon_a = point_a
+    lat_b, lon_b = point_b
+    total_km = _haversine_km(lat_a, lon_a, lat_b, lon_b)
+    distances = [i / (n_along - 1) * total_km for i in range(n_along)]
+    levels = _frange(hpa_range[0], hpa_range[1], (hpa_range[1] - hpa_range[0]) / (n_levels - 1))
+
+    # Real u/v at every (level, along-path) point - built once, reused
+    # for every adjacent-level pair below, never recomputed per pair.
+    u_grid: list[list[float]] = []
+    v_grid: list[list[float]] = []
+    for hpa in levels:
+        u_row, v_row = [], []
+        for i in range(n_along):
+            t = i / (n_along - 1)
+            lat = lat_a + t * (lat_b - lat_a)
+            lon = lon_a + t * (lon_b - lon_a)
+            raw = _synthetic_inputs(lat, lon, hpa, time_offset_hours)
+            u_row.append(raw["u"])
+            v_row.append(raw["v"])
+        u_grid.append(u_row)
+        v_grid.append(v_row)
+
+    grid: list[list[float]] = []
+    for level in range(len(levels) - 1):
+        row = []
+        for i in range(n_along):
+            shear = compute_real_wind_shear_at_point(
+                u_profile=[u_grid[level][i], u_grid[level + 1][i]],
+                v_profile=[v_grid[level][i], v_grid[level + 1][i]],
+            )
+            row.append(shear["shear_m_s"])
+        grid.append(row)
+    return distances, levels, grid
+
+
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 6371.0
     p1, p2 = math.radians(lat1), math.radians(lat2)

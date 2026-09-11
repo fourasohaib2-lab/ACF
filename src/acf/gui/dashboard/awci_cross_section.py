@@ -214,12 +214,13 @@ class AWCICrossSection(QWidget):
         be the SAME real grid already drawn (from
         acf.awci.path_sampling.sample_cross_section_hazards() or
         acf.gui.dashboard.awci_synthetic_field.
-        cross_section_phase_severity_field(), aligned to whatever this
+        cross_section_phase_severity_field()/
+        cross_section_wind_shear_field(), aligned to whatever this
         panel's own current heatmap already shows). Either grid may be
-        omitted (None) - e.g. the synthetic demo pattern has no real
-        wind_shear_grid (no u/v components exist in that pattern - see
-        awci_synthetic_field.py's own docstring), so only icing icons
-        are drawn there.
+        omitted (None) if a caller genuinely has none to show - both
+        modes have a real source for both grids as of 2026-09-11 (demo
+        mode's own cross_section_wind_shear_field() closed the earlier
+        "no u/v in the synthetic pattern" gap).
         """
         self._hazard_overlay = (distances_km, levels_hpa, phase_severity_grid, wind_shear_grid)
         if self._last_grid_context is not None:
