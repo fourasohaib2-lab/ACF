@@ -11365,3 +11365,43 @@ constructed anywhere" (`acf-gui` lance `ESOCWindow` directement).
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire
 pour ces quatre paquets.**
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — `acf.connectors`, `acf.parameters`, `acf.catalog` : tous vérifiés propres
+
+**`acf.connectors`** (7 fichiers, 774 lignes) - `wmo_wis.py`/
+`live_connectors.py` déjà corrigés ; les 5 restants lus intégralement,
+qualité exemplaire et cohérente : `eumetsat_mtg.py` (vraie connexion
+OAuth2 + recherche + téléchargement de la véritable image MTG/FCI
+"Quicklook" officielle EUMETSAT, jamais de token ou d'image fabriqués -
+IDs de collection vérifiés en direct contre l'API EUMETSAT pendant la
+construction, pas devinés), `pirep_reports.py`/`nexrad_stations.py`/
+`argo_floats.py` (clients réels NOAA/Argovis sans authentification,
+`is_real_data=False` honnête sur chaque chemin d'échec réseau/HTTP/JSON,
+jamais de liste de rapports fabriquée). Note : ce paquet confirme
+indépendamment que le retrait du basemap MTG d'`AWCIMapPanel` (testé
+plus haut aujourd'hui) n'était pas dû à des données EUMETSAT fictives
+mais à un choix de fiabilité (Cartopy offline vs dépendance réseau) -
+le connecteur EUMETSAT lui-même reste réel et fonctionnel.
+
+**`acf.parameters`** (12 fichiers, 504 lignes) - `units.py`/`converter.py`/
+`categories.py`/`validator.py`/`hub.py`/`__init__.py` déjà corrigés ;
+les 6 restants (`search.py`, `catalog.py`, `index.py`, `aliases.py`,
+`registry.py`, `parameter.py`) lus intégralement - registres/alias
+purs, aucun statut fabriqué.
+
+**`acf.catalog`** (15 fichiers, 1527 lignes) - `manager.py` déjà corrigé
+(`CatalogManager.datasets` disclosé comme compteur réel mais
+définitivement non câblé) ; les 14 restants lus intégralement -
+`catalog.py`/`dataset_catalog.py`/`dataset_registry.py`/
+`parameter_mapper.py` (registres réels), 5 fichiers `*_parameters.py`
+(atmospheric/surface/climate/ocean/satellite - tables de paramètres CF
+réelles avec noms standard/unités corrects, aucun surclaim de
+comptage), `default_catalog.py`/`default_mapping.py` (assemblage réel
+des tables ci-dessus), `catalog_entry.py`/`dataset_entry.py` (dataclasses
+simples). Le propre docstring du paquet confirme avoir vérifié par grep
+que c'est bien cette version (singulier) qui est réellement importée
+par le code applicatif, distincte de `acf.catalogs` (pluriel, une
+extension plus petite et non concurrente).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire
+pour ces trois paquets.**
