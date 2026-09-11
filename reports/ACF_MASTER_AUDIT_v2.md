@@ -11449,3 +11449,32 @@ statique jamais rendu par une UI réelle - aspirational mais pas une
 fabrication de statut mesuré), `__init__.py` (imports uniquement).
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — `acf.aeos`, `acf.workspace`, `acf.release` : vérifiés propres (déjà disclosés)
+
+**`acf.aeos`** (26 fichiers, 891 lignes) - déjà entièrement disclosé
+package-wide par une passe antérieure ("Tier E sweep") : son propre
+`__init__.py` déclare explicitement qu'`AEOSKernel` et chaque classe
+réexportée ne sont construites nulle part dans `src/` hors de son
+propre test - "Tier E : désiré pour v1.0, non individuellement
+bloquant pour la release". `ServiceRegistry`/`PlanetaryEventBus`
+(les 2 derniers fichiers substantiels) portent leur propre disclosure
+honnête ("REGISTERED" signifie "le nom figure dans une liste statique",
+pas "un service a réellement démarré" ; le bus pub/sub est réel mais
+synchrone, pas asynchrone comme le nom pourrait le suggérer).
+
+**`acf.workspace`** (8 fichiers, 558 lignes) - `manager.py`/`project.py`/
+`recent.py`/`serializer.py` déjà corrigés (bug d'écrasement silencieux
+de métadonnées au round-trip, `except: pass` sur fichier corrompu -
+tous deux déjà réparés) ; `exceptions.py`/`metadata.py`/`templates.py`
+sont des stubs vides explicitement disclosés, vérifiés non importés
+nulle part.
+
+**`acf.release`** (34 fichiers, 1249 lignes) - 30/34 déjà corrigés. Les
+4 restants (`configuration.py`, `logging_configuration.py`,
+`exception_manager.py`, `__init__.py`) lus intégralement - configuration
+statique de production (dicts par défaut, aucune prétention d'état
+système mesuré), `ExceptionManager.classify_exception()` branche
+réellement selon le contenu de l'exception.
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire.**
