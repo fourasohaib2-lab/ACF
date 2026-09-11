@@ -258,6 +258,18 @@ class ACFMultiModelLabPanel(QWidget):
             f"✅ Real weighted fusion computed ({result['target_model']} grid, weights: {weights}, "
             f"source: {result['weight_source']})."
         )
+        # BUG FIX (2026-09-11, found during a full ACF Workstation rescan):
+        # _redraw() branches purely on self.display_selector.currentText() -
+        # a bare _redraw() here left the map showing whatever was selected
+        # before (its own default, "Model A field", if fusion is run
+        # before any comparison - _redraw_comparison() then silently
+        # no-ops on self._result is None). The button's own tooltip
+        # promises a real, visible fusion result; setCurrentText() here
+        # makes the just-computed fusion field the one actually shown,
+        # same real "make the new result visible" convention
+        # _on_comparison_ready() already gets for free (its own redraw
+        # target, "Model A field", is already the selector's default).
+        self.display_selector.setCurrentText("Weighted Fusion (A+B)")
         self._redraw()
 
     def _on_fusion_failed(self, message: str) -> None:

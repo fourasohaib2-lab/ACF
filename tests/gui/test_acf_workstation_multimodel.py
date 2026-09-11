@@ -176,6 +176,30 @@ def test_switching_to_fusion_display_redraws_with_the_real_fused_field(qtbot):
     assert np.allclose(panel.map_panel._external_field[2], panel._fusion_result["spread_field"])
 
 
+def test_weighted_fusion_is_visible_on_the_map_without_manually_reselecting_display(qtbot):
+    """BUG FIX (2026-09-11, found during a full ACF Workstation rescan):
+    _on_fusion_ready() called a bare _redraw(), which branches purely on
+    display_selector.currentText() - left at its own default ("Model A
+    field") when Weighted Fusion is clicked with no prior "Compare
+    Models" run. The real, correctly-computed fusion result was then
+    unreachable from the map unless the user manually reselected
+    "Weighted Fusion (A+B)" from the dropdown - nothing in the UI
+    prompted that. This is the exact real-world path (fusion clicked
+    FIRST, no comparison ever run) the earlier fusion tests never
+    exercised, since they only ever asserted the result was computed,
+    not that it was actually drawn without extra manual steps."""
+    panel = ACFMultiModelLabPanel()
+    qtbot.addWidget(panel)
+    panel.model_a_selector.setCurrentText("ALADIN")
+    panel.model_b_selector.setCurrentText("ARPEGE")
+
+    panel.fusion_button.click()
+    qtbot.waitUntil(lambda: panel._fusion_result is not None, timeout=60000)
+
+    assert panel.display_selector.currentText() == "Weighted Fusion (A+B)"
+    assert np.allclose(panel.map_panel._external_field[2], panel._fusion_result["fused_field"])
+
+
 def test_switching_back_to_comparison_display_after_fusion_still_works(qtbot):
     """Both real result states (comparison and fusion) coexist independently in the same panel."""
     panel = ACFMultiModelLabPanel()
