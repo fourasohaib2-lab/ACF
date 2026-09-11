@@ -11,6 +11,7 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from acf.gui.dashboard.acf_workstation_thumbnail_strip import ACFVariableThumbnailStrip
+from acf.gui.theme_tokens import COLORS
 
 
 @pytest.fixture(scope="session")
@@ -67,16 +68,24 @@ def test_set_label_rejects_an_unknown_variable(qapp):
 
 
 def test_set_selected_highlights_at_most_one_real_thumbnail(qapp):
+    """Every thumbnail always carries its own base hover-affordance QSS
+    (real, added alongside the other clickable dashboard elements'
+    :hover pattern) - "selected" is real when its stylesheet ALSO sets
+    an unconditional background-color (COLORS['bg_surface_alt']), on
+    top of that shared base, not by the base itself being empty."""
     strip = ACFVariableThumbnailStrip(["A", "B"])
 
+    def _is_selected(name: str) -> bool:
+        return "background-color: " + COLORS["bg_surface_alt"] in strip._thumbnails[name].styleSheet()
+
     strip.set_selected("A")
-    assert strip._thumbnails["A"].styleSheet() != ""
-    assert strip._thumbnails["B"].styleSheet() == ""
+    assert _is_selected("A")
+    assert not _is_selected("B")
 
     strip.set_selected("B")
-    assert strip._thumbnails["A"].styleSheet() == ""
-    assert strip._thumbnails["B"].styleSheet() != ""
+    assert not _is_selected("A")
+    assert _is_selected("B")
 
     strip.set_selected(None)
-    assert strip._thumbnails["A"].styleSheet() == ""
-    assert strip._thumbnails["B"].styleSheet() == ""
+    assert not _is_selected("A")
+    assert not _is_selected("B")

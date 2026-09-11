@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 #: per-call.
 _QUALITY_COLOR = {
     "GOOD": TOKENS.text_primary,
-    "DEGRADED": "#e3a544",
-    "BAD": "#ff6b7f",
+    "DEGRADED": TOKENS.warning,
+    "BAD": TOKENS.danger,
     "UNKNOWN": TOKENS.text_muted,
 }
 
@@ -90,7 +90,7 @@ class AWCIExecutionReportDialog(QDialog):
             if field_name == "Quality":
                 color = _QUALITY_COLOR.get(report.quality, TOKENS.text_primary)
             elif field_name == "AWCI generated":
-                color = TOKENS.text_primary if report.awci_generated else "#ff6b7f"
+                color = TOKENS.text_primary if report.awci_generated else TOKENS.danger
             label.setStyleSheet(f"color: {color}; font-size: 12px; font-family: monospace;")
             self.rows_container.addWidget(label)
             self._row_labels.append(label)

@@ -32,7 +32,9 @@ never a new/fabricated action:
 """
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
+
+from acf.gui.theme_tokens import TOKENS
 
 _ITEMS = [
     ("synthetic_view", "🌐", "SYNTHETIC VIEW", "One map to understand\nthe complexity"),
@@ -60,8 +62,8 @@ class AWCIFooterCell(QFrame):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip(desc.replace("\n", " "))
         self.setStyleSheet(
-            "QFrame#footerCell { border-radius: 6px; padding: 2px 6px; }"
-            "QFrame#footerCell:hover { background-color: #182238; }"
+            f"QFrame#footerCell {{ border-radius: {TOKENS.radius_sm}px; padding: 2px 6px; }}"
+            f"QFrame#footerCell:hover {{ background-color: {TOKENS.bg_surface_alt}; }}"
         )
 
         layout = QHBoxLayout(self)
@@ -73,7 +75,7 @@ class AWCIFooterCell(QFrame):
         layout.addWidget(icon_lbl)
 
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: #e8edf5; font-size: 9px; font-weight: bold; background: transparent;")
+        title_lbl.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 9px; font-weight: bold; background: transparent;")
         layout.addWidget(title_lbl)
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt override signature
@@ -90,7 +92,7 @@ class AWCIFooter(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setStyleSheet("background-color: #121a2b; border-top: 1px solid #263450;")
+        self.setStyleSheet(f"background-color: {TOKENS.bg_surface}; border-top: 1px solid {TOKENS.border};")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 4, 14, 4)

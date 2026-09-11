@@ -51,12 +51,15 @@ from shiboken6 import isValid
 
 from acf.gui.theme_tokens import TOKENS
 
-#: severity -> (left-accent color, icon)
+#: severity -> (left-accent color, icon). Uses the shared TOKENS'
+#: own success/warning/danger status colors (not ad hoc hex) - info
+#: has no dedicated status token, so it reuses accent_primary, this
+#: codebase's existing convention for a neutral informational accent.
 _KINDS = {
-    "success": ("#2ecc71", "✓"),
-    "info": ("#3fa7ff", "ℹ"),
-    "warning": ("#f5a623", "⚠"),
-    "error": ("#e74c3c", "✕"),
+    "success": (TOKENS.success, "✓"),
+    "info": (TOKENS.accent_primary, "ℹ"),
+    "warning": (TOKENS.warning, "⚠"),
+    "error": (TOKENS.danger, "✕"),
 }
 
 
