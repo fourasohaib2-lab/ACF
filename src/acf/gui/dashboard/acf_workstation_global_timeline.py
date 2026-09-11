@@ -123,6 +123,12 @@ class ACFGlobalTimelineWidget(QWidget):
         controls.addWidget(self._label("Speed:"))
         self.speed_selector = QComboBox()
         self.speed_selector.addItems(list(_SPEED_INTERVALS_MS.keys()))
+        # BUG FIX (2026-09-11, found during a full ACF Workstation rescan):
+        # this selector's only reader was _on_play_toggled(), read once at
+        # the moment Play is pressed - changing speed while already
+        # playing had no effect until Pause/Play again. Now applies live,
+        # same real QTimer.setInterval() the already-running timer uses.
+        self.speed_selector.currentTextChanged.connect(self._on_speed_changed)
         controls.addWidget(self.speed_selector)
 
         self.status_label = QLabel("Not yet computed.")
@@ -237,6 +243,13 @@ class ACFGlobalTimelineWidget(QWidget):
         else:
             self.play_button.setText("▶ Play")
             self._timer.stop()
+
+    def _on_speed_changed(self, speed_text: str) -> None:
+        """Apply a new speed immediately if playback is currently running -
+        see this selector's own construction-time comment for the real
+        gap this closes."""
+        if self._timer.isActive():
+            self._timer.setInterval(_SPEED_INTERVALS_MS[speed_text])
 
     def _advance_frame(self) -> None:
         if self._evolution is None:

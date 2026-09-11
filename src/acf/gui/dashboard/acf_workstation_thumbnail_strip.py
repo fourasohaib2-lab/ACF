@@ -42,6 +42,16 @@ class _Thumbnail(QWidget):
         super().__init__(parent)
         self.name = name
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Real hover feedback (was missing - every other clickable
+        # dashboard element in this codebase has one, e.g.
+        # _ComponentRow/AWCIFooterCell's own established :hover
+        # pattern). Object-name-scoped so set_selected()'s own
+        # per-widget background override below still applies on top.
+        self.setObjectName("workstationThumbnail")
+        self.setStyleSheet(
+            f"QWidget#workstationThumbnail {{ border-radius: {TOKENS.radius_sm}px; }}"
+            f"QWidget#workstationThumbnail:hover {{ background-color: {TOKENS.bg_surface}; }}"
+        )
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(2, 2, 2, 2)
@@ -124,8 +134,13 @@ class ACFVariableThumbnailStrip(QWidget):
         """Real, at-most-one visual highlight (added Phase 41,
         2026-09-05) - e.g. the Global Timeline's own currently-scrubbed
         frame. `None` clears every highlight."""
+        base = (
+            f"QWidget#workstationThumbnail {{ border-radius: {TOKENS.radius_sm}px; }}"
+            f"QWidget#workstationThumbnail:hover {{ background-color: {TOKENS.bg_surface}; }}"
+        )
         for thumb_name, thumb in self._thumbnails.items():
-            thumb.setStyleSheet(f"background-color: {COLORS['bg_surface_alt']};" if thumb_name == name else "")
+            selected_bg = f"QWidget#workstationThumbnail {{ background-color: {COLORS['bg_surface_alt']}; }}"
+            thumb.setStyleSheet(base + selected_bg if thumb_name == name else base)
 
     def status(self) -> dict[str, Any]:
         return {

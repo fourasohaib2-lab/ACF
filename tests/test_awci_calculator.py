@@ -120,6 +120,47 @@ def test_custom_weights():
     assert total == pytest.approx(1.0, abs=0.01)
 
 
+def test_awci_never_exceeds_100_for_weights_within_the_real_tolerance_band(monkeypatch):
+    """Regression guard for a real bug found 2026-09-11 (full AWCI
+    rescan): calculate() used to hardcode `1.0` for the module-weight
+    share of its own weight_budget, silently assuming
+    WeightsManager._validate_weights()'s real tolerance ([0.99, 1.01])
+    always lands exactly on 1.0. It doesn't - a legal custom weight set
+    summing to 1.01, combined with every module score at its real
+    maximum (1.0), used to push `awci`/`physical_score`/`forecast_score`
+    above 100 (confirmed: 101.0 on the code before this fix, via
+    saturated module scores below), directly violating this class's own
+    repeated "always within [0, 100]" docstring guarantee.
+
+    Module scores are monkeypatched to their real maximum (1.0) rather
+    than reverse-engineered from physical inputs - this isolates the
+    real aggregation arithmetic under test from the normalization
+    formulas, which are already covered by their own dedicated tests.
+    """
+    custom_weights = {
+        "dynamic": 0.21,
+        "thermodynamic": 0.25,
+        "convective": 0.20,
+        "microphysical": 0.15,
+        "topographic": 0.10,
+        "temporal": 0.05,
+        "confidence": 0.05,
+        "ensemble_spread": 0.0,
+        "model_disagreement": 0.0,
+    }
+    assert sum(custom_weights.values()) == pytest.approx(1.01)
+    calc = AWCICalculator(custom_weights)
+    monkeypatch.setattr(calc, "calculate_module_scores", lambda data: dict.fromkeys(custom_weights, 1.0))
+
+    result = calc.calculate({})
+
+    assert 0.0 <= result["awci"] <= 100.0
+    if result["physical_score"] is not None:
+        assert 0.0 <= result["physical_score"] <= 100.0
+    if result["forecast_score"] is not None:
+        assert 0.0 <= result["forecast_score"] <= 100.0
+
+
 def test_empty_data():
     """Test calculator with empty data."""
     calc = AWCICalculator()

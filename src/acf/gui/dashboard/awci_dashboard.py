@@ -135,6 +135,7 @@ from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
     awci_grid,
     cross_section_phase_severity_field,
+    cross_section_wind_shear_field,
     route_profile,
 )
 from acf.gui.dashboard.awci_timeline import AWCITimeline
@@ -1033,6 +1034,21 @@ class AWCIDashboard(QWidget):
         self.view_mode_global_radio = QRadioButton("Global")
         self.view_mode_regional_radio = QRadioButton("Regional")
         self.view_mode_cross_section_radio = QRadioButton("Vertical Cross-Section")
+        # Real, disclosed tooltips (added 2026-09-11, "rester sur AWCI"
+        # session - closing this closure's own earlier gap: only the
+        # NEW controls it introduced got tooltips, not these 3 pre-
+        # existing radios) - text matches _on_view_mode_changed()'s own
+        # real behavior, not a generic label restatement.
+        self.view_mode_global_radio.setToolTip("Reset the global map to its default world extent.")
+        self.view_mode_regional_radio.setToolTip(
+            "Zoom the global map to the regional extent below (same real bounding box\n"
+            "the regional map panel itself uses)."
+        )
+        self.view_mode_cross_section_radio.setToolTip(
+            "Zoom the global map to the current flight route's own real lat/lon\n"
+            "bounding box (+5° margin) - the closest honest analog to emphasizing\n"
+            "the corridor the vertical cross-section panel shows on a 2D map."
+        )
         self.view_mode_global_radio.setChecked(True)
         for radio in (self.view_mode_global_radio, self.view_mode_regional_radio, self.view_mode_cross_section_radio):
             radio.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px;")
@@ -1207,6 +1223,11 @@ class AWCIDashboard(QWidget):
         self.time_slider.setMinimum(0)
         self.time_slider.setMaximum(23)
         self.time_slider.setValue(12)
+        self.time_slider.setToolTip(
+            "Shifts the regional map's synthetic-pattern phase (a real ~2°/hour eastward\n"
+            "drift, like a synoptic system moving) - genuinely re-renders the map, not a\n"
+            "cosmetic readout."
+        )
         self.time_slider.sliderReleased.connect(self._on_time_changed)
         self.time_readout = QLabel("12Z")
         self.time_readout.setStyleSheet(label_style("text_primary", "xs", "bold"))
@@ -1285,7 +1306,7 @@ class AWCIDashboard(QWidget):
         self.recommendation_banner = QLabel("")
         self.recommendation_banner.setWordWrap(True)
         self.recommendation_banner.setStyleSheet(
-            f"background-color: #3a2410; color: {TOKENS.text_primary}; border: 1px solid #b8763a; "
+            f"background-color: {TOKENS.warning_surface}; color: {TOKENS.text_primary}; border: 1px solid {TOKENS.warning_surface_border}; "
             f"border-radius: {TOKENS.radius_sm}px; padding: 6px 10px; font-size: 10px;"
         )
         self.recommendation_banner.setVisible(False)
@@ -1417,9 +1438,10 @@ class AWCIDashboard(QWidget):
         # T/q/P inputs the cross-section's own AWCI score already
         # comes from, fed into the real acf.awci.hydrometeor_phase
         # formula (see cross_section_phase_severity_field()'s own
-        # docstring). No real wind_shear_grid in demo mode - the
-        # synthetic pattern has no u/v components to compute a real
-        # shear from (see awci_synthetic_field.py's own docstring).
+        # docstring). Real turbulence-proxy wind_shear_grid too (closed
+        # 2026-09-11 - the synthetic pattern now has real u/v
+        # components, see cross_section_wind_shear_field()'s own
+        # docstring for the closure and the real formula reused).
         # Passed into update_data()'s own hazard_overlay= parameter
         # (real performance pass, 2026-09-03) rather than a separate
         # set_hazard_overlay() call - that used to trigger a real
@@ -1428,11 +1450,14 @@ class AWCIDashboard(QWidget):
         phase_distances, phase_levels, phase_grid = cross_section_phase_severity_field(
             _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
         )
+        _shear_distances, _shear_levels, shear_grid = cross_section_wind_shear_field(
+            _GLOBAL_ROUTE[0][:2], _GLOBAL_ROUTE[1][:2], n_along=60, n_levels=20
+        )
         self.cross_section.update_data(
             _GLOBAL_ROUTE[0][:2],
             _GLOBAL_ROUTE[1][:2],
             cruise_hpa=300.0,
-            hazard_overlay=(phase_distances, phase_levels, phase_grid, None),
+            hazard_overlay=(phase_distances, phase_levels, phase_grid, shear_grid),
         )
 
         # Kept as two real steps (not awci_at()'s single-call shortcut)
@@ -1618,6 +1643,27 @@ class AWCIDashboard(QWidget):
             return
 
         self._imported_dataset = dataset
+        # BUG FIX (2026-09-11, found during a full AWCI rescan): this
+        # button's own tooltip has always advertised a real, distinct
+        # import-tier capability ("With an imported model file active
+        # instead: computes and animates the real per-grid-cell AWCI
+        # evolution of that file's own valid times") but nothing ever
+        # called setEnabled(True) for the import-only path (only
+        # _on_real_physics_ready() did) - the button stayed permanently
+        # disabled for a user who imports a file without ever running
+        # "🔬 Real Physics" first, making _toggle_evolution_playback()'s
+        # own `elif self._imported_dataset is not None` branch
+        # unreachable from the real UI. `_toggle_evolution_playback()`
+        # itself already handles a dataset with no real usable time
+        # dimension honestly (a real exception surfaces via
+        # _on_imported_evolution_failed(), never a silent no-op) - same
+        # "let the real computation report failure honestly" discipline
+        # already used for a coordinate-less/variable-less import
+        # elsewhere in this method, so enabling unconditionally here
+        # (once a dataset with real variables exists) does not risk a
+        # dead click.
+        if getattr(dataset, "variables", None):
+            self.play_evolution_button.setEnabled(True)
         # A new import invalidates the previous file's 4D evolution and
         # cross-section - a stale-file product is never replayed (same
         # real cache-invalidation discipline as the level change below).
@@ -2592,7 +2638,16 @@ class AWCIDashboard(QWidget):
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()
-        self.play_evolution_button.setEnabled(False)  # always visible - see its own construction-time NOTE
+        # BUG FIX (2026-09-11, full AWCI rescan): this used to
+        # unconditionally disable the button, even though the import
+        # tier's own evolution/dataset are deliberately kept alive by
+        # this same method (see "survives the demo revert" below and
+        # test_imported_evolution_survives_revert_to_demo) - disabling
+        # it here made that surviving state unreachable from the real
+        # UI, the same real bug as _import_model_file()'s own missing
+        # setEnabled(True) (see that method's own comment). Only really
+        # disable when there is no import tier left to fall back to.
+        self.play_evolution_button.setEnabled(self._imported_dataset is not None)  # always visible - see its own construction-time NOTE
         self._evolution = None
         self._real_physics_active = False
         self._real_volume = None

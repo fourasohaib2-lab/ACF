@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from acf.gui.theme_tokens import TOKENS
+
 _AXES = [
     ("dynamic", "Dynamic\nComplexity"),
     ("thermodynamic", "Thermodynamic\nComplexity"),
@@ -50,7 +52,7 @@ class AWCIRadar(QWidget):
         # own matching comment for the real screen sizes this was
         # measured against.
         scale = max(0.6, figsize_scale)
-        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1, projection="polar")
@@ -67,17 +69,20 @@ class AWCIRadar(QWidget):
         angles_closed = angles + angles[:1]
         values_closed = values + values[:1]
 
-        self.axis.set_facecolor("#0b1220")
+        self.axis.set_facecolor(TOKENS.bg_card)
+        # #ff8c00 (data curve/fill) kept as-is, not a token: matches the
+        # reference mockup's own radar color, a deliberate data accent
+        # distinct from chrome, not chrome drift to unify.
         self.axis.plot(angles_closed, values_closed, color="#ff8c00", linewidth=2)
         self.axis.fill(angles_closed, values_closed, color="#ff8c00", alpha=0.35)
 
         self.axis.set_xticks(angles)
-        self.axis.set_xticklabels([label for _, label in _AXES], color="#9fb0c9", fontsize=7)
+        self.axis.set_xticklabels([label for _, label in _AXES], color=TOKENS.text_secondary, fontsize=7)
         self.axis.set_ylim(0, 100)
         self.axis.set_yticks([25, 50, 75, 100])
-        self.axis.set_yticklabels(["25", "50", "75", "100"], color="#6b7a94", fontsize=6)
-        self.axis.spines["polar"].set_color("#34445f")
-        self.axis.grid(color="#263450", linewidth=0.6)
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", pad=14)
+        self.axis.set_yticklabels(["25", "50", "75", "100"], color=TOKENS.text_muted, fontsize=6)
+        self.axis.spines["polar"].set_color(TOKENS.border)
+        self.axis.grid(color=TOKENS.border, linewidth=0.6)
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=10, fontweight="bold", pad=14)
         self.figure.subplots_adjust(left=0.12, right=0.88, top=0.85, bottom=0.08)
         self.canvas.draw_idle()

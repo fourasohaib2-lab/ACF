@@ -935,14 +935,31 @@ class AWCICalculator:
         module_scores = self.calculate_module_scores(data)
         interaction_scores = self.calculate_interaction_scores(module_scores)
 
-        # Total weight budget: the 7 module weights (sum to 1.0, enforced
-        # by WeightsManager) plus the interaction weights. Dividing by
-        # this budget renormalizes the combined weighted sum back into
-        # [0, 1] regardless of how many interaction terms are added, so
-        # 'awci' is always within [0, 100] and decomposition always sums
-        # to it (up to rounding) — no ad hoc clipping needed.
+        # Total weight budget: the real module weights actually used
+        # below (sum ~1.0, enforced by WeightsManager's own [0.99, 1.01]
+        # tolerance - NOT necessarily exactly 1.0) plus the interaction
+        # weights. Dividing by this real budget renormalizes the
+        # combined weighted sum back into [0, 1] regardless of how many
+        # interaction terms are added, so 'awci' is always within
+        # [0, 100] and decomposition always sums to it (up to rounding)
+        # — no ad hoc clipping needed.
+        #
+        # BUG FIX (2026-09-11, found during a full AWCI rescan): this
+        # used to hardcode `1.0` for the module-weight share of the
+        # budget instead of the real sum below. WeightsManager only
+        # enforces [0.99, 1.01] (see its own _validate_weights()
+        # docstring/tolerance), not exactly 1.0 - a caller-supplied
+        # custom weight set legally summing to e.g. 1.01, combined with
+        # near-saturated module scores, could push `awci_score` past
+        # 100 with the old hardcoded budget, directly violating this
+        # class's own repeated "always within [0, 100]" docstring
+        # guarantee. Bit-identical for DEFAULT_WEIGHTS (which sum to
+        # exactly 1.0) and for any custom weights that already summed
+        # to exactly 1.0 - only affects the previously-untested
+        # [0.99, 1.01)/(1.0, 1.01] edge of the tolerance band.
+        module_weight_total = sum(self.weights_manager.get_weight(module) for module in module_scores)
         interaction_weight_total = sum(self.interaction_weights.values())
-        weight_budget = 1.0 + interaction_weight_total
+        weight_budget = module_weight_total + interaction_weight_total
 
         weighted_sum = 0.0
         decomposition: dict[str, float] = {}
@@ -968,8 +985,12 @@ class AWCICalculator:
         # Store decomposition for later use
         self._last_decomposition = decomposition
 
-        physical_score = self._renormalized_score(decomposition, self.PHYSICAL_MODULES, include_interactions=True)
-        forecast_score = self._renormalized_score(decomposition, self.FORECAST_MODULES, include_interactions=False)
+        physical_score = self._renormalized_score(
+            decomposition, self.PHYSICAL_MODULES, include_interactions=True, weight_budget=weight_budget
+        )
+        forecast_score = self._renormalized_score(
+            decomposition, self.FORECAST_MODULES, include_interactions=False, weight_budget=weight_budget
+        )
 
         return {
             "awci": awci_score,
@@ -1100,7 +1121,11 @@ class AWCICalculator:
         return CLIMATOLOGY_NORMALIZATION_METHOD_STATUS
 
     def _renormalized_score(
-        self, decomposition: dict[str, float], module_names: frozenset[str], include_interactions: bool
+        self,
+        decomposition: dict[str, float],
+        module_names: frozenset[str],
+        include_interactions: bool,
+        weight_budget: float,
     ) -> float | None:
         """
         Renormalize the subset of `decomposition` belonging to
@@ -1108,6 +1133,18 @@ class AWCICalculator:
         `include_interactions`) back into an independent [0, 100]
         score — i.e. "what would the composite score be if only these
         modules existed", not just their raw slice of `awci`.
+
+        Parameters
+        ----------
+        weight_budget : float
+            The SAME real total weight budget `calculate()` itself just
+            used (real module-weight sum + interaction-weight sum) -
+            passed in rather than recomputed here so this can never
+            drift out of sync with `calculate()`'s own real budget
+            (BUG FIX 2026-09-11: this used to hardcode `1.0 +
+            interactions` internally, the same "assumes module weights
+            always sum to exactly 1.0" bug `calculate()` itself had -
+            see that method's own comment for the full disclosure).
 
         Returns None if the selected modules' weight budget is ~0
         (e.g. a caller zeroed every forecast-side weight) — an
@@ -1123,7 +1160,6 @@ class AWCICalculator:
                 points for name, points in decomposition.items() if name in self.interaction_weights
             )
 
-        weight_budget = 1.0 + sum(self.interaction_weights.values())
         weight_fraction_of_budget = weight_total / weight_budget
 
         if weight_fraction_of_budget <= 1e-9:

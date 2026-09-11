@@ -22,6 +22,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_gauge import AWCIGauge
+from acf.gui.theme_tokens import TOKENS
 
 
 class _StatBox(QFrame):
@@ -33,14 +34,14 @@ class _StatBox(QFrame):
         layout.setSpacing(2)
 
         self.value_lbl = QLabel("—")
-        self.value_lbl.setStyleSheet("color: #e8edf5; font-size: 20px; font-weight: bold; border: none;")
+        self.value_lbl.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 20px; font-weight: bold; border: none;")
         layout.addWidget(self.value_lbl)
 
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: #6b7a94; font-size: 9px; border: none;")
+        title_lbl.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none;")
         layout.addWidget(title_lbl)
 
-    def set_value(self, text: str, color: str = "#e8edf5") -> None:
+    def set_value(self, text: str, color: str = TOKENS.text_primary) -> None:
         self.value_lbl.setText(text)
         self.value_lbl.setStyleSheet(f"color: {color}; font-size: 20px; font-weight: bold; border: none;")
 
@@ -61,7 +62,7 @@ class _ConfidenceGaugeBox(QFrame):
         layout.addWidget(self.gauge)
 
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: #6b7a94; font-size: 9px; border: none;")
+        title_lbl.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none;")
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(title_lbl)
 
@@ -74,7 +75,7 @@ class AWCIStatsBar(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setStyleSheet("background-color: #16213e; border: 1px solid #263450; border-radius: 6px;")
+        self.setStyleSheet(f"background-color: {TOKENS.bg_surface_alt}; border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px;")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 6, 10, 6)

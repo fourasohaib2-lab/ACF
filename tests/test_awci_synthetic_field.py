@@ -7,6 +7,7 @@ split), with light coverage of the pre-existing functions it builds on.
 import pytest
 
 from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
     awci_at,
@@ -14,6 +15,7 @@ from acf.gui.dashboard.awci_synthetic_field import (
     awci_grid_full,
     cross_section_field,
     cross_section_phase_severity_field,
+    cross_section_wind_shear_field,
 )
 
 
@@ -86,6 +88,56 @@ def test_cross_section_phase_severity_field_is_bounded_0_1():
     for row in grid:
         for value in row:
             assert 0.0 <= value <= 1.0
+
+
+# --------------------------------- cross_section_wind_shear_field (demo-mode u/v closure)
+
+
+def test_cross_section_wind_shear_field_shape_matches_cross_section_field():
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances_awci, levels_awci, _ = cross_section_field(point_a, point_b, n_along=10, n_levels=5)
+    distances, levels, grid = cross_section_wind_shear_field(point_a, point_b, n_along=10, n_levels=5)
+
+    assert distances == distances_awci
+    assert levels == levels_awci
+    assert len(grid) == len(levels) - 1  # bulk shear is between adjacent levels
+    assert all(len(row) == 10 for row in grid)
+
+
+def test_cross_section_wind_shear_field_matches_a_direct_formula_call():
+    """grid[level][dist] must be compute_real_wind_shear_at_point() fed the SAME
+    real synthetic u/v this module's own _synthetic_inputs() already returns -
+    no separate/parallel formula."""
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances, levels, grid = cross_section_wind_shear_field(point_a, point_b, n_along=6, n_levels=4)
+
+    level_i, dist_i = 1, 3
+    t = dist_i / 5
+    lat = point_a[0] + t * (point_b[0] - point_a[0])
+    lon = point_a[1] + t * (point_b[1] - point_a[1])
+    inputs_lo = _synthetic_inputs(lat, lon, levels[level_i], 0.0)
+    inputs_hi = _synthetic_inputs(lat, lon, levels[level_i + 1], 0.0)
+    expected = compute_real_wind_shear_at_point(
+        u_profile=[inputs_lo["u"], inputs_hi["u"]],
+        v_profile=[inputs_lo["v"], inputs_hi["v"]],
+    )
+
+    assert grid[level_i][dist_i] == pytest.approx(expected["shear_m_s"])
+
+
+def test_cross_section_wind_shear_field_is_non_negative():
+    distances, levels, grid = cross_section_wind_shear_field((36.75, 3.06), (32.90, 13.19), n_along=10, n_levels=8)
+    for row in grid:
+        for value in row:
+            assert value >= 0.0
+
+
+def test_cross_section_wind_shear_field_is_not_degenerate():
+    """A real, non-trivial signal - not every cell collapsing to the same value
+    (which would indicate a wiring bug rather than a genuine per-point shear)."""
+    _distances, _levels, grid = cross_section_wind_shear_field((36.75, 3.06), (32.90, 13.19), n_along=10, n_levels=8)
+    flat = [value for row in grid for value in row]
+    assert len(set(round(v, 6) for v in flat)) > 1
 
 
 # --------------------------------------------------------- real @lru_cache (perf)

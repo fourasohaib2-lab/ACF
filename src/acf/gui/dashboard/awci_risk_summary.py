@@ -100,12 +100,12 @@ class _RiskRow(QFrame):
         row_layout.setContentsMargins(0, 0, 0, 0)
 
         self.label = QLabel(f"{icon}  {label}")
-        self.label.setStyleSheet("color: #9fb0c9; font-size: 10px; border: none;")
+        self.label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; border: none;")
         row_layout.addWidget(self.label)
         row_layout.addStretch()
 
         self.badge = QLabel("—")
-        self.badge.setStyleSheet("color: #6b7a94; font-size: 10px; font-weight: bold; border: none;")
+        self.badge.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 10px; font-weight: bold; border: none;")
         # Real fix (2026-09-07, found by rendering the dashboard at a
         # real 1920x1080 size and looking at the screenshot - not just
         # checking scrollbar metrics): with no floor here, a tight
@@ -143,14 +143,14 @@ class AWCIRiskSummary(QWidget):
     def __init__(self, title: str = "RISK SUMMARY", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._title = title
-        self.setStyleSheet("background-color: #16213e; border: 1px solid #263450; border-radius: 6px;")
+        self.setStyleSheet(f"background-color: {TOKENS.bg_surface_alt}; border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px;")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(10, 8, 10, 8)
         outer.setSpacing(6)
 
         header = QLabel(title)
-        header.setStyleSheet("color: #e8edf5; font-size: 11px; font-weight: bold; border: none;")
+        header.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 11px; font-weight: bold; border: none;")
         outer.addWidget(header)
 
         self._rows: dict[str, tuple[QLabel, QLabel]] = {}
@@ -180,7 +180,7 @@ class AWCIRiskSummary(QWidget):
 
             if score is None:
                 badge.setText("—")
-                badge.setStyleSheet("color: #6b7a94; font-size: 10px; font-weight: bold; border: none;")
+                badge.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 10px; font-weight: bold; border: none;")
                 continue
 
             level = _band(score)

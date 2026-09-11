@@ -240,14 +240,51 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     is the Real Physics mode counterpart).
 
     Honest scope: the real volume carries temperature/wind_speed/u/v/
-    specific_humidity/pressure but NOT cape/precipitation (see that
-    function's own docstring - convective/microphysical inputs are not
-    part of the real solver state today, same limitation already
-    disclosed for the AWCI module scores themselves in Real Physics
-    mode). Only the 3 layers derivable from what IS real are returned
-    here - a caller (`AWCIMapPanel`) must leave the "CAPE"/
-    "Convection"/"Clouds" checkboxes as a real no-op in Real Physics
-    mode rather than fabricate a value for them.
+    specific_humidity/pressure but NOT a real precipitation field - a
+    caller (`AWCIMapPanel`) must leave the "Clouds" checkbox a real
+    no-op in Real Physics mode rather than fabricate a value for it.
+
+    **Update 2026-09-11 (closing docs/awci/future-improvements.md §6's
+    Real Physics half):** "cape"/"convection" ARE real here too, not a
+    no-op - `compute_real_complexity_volume()`'s own
+    `temperature_volume`/`specific_humidity_volume`/`pressure_volume_hpa`
+    are real FULL vertical columns (all native levels, ordered lowest
+    upward - the same real convention
+    `acf.awci.convective_energy.compute_real_cape_cin_at_point()` already
+    consumes elsewhere in this codebase, e.g.
+    `acf.awci.spatial_field.compute_real_complexity_field()`'s own
+    per-point CAPE/CIN), not just the one `level_idx` slice this
+    function otherwise works with - the earlier "no real CAPE field"
+    disclosure was accurate for `wind_speed_volume`/`u_volume`/`v_volume`
+    (single-level fields) but missed that the SAME real column already
+    used by other AWCI modules for real CAPE was sitting unused right
+    here. "cape"/"convection" are therefore independent of `level_idx`
+    (real CAPE describes a whole sounding, not "CAPE at one flight
+    level") - real, honestly `NaN` (never a fabricated 0.0) wherever
+    `compute_real_cape_cin_at_point()` itself reports too few real
+    levels above its own 100 hPa cutoff (see that function's own
+    docstring).
+
+    "turbulence" is now the real Ellrod & Knapp (1992) TI1 clear-air
+    turbulence index (docs/awci/future-improvements.md §5, closed for
+    Real Physics mode) - `acf.science.wind_turbulence.CATIndex.ti1()`,
+    not the coarser wind-speed-gradient proxy this function used
+    before. Real horizontal deformation from `volume["u_volume"]`/
+    `["v_volume"]`'s own real components at this level
+    (`numpy.gradient()`, per grid STEP, not per physical distance - lat/
+    lon spacing is not uniform in km and this pipeline has no per-point
+    map projection to convert it, same "grid step" unit already
+    disclosed for the old proxy). Real vertical wind shear between this
+    level and its real adjacent native neighbour
+    (`level_idx + 1`, or `level_idx - 1` at the top level), divided by a
+    real layer thickness from the hypsometric equation
+    (`acf.science.hypsometric_equation.HypsometricEquation`, using real
+    virtual temperature from `acf.science.virtual_temperature.
+    VirtualTemperature` at both levels) - the standard meteorological
+    way to get a real height difference between two pressure levels
+    without this codebase's native levels being pinned to real physical
+    heights (see `acf.awci.wind_shear`'s own docstring for that
+    disclosed gap - this is the real fix for it, not a workaround).
 
     Parameters
     ----------
@@ -257,25 +294,64 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     Returns
     -------
     dict with "lats"/"lons" (the volume's own 1D coordinate arrays)
-    and "wind" (m/s, real speed magnitude), "turbulence" (m/s per grid
-    step, real horizontal gradient magnitude of that same real wind
-    field - the same disclosed proxy `awci_layer_grids()` uses, not
-    the full Ellrod-Knapp CAT index), "icing" ([0, 1], real
-    `acf.awci.hydrometeor_phase` severity from this level's own real
-    T/q/P) - each a 2D numpy array (n_lat, n_lon).
+    and "wind" (m/s, real speed magnitude), "turbulence" (s^-2, real
+    Ellrod-Knapp TI1 - multiply by 1e7 to compare against the textbook
+    threshold table, see `CATIndex.ti2()`'s own docstring), "icing"
+    ([0, 1], real `acf.awci.hydrometeor_phase` severity from this
+    level's own real T/q/P), "cape" (J/kg, real surface-based CAPE from
+    the real full column, `NaN` where too few real levels remain - see
+    "Update 2026-09-11" above), "convection" (m/s, real
+    `acf.awci.updraft.compute_real_max_updraft_velocity()` - a real,
+    disclosed nonlinear function of the SAME "cape" above, `NaN` under
+    the same condition) - each a 2D numpy array (n_lat, n_lon).
     """
+    from acf.awci.convective_energy import compute_real_cape_cin_at_point
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+    from acf.awci.updraft import compute_real_max_updraft_velocity
+    from acf.science.clouds.dynamics import CloudDynamicsEngine
+    from acf.science.hypsometric_equation import HypsometricEquation
+    from acf.science.virtual_temperature import VirtualTemperature
+    from acf.science.wind_turbulence import CATIndex
+
+    # Real full vertical columns (all native levels, lowest upward) -
+    # see "Update 2026-09-11" above. Kept separate from the level_idx-
+    # only slices below (wind/icing/turbulence genuinely are per-level,
+    # cape/convection genuinely are not).
+    temperature_column = np.asarray(volume["temperature_volume"])
+    specific_humidity_column = np.asarray(volume["specific_humidity_volume"])
+    pressure_hpa_column = np.asarray(volume["pressure_volume_hpa"])
+    # One real CloudDynamicsEngine instance reused across the whole
+    # loop - matches acf.awci.spatial_field's own established reuse
+    # pattern (see compute_real_max_updraft_velocity()'s own docstring).
+    cloud_dynamics_engine = CloudDynamicsEngine()
 
     wind_speed = np.asarray(volume["wind_speed_volume"][level_idx])
     temperature = np.asarray(volume["temperature_volume"][level_idx])
     specific_humidity = np.asarray(volume["specific_humidity_volume"][level_idx])
     pressure_hpa = np.asarray(volume["pressure_volume_hpa"][level_idx])
+    u = np.asarray(volume["u_volume"][level_idx])
+    v = np.asarray(volume["v_volume"][level_idx])
 
-    d_dlat, d_dlon = np.gradient(wind_speed)
-    turbulence = np.hypot(d_dlat, d_dlon)
+    n_levels = np.asarray(volume["u_volume"]).shape[0]
+    neighbor_idx = level_idx + 1 if level_idx + 1 < n_levels else level_idx - 1
+    u_neighbor = np.asarray(volume["u_volume"][neighbor_idx])
+    v_neighbor = np.asarray(volume["v_volume"][neighbor_idx])
+    temperature_neighbor = np.asarray(volume["temperature_volume"][neighbor_idx])
+    specific_humidity_neighbor = np.asarray(volume["specific_humidity_volume"][neighbor_idx])
+    pressure_hpa_neighbor = np.asarray(volume["pressure_volume_hpa"][neighbor_idx])
+
+    # Real horizontal gradients of the real u/v components - per grid
+    # step, see docstring. du_dlon/dv_dlon vary along axis 1 (lon),
+    # du_dlat/dv_dlat along axis 0 (lat) - numpy.gradient's own default
+    # axis order for a 2D array.
+    du_dlat, du_dlon = np.gradient(u)
+    dv_dlat, dv_dlon = np.gradient(v)
 
     n_lat, n_lon = wind_speed.shape
     icing = np.zeros((n_lat, n_lon))
+    turbulence = np.zeros((n_lat, n_lon))
+    cape = np.full((n_lat, n_lon), np.nan)
+    convection = np.full((n_lat, n_lon), np.nan)
     for i in range(n_lat):
         for j in range(n_lon):
             phase = compute_real_hydrometeor_phase_at_point(
@@ -285,12 +361,72 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
             )
             icing[i, j] = phase["phase_severity"]
 
+            cape_cin = compute_real_cape_cin_at_point(
+                temperature_profile_k=temperature_column[:, i, j],
+                specific_humidity_profile=specific_humidity_column[:, i, j],
+                pressure_profile_hpa=pressure_hpa_column[:, i, j],
+            )
+            if cape_cin["is_real_data"]:
+                cape[i, j] = cape_cin["cape_j_kg"]
+                updraft = compute_real_max_updraft_velocity(cape_cin["cape_j_kg"], engine=cloud_dynamics_engine)
+                convection[i, j] = updraft["w_max_m_s"]
+            # else: honestly leave cape[i, j]/convection[i, j] as NaN -
+            # too few real levels above the real 100 hPa cutoff at this
+            # column, never a fabricated 0.0 (see compute_real_cape_cin_at_point()'s
+            # own docstring).
+
+            deformation = CATIndex.deformation(
+                du_dx=float(du_dlon[i, j]),
+                dv_dy=float(dv_dlat[i, j]),
+                dv_dx=float(dv_dlon[i, j]),
+                du_dy=float(du_dlat[i, j]),
+            )
+
+            # Real layer thickness (hypsometric equation) between this
+            # cell's own real pressure and its real neighbour's -
+            # "lower"/"upper" by real pressure, not by level index
+            # (level_idx could be either side of neighbor_idx).
+            p_here_pa = float(pressure_hpa[i, j]) * 100.0
+            p_neighbor_pa = float(pressure_hpa_neighbor[i, j]) * 100.0
+            if p_here_pa >= p_neighbor_pa:
+                p_lower_pa, p_upper_pa = p_here_pa, p_neighbor_pa
+                u_lower, u_upper = float(u[i, j]), float(u_neighbor[i, j])
+                v_lower, v_upper = float(v[i, j]), float(v_neighbor[i, j])
+                t_lower, t_upper = float(temperature[i, j]), float(temperature_neighbor[i, j])
+                q_lower, q_upper = float(specific_humidity[i, j]), float(specific_humidity_neighbor[i, j])
+            else:
+                p_lower_pa, p_upper_pa = p_neighbor_pa, p_here_pa
+                u_lower, u_upper = float(u_neighbor[i, j]), float(u[i, j])
+                v_lower, v_upper = float(v_neighbor[i, j]), float(v[i, j])
+                t_lower, t_upper = float(temperature_neighbor[i, j]), float(temperature[i, j])
+                q_lower, q_upper = float(specific_humidity_neighbor[i, j]), float(specific_humidity[i, j])
+
+            if p_lower_pa <= p_upper_pa:
+                # Two real native levels reporting the same real
+                # pressure at this cell (degenerate/flat column) - no
+                # real thickness to divide by; a real, disclosed
+                # numerical guard, not a fabricated value.
+                turbulence[i, j] = 0.0
+                continue
+
+            virtual_temperature_lower = VirtualTemperature.calculate(t_lower, q_lower)
+            virtual_temperature_upper = VirtualTemperature.calculate(t_upper, q_upper)
+            virtual_temperature_mean = 0.5 * (virtual_temperature_lower + virtual_temperature_upper)
+            thickness_m = HypsometricEquation.calculate(p_lower_pa, p_upper_pa, virtual_temperature_mean)
+
+            du_dz = (u_upper - u_lower) / thickness_m
+            dv_dz = (v_upper - v_lower) / thickness_m
+            vertical_wind_shear = CATIndex.vertical_wind_shear(du_dz, dv_dz)
+            turbulence[i, j] = CATIndex.ti1(vertical_wind_shear, deformation)
+
     return {
         "lats": volume["lats"],
         "lons": volume["lons"],
         "wind": wind_speed,
         "turbulence": turbulence,
         "icing": icing,
+        "cape": cape,
+        "convection": convection,
     }
 
 

@@ -41,6 +41,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP
 from acf.gui.dashboard.awci_synthetic_field import cross_section_field
+from acf.gui.theme_tokens import TOKENS
 
 #: Real, disclosed ACF design-choice threshold for drawing a
 #: turbulence-proxy icon (see class docstring's "Hazard icon
@@ -138,7 +139,7 @@ class AWCICrossSection(QWidget):
         # then gets scrolled past. Floored at 0.6 so the figure never
         # collapses to something unreadable.
         scale = max(0.6, figsize_scale)
-        self.figure = plt.figure(figsize=(6 * scale, 1.6 * scale), facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(6 * scale, 1.6 * scale), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -213,12 +214,13 @@ class AWCICrossSection(QWidget):
         be the SAME real grid already drawn (from
         acf.awci.path_sampling.sample_cross_section_hazards() or
         acf.gui.dashboard.awci_synthetic_field.
-        cross_section_phase_severity_field(), aligned to whatever this
+        cross_section_phase_severity_field()/
+        cross_section_wind_shear_field(), aligned to whatever this
         panel's own current heatmap already shows). Either grid may be
-        omitted (None) - e.g. the synthetic demo pattern has no real
-        wind_shear_grid (no u/v components exist in that pattern - see
-        awci_synthetic_field.py's own docstring), so only icing icons
-        are drawn there.
+        omitted (None) if a caller genuinely has none to show - both
+        modes have a real source for both grids as of 2026-09-11 (demo
+        mode's own cross_section_wind_shear_field() closed the earlier
+        "no u/v in the synthetic pattern" gap).
         """
         self._hazard_overlay = (distances_km, levels_hpa, phase_severity_grid, wind_shear_grid)
         if self._last_grid_context is not None:
@@ -262,20 +264,20 @@ class AWCICrossSection(QWidget):
         if self._hazard_overlay is not None:
             self._draw_hazard_icons()
 
-        self.axis.set_facecolor("#0f1830")
-        self.axis.set_xlabel("Distance (km)", color="#9fb0c9", fontsize=8)
-        self.axis.set_ylabel("Altitude (ft)", color="#9fb0c9", fontsize=8)
-        self.axis.tick_params(colors="#9fb0c9", labelsize=7)
+        self.axis.set_facecolor(TOKENS.bg_card)
+        self.axis.set_xlabel("Distance (km)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.set_ylabel("Altitude (ft)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.tick_params(colors=TOKENS.text_secondary, labelsize=7)
         for spine in self.axis.spines.values():
-            spine.set_color("#34445f")
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
+            spine.set_color(TOKENS.border)
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=10, fontweight="bold", loc="left")
 
         # Real AWCI 0-100 colorbar, matching the reference mockup's
         # colorbar under this exact panel.
         self._colorbar = self.figure.colorbar(contour, ax=self.axis, orientation="horizontal", pad=0.28, fraction=0.07, ticks=[0, 20, 40, 60, 80, 100])
-        self._colorbar.set_label("AWCI", color="#9fb0c9", fontsize=7)
-        self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=6)
-        self._colorbar.outline.set_edgecolor("#34445f")
+        self._colorbar.set_label("AWCI", color=TOKENS.text_secondary, fontsize=7)
+        self._colorbar.ax.tick_params(colors=TOKENS.text_secondary, labelsize=6)
+        self._colorbar.outline.set_edgecolor(TOKENS.border)
 
         self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.22)
         self.canvas.draw_idle()

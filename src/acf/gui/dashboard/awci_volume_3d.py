@@ -52,6 +52,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 - import registers the "3d
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP
+from acf.gui.theme_tokens import TOKENS
 
 
 class AWCIVolume3DView(QWidget):
@@ -67,7 +68,7 @@ class AWCIVolume3DView(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor="#0b1220")
+        self.figure = plt.figure(facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
 
@@ -76,7 +77,7 @@ class AWCIVolume3DView(QWidget):
 
     def _render_empty(self) -> None:
         self.axis.clear()
-        self.axis.set_facecolor("#0b1220")
+        self.axis.set_facecolor(TOKENS.bg_card)
         self.axis.text2D(
             0.5,
             0.5,
@@ -84,10 +85,10 @@ class AWCIVolume3DView(QWidget):
             transform=self.axis.transAxes,
             ha="center",
             va="center",
-            color="#6b7a94",
+            color=TOKENS.text_muted,
             fontsize=10,
         )
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=11, fontweight="bold")
         self.canvas.draw_idle()
 
     def set_volume(
@@ -116,7 +117,7 @@ class AWCIVolume3DView(QWidget):
         n_levels = awci_volume.shape[0]
 
         self.axis.clear()
-        self.axis.set_facecolor("#0b1220")
+        self.axis.set_facecolor(TOKENS.bg_card)
 
         if n_levels <= max_levels:
             level_indices = list(range(n_levels))
@@ -144,13 +145,13 @@ class AWCIVolume3DView(QWidget):
         self.axis.set_zticklabels(
             [f"L{idx} (~{float(np.mean(pressure_volume_hpa[idx])):.0f}hPa)" for idx in level_indices],
             fontsize=6,
-            color="#9fb0c9",
+            color=TOKENS.text_secondary,
         )
-        self.axis.set_xlabel("Longitude", color="#9fb0c9", fontsize=8)
-        self.axis.set_ylabel("Latitude", color="#9fb0c9", fontsize=8)
-        self.axis.tick_params(colors="#6b7a94", labelsize=6)
+        self.axis.set_xlabel("Longitude", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.set_ylabel("Latitude", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.tick_params(colors=TOKENS.text_muted, labelsize=6)
         self._title = f"{self._base_title} — {label}"
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=11, fontweight="bold")
         self._has_data = True
         self.canvas.draw_idle()
 

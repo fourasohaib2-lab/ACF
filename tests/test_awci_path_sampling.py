@@ -22,6 +22,9 @@ from acf.awci.path_sampling import (
 from acf.awci.spatial_field import compute_real_complexity_field
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
+from acf.science.hypsometric_equation import HypsometricEquation
+from acf.science.virtual_temperature import VirtualTemperature
+from acf.science.wind_turbulence import CATIndex
 
 
 def test_sample_field_along_path_returns_real_values_from_the_field():
@@ -222,23 +225,103 @@ def test_real_layer_grids_at_level_icing_bounded_0_1():
     assert np.all(result["icing"] <= 1.0)
 
 
-def test_real_layer_grids_at_level_turbulence_is_a_real_nonnegative_gradient():
+def test_real_layer_grids_at_level_turbulence_is_nonnegative():
     volume = _real_volume_for_hazards()
     result = real_layer_grids_at_level(volume, level_idx=2)
-    d_dlat, d_dlon = np.gradient(volume["wind_speed_volume"][2])
-    expected = np.hypot(d_dlat, d_dlon)
-    assert np.allclose(result["turbulence"], expected)
+    # TI1 = VWS * DEF, both real non-negative magnitudes (sqrt of a
+    # sum of squares) - the product can never be negative.
     assert np.all(result["turbulence"] >= 0.0)
 
 
-def test_real_layer_grids_at_level_has_no_cape_convection_clouds_keys():
-    """Honest scope guard: the real solver volume carries no CAPE/
-    precipitation field, so this function must never fabricate one."""
+def test_real_layer_grids_at_level_turbulence_matches_a_direct_ellrod_knapp_ti1_call():
+    """Regression guard for future-improvements.md §5's Real Physics
+    closure: "turbulence" must be the real Ellrod-Knapp TI1 index
+    computed from the real u/v horizontal gradients and a real
+    hypsometric-equation vertical shear, not the old wind-speed-
+    gradient proxy."""
+    volume = _real_volume_for_hazards(seed=13, perturbation_scale=4.0)
+    level_idx = 2
+    result = real_layer_grids_at_level(volume, level_idx=level_idx)
+
+    u = volume["u_volume"][level_idx]
+    v = volume["v_volume"][level_idx]
+    du_dlat, du_dlon = np.gradient(u)
+    dv_dlat, dv_dlon = np.gradient(v)
+
+    i, j = 3, 5
+    neighbor_idx = level_idx + 1
+    p_here = float(volume["pressure_volume_hpa"][level_idx, i, j]) * 100.0
+    p_neighbor = float(volume["pressure_volume_hpa"][neighbor_idx, i, j]) * 100.0
+    assert p_here > p_neighbor  # pressure must decrease with the real solver's own level ordering
+
+    tv_here = VirtualTemperature.calculate(
+        float(volume["temperature_volume"][level_idx, i, j]), float(volume["specific_humidity_volume"][level_idx, i, j])
+    )
+    tv_neighbor = VirtualTemperature.calculate(
+        float(volume["temperature_volume"][neighbor_idx, i, j]),
+        float(volume["specific_humidity_volume"][neighbor_idx, i, j]),
+    )
+    thickness_m = HypsometricEquation.calculate(p_here, p_neighbor, 0.5 * (tv_here + tv_neighbor))
+
+    du_dz = (float(volume["u_volume"][neighbor_idx, i, j]) - float(volume["u_volume"][level_idx, i, j])) / thickness_m
+    dv_dz = (float(volume["v_volume"][neighbor_idx, i, j]) - float(volume["v_volume"][level_idx, i, j])) / thickness_m
+    expected_vws = CATIndex.vertical_wind_shear(du_dz, dv_dz)
+    expected_def = CATIndex.deformation(
+        du_dx=float(du_dlon[i, j]), dv_dy=float(dv_dlat[i, j]), dv_dx=float(dv_dlon[i, j]), du_dy=float(du_dlat[i, j])
+    )
+    expected_ti1 = CATIndex.ti1(expected_vws, expected_def)
+
+    assert result["turbulence"][i, j] == pytest.approx(expected_ti1)
+
+
+def test_real_layer_grids_at_level_has_no_clouds_key():
+    """Honest scope guard: the real solver volume carries no real
+    precipitation field, so this function must never fabricate a
+    "clouds" layer. "cape"/"convection" ARE real here (closed
+    2026-09-11, future-improvements.md §6) - see the dedicated tests
+    below."""
     volume = _real_volume_for_hazards()
     result = real_layer_grids_at_level(volume, level_idx=0)
-    assert "cape" not in result
-    assert "convection" not in result
     assert "clouds" not in result
+
+
+def test_real_layer_grids_at_level_cape_matches_a_direct_real_call():
+    from acf.awci.convective_energy import compute_real_cape_cin_at_point
+
+    volume = _real_volume_for_hazards()
+    level_idx = 0
+    result = real_layer_grids_at_level(volume, level_idx=level_idx)
+    i, j = 2, 4
+    expected = compute_real_cape_cin_at_point(
+        temperature_profile_k=volume["temperature_volume"][:, i, j],
+        specific_humidity_profile=volume["specific_humidity_volume"][:, i, j],
+        pressure_profile_hpa=volume["pressure_volume_hpa"][:, i, j],
+    )
+    assert expected["is_real_data"]
+    assert result["cape"][i, j] == pytest.approx(expected["cape_j_kg"])
+    assert not np.isnan(result["cape"][i, j])
+
+
+def test_real_layer_grids_at_level_cape_is_independent_of_level_idx():
+    """Real CAPE describes a whole sounding, not one flight level - the
+    grid must be identical regardless of which level_idx is requested,
+    unlike wind/icing/turbulence."""
+    volume = _real_volume_for_hazards()
+    cape_at_0 = real_layer_grids_at_level(volume, level_idx=0)["cape"]
+    cape_at_2 = real_layer_grids_at_level(volume, level_idx=2)["cape"]
+    assert np.array_equal(cape_at_0, cape_at_2, equal_nan=True)
+
+
+def test_real_layer_grids_at_level_convection_matches_a_direct_real_call():
+    from acf.awci.updraft import compute_real_max_updraft_velocity
+
+    volume = _real_volume_for_hazards()
+    level_idx = 0
+    result = real_layer_grids_at_level(volume, level_idx=level_idx)
+    i, j = 2, 4
+    assert not np.isnan(result["cape"][i, j])
+    expected = compute_real_max_updraft_velocity(float(result["cape"][i, j]))
+    assert result["convection"][i, j] == pytest.approx(expected["w_max_m_s"])
 
 
 def test_crop_field_to_extent_keeps_only_points_inside_it():

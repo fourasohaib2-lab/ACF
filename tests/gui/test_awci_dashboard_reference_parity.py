@@ -341,7 +341,11 @@ def test_cross_section_hazard_overlay_is_populated_in_demo_mode(qapp):
     assert dashboard.cross_section._hazard_overlay is not None
     _distances, _levels, phase_grid, shear_grid = dashboard.cross_section._hazard_overlay
     assert phase_grid is not None
-    assert shear_grid is None  # no real u/v in the synthetic demo pattern
+    # Demo mode's synthetic pattern has real u/v wind vector components
+    # (closed 2026-09-11), so cross_section_wind_shear_field() now feeds a
+    # real bulk wind-shear grid here too, same as Real Physics mode.
+    assert shear_grid is not None
+    assert np.all(np.asarray(shear_grid) >= 0.0)
 
 
 def test_cross_section_hazard_overlay_includes_real_wind_shear_in_real_physics_mode(qapp):

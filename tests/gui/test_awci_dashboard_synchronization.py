@@ -175,6 +175,21 @@ def test_risk_row_and_component_row_have_real_tooltips(qapp):
     assert component_row.toolTip() != ""
 
 
+def test_view_mode_radios_and_time_slider_have_real_tooltips(qapp):
+    """Same real accessibility/discoverability polish as
+    test_risk_row_and_component_row_have_real_tooltips() - these 4 were
+    the last pre-existing AWCI dashboard controls found without one
+    (2026-09-11 audit, "rester sur AWCI" session)."""
+    dashboard = AWCIDashboard()
+    for widget in (
+        dashboard.view_mode_global_radio,
+        dashboard.view_mode_regional_radio,
+        dashboard.view_mode_cross_section_radio,
+        dashboard.time_slider,
+    ):
+        assert widget.toolTip() != ""
+
+
 # --------------------------------------------------- flight-level selector
 
 

@@ -43,9 +43,11 @@ DISABLED for the same "no real data source, no fake toggle" reason -
 tout les boutons de awci en marche"): all 6 are now real, working
 toggles backed by real formulas (see _EXTRA_LAYER_SPECS' own
 docstring for the exact real source/proxy and honest scope limits per
-layer - Wind/Turbulence/Icing are real in both demo and Real Physics
-mode, Convection/CAPE/Clouds are real in demo mode only since the Real
-Physics solver volume carries no CAPE/precipitation field).
+layer - Wind/Turbulence/Icing/Convection/CAPE are real in BOTH demo
+and Real Physics mode (Convection/CAPE closed 2026-09-11, see
+`acf.awci.path_sampling.real_layer_grids_at_level()`'s own docstring);
+Clouds is real in demo mode only - no precipitation field exists
+anywhere in this pipeline, Real Physics mode included).
 
 Aircraft glyph + city labels + real extent helper (added 2026-09-03,
 docs/reference/awci_dashboard_reference.jpg parity work): flight-path
@@ -320,7 +322,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         outer_layout.addLayout(button_column)
 
         self.figure = plt.figure(
-            figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor="#0b1220"
+            figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor=TOKENS.bg_root
         )
         self.canvas = FigureCanvasQTAgg(self.figure)
         # See map_canvas.py's own comment on why this filter is needed -
@@ -369,8 +371,8 @@ class AWCIMapPanel(EventMixin, QWidget):
         #: awci_layer_grids() call in update_data() - set via
         #: set_external_layer_grids() (acf.awci.path_sampling.
         #: real_layer_grids_at_level()'s own dict: "lats"/"lons"/
-        #: "wind"/"turbulence"/"icing" only - see that function's own
-        #: docstring for why "CAPE"/"Convection"/"Clouds" have no real
+        #: "wind"/"turbulence"/"icing"/"cape"/"convection" - see that
+        #: function's own docstring for why "clouds" has no real
         #: counterpart there).
         self._external_layer_grids: dict[str, Any] | None = None
         self._base_title = title
@@ -624,23 +626,26 @@ class AWCIMapPanel(EventMixin, QWidget):
     #: en marche" (the pre-implementation audit's own §12/
     #: AWCI_COMPONENT_INVENTORY.md #12 gap: these 6 checkboxes were
     #: honestly disabled, no real data source wired in). Wind/
-    #: Turbulence/Icing are real in BOTH demo and Real Physics mode
-    #: (see set_external_layer_grids()); Convection/CAPE/Clouds are
-    #: real in demo mode only - the real solver volume carries no
-    #: CAPE/precipitation field (same disclosed limitation already
-    #: documented for the AWCI module scores themselves in Real
-    #: Physics mode), so those 3 checkboxes stay enabled but a real
-    #: no-op there rather than a fabricated contour.
+    #: Turbulence/Icing/Convection/CAPE are real in BOTH demo and Real
+    #: Physics mode (see set_external_layer_grids()'s own docstring -
+    #: Convection/CAPE closed 2026-09-11, reusing the real full-column
+    #: CAPE formula already used elsewhere in this codebase). Clouds
+    #: stays real in demo mode only - no real precipitation field
+    #: exists anywhere in this pipeline - so that one checkbox stays
+    #: enabled but a real no-op in Real Physics mode rather than a
+    #: fabricated contour.
     _EXTRA_LAYER_SPECS: dict[str, tuple[str, str, str]] = {
         "Wind": (
             "wind", "Blues",
-            "Real wind speed (m/s) - direction/vectors are not real here (no u/v components in the demo "
-            "pattern; Real Physics mode's own real u/v are not yet used for direction either), speed magnitude only.",
+            "Real wind speed (m/s) - this layer itself shows the scalar magnitude only, not direction/"
+            "barbs (both demo and Real Physics mode DO have real u/v components internally now - see "
+            "the Turbulence layer below - just not surfaced as a vector layer of their own here).",
         ),
         "Turbulence": (
             "turbulence", "Purples",
-            "Real horizontal wind-speed gradient magnitude - a disclosed PROXY, not the full Ellrod-Knapp "
-            "CAT index (see docs/awci/future-improvements.md).",
+            "Real Ellrod & Knapp (1992) TI1 clear-air turbulence index (closed 2026-09-11, "
+            "docs/awci/future-improvements.md §5) - real horizontal deformation from the real u/v wind "
+            "components, real vertical wind shear via the hypsometric equation.",
         ),
         "Icing": (
             "icing", "PuBu",
@@ -649,13 +654,15 @@ class AWCIMapPanel(EventMixin, QWidget):
         "Convection": (
             "convection", "Oranges",
             "Real acf.awci.updraft maximum theoretical updraft velocity (m/s) - a real, disclosed nonlinear "
-            "function of CAPE (w_max=sqrt(2*CAPE)), not independent information from the CAPE layer. "
-            "Demo mode only - the real solver volume carries no CAPE field.",
+            "function of CAPE (w_max=sqrt(2*CAPE)), not independent information from the CAPE layer. Real in "
+            "both demo and Real Physics mode (the latter's real full-column CAPE, independent of the flight "
+            "level being viewed).",
         ),
         "CAPE": (
             "cape", "YlOrRd",
-            "Real Convective Available Potential Energy (J/kg), raw. Demo mode only - the real solver "
-            "volume carries no CAPE field.",
+            "Real Convective Available Potential Energy (J/kg), raw. Real in both demo and Real Physics "
+            "mode (the latter from the real solver's own full vertical column, independent of the flight "
+            "level being viewed - real CAPE describes a whole sounding, not one level).",
         ),
         "Clouds": (
             "clouds", "Greys",
@@ -683,6 +690,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         panel_layout.addWidget(header)
 
         self.awci_layer_checkbox = QCheckBox("AWCI")
+        self.awci_layer_checkbox.setToolTip("Show/hide the AWCI complexity contour (the map's own main score layer).")
         self.awci_layer_checkbox.setChecked(True)
         self.awci_layer_checkbox.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
         self.awci_layer_checkbox.toggled.connect(self._on_awci_layer_toggled)
@@ -724,9 +732,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         key, cmap, _tooltip = self._EXTRA_LAYER_SPECS[name]
         if key not in self._last_layer_grids:
             # Real, disclosed scope limit (see set_external_layer_grids()'s
-            # own docstring) - e.g. "CAPE" while Real Physics mode is
-            # active, whose real volume carries no CAPE field. A real
-            # no-op, never a fabricated contour.
+            # own docstring) - e.g. "Clouds" while Real Physics mode is
+            # active, which has no real precipitation field anywhere in
+            # this pipeline. A real no-op, never a fabricated contour.
             return
         artist = self.axis.contourf(
             self._last_layer_grids["lons"],
@@ -752,7 +760,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         y0 = 0.02
         self.axis.text(
             x0, y0 + len(LEVELS) * box_h + 0.012, "AWCI SCALE",
-            transform=self.axis.transAxes, color="#e8edf5", fontsize=7, fontweight="bold", va="bottom", zorder=20,
+            transform=self.axis.transAxes, color=TOKENS.text_primary, fontsize=7, fontweight="bold", va="bottom", zorder=20,
         )
         for i, (threshold, name, rgb) in enumerate(reversed(LEVELS)):
             y = y0 + i * box_h
@@ -762,7 +770,7 @@ class AWCIMapPanel(EventMixin, QWidget):
             )
             self.axis.text(
                 x0 + 0.028, y + box_h * 0.37, f"{threshold:g}  {name}",
-                transform=self.axis.transAxes, color="#c5cede", fontsize=6, va="center", zorder=20,
+                transform=self.axis.transAxes, color=TOKENS.text_secondary, fontsize=6, va="center", zorder=20,
             )
 
     def _draw_info_boxes(self) -> None:
@@ -774,14 +782,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         (pressure_to_flight_level_ft())."""
         rendered_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + "Z"
         fl = pressure_to_flight_level_ft(self._flight_level_hpa) // 100
-        box_style = {"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.9}
+        box_style = {"boxstyle": "round,pad=0.4", "facecolor": TOKENS.bg_card, "edgecolor": TOKENS.border, "alpha": 0.9}
         self.axis.text(
             0.012, 0.98, f"RENDERED\n{rendered_at}",
-            transform=self.axis.transAxes, color="#9fb0c9", fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
+            transform=self.axis.transAxes, color=TOKENS.text_secondary, fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
         )
         self.axis.text(
             0.012, 0.87, f"FLIGHT LEVEL\nFL{fl} (~{self._flight_level_hpa:.0f} hPa)",
-            transform=self.axis.transAxes, color="#e8edf5", fontsize=6.5, fontweight="bold",
+            transform=self.axis.transAxes, color=TOKENS.text_primary, fontsize=6.5, fontweight="bold",
             va="top", ha="left", bbox=box_style, zorder=20,
         )
 
@@ -870,14 +878,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def set_external_layer_grids(self, layer_grids: dict[str, Any]) -> None:
-        """Real Physics mode's own Wind/Turbulence/Icing LAYERS data
-        (acf.awci.path_sampling.real_layer_grids_at_level()'s own
-        dict) - call alongside set_external_field(), before or after,
-        either order (both redraw via update_data()). CAPE/Convection/
-        Clouds have no real counterpart in Real Physics mode - see
-        that function's own docstring - so those 3 checkboxes stay a
-        real no-op (self._extra_layer_contours has no entry for them)
-        rather than drawing a fabricated contour."""
+        """Real Physics mode's own Wind/Turbulence/Icing/Convection/CAPE
+        LAYERS data (acf.awci.path_sampling.real_layer_grids_at_level()'s
+        own dict) - call alongside set_external_field(), before or
+        after, either order (both redraw via update_data()). Clouds has
+        no real counterpart in Real Physics mode - see that function's
+        own docstring - so that one checkbox stays a real no-op
+        (self._extra_layer_contours has no entry for it) rather than
+        drawing a fabricated contour."""
         self._external_layer_grids = layer_grids
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
@@ -925,10 +933,10 @@ class AWCIMapPanel(EventMixin, QWidget):
         # below), which is 100% real, always available offline, has no
         # network dependency, and needs no authentication - genuinely
         # functional on every launch, not just when EUMETSAT answers.
-        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
-        self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
-        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
-        self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
+        self.axis.add_feature(cfeature.OCEAN, facecolor=TOKENS.bg_card)
+        self.axis.add_feature(cfeature.LAND, facecolor=TOKENS.bg_surface_alt)
+        self.axis.add_feature(cfeature.COASTLINE, edgecolor=TOKENS.border, linewidth=0.5)
+        self.axis.add_feature(cfeature.BORDERS, edgecolor=TOKENS.border, linewidth=0.3)
 
         if self._external_field is not None:
             lons, lats, grid = self._external_field
@@ -1018,15 +1026,18 @@ class AWCIMapPanel(EventMixin, QWidget):
         if self._external_field_colorbar_label:
             cax = self.figure.add_axes((0.92, 0.15, 0.02, 0.7))
             self._colorbar = self.figure.colorbar(self._contour, cax=cax)
-            self._colorbar.set_label(self._external_field_colorbar_label, color="#c9d6e8", fontsize=8)
-            self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=7)
+            self._colorbar.set_label(self._external_field_colorbar_label, color=TOKENS.text_secondary, fontsize=8)
+            self._colorbar.ax.tick_params(colors=TOKENS.text_secondary, labelsize=7)
 
         # Real extra layers (Wind/Turbulence/Icing/Convection/CAPE/
         # Clouds) - see _EXTRA_LAYER_SPECS' own docstring. Demo mode:
-        # all 6 real, from awci_layer_grids(). Real Physics mode: only
-        # Wind/Turbulence/Icing have a real counterpart (see
-        # set_external_layer_grids()'s own docstring) - CAPE/
-        # Convection/Clouds stay a real no-op there, not fabricated.
+        # all 6 real, from awci_layer_grids(). Real Physics mode: 5 of
+        # 6 have a real counterpart (see set_external_layer_grids()'s
+        # own docstring) - only Clouds stays a real no-op there, not
+        # fabricated. Both branches below key off whether the real
+        # layer_grids dict actually HAS this layer's key, never a
+        # hardcoded name list, so a future real closure (or narrowing)
+        # of either mode's own real coverage needs no change here.
         #
         # Lazily built (added 2026-09-03, real performance pass - a
         # profiled full refresh() was building all 6 real matplotlib
@@ -1068,11 +1079,15 @@ class AWCIMapPanel(EventMixin, QWidget):
                     self._extra_layer_contours[name] = artist
             elif self._external_layer_grids is not None:
                 self._last_layer_grids = self._external_layer_grids
-                for name in ("Wind", "Turbulence", "Icing"):
+                for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
                     if not self.extra_layer_checkboxes[name].isChecked():
                         continue
-                    key = self._EXTRA_LAYER_SPECS[name][0]
-                    cmap = self._EXTRA_LAYER_SPECS[name][1]
+                    if key not in self._external_layer_grids:
+                        # Real, disclosed scope limit (e.g. "Clouds" -
+                        # see set_external_layer_grids()'s own
+                        # docstring) - a real no-op, never a fabricated
+                        # contour.
+                        continue
                     artist = self.axis.contourf(
                         self._external_layer_grids["lons"],
                         self._external_layer_grids["lats"],
@@ -1120,9 +1135,9 @@ class AWCIMapPanel(EventMixin, QWidget):
                     )
 
         for lat, lon, name in self._city_labels:
-            self.axis.plot(lon, lat, marker="o", color="#e8edf5", markersize=3, transform=ccrs.PlateCarree())
+            self.axis.plot(lon, lat, marker="o", color=TOKENS.text_primary, markersize=3, transform=ccrs.PlateCarree())
             self.axis.text(
-                lon + 0.3, lat, name, color="#e8edf5", fontsize=7, ha="left", va="center",
+                lon + 0.3, lat, name, color=TOKENS.text_primary, fontsize=7, ha="left", va="center",
                 transform=ccrs.PlateCarree(), zorder=14,
             )
 
@@ -1143,10 +1158,10 @@ class AWCIMapPanel(EventMixin, QWidget):
                     xycoords=ccrs.PlateCarree()._as_mpl_transform(self.axis),
                     xytext=(20, 20),
                     textcoords="offset points",
-                    color="#e8edf5",
+                    color=TOKENS.text_primary,
                     fontsize=6.5,
                     fontweight="bold",
-                    bbox={"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.92},
+                    bbox={"boxstyle": "round,pad=0.4", "facecolor": TOKENS.bg_card, "edgecolor": TOKENS.border, "alpha": 0.92},
                     arrowprops={"arrowstyle": "-", "color": TOKENS.border, "lw": 0.8},
                     zorder=25,
                 )
@@ -1156,7 +1171,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         if self._show_info_boxes:
             self._draw_info_boxes()
 
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=11, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.02)
         # Real view state (zoom/pan) is reapplied here rather than a
         # fixed set_extent()/set_global() call, so this full redraw

@@ -74,6 +74,20 @@ class _Tokens:
     warning: str = "#ffb74d"
     danger: str = "#ff5f6d"
 
+    # Status SURFACES - a muted, dark-tinted background/border pair for
+    # a banner/callout in that status color, distinct from the flat
+    # foreground `warning`/`danger` tokens above (those are for text/
+    # icons on the normal chrome background, not a background of their
+    # own). Added 2026-09-11, promoting the AWCI recommendation
+    # banner's own already-deliberate amber pair
+    # (awci_dashboard.py) into a named, reusable token instead of a
+    # second ad hoc hex literal - same amber values, not a new color
+    # choice. Only `warning_surface`/`_border` exist today (the one
+    # real call site needing it); add `danger_surface`/`success_surface`
+    # the same way if/when a real caller needs them, not speculatively.
+    warning_surface: str = "#3a2410"
+    warning_surface_border: str = "#b8763a"
+
     # Geometry - slightly larger radii read as a more current, softer
     # "2026" card language than the previous sharper corners.
     radius_sm: int = 6

@@ -8,6 +8,63 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 > primaire). Il est repris à jour à partir du 6 septembre 2026 et sera
 > maintenu à chaque changement notable, comme le demande `AGENTS.md`.
 
+## [Unreleased] - 2026-09-11
+
+### Added
+- Couches carte AWCI "CAPE"/"Convection" en mode Real Physics :
+  `acf.awci.path_sampling.real_layer_grids_at_level()` calcule maintenant
+  le vrai CAPE de surface (formule MetPy parcel-ascent déjà utilisée
+  ailleurs dans le codebase — `compute_real_cape_cin_at_point()`) à partir
+  de la colonne verticale complète déjà présente dans le volume solveur
+  (`temperature_volume`/`specific_humidity_volume`/`pressure_volume_hpa`,
+  jusque-là seulement tranchés par niveau) — pas une nouvelle formule,
+  une réutilisation d'une colonne réelle déjà disponible mais non
+  exploitée pour cet usage. "Convection" réutilise ce même CAPE réel
+  (`compute_real_max_updraft_velocity`). Honnêtement `NaN` (jamais 0.0
+  fabriqué) là où trop peu de niveaux réels subsistent au-dessus du seuil
+  de 100 hPa. "Clouds" reste un vrai no-op (aucun champ de précipitation
+  nulle part dans ce pipeline, mode démo ou Real Physics). Voir
+  `docs/awci/future-improvements.md` §6.
+- AWCI "turbulence" map layer (Real Physics mode) : indice de turbulence
+  en air clair Ellrod-Knapp (1992) complet (`CATIndex.ti1`), remplaçant le
+  proxy de gradient de norme du vent utilisé jusque-là — cisaillement
+  vertical réel via l'équation hypsométrique (`acf.science.
+  hypsometric_equation`) + température virtuelle réelle, déformation
+  horizontale réelle à partir des composantes u/v réelles du volume
+  solveur. Voir `docs/awci/future-improvements.md` §5. Mode démo inchangé
+  (proxy conservé, disclosed — pas de composantes u/v réelles dans le
+  pattern synthétique).
+- 3 skills de repo (`.claude/skills/`) : `awci-review` (checklist
+  scientifique/technique pour tout changement AWCI), `acf-status-sync`
+  (cohérence docs/STATUS.md ↔ code après un changement), `acf-dashboard-design`
+  (système de tokens UI réel, capacités Qt/QSS, convention charts
+  matplotlib ↔ chrome).
+
+### Changed
+- Unification de la palette des panneaux matplotlib du dashboard AWCI
+  (`awci_radar.py`, `awci_route_chart.py`, `awci_cross_section.py`,
+  `awci_volume_3d.py`, complète du reste de `awci_map_panel.py`) sur
+  `acf.gui.theme_tokens.TOKENS` — ces 5 fichiers gardaient encore une
+  palette hex figée pré-2026-09-07, visuellement incohérente avec le
+  chrome Qt déjà modernisé. Couleurs de données volontaires (icônes
+  givrage/turbulence, courbe du radar) laissées inchangées, non
+  concernées.
+- Poursuite de l'unification (2e et 3e passes) : `awci_stats_bar.py`,
+  `awci_risk_summary.py`, `awci_toast.py` (couleurs de sévérité
+  réutilisent maintenant `TOKENS.success/warning/danger` au lieu de hex
+  qui les dupliquaient), `awci_execution_report_dialog.py`,
+  `awci_footer.py`. Ajout de 2 nouveaux tokens réels
+  `warning_surface`/`warning_surface_border` (`theme_tokens.py`) —
+  promotion de la paire ambrée déjà utilisée par la bannière de
+  recommandation d'`awci_dashboard.py` (mêmes valeurs, pas de nouvelle
+  couleur inventée) en tokens réutilisables, dernier littéral hex du
+  fichier. Ajout d'un retour visuel au survol manquant sur
+  `acf_workstation_thumbnail_strip.py` (seul élément cliquable du
+  dashboard qui n'en avait pas). Portée volontairement limitée à
+  AWCI/Scientific Workstation — `acf.gui.esoc` (~123 littéraux restants,
+  périmètre distinct et nettement plus large) explicitement exclu de
+  cette session sur demande.
+
 ## [Unreleased] - 2026-09-06
 
 ### Added

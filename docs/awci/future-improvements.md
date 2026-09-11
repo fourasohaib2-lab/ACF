@@ -75,6 +75,43 @@ now real in Real Physics mode (`acf.awci.path_sampling.
 real_layer_grids_at_level()`, same disclosed proxy, applied to that
 mode's own real wind field).
 
+**Update 2026-09-11 (closed for Real Physics mode):** `real_layer_grids_at_level()`'s
+"turbulence" layer is now the real Ellrod & Knapp (1992) TI1 index
+(`CATIndex.ti1(vertical_wind_shear, deformation)`), not the
+wind-speed-gradient proxy. The real u/v components
+`compute_real_complexity_volume()` already produces
+(`volume["u_volume"]`/`["v_volume"]`) give real horizontal deformation
+(`numpy.gradient()`, per grid step — see the function's own docstring
+for why this is not a per-physical-distance gradient in this pipeline).
+Real vertical wind shear now comes from a real layer thickness via the
+hypsometric equation (`acf.science.hypsometric_equation.
+HypsometricEquation` + `acf.science.virtual_temperature.
+VirtualTemperature`, both pre-existing, reused, not new formulas) —
+this is also the first real fix for the height-pinning gap
+`acf.awci.wind_shear`'s own docstring disclosed ("ACF's own native
+solver levels are not yet pinned to real physical heights"), at least
+for this one use site. Regression-guarded by
+`tests/test_awci_path_sampling.py::test_real_layer_grids_at_level_turbulence_matches_a_direct_ellrod_knapp_ti1_call`.
+
+**Update 2026-09-11 (closed for demo mode too — §5 fully closed):**
+`_synthetic_inputs()` now returns a real `u`/`v` vector decomposition of
+its own `wind_speed` (`u = wind_speed * cos(direction)`, `v = wind_speed
+* sin(direction)`, a real deterministic synthetic direction field —
+still a demo device, disclosed, not a real forecast wind) —
+`sqrt(u**2+v**2) == wind_speed` exactly, so `AWCICalculator`'s own
+composite score, which only ever consumed `wind_speed`, is bit-identical
+to before (verified: `test_awci_calculator_ignores_the_new_u_v_keys`,
+and a direct before/after `awci_grid()` diff during development).
+`awci_layer_grids()`'s "turbulence" layer now computes the same real
+Ellrod-Knapp TI1 index as Real Physics mode — real horizontal
+deformation from the real u/v grid, real vertical wind shear via the
+hypsometric equation between the requested flight level and a
+**synthetic** second level 50 hPa above it (both sampled from the same
+deterministic pattern — disclosed as synthetic, not a second real
+physical level, matching the honest-proxy convention this whole demo
+pattern already follows). Regression-guarded by
+`tests/test_awci_layer_grids.py::test_turbulence_matches_a_direct_ellrod_knapp_ti1_call`.
+
 ## 6. Real per-grid-cell CAPE contour map layer
 
 **Closed 2026-09-03 (suite)**, explicit user request "je veux rendre
@@ -93,6 +130,34 @@ already disclosed for the AWCI module scores themselves in Real
 Physics mode) — a real CAPE/precipitation field for that mode would
 require the solver itself to produce one, a separate, larger physics
 task, not a UI wiring gap.
+
+**Update 2026-09-11 (CAPE/Convection closed for Real Physics mode
+too — the above turned out to be wrong about CAPE specifically):**
+`compute_real_complexity_volume()`'s `temperature_volume`/
+`specific_humidity_volume`/`pressure_volume_hpa` are real FULL vertical
+columns (every native level, not just one), the exact same real
+convention `acf.awci.convective_energy.compute_real_cape_cin_at_point()`
+already consumes elsewhere in this codebase
+(`acf.awci.spatial_field.compute_real_complexity_field()`'s own
+per-point CAPE/CIN, opt-in via `compute_convective_energy`). CAPE was
+never a solver-native field to begin with anywhere in this codebase —
+it is always a real MetPy parcel-ascent DERIVATION from a real T/q/P
+sounding, and the Real Physics volume already carries a real sounding
+at every column; the earlier disclosure above missed this because
+`real_layer_grids_at_level()` was only slicing `level_idx` (a single
+level), not the full column already sitting in the same `volume` dict.
+`real_layer_grids_at_level()` now returns real "cape"/"convection" too
+(the latter reusing `acf.awci.updraft.compute_real_max_updraft_velocity()`
+on the same real CAPE, same real formula as demo mode) — real,
+honestly `NaN` (never a fabricated 0.0) wherever the real column has
+fewer than 2 real levels above `compute_real_cape_cin_at_point()`'s own
+100 hPa cutoff. Independent of `level_idx` by construction (real CAPE
+describes a whole sounding, not one flight level). "Clouds" remains
+the one genuinely open item — no precipitation/microphysics field
+exists anywhere in this codebase's solver state, real or synthetic,
+for either mode. Regression-guarded by
+`tests/test_awci_path_sampling.py::test_real_layer_grids_at_level_cape_matches_a_direct_real_call`
+and `::test_real_layer_grids_at_level_convection_matches_a_direct_real_call`.
 
 ## 7. Reconciling the two incompatible map-layer systems
 

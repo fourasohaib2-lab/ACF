@@ -165,19 +165,34 @@ def test_real_physics_ready_wires_wind_turbulence_icing_layers(qapp):
         assert dashboard.global_map._extra_layer_contours[name].get_visible() is True
 
 
-def test_real_physics_mode_cape_convection_clouds_stay_a_real_no_op(qapp):
-    """Honest scope guard: these 3 checkboxes have no real counterpart
-    in Real Physics mode (the solver volume carries no CAPE/
-    precipitation field) - checking them must not draw a fabricated
-    contour, and must not raise."""
+def test_real_physics_mode_clouds_stays_a_real_no_op(qapp):
+    """Honest scope guard: "Clouds" has no real counterpart in Real
+    Physics mode (no precipitation field exists anywhere in this
+    pipeline) - checking it must not draw a fabricated contour, and
+    must not raise."""
     dashboard = AWCIDashboard()
     volume = _real_volume()
 
     dashboard._on_real_physics_ready(volume)
 
-    for name in ("Convection", "CAPE", "Clouds"):
-        dashboard.global_map.extra_layer_checkboxes[name].setChecked(True)  # must not raise
-        assert name not in dashboard.global_map._extra_layer_contours
+    dashboard.global_map.extra_layer_checkboxes["Clouds"].setChecked(True)  # must not raise
+    assert "Clouds" not in dashboard.global_map._extra_layer_contours
+
+
+def test_real_physics_mode_cape_and_convection_are_real(qapp):
+    """Closed 2026-09-11 (future-improvements.md §6): CAPE/Convection
+    DO have a real counterpart in Real Physics mode now - the real
+    solver's own full vertical column, reusing
+    acf.awci.convective_energy.compute_real_cape_cin_at_point() (same
+    formula already used elsewhere in this codebase)."""
+    dashboard = AWCIDashboard()
+    volume = _real_volume()
+
+    dashboard._on_real_physics_ready(volume)
+
+    for name in ("CAPE", "Convection"):
+        dashboard.global_map.extra_layer_checkboxes[name].setChecked(True)
+        assert name in dashboard.global_map._extra_layer_contours
 
 
 def test_revert_to_demo_clears_the_real_layer_grids_and_restores_all_6(qapp):

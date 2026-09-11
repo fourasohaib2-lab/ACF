@@ -50,12 +50,24 @@ native pressure range returns `None` (interpolated_state_at_pressure())
 out-of-range value - the same "honest gap over fabrication" rule this
 module already applied to CAPE/CIN/forecast_volume above.
 
-Same scope limits as spatial_field.py carry over: CAPE/CIN/
-precipitation/terrain-altitude are not derived (AWCICalculator's own
-defaults apply), and forecast_field/forecast_volume stays flat under
-default weights for the same reason (no per-point ensemble/multi-model
-data - would require re-running that fusion at every one of the
-volume's points, which does not scale).
+Same scope limits as spatial_field.py carry over for THIS function's
+own `awci_volume`/`module_volumes`: AWCICalculator's per-module scores
+here still use its own CAPE/CIN/precipitation/terrain-altitude
+defaults (not derived inline in this loop), and forecast_field/
+forecast_volume stays flat under default weights for the same reason
+(no per-point ensemble/multi-model data - would require re-running
+that fusion at every one of the volume's points, which does not
+scale). **Update 2026-09-11** (future-improvements.md §6, "rester sur
+AWCI" session): this no longer means CAPE is unavailable from this
+volume entirely - `temperature_volume`/`specific_humidity_volume`/
+`pressure_volume_hpa` returned below are real full vertical columns, and
+`acf.awci.path_sampling.real_layer_grids_at_level()` now derives real
+per-column CAPE/Convection from them (the same real MetPy parcel-ascent
+formula already used by spatial_field.py's own opt-in
+`compute_convective_energy`) - just not computed inline as part of
+`awci_volume`/`module_volumes` here. Precipitation/terrain-altitude
+remain genuinely undeliverable (no source anywhere in this codebase's
+solver state, real or derivable).
 """
 
 from typing import Any
@@ -223,16 +235,25 @@ def compute_real_complexity_volume(
             "Real volume derived from CoupledEarthSolver's actual 3D state "
             "at the requested grid configuration's native model levels - "
             "not standard pressure levels (1000/925/850/700/500/300 hPa "
-            "etc.) and not a synthetic pattern. No vertical interpolation "
-            "is performed anywhere in ACF today; pressure_volume_hpa "
+            "etc.) and not a synthetic pattern. pressure_volume_hpa "
             "reports each native level's own real local pressure so a "
             "caller can find the closest native level to a pressure of "
-            "interest, not an interpolated value at that exact pressure. "
-            "CAPE/CIN/precipitation/terrain-altitude stay at "
-            "AWCICalculator's defaults (no per-column parcel ascent). "
-            "forecast_volume is flat under default weights - same "
-            "does-not-scale-to-every-point reason as spatial_field.py's "
-            "compute_real_complexity_field()."
+            "interest; real log-pressure interpolation onto an arbitrary "
+            "standard level IS available (interpolated_state_at_pressure()/"
+            "vertical_profile_at_standard_levels() below - updated "
+            "2026-09-04, this string used to say no interpolation existed "
+            "at all, stale after that closure - fixed 2026-09-11). "
+            "module_volumes/awci_volume above still use AWCICalculator's "
+            "CAPE/CIN/precipitation/terrain-altitude defaults (not derived "
+            "inline here); real per-column CAPE/Convection FROM this same "
+            "volume's own temperature_volume/specific_humidity_volume/"
+            "pressure_volume_hpa are available separately via "
+            "acf.awci.path_sampling.real_layer_grids_at_level() (closed "
+            "2026-09-11) - precipitation/terrain-altitude remain "
+            "genuinely undeliverable, no source anywhere in this "
+            "codebase's solver state. forecast_volume is flat under "
+            "default weights - same does-not-scale-to-every-point reason "
+            "as spatial_field.py's compute_real_complexity_field()."
         ),
     }
 

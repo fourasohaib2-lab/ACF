@@ -119,6 +119,35 @@ def test_play_toggle_starts_and_stops_the_real_timer(qapp):
     assert widget._timer.isActive() is False
 
 
+def test_changing_speed_while_playing_applies_live_not_only_on_next_play(qapp):
+    """BUG FIX (2026-09-11): the "Speed:" selector was only ever read
+    once, inside _on_play_toggled(), at the moment Play is pressed - a
+    change made while already playing had no effect until Pause/Play
+    again. It must now retune the real, already-running QTimer
+    immediately."""
+    widget = ACFGlobalTimelineWidget()
+    widget.update_from_volume(_real_volume(), 0)
+    widget._on_evolution_ready(_real_evolution())
+
+    widget.speed_selector.setCurrentText("1x")
+    widget.play_button.setChecked(True)
+    assert widget._timer.interval() == 1200
+
+    widget.speed_selector.setCurrentText("4x")
+    assert widget._timer.isActive() is True  # still running, not stopped
+    assert widget._timer.interval() == 300  # retuned live
+
+
+def test_changing_speed_while_not_playing_does_not_start_the_timer(qapp):
+    widget = ACFGlobalTimelineWidget()
+    widget.update_from_volume(_real_volume(), 0)
+    widget._on_evolution_ready(_real_evolution())
+
+    widget.speed_selector.setCurrentText("4x")
+
+    assert widget._timer.isActive() is False
+
+
 def test_evolution_failure_reports_the_real_error_and_reenables_run(qapp):
     widget = ACFGlobalTimelineWidget()
     widget.run_button.setEnabled(False)
