@@ -35,6 +35,21 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   chrome Qt déjà modernisé. Couleurs de données volontaires (icônes
   givrage/turbulence, courbe du radar) laissées inchangées, non
   concernées.
+- Poursuite de l'unification (2e et 3e passes) : `awci_stats_bar.py`,
+  `awci_risk_summary.py`, `awci_toast.py` (couleurs de sévérité
+  réutilisent maintenant `TOKENS.success/warning/danger` au lieu de hex
+  qui les dupliquaient), `awci_execution_report_dialog.py`,
+  `awci_footer.py`. Ajout de 2 nouveaux tokens réels
+  `warning_surface`/`warning_surface_border` (`theme_tokens.py`) —
+  promotion de la paire ambrée déjà utilisée par la bannière de
+  recommandation d'`awci_dashboard.py` (mêmes valeurs, pas de nouvelle
+  couleur inventée) en tokens réutilisables, dernier littéral hex du
+  fichier. Ajout d'un retour visuel au survol manquant sur
+  `acf_workstation_thumbnail_strip.py` (seul élément cliquable du
+  dashboard qui n'en avait pas). Portée volontairement limitée à
+  AWCI/Scientific Workstation — `acf.gui.esoc` (~123 littéraux restants,
+  périmètre distinct et nettement plus large) explicitement exclu de
+  cette session sur demande.
 
 ## [Unreleased] - 2026-09-06
 

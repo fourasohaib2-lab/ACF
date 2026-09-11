@@ -1285,7 +1285,7 @@ class AWCIDashboard(QWidget):
         self.recommendation_banner = QLabel("")
         self.recommendation_banner.setWordWrap(True)
         self.recommendation_banner.setStyleSheet(
-            f"background-color: #3a2410; color: {TOKENS.text_primary}; border: 1px solid #b8763a; "
+            f"background-color: {TOKENS.warning_surface}; color: {TOKENS.text_primary}; border: 1px solid {TOKENS.warning_surface_border}; "
             f"border-radius: {TOKENS.radius_sm}px; padding: 6px 10px; font-size: 10px;"
         )
         self.recommendation_banner.setVisible(False)
