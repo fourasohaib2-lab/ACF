@@ -11702,3 +11702,49 @@ compatibilité pure vers `acf.importers`, déjà disclosée). `acf.standards`
 (`hub.py`/`manager.py`/`cf_standard_names.py`/`ecmwf/manager.py`/
 `ecmwf/loader.py`/`ecmwf/converter.py` tous réels et corrects, noms CF
 et unités canoniques vérifiés exacts).
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement, "continue l'audit sur les paquets restants") — `acf.events`, `acf.climate`, `acf.hazard_operations` : vérifiés propres
+
+**`acf.events`** (5 fichiers) : disclosure exemplaire au niveau
+`__init__.py` sur la portée honnête des détecteurs (seuls 2 des 8
+types d'événements du "Prompt Maître" ont un détecteur réel et
+défendable - vent fort et conditions favorables au brouillard - les 6
+autres nécessitent des données que le solveur réel d'ACF ne fournit
+pas encore par point de grille). `Event` (machine à états réelle avec
+transitions légales strictement contrôlées, round-trip
+`to_dict()`/`from_dict()` sans perte), `wind_detector.py`/
+`fog_detector.py` (calculs réels via MetPy, seuils documentés comme
+choix opérationnels d'ACF plutôt que normes internationales
+spécifiques) - tous vérifiés propres.
+
+**`acf.climate`** (13 fichiers) : déjà corrigé le 2026-09-05
+(survendications de couverture dans les docstrings d'en-tête -
+15 indices climatiques annoncés mais 5 réellement implémentés, 10
+modèles climatiques annoncés mais 5 implémentés, 7 réanalyses
+annoncées mais 4 implémentées - dans chaque cas le code lui-même
+retourne honnêtement `None` pour les clés manquantes, seul l'en-tête
+survendait). Contenu scientifique réel et vérifiable (ENSO/NAO/AMO/PDO/
+SPI avec formules et références réelles ; CESM2/EC-Earth3/MPI-ESM1.2/
+CNRM-CM6/SCREAM avec composants et références réels ; scénarios
+SSP1-1.9 à SSP5-8.5 conformes à l'AR6 du GIEC ; ERA5/ERA5-Land/MERRA-2/
+JRA-55 avec métadonnées réelles et citées). `earth_system/coupling.py`
+et `verification/metrics.py` : formules physiques et statistiques
+réelles et correctes (flux de quantité de mouvement, rétroaction
+d'albédo glace-océan, ACC, tendance décennale, diagramme de Taylor).
+
+**`acf.hazard_operations`** (16 fichiers) : domaine à haut risque
+(urgences, évacuations, alertes) déjà exhaustivement corrigé par une
+passe antérieure - l'un des findings les plus opérationnellement
+dangereux du projet (`hazard_detection_engine.py` fabriquait
+auparavant un cyclone nommé, une tempête, une inondation et un feu de
+forêt fictifs présentés comme un vrai scan mondial). Les 15 autres
+fichiers (`alert_generator.py`, `communication_engine.py`,
+`crisis_timeline.py`, `early_warning_system.py`,
+`emergency_manager.py`, `evacuation_planner.py`, `hazard_dashboard.py`,
+`impact_model.py`, `risk_assessment.py`, `situation_awareness.py`,
+`risk_visualization/*.py`) tous vérifiés propres ou déjà corrigés.
+`risk_layers.py` re-examiné et confirmé être un catalogue statique
+légitime (types de couches supportées par l'UI, pas une revendication
+de données live), conformément à la décision déjà documentée dans
+`tests/test_hazard_operations.py` - docstring clarifiée sans
+changement fonctionnel.
