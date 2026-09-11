@@ -11427,3 +11427,25 @@ existants, export CSV réel via stdlib sans pandas), `acf.time`
 aucun risque de fabrication).
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — `acf.catalogs` et `acf.master` : vérifiés propres (déjà disclosés par une passe antérieure)
+
+**`acf.catalogs`** (10 fichiers, 219 lignes) - paquet déjà entièrement
+disclosé par une passe antérieure (non détecté par le grep de
+couverture car utilisant une formulation différente) : son propre
+`__init__.py` explique que c'est une extension CF/ECMWF plus petite,
+non concurrente d'`acf.catalog` (singulier, la vraie implémentation
+utilisée par le code applicatif réel). `CFCatalog`/`ECMWFCatalog`
+délèguent réellement à `acf.standards`, `managers/`/`loaders/` sont des
+sous-paquets vides explicitement disclosés comme tels ("not imported
+anywhere... disclosed, not populated or removed").
+
+**`acf.master`** (17 fichiers, 1277 lignes) - 12/17 déjà corrigés. Les
+5 restants lus intégralement : `traceability.py`/`capabilities.py`/
+`master_settings.py` (dataclasses/registres statiques, aucun calcul,
+aucun statut fabriqué), `awci_master_dashboard.py` (déjà disclosé par
+une passe antérieure "Tier E sweep" comme un descripteur de workspace
+statique jamais rendu par une UI réelle - aspirational mais pas une
+fabrication de statut mesuré), `__init__.py` (imports uniquement).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire.**
