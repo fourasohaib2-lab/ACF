@@ -97,14 +97,16 @@ class AWCICalculator:
     - `LEVEL_THRESHOLDS` - the aviation complexity bands ("Very Low"
       through "Extreme") `_get_level()` classifies into (overridable via
       `AWCICalculator(level_thresholds=...)`).
-    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 9 real
+    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 11 real
       modules this application considers physical vs. forecast-derived.
       NOT YET overridable per instance (still class-level constants) -
       a real, disclosed, deliberately deferred sub-item, not silently
       complete.
-    - The specific 7+2-module set itself (dynamic/thermodynamic/
-      convective/microphysical/topographic/temporal/confidence +
-      ensemble_spread/model_disagreement) is itself an AWCI application
+    - The specific 9+2-module set itself (dynamic/thermodynamic/
+      convective/microphysical/topographic/temporal/confidence/ceiling/
+      visibility + ensemble_spread/model_disagreement - the last 4
+      added post-model4d audit, 2026-09-11, all opt-in at weight 0.0 -
+      see WeightsManager.DEFAULT_WEIGHTS) is itself an AWCI application
       choice - a hypothetical DWCI/MWCI application (section 46 - "des
       applications potentielles, pas des produits déjà développés", not
       built here) could choose a different module set entirely, as long
@@ -391,7 +393,7 @@ class AWCICalculator:
     # (tests/test_awci_calculator.py) so a future new module can't
     # silently fall into neither/both.
     PHYSICAL_MODULES = frozenset(
-        {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal"}
+        {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "ceiling", "visibility"}
     )
     FORECAST_MODULES = frozenset({"confidence", "ensemble_spread", "model_disagreement"})
 
@@ -584,6 +586,26 @@ class AWCICalculator:
               min-max normalization. Not stratified by season/region/
               altitude internally - pre-filter the sample yourself if
               that nuance matters.
+            - ceiling_height_m: optional, real estimated ceiling height
+              in meters (docs/ACF_MASTER_PROMPT.md's "visibilité et
+              plafond" gap, closed post-model4d audit, 2026-09-11) -
+              see acf.awci.ceiling.compute_real_ceiling_at_point() for
+              the real LCL-approximation formula that produces it (not
+              derived internally from temperature/specific_humidity/
+              pressure by this method - a caller must compute it first
+              via that function and pass the result in). Drives the
+              real, opt-in `ceiling` module (see class docstring).
+              Omitted entirely (the default): zero behavior change -
+              no existing caller, including the AWCI dashboard, is
+              affected by this module's existence.
+            - visibility_risk: optional, real [0, 1] visibility-
+              degradation risk proxy (same gap and session as
+              ceiling_height_m above) - see
+              acf.awci.visibility.compute_real_visibility_risk_at_point()
+              for the real formula and its honest scope (a risk proxy,
+              not a literal visibility distance). Drives the real,
+              opt-in `visibility` module (see class docstring). Omitted
+              entirely (the default): zero behavior change.
 
         Returns
         -------
@@ -774,6 +796,36 @@ class AWCICalculator:
             self._compute_spread_score(model_realizations, self.normalizer.normalize_model_disagreement)
             if model_realizations
             else 0.0
+        )
+
+        # Ceiling module - real estimated ceiling height (LCL
+        # approximation) when a caller supplies data["ceiling_height_m"]
+        # (docs/ACF_MASTER_PROMPT.md's "visibilité et plafond" gap,
+        # closed post-model4d audit, 2026-09-11 - see
+        # acf.awci.ceiling.compute_real_ceiling_at_point() for the real
+        # formula that produces it). Same "0.0 = no signal supplied"
+        # convention as ensemble_spread/model_disagreement above, not
+        # "unlimited ceiling" - a caller who wants a real ceiling
+        # complexity contribution must compute it first via
+        # acf.awci.ceiling and pass the result in; this method never
+        # derives it internally from temperature/humidity/pressure on
+        # its own, so every existing caller that never supplies this
+        # key - the AWCI dashboard included - gets a bit-identical
+        # awci/level/decomposition to before this module existed.
+        scores["ceiling"] = (
+            self.normalizer.normalize_ceiling(data["ceiling_height_m"]) if "ceiling_height_m" in data else 0.0
+        )
+
+        # Visibility module - real visibility-degradation risk proxy
+        # when a caller supplies data["visibility_risk"] (same gap and
+        # session as ceiling above - see
+        # acf.awci.visibility.compute_real_visibility_risk_at_point()
+        # for the real formula, and that module's own docstring for
+        # why this is a risk proxy in [0, 1], not a literal visibility
+        # distance). Same "0.0 = no signal supplied" opt-in convention,
+        # zero behavior change for every existing caller.
+        scores["visibility"] = (
+            self.normalizer.normalize_visibility_risk(data["visibility_risk"]) if "visibility_risk" in data else 0.0
         )
 
         return scores
@@ -1158,6 +1210,8 @@ class AWCICalculator:
             "confidence": "Incertitude de prévision",
             "ensemble_spread": "Désaccord d'ensemble (spread réel)",
             "model_disagreement": "Désaccord inter-modèles (fusion réelle)",
+            "ceiling": "Plafond (hauteur LCL estimée)",
+            "visibility": "Visibilité (risque brouillard/précipitation)",
             "wind_topo_interaction": "Interaction Vent x Relief",
             "conv_thermo_interaction": "Interaction Convection x Thermodynamique",
         }

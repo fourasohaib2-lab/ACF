@@ -252,6 +252,42 @@ class Normalizer:
         """
         return Normalizer.normalize_humidity(value)
 
+    @staticmethod
+    def normalize_ceiling(ceiling_height_m: float) -> float:
+        """
+        Normalize a real estimated ceiling height (m) to a [0, 1]
+        complexity score - opt-in `ceiling` module (docs/
+        ACF_MASTER_PROMPT.md's "visibilité et plafond" gap, closed
+        post-model4d audit, 2026-09-11; see
+        acf.awci.ceiling.compute_real_ceiling_at_point() for the real
+        LCL-approximation formula that produces `ceiling_height_m`).
+
+        Real, disclosed ACF design choice: complexity = 1 at ceiling_m
+        = 0 (surface obscured), ramping linearly down to complexity = 0
+        at/above acf.awci.ceiling.MVFR_CEILING_M (914.4 m / 3000 ft,
+        the real FAA/NOAA VFR ceiling threshold - not an arbitrary
+        saturation point) - see get_range_status("ceiling") for the
+        full disclosure of what is and is not a published value here.
+        """
+        from acf.awci.ceiling import MVFR_CEILING_M
+
+        ceiling_height_m = max(0.0, min(MVFR_CEILING_M, ceiling_height_m))
+        return 1.0 - (ceiling_height_m / MVFR_CEILING_M)
+
+    @staticmethod
+    def normalize_visibility_risk(visibility_risk_score: float) -> float:
+        """
+        Pass-through clamp to [0, 1] - `visibility_risk_score` (docs/
+        ACF_MASTER_PROMPT.md's "visibilité et plafond" gap, closed
+        post-model4d audit, 2026-09-11) already IS a real [0, 1] risk
+        proxy computed by
+        acf.awci.visibility.compute_real_visibility_risk_at_point() -
+        see that module's own docstring, and get_range_status
+        ("visibility_risk") for the full disclosure of what is and is
+        not a published value here.
+        """
+        return max(0.0, min(1.0, visibility_risk_score))
+
     # Reference "large disagreement" spread per variable, used to
     # normalize a real ensemble standard deviation (from
     # acf.ai.ensemble.ensemble_manager.EnsembleManager.spread) to

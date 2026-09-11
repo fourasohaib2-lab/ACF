@@ -11748,3 +11748,120 @@ légitime (types de couches supportées par l'UI, pas une revendication
 de données live), conformément à la décision déjà documentée dans
 `tests/test_hazard_operations.py` - docstring clarifiée sans
 changement fonctionnel.
+
+## Mise à jour 2026-09-11 (sur demande explicite de l'utilisateur, suite au cross-check AWCI vs spécification ChatGPT) — Fermeture du gap "visibilité et plafond" : 2 nouveaux modules réels, strictement opt-in, contrainte explicite "ne pas modifier le dashboard"
+
+**Contexte** : un cross-check de l'implémentation réelle d'AWCI contre la
+spécification conceptuelle que l'utilisateur avait élaborée avec ChatGPT
+("AWCI — programme complet") a identifié plusieurs écarts fonctionnels
+réels, dont le plus net : aucun module de visibilité ni de plafond
+n'existait nulle part dans `acf.awci` (ni dans les 9 modules du
+calculateur, ni comme fonction point-à-point à la manière de
+`theta_e.py`/`orographic_froude.py`). L'utilisateur a explicitement
+demandé de commencer la fermeture de ces écarts tout en gardant le
+tableau de bord AWCI strictement inchangé ("essaye le maximum de ne pas
+le modifier").
+
+**Conception retenue pour respecter cette contrainte** : les deux
+nouveaux modules (`ceiling`, `visibility`) suivent exactement le même
+motif déjà établi et déjà en production pour `ensemble_spread`/
+`model_disagreement` - poids par défaut 0.0 dans
+`WeightsManager.DEFAULT_WEIGHTS`, et calcul déclenché uniquement si
+l'appelant fournit explicitement la valeur pré-calculée
+(`data["ceiling_height_m"]`/`data["visibility_risk"]`) ; jamais dérivés
+en interne à partir des champs de base. Aucun appelant existant -
+tableau de bord AWCI inclus - ne fournit ces clés, donc `awci`/`level`/
+`decomposition` restent bit-identiques à avant cette fermeture pour tout
+appel existant, vérifié par un test dédié
+(`test_omitting_both_keys_gives_a_bit_identical_awci_to_before_these_
+modules_existed`).
+
+**Nouveaux fichiers, formules réelles, portée honnêtement disclosée** :
+- `src/acf/awci/ceiling.py` - hauteur de plafond estimée (approximation
+  LCL réelle, 125 m par °C de dépression du point de rosée - dérivée de
+  deux taux de gradient réels : adiabatique sec ≈9.8 K/km et point de
+  rosée le long d'une parcelle ascendante ≈1.8-2 K/km), réutilisant les
+  briques déjà réelles et déjà auditées `acf.science.dewpoint.DewPoint`/
+  `acf.science.thermodynamics.Thermodynamics` (même composition que
+  `theta_e.py`). Classification LIFR/IFR/MVFR/VFR réelle (seuils
+  opérationnels standards FAA/NOAA Aviation Weather Center - plafond
+  seul, visibilité traitée séparément). Retourne honnêtement `None`
+  (jamais une valeur fabriquée) si l'humidité relative calculée est
+  non-positive.
+- `src/acf/awci/visibility.py` - proxy de risque de dégradation de
+  visibilité dans [0, 1], **explicitement pas une distance littérale**
+  (kilomètres/miles nautiques) : une valeur quantitative réelle
+  nécessiterait la loi de Koschmieder avec un coefficient d'extinction
+  réel, que les entrées réelles d'AWCI (température/humidité
+  spécifique/pression/taux de précipitation) ne permettent pas de
+  fournir sans inventer un coefficient non sourcé. Combine par `max()`
+  (choix ACF disclosé, pas une moyenne) une proximité de brouillard
+  réelle (même formule d'humidité relative que `theta_e.py`) et une
+  intensité de précipitation réelle (seuil OMM/NWS standard de pluie
+  forte, 7.6 mm/h).
+
+**Câblage dans `AWCICalculator`** : `calculate_module_scores()` étendu
+avec les 2 nouveaux modules selon le motif exact d'`ensemble_spread`/
+`model_disagreement` ; `PHYSICAL_MODULES` mis à jour (8 clés) ;
+`WeightsManager.DEFAULT_WEIGHTS`/`scientific_status.py`
+(`MODULE_WEIGHT_STATUS`, `NORMALIZER_RANGE_STATUS` - statut INITIAL/
+HYPOTHESIS, jamais CALIBRATED/VALIDATED, conforme à la convention déjà
+établie) mis à jour en conséquence. `Normalizer.normalize_ceiling()`/
+`normalize_visibility_risk()` ajoutés.
+
+**Vérification de l'impact réel sur le dashboard (pas seulement
+supposé)** : investigation empirique de la chaîne complète
+`AWCICalculator.calculate_module_scores()` →
+`acf.awci.spatial_field.compute_real_complexity_field()`'s
+`module_fields` (dérivé dynamiquement de `PHYSICAL_MODULES |
+FORECAST_MODULES`, donc désormais y compris `ceiling`/`visibility`,
+honnêtement à zéro partout) → `acf.gui.map.map_layers.
+MODULE_COMPLEXITY_LAYERS` (registre de couches de carte, **un dict
+statique et curé, pas dérivé dynamiquement**) → `MapCanvas.
+set_module_complexity_field()`. Confirmé empiriquement : les 2 nouveaux
+champs 2D sont bien calculés (tous à zéro) mais ne sont raccrochés à
+aucune couche de carte réelle - `set_module_complexity_field()` pour
+une clé non enregistrée logue un avertissement "unknown module_key" et
+retourne silencieusement, exactement le même comportement déjà
+documenté et déjà accepté pour les 3 modules prévisionnels avant leur
+propre enregistrement (2026-09-06). Aucun panneau, aucune valeur
+affichée, aucune couche de carte du tableau de bord AWCI n'est modifiée
+par cette fermeture - vérifié, pas supposé.
+
+**Fichiers `acf.gui.*` (dashboard) délibérément non modifiés** :
+`map_layers.py`/`map_canvas.py`/tous les panneaux `awci_*.py` du
+dossier `gui/dashboard/`. Un seul test-garde-fou pré-existant du projet
+(`test_module_complexity_layers_covers_every_real_awci_module`,
+`tests/test_map_layers_module_complexity.py`) impose explicitement que
+tout nouveau module `AWCICalculator` soit enregistré comme couche de
+carte - mis à jour avec une exception délibérée et disclosée
+(`ceiling`/`visibility` exclus tant qu'aucune source réelle
+point-à-point n'est câblée dans `compute_real_complexity_field()`
+lui-même) plutôt que contourné silencieusement : enregistrer ces
+couches aujourd'hui aurait de toute façon été trompeur (un utilisateur
+activant la couche verrait un dégradé uniformément à zéro, laissant
+croire à une donnée réelle là où il n'y en a pas encore).
+
+**Tests** : 3 nouveaux fichiers (`tests/test_awci_ceiling.py`,
+`tests/test_awci_visibility.py`,
+`tests/test_awci_calculator_ceiling_visibility.py` - 21 tests),
+couvrant : disclosure honnête `None` sur humidité nulle, monotonicité
+physique réelle (humidité croissante → plafond décroissant), seuils
+FAA réels, combinaison `max()` vérifiée par construction, non-impact
+strict par défaut, activation opt-in réelle, classification physique.
+2 tests pré-existants mis à jour pour refléter le nouvel ensemble de
+clés (`tests/test_awci_vertical_field.py`,
+`tests/gui/test_awci_dashboard_reference_parity.py`) - vérification
+supplémentaire que `_module_rows` du dashboard (panneau de détail de
+risque) provient d'une liste `_MODULE_LABELS` statique et non d'une
+énumération dynamique de `module_scores`, donc également non affecté.
+
+**Résultat** : suite de tests AWCI complète (827 tests, `tests/
+test_awci*.py` + `tests/gui/test_awci*.py`) : 0 échec. `ruff check` :
+propre sur tous les fichiers modifiés/créés.
+
+**Prochaine étape (non traitée ici)** : les écarts restants identifiés
+lors du cross-check (poussière/sable, cendres volcaniques, câblage du
+registre `acf.aviation.hazards` pour le microburst, optimisation de
+niveau de vol, AWCI aéroport) - voir le message de réponse de cette
+session au diagnostic ChatGPT pour la liste complète et priorisée.

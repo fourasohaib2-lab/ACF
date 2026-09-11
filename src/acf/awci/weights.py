@@ -38,6 +38,21 @@ class WeightsManager:
         # compute_real_multi_model_disagreement()). Same opt-in
         # convention as ensemble_spread above: 0.0 by default.
         "model_disagreement": 0.0,
+        # Real estimated ceiling height (see AWCICalculator's
+        # calculate_module_scores() and
+        # acf.awci.ceiling.compute_real_ceiling_at_point()). Added
+        # post-model4d audit, 2026-09-11, closing AWCI's "visibilité et
+        # plafond" gap. Same opt-in convention as ensemble_spread
+        # above: 0.0 by default, so every existing caller that never
+        # supplies data["ceiling_height_m"] - and every existing test,
+        # and the AWCI dashboard - gets a bit-identical awci/level/
+        # decomposition to before this module existed.
+        "ceiling": 0.0,
+        # Real visibility-degradation risk proxy (see AWCICalculator's
+        # calculate_module_scores() and
+        # acf.awci.visibility.compute_real_visibility_risk_at_point()).
+        # Same opt-in convention: 0.0 by default.
+        "visibility": 0.0,
     }
 
     def __init__(self, weights: dict[str, float] | None = None):

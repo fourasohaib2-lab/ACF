@@ -242,12 +242,25 @@ def compute_real_complexity_field(
             separate map layers) - one real 0-100 field per
             AWCICalculator module (dynamic/thermodynamic/convective/
             microphysical/topographic/temporal/confidence/
-            ensemble_spread/model_disagreement - see
-            AWCICalculator.PHYSICAL_MODULES/FORECAST_MODULES for the
-            exact real set), each entry field[i, j] equal to
+            ensemble_spread/model_disagreement/ceiling/visibility -
+            the last two added post-model4d audit, 2026-09-11, opt-in
+            at weight 0.0 so this field is honestly all-zero unless a
+            caller separately opts in - see AWCICalculator.
+            PHYSICAL_MODULES/FORECAST_MODULES for the exact real set),
+            each entry field[i, j] equal to
             `calculate(data_at_i_j)["module_scores"][name]` - the
             SAME per-point calculate() call awci_field/physical_field
-            already come from, not a second pass.
+            already come from, not a second pass. NOTE: `acf.gui.map.
+            map_layers.MODULE_COMPLEXITY_LAYERS` (the real map-layer
+            toggle registry) is a curated dict, not auto-derived from
+            this field set - ceiling/visibility have no registered map
+            layer yet (a deliberate, disclosed choice: keeping the
+            existing dashboard/map layer list untouched while this
+            capability is opt-in and zero-weight by default); a caller
+            feeding them into MapCanvas.set_module_complexity_field()
+            gets a logged "unknown module_key" warning and no render,
+            the same documented behavior every other module already
+            had before it was registered as a layer.
         temperature_field, wind_speed_field, specific_humidity_field,
         pressure_field_hpa : the real per-point CoupledEarthSolver
             values actually fed to AWCICalculator to produce the above

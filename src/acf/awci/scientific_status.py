@@ -113,6 +113,12 @@ MODULE_WEIGHT_STATUS: dict[str, WeightStatusEntry] = {
     "model_disagreement": WeightStatusEntry(
         WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet."
     ),
+    "ceiling": WeightStatusEntry(
+        WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'visibilité et plafond' gap (see acf.awci.ceiling)."
+    ),
+    "visibility": WeightStatusEntry(
+        WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'visibilité et plafond' gap (see acf.awci.visibility)."
+    ),
 }
 
 #: Status for AWCICalculator.INTERACTION_WEIGHTS - HYPOTHESIS per that
@@ -168,6 +174,8 @@ NORMALIZER_RANGE_STATUS: dict[str, ThresholdStatus] = {
     "mountain_wave_severity": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Severity = 1 - clip(Fr, 0, 1) - the Fr=1 threshold itself is a real, classic physical dividing line (flow blocking/intense stationary waves below it, smoother flow-over above it - acf.awci.orographic_froude.compute_real_mountain_wave_froude_number_at_point()), but treating severity as exactly linear in (1-Fr) between 0 and 1, and exactly 0 above Fr=1, is an ACF design choice, not a published severity index. The underlying real Fr=U/(N*H) formula itself is a real, classic, cited aviation-meteorology diagnostic (ICAO Doc 9817 Wind Shear; AMS Aviation Meteorology)."),
     "confidence": ThresholdStatus(ScientificStatus.CONFIRMED, "Range 0..100% is a real, exact unit definition, not an empirical choice."),
     "temporal": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..20 (default max_change) - unitless, not sourced; caller-overridable."),
+    "ceiling": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Saturates to 0 complexity at/above 914.4 m (the real FAA/NOAA VFR ceiling threshold, acf.awci.ceiling.MVFR_CEILING_M) - a real, standard operational cutoff, but treating complexity as exactly linear in ceiling height between 0 and that threshold is an ACF design choice, not a published severity curve. The underlying real ceiling height itself (acf.awci.ceiling.compute_real_ceiling_at_point()) is a real, standard first-order LCL approximation (125 m per degC of dewpoint depression) - only this normalization curve's own linearity assumption is HYPOTHESIS."),
+    "visibility_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.visibility.compute_real_visibility_risk_at_point() - a real, disclosed ACF design choice (max() of a real relative-humidity-based fog-proximity ramp and a real WMO-heavy-rain-referenced precipitation-intensity ramp), not a value sourced from a published visibility index, and explicitly not a literal visibility distance (see that module's own honest-scope disclosure)."),
 }
 
 #: Status for Normalizer.ENSEMBLE_SPREAD_REFERENCE / MODEL_DISAGREEMENT_REFERENCE -
