@@ -69,13 +69,33 @@ class HPCExecutionPanel(QWidget):
         btn_start.setStyleSheet("font-weight: bold; background-color: #00A86B; color: white; padding: 4px 10px;")
         btn_start.clicked.connect(self._on_start_run)
 
-        btn_pause = QPushButton("⏸️ Pause")
-        btn_pause.setStyleSheet("font-weight: bold; background-color: #FFA500; color: white; padding: 4px 10px;")
-        btn_pause.clicked.connect(self._on_pause_run)
+        # BUG FIX (2026-09-11, found during a full ESOC rescan): these
+        # buttons used to be enabled, styled identically to the
+        # genuinely-wired Start/Cancel/Restart, and connected to
+        # handlers that called nothing but self.refresh_table() - no
+        # real pause/resume capability exists anywhere in this
+        # codebase (UniversalModelRunner only defines submit/cancel/
+        # restart; HPCWorkflowManager has no pause/resume either), so
+        # clicking them silently did nothing to a real job while
+        # looking exactly like a working control. Disabled with an
+        # honest tooltip rather than left clickable-but-fake - same
+        # "honest disclosure over silent/fake action" discipline this
+        # file's own _on_restart_run() NOTE already documents.
+        self.btn_pause = QPushButton("⏸️ Pause")
+        self.btn_pause.setStyleSheet("font-weight: bold; background-color: #FFA500; color: white; padding: 4px 10px;")
+        self.btn_pause.setEnabled(False)
+        self.btn_pause.setToolTip(
+            "Not implemented: no real pause capability exists in UniversalModelRunner "
+            "or HPCWorkflowManager for any scheduler backend in this codebase."
+        )
 
-        btn_resume = QPushButton("⏯️ Resume")
-        btn_resume.setStyleSheet("font-weight: bold; background-color: #0088CC; color: white; padding: 4px 10px;")
-        btn_resume.clicked.connect(self._on_resume_run)
+        self.btn_resume = QPushButton("⏯️ Resume")
+        self.btn_resume.setStyleSheet("font-weight: bold; background-color: #0088CC; color: white; padding: 4px 10px;")
+        self.btn_resume.setEnabled(False)
+        self.btn_resume.setToolTip(
+            "Not implemented: no real resume capability exists in UniversalModelRunner "
+            "or HPCWorkflowManager for any scheduler backend in this codebase."
+        )
 
         btn_cancel = QPushButton("⏹️ Cancel")
         btn_cancel.setStyleSheet("font-weight: bold; background-color: #CC0000; color: white; padding: 4px 10px;")
@@ -92,8 +112,8 @@ class HPCExecutionPanel(QWidget):
         ctrl_layout.addWidget(lbl_model)
         ctrl_layout.addWidget(self.combo_model)
         ctrl_layout.addWidget(btn_start)
-        ctrl_layout.addWidget(btn_pause)
-        ctrl_layout.addWidget(btn_resume)
+        ctrl_layout.addWidget(self.btn_pause)
+        ctrl_layout.addWidget(self.btn_resume)
         ctrl_layout.addWidget(btn_cancel)
         ctrl_layout.addWidget(btn_restart)
 
@@ -112,13 +132,6 @@ class HPCExecutionPanel(QWidget):
     def _on_start_run(self) -> None:
         model = self.combo_model.currentText()
         self.runner.submit(model, {"nodes": 4, "cpus_per_node": 32})
-        self.refresh_table()
-
-    def _on_pause_run(self) -> None:
-        # Pause status flag set in UI table
-        self.refresh_table()
-
-    def _on_resume_run(self) -> None:
         self.refresh_table()
 
     def _on_cancel_run(self) -> None:

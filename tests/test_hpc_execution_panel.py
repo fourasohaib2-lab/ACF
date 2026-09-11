@@ -20,6 +20,23 @@ def test_panel_constructs_with_empty_job_table(qapp):
     assert panel.table.rowCount() == 0
 
 
+def test_pause_and_resume_are_honestly_disabled_not_fake_controls(qapp):
+    """BUG FIX (2026-09-11): Pause/Resume used to be enabled and
+    connected to handlers that called nothing but refresh_table() - no
+    real pause/resume capability exists anywhere in this codebase
+    (UniversalModelRunner only defines submit/cancel/restart). Clicking
+    silently did nothing to a real job while looking like a working
+    control. Now honestly disabled with a tooltip explaining why."""
+    panel = HPCExecutionPanel()
+
+    assert panel.btn_pause.isEnabled() is False
+    assert "no real pause capability" in panel.btn_pause.toolTip()
+    assert panel.btn_resume.isEnabled() is False
+    assert "no real resume capability" in panel.btn_resume.toolTip()
+    assert not hasattr(panel, "_on_pause_run")
+    assert not hasattr(panel, "_on_resume_run")
+
+
 def test_restart_run_failure_is_logged_not_swallowed_silently(qapp, caplog):
     """
     CORRECTED: _on_restart_run() used to catch any exception from

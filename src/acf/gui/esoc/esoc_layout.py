@@ -311,13 +311,46 @@ class ESOCLayout:
         self.dock_bottom.setVisible(True)
         self.dock_bottom.raise_()
 
+    #: Real (visible_panels name used in esoc_workspace.py's 10 mode
+    #: profiles -> panel_manager.py's own real panel key). Every one of
+    #: the 11 real names those profiles use maps 1:1 onto an existing
+    #: `PanelManager.panels` key EXCEPT "system", which is the same
+    #: "System Config" -> "system_console" mapping
+    #: `_CATEGORY_LABEL_TO_PANEL_NAME` above already uses for sidebar
+    #: routing - kept explicit here rather than fuzzy-matched, so a
+    #: typo'd/renamed panel key fails loudly (silently shows nothing,
+    #: caught by this module's own tests) instead of guessing.
+    _VISIBLE_PANEL_NAME_TO_PANEL_KEY: dict[str, str] = {"system": "system_console"}
+
     def apply_workspace_profile(self, profile: dict[str, Any]) -> None:
-        """Adjust panel visibility and focus according to workspace mode profile."""
+        """Adjust panel visibility and focus according to workspace mode profile.
+
+        BUG FIX (2026-09-11, found during a full ESOC rescan): this
+        method used to read profile["primary_panel"] (real - drives the
+        tab focus below) but NEVER read profile["visible_panels"] at
+        all, despite every one of WorkspaceManager's 10 mode profiles
+        defining one specifically to describe which bottom-dock tabs
+        should be shown for that mode - "focus" happened, "visibility"
+        never did, so all 44 tabs stayed visible regardless of
+        workspace mode. Now genuinely hides every bottom-dock tab whose
+        real panel key is not in the current profile's own
+        visible_panels (an empty/missing list means "show everything" -
+        the pre-fix behaviour - rather than hiding all 44 tabs, since
+        no profile in this codebase actually defines an empty one).
+        """
         primary_panel = profile.get("primary_panel", "earth_monitoring")
         active_layers = profile.get("active_map_layers", [])
+        visible_panels = profile.get("visible_panels", [])
 
         # Update central map layers
         self.view_manager.set_layers(active_layers)
+
+        visible_keys = {self._VISIBLE_PANEL_NAME_TO_PANEL_KEY.get(name, name) for name in visible_panels}
+        panel_keys = self.panel_manager.list_panel_names()
+        if visible_keys:
+            for i, key in enumerate(panel_keys):
+                if i < self.bottom_tabs.count():
+                    self.bottom_tabs.setTabVisible(i, key in visible_keys)
 
         # Select tab corresponding to primary panel
         for i in range(self.bottom_tabs.count()):
