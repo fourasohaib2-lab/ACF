@@ -11405,3 +11405,25 @@ extension plus petite et non concurrente).
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire
 pour ces trois paquets.**
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — 8 petits paquets vérifiés propres
+
+`acf.alerts` (2 fichiers - `WarningEngine` réel WMO/EUMETNET-CAP, déjà
+utilisé par `acf.geology.earthquake_warning`, déjà auto-documenté
+propre dans son `__init__.py`), `acf.analysis` (2 fichiers -
+`PostProcessingEngine` : `generate_maps()`/`extract_time_series()`/
+`compute_vertical_profile()`/`compute_cross_section()`/`export_netcdf()`/
+`export_geotiff()` lèvent honnêtement `NotImplementedError` documenté
+plutôt que d'écrire un faux fichier "Mock Export" comme auparavant -
+déjà corrigé par une passe antérieure), `acf.animation` (2 fichiers -
+`AnimationEngine` réel, bug de bouclage déjà corrigé), `acf.api`
+(2 fichiers - `ACFAPI` délègue réellement à des classes déjà auditées,
+jamais construite dans `src/` sauf par son propre test), `acf.search`
+(2 fichiers - délégation réelle à `CatalogHub`), `acf.storage`
+(2 fichiers - `StorageWriter` délègue aux vrais writers NetCDF/Zarr
+existants, export CSV réel via stdlib sans pandas), `acf.time`
+(2 fichiers - `TimeManager` index réel et borné), `acf.utils`
+(6 fichiers - utilitaires triviaux path/system/validators/files/time,
+aucun risque de fabrication).
+
+**Aucune fabrication trouvée, aucune modification de code nécessaire.**
