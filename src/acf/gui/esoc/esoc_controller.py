@@ -248,6 +248,29 @@ class ESOCController:
         return {"status": "REFRESH_TRIGGERED_5_REAL_FEEDS_ASYNC_RESULTS_NOT_YET_KNOWN", "feeds_triggered": 5}
 
     def handle_load_digital_twin(self, scenario: str = "Present Earth Digital Twin") -> dict[str, Any]:
-        """Load Earth Digital Twin scenario."""
-        self.dispatcher.log_message_emitted.emit("INFO", f"Loaded Digital Twin scenario: {scenario}")
-        return {"status": "SUCCESS", "scenario": scenario}
+        """Load Earth Digital Twin scenario.
+
+        NOTE (correction, found during a full ESOC rescan): this
+        handler used to unconditionally return {"status": "SUCCESS"}
+        without ever touching the real, registered "digital_twin"
+        module (DigitalTwinEngine) - a fabricated success for a
+        scenario that was never actually loaded. Now genuinely calls
+        the real DigitalTwinEngine.run_digital_twin_cycle() and passes
+        its own honest status straight through
+        ("NOT_RUN_NO_ASSIMILATION_FORECAST_CYCLE_CONNECTED" today -
+        see that method's own docstring/NOTE for why it is honest
+        about not being a real cycle yet), same "real engine, honestly
+        disclosed limitation" pattern as handle_run_simulation()
+        above rather than a second fabrication."""
+        engine = self.registry.get_module("digital_twin")
+        if engine is None:
+            return {"status": "ERROR", "message": "Digital Twin engine not found", "scenario": scenario}
+        # `scenario` (e.g. "2050 Mid-Century Horizon") is the combo's own
+        # display string, not a real lead-time-horizon value
+        # run_digital_twin_cycle() expects (e.g. "+24h") - left at that
+        # method's own default rather than fed in mislabeled.
+        result = engine.run_digital_twin_cycle()
+        self.dispatcher.log_message_emitted.emit(
+            "INFO", f"Digital Twin cycle requested ({scenario}): {result['status']}"
+        )
+        return {"scenario": scenario, **result}

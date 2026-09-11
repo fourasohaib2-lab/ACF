@@ -91,8 +91,23 @@ class HPCDashboardPanel(BasePanelWidget):
         h_btn = QHBoxLayout()
         btn_conn = QPushButton("🔌 Connect HPC Cluster")
         btn_dis = QPushButton("❌ Disconnect")
-        btn_conn.clicked.connect(lambda: self.dispatcher.dispatch("connect_hpc"))
-        btn_dis.clicked.connect(lambda: self.dispatcher.dispatch("disconnect_hpc"))
+        # BUG FIX (2026-09-11, found during a full ESOC rescan): both
+        # buttons used to dispatch("connect_hpc")/("disconnect_hpc") -
+        # names CommandDispatcher never had a registered handler for
+        # (only ESOCWindow._handle_toolbar_action's own "connect_hpc"/
+        # "disconnect_hpc" branches call the real
+        # HPCConnectionManager, entirely OUTSIDE the dispatcher) - so
+        # clicking these silently did nothing but log an invisible
+        # WARNING. Now genuinely calls the SAME real
+        # HPCConnectionManager (registry's own "hpc_connector" module)
+        # ESOCWindow._connect_hpc()/_disconnect_hpc() use - default
+        # "fennec" profile (this quick button has no wizard dialog to
+        # collect overrides from, unlike the toolbar's own "Connect
+        # HPC" action) - off-thread via the SAME real
+        # dispatcher.hpc_connection_result signal, so ESOCWindow's own
+        # status bar reflects it too, not just this panel.
+        btn_conn.clicked.connect(self._connect)
+        btn_dis.clicked.connect(self._disconnect)
         h_btn.addWidget(btn_conn)
         h_btn.addWidget(btn_dis)
         self.main_layout.addLayout(h_btn)
@@ -121,6 +136,52 @@ class HPCDashboardPanel(BasePanelWidget):
             "• Interconnect: InfiniBand HDR 200 Gbps"
         )
         self.main_layout.addWidget(self.txt_status)
+
+        self.dispatcher.hpc_connection_result.connect(self._on_connection_result)
+
+    def _connect(self) -> None:
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self.txt_status.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        self.txt_status.setText("⏳ Connecting (real 11-step FENNEC workflow, profile: fennec)…")
+
+        def _do_connect() -> None:
+            try:
+                hpc.connect("fennec")
+            except Exception as exc:  # noqa: BLE001 - must not crash the worker thread
+                self.dispatcher.log_message_emitted.emit("ERROR", f"HPC connect('fennec') raised: {exc}")
+                self.dispatcher.hpc_connection_result.emit(False, "fennec")
+                return
+            real_transport = bool(getattr(hpc.ssh_connector, "is_real_connection", False))
+            self.dispatcher.hpc_connection_result.emit(real_transport, "fennec")
+
+        self.dispatcher.run_async(_do_connect)
+
+    def _disconnect(self) -> None:
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self.txt_status.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        try:
+            hpc.disconnect()
+        except Exception as exc:  # noqa: BLE001
+            self.txt_status.setText(f"⚠ HPC disconnect() raised: {exc}")
+            return
+        self.txt_status.setText("HPC connection closed (real disconnect() call).")
+
+    def _on_connection_result(self, ok: bool, profile: str) -> None:
+        """Reflect the real outcome of a connect() attempt - fired by
+        EITHER this panel's own _connect() or ESOCWindow's toolbar
+        "Connect HPC" wizard (same shared dispatcher signal), so this
+        status text never goes stale relative to the other entry point."""
+        if ok:
+            self.txt_status.setText(f"✅ Connected (real SSH transport confirmed, profile: {profile}).")
+        else:
+            self.txt_status.setText(
+                f"⚠ Connect (profile: {profile}) completed its local workflow but no real SSH "
+                "transport was confirmed - offline/local dev mode, not genuinely connected."
+            )
 
 
 class ClusterExplorerPanel(BasePanelWidget):
@@ -157,31 +218,70 @@ class JobExplorerPanel(BasePanelWidget):
         h_btn = QHBoxLayout()
         btn_sub = QPushButton("🚀 Submit Job")
         btn_can = QPushButton("⏹ Cancel Job")
-        btn_sub.clicked.connect(lambda: self.dispatcher.dispatch("submit_hpc_job"))
-        btn_can.clicked.connect(lambda: self.dispatcher.dispatch("cancel_hpc_job"))
+        # BUG FIX (2026-09-11, found during a full ESOC rescan): both
+        # used to dispatch("submit_hpc_job")/("cancel_hpc_job") - never
+        # registered commands, so clicking silently did nothing. Now
+        # genuinely calls the real, already-honest
+        # HPCConnectionManager.submit_simulation_job()/
+        # job_manager.cancel_job() (registry's "hpc_connector" module) -
+        # real is_real_submission/status semantics already established
+        # in job_manager.py, not fabricated - and refreshes this table
+        # from JobManager.list_jobs()'s own real state instead of the
+        # static "EXAMPLE" rows.
+        btn_sub.clicked.connect(self._submit)
+        btn_can.clicked.connect(self._cancel_selected)
         h_btn.addWidget(btn_sub)
         h_btn.addWidget(btn_can)
         self.main_layout.addLayout(h_btn)
 
-        # NOTE (correction): this table used to show 3 fixed jobs
-        # ("slurm_1024" etc.) marked RUNNING/COMPLETED with no
-        # connection to JobManager.list_jobs() (the real, already-honest
-        # job registry - see hpc_connector/job_manager.py) despite
-        # self.registry being available to reach it. Not fabricated.
-        self.main_layout.addWidget(_example_layout_disclaimer())
-        self.table = QTableWidget(3, 4)
+        self._status_label = QLabel("No real job submitted yet in this session.")
+        self._status_label.setWordWrap(True)
+        self.main_layout.addWidget(self._status_label)
+
+        self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels(["Job ID", "Job Name", "Nodes/MPI", "Status"])
-        jobs = [
-            ("slurm_1024", "acf_coupled_sim", "4 / 128", "EXAMPLE"),
-            ("slurm_1025", "acf_fno_surrogate", "1 / 4 GPU", "EXAMPLE"),
-            ("slurm_1026", "acf_4dvar_cycle", "2 / 64", "EXAMPLE"),
-        ]
-        for row, (jid, name, n_mpi, st) in enumerate(jobs):
-            self.table.setItem(row, 0, QTableWidgetItem(jid))
-            self.table.setItem(row, 1, QTableWidgetItem(name))
-            self.table.setItem(row, 2, QTableWidgetItem(n_mpi))
-            self.table.setItem(row, 3, QTableWidgetItem(st))
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.main_layout.addWidget(self.table)
+
+    def _submit(self) -> None:
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self._status_label.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        job = hpc.submit_simulation_job()
+        if job["is_real_submission"]:
+            self._status_label.setText(f"✅ Submitted (real scheduler): {job['job_id']}")
+        else:
+            self._status_label.setText(
+                f"⚠ Submit attempted but no real scheduler backend is connected: {job['status']}"
+            )
+        self._refresh_table(hpc)
+
+    def _cancel_selected(self) -> None:
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self._status_label.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        row = self.table.currentRow()
+        if row < 0:
+            self._status_label.setText("⚠ Select a job row to cancel first.")
+            return
+        job_id = self.table.item(row, 0).text()
+        cancelled = hpc.job_manager.cancel_job(job_id)
+        self._status_label.setText(
+            f"✅ Cancelled (confirmed by scheduler): {job_id}" if cancelled
+            else f"⚠ Cancel request for {job_id} could not be confirmed by the scheduler."
+        )
+        self._refresh_table(hpc)
+
+    def _refresh_table(self, hpc: Any) -> None:
+        jobs = hpc.job_manager.list_jobs()
+        self.table.setRowCount(len(jobs))
+        for row, job in enumerate(jobs):
+            self.table.setItem(row, 0, QTableWidgetItem(job["job_id"]))
+            self.table.setItem(row, 1, QTableWidgetItem(job["job_name"]))
+            self.table.setItem(row, 2, QTableWidgetItem(f"{job['nodes']} / {job['ntasks']}"))
+            self.table.setItem(row, 3, QTableWidgetItem(job["status"]))
 
 
 class GPUMonitorPanel(BasePanelWidget):
@@ -226,8 +326,39 @@ class StorageMonitorPanel(BasePanelWidget):
         )
         self.main_layout.addWidget(self.txt)
         btn_sync = QPushButton("🔄 Sync Local <-> HPC Storage")
-        btn_sync.clicked.connect(lambda: self.dispatcher.dispatch("sync_hpc_storage"))
+        # BUG FIX (2026-09-11, found during a full ESOC rescan): used to
+        # dispatch("sync_hpc_storage") - never a registered command, so
+        # this button silently did nothing. Now genuinely calls the
+        # real, already-honest FileTransferManager.sync_files()
+        # (registry's "hpc_connector" module's own real
+        # hpc.file_transfer) - a real SFTP upload attempt (honestly
+        # reports FAILED_NO_REAL_TRANSFER when the connector isn't
+        # alive, see that method's own NOTE), not fabricated. A real
+        # file picker collects the source path from the operator
+        # (same pattern as ESOCWindow._open_dataset()) rather than
+        # inventing one - nothing to sync without a real source file.
+        btn_sync.clicked.connect(self._sync)
         self.main_layout.addWidget(btn_sync)
+
+    def _sync(self) -> None:
+        from PySide6.QtWidgets import QFileDialog
+
+        source, _ = QFileDialog.getOpenFileName(self, "Select File to Sync to HPC Storage", "", "All Files (*)")
+        if not source:
+            return
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self.txt.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        destination = f"/scratch/users/acf/{Path(source).name}"
+        ok = hpc.file_transfer.sync_files(source, destination)
+        if ok:
+            self.txt.setText(f"✅ Synced (real SFTP upload confirmed): {source} -> {destination}")
+        else:
+            self.txt.setText(
+                f"⚠ Sync attempted but no real transfer was confirmed (connector not alive/connected): "
+                f"{source} -> {destination}. Connect to HPC first."
+            )
 
 
 class BenchmarkPanel(BasePanelWidget):
@@ -236,18 +367,45 @@ class BenchmarkPanel(BasePanelWidget):
     def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
         super().__init__("📊 BENCHMARK & PERFORMANCE SUITE", "#CE93D8", registry, dispatcher)
         btn_bench = QPushButton("⚡ Execute Full HPC Benchmark")
-        btn_bench.clicked.connect(lambda: self.dispatcher.dispatch("benchmark_hpc"))
+        # BUG FIX (2026-09-11, found during a full ESOC rescan): used to
+        # dispatch("benchmark_hpc") - a command CommandDispatcher never
+        # had a registered handler for, so this button silently did
+        # nothing at all (not even the honest NOT_BENCHMARKED result
+        # below - it never ran). Now genuinely calls the real,
+        # already-honest HPCConnectionManager.benchmark_performance()
+        # (registry's own "hpc_connector" module) - itself already
+        # correctly disclosing NOT_BENCHMARKED_NO_LIVE_PROBE_CONNECTED
+        # (see its own NOTE) since no stress-ng/mpirun/ib_write_bw/
+        # BeeGFS probe is wired in this codebase - so txt_bench below
+        # now genuinely reflects that call's real outcome instead of
+        # the button never even reaching it.
+        btn_bench.clicked.connect(self._run_benchmark)
         self.main_layout.addWidget(btn_bench)
-        # NOTE (correction): used to unconditionally show fixed
-        # "CPU GFLOPS: 450.0 | GPU TFLOPS: 19.5..." results as if a
-        # benchmark had already run - see
-        # HPCConnectionManager.benchmark_performance()'s own NOTE
-        # (correction), the same fabrication independently duplicated
-        # here. Not fabricated.
         self.txt_bench = QTextEdit()
         self.txt_bench.setReadOnly(True)
         self.txt_bench.setText("Benchmark Status: Not run yet. Click 'Execute Full HPC Benchmark' above.")
         self.main_layout.addWidget(self.txt_bench)
+
+    def _run_benchmark(self) -> None:
+        hpc = self.registry.get_module("hpc_connector")
+        if hpc is None:
+            self.txt_bench.setText("⚠ HPC connector subsystem not available (registry has no real module).")
+            return
+        result = hpc.benchmark_performance()
+        if result["is_real_data"]:
+            self.txt_bench.setText(
+                f"Benchmark Status: {result['status']}\n"
+                f"• CPU GFLOPS: {result['cpu_gflops']}\n"
+                f"• GPU TFLOPS: {result['gpu_tflops']}\n"
+                f"• MPI Bandwidth: {result['mpi_bandwidth_gbps']} Gbps\n"
+                f"• InfiniBand: {result['infiniband_gbps']} Gbps\n"
+                f"• BeeGFS Read/Write: {result['beegfs_io_read_mbps']}/{result['beegfs_io_write_mbps']} MB/s"
+            )
+        else:
+            self.txt_bench.setText(
+                f"⚠ Benchmark Status: {result['status']} - no real stress-ng/mpirun/ib_write_bw/BeeGFS "
+                "probe is connected in this build, so no numeric result is shown."
+            )
 
 
 class PlanetaryDashboardPanel(BasePanelWidget):
