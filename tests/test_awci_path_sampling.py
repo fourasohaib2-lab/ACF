@@ -22,6 +22,9 @@ from acf.awci.path_sampling import (
 from acf.awci.spatial_field import compute_real_complexity_field
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
+from acf.science.hypsometric_equation import HypsometricEquation
+from acf.science.virtual_temperature import VirtualTemperature
+from acf.science.wind_turbulence import CATIndex
 
 
 def test_sample_field_along_path_returns_real_values_from_the_field():
@@ -222,13 +225,53 @@ def test_real_layer_grids_at_level_icing_bounded_0_1():
     assert np.all(result["icing"] <= 1.0)
 
 
-def test_real_layer_grids_at_level_turbulence_is_a_real_nonnegative_gradient():
+def test_real_layer_grids_at_level_turbulence_is_nonnegative():
     volume = _real_volume_for_hazards()
     result = real_layer_grids_at_level(volume, level_idx=2)
-    d_dlat, d_dlon = np.gradient(volume["wind_speed_volume"][2])
-    expected = np.hypot(d_dlat, d_dlon)
-    assert np.allclose(result["turbulence"], expected)
+    # TI1 = VWS * DEF, both real non-negative magnitudes (sqrt of a
+    # sum of squares) - the product can never be negative.
     assert np.all(result["turbulence"] >= 0.0)
+
+
+def test_real_layer_grids_at_level_turbulence_matches_a_direct_ellrod_knapp_ti1_call():
+    """Regression guard for future-improvements.md §5's Real Physics
+    closure: "turbulence" must be the real Ellrod-Knapp TI1 index
+    computed from the real u/v horizontal gradients and a real
+    hypsometric-equation vertical shear, not the old wind-speed-
+    gradient proxy."""
+    volume = _real_volume_for_hazards(seed=13, perturbation_scale=4.0)
+    level_idx = 2
+    result = real_layer_grids_at_level(volume, level_idx=level_idx)
+
+    u = volume["u_volume"][level_idx]
+    v = volume["v_volume"][level_idx]
+    du_dlat, du_dlon = np.gradient(u)
+    dv_dlat, dv_dlon = np.gradient(v)
+
+    i, j = 3, 5
+    neighbor_idx = level_idx + 1
+    p_here = float(volume["pressure_volume_hpa"][level_idx, i, j]) * 100.0
+    p_neighbor = float(volume["pressure_volume_hpa"][neighbor_idx, i, j]) * 100.0
+    assert p_here > p_neighbor  # pressure must decrease with the real solver's own level ordering
+
+    tv_here = VirtualTemperature.calculate(
+        float(volume["temperature_volume"][level_idx, i, j]), float(volume["specific_humidity_volume"][level_idx, i, j])
+    )
+    tv_neighbor = VirtualTemperature.calculate(
+        float(volume["temperature_volume"][neighbor_idx, i, j]),
+        float(volume["specific_humidity_volume"][neighbor_idx, i, j]),
+    )
+    thickness_m = HypsometricEquation.calculate(p_here, p_neighbor, 0.5 * (tv_here + tv_neighbor))
+
+    du_dz = (float(volume["u_volume"][neighbor_idx, i, j]) - float(volume["u_volume"][level_idx, i, j])) / thickness_m
+    dv_dz = (float(volume["v_volume"][neighbor_idx, i, j]) - float(volume["v_volume"][level_idx, i, j])) / thickness_m
+    expected_vws = CATIndex.vertical_wind_shear(du_dz, dv_dz)
+    expected_def = CATIndex.deformation(
+        du_dx=float(du_dlon[i, j]), dv_dy=float(dv_dlat[i, j]), dv_dx=float(dv_dlon[i, j]), du_dy=float(du_dlat[i, j])
+    )
+    expected_ti1 = CATIndex.ti1(expected_vws, expected_def)
+
+    assert result["turbulence"][i, j] == pytest.approx(expected_ti1)
 
 
 def test_real_layer_grids_at_level_has_no_cape_convection_clouds_keys():

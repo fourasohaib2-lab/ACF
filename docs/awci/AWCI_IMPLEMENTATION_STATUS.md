@@ -141,6 +141,12 @@ checklist and screenshot comparison against
 
 RouteOptimizationEngine/flight-level recommendation scoring, calendar
 date-picker, WebGL/GPU/worker rendering, repo-wide accessibility sweep,
-full Ellrod–Knapp CAT index, real per-grid-cell CAPE contour layer,
-reconciling the two incompatible map-layer systems. None of these were
-in this closure's own approved scope.
+real per-grid-cell CAPE contour layer, reconciling the two incompatible
+map-layer systems. None of these were in this closure's own approved
+scope.
+
+**Update 2026-09-11:** the full Ellrod-Knapp CAT index is now real in
+Real Physics mode (`acf.awci.path_sampling.real_layer_grids_at_level()`)
+— see `future-improvements.md` §5. Demo mode keeps its own disclosed
+wind-speed-gradient proxy (no real u/v vector components in the
+synthetic pattern) — that half of §5 stays open.

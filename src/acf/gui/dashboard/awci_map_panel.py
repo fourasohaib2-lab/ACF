@@ -320,7 +320,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         outer_layout.addLayout(button_column)
 
         self.figure = plt.figure(
-            figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor="#0b1220"
+            figsize=(6 * self._figsize_scale, 1.6 * self._figsize_scale), facecolor=TOKENS.bg_root
         )
         self.canvas = FigureCanvasQTAgg(self.figure)
         # See map_canvas.py's own comment on why this filter is needed -
@@ -752,7 +752,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         y0 = 0.02
         self.axis.text(
             x0, y0 + len(LEVELS) * box_h + 0.012, "AWCI SCALE",
-            transform=self.axis.transAxes, color="#e8edf5", fontsize=7, fontweight="bold", va="bottom", zorder=20,
+            transform=self.axis.transAxes, color=TOKENS.text_primary, fontsize=7, fontweight="bold", va="bottom", zorder=20,
         )
         for i, (threshold, name, rgb) in enumerate(reversed(LEVELS)):
             y = y0 + i * box_h
@@ -762,7 +762,7 @@ class AWCIMapPanel(EventMixin, QWidget):
             )
             self.axis.text(
                 x0 + 0.028, y + box_h * 0.37, f"{threshold:g}  {name}",
-                transform=self.axis.transAxes, color="#c5cede", fontsize=6, va="center", zorder=20,
+                transform=self.axis.transAxes, color=TOKENS.text_secondary, fontsize=6, va="center", zorder=20,
             )
 
     def _draw_info_boxes(self) -> None:
@@ -774,14 +774,14 @@ class AWCIMapPanel(EventMixin, QWidget):
         (pressure_to_flight_level_ft())."""
         rendered_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + "Z"
         fl = pressure_to_flight_level_ft(self._flight_level_hpa) // 100
-        box_style = {"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.9}
+        box_style = {"boxstyle": "round,pad=0.4", "facecolor": TOKENS.bg_card, "edgecolor": TOKENS.border, "alpha": 0.9}
         self.axis.text(
             0.012, 0.98, f"RENDERED\n{rendered_at}",
-            transform=self.axis.transAxes, color="#9fb0c9", fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
+            transform=self.axis.transAxes, color=TOKENS.text_secondary, fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
         )
         self.axis.text(
             0.012, 0.87, f"FLIGHT LEVEL\nFL{fl} (~{self._flight_level_hpa:.0f} hPa)",
-            transform=self.axis.transAxes, color="#e8edf5", fontsize=6.5, fontweight="bold",
+            transform=self.axis.transAxes, color=TOKENS.text_primary, fontsize=6.5, fontweight="bold",
             va="top", ha="left", bbox=box_style, zorder=20,
         )
 
@@ -925,10 +925,10 @@ class AWCIMapPanel(EventMixin, QWidget):
         # below), which is 100% real, always available offline, has no
         # network dependency, and needs no authentication - genuinely
         # functional on every launch, not just when EUMETSAT answers.
-        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
-        self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
-        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
-        self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
+        self.axis.add_feature(cfeature.OCEAN, facecolor=TOKENS.bg_card)
+        self.axis.add_feature(cfeature.LAND, facecolor=TOKENS.bg_surface_alt)
+        self.axis.add_feature(cfeature.COASTLINE, edgecolor=TOKENS.border, linewidth=0.5)
+        self.axis.add_feature(cfeature.BORDERS, edgecolor=TOKENS.border, linewidth=0.3)
 
         if self._external_field is not None:
             lons, lats, grid = self._external_field
@@ -1018,8 +1018,8 @@ class AWCIMapPanel(EventMixin, QWidget):
         if self._external_field_colorbar_label:
             cax = self.figure.add_axes((0.92, 0.15, 0.02, 0.7))
             self._colorbar = self.figure.colorbar(self._contour, cax=cax)
-            self._colorbar.set_label(self._external_field_colorbar_label, color="#c9d6e8", fontsize=8)
-            self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=7)
+            self._colorbar.set_label(self._external_field_colorbar_label, color=TOKENS.text_secondary, fontsize=8)
+            self._colorbar.ax.tick_params(colors=TOKENS.text_secondary, labelsize=7)
 
         # Real extra layers (Wind/Turbulence/Icing/Convection/CAPE/
         # Clouds) - see _EXTRA_LAYER_SPECS' own docstring. Demo mode:
@@ -1120,9 +1120,9 @@ class AWCIMapPanel(EventMixin, QWidget):
                     )
 
         for lat, lon, name in self._city_labels:
-            self.axis.plot(lon, lat, marker="o", color="#e8edf5", markersize=3, transform=ccrs.PlateCarree())
+            self.axis.plot(lon, lat, marker="o", color=TOKENS.text_primary, markersize=3, transform=ccrs.PlateCarree())
             self.axis.text(
-                lon + 0.3, lat, name, color="#e8edf5", fontsize=7, ha="left", va="center",
+                lon + 0.3, lat, name, color=TOKENS.text_primary, fontsize=7, ha="left", va="center",
                 transform=ccrs.PlateCarree(), zorder=14,
             )
 
@@ -1143,10 +1143,10 @@ class AWCIMapPanel(EventMixin, QWidget):
                     xycoords=ccrs.PlateCarree()._as_mpl_transform(self.axis),
                     xytext=(20, 20),
                     textcoords="offset points",
-                    color="#e8edf5",
+                    color=TOKENS.text_primary,
                     fontsize=6.5,
                     fontweight="bold",
-                    bbox={"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.92},
+                    bbox={"boxstyle": "round,pad=0.4", "facecolor": TOKENS.bg_card, "edgecolor": TOKENS.border, "alpha": 0.92},
                     arrowprops={"arrowstyle": "-", "color": TOKENS.border, "lw": 0.8},
                     zorder=25,
                 )
@@ -1156,7 +1156,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         if self._show_info_boxes:
             self._draw_info_boxes()
 
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=11, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=11, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.01, right=0.99, top=0.92, bottom=0.02)
         # Real view state (zoom/pan) is reapplied here rather than a
         # fixed set_extent()/set_global() call, so this full redraw

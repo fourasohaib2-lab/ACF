@@ -75,6 +75,32 @@ now real in Real Physics mode (`acf.awci.path_sampling.
 real_layer_grids_at_level()`, same disclosed proxy, applied to that
 mode's own real wind field).
 
+**Update 2026-09-11 (closed for Real Physics mode):** `real_layer_grids_at_level()`'s
+"turbulence" layer is now the real Ellrod & Knapp (1992) TI1 index
+(`CATIndex.ti1(vertical_wind_shear, deformation)`), not the
+wind-speed-gradient proxy. The real u/v components
+`compute_real_complexity_volume()` already produces
+(`volume["u_volume"]`/`["v_volume"]`) give real horizontal deformation
+(`numpy.gradient()`, per grid step — see the function's own docstring
+for why this is not a per-physical-distance gradient in this pipeline).
+Real vertical wind shear now comes from a real layer thickness via the
+hypsometric equation (`acf.science.hypsometric_equation.
+HypsometricEquation` + `acf.science.virtual_temperature.
+VirtualTemperature`, both pre-existing, reused, not new formulas) —
+this is also the first real fix for the height-pinning gap
+`acf.awci.wind_shear`'s own docstring disclosed ("ACF's own native
+solver levels are not yet pinned to real physical heights"), at least
+for this one use site. Regression-guarded by
+`tests/test_awci_path_sampling.py::test_real_layer_grids_at_level_turbulence_matches_a_direct_ellrod_knapp_ti1_call`.
+
+**Still open — demo mode.** `awci_synthetic_field.awci_layer_grids()`'s
+own "turbulence" layer keeps the wind-speed-gradient proxy: its
+`_synthetic_inputs()` has no real u/v vector decomposition, only a
+scalar wind speed (see that function's own docstring). Adding one would
+touch the same shared synthetic pattern the AWCI composite score itself
+is computed from — a larger-blast-radius change than this closure's own
+scope, deliberately not attempted here.
+
 ## 6. Real per-grid-cell CAPE contour map layer
 
 **Closed 2026-09-03 (suite)**, explicit user request "je veux rendre

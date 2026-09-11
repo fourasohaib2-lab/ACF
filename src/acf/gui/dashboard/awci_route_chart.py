@@ -33,6 +33,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import AWCI_CMAP
 from acf.gui.dashboard.awci_synthetic_field import route_profile
+from acf.gui.theme_tokens import TOKENS
 
 
 class AWCIRouteChart(QWidget):
@@ -81,7 +82,7 @@ class AWCIRouteChart(QWidget):
         # est adaptable selon le type d'ecran") - see
         # AWCICrossSection's own matching comment.
         scale = max(0.6, figsize_scale)
-        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -159,11 +160,11 @@ class AWCIRouteChart(QWidget):
             # with a legend, no filled area (see module docstring for
             # why a fill is misleading once 2 real series are shown).
             comp_distances, comp_scores, comp_label = self._comparison
-            self.axis.plot(distances, scores, color="#ffa726", linewidth=1.6, label=self._primary_label)
-            self.axis.plot(comp_distances, comp_scores, color="#4fc3f7", linewidth=1.6, label=comp_label)
-            legend = self.axis.legend(loc="upper right", fontsize=7, facecolor="#0f1830", edgecolor="#34445f")
+            self.axis.plot(distances, scores, color=TOKENS.warning, linewidth=1.6, label=self._primary_label)
+            self.axis.plot(comp_distances, comp_scores, color=TOKENS.accent_primary, linewidth=1.6, label=comp_label)
+            legend = self.axis.legend(loc="upper right", fontsize=7, facecolor=TOKENS.bg_card, edgecolor=TOKENS.border)
             for text in legend.get_texts():
-                text.set_color("#e8edf5")
+                text.set_color(TOKENS.text_primary)
         else:
             colors = AWCI_CMAP(np.array(scores) / 100.0)
             # A real PolyCollection (added 2026-09-03, profiled
@@ -181,7 +182,7 @@ class AWCIRouteChart(QWidget):
                 for i in range(len(distances) - 1)
             ]
             self.axis.add_collection(PolyCollection(quads, facecolors=colors[:-1], edgecolors="none"))
-            self.axis.plot(distances, scores, color="#e8edf5", linewidth=1.0)
+            self.axis.plot(distances, scores, color=TOKENS.text_primary, linewidth=1.0)
 
             max_i = int(np.argmax(scores))
             if scores[max_i] >= 60:
@@ -189,19 +190,19 @@ class AWCIRouteChart(QWidget):
                     "High complexity area",
                     xy=(distances[max_i], scores[max_i]),
                     xytext=(distances[max_i], min(98, scores[max_i] + 12)),
-                    color="#ffb74d",
+                    color=TOKENS.warning,
                     fontsize=7,
                     ha="center",
-                    arrowprops={"arrowstyle": "->", "color": "#ffb74d"},
+                    arrowprops={"arrowstyle": "->", "color": TOKENS.warning},
                 )
 
-        self.axis.set_facecolor("#0f1830")
+        self.axis.set_facecolor(TOKENS.bg_card)
         self.axis.set_ylim(0, 100)
-        self.axis.set_xlabel("Distance (km)", color="#9fb0c9", fontsize=8)
-        self.axis.set_ylabel("AWCI", color="#9fb0c9", fontsize=8)
-        self.axis.tick_params(colors="#9fb0c9", labelsize=7)
+        self.axis.set_xlabel("Distance (km)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.set_ylabel("AWCI", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.tick_params(colors=TOKENS.text_secondary, labelsize=7)
         for spine in self.axis.spines.values():
-            spine.set_color("#34445f")
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
+            spine.set_color(TOKENS.border)
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=10, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.18)
         self.canvas.draw_idle()

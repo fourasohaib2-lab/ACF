@@ -8,6 +8,34 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 > primaire). Il est repris à jour à partir du 6 septembre 2026 et sera
 > maintenu à chaque changement notable, comme le demande `AGENTS.md`.
 
+## [Unreleased] - 2026-09-11
+
+### Added
+- AWCI "turbulence" map layer (Real Physics mode) : indice de turbulence
+  en air clair Ellrod-Knapp (1992) complet (`CATIndex.ti1`), remplaçant le
+  proxy de gradient de norme du vent utilisé jusque-là — cisaillement
+  vertical réel via l'équation hypsométrique (`acf.science.
+  hypsometric_equation`) + température virtuelle réelle, déformation
+  horizontale réelle à partir des composantes u/v réelles du volume
+  solveur. Voir `docs/awci/future-improvements.md` §5. Mode démo inchangé
+  (proxy conservé, disclosed — pas de composantes u/v réelles dans le
+  pattern synthétique).
+- 3 skills de repo (`.claude/skills/`) : `awci-review` (checklist
+  scientifique/technique pour tout changement AWCI), `acf-status-sync`
+  (cohérence docs/STATUS.md ↔ code après un changement), `acf-dashboard-design`
+  (système de tokens UI réel, capacités Qt/QSS, convention charts
+  matplotlib ↔ chrome).
+
+### Changed
+- Unification de la palette des panneaux matplotlib du dashboard AWCI
+  (`awci_radar.py`, `awci_route_chart.py`, `awci_cross_section.py`,
+  `awci_volume_3d.py`, complète du reste de `awci_map_panel.py`) sur
+  `acf.gui.theme_tokens.TOKENS` — ces 5 fichiers gardaient encore une
+  palette hex figée pré-2026-09-07, visuellement incohérente avec le
+  chrome Qt déjà modernisé. Couleurs de données volontaires (icônes
+  givrage/turbulence, courbe du radar) laissées inchangées, non
+  concernées.
+
 ## [Unreleased] - 2026-09-06
 
 ### Added
