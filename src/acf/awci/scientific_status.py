@@ -119,6 +119,12 @@ MODULE_WEIGHT_STATUS: dict[str, WeightStatusEntry] = {
     "visibility": WeightStatusEntry(
         WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'visibilité et plafond' gap (see acf.awci.visibility)."
     ),
+    "dust": WeightStatusEntry(
+        WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'poussière et sable' gap (see acf.awci.dust)."
+    ),
+    "ash": WeightStatusEntry(
+        WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'cendres volcaniques' gap (see acf.awci.volcanic_ash)."
+    ),
 }
 
 #: Status for AWCICalculator.INTERACTION_WEIGHTS - HYPOTHESIS per that
@@ -176,6 +182,8 @@ NORMALIZER_RANGE_STATUS: dict[str, ThresholdStatus] = {
     "temporal": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..20 (default max_change) - unitless, not sourced; caller-overridable."),
     "ceiling": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Saturates to 0 complexity at/above 914.4 m (the real FAA/NOAA VFR ceiling threshold, acf.awci.ceiling.MVFR_CEILING_M) - a real, standard operational cutoff, but treating complexity as exactly linear in ceiling height between 0 and that threshold is an ACF design choice, not a published severity curve. The underlying real ceiling height itself (acf.awci.ceiling.compute_real_ceiling_at_point()) is a real, standard first-order LCL approximation (125 m per degC of dewpoint depression) - only this normalization curve's own linearity assumption is HYPOTHESIS."),
     "visibility_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.visibility.compute_real_visibility_risk_at_point() - a real, disclosed ACF design choice (max() of a real relative-humidity-based fog-proximity ramp and a real WMO-heavy-rain-referenced precipitation-intensity ramp), not a value sourced from a published visibility index, and explicitly not a literal visibility distance (see that module's own honest-scope disclosure)."),
+    "dust_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.dust.compute_real_dust_risk_at_point() - a real, disclosed ACF design choice (multiplicative combination of a real wind-speed erosion-potential ramp, floor/ceiling not sourced from a specific soil-type study, and a real relative-humidity-based dry-surface proxy standing in for unavailable soil moisture), not a value sourced from a published dust-emission scheme, and explicitly not a literal dust concentration/AOD/PM10 value (see that module's own honest-scope disclosure)."),
+    "ash_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.volcanic_ash.compute_real_ash_exposure_risk_at_point() - combines the real, published Mastin et al. (2009) plume-height formula with a real, disclosed ACF first-order speed x time transport estimate and downwind-sector geometry (30 deg half-width, 100 km buffer - both ACF design choices, not derived from a real dispersion model). REQUIRES real, caller-supplied eruption source data; never derived from ordinary meteorological fields. Explicitly not a substitute for a real VAAC advisory (see that module's own honest-scope disclosure)."),
 }
 
 #: Status for Normalizer.ENSEMBLE_SPREAD_REFERENCE / MODEL_DISAGREEMENT_REFERENCE -

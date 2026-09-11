@@ -11865,3 +11865,102 @@ lors du cross-check (poussière/sable, cendres volcaniques, câblage du
 registre `acf.aviation.hazards` pour le microburst, optimisation de
 niveau de vol, AWCI aéroport) - voir le message de réponse de cette
 session au diagnostic ChatGPT pour la liste complète et priorisée.
+
+## Mise à jour 2026-09-11 (suite, priorité #2 et #3 du cross-check ChatGPT) — Fermeture des gaps "poussière/sable" et "cendres volcaniques" : 2 nouveaux modules réels, même discipline opt-in
+
+**Contexte** : poursuite de la fermeture des écarts identifiés lors du
+cross-check AWCI vs. spécification ChatGPT, priorisés #2 (poussière/
+sable - explicitement signalé par l'utilisateur comme le plus pertinent
+pour ses opérations en Afrique du Nord) et #3 (cendres volcaniques).
+Même discipline stricte que la fermeture précédente (visibilité/
+plafond) : modules opt-in à poids 0.0 par défaut, aucun appelant
+existant affecté.
+
+**`src/acf/awci/dust.py`** - proxy de risque d'émission de poussière/
+sable dans [0, 1], **explicitement pas une concentration** (PM10/AOD) :
+une valeur quantitative réelle nécessiterait un schéma d'émission réel
+(famille Marticorena & Bergametti 1995 / Shao & Lu 2000) reposant sur
+la vitesse de friction de seuil, elle-même fonction de la texture du
+sol/rugosité de surface - aucune de ces données n'existe dans ACF.
+Combine par **multiplication** (choix ACF disclosé, à la différence du
+`max()` de `visibility.py` : l'émission de poussière nécessite
+réellement les DEUX conditions simultanément, pas l'une ou l'autre)
+un potentiel d'érosion éolienne réel (vitesse du vent, rampe 8-18 m/s,
+plage plausible non sourcée d'une étude de sol spécifique) et un proxy
+de sécheresse de surface réel (humidité relative inversée, substitut
+honnête à une humidité du sol indisponible - direction physique réelle
+et documentée, Fécan et al. 1999).
+
+**`src/acf/awci/volcanic_ash.py`** - estimation d'exposition aux
+cendres volcaniques. À la différence de tous les autres modules AWCI,
+ce danger n'est **pas une fonction de l'état météorologique local** :
+il dépend entièrement de l'existence réelle d'une éruption en cours,
+de sa localisation, sa hauteur de panache et le transport par le vent
+réel - aucune de ces données n'est dérivable des champs météo
+ordinaires. Ce module **exige** des données d'éruption réelles fournies
+par l'appelant (jamais dérivées des champs ACF standards) et compose 3
+éléments réels : (1) hauteur de panache - **réutilise** la formule déjà
+réelle et publiée de Mastin et al. (2009), H = 2.0×Q^0.241, déjà
+présente dans `acf.geology.volcanic_physics.VolcanicPhysicsEngine`, non
+dupliquée ; (2) distance de transport en aval - cinématique réelle et
+exacte (distance = vitesse × temps), simplification disclosée d'un
+vrai modèle de dispersion (HYSPLIT/NAME) que ce module ne prétend pas
+être ; (3) géométrie de secteur sous le vent - calcul réel de relèvement
+(bearing) source→point comparé à la direction du vent, avec une
+demi-largeur de secteur de 30° et une marge de transport de 100 km
+(choix ACF disclosés). Combine par multiplication l'altitude dans le
+panache (binaire) et la proximité sous le vent (rampe réelle).
+Explicitement jamais un substitut à un bulletin VAAC réel.
+
+**Câblage** : mêmes fichiers modifiés que pour ceiling/visibility
+(`calculator.py`, `weights.py`, `normalizer.py`, `scientific_status.py`,
+`spatial_field.py`), même motif exact (`data["dust_risk"]`/
+`data["ash_risk"]`, poids par défaut 0.0, `PHYSICAL_MODULES` étendu à
+10 clés physiques + 3 prévisionnelles = 13 modules au total). Le
+garde-fou pré-existant `test_module_complexity_layers_covers_every_
+real_awci_module` étendu à l'exception disclosée déjà établie pour
+ceiling/visibility (dust/ash également non enregistrés comme couches de
+carte tant qu'aucune source réelle point-à-point n'est câblée dans
+`compute_real_complexity_field()`).
+
+**Tests** : 3 nouveaux fichiers (`tests/test_awci_dust.py`,
+`tests/test_awci_volcanic_ash.py`,
+`tests/test_awci_calculator_dust_ash.py`), couvrant notamment la
+vérification par construction que la combinaison est bien
+multiplicative (pas `max()`) pour `dust`, et que `ash` retourne bien
+zéro si le point est en amont du vent, au-dessus du panache réel, ou
+au-delà de la distance de transport réelle - pas seulement les cas
+positifs.
+
+**Note sur l'intégration au dashboard** : suite à une clarification de
+l'utilisateur en cours de session ("tu peux ajouter des boutons/
+modifier le dashboard, mais ne touche pas au design, garde-le comme
+il est"), la contrainte a été assouplie par rapport à la fermeture
+précédente. Le choix de ne pas encore enregistrer `ceiling`/
+`visibility`/`dust`/`ash` comme couches de carte réelles est néanmoins
+maintenu pour ces 4 modules, non plus pour préserver le design, mais
+parce que ces champs sont honnêtement à zéro partout tant qu'aucune
+source point-à-point réelle n'est câblée dans le solveur spatial -
+les enregistrer aujourd'hui serait trompeur (dégradé uniformément vide
+faisant croire à une donnée réelle). Cette intégration reste une
+prochaine étape naturelle une fois une source réelle disponible.
+
+**Correction post-validation** : la suite complète du projet a révélé un
+test de régression golden dataset attendu
+(`tests/scientific/regression/test_golden_datasets.py::
+test_awci_calculator_matches_the_golden_reference_case`) - la référence
+figée `tests/data/golden/awci_calculator_reference_case.json` ne
+connaissait pas encore les 4 nouvelles clés. Vérifié explicitement par
+script avant régénération : le score AWCI réel, son niveau, ses scores
+physique/prévisionnel et **chaque valeur pré-existante** de la
+décomposition et des scores par module sont restés bit-identiques
+(30.3 == 30.3, etc.) - seules 4 nouvelles clés à 0.0 (`ash`, `ceiling`,
+`dust`, `visibility`) sont apparues. Régénéré via le mécanisme prévu à
+cet effet par le projet (`acf.testing.golden.write_golden()`), diff
+minimal confirmé. Un second échec observé dans le run combiné
+(`test_awci_dashboard_hpc_and_import.py::...test_a_workflow_completing_
+without_a_real_ssh_transport_is_reported_honestly`, un timeout
+`qtbot.waitUntil`) a été vérifié comme un flake indépendant des
+changements de cette session - passe systématiquement en isolation,
+avant et après ces modifications, y compris le fichier de test complet
+qui le contient (8 passed, 1 skipped).

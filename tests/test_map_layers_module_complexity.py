@@ -32,24 +32,23 @@ def test_module_complexity_layers_covers_every_real_awci_module():
     ties the two together so a future new AWCICalculator module can't
     silently reintroduce the same gap - it must fail here first.
 
-    NOTE (deliberate, disclosed exception, 2026-09-11): "ceiling" and
-    "visibility" (added closing AWCI's "visibilité et plafond" gap -
-    see acf.awci.ceiling/acf.awci.visibility) are excluded from this
-    invariant on purpose, per an explicit user instruction to keep the
-    AWCI dashboard/map exactly as it is while this closure lands.
-    Registering them as toggleable map layers today would also be
-    scientifically misleading rather than merely incomplete: both
-    default to weight 0.0 and compute_real_complexity_field() never
-    supplies their opt-in per-point inputs
-    (data["ceiling_height_m"]/data["visibility_risk"]), so their real
-    module_fields entries are honestly all-zero - a toggled-on "Ceiling
-    Complexity"/"Visibility Complexity" layer would show a uniform
-    blank heatmap, implying real data where there is none yet. Revisit
-    this exclusion once a real per-point ceiling/visibility source is
-    wired into compute_real_complexity_field() itself (a separate,
-    larger closure, not attempted here)."""
+    NOTE (deliberate, disclosed exception, 2026-09-11): "ceiling",
+    "visibility", "dust" and "ash" (added closing AWCI's "visibilité et
+    plafond", "poussière et sable" and "cendres volcaniques" gaps - see
+    acf.awci.ceiling/visibility/dust/volcanic_ash) are excluded from
+    this invariant on purpose. Registering them as toggleable map
+    layers today would be scientifically misleading, independent of
+    any dashboard-design consideration: all 4 default to weight 0.0
+    and compute_real_complexity_field() never supplies their opt-in
+    per-point inputs (data["ceiling_height_m"]/"visibility_risk"/
+    "dust_risk"/"ash_risk"), so their real module_fields entries are
+    honestly all-zero - a toggled-on layer for any of them would show a
+    uniform blank heatmap, implying real data where there is none yet.
+    Revisit this exclusion, module by module, once a real per-point
+    source for it is wired into compute_real_complexity_field() itself
+    (a separate, larger closure, not attempted here)."""
     all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
-    deliberately_unregistered_pending_real_field_data = {"ceiling", "visibility"}
+    deliberately_unregistered_pending_real_field_data = {"ceiling", "visibility", "dust", "ash"}
     assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules - deliberately_unregistered_pending_real_field_data
 
 

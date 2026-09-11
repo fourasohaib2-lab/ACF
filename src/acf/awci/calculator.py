@@ -97,16 +97,16 @@ class AWCICalculator:
     - `LEVEL_THRESHOLDS` - the aviation complexity bands ("Very Low"
       through "Extreme") `_get_level()` classifies into (overridable via
       `AWCICalculator(level_thresholds=...)`).
-    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 11 real
+    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 13 real
       modules this application considers physical vs. forecast-derived.
       NOT YET overridable per instance (still class-level constants) -
       a real, disclosed, deliberately deferred sub-item, not silently
       complete.
-    - The specific 9+2-module set itself (dynamic/thermodynamic/
+    - The specific 11+2-module set itself (dynamic/thermodynamic/
       convective/microphysical/topographic/temporal/confidence/ceiling/
-      visibility + ensemble_spread/model_disagreement - the last 4
-      added post-model4d audit, 2026-09-11, all opt-in at weight 0.0 -
-      see WeightsManager.DEFAULT_WEIGHTS) is itself an AWCI application
+      visibility/dust/ash + ensemble_spread/model_disagreement - the
+      last 6 added post-model4d audit, 2026-09-11, all opt-in at weight
+      0.0 - see WeightsManager.DEFAULT_WEIGHTS) is itself an AWCI application
       choice - a hypothetical DWCI/MWCI application (section 46 - "des
       applications potentielles, pas des produits déjà développés", not
       built here) could choose a different module set entirely, as long
@@ -393,7 +393,10 @@ class AWCICalculator:
     # (tests/test_awci_calculator.py) so a future new module can't
     # silently fall into neither/both.
     PHYSICAL_MODULES = frozenset(
-        {"dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "ceiling", "visibility"}
+        {
+            "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal",
+            "ceiling", "visibility", "dust", "ash",
+        }
     )
     FORECAST_MODULES = frozenset({"confidence", "ensemble_spread", "model_disagreement"})
 
@@ -606,6 +609,22 @@ class AWCICalculator:
               not a literal visibility distance). Drives the real,
               opt-in `visibility` module (see class docstring). Omitted
               entirely (the default): zero behavior change.
+            - dust_risk: optional, real [0, 1] dust/sand-storm
+              emission-favorable-conditions risk proxy (same gap-
+              closing session as ceiling_height_m/visibility_risk
+              above) - see
+              acf.awci.dust.compute_real_dust_risk_at_point() for the
+              real formula and its honest scope. Drives the real,
+              opt-in `dust` module. Omitted entirely (the default):
+              zero behavior change.
+            - ash_risk: optional, real [0, 1] volcanic-ash exposure
+              risk proxy - see
+              acf.awci.volcanic_ash.compute_real_ash_exposure_risk_at_point()
+              for the real formula, which itself REQUIRES real
+              eruption source data (never derived from ordinary
+              meteorological fields). Drives the real, opt-in `ash`
+              module. Omitted entirely (the default): zero behavior
+              change.
 
         Returns
         -------
@@ -827,6 +846,26 @@ class AWCICalculator:
         scores["visibility"] = (
             self.normalizer.normalize_visibility_risk(data["visibility_risk"]) if "visibility_risk" in data else 0.0
         )
+
+        # Dust module - real dust/sand-storm emission-favorable-
+        # conditions risk proxy when a caller supplies
+        # data["dust_risk"] (docs/ACF_MASTER_PROMPT.md's "poussière et
+        # sable" gap, closed post-model4d audit, 2026-09-11 - see
+        # acf.awci.dust.compute_real_dust_risk_at_point()). Same
+        # "0.0 = no signal supplied" opt-in convention as ceiling/
+        # visibility above, zero behavior change for every existing
+        # caller.
+        scores["dust"] = self.normalizer.normalize_dust_risk(data["dust_risk"]) if "dust_risk" in data else 0.0
+
+        # Volcanic ash module - real ash exposure risk proxy when a
+        # caller supplies data["ash_risk"] (same gap-closing session as
+        # dust above - see acf.awci.volcanic_ash.
+        # compute_real_ash_exposure_risk_at_point(), which itself
+        # requires real eruption source data and is never invoked from
+        # ordinary meteorological fields alone). Same "0.0 = no signal
+        # supplied" opt-in convention, zero behavior change for every
+        # existing caller.
+        scores["ash"] = self.normalizer.normalize_ash_risk(data["ash_risk"]) if "ash_risk" in data else 0.0
 
         return scores
 
@@ -1212,6 +1251,8 @@ class AWCICalculator:
             "model_disagreement": "Désaccord inter-modèles (fusion réelle)",
             "ceiling": "Plafond (hauteur LCL estimée)",
             "visibility": "Visibilité (risque brouillard/précipitation)",
+            "dust": "Poussière/Sable (érosion éolienne)",
+            "ash": "Cendres volcaniques (exposition panache)",
             "wind_topo_interaction": "Interaction Vent x Relief",
             "conv_thermo_interaction": "Interaction Convection x Thermodynamique",
         }

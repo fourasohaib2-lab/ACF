@@ -4,9 +4,12 @@
     "awci": 30.3,
     "confidence": 70.0,
     "decomposition": {
+      "ash": 0.0,
+      "ceiling": 0.0,
       "confidence": 1.4,
       "conv_thermo_interaction": 0.6,
       "convective": 4.3,
+      "dust": 0.0,
       "dynamic": 6.5,
       "ensemble_spread": 0.0,
       "microphysical": 1.6,
@@ -14,6 +17,7 @@
       "temporal": 0.7,
       "thermodynamic": 12.4,
       "topographic": 2.4,
+      "visibility": 0.0,
       "wind_topo_interaction": 0.4
     },
     "explanation": [
@@ -34,15 +38,19 @@
     },
     "level": "Low",
     "module_scores": {
+      "ash": 0.0,
+      "ceiling": 0.0,
       "confidence": 30.0,
       "convective": 23.4,
+      "dust": 0.0,
       "dynamic": 36.0,
       "ensemble_spread": 26.9,
       "microphysical": 12.0,
       "model_disagreement": 26.0,
       "temporal": 15.0,
       "thermodynamic": 54.4,
-      "topographic": 26.7
+      "topographic": 26.7,
+      "visibility": 0.0
     },
     "physical_level": "Low",
     "physical_score": 30.3

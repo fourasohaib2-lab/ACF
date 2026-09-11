@@ -242,10 +242,10 @@ def compute_real_complexity_field(
             separate map layers) - one real 0-100 field per
             AWCICalculator module (dynamic/thermodynamic/convective/
             microphysical/topographic/temporal/confidence/
-            ensemble_spread/model_disagreement/ceiling/visibility -
-            the last two added post-model4d audit, 2026-09-11, opt-in
-            at weight 0.0 so this field is honestly all-zero unless a
-            caller separately opts in - see AWCICalculator.
+            ensemble_spread/model_disagreement/ceiling/visibility/dust/
+            ash - the last 4 added post-model4d audit, 2026-09-11,
+            opt-in at weight 0.0 so this field is honestly all-zero
+            unless a caller separately opts in - see AWCICalculator.
             PHYSICAL_MODULES/FORECAST_MODULES for the exact real set),
             each entry field[i, j] equal to
             `calculate(data_at_i_j)["module_scores"][name]` - the
@@ -253,10 +253,12 @@ def compute_real_complexity_field(
             already come from, not a second pass. NOTE: `acf.gui.map.
             map_layers.MODULE_COMPLEXITY_LAYERS` (the real map-layer
             toggle registry) is a curated dict, not auto-derived from
-            this field set - ceiling/visibility have no registered map
-            layer yet (a deliberate, disclosed choice: keeping the
-            existing dashboard/map layer list untouched while this
-            capability is opt-in and zero-weight by default); a caller
+            this field set - ceiling/visibility/dust/ash have no
+            registered map layer yet (a deliberate, disclosed choice:
+            these 4 are opt-in and zero-weight by default, so their
+            field here is honestly all-zero until a caller wires real
+            per-point data in - registering a map layer for an
+            all-zero field would itself be misleading); a caller
             feeding them into MapCanvas.set_module_complexity_field()
             gets a logged "unknown module_key" warning and no render,
             the same documented behavior every other module already

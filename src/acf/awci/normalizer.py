@@ -288,6 +288,34 @@ class Normalizer:
         """
         return max(0.0, min(1.0, visibility_risk_score))
 
+    @staticmethod
+    def normalize_dust_risk(dust_risk_score: float) -> float:
+        """
+        Pass-through clamp to [0, 1] - `dust_risk_score` (docs/
+        ACF_MASTER_PROMPT.md's "poussière/sable" gap, closed
+        post-model4d audit, 2026-09-11) already IS a real [0, 1] risk
+        proxy computed by
+        acf.awci.dust.compute_real_dust_risk_at_point() - see that
+        module's own docstring, and get_range_status("dust_risk") for
+        the full disclosure of what is and is not a published value
+        here.
+        """
+        return max(0.0, min(1.0, dust_risk_score))
+
+    @staticmethod
+    def normalize_ash_risk(ash_risk_score: float) -> float:
+        """
+        Pass-through clamp to [0, 1] - `ash_risk_score` (docs/
+        ACF_MASTER_PROMPT.md's "cendres volcaniques" gap, closed
+        post-model4d audit, 2026-09-11) already IS a real [0, 1] risk
+        proxy computed by
+        acf.awci.volcanic_ash.compute_real_ash_exposure_risk_at_point()
+        - see that module's own docstring, and get_range_status
+        ("ash_risk") for the full disclosure of what is and is not a
+        published value here.
+        """
+        return max(0.0, min(1.0, ash_risk_score))
+
     # Reference "large disagreement" spread per variable, used to
     # normalize a real ensemble standard deviation (from
     # acf.ai.ensemble.ensemble_manager.EnsembleManager.spread) to

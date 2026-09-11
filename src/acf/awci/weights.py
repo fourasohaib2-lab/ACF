@@ -53,6 +53,18 @@ class WeightsManager:
         # acf.awci.visibility.compute_real_visibility_risk_at_point()).
         # Same opt-in convention: 0.0 by default.
         "visibility": 0.0,
+        # Real dust/sand-storm emission-favorable-conditions risk proxy
+        # (see AWCICalculator's calculate_module_scores() and
+        # acf.awci.dust.compute_real_dust_risk_at_point()). Added
+        # post-model4d audit, 2026-09-11, closing AWCI's "poussière et
+        # sable" gap. Same opt-in convention: 0.0 by default.
+        "dust": 0.0,
+        # Real volcanic-ash exposure risk proxy (see AWCICalculator's
+        # calculate_module_scores() and acf.awci.volcanic_ash.
+        # compute_real_ash_exposure_risk_at_point()). Added
+        # post-model4d audit, 2026-09-11, closing AWCI's "cendres
+        # volcaniques" gap. Same opt-in convention: 0.0 by default.
+        "ash": 0.0,
     }
 
     def __init__(self, weights: dict[str, float] | None = None):
