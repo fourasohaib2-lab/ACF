@@ -74,7 +74,7 @@ def test_omitted_module_scores_match_a_calculator_built_before_this_capability_e
         "temporal", "confidence", "ensemble_spread", "model_disagreement",
     }
     assert legacy_keys <= set(result["module_scores"].keys())
-    assert set(result["module_scores"].keys()) == legacy_keys | {"ceiling", "visibility", "dust", "ash"}
+    assert set(result["module_scores"].keys()) == legacy_keys | {"ceiling", "visibility", "dust", "ash", "microburst"}
 
 
 def test_supplying_ceiling_height_m_activates_the_real_normalize_ceiling_value():

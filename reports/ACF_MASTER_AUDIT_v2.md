@@ -11964,3 +11964,67 @@ without_a_real_ssh_transport_is_reported_honestly`, un timeout
 changements de cette session - passe systématiquement en isolation,
 avant et après ces modifications, y compris le fichier de test complet
 qui le contient (8 passed, 1 skipped).
+
+## Mise à jour 2026-09-11 (suite, priorité #4 du cross-check ChatGPT) — Câblage du microburst : connexion de l'encyclopédie réelle déjà existante à un diagnostic vivant
+
+**Contexte** : dernier écart identifié lors du cross-check AWCI vs.
+spécification ChatGPT - la connaissance scientifique du microburst
+existait déjà, réelle et citée (`acf.aviation.hazards.
+aviation_hazards.AVIATION_HAZARDS_REGISTRY["microburst_windshear"]` -
+explication physique, équation directrice, seuil ICAO réel, références
+ICAO Doc 9837 / FAA AC 00-54), mais n'était **jamais appelée** par quoi
+que ce soit calculant les sorties réelles d'AWCI - une pure encyclopédie
+de référence, déconnectée du pipeline de score vivant.
+
+**`src/acf/awci/microburst.py`** - proxy de proximité au seuil d'alerte
+microburst dans [0, 1]. Réutilise le seuil réel et cité du registre
+(30 nœuds / 1500 ft AGL, converti en SI : 15.433 m/s / 457.2 m) plutôt
+que d'en inventer un nouveau. **Honnêtement pas une détection de
+microburst réelle** : le vrai critère ICAO mesure un différentiel de
+vitesse air rencontré le long d'une trajectoire de vol (perte de vent
+debout puis gain de vent arrière) - une mesure le long de la trajectoire
+qu'aucun diagnostic ponctuel ne peut reconstruire à partir d'un champ
+statique. Combine par **multiplication** trois préconditions physiques
+réelles : proximité au seuil de cisaillement (réutilise la même
+grandeur physique que le module dynamique existant), proximité d'une
+source convective réelle (réutilise directement
+`Normalizer.normalize_cape()`, non dupliqué), et pertinence de
+l'altitude (seuil réel 1500 ft AGL, avec une marge de 300 m disclosée
+au-delà). Expose également `get_microburst_hazard_reference()`,
+retournant l'entrée réelle complète du registre, fermant explicitement
+le fossé "documenté mais jamais appelé".
+
+**Câblage** : même motif exact que les 4 fermetures précédentes de
+cette session (poids 0.0 par défaut dans `WeightsManager.
+DEFAULT_WEIGHTS`, calcul déclenché uniquement par `data["microburst_
+risk"]`, `PHYSICAL_MODULES` étendu à 11 modules physiques + 3
+prévisionnels = **14 modules réels au total**). Statut scientifique
+notable : les deux seuils réutilisés (30 kt, 1500 ft) sont classés
+CONFIRMED (valeurs opérationnelles citées, pas une invention ACF) mais
+la rampe multiplicative combinant cisaillement/CAPE/altitude en un
+proxy continu reste HYPOTHESIS (choix de conception ACF, pas une
+formule publiée pour ce composite).
+
+**Golden dataset** régénéré une nouvelle fois via `write_golden()`
+avec la même vérification programmatique explicite que les fermetures
+précédentes (score AWCI et toutes les valeurs pré-existantes restées
+bit-identiques, diff minimal - une seule nouvelle clé `microburst: 0.0`
+ajoutée aux deux endroits).
+
+**Résultat de ce lot** : 899 tests passés sur la suite AWCI+GUI+golden
+combinée (2 fichiers de tests dédiés, 15 tests), 0 échec.
+
+---
+
+**Bilan de la session "cross-check AWCI vs. spécification ChatGPT"** :
+les 4 écarts fonctionnels réels priorisés sont désormais fermés
+(visibilité/plafond, poussière/sable, cendres volcaniques, câblage
+microburst) - 5 nouveaux modules opt-in au total (`ceiling`,
+`visibility`, `dust`, `ash`, `microburst`), portant AWCI de 9 à 14
+modules réels, sans aucun changement de comportement pour les
+appelants existants (dashboard AWCI inclus, vérifié à chaque étape par
+tests dédiés et golden dataset). Écarts restants, non traités dans
+cette session (produit/UX, pas des trous de diagnostic physique) :
+optimisation de niveau de vol, AWCI spécifique aéroport/corridors,
+logique de persistance des alertes, calibration réelle des poids
+contre des observations.

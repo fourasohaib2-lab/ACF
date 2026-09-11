@@ -48,7 +48,7 @@ def test_module_complexity_layers_covers_every_real_awci_module():
     source for it is wired into compute_real_complexity_field() itself
     (a separate, larger closure, not attempted here)."""
     all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
-    deliberately_unregistered_pending_real_field_data = {"ceiling", "visibility", "dust", "ash"}
+    deliberately_unregistered_pending_real_field_data = {"ceiling", "visibility", "dust", "ash", "microburst"}
     assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules - deliberately_unregistered_pending_real_field_data
 
 

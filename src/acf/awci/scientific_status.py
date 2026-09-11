@@ -125,6 +125,9 @@ MODULE_WEIGHT_STATUS: dict[str, WeightStatusEntry] = {
     "ash": WeightStatusEntry(
         WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, closing AWCI's 'cendres volcaniques' gap (see acf.awci.volcanic_ash)."
     ),
+    "microburst": WeightStatusEntry(
+        WeightStatus.INITIAL, "Opt-in, defaults to 0.0 (excluded) until a caller explicitly raises it - no magnitude judgment made yet. Added post-model4d audit, 2026-09-11, connecting acf.aviation.hazards.aviation_hazards's already-real, already-cited microburst_windshear encyclopedia entry to a live diagnostic (see acf.awci.microburst)."
+    ),
 }
 
 #: Status for AWCICalculator.INTERACTION_WEIGHTS - HYPOTHESIS per that
@@ -184,6 +187,7 @@ NORMALIZER_RANGE_STATUS: dict[str, ThresholdStatus] = {
     "visibility_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.visibility.compute_real_visibility_risk_at_point() - a real, disclosed ACF design choice (max() of a real relative-humidity-based fog-proximity ramp and a real WMO-heavy-rain-referenced precipitation-intensity ramp), not a value sourced from a published visibility index, and explicitly not a literal visibility distance (see that module's own honest-scope disclosure)."),
     "dust_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.dust.compute_real_dust_risk_at_point() - a real, disclosed ACF design choice (multiplicative combination of a real wind-speed erosion-potential ramp, floor/ceiling not sourced from a specific soil-type study, and a real relative-humidity-based dry-surface proxy standing in for unavailable soil moisture), not a value sourced from a published dust-emission scheme, and explicitly not a literal dust concentration/AOD/PM10 value (see that module's own honest-scope disclosure)."),
     "ash_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.volcanic_ash.compute_real_ash_exposure_risk_at_point() - combines the real, published Mastin et al. (2009) plume-height formula with a real, disclosed ACF first-order speed x time transport estimate and downwind-sector geometry (30 deg half-width, 100 km buffer - both ACF design choices, not derived from a real dispersion model). REQUIRES real, caller-supplied eruption source data; never derived from ordinary meteorological fields. Explicitly not a substitute for a real VAAC advisory (see that module's own honest-scope disclosure)."),
+    "microburst_risk": ThresholdStatus(ScientificStatus.HYPOTHESIS, "The value already IS the [0, 1] risk proxy computed by acf.awci.microburst.compute_real_microburst_risk_at_point() - its two real reused thresholds (30 kt shear, 1500 ft AGL altitude ceiling) are CONFIRMED, cited operational values (ICAO Doc 9837 / FAA AC 00-54, already present in acf.aviation.hazards.aviation_hazards before this module existed), but the multiplicative [0, 1] ramp combining shear/CAPE/altitude proximity into one continuous proxy is a real, disclosed ACF design choice, not itself a published formula - hence HYPOTHESIS for the composite, not CONFIRMED (see that module's own honest-scope disclosure: an alert-proximity proxy, not a true along-track microburst detection)."),
 }
 
 #: Status for Normalizer.ENSEMBLE_SPREAD_REFERENCE / MODEL_DISAGREEMENT_REFERENCE -

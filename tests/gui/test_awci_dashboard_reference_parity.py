@@ -251,7 +251,7 @@ def test_vertical_profile_data_carries_the_real_module_scores_per_level(qapp):
     assert "module_scores" in entry["result"]
     assert set(entry["result"]["module_scores"].keys()) == {
         "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
-        "ensemble_spread", "model_disagreement", "ceiling", "visibility", "dust", "ash",
+        "ensemble_spread", "model_disagreement", "ceiling", "visibility", "dust", "ash", "microburst",
     }
 
 

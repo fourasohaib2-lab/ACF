@@ -65,6 +65,14 @@ class WeightsManager:
         # post-model4d audit, 2026-09-11, closing AWCI's "cendres
         # volcaniques" gap. Same opt-in convention: 0.0 by default.
         "ash": 0.0,
+        # Real microburst/LLWS alert-proximity risk proxy (see
+        # AWCICalculator's calculate_module_scores() and
+        # acf.awci.microburst.compute_real_microburst_risk_at_point()),
+        # connecting the already-real, already-cited
+        # acf.aviation.hazards.aviation_hazards encyclopedia entry to a
+        # live diagnostic. Added post-model4d audit, 2026-09-11. Same
+        # opt-in convention: 0.0 by default.
+        "microburst": 0.0,
     }
 
     def __init__(self, weights: dict[str, float] | None = None):

@@ -211,7 +211,7 @@ def test_vertical_profile_at_standard_levels_uses_a_real_calculator_on_real_inte
     assert entry["result"]["awci"] == pytest.approx(expected["awci"])
     assert set(entry["result"]["module_scores"].keys()) == {
         "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
-        "ensemble_spread", "model_disagreement", "ceiling", "visibility", "dust", "ash",
+        "ensemble_spread", "model_disagreement", "ceiling", "visibility", "dust", "ash", "microburst",
     }
 
 

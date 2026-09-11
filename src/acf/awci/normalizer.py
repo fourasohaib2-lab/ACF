@@ -303,6 +303,21 @@ class Normalizer:
         return max(0.0, min(1.0, dust_risk_score))
 
     @staticmethod
+    def normalize_microburst_risk(microburst_risk_score: float) -> float:
+        """
+        Pass-through clamp to [0, 1] - `microburst_risk_score` (closing
+        AWCI's "microburst" gap, post-model4d audit, 2026-09-11 -
+        connecting the already-real, already-cited
+        acf.aviation.hazards.aviation_hazards encyclopedia entry to a
+        live diagnostic) already IS a real [0, 1] risk proxy computed
+        by acf.awci.microburst.compute_real_microburst_risk_at_point()
+        - see that module's own docstring, and
+        get_range_status("microburst_risk") for the full disclosure of
+        what is and is not a published value here.
+        """
+        return max(0.0, min(1.0, microburst_risk_score))
+
+    @staticmethod
     def normalize_ash_risk(ash_risk_score: float) -> float:
         """
         Pass-through clamp to [0, 1] - `ash_risk_score` (docs/

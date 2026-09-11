@@ -97,16 +97,17 @@ class AWCICalculator:
     - `LEVEL_THRESHOLDS` - the aviation complexity bands ("Very Low"
       through "Extreme") `_get_level()` classifies into (overridable via
       `AWCICalculator(level_thresholds=...)`).
-    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 13 real
+    - `PHYSICAL_MODULES`/`FORECAST_MODULES` - which of the 14 real
       modules this application considers physical vs. forecast-derived.
       NOT YET overridable per instance (still class-level constants) -
       a real, disclosed, deliberately deferred sub-item, not silently
       complete.
-    - The specific 11+2-module set itself (dynamic/thermodynamic/
+    - The specific 12+2-module set itself (dynamic/thermodynamic/
       convective/microphysical/topographic/temporal/confidence/ceiling/
-      visibility/dust/ash + ensemble_spread/model_disagreement - the
-      last 6 added post-model4d audit, 2026-09-11, all opt-in at weight
-      0.0 - see WeightsManager.DEFAULT_WEIGHTS) is itself an AWCI application
+      visibility/dust/ash/microburst + ensemble_spread/
+      model_disagreement - the last 7 added post-model4d audit,
+      2026-09-11, all opt-in at weight 0.0 - see WeightsManager.
+      DEFAULT_WEIGHTS) is itself an AWCI application
       choice - a hypothetical DWCI/MWCI application (section 46 - "des
       applications potentielles, pas des produits déjà développés", not
       built here) could choose a different module set entirely, as long
@@ -395,7 +396,7 @@ class AWCICalculator:
     PHYSICAL_MODULES = frozenset(
         {
             "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal",
-            "ceiling", "visibility", "dust", "ash",
+            "ceiling", "visibility", "dust", "ash", "microburst",
         }
     )
     FORECAST_MODULES = frozenset({"confidence", "ensemble_spread", "model_disagreement"})
@@ -625,6 +626,15 @@ class AWCICalculator:
               meteorological fields). Drives the real, opt-in `ash`
               module. Omitted entirely (the default): zero behavior
               change.
+            - microburst_risk: optional, real [0, 1] microburst/LLWS
+              alert-proximity risk proxy - see
+              acf.awci.microburst.compute_real_microburst_risk_at_point()
+              for the real formula, grounded in the real, cited ICAO
+              Doc 9837 / FAA AC 00-54 threshold already documented (but
+              never previously called) in
+              acf.aviation.hazards.aviation_hazards. Drives the real,
+              opt-in `microburst` module. Omitted entirely (the
+              default): zero behavior change.
 
         Returns
         -------
@@ -866,6 +876,21 @@ class AWCICalculator:
         # supplied" opt-in convention, zero behavior change for every
         # existing caller.
         scores["ash"] = self.normalizer.normalize_ash_risk(data["ash_risk"]) if "ash_risk" in data else 0.0
+
+        # Microburst module - real microburst/LLWS alert-proximity risk
+        # proxy when a caller supplies data["microburst_risk"] (closing
+        # AWCI's "microburst" gap, post-model4d audit, 2026-09-11 - see
+        # acf.awci.microburst.compute_real_microburst_risk_at_point(),
+        # which connects the already-real, already-cited
+        # acf.aviation.hazards.aviation_hazards encyclopedia entry -
+        # ICAO Doc 9837 / FAA AC 00-54's own real 30 kt / 1500 ft AGL
+        # threshold - to a live diagnostic instead of leaving it a
+        # disconnected reference). Same "0.0 = no signal supplied"
+        # opt-in convention, zero behavior change for every existing
+        # caller.
+        scores["microburst"] = (
+            self.normalizer.normalize_microburst_risk(data["microburst_risk"]) if "microburst_risk" in data else 0.0
+        )
 
         return scores
 
@@ -1253,6 +1278,7 @@ class AWCICalculator:
             "visibility": "Visibilité (risque brouillard/précipitation)",
             "dust": "Poussière/Sable (érosion éolienne)",
             "ash": "Cendres volcaniques (exposition panache)",
+            "microburst": "Microburst/LLWS (proximité seuil d'alerte)",
             "wind_topo_interaction": "Interaction Vent x Relief",
             "conv_thermo_interaction": "Interaction Convection x Thermodynamique",
         }
