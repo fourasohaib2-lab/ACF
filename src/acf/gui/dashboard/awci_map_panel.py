@@ -637,13 +637,15 @@ class AWCIMapPanel(EventMixin, QWidget):
     _EXTRA_LAYER_SPECS: dict[str, tuple[str, str, str]] = {
         "Wind": (
             "wind", "Blues",
-            "Real wind speed (m/s) - direction/vectors are not real here (no u/v components in the demo "
-            "pattern; Real Physics mode's own real u/v are not yet used for direction either), speed magnitude only.",
+            "Real wind speed (m/s) - this layer itself shows the scalar magnitude only, not direction/"
+            "barbs (both demo and Real Physics mode DO have real u/v components internally now - see "
+            "the Turbulence layer below - just not surfaced as a vector layer of their own here).",
         ),
         "Turbulence": (
             "turbulence", "Purples",
-            "Real horizontal wind-speed gradient magnitude - a disclosed PROXY, not the full Ellrod-Knapp "
-            "CAT index (see docs/awci/future-improvements.md).",
+            "Real Ellrod & Knapp (1992) TI1 clear-air turbulence index (closed 2026-09-11, "
+            "docs/awci/future-improvements.md §5) - real horizontal deformation from the real u/v wind "
+            "components, real vertical wind shear via the hypsometric equation.",
         ),
         "Icing": (
             "icing", "PuBu",
