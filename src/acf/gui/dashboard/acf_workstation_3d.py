@@ -57,7 +57,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 - registers the real '3d' projection; required, never used directly
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from acf.gui.theme_tokens import label_style
+from acf.gui.theme_tokens import TOKENS, label_style
 
 #: Real per-variable volume key + unit + a real, disclosed physical
 #: rendering range - same real ranges Overview's own _VARIABLES uses
@@ -95,10 +95,10 @@ class ACF3DAtmospherePanel(QWidget):
         controls.addStretch()
         layout.addLayout(controls)
 
-        self.figure = plt.figure(facecolor="#0b1220")
+        self.figure = plt.figure(facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.axis = self.figure.add_subplot(111, projection="3d")
-        self.axis.set_facecolor("#0b1220")
+        self.axis.set_facecolor(TOKENS.bg_card)
         layout.addWidget(self.canvas, stretch=1)
 
     @staticmethod
@@ -121,7 +121,7 @@ class ACF3DAtmospherePanel(QWidget):
         if self._volume is None:
             return
         self.axis.clear()
-        self.axis.set_facecolor("#0b1220")
+        self.axis.set_facecolor(TOKENS.bg_card)
 
         variable = self.variable_selector.currentText()
         spec = _VARIABLES[variable]
@@ -150,16 +150,16 @@ class ACF3DAtmospherePanel(QWidget):
                 alpha=0.85,
             )
 
-        self.axis.set_xlabel("Longitude (°)", color="#9fb0c9", fontsize=8)
-        self.axis.set_ylabel("Latitude (°)", color="#9fb0c9", fontsize=8)
-        self.axis.set_zlabel("Pressure (hPa)", color="#9fb0c9", fontsize=8)
-        self.axis.tick_params(colors="#6b7a94", labelsize=6)
+        self.axis.set_xlabel("Longitude (°)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.set_ylabel("Latitude (°)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.set_zlabel("Pressure (hPa)", color=TOKENS.text_secondary, fontsize=8)
+        self.axis.tick_params(colors=TOKENS.text_muted, labelsize=6)
         self.axis.set_zlim(min(pressures_hpa) - 50.0, max(pressures_hpa) + 50.0)
         self.axis.invert_zaxis()  # real meteorological convention: pressure decreases upward
         self.axis.set_title(
             f"Real {self._volume.get('model', '')} — {variable} — {len(shown_levels)} real levels stacked\n"
             "(no geographic basemap - see the 2D Labs for map context)",
-            color="#e8edf5",
+            color=TOKENS.text_primary,
             fontsize=9,
         )
         self.canvas.draw_idle()
