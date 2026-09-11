@@ -13,6 +13,9 @@ import numpy as np
 import pytest
 
 from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs, awci_layer_grids
+from acf.science.hypsometric_equation import HypsometricEquation
+from acf.science.virtual_temperature import VirtualTemperature
+from acf.science.wind_turbulence import CATIndex
 
 
 def test_returns_the_real_expected_grid_shape():
@@ -100,6 +103,71 @@ def test_turbulence_is_a_real_nonnegative_gradient_magnitude():
     # everywhere - the real synthetic wind pattern is not flat, so
     # this must show real variation.
     assert arr.max() > 0.0
+
+
+def test_turbulence_matches_a_direct_ellrod_knapp_ti1_call():
+    """Regression guard for future-improvements.md §5's demo-mode
+    closure: "turbulence" must be the real Ellrod-Knapp TI1 index from
+    the synthetic u/v decomposition + a synthetic-second-level
+    hypsometric vertical shear, not the old wind-speed-gradient proxy."""
+    lat_step, lon_step = 6.0, 6.0
+    lat_range, lon_range = (-18.0, 18.0), (-18.0, 18.0)
+    flight_level_hpa = 300.0
+    offset_hpa = 50.0
+
+    result = awci_layer_grids(
+        lat_step=lat_step, lon_step=lon_step, lat_range=lat_range, lon_range=lon_range,
+        flight_level_hpa=flight_level_hpa,
+    )
+    lats, lons = result["lats"], result["lons"]
+
+    u = np.array([[_synthetic_inputs(lat, lon, flight_level_hpa, 0.0)["u"] for lon in lons] for lat in lats])
+    v = np.array([[_synthetic_inputs(lat, lon, flight_level_hpa, 0.0)["v"] for lon in lons] for lat in lats])
+    du_dlat, du_dlon = np.gradient(u)
+    dv_dlat, dv_dlon = np.gradient(v)
+
+    i, j = 2, 1
+    raw = _synthetic_inputs(lats[i], lons[j], flight_level_hpa, 0.0)
+    raw_upper = _synthetic_inputs(lats[i], lons[j], flight_level_hpa - offset_hpa, 0.0)
+    tv_lower = VirtualTemperature.calculate(raw["temperature"], raw["specific_humidity"])
+    tv_upper = VirtualTemperature.calculate(raw_upper["temperature"], raw_upper["specific_humidity"])
+    thickness_m = HypsometricEquation.calculate(
+        flight_level_hpa * 100.0, (flight_level_hpa - offset_hpa) * 100.0, 0.5 * (tv_lower + tv_upper)
+    )
+    du_dz = (raw_upper["u"] - raw["u"]) / thickness_m
+    dv_dz = (raw_upper["v"] - raw["v"]) / thickness_m
+    expected_vws = CATIndex.vertical_wind_shear(du_dz, dv_dz)
+    expected_def = CATIndex.deformation(
+        du_dx=float(du_dlon[i, j]), dv_dy=float(dv_dlat[i, j]), dv_dx=float(dv_dlon[i, j]), du_dy=float(du_dlat[i, j])
+    )
+    expected_ti1 = CATIndex.ti1(expected_vws, expected_def)
+
+    assert result["turbulence"][i][j] == pytest.approx(expected_ti1)
+
+
+def test_wind_speed_equals_the_u_v_magnitude_the_awci_score_is_untouched():
+    """The AWCI composite score consumes ONLY wind_speed (never u/v) -
+    u/v must be an exact vector decomposition of it
+    (sqrt(u**2+v**2) == wind_speed), not a second, independent
+    quantity, so adding them cannot silently change awci_grid()'s own
+    real score."""
+    raw = _synthetic_inputs(23.4, 67.8, 300.0, 3.0)
+    assert np.hypot(raw["u"], raw["v"]) == pytest.approx(raw["wind_speed"], abs=1e-9)
+
+
+def test_awci_calculator_ignores_the_new_u_v_keys():
+    """Real proof (not just a shape/range check) that AWCICalculator's
+    own composite score is unaffected by u/v being present in the dict
+    - removing them must give the exact same real result, so
+    awci_grid()/awci_at() stay bit-identical to before this closure."""
+    from acf.awci.calculator import AWCICalculator
+
+    raw = _synthetic_inputs(23.4, 67.8, 300.0, 3.0)
+    calc = AWCICalculator()
+    with_uv = calc.calculate(dict(raw))
+    without_uv = calc.calculate({k: v for k, v in raw.items() if k not in ("u", "v")})
+    assert with_uv["awci"] == pytest.approx(without_uv["awci"])
+    assert with_uv["module_scores"] == without_uv["module_scores"]
 
 
 def test_turbulence_is_zero_for_a_hand_built_flat_wind_field():

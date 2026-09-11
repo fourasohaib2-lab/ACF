@@ -93,13 +93,24 @@ solver levels are not yet pinned to real physical heights"), at least
 for this one use site. Regression-guarded by
 `tests/test_awci_path_sampling.py::test_real_layer_grids_at_level_turbulence_matches_a_direct_ellrod_knapp_ti1_call`.
 
-**Still open — demo mode.** `awci_synthetic_field.awci_layer_grids()`'s
-own "turbulence" layer keeps the wind-speed-gradient proxy: its
-`_synthetic_inputs()` has no real u/v vector decomposition, only a
-scalar wind speed (see that function's own docstring). Adding one would
-touch the same shared synthetic pattern the AWCI composite score itself
-is computed from — a larger-blast-radius change than this closure's own
-scope, deliberately not attempted here.
+**Update 2026-09-11 (closed for demo mode too — §5 fully closed):**
+`_synthetic_inputs()` now returns a real `u`/`v` vector decomposition of
+its own `wind_speed` (`u = wind_speed * cos(direction)`, `v = wind_speed
+* sin(direction)`, a real deterministic synthetic direction field —
+still a demo device, disclosed, not a real forecast wind) —
+`sqrt(u**2+v**2) == wind_speed` exactly, so `AWCICalculator`'s own
+composite score, which only ever consumed `wind_speed`, is bit-identical
+to before (verified: `test_awci_calculator_ignores_the_new_u_v_keys`,
+and a direct before/after `awci_grid()` diff during development).
+`awci_layer_grids()`'s "turbulence" layer now computes the same real
+Ellrod-Knapp TI1 index as Real Physics mode — real horizontal
+deformation from the real u/v grid, real vertical wind shear via the
+hypsometric equation between the requested flight level and a
+**synthetic** second level 50 hPa above it (both sampled from the same
+deterministic pattern — disclosed as synthetic, not a second real
+physical level, matching the honest-proxy convention this whole demo
+pattern already follows). Regression-guarded by
+`tests/test_awci_layer_grids.py::test_turbulence_matches_a_direct_ellrod_knapp_ti1_call`.
 
 ## 6. Real per-grid-cell CAPE contour map layer
 

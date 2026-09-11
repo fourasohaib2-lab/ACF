@@ -89,6 +89,29 @@ def _synthetic_inputs(
 
     temperature_k = 288.0 - 0.55 * abs(lat) + 3.0 * math.sin(2 * lon_r)
     wind_speed = 5.0 + 58.0 * storminess * (0.35 + 0.65 * jet_factor) + 15.0 * storm_track * jet_factor
+
+    # Real, deterministic synthetic wind DIRECTION (added 2026-09-11,
+    # closing future-improvements.md §5's demo-mode half - "je veux
+    # rester sur AWCI" session) - same honest-synthetic-pattern
+    # convention as every other field in this function, NOT a new kind
+    # of fabrication. `wind_speed` above is unchanged and still the
+    # only thing AWCICalculator.calculate() ever consumes for its own
+    # composite score - u/v below are a real vector DECOMPOSITION of
+    # that same scalar (u=speed*cos(dir), v=speed*sin(dir), so
+    # sqrt(u**2+v**2) == wind_speed to within double-precision
+    # cos**2+sin**2=1, not a second, independent magnitude) purely so
+    # `awci_layer_grids()`'s own turbulence layer can compute a real
+    # Ellrod-Knapp horizontal deformation term - the AWCI score itself
+    # is bit-identical to before this change, only fed the same
+    # unchanged `wind_speed`. Direction varies smoothly with both lat
+    # and lon (tied to the same storm-phase `drift`) so the real
+    # horizontal gradients used below are genuinely non-trivial, not a
+    # constant global direction that would make deformation always
+    # zero - still a demo device, not a real forecast wind field.
+    wind_direction_rad = 1.5 * lon_r + 0.7 * lat_r + drift * 1.2
+    u_wind = wind_speed * math.cos(wind_direction_rad)
+    v_wind = wind_speed * math.sin(wind_direction_rad)
+
     cape = 9500.0 * max(0.0, storminess - 0.15) ** 1.3 * (0.4 + 0.6 * convective_boost)
     cin = 80.0 * (1.0 - storminess)
     specific_humidity = 0.003 + 0.022 * itcz + 0.018 * storminess
@@ -111,6 +134,8 @@ def _synthetic_inputs(
         "temperature": temperature_k,
         "specific_humidity": specific_humidity,
         "wind_speed": wind_speed,
+        "u": u_wind,
+        "v": v_wind,
         "cape": cape,
         "cin": cin,
         "precipitation": precipitation,
@@ -246,14 +271,23 @@ def awci_layer_grids(
       mode's own volume DOES carry real u_volume/v_volume - see
       `acf.awci.vertical_field` - a real vector wind layer for that
       mode specifically is future work, not built here).
-    - "turbulence": a real, disclosed PROXY - the horizontal gradient
-      magnitude of the wind_speed grid itself (a real `numpy.gradient()`
-      of already-real values, not a fabricated number), the same
-      honest-proxy convention this project already uses for the
-      cross-section's own turbulence icons (see awci_cross_section.py's
-      `_TURBULENCE_PROXY_SHEAR_THRESHOLD_M_S`) - NOT the full real
-      Ellrod-Knapp CAT index (still a real, disclosed gap, see
-      future-improvements.md §5).
+    - "turbulence": the real Ellrod & Knapp (1992) TI1 clear-air
+      turbulence index (`acf.science.wind_turbulence.CATIndex.ti1()`),
+      closed 2026-09-11 (future-improvements.md §5, demo-mode half).
+      Real horizontal deformation from `_synthetic_inputs()`'s own real
+      u/v decomposition of `wind_speed` (see that function's own
+      docstring - the AWCI score itself is untouched, still fed only
+      `wind_speed`). Real vertical wind shear from a real hypsometric-
+      equation layer thickness between the requested flight level and
+      a SYNTHETIC second level `_VERTICAL_SHEAR_OFFSET_HPA` above it -
+      both levels sampled from the exact same deterministic
+      `_synthetic_inputs()` pattern (its `jet_factor` already varies
+      genuinely with `flight_level_hpa`, so this vertical shear is a
+      real derivative of the real pattern, not an invented one) - NOT
+      a second real physical level, disclosed as such. Same real
+      formula now used for Real Physics mode
+      (`acf.awci.path_sampling.real_layer_grids_at_level()`), applied
+      here to synthetic inputs instead of a real solver volume.
     - "clouds": a real, disclosed PROXY - precipitation rate (no
       cloud-fraction/cloud-cover quantity exists anywhere in this
       pipeline; higher precipitation genuinely correlates with cloud
@@ -262,9 +296,10 @@ def awci_layer_grids(
     Returns
     -------
     dict with "lons"/"lats" (1D) and one 2D grid per real map layer:
-    "wind" (m/s, raw wind speed), "turbulence" (m/s per grid-step,
-    real horizontal wind-speed gradient magnitude - see honest
-    limitation above), "icing" ([0, 1],
+    "wind" (m/s, raw wind speed), "turbulence" (s^-2, real Ellrod-Knapp
+    TI1 - multiply by 1e7 to compare against the textbook threshold
+    table, see `CATIndex.ti2()`'s own docstring - see honest limitation
+    above for the real formula), "icing" ([0, 1],
     `acf.awci.hydrometeor_phase.compute_real_hydrometeor_phase_at_point()`'s
     own real severity), "convection" (m/s, real
     `acf.awci.updraft.compute_real_max_updraft_velocity()` - a real,
@@ -276,6 +311,15 @@ def awci_layer_grids(
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
     from acf.awci.updraft import compute_real_max_updraft_velocity
     from acf.science.clouds.dynamics import CloudDynamicsEngine
+    from acf.science.hypsometric_equation import HypsometricEquation
+    from acf.science.virtual_temperature import VirtualTemperature
+    from acf.science.wind_turbulence import CATIndex
+
+    #: See "turbulence" honest limitation above - a real, disclosed
+    #: synthetic second level, not a real physical one. 50 hPa is a
+    #: real, typical operational native-level spacing order of
+    #: magnitude, not tuned to produce any particular turbulence value.
+    _VERTICAL_SHEAR_OFFSET_HPA = 50.0
 
     lats = _frange(lat_range[0], lat_range[1], lat_step)
     lons = _frange(lon_range[0], lon_range[1], lon_step)
@@ -290,11 +334,28 @@ def awci_layer_grids(
     convection: list[list[float]] = []
     cape: list[list[float]] = []
     clouds: list[list[float]] = []
+    u_grid: list[list[float]] = []
+    v_grid: list[list[float]] = []
+    u_grid_upper: list[list[float]] = []
+    v_grid_upper: list[list[float]] = []
+    virtual_temperature_lower: list[list[float]] = []
+    virtual_temperature_upper: list[list[float]] = []
     for lat in lats:
         wind_row, icing_row, convection_row, cape_row, clouds_row = [], [], [], [], []
+        u_row, v_row, u_row_upper, v_row_upper = [], [], [], []
+        tv_lower_row, tv_upper_row = [], []
         for lon in lons:
             raw = _synthetic_inputs(lat, lon, flight_level_hpa, time_offset_hours)
+            raw_upper = _synthetic_inputs(
+                lat, lon, flight_level_hpa - _VERTICAL_SHEAR_OFFSET_HPA, time_offset_hours
+            )
             wind_row.append(raw["wind_speed"])
+            u_row.append(raw["u"])
+            v_row.append(raw["v"])
+            u_row_upper.append(raw_upper["u"])
+            v_row_upper.append(raw_upper["v"])
+            tv_lower_row.append(VirtualTemperature.calculate(raw["temperature"], raw["specific_humidity"]))
+            tv_upper_row.append(VirtualTemperature.calculate(raw_upper["temperature"], raw_upper["specific_humidity"]))
             phase = compute_real_hydrometeor_phase_at_point(raw["temperature"], raw["specific_humidity"], flight_level_hpa)
             icing_row.append(phase["phase_severity"])
             updraft = compute_real_max_updraft_velocity(raw["cape"], engine=cloud_dynamics_engine)
@@ -306,15 +367,43 @@ def awci_layer_grids(
         convection.append(convection_row)
         cape.append(cape_row)
         clouds.append(clouds_row)
+        u_grid.append(u_row)
+        v_grid.append(v_row)
+        u_grid_upper.append(u_row_upper)
+        v_grid_upper.append(v_row_upper)
+        virtual_temperature_lower.append(tv_lower_row)
+        virtual_temperature_upper.append(tv_upper_row)
 
-    # Real horizontal gradient magnitude of the wind_speed grid (see
-    # "turbulence" honest limitation above) - np.gradient() over the
-    # real, already-computed wind grid, per grid-step (not per real
-    # km - lat/lon grid spacing isn't uniform in km, and this is
-    # already disclosed as a proxy, not a calibrated physical shear).
-    wind_arr = np.asarray(wind)
-    d_dlat, d_dlon = np.gradient(wind_arr)
-    turbulence = np.hypot(d_dlat, d_dlon).tolist()
+    # Real horizontal gradients of the real u/v components (see
+    # "turbulence" honest limitation above) - per grid step, not per
+    # real km (lat/lon grid spacing isn't uniform in km, and this
+    # pipeline has no per-point map projection to convert it - same
+    # disclosed unit convention already used for the old proxy and for
+    # Real Physics mode's own real_layer_grids_at_level()).
+    u_arr = np.asarray(u_grid)
+    v_arr = np.asarray(v_grid)
+    du_dlat, du_dlon = np.gradient(u_arr)
+    dv_dlat, dv_dlon = np.gradient(v_arr)
+
+    p_lower_pa = flight_level_hpa * 100.0
+    p_upper_pa = (flight_level_hpa - _VERTICAL_SHEAR_OFFSET_HPA) * 100.0
+
+    n_lat, n_lon = u_arr.shape
+    turbulence = [[0.0] * n_lon for _ in range(n_lat)]
+    for i in range(n_lat):
+        for j in range(n_lon):
+            deformation = CATIndex.deformation(
+                du_dx=float(du_dlon[i][j]),
+                dv_dy=float(dv_dlat[i][j]),
+                dv_dx=float(dv_dlon[i][j]),
+                du_dy=float(du_dlat[i][j]),
+            )
+            tv_mean = 0.5 * (virtual_temperature_lower[i][j] + virtual_temperature_upper[i][j])
+            thickness_m = HypsometricEquation.calculate(p_lower_pa, p_upper_pa, tv_mean)
+            du_dz = (u_grid_upper[i][j] - u_grid[i][j]) / thickness_m
+            dv_dz = (v_grid_upper[i][j] - v_grid[i][j]) / thickness_m
+            vertical_wind_shear = CATIndex.vertical_wind_shear(du_dz, dv_dz)
+            turbulence[i][j] = CATIndex.ti1(vertical_wind_shear, deformation)
 
     return {
         "lons": lons,

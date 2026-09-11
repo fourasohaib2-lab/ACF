@@ -146,7 +146,10 @@ map-layer systems. None of these were in this closure's own approved
 scope.
 
 **Update 2026-09-11:** the full Ellrod-Knapp CAT index is now real in
-Real Physics mode (`acf.awci.path_sampling.real_layer_grids_at_level()`)
-— see `future-improvements.md` §5. Demo mode keeps its own disclosed
-wind-speed-gradient proxy (no real u/v vector components in the
-synthetic pattern) — that half of §5 stays open.
+both Real Physics mode
+(`acf.awci.path_sampling.real_layer_grids_at_level()`) and demo mode
+(`acf.gui.dashboard.awci_synthetic_field.awci_layer_grids()`, via a real
+u/v decomposition of the existing synthetic `wind_speed` — the AWCI
+composite score itself is unaffected, bit-identical) — §5 is now fully
+closed. See `future-improvements.md` §5 for the full disclosure of both
+closures.
