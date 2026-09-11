@@ -11478,3 +11478,45 @@ système mesuré), `ExceptionManager.classify_exception()` branche
 réellement selon le contenu de l'exception.
 
 **Aucune fabrication trouvée, aucune modification de code nécessaire.**
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement) — `acf.data` : échantillonnage ciblé, vérifié propre (1 limite déjà disclosée confirmée indépendamment)
+
+**Contexte** : `acf.data` (63 fichiers, 3139 lignes) - `epygram_reader.py`
+(616 lignes) et `universal_ingestion.py` (223 lignes, le vrai moteur
+d'ingestion utilisé par `UniversalReader`/`PreprocessingEngine`) déjà
+corrigés. Vu le volume, méthode d'échantillonnage ciblé sur les
+fichiers les plus substantiels et les plus à risque, comme pour
+`acf.science` plus tôt dans cette session - non exhaustif, disclosé
+honnêtement.
+
+**Fichiers lus intégralement, tous vérifiés propres** : `dataset.py`
+(309 lignes - `Dataset.validate()` vérifie réellement nom/variables),
+`preprocessing.py`, `engine/dataset_engine.py`,
+`integration/integration_engine.py`, `manager.py`, `dataset_validator.py`,
+`engine/projection_detector.py` (le même détecteur déjà vérifié via
+`acf.geospatial.crs_manager`), `cache_manager.py` (LRU réel avec
+éviction réelle), `engine/dataset_statistics.py` (min/max/mean calculés
+réellement à partir des données), `detector.py`, `universal_reader.py`,
+`unit_converter.py` (conversions réelles et correctes, `ValueError`
+honnête pour une paire non supportée), `integration/csv_adapter.py`/
+`netcdf_adapter.py`/`grib_adapter.py`, `integration/adapter_factory.py`.
+
+**Confirmation indépendante d'une limite déjà disclosée** :
+`integration/__init__.py` porte déjà sa propre disclosure ("Tier C
+sweep") documentant exactement ce que cette passe a retrouvé de façon
+indépendante en lisant `adapter_factory.py`/`csv_adapter.py`/
+`netcdf_adapter.py`/`grib_adapter.py` : `AdapterFactory` route
+correctement par extension, mais chaque adaptateur ne lit jamais le
+contenu réel du fichier (`Dataset` renvoyé avec `variables`/`dimensions`
+vides) - non câblé nulle part dans `src/` (seulement ses propres tests),
+distinct du vrai système d'ingestion (`acf.importers`/
+`UniversalDataIngestionEngine`) effectivement utilisé par le reste de
+l'application. Pas un nouveau trou, une vérification croisée réussie.
+
+**Limite honnête de cette conclusion** : contrairement aux paquets
+listés plus haut comme "vérifiés propres" (lus intégralement),
+`acf.data` n'a été vérifié que par échantillonnage ciblé - environ
+45 fichiers restants (principalement des adaptateurs `integration/*.py`
+de 28-29 lignes suivant le même schéma que ceux déjà lus, et des
+fichiers `engine/*.py` de 29-45 lignes) n'ont pas été relus
+individuellement.
