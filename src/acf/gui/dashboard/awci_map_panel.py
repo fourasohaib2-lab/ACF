@@ -688,6 +688,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         panel_layout.addWidget(header)
 
         self.awci_layer_checkbox = QCheckBox("AWCI")
+        self.awci_layer_checkbox.setToolTip("Show/hide the AWCI complexity contour (the map's own main score layer).")
         self.awci_layer_checkbox.setChecked(True)
         self.awci_layer_checkbox.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
         self.awci_layer_checkbox.toggled.connect(self._on_awci_layer_toggled)

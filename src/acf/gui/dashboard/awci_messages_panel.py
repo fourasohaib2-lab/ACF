@@ -208,6 +208,7 @@ class AWCIMessagesDialog(QDialog):
         header_row.addWidget(header)
         header_row.addStretch()
         self.refresh_button = QPushButton("🔄 Refresh")
+        self.refresh_button.setToolTip("Fetch live METAR/TAF/SIGMET (aviationweather.gov) again.")
         self.refresh_button.clicked.connect(self.refresh)
         header_row.addWidget(self.refresh_button)
         outer.addLayout(header_row)

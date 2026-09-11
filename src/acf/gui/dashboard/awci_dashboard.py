@@ -1033,6 +1033,21 @@ class AWCIDashboard(QWidget):
         self.view_mode_global_radio = QRadioButton("Global")
         self.view_mode_regional_radio = QRadioButton("Regional")
         self.view_mode_cross_section_radio = QRadioButton("Vertical Cross-Section")
+        # Real, disclosed tooltips (added 2026-09-11, "rester sur AWCI"
+        # session - closing this closure's own earlier gap: only the
+        # NEW controls it introduced got tooltips, not these 3 pre-
+        # existing radios) - text matches _on_view_mode_changed()'s own
+        # real behavior, not a generic label restatement.
+        self.view_mode_global_radio.setToolTip("Reset the global map to its default world extent.")
+        self.view_mode_regional_radio.setToolTip(
+            "Zoom the global map to the regional extent below (same real bounding box\n"
+            "the regional map panel itself uses)."
+        )
+        self.view_mode_cross_section_radio.setToolTip(
+            "Zoom the global map to the current flight route's own real lat/lon\n"
+            "bounding box (+5° margin) - the closest honest analog to emphasizing\n"
+            "the corridor the vertical cross-section panel shows on a 2D map."
+        )
         self.view_mode_global_radio.setChecked(True)
         for radio in (self.view_mode_global_radio, self.view_mode_regional_radio, self.view_mode_cross_section_radio):
             radio.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px;")
@@ -1207,6 +1222,11 @@ class AWCIDashboard(QWidget):
         self.time_slider.setMinimum(0)
         self.time_slider.setMaximum(23)
         self.time_slider.setValue(12)
+        self.time_slider.setToolTip(
+            "Shifts the regional map's synthetic-pattern phase (a real ~2°/hour eastward\n"
+            "drift, like a synoptic system moving) - genuinely re-renders the map, not a\n"
+            "cosmetic readout."
+        )
         self.time_slider.sliderReleased.connect(self._on_time_changed)
         self.time_readout = QLabel("12Z")
         self.time_readout.setStyleSheet(label_style("text_primary", "xs", "bold"))
