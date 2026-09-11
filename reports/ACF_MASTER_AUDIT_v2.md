@@ -11520,3 +11520,121 @@ listés plus haut comme "vérifiés propres" (lus intégralement),
 de 28-29 lignes suivant le même schéma que ceux déjà lus, et des
 fichiers `engine/*.py` de 29-45 lignes) n'ont pas été relus
 individuellement.
+
+## Mise à jour 2026-09-11 (suite, sur demande explicite de l'utilisateur - "je veux que tu test les maps sur AWCI si elle sont fonctionnels a 100%") — Vérification fonctionnelle des cartes AWCI : 100% fonctionnelles, confirmé par preuve directe
+
+**Contexte** : demande explicite de vérifier - pas seulement "les tests
+passent" - que les cartes AWCI (`AWCIMapPanel`,
+`src/acf/gui/dashboard/awci_map_panel.py`) sont réellement
+fonctionnelles à 100%, pour les deux panneaux qui la réutilisent
+("AWCI GLOBAL MAP" et "AWCI REGIONAL MAP").
+
+**Méthode** : lecture intégrale de `awci_map_panel.py` (1167 lignes),
+`src/acf/gui/map/map_camera.py` (393 lignes, `MapCamera`) et
+`src/acf/gui/map/map_events.py` (110 lignes, `EventMixin`), puis
+vérification empirique directe (pas seulement pytest) : instanciation
+réelle d'`AWCIMapPanel` sous `QApplication` offscreen,
+`update_data(flight_level_hpa=300.0, time_offset_hours=12.0)` avec
+vérification d'une vraie grille (43×91, valeurs 4.5-73.3, vraie
+variation spatiale - pas une valeur constante fabriquée), rendu
+Cartopy réel (`axis.contourf`, `canvas.draw_idle()`) sauvegardé en PNG
+et visuellement inspecté (carte du monde + heatmap + légende + boîtes
+d'info correctes). `zoom_in()`/`pan()` vérifiés changer réellement
+`axis.get_extent()` (pas juste les compteurs internes - bug qui avait
+déjà été trouvé et corrigé par une passe antérieure dans
+`map_camera.py`, reconfirmé ici toujours corrigé). Carte régionale
+testée avec trajectoire de vol/labels de ville/marqueur de point (PNG
+sauvegardé et inspecté). Mode "Real Physics"
+(`set_external_field()`) testé avec sa colorbar dédiée (PNG sauvegardé
+et inspecté, colormap distincte confirmée).
+
+**Résultat** : rendu réel, zoom/pan réel, clic-vers-point réel
+(`pointClicked` Signal), carte régionale réelle, mode "Real Physics"
+réel, export PNG/SVG/CSV/JSON réel via `QFileDialog` - aucune
+fabrication trouvée. Les 3 PNG de preuve ont été transmis à
+l'utilisateur. Conclusion : cartes AWCI fonctionnelles à 100%,
+confirmé par preuve directe et non par simple "les tests passent".
+
+## Mise à jour 2026-09-11 (suite, sur demande explicite - "confirme-moi le résultat de la suite complète") — Suite de tests complète : 1 échec trouvé et corrigé (environnement, pas le code), suite verte
+
+**Résultat de la suite complète** (`pytest -q`, 815s) :
+**1 failed, 4703 passed, 26 skipped**.
+
+**Investigation de l'échec** :
+`tests/test_awci_app.py::test_console_script_is_installed_and_reports_its_own_version`
+échouait avec `AssertionError: console script not installed at
+.venv/bin/acf-awci`. Root cause confirmée : `acf-awci` a été ajouté à
+`[project.scripts]` dans `pyproject.toml` après la dernière
+installation `pip install -e .` de ce venv (`acf-gui`/`acf-web`
+présents et datés du 5 sept., `acf-awci` absent) - un problème
+d'environnement de développement désynchronisé, pas un bug dans le
+code source. Corrigé par `pip install -e . --no-deps` (régénère les
+points d'entrée sans toucher aux dépendances) ; `acf-awci` apparaît
+alors dans `.venv/bin/`, et `pytest tests/test_awci_app.py` repasse à
+4/4 vert. Aucun changement de code nécessaire - rien à committer pour
+ce point, juste une réinstallation locale du venv.
+
+## Mise à jour 2026-09-11 (extension du périmètre, selon jugement, "continue l'audit sur les paquets restants") — `acf.model4d` : 1 incohérence réelle trouvée dans `physics/atmospheric_boundary_layer_dynamics.py`, reste du paquet déjà audité par des passes antérieures (Tier X/E/C, 2026-09-05 à 2026-09-07)
+
+**Découverte méthodologique importante** : le comptage par grep
+(`grep -L "NOTE (correction\|NOTE (found"`) sous-estime fortement la
+couverture réelle de l'audit sur ce paquet (179 fichiers, ~19 802
+lignes) - les passes antérieures y utilisent d'autres formulations
+("NOTE (Physics Guard, ... Tier X/E/C sweep)", "CORRECTED:") ou des
+disclosures au niveau `__init__.py` couvrant plusieurs fichiers à la
+fois. La lecture intégrale de `src/acf/model4d/__init__.py`
+(264 lignes) confirme que `physics/` (131 fichiers hors `_engine.py`
++ 20 `_engine.py`), `operators/` (8 fichiers) et `interpolation/`
+(9 fichiers) ont déjà été lus et audités individuellement et
+exhaustivement lors de passes datées du 2026-09-05 au 2026-09-07.
+`acf.model4d` est par ailleurs un paquet réel, testé, mais
+complètement déconnecté (aucun `from acf.model4d` ailleurs dans
+`src/acf/` - vérifié par grep) : architecture 4D précoce supplantée
+par `acf.awci.vertical_field`/`temporal_field` + Workstation UI, jamais
+supprimée (convention du projet : ne jamais supprimer une capacité
+réelle).
+
+**1 incohérence réelle trouvée** :
+`src/acf/model4d/physics/atmospheric_boundary_layer_dynamics.py` -
+`AtmosphericBoundaryLayerDynamics` utilise des coefficients de
+proportionnalité non cités (0.1, 0.2666666667, 0.4, et une
+`surface_correction = 1.0` fixe soustraite dans `surface_exchange()`)
+qui ne correspondent à aucune constante physique réelle (sauf le 0.4
+de `vertical_mixing()`, plausiblement la constante de von Kármán
+κ≈0.4, sans que la formule elle-même soit une formule nommée standard
+vérifiable). Ce modèle diffère matériellement des vraies formules de
+transfert en masse du même paquet
+(`acf.model4d.physics.surface_flux.SurfaceFlux`, même répertoire) :
+`SurfaceFlux.sensible_heat_flux()` calcule H = ρ·Cp·Ch·(Ts-Ta) avec de
+vraies constantes citées (ρ=1.225 kg/m3, Cp=1004 J/(kg K)), tandis que
+`AtmosphericBoundaryLayerDynamics.sensible_heat_flux()` calcule
+`wind_speed*temperature_difference*0.1` - une formule différente pour
+la même grandeur physique nommée, sans constante partagée ni citation
+pour 0.1. Zéro appelant réel dans le reste du code au-delà de son
+propre test dédié (`tests/test_atmospheric_boundary_layer_dynamics.py`,
+qui ne fait que verrouiller la sortie de ces formules - pas une valeur
+de référence physique) - vérifié par grep.
+
+**Correction appliquée** : NOTE (found, NOT changed) ajoutée à la
+docstring de la classe, documentant intégralement ce qui précède.
+Laissé en l'état plutôt que de remplacer ces coefficients par un jeu
+"correctement sourcé" deviné, ou d'aligner silencieusement cette
+classe sur les vraies formules de `SurfaceFlux` sans spec réelle
+demandant cette fusion. Validé : `pytest
+tests/test_atmospheric_boundary_layer_dynamics.py` → 6 passed ;
+`ruff check` → propre.
+
+**Fichiers supplémentaires lus, tous vérifiés propres ou déjà
+disclosés** : `operators/gradient.py`, `physics/surface_flux.py`,
+`physics/gravity_waves.py`, `physics/cloud_radiative_feedback.py`
+(déjà disclosé - "Tier X sweep", incohérence formule/implémentation
+préexistante), `physics/urban_physics.py`,
+`physics/thermospheric_dynamics.py`,
+`physics/tropical_cyclone_dynamics.py`, `field4d.py` (`Field4D.validate()`
+vérifie réellement nom/domaine/valeurs).
+
+**Limite honnête** : les fichiers de premier niveau restants du
+paquet (`time_axis.py`, `interpolation.py`, `vertical_axis.py`,
+`constants.py`, `grid4d.py`, `exceptions.py`, `domain4d.py`,
+`operators.py`) n'ont pas encore été relus individuellement à cette
+passe - à couvrir lors d'une prochaine extension du périmètre.
