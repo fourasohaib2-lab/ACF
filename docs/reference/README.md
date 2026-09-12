@@ -18,11 +18,16 @@ not screenshots of this codebase.
   architecture) sections. No corresponding widget exists in
   `src/acf/gui` yet as of this writing - this is forward-looking
   reference material, not a description of current code.
-- **`awci_dashboard_reference.jpg`** - the AWCI-specific dashboard.
-  This is the SAME reference mockup `acf.gui.dashboard.awci_dashboard`
-  was already built against (see that module's own docstring and
-  `reports/ACF_MASTER_AUDIT_v2.md`'s "fidélité réelle à la maquette de
-  référence AWCI" update) - global/regional maps, vertical
-  cross-section, AWCI components radar, risk summary, route planning,
-  stats bar, footer, AWCI SCALE legend, Flight Level/Rendered info
-  boxes, Point Information card, Layers panel.
+- **`awci_dashboard_reference.jpg`** - REMOVED 2026-09-12 (explicit
+  user request "on vas repartir a zero toutes les images du dashboard
+  AWCI... suprime les"): this was the AWCI-specific mockup
+  `acf.gui.dashboard.awci_dashboard` was built/pixel-matched against
+  through this session (global/regional maps, vertical cross-section,
+  AWCI components radar, risk summary, route planning, stats bar,
+  footer, AWCI SCALE legend, Flight Level/Rendered info boxes, Point
+  Information card, Layers panel). The many source-code comments
+  citing this file (e.g. "docs/reference/awci_dashboard_reference.jpg
+  parity work") describe real, already-shipped design decisions made
+  while it existed - left as-is, historically accurate, not rewritten
+  just because the image itself is gone. A new AWCI reference, if any,
+  replaces this entry.
