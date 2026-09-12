@@ -306,6 +306,24 @@ def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(qapp):
     assert "FL280" in dashboard._vertical_profile_detail_window.windowTitle()
 
 
+def test_level_detail_dialog_shows_all_14_real_modules_not_just_9(qapp):
+    """Same completeness gap as the risk-badge composite dialog's own
+    regression guard (test_awci_dashboard_synchronization.py) - found
+    2026-09-12, once ceiling/visibility/dust/ash/microburst existed as
+    real opt-in AWCICalculator modules but were still silently missing
+    from this dialog's own §51 breakdown."""
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+
+    dialog = dashboard._vertical_profile_detail_window
+    assert set(dialog._module_rows.keys()) == {
+        "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
+        "ensemble_spread", "model_disagreement",
+        "ceiling", "visibility", "dust", "ash", "microburst",
+    }
+
+
 def test_clicking_a_different_bar_reuses_the_same_dialog_instance(qapp):
     dashboard = AWCIDashboard()
     dashboard._open_vertical_profile()

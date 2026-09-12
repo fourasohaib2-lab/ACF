@@ -273,6 +273,15 @@ class AWCIVerticalProfile(QWidget):
 #: (never a fabricated one) in demo mode, since neither
 #: ensemble_members nor model_realizations is ever supplied by this
 #: dashboard's own synthetic per-point pipeline.
+#: NOTE (correction, 2026-09-12): ceiling/visibility/dust/ash/
+#: microburst (5 opt-in AWCICalculator.PHYSICAL_MODULES added
+#: 2026-09-11/12, weight 0.0 by default) were silently missing from
+#: this dict - found by re-reading this file after wiring §30's
+#: level-optimization suggestion into the dashboard. Added for the
+#: same completeness reason as ensemble_spread/model_disagreement:
+#: this dashboard never supplies any of their opt-in data keys, so
+#: every one of them is honestly 0.0 here today - never a fabricated
+#: non-zero value.
 _MODULE_LABELS_FOR_LEVEL_DETAIL: dict[str, str] = {
     "dynamic": "Dynamics (wind)",
     "thermodynamic": "Thermodynamic (temperature + humidity)",
@@ -283,6 +292,11 @@ _MODULE_LABELS_FOR_LEVEL_DETAIL: dict[str, str] = {
     "confidence": "Confidence",
     "ensemble_spread": "Ensemble spread",
     "model_disagreement": "Model disagreement",
+    "ceiling": "Ceiling (opt-in, always 0.0 here)",
+    "visibility": "Visibility (opt-in, always 0.0 here)",
+    "dust": "Dust/Sand (opt-in, always 0.0 here)",
+    "ash": "Volcanic ash (opt-in, always 0.0 here)",
+    "microburst": "Microburst/LLWS (opt-in, always 0.0 here)",
 }
 
 
@@ -296,11 +310,19 @@ class AWCIVerticalProfileLevelDialog(QDialog):
     recomputed value.
 
     Honest §51 coverage: this project's own AWCICalculator computes 9
-    real modules (dynamic/thermodynamic/convective/microphysical/
+    core modules (dynamic/thermodynamic/convective/microphysical/
     topographic/temporal/confidence/ensemble_spread/model_disagreement)
     - §51's own word list ("température, humidité" as 2 separate
     items; "stabilité"; "turbulence"; "givrage") does not map 1:1 onto
     them.
+
+    5 further opt-in modules (ceiling/visibility/dust/ash/microburst,
+    weight 0.0 by default - see weights.py's own DEFAULT_WEIGHTS) are
+    also shown below for real completeness (added 2026-09-12), each
+    honestly labelled "always 0.0 here" - this dashboard's own
+    per-point pipeline never supplies any of their opt-in data keys,
+    so a real, defined 0.0 is genuinely what AWCICalculator.
+    calculate_module_scores() returns for them, never a placeholder.
     "température"+"humidité" are honestly shown as ONE real
     thermodynamic score (AWCICalculator's own module already blends
     them, not 2 separate numbers); "givrage" maps onto the real

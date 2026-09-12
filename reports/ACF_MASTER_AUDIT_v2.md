@@ -12340,3 +12340,42 @@ la réouverture de la fenêtre après un changement de point d'intérêt.
 `awci_dashboard.py` et le fichier de test. Suite ciblée
 (`tests/gui/test_awci_dashboard_reference_parity.py`) : 40 passed, 7
 skipped.
+
+## Mise à jour 2026-09-12 (suite, selon jugement) — Même famille de fissure retrouvée : 5 modules opt-in silencieusement absents des popups de détail "réelle complétude"
+
+**Pourquoi** : en relisant `awci_risk_summary.py`/`awci_vertical_profile.py`
+juste après avoir câblé le label de suggestion §30 dans la fenêtre
+"Vertical Profile", constat que les 2 popups déjà explicitement conçus
+pour montrer TOUS les modules réels sans contrainte de maquette
+(`AWCIRiskBadgeDetailDialog._MODULE_LABELS`,
+`AWCIVerticalProfileLevelDialog._MODULE_LABELS_FOR_LEVEL_DETAIL`)
+étaient restés figés à 9 clés (les 6 modules physiques + 3 modules de
+prévision d'origine) - silencieusement muets sur les 5 modules opt-in
+`ceiling`/`visibility`/`dust`/`ash`/`microburst` ajoutés le 2026-09-11/
+12. **Exactement la même fissure** déjà trouvée et corrigée une
+première fois le 2026-09-03 pour `ensemble_spread`/`model_
+disagreement` (docstring de ces deux fichiers en faisait déjà foi) -
+le précédent n'avait simplement pas été reproduit lors de l'ajout des
+5 nouveaux modules eux-mêmes.
+
+**Construit** : les 5 clés ajoutées aux deux dicts, avec icônes et
+libellés explicites ("(opt-in, always 0.0 here)" côté §51). Aucune
+maquette contrainte ces deux popups (contrairement à `_ComponentValueList`/
+`COMPONENT_INFO`, qui restent volontairement à 7 lignes pour la parité
+pixel avec `awci_dashboard_reference.jpg` - non touchés). Design du
+dashboard non modifié - texte de contenu uniquement, même widget
+dynamique déjà en place.
+
+**Divulgation honnête reprise** : les 5 valeurs affichées sont
+réellement 0.0 (jamais une valeur fabriquée) - ce dashboard ne fournit
+jamais les clés opt-in de ces modules (`ceiling_temperature_k`,
+`dust_wind_speed_m_s`, une vraie source d'éruption pour `ash`, ...).
+
+**Tests** : `test_composite_dialog_shows_all_9_real_modules_not_just_7`
+renommé et étendu (14 clés) ; nouveau test symétrique ajouté pour
+`AWCIVerticalProfileLevelDialog`
+(`test_level_detail_dialog_shows_all_14_real_modules_not_just_9`).
+Suite ciblée (`test_awci_dashboard_synchronization.py` +
+`test_awci_dashboard_reference_parity.py` + `test_awci_vertical_
+profile.py`) : 66 passed, 7 skipped. `ruff`/`mypy` propres sur les 3
+fichiers source touchés.

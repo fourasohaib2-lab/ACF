@@ -146,11 +146,14 @@ def test_composite_dialog_shows_the_real_module_score_breakdown(qapp):
     assert f"{module_scores['dynamic']:.1f}" in dynamic_text
 
 
-def test_composite_dialog_shows_all_9_real_modules_not_just_7(qapp):
-    """Real regression guard: ensemble_spread/model_disagreement are 2
+def test_composite_dialog_shows_all_14_real_modules_not_just_7(qapp):
+    """Real regression guard: ensemble_spread/model_disagreement were 2
     real AWCICalculator.calculate_module_scores() keys found missing
     from this dialog's own breakdown while closing §51's vertical-
-    profile detail dialog - must not silently drop them here too."""
+    profile detail dialog (fixed 2026-09-03); ceiling/visibility/dust/
+    ash/microburst were the same completeness gap found again on
+    2026-09-12, once those 5 opt-in modules existed - must not silently
+    drop any real module key here."""
     dashboard = AWCIDashboard()
     dashboard.risk_summary.rowClicked.emit("overall")
 
@@ -158,6 +161,7 @@ def test_composite_dialog_shows_all_9_real_modules_not_just_7(qapp):
     assert set(dialog._module_rows.keys()) == {
         "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
         "ensemble_spread", "model_disagreement",
+        "ceiling", "visibility", "dust", "ash", "microburst",
     }
 
 

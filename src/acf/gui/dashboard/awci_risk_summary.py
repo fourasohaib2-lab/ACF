@@ -48,6 +48,19 @@ from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 #: (this dashboard's own per-point pipeline never supplies real
 #: ensemble_members/model_realizations), never a fabricated non-zero
 #: value.
+#:
+#: NOTE (correction, 2026-09-12): ceiling/visibility/dust/ash/
+#: microburst (5 opt-in AWCICalculator.PHYSICAL_MODULES added
+#: 2026-09-11/12, weight 0.0 by default - see weights.py's own
+#: DEFAULT_WEIGHTS) were silently missing from this list, the exact
+#: same completeness gap already found and fixed once for
+#: ensemble_spread/model_disagreement above - found by re-reading this
+#: file after wiring §30's level-optimization suggestion into the
+#: dashboard, not a new bug report. Added for the same "real
+#: completeness" reason: this dashboard never supplies any of their
+#: opt-in data keys (ceiling_temperature_k, dust_wind_speed_m_s, a
+#: real eruption source for ash, ...), so every one of them is
+#: honestly 0.0 here today - never a fabricated non-zero value.
 _MODULE_LABELS = [
     ("dynamic", "🌀", "Dynamic"),
     ("thermodynamic", "🌡️", "Thermodynamic"),
@@ -58,6 +71,11 @@ _MODULE_LABELS = [
     ("confidence", "❓", "Uncertainty"),
     ("ensemble_spread", "📊", "Ensemble spread"),
     ("model_disagreement", "🔀", "Model disagreement"),
+    ("ceiling", "☁️", "Ceiling"),
+    ("visibility", "🌫️", "Visibility"),
+    ("dust", "🏜️", "Dust/Sand"),
+    ("ash", "🌋", "Volcanic ash"),
+    ("microburst", "💨", "Microburst/LLWS"),
 ]
 
 _ROWS = [
