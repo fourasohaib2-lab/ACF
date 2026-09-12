@@ -1227,7 +1227,27 @@ class ACFWorkstation(QWidget):
         self.hpc_connect_button.clicked.connect(self._connect_to_hpc)
         nav_col.addWidget(self.hpc_connect_button)
 
-        body.addLayout(nav_col)
+        # NOTE (real responsive-sizing fix, 2026-09-12): nav_col's own
+        # cumulative minimum height (nav list + Data Sources + Diagnostics +
+        # Pipeline Monitor + the Phase 43 Reports/HPC sections added above)
+        # floors this window's real minimum height - measured regression:
+        # test_main_windows_fit_the_hpc_vnc_fallback_screen's own
+        # 1280x720 HPC/VNC fallback screen case went from fitting to
+        # ACFWorkstationWindow being 733px tall (13px over) the moment the
+        # Phase 43 Reports/HPC sections were added, because a plain
+        # QVBoxLayout's minimum height is the SUM of every child's own
+        # minimum, not the largest one - `nav_list`'s stretch=1 lets IT
+        # shrink, but the other 8 fixed nav widgets around it can't. Same
+        # established QScrollArea-wrap fix as `self.stack` right below (and
+        # `AWCIDashboardWindow`'s own scroll wrap) - a real scrollbar on a
+        # genuinely small screen beats a window that can't fit at all.
+        nav_container = QWidget()
+        nav_container.setLayout(nav_col)
+        nav_scroll = QScrollArea()
+        nav_scroll.setWidgetResizable(True)
+        nav_scroll.setMaximumWidth(200)
+        nav_scroll.setWidget(nav_container)
+        body.addWidget(nav_scroll)
 
         # NOTE (real responsive-sizing fix, 2026-09-05): a plain
         # QStackedWidget sizes itself to the LARGEST of all 15 Lab
