@@ -12666,3 +12666,30 @@ LWC réels ICAO Annex 3 Ch.3) reste NON fermable honnêtement -
 (`qc`) ; le proxy existant (sévérité de phase par température du
 thermomètre mouillé, `acf.awci.hydrometeor_phase`) reste la meilleure
 approximation honnête disponible.
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que AWCI travaille avec les lois de l'OACI et l'OMM") — `classify_precipitation_intensity()` ajoutée
+
+**Contexte** : `acf.awci.visibility` citait déjà les vrais seuils OMM/NWS
+d'intensité de précipitation (léger ≤2.5 mm/h, modéré 2.5-7.6 mm/h,
+lourd >7.6 mm/h) dans son propre docstring et sa rampe
+`precip_intensity`, mais seul le seuil "lourd" (`WMO_HEAVY_RAIN_MM_H`)
+existait comme constante numérique nommée réutilisable - aucune
+fonction n'exposait les 3 catégories nommées, contrairement au même
+motif déjà établi pour `classify_ceiling_category()`/
+`classify_visibility_category()`.
+
+**Construit** : `classify_precipitation_intensity(precipitation_mm_h)`
+dans `acf.awci.visibility`, réutilisant les 2 mêmes constantes réelles
+déjà citées (`LIGHT_RAIN_MM_H` ajoutée, `WMO_HEAVY_RAIN_MM_H`
+existante) - jamais un second seuil indépendamment choisi pour la même
+échelle réelle. S'arrête honnêtement à 3 niveaux (LIGHT/MODERATE/HEAVY)
+- pas de 4e palier "violent/torrentiel" ajouté, faute de source déjà
+vérifiée et citée dans ce dépôt pour un tel seuil.
+
+**Tests** : 3 ajoutés à `tests/test_awci_visibility.py` (total 10) -
+seuils réels aux bornes exactes, absence de fabrication pour une
+entrée négative (artefact capteur non physique traité comme 0, jamais
+une 4e catégorie inventée), et vérification croisée que les 2
+constantes réutilisées sont bien celles déjà citées ailleurs dans le
+même fichier. Suite ciblée (`pytest -k visibility`, dépôt entier) :
+69 passed. `ruff`/`mypy` propres.

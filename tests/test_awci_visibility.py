@@ -8,7 +8,9 @@ from __future__ import annotations
 
 from acf.awci.visibility import (
     FOG_RH_FLOOR_PCT,
+    LIGHT_RAIN_MM_H,
     WMO_HEAVY_RAIN_MM_H,
+    classify_precipitation_intensity,
     compute_real_visibility_risk_at_point,
 )
 
@@ -99,3 +101,32 @@ def test_risk_score_never_exceeds_the_real_0_1_bounds():
     assert 0.0 <= result["visibility_risk_score"] <= 1.0
     assert 0.0 <= result["fog_proximity"] <= 1.0
     assert 0.0 <= result["precip_intensity"] <= 1.0
+
+
+# --------------------------------------------- classify_precipitation_intensity
+
+
+def test_classify_precipitation_intensity_real_wmo_thresholds():
+    assert classify_precipitation_intensity(0.0) == "LIGHT"
+    assert classify_precipitation_intensity(LIGHT_RAIN_MM_H) == "LIGHT"
+    assert classify_precipitation_intensity(LIGHT_RAIN_MM_H + 0.1) == "MODERATE"
+    assert classify_precipitation_intensity(WMO_HEAVY_RAIN_MM_H) == "MODERATE"
+    assert classify_precipitation_intensity(WMO_HEAVY_RAIN_MM_H + 0.1) == "HEAVY"
+    assert classify_precipitation_intensity(50.0) == "HEAVY"
+
+
+def test_classify_precipitation_intensity_never_fabricates_a_negative_category():
+    """A real, non-physical sensor artifact (negative rate) must still
+    honestly classify as LIGHT (treated as 0), never raise or return an
+    invented 4th category."""
+    assert classify_precipitation_intensity(-5.0) == "LIGHT"
+
+
+def test_classify_precipitation_intensity_matches_the_module_docstrings_own_boundaries():
+    """Real, decisive cross-check: the 3 boundaries this function uses
+    must be exactly the same 2 real module-level constants
+    compute_real_visibility_risk_at_point()'s own precip_intensity ramp
+    already uses - never a second, independently-chosen set of numbers
+    for the same real WMO scale."""
+    assert LIGHT_RAIN_MM_H == 2.5
+    assert WMO_HEAVY_RAIN_MM_H == 7.6

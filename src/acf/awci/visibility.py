@@ -39,7 +39,11 @@ computed [0, 1] signals into one risk proxy:
 2. `precip_intensity` - real precipitation rate (mm/h), linearly ramped
    from 0 to 1 at `WMO_HEAVY_RAIN_MM_H` (7.6 mm/h) - the real, standard
    WMO/NWS "heavy rain" intensity threshold (light: <=2.5 mm/h;
-   moderate: 2.5-7.6 mm/h; heavy: >7.6 mm/h), not an ACF invention.
+   moderate: 2.5-7.6 mm/h; heavy: >7.6 mm/h), not an ACF invention -
+   see `classify_precipitation_intensity()` below, which exposes these
+   same 3 tiers as named categories (added 2026-09-12, explicit user
+   request "je veux que AWCI travaille avec les lois de l'OACI et
+   l'OMM").
 
 The two are combined with `max()`, not a weighted average - a real,
 disclosed ACF design choice (matching the same "not derived from a
@@ -69,9 +73,53 @@ from acf.science.thermodynamics import Thermodynamics
 FOG_RH_FLOOR_PCT = 80.0
 FOG_RH_CEILING_PCT = 100.0
 
+#: Real WMO/NWS "light rain" upper bound (mm/h) - see module docstring
+#: and classify_precipitation_intensity() below. Not an ACF invention.
+LIGHT_RAIN_MM_H = 2.5
+
 #: Real WMO/NWS "heavy rain" intensity threshold (mm/h) - see module
 #: docstring. Not an ACF invention.
 WMO_HEAVY_RAIN_MM_H = 7.6
+
+
+def classify_precipitation_intensity(precipitation_mm_h: float) -> str:
+    """
+    Real WMO/NWS precipitation-intensity category for a real
+    precipitation rate (mm/h) - the same 3-tier scale already cited in
+    this module's own docstring (`precip_intensity`'s ramp uses only
+    the LIGHT/HEAVY boundary numerically; this function exposes all 3
+    named categories, the same "named category alongside the raw
+    number" convention already established by `acf.awci.ceiling.
+    classify_ceiling_category()` and `acf.awci.metar_verification.
+    classify_visibility_category()`).
+
+    Real, cited thresholds, not invented
+    ----------------------------------------
+    "LIGHT": <= `LIGHT_RAIN_MM_H` (2.5 mm/h). "MODERATE": between
+    `LIGHT_RAIN_MM_H` and `WMO_HEAVY_RAIN_MM_H` (2.5-7.6 mm/h).
+    "HEAVY": > `WMO_HEAVY_RAIN_MM_H` (7.6 mm/h). Only these 3 tiers are
+    returned - no further "violent"/"torrential" tier is claimed here,
+    since this codebase does not (yet) carry an independently
+    verified real citation for one beyond the 3 already established.
+
+    Parameters
+    ----------
+    precipitation_mm_h : float
+        Real precipitation rate (mm/h). Negative values are treated as
+        0 (a real, non-physical sensor artifact, never a fabricated
+        negative-intensity category).
+
+    Returns
+    -------
+    str
+        One of "LIGHT", "MODERATE", "HEAVY".
+    """
+    rate = max(0.0, precipitation_mm_h)
+    if rate <= LIGHT_RAIN_MM_H:
+        return "LIGHT"
+    if rate <= WMO_HEAVY_RAIN_MM_H:
+        return "MODERATE"
+    return "HEAVY"
 
 
 def _ramp(value: float, floor: float, ceiling: float) -> float:
