@@ -12454,3 +12454,57 @@ juste une confirmation de sens physique) : `calculate_isa_pressure_altitude()`
 retrouve les valeurs standard connues (1013.25 hPa -> 0 m ; 850 hPa ->
 1457 m ; 500 hPa -> 5574 m ; 300 hPa -> 9164 m ; 250 hPa -> 10363 m,
 proche du réel FL340).
+
+## Mise à jour 2026-09-12 (suite, selon jugement) — Même motif "unknown module_key WARNING" retrouvé une 2e fois pour 5 nouveaux modules ; 3 rendus réellement réels dans le vrai appel GUI
+
+**Pourquoi** : en réfléchissant à la prochaine étape après la clôture
+de `compute_microburst`, vérification empirique (pas seulement une
+lecture de code) de ce que produit réellement
+`esoc_window.py._show_awci_field_on_map()` aujourd'hui - confirmé que
+ce vrai chemin GUI logue silencieusement 5 WARNING "unknown
+module_key" (`ceiling`/`visibility`/`dust`/`ash`/`microburst`) à
+CHAQUE clic sur "🌪️ AWCI Field", exactement le même motif déjà trouvé
+et corrigé une première fois le 2026-09-06 pour
+`confidence`/`ensemble_spread`/`model_disagreement` - le correctif
+précédent n'avait simplement pas anticipé les modules ajoutés depuis.
+
+**3 rendus réellement réels, pas seulement "enregistrés"** :
+`ceiling`/`visibility`/`dust` ne dépendent que de température/
+humidité spécifique/pression/vitesse du vent - déjà récupérées pour
+CHAQUE point indépendamment de tout flag `compute_*` (contrairement à
+`compute_convective_energy`, qui appelle un vrai calcul MetPy
+d'ascension de parcelle, non gratuit). `esoc_window.py` passe donc
+désormais `compute_ceiling=True`/`compute_visibility=True`/
+`compute_dust=True` dans son propre appel worker (coût réel
+supplémentaire négligeable, vérifié) et les 3 sont enregistrés comme
+vraies couches de carte activables dans `MODULE_COMPLEXITY_LAYERS`
+("Ceiling", "Visibility", "Dust/Sand").
+
+**2 restent délibérément exclus, pour 2 raisons RÉELLEMENT
+DIFFÉRENTES, pas une seule partagée** : `ash` a besoin d'une vraie
+source d'éruption (lat/lon/débit/vent) qui n'existe nulle part dans
+l'état de `CoupledEarthSolver` - aucun moyen bon marché de l'activer.
+`microburst` a besoin de `compute_wind_shear=True` ET
+`compute_convective_energy=True` ensemble - le cisaillement est réel
+mais PAS gratuit (une seconde extraction de colonne réelle par point),
+que l'appel par défaut de `esoc_window.py` ne paie pas aujourd'hui.
+`esoc_window.py._on_awci_field_ready()` ignore désormais explicitement
+toute clé de module non enregistrée dans `MODULE_COMPLEXITY_LAYERS`
+au lieu d'appeler dans un cul-de-sac générateur de WARNING - cette
+exclusion est donc silencieuse-par-conception, plus silencieuse-par-bug.
+
+**Vérification empirique du bug ET du correctif** (pas seulement
+déduit du code) : reproduit directement (`MapCanvas.
+set_module_complexity_field()` appelé pour chacune des 14 clés
+réelles de `module_fields`) - confirmé 5 WARNING avant le correctif,
+0 après.
+
+**Tests** : `test_module_complexity_layers_covers_every_real_awci_module`
+mis à jour (exclusion réduite à `{"ash", "microburst"}`, avec le
+raisonnement des 2 causes distinctes explicité). 2 tests ajoutés à
+`tests/test_esoc_awci_field.py` - absence réelle du texte "unknown
+module_key" dans les logs capturés (`caplog`) après un vrai appel, et
+que Ceiling/Visibility/Dust ont bien de vraies données non nulles
+après ce même appel. `ruff`/`mypy` propres sur les 4 fichiers source
+touchés (2 erreurs mypy pré-existantes dans `esoc_window.py`,
+confirmées inchangées et sans lien via `git stash`).

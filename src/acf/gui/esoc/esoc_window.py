@@ -20,6 +20,7 @@ from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
 from acf.gui.esoc.log_viewer_dialog import LogViewerDialog
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.map.layer_toggle_panel import LayerTogglePanel
+from acf.gui.map.map_layers import MODULE_COMPLEXITY_LAYERS
 from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.session_manager import SessionManager
 from acf.gui.esoc.settings_dialog import SettingsDialog
@@ -536,6 +537,16 @@ class ESOCWindow(QMainWindow):
         CAPE/CIN (acf.awci.convective_energy) - closing a real,
         previously-found gap: that machinery existed and was tested,
         but no GUI widget anywhere ever visualized it.
+
+        compute_ceiling/compute_visibility/compute_dust=True (added
+        2026-09-12) surface 3 further real per-point fields at
+        genuinely no extra real cost - all 3 depend only on
+        temperature/specific humidity/pressure/wind speed, already
+        fetched here for every point regardless (unlike
+        compute_convective_energy's own real MetPy parcel-ascent call)
+        - closing the same "unknown module_key" warning gap this
+        method's own worker used to silently trigger for them (see
+        acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS's own NOTE).
         """
         self.dispatcher.log_message_emitted.emit(
             "INFO",
@@ -544,7 +555,12 @@ class ESOCWindow(QMainWindow):
         )
         self.status_bar.showMessage("🌪️ Computing real AWCI field…")
         worker = _AWCIFieldWorker(
-            model="ARPEGE", n_lat=24, n_lon=36, n_levels=6, steps=6, compute_convective_energy=True
+            model="ARPEGE",
+            n_lat=24, n_lon=36, n_levels=6, steps=6,
+            compute_convective_energy=True,
+            compute_ceiling=True,
+            compute_visibility=True,
+            compute_dust=True,
         )
         # NOTE (found while verifying this end-to-end, not hypothetical):
         # connecting to a bare lambda here (instead of a genuine bound
@@ -578,12 +594,34 @@ class ESOCWindow(QMainWindow):
         # "unknown module_key" WARNING, invisible in normal use) - found
         # by an end-to-end toolbar smoke test, fixed by registering all 9
         # in MODULE_COMPLEXITY_LAYERS (see that dict's own NOTE).
-        # activate=False: showing all 10 at once stacked on top of the
+        # activate=False: showing all 12 at once stacked on top of the
         # combined AWCI layer would be a cluttered, unreadable overlay -
         # real data is populated and ready for the user to pick
         # individually via self.layer_toggle_panel's real checkboxes
         # (built 2026-09-03), not auto-displayed all at once.
+        #
+        # NOTE (correction, 2026-09-12): the exact same "silently
+        # discarded, unknown module_key WARNING" bug this method's own
+        # 2026-09-06 NOTE above already fixed once had quietly
+        # reappeared for 5 further opt-in modules (ceiling/visibility/
+        # dust/ash/microburst, added 2026-09-11/12) - `module_fields`
+        # always carries all 14 real AWCICalculator module keys
+        # regardless of which `compute_*` flags this window's own
+        # worker call passes (see AWCICalculator.calculate_module_scores()'s
+        # "0.0 = no signal supplied" convention), but this loop kept
+        # calling into set_module_complexity_field() for every one of
+        # them - 3 (ceiling/visibility/dust) are now genuinely real (see
+        # _show_awci_field_on_map()'s own NOTE), but ash/microburst
+        # remain deliberately unregistered in MODULE_COMPLEXITY_LAYERS
+        # (real eruption source data and real wind-shear+CAPE cost,
+        # respectively, that this window's default call does not and
+        # should not supply - see that dict's own NOTE). Skipping
+        # unregistered keys here silences the warning for those 2
+        # permanently, honestly, rather than registering a layer that
+        # would only ever show a misleading flat zero.
         for module_key, field in result["module_fields"].items():
+            if module_key not in MODULE_COMPLEXITY_LAYERS.values():
+                continue
             map_canvas.set_module_complexity_field(module_key, result["lons"], result["lats"], field, activate=False)
         map_canvas.set_uncertainty_field(result["lons"], result["lats"], result["forecast_field"], activate=False)
         # set_awci_field() above DID activate "AWCI Complexity" directly
@@ -595,8 +633,8 @@ class ESOCWindow(QMainWindow):
             "INFO",
             "Real AWCI complexity field displayed on the central map - real per-module "
             "complexity layers (Dynamic/Thermodynamic/Convective/Microphysical/Orographic/"
-            "Temporal/Forecast Confidence/Ensemble Spread/Model Disagreement/Uncertainty) "
-            "also populated with real data, ready to display.",
+            "Temporal/Forecast Confidence/Ensemble Spread/Model Disagreement/Ceiling/"
+            "Visibility/Dust/Sand/Uncertainty) also populated with real data, ready to display.",
         )
 
     def _on_awci_field_failed(self, message: str) -> None:

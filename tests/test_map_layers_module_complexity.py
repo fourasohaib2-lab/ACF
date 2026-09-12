@@ -32,23 +32,38 @@ def test_module_complexity_layers_covers_every_real_awci_module():
     ties the two together so a future new AWCICalculator module can't
     silently reintroduce the same gap - it must fail here first.
 
-    NOTE (deliberate, disclosed exception, 2026-09-11): "ceiling",
-    "visibility", "dust" and "ash" (added closing AWCI's "visibilité et
-    plafond", "poussière et sable" and "cendres volcaniques" gaps - see
-    acf.awci.ceiling/visibility/dust/volcanic_ash) are excluded from
-    this invariant on purpose. Registering them as toggleable map
-    layers today would be scientifically misleading, independent of
-    any dashboard-design consideration: all 4 default to weight 0.0
-    and compute_real_complexity_field() never supplies their opt-in
-    per-point inputs (data["ceiling_height_m"]/"visibility_risk"/
-    "dust_risk"/"ash_risk"), so their real module_fields entries are
-    honestly all-zero - a toggled-on layer for any of them would show a
-    uniform blank heatmap, implying real data where there is none yet.
-    Revisit this exclusion, module by module, once a real per-point
-    source for it is wired into compute_real_complexity_field() itself
-    (a separate, larger closure, not attempted here)."""
+    NOTE (deliberate, disclosed exception, 2026-09-11, NARROWED
+    2026-09-12): "ceiling"/"visibility"/"dust" were excluded here too
+    at first, for the same reason as "ash"/"microburst" below - but
+    unlike those two, all 3 depend only on temperature/specific
+    humidity/pressure/wind speed, already fetched for every point
+    regardless of any `compute_*` flag - so `esoc_window.py`'s own real
+    GUI call was updated to pass `compute_ceiling=True`/
+    `compute_visibility=True`/`compute_dust=True` (genuinely free, no
+    extra real cost), making their `module_fields` entries genuinely
+    real and non-uniform. Registered as real layers below; no longer
+    excluded.
+
+    "ash" and "microburst" remain excluded, for two DIFFERENT real
+    reasons, not one shared one: `ash` needs a real eruption source
+    (lat/lon/rate/wind) that simply does not exist anywhere in
+    `CoupledEarthSolver`'s state - there is no cheap way to opt it in.
+    `microburst` needs `compute_wind_shear=True` AND
+    `compute_convective_energy=True` together (see
+    `acf.awci.spatial_field.compute_real_complexity_field`'s own
+    `compute_microburst` docstring) - `compute_wind_shear` is real but
+    NOT free (a second real column extraction per point,
+    `esoc_window.py`'s default call does not currently pay for it) -
+    registering either today would show a uniform blank heatmap in
+    real GUI use, implying real data where there is none yet.
+    `esoc_window.py._on_awci_field_ready()` now explicitly skips any
+    module_key not registered here, so this exclusion is silent-by-
+    design (no more `set_module_complexity_field()` warning noise for
+    them), not silent-by-bug. Revisit either exclusion if/when a real,
+    cheap per-point source is wired for it (a separate, larger closure,
+    not attempted here)."""
     all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
-    deliberately_unregistered_pending_real_field_data = {"ceiling", "visibility", "dust", "ash", "microburst"}
+    deliberately_unregistered_pending_real_field_data = {"ash", "microburst"}
     assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules - deliberately_unregistered_pending_real_field_data
 
 

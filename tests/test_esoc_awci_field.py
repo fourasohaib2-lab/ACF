@@ -117,3 +117,48 @@ def test_toolbar_action_dispatch_reaches_the_real_handler(qtbot):
         timeout=60000,
     )
     assert map_canvas.layer_manager.available_layers["AWCI Complexity"].custom_data is not None
+
+
+def test_show_awci_field_on_map_no_longer_logs_unknown_module_key_warnings(qtbot, caplog):
+    """Regression guard for the 2026-09-12 fix: this real call used to
+    silently log 5 "unknown module_key" WARNINGs every single time
+    (ceiling/visibility/dust/ash/microburst) - confirmed empirically
+    before the fix, not assumed. 3 of them are now genuinely real
+    layers; ash/microburst are now explicitly skipped rather than
+    warned about."""
+    import logging
+
+    win = ESOCWindow()
+    qtbot.addWidget(win)
+    map_canvas = win.layout_manager.view_manager.map_canvas
+
+    with caplog.at_level(logging.WARNING, logger="acf.gui.map.map_canvas"):
+        win._show_awci_field_on_map()
+        qtbot.waitUntil(
+            lambda: "AWCI Complexity" in map_canvas.layer_manager.active_layer_names,
+            timeout=60000,
+        )
+
+    assert "unknown module_key" not in caplog.text
+
+
+def test_show_awci_field_on_map_ceiling_visibility_dust_are_now_genuinely_real(qtbot):
+    """2026-09-12: ceiling/visibility/dust used to be excluded from
+    MODULE_COMPLEXITY_LAYERS because this real GUI call never opted
+    into them - now it does, at no extra real cost (all 3 depend only
+    on fields already fetched for compute_convective_energy)."""
+    win = ESOCWindow()
+    qtbot.addWidget(win)
+    map_canvas = win.layout_manager.view_manager.map_canvas
+
+    win._show_awci_field_on_map()
+
+    qtbot.waitUntil(
+        lambda: "AWCI Complexity" in map_canvas.layer_manager.active_layer_names,
+        timeout=60000,
+    )
+
+    for layer_name in ("Ceiling", "Visibility", "Dust/Sand"):
+        layer = map_canvas.layer_manager.available_layers[layer_name]
+        assert layer.custom_data is not None
+        assert layer_name not in map_canvas.layer_manager.active_layer_names  # populated, not auto-shown

@@ -291,6 +291,30 @@ class AWCILayer(BaseMapLayer):
 #: Registering them here is the fix - LayerManager below and
 #: LayerTogglePanel (which iterates `available_layers` dynamically)
 #: pick them up with no further change needed.
+#:
+#: NOTE (correction, 2026-09-12): the SAME "unknown module_key" WARNING
+#: pattern reappeared for 5 further opt-in AWCICalculator modules
+#: (ceiling/visibility/dust/ash/microburst, added 2026-09-11/12) - every
+#: real esoc_window.py._show_awci_field_on_map() call was silently
+#: logging 5 such warnings (confirmed empirically, not a code read
+#: alone: `compute_real_complexity_field()`'s `module_fields` dict
+#: always carries all 14 real AWCICalculator module keys regardless of
+#: which `compute_*` flags were passed - see AWCICalculator.
+#: calculate_module_scores()'s own "0.0 = no signal supplied"
+#: convention). Fixed in two parts: (1) ceiling/visibility/dust
+#: registered as real layers below, AND esoc_window.py's own worker
+#: call now passes `compute_ceiling=True`/`compute_visibility=True`/
+#: `compute_dust=True` - all 3 depend only on temperature/specific
+#: humidity/pressure/wind speed, already fetched for every point
+#: regardless, so this is genuinely free (no extra MetPy parcel-ascent
+#: call, unlike `compute_convective_energy` already enabled there) and
+#: produces a genuinely non-uniform per-point field, unlike leaving
+#: them un-opted-in would. (2) ash/microburst remain deliberately
+#: EXCLUDED from this dict (see test_map_layers_module_complexity.py's
+#: own NOTE for why neither can be honestly enabled by default today) -
+#: esoc_window.py._on_awci_field_ready() now skips any module_key not
+#: registered here instead of calling into a warning-logging dead end,
+#: so their continued exclusion is silent-by-design, not silent-by-bug.
 MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Dynamic Complexity": "dynamic",
     "Thermodynamic Complexity": "thermodynamic",
@@ -301,6 +325,9 @@ MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Forecast Confidence": "confidence",
     "Ensemble Spread": "ensemble_spread",
     "Model Disagreement": "model_disagreement",
+    "Ceiling": "ceiling",
+    "Visibility": "visibility",
+    "Dust/Sand": "dust",
 }
 
 
