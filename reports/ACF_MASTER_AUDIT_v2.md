@@ -13133,3 +13133,74 @@ proches de la photo qu'avant).
 **Validation** : `tests/test_awci_map_panel_no_mtg.py` : 3 passed.
 Suite ciblée map_panel + workstation + awci_dashboard (14 consommateurs
 de `AWCIMapPanel`) : 488 passed, 9 skipped, 0 régression.
+
+## Mise à jour 2026-09-12 (suite) — Redesign complet du dashboard AWCI, Phase 1/6 : barre latérale + en-tête
+
+**Contexte** : suppression de l'ancienne photo de référence AWCI
+(demande explicite), remplacée par une nouvelle photo montrant un
+dashboard structurellement très différent (barre latérale de
+navigation claire + en-tête clair autour de la même zone de contenu
+sombre, tableau de complexité aéroports, 5 panneaux d'analyse
+supplémentaires, footer d'alertes/actions). Demande explicite : "je
+veux que le dashboard soit exactement comme celui dans la photo...
+100%... tous les boutons fonctionnelles". Nouvelle image sauvegardée
+sous `docs/reference/awci_dashboard_reference.png`. Travail découpé en
+6 phases vérifiées (todo-list de session) - Phase 1 ci-dessous.
+
+**Câblé** :
+1. **`acf.gui.dashboard.awci_sidebar.AWCISidebar`** (nouveau fichier) -
+   barre latérale claire, 25 items de navigation répartis en 5
+   sections (Overview / Map & Visualization / Hazards / Analysis /
+   Data & Reports). Chaque item réel est câblé à une fonctionnalité
+   RÉELLE déjà existante (`_open_3d_view`, `_toggle_evolution_playback`,
+   `_toggle_fl_comparison`, `_open_alerts`, `_open_messages`,
+   `_open_execution_report`, les vraies checkboxes de couches de
+   `AWCIMapPanel` pour les items "Hazards"). Les items sans
+   contrepartie réelle (Airport Analysis, Wind Shear en couche séparée,
+   Precipitation, Snow & Icing Accumulation, Volcanic Ash, API) sont
+   construits **honnêtement désactivés** avec une tooltip expliquant
+   pourquoi - jamais un bouton fantôme qui ne fait rien silencieusement.
+2. **`acf.gui.dashboard.awci_topbar.AWCITopBar`** (nouveau fichier) -
+   en-tête clair remplaçant l'ancien en-tête sombre. Area (sélecteur
+   réel branché sur les vrais radios VIEW MODE), Date & Time
+   (prev/next/Now réels branchés sur le vrai `time_slider`), Forecast
+   (calcul réel dérivé de ce même slider), Model (lecture réelle du nom
+   de modèle déjà affiché dans la barre de stats), statut système réel
+   (Real Physics/Demo), Last Update réel (même horloge UTC), cloche →
+   vraies Alertes, prise → vrai Connect HPC, engrenage → le même vrai
+   menu "☰" déjà construit cette session. Seul élément honnêtement non
+   fonctionnel : l'avatar utilisateur (aucun système de compte réel
+   dans ACF - icône générique désactivée avec tooltip explicite, plutôt
+   que d'inventer un faux nom/rôle).
+3. **Restructuration `_build_ui()`** : le layout racine devient un
+   `QHBoxLayout [sidebar | contenu]` ; le contenu existant (carte,
+   radar, stats, etc.) est entièrement conservé, juste déplacé dans un
+   widget englobant. L'ancien en-tête (titre, badge RESEARCH STAGE, les
+   9 boutons réels, l'horloge) et l'ancienne rangée VIEW MODE restent
+   de vrais widgets construits et fonctionnels, seulement masqués
+   (`.hide()`) - même pattern déjà établi cette session pour les 9
+   boutons d'en-tête.
+
+**Bug réel trouvé et corrigé** : Qt interprète un `&` nu dans le texte
+d'un `QPushButton` comme marqueur de raccourci clavier (mnémonique),
+pas comme un caractère littéral - "Convection & Thunderstorms"
+s'affichait "Convection_Thunderstorms". Corrigé en échappant `&` en
+`&&` (l'échappement réel de Qt) dans `_make_nav_button()`.
+
+**Fausse alerte visuelle** (2e fois cette session, même cause) : une
+capture d'écran de la sidebar semblait avoir un fond sombre au lieu du
+fond clair attendu - échantillonnage direct des pixels du PNG confirmé
+correct (`#f7f8fa`) ; la miniature affichée pendant la revue induit en
+erreur, pas le rendu réel. Lesson recorded : toujours vérifier par
+pixel, jamais seulement à l'œil sur une miniature.
+
+**Tests ajoutés** : `tests/gui/test_awci_sidebar.py` (7 tests - item
+actif par défaut, émission réelle par clic, désactivation honnête
+vérifiée avec tooltip, exclusivité du groupe, `set_active()`, unicité
+des clés), `tests/gui/test_awci_topbar.py` (5 tests - options Area,
+émission de signal, `set_status()`, placeholder utilisateur
+honnêtement désactivé, boutons réels tous actifs).
+
+**Validation** : 12 tests dédiés nouveaux : 12 passed. Suite complète
+GUI + dashboard + map_panel : 434 passed, 9 skipped, **0 régression**
+malgré une restructuration structurelle majeure du layout racine.

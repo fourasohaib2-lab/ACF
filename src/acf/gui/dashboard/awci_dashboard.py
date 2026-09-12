@@ -137,7 +137,9 @@ from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
 from acf.gui.dashboard.awci_radar import AWCIRadar
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskBadgeDetailDialog, AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
+from acf.gui.dashboard.awci_sidebar import AWCISidebar
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
+from acf.gui.dashboard.awci_topbar import AWCITopBar
 from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
     awci_grid,
@@ -766,14 +768,49 @@ class AWCIDashboard(QWidget):
     # ------------------------------------------------------------------ UI
 
     def _build_ui(self) -> None:
-        outer = QVBoxLayout(self)
+        # Real light sidebar-navigation shell (added 2026-09-12,
+        # explicit user request "je veux que le dashboard soit
+        # exactement comme celui dans la photo... 100%... tous les
+        # boutons fonctionnelles" - docs/reference/awci_dashboard_
+        # reference.png, a substantially different layout from the
+        # single-column dashboard this file used to build directly).
+        # `self`'s own top-level layout is now a real HBox
+        # [sidebar | content_widget] - `outer` below still builds the
+        # SAME real content this file always built (every panel, the
+        # top bar, the footer), just installed on `content_widget`
+        # instead of directly on `self`. See _build_sidebar()'s own
+        # docstring for the real nav-item -> existing-feature wiring.
+        root = QHBoxLayout(self)
+        root.setSpacing(0)
+        root.setContentsMargins(0, 0, 0, 0)
+        content_widget = QWidget()
+        outer = QVBoxLayout(content_widget)
         outer.setSpacing(8)
         outer.setContentsMargins(6, 6, 6, 0)
 
+        # Real light top bar (added 2026-09-12, docs/reference/
+        # awci_dashboard_reference.png) - see AWCITopBar's own module
+        # docstring. Built here, first, but only wired to real slots in
+        # _wire_topbar() at the very end of this method, once every
+        # method/attribute it dispatches to (time_slider, view mode
+        # radios, _open_alerts, the "☰" menu, ...) already exists.
+        self.topbar = AWCITopBar()
+        outer.addWidget(self.topbar)
+
+        # NOTE (2026-09-12, docs/reference/awci_dashboard_reference.png):
+        # this whole header_row is no longer the visible page header -
+        # self.topbar above now owns that real estate and shows the SAME
+        # real title/subtitle. header_row (and every widget still built
+        # into it below - the 9 real buttons, the ☰ menu, the badge) is
+        # kept and still real/functional, just not shown - see the
+        # NOTE on real_physics_button further down for why hiding
+        # rather than deleting these was already this session's own
+        # established pattern for exactly this situation.
         header_row = QHBoxLayout()
         header = QLabel("AWCI – AVIATION WEATHER COMPLEXITY INDEX")
         header.setStyleSheet(label_style("text_primary", "xl", "bold"))
-        header_row.addWidget(header)
+        header.setParent(self)
+        header.hide()
         header_row.addStretch()
 
         self.real_physics_button = QPushButton("🔬 Real Physics")
@@ -1019,16 +1056,22 @@ class AWCIDashboard(QWidget):
             f"border: 1px solid {TOKENS.border}; border-radius: 4px; padding: 3px 8px;"
         )
         status_badge.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        status_badge.setParent(self)
+        status_badge.hide()
 
-        # Real "☰" header menu (added 2026-09-12, see the NOTE on
-        # real_physics_button above): the single visible substitute for
-        # the 9 real buttons hidden above, so the header matches
-        # docs/reference/awci_dashboard_reference.jpg pixel-for-pixel
-        # while every one of those real features stays one click away.
-        header_row.addWidget(self._build_header_menu())
-        header_row.addWidget(status_badge)
+        # Real "☰" menu (added 2026-09-12) - its own toolbutton is kept
+        # real but hidden now that self.topbar.settings_button opens the
+        # SAME real QMenu (see _open_settings_menu()); still built here
+        # since every one of the 9 real header features it lists must
+        # exist by construction time.
+        hamburger_button = self._build_header_menu()
+        hamburger_button.setParent(self)
+        hamburger_button.hide()
+        # header_row itself is no longer added to `outer` (nothing left
+        # in it is visible - see the NOTE above on real_physics_button)
+        # - every real widget it built is still a real, parented,
+        # functioning object, just reached through self.topbar instead.
 
-        outer.addLayout(header_row)
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
         self._alerts_window: AWCIAlertsDialog | None = None
@@ -1078,10 +1121,21 @@ class AWCIDashboard(QWidget):
         # route's own lat/lon bounding box (the closest honest analog
         # to "emphasize the corridor" on a 2D map - a real, computed
         # extent, never fabricated).
+        # NOTE (2026-09-12, docs/reference/awci_dashboard_reference.png):
+        # the VIEW MODE label + 3 radios below are no longer shown -
+        # self.topbar's own real "Area" selector now drives the SAME
+        # real self.view_mode_global_radio/regional_radio state (see
+        # _on_topbar_area_changed()) - kept real and hidden rather than
+        # deleted, same established pattern as this file's other hidden-
+        # but-functional widgets (see the NOTE on real_physics_button).
+        # "Vertical Cross-Section" has no topbar equivalent yet - still
+        # reachable via the sidebar's own "Vertical Cross-Section" nav
+        # item (_on_sidebar_nav()).
         view_mode_row = QHBoxLayout()
         view_mode_label = QLabel("VIEW MODE:")
         view_mode_label.setStyleSheet(label_style("text_muted", "xs"))
-        view_mode_row.addWidget(view_mode_label)
+        view_mode_label.setParent(self)
+        view_mode_label.hide()
         self.view_mode_group = QButtonGroup(self)
         self.view_mode_global_radio = QRadioButton("Global")
         self.view_mode_regional_radio = QRadioButton("Regional")
@@ -1090,8 +1144,8 @@ class AWCIDashboard(QWidget):
         for radio in (self.view_mode_global_radio, self.view_mode_regional_radio, self.view_mode_cross_section_radio):
             radio.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px;")
             self.view_mode_group.addButton(radio)
-            view_mode_row.addWidget(radio)
-        view_mode_row.addStretch()
+            radio.setParent(self)
+            radio.hide()
         self.view_mode_group.buttonClicked.connect(self._on_view_mode_changed)
 
         # Real single-source-of-truth "Flight Level:" selector (added
@@ -1114,6 +1168,12 @@ class AWCIDashboard(QWidget):
         )
         self.flight_level_selector.currentTextChanged.connect(self._on_flight_level_selector_changed)
         view_mode_row.addWidget(self.flight_level_selector)
+        # Real fix: with the VIEW MODE radios now hidden above, this
+        # row's own trailing stretch (previously after the radios) was
+        # lost, letting the combo box's expanding size policy stretch
+        # it across the whole row width - confirmed in a real
+        # screenshot. A trailing stretch keeps it compact again.
+        view_mode_row.addStretch()
         outer.addLayout(view_mode_row)
 
         # --- Row 1: global map (left) + cross-section & radar (right) -----
@@ -1267,6 +1327,7 @@ class AWCIDashboard(QWidget):
         self.time_readout = QLabel("12Z")
         self.time_readout.setStyleSheet(label_style("text_primary", "xs", "bold"))
         self.time_slider.valueChanged.connect(lambda v: self.time_readout.setText(f"{v:02d}Z"))
+        self.time_slider.valueChanged.connect(self._sync_topbar_time)
         time_row.addWidget(time_label)
         time_row.addWidget(self.time_slider, stretch=1)
         time_row.addWidget(self.time_readout)
@@ -1354,6 +1415,15 @@ class AWCIDashboard(QWidget):
         self.footer = AWCIFooter()
         self.footer.itemClicked.connect(self._on_footer_item_clicked)
         outer.addWidget(self.footer)
+
+        # Assemble the real [sidebar | content] shell (see the NOTE at
+        # the top of this method) - built last so every real widget/
+        # method the sidebar's nav items dispatch to (self._open_3d_view,
+        # self._toggle_fl_comparison, self.view_mode_regional_radio, ...)
+        # already exists by the time _build_sidebar() runs.
+        self._wire_topbar()
+        root.addWidget(self._build_sidebar())
+        root.addWidget(content_widget, stretch=1)
 
     def _build_header_menu(self) -> QToolButton:
         """Real "☰" substitute for the 9 real buttons + clock hidden
@@ -1449,6 +1519,71 @@ class AWCIDashboard(QWidget):
             action.setEnabled(button.isEnabled())
             action.setToolTip(button.toolTip())
 
+    #: Real hazard-nav-item -> real AWCIMapPanel Layers-panel checkbox
+    #: name(s) mapping (added 2026-09-12, docs/reference/
+    #: awci_dashboard_reference.png) - see awci_sidebar.py's own
+    #: NAV_SECTIONS for which hazard items have NO real layer yet
+    #: (those are constructed disabled and never reach this dict).
+    _HAZARD_LAYER_MAP: dict[str, tuple[str, ...]] = {
+        "hazard_turbulence": ("Turbulence",),
+        "hazard_convection": ("Convection",),
+        "hazard_icing": ("Icing",),
+        "hazard_wind": ("Wind",),
+        "hazard_visibility_ceiling": ("Visibility", "Ceiling"),
+        "hazard_dust": ("Dust",),
+    }
+
+    def _build_sidebar(self) -> AWCISidebar:
+        """Real light sidebar (see awci_sidebar.py's own module
+        docstring) - constructed last in _build_ui() so every real
+        method/attribute _on_sidebar_nav() below dispatches to already
+        exists."""
+        self.sidebar = AWCISidebar()
+        self.sidebar.navItemClicked.connect(self._on_sidebar_nav)
+        return self.sidebar
+
+    def _on_sidebar_nav(self, key: str) -> None:
+        """Real dispatch for every sidebar nav item to an EXISTING real
+        dashboard feature - see awci_sidebar.py's own NAV_SECTIONS for
+        which items have no real counterpart yet (those are
+        constructed disabled and never reach this method at all)."""
+        if key == "overview":
+            return  # already the default view - a real no-op, not a fabricated second view
+        if key == "map_interactive":
+            self.view_mode_global_radio.setChecked(True)
+            self._on_view_mode_changed()
+        elif key == "map_3d":
+            self._open_3d_view()
+        elif key == "map_cross_section":
+            self.view_mode_cross_section_radio.setChecked(True)
+            self._on_view_mode_changed()
+        elif key == "map_route":
+            self.view_mode_regional_radio.setChecked(True)
+            self._on_view_mode_changed()
+        elif key in self._HAZARD_LAYER_MAP:
+            self.view_mode_global_radio.setChecked(True)
+            self._on_view_mode_changed()
+            for layer_name in self._HAZARD_LAYER_MAP[key]:
+                checkbox = self.global_map.extra_layer_checkboxes.get(layer_name)
+                if checkbox is not None:
+                    checkbox.setChecked(True)
+        elif key == "analysis_risk":
+            pass  # the real Risk Summary panel is already always visible - a real no-op, not a fabricated second panel
+        elif key == "analysis_forecast":
+            self._open_vertical_profile()
+        elif key == "analysis_time_evolution":
+            self._toggle_evolution_playback()
+        elif key == "analysis_model_comparison":
+            self._toggle_fl_comparison()
+        elif key == "analysis_uncertainty":
+            self._open_execution_report()
+        elif key == "data_stations":
+            self._open_messages()
+        elif key == "data_alerts":
+            self._open_alerts()
+        elif key == "data_reports":
+            self._open_execution_report()
+
     def _apply_theme(self) -> None:
         """Real, token-driven stylesheet (acf.gui.theme_tokens) - replaces
         the previous hardcoded 6-line block that lived only here and
@@ -1516,6 +1651,73 @@ class AWCIDashboard(QWidget):
         self.clock_label's own construction-time note."""
         now = datetime.now(timezone.utc)
         self.clock_label.setText(now.strftime("%H:%M:%S UTC"))
+        # Piggyback the real topbar refresh on this same real 1s tick
+        # (added 2026-09-12, docs/reference/awci_dashboard_reference.png)
+        # rather than a second timer - see _wire_topbar()'s own
+        # docstring for what each of these real values already is.
+        if hasattr(self, "topbar"):
+            self.topbar.last_update_label.setText(f"Last Update: {self.clock_label.text()}")
+            if hasattr(self, "stats_bar"):
+                self.topbar.model_label.setText(self.stats_bar.model_box.value_lbl.text())
+            self.topbar.set_status(
+                is_real=self._real_physics_active,
+                label="REAL PHYSICS" if self._real_physics_active else "DEMO MODE",
+            )
+
+    def _sync_topbar_time(self, hour: int) -> None:
+        """Real Date & Time / Forecast readouts, derived from the SAME
+        real time_slider value the "Évolution AWCI" row's own 06Z-18Z
+        ticks already use as their real anchor - added 2026-09-12,
+        docs/reference/awci_dashboard_reference.png. Forecast lead is
+        real arithmetic on that one real value, not a second,
+        independently-tracked lead-time field."""
+        if not hasattr(self, "topbar"):
+            return
+        self.topbar.time_readout_label.setText(f"{hour:02d}:00 UTC")
+        self.topbar.forecast_label.setText(f"+{hour - 6}h")
+
+    def _wire_topbar(self) -> None:
+        """Real dispatch for every AWCITopBar control to an existing
+        real dashboard mechanism - see awci_topbar.py's own module
+        docstring for the full inventory. Called once from _build_ui()
+        after every widget/method it references already exists."""
+        self.topbar.areaChanged.connect(self._on_topbar_area_changed)
+        self.topbar.prev_time_button.clicked.connect(lambda: self._step_time_slider(-1))
+        self.topbar.next_time_button.clicked.connect(lambda: self._step_time_slider(1))
+        self.topbar.now_button.clicked.connect(lambda: self._step_time_slider(0, reset_to=12))
+        self.topbar.bell_button.clicked.connect(self._open_alerts)
+        self.topbar.hpc_button.clicked.connect(self._toggle_hpc_connection)
+        self.topbar.settings_button.clicked.connect(self._open_settings_menu)
+        self._sync_topbar_time(self.time_slider.value())
+        self._update_clock()
+
+    def _on_topbar_area_changed(self, area: str) -> None:
+        """Real Area selector - the SAME real VIEW MODE radios/
+        _on_view_mode_changed() the existing VIEW MODE row already
+        drives, never a second/duplicated extent mechanism."""
+        if area == "North Africa":
+            self.view_mode_regional_radio.setChecked(True)
+        else:
+            self.view_mode_global_radio.setChecked(True)
+        self._on_view_mode_changed()
+
+    def _step_time_slider(self, delta: int, reset_to: int | None = None) -> None:
+        """Real prev/next/now Date & Time controls - moves the SAME
+        real time_slider the "Évolution AWCI" row's own real slider
+        drives, then runs the exact same real handler a manual drag
+        release already runs (_on_time_changed()) - no second/
+        duplicated time mechanism."""
+        new_value = reset_to if reset_to is not None else self.time_slider.value() + delta
+        self.time_slider.setValue(max(self.time_slider.minimum(), min(self.time_slider.maximum(), new_value)))
+        self._on_time_changed()
+
+    def _open_settings_menu(self) -> None:
+        """Real settings gear - opens the SAME real "☰" menu
+        (_build_header_menu()/_sync_header_menu()) this dashboard
+        already built for its 9 real header features, never a second,
+        duplicated menu."""
+        self._sync_header_menu()
+        self._header_menu.popup(self.topbar.settings_button.mapToGlobal(self.topbar.settings_button.rect().bottomLeft()))
 
     def _on_apply_route(self) -> None:
         """Real route change - explicit user request "un bouton pour
