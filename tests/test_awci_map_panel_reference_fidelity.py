@@ -84,6 +84,38 @@ def test_legend_uses_the_real_shared_awci_levels_not_a_separate_scale(qtbot):
         assert any(f"{threshold:g}" in txt and name in txt for txt in texts)
 
 
+def test_legend_lists_highest_severity_first_top_to_bottom(qtbot):
+    """2026-09-12, docs/reference/awci_dashboard_reference.jpg pixel-
+    parity pass: the reference photo's own AWCI SCALE legend reads
+    Extreme (top) down to Very Low (bottom) - a pure display-order
+    choice, matched here without touching the real threshold NUMBERS
+    (0/20/35/50/65/85 stay AWCICalculator's own real bands - see
+    _draw_awci_scale_legend()'s own docstring for why the photo's
+    generic 0/20/40/60/80/100 scale is NOT copied). Real proof: each
+    row's y-position (axes fraction, larger = higher on screen) must
+    increase from Very Low to Extreme."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_legend=True)
+    qtbot.addWidget(panel)
+    panel.update_data()
+
+    row_y_by_name = {}
+    for text_obj in panel.axis.texts:
+        for threshold, name, _rgb in LEVELS:
+            # Exact per-row match on the real "{threshold}  {name}" text
+            # _draw_awci_scale_legend() draws - a plain substring check
+            # would wrongly match e.g. "Low" inside "Very Low"'s own row.
+            if text_obj.get_text() == f"{threshold:g}  {name}":
+                row_y_by_name[name] = text_obj.get_position()[1]
+
+    assert set(row_y_by_name) == {name for _t, name, _rgb in LEVELS}
+    ordered_by_value = [name for _threshold, name, _rgb in LEVELS]  # ascending: Very Low -> Extreme
+    ys_ascending_value_order = [row_y_by_name[name] for name in ordered_by_value]
+    assert ys_ascending_value_order == sorted(ys_ascending_value_order), (
+        "Extreme must sit at the highest y (top of screen) and Very Low at the lowest (bottom), "
+        "matching the reference photo's own top-to-bottom order"
+    )
+
+
 def test_point_marker_with_a_real_score_draws_a_point_information_card(qtbot):
     panel = AWCIMapPanel("AWCI REGIONAL MAP")
     qtbot.addWidget(panel)

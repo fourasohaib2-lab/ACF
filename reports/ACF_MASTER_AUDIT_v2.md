@@ -12989,9 +12989,33 @@ de test associé).
 
 **Reste à faire (parité visuelle, disclosed, non traité ce tour)** :
 palette de couleurs de la carte globale (jet plus saturé/texturé dans
-la photo), ordre décroissant de la légende AWCI SCALE (la photo liste
-100→0 de haut en bas ; ACF garde ses vrais seuils 0/20/35/50/65/85 déjà
-utilisés par `AWCICalculator`/`AWCIGauge` - les valeurs de la photo
-0/20/40/60/80/100 ne sont pas la vraie échelle scientifique ACF et ne
-seront donc pas copiées, seul l'ordre d'affichage le sera), icônes
-avion multiples sur la carte globale.
+la photo), icônes avion multiples sur la carte globale.
+
+## Mise à jour 2026-09-12 (suite) — Ordre d'affichage de la légende AWCI SCALE aligné sur la photo (valeurs scientifiques réelles inchangées)
+
+**Câblé** : `AWCIMapPanel._draw_awci_scale_legend()` itérait
+`reversed(LEVELS)`, plaçant "0 Very Low" en haut et "85 Extreme" en bas
+- l'inverse de l'ordre d'affichage de la photo de référence (100→0 de
+haut en bas). Changé pour itérer `LEVELS` (ordre ascendant réel) tel
+quel : la géométrie `y = y0 + i * box_h` place alors "Extreme" en haut
+(plus grand y) et "Very Low" en bas, exactement comme la photo. **Les
+vrais seuils scientifiques ACF (0/20/35/50/65/85, déjà utilisés par
+`AWCICalculator`/`AWCIGauge`/les badges de risque) ne sont PAS changés**
+en 0/20/40/60/80/100 (les valeurs génériques de la photo) - ce
+serait une régression scientifique, disclosed explicitement dans le
+docstring de la méthode : seul l'ORDRE d'affichage est repris de la
+photo, jamais les valeurs.
+
+**Test de régression réel ajouté** :
+`tests/test_awci_map_panel_reference_fidelity.py::test_legend_lists_highest_severity_first_top_to_bottom`
+- lit la position y réelle de chaque ligne de texte dessinée par le
+vrai `paintEvent`/`draw()` matplotlib et vérifie que l'ordre croissant
+de sévérité correspond à un y strictement croissant. **Vérifié en 2
+temps** : échoue bien sur l'ancien code (`reversed(LEVELS)` restauré
+temporairement) avec un `AssertionError` explicite, puis passe une
+fois le correctif réappliqué.
+
+**Validation** : `tests/test_awci_map_panel_reference_fidelity.py` :
+28 passed (1 nouveau), 0 régression. Vérifié visuellement par capture
+d'écran réelle du panneau `global_map` (pilotage réel de l'app,
+`QT_QPA_PLATFORM=offscreen` + `QWidget.grab()`).

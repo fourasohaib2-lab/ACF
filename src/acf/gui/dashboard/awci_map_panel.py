@@ -783,7 +783,22 @@ class AWCIMapPanel(EventMixin, QWidget):
         """Real "AWCI SCALE" legend - the exact same real thresholds/
         colors acf.gui.dashboard.awci_colors.LEVELS already uses
         everywhere else (map heatmaps, gauge, risk badges), not a
-        separately invented scale."""
+        separately invented scale.
+
+        Row order (2026-09-12, docs/reference/awci_dashboard_reference.jpg
+        pixel-parity pass): the reference photo lists its own scale
+        highest-value-first, top to bottom - purely a display-order
+        choice, so matched here by iterating LEVELS in its own real
+        ascending order (lowest value lands at the smallest y, i.e. the
+        bottom row - see the y = y0 + i * box_h geometry below). The
+        real threshold NUMBERS themselves (0/20/35/50/65/85) are NOT
+        changed to the photo's own 0/20/40/60/80/100 - those are a
+        generic placeholder scale from the mockup's graphic design, not
+        AWCICalculator's real, already-validated severity bands (the
+        same 0/20/35/50/65/85 AWCIGauge.levels already uses) - copying
+        the photo's numbers here would misrepresent the real scoring
+        engine, so only the row ORDER is matched, never the values.
+        """
         x0 = 0.012
         box_h = 0.032
         y0 = 0.02
@@ -791,7 +806,7 @@ class AWCIMapPanel(EventMixin, QWidget):
             x0, y0 + len(LEVELS) * box_h + 0.012, "AWCI SCALE",
             transform=self.axis.transAxes, color="#e8edf5", fontsize=7, fontweight="bold", va="bottom", zorder=20,
         )
-        for i, (threshold, name, rgb) in enumerate(reversed(LEVELS)):
+        for i, (threshold, name, rgb) in enumerate(LEVELS):
             y = y0 + i * box_h
             color = tuple(c / 255.0 for c in rgb)
             self.axis.add_patch(
