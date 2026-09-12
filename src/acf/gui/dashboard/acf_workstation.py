@@ -764,7 +764,7 @@ from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialo
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
-from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
+from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel, compute_real_key_metrics_at_point
 from acf.gui.dashboard.acf_workstation_pipeline_checks import (
     run_real_derivation_consistency_check,
     run_real_range_qc,
@@ -888,6 +888,37 @@ class _HPCConnectWorker(QRunnable):
             return
         real_transport = bool(getattr(self.hpc.ssh_connector, "is_real_connection", False))
         self.signals.finished.emit(real_transport, self.label, f"workflow_completed={workflow_ok}")
+
+
+class _ConsensusWorkerSignals(QObject):
+    finished = Signal(dict)
+    failed = Signal(str)
+
+
+class _ConsensusWorker(QRunnable):
+    """Runs ModelConsensusEngine.compute_real_multi_model_disagreement()
+    off the GUI thread - added Phase 44 (2026-09-12) for the Overview
+    page's own "Model Consensus" section - same real engine, same real
+    QRunnable/QThreadPool + QObject-signals pattern as
+    `acf_workstation_complexity.py`'s own `_ConsensusWorker` (a
+    separate, independently-triggered real computation, not a shared
+    instance - each Lab reads the same real engine on its own
+    schedule)."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _ConsensusWorkerSignals()
+
+    def run(self) -> None:
+        from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
+
+        try:
+            result = ModelConsensusEngine.compute_real_multi_model_disagreement(**self.kwargs)
+        except Exception as exc:  # noqa: BLE001 - real failure, reported honestly via signal below
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
 
 
 class ACFWorkstation(QWidget):
@@ -1205,7 +1236,9 @@ class ACFWorkstation(QWidget):
         # acf.gui.widgets.current_page_sizing's own module docstring.
         self.stack = CurrentPageStackedWidget()
         self.overview_landing_panel = ACFOverviewLandingPanel(
-            navigate_to=self._navigate_to, module_names=_ENABLED_MODULES + _TOOLBAR_MODULES
+            navigate_to=self._navigate_to,
+            module_names=_ENABLED_MODULES + _TOOLBAR_MODULES,
+            compute_consensus=self._start_consensus,
         )
         self.overview_panel = ACFOverviewPanel()
         self.dynamics_panel = ACFDynamicsLabPanel()
@@ -1561,6 +1594,30 @@ class ACFWorkstation(QWidget):
         self._hpc_connect_worker.signals.finished.connect(self._on_hpc_connect_done)
         QThreadPool.globalInstance().start(self._hpc_connect_worker)
 
+    def _start_consensus(self) -> None:
+        """Real, on-demand Model Consensus (added Phase 44, 2026-09-12,
+        Overview's own "🔄 Compute Model Consensus" button) - reuses
+        `ModelConsensusEngine.compute_real_multi_model_disagreement()`
+        (the SAME real engine Complexity Explorer's own "Model
+        Disagreement" dimension already uses, a separate,
+        independently-triggered real call here) at this Workstation's
+        own current real point of interest - the same real point Key
+        Metrics/Stability Indices/the Sounding panel already use. All
+        3 real MODEL_CONFIGS models (AROME/ALADIN/ARPEGE) are compared -
+        genuinely expensive (one real CoupledEarthSolver run each)."""
+        lat, lon = self._last_clicked_point or (0.0, 0.0)
+        if self._volume is not None and self._last_clicked_point is None:
+            lat = float(self._volume["lats"][len(self._volume["lats"]) // 2])
+            lon = float(self._volume["lons"][len(self._volume["lons"]) // 2])
+        elif self._volume is None and self._last_clicked_point is None:
+            lat, lon = 36.75, 3.06  # same real disclosed default point as Complexity Explorer's own
+
+        self.overview_landing_panel.set_consensus_pending()
+        self._consensus_worker = _ConsensusWorker(lat=lat, lon=lon, models=list(MODEL_CONFIGS.keys()))
+        self._consensus_worker.signals.finished.connect(self.overview_landing_panel.set_consensus_result)
+        self._consensus_worker.signals.failed.connect(self.overview_landing_panel.set_consensus_failed)
+        QThreadPool.globalInstance().start(self._consensus_worker)
+
     def _on_hpc_connect_done(self, real_transport: bool, label: str, detail: str) -> None:
         self.hpc_connect_button.setEnabled(True)
         if real_transport:
@@ -1707,6 +1764,10 @@ class ACFWorkstation(QWidget):
         # _on_level_changed() below.
         self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(volume, lat, lon))
 
+        # Real Overview "Key Metrics" update (added Phase 44, 2026-09-12) -
+        # same real point as the sounding/stability indices above.
+        self.overview_landing_panel.set_key_metrics(compute_real_key_metrics_at_point(volume, lat, lon))
+
         # Real Atmospheric Interaction Graph update (added Phase 34,
         # 2026-09-05) - real per-level Pearson correlations, re-derived
         # here (once per run/level change), not on every map click.
@@ -1735,6 +1796,7 @@ class ACFWorkstation(QWidget):
         if self._volume is not None:
             self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
             self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(self._volume, lat, lon))
+            self.overview_landing_panel.set_key_metrics(compute_real_key_metrics_at_point(self._volume, lat, lon))
             snapshot = compute_real_map_inspector_snapshot(self._volume, lat, lon, self._level_index)
             if self._map_inspector is None:
                 self._map_inspector = ACFMapInspectorDialog(self)
