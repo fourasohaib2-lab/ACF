@@ -6,7 +6,7 @@ Automated Operational Meteorological Briefings Generator Module (Phase 8)
 """
 
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class BriefingGenerator:
@@ -42,7 +42,14 @@ class BriefingGenerator:
         confidence. Not fabricated now.
         """
         title = f"OFFICIAL METEOROLOGICAL BRIEFING — {briefing_type.upper()}"
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
+        # NOTE (correction, 2026-09-12 ICAO/WMO compliance audit): this
+        # used to call datetime.now() - this machine's real LOCAL time -
+        # while labelling it "UTC" in the string below, an identical
+        # fabricated-UTC-label bug to the one already found and fixed in
+        # ACFWorkstation's own header clock (ICAO Annex 3 §4.1 mandates
+        # UTC exclusively for aeronautical/official meteorological
+        # information). Now a genuine UTC timestamp.
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
         content_md = f"""# {title}
 **Generated**: {timestamp}
