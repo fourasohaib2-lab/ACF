@@ -46,6 +46,11 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
   l'UTC exclusivement pour toute information météorologique
   aéronautique.
+- Grammaire METAR/TAF (`acf.aviation.icao`), items disclosed comme
+  manquants dans les docstrings des décodeurs : indicateur de tendance
+  RVR U/D/N (METAR) et groupes TX/TN température max/min (TAF) - ce
+  dernier tombait auparavant silencieusement dans le filet
+  "unrecognized token, skip" du décodeur, aucun champ ne le portait.
 - `BUFRAdapter.load()`/`GRIBAdapter.load()` (`acf.data.integration`) :
   retournaient silencieusement un `Dataset` bien formé mais vide, sans
   aucune disclosure, quel que soit le contenu réel du fichier - aucun

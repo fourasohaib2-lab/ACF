@@ -167,6 +167,26 @@ def test_vertical_visibility_group():
     assert base.cloud_layers == []
 
 
+def test_tx_tn_max_min_temperature_groups_parsed():
+    """WMO FM 51-XV / ICAO Annex 3 TX/TN groups - real regression added
+    2026-09-12; the decoder's own module docstring used to explicitly
+    disclose this as a gap (previously silently dropped by the main
+    loop's "unrecognized token, skip" fallback)."""
+    r = TAFDecoder.decode("TAF KJFK 121720Z 1218/1324 21015G25KT 9999 SCT040 TX28/1220Z TNM03/1310Z")
+
+    assert r.max_temp_c == 28.0
+    assert (r.max_temp_day, r.max_temp_hour) == (12, 20)
+    assert r.min_temp_c == -3.0
+    assert (r.min_temp_day, r.min_temp_hour) == (13, 10)
+
+
+def test_tx_tn_absent_stays_honestly_none():
+    r = TAFDecoder.decode("TAF KXXX 021130Z 0212/0318 18010KT 9999 SCT040")
+
+    assert r.max_temp_c is None
+    assert r.min_temp_c is None
+
+
 def test_raises_on_missing_icao_code():
     with pytest.raises(ValueError, match="ICAO station identifier"):
         TAFDecoder.decode("TAF 020600Z 0206/0312 24015KT 9999")

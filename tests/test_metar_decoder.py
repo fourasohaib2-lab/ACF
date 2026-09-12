@@ -96,6 +96,21 @@ def test_rvr_group_parsed():
     assert len(r.rvr) == 1
     assert r.rvr[0]["runway"] == "27L"
     assert r.rvr[0]["value_m"] == 400.0
+    assert r.rvr[0]["trend"] is None
+
+
+def test_rvr_tendency_indicator_parsed():
+    """ICAO Annex 3 / WMO No. 306 real RVR tendency indicator (U/D/N) -
+    real regression added 2026-09-12, the decoder's own module docstring
+    used to explicitly disclose this as a gap."""
+    r = METARDecoder.decode("LFPG 020800Z 24010KT 0350 R27L/0400U FG VV002 03/03 Q1015")
+    assert r.rvr[0]["trend"] == "U"
+
+    r2 = METARDecoder.decode("LFPG 020800Z 24010KT 0350 R27L/0400D FG VV002 03/03 Q1015")
+    assert r2.rvr[0]["trend"] == "D"
+
+    r3 = METARDecoder.decode("LFPG 020800Z 24010KT 0350 R27L/0400N FG VV002 03/03 Q1015")
+    assert r3.rvr[0]["trend"] == "N"
 
 
 def test_tempo_trend_detected():

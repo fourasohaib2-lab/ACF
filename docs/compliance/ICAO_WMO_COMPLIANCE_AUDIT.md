@@ -136,6 +136,33 @@ hors du périmètre OACI/OMM strict de cette session - à traiter dans une
 passe dédiée "intégrité de `acf.data.integration`", pas ici, pour ne pas
 diluer le périmètre demandé.
 
+## 3ter. Passe suivante (2026-09-12) : complétion de grammaire METAR/TAF
+
+Suite de l'item §4.2 de la feuille de route (grammaire METAR/TAF
+incomplète, disclosed dans les docstrings des décodeurs eux-mêmes) :
+
+- **METAR** : indicateur de tendance RVR U/D/N (Annexe 3 / OMM n°306) -
+  `_RVR_RE` ne le capturait pas du tout ; le champ `rvr[i]["trend"]`
+  était absent. Ajouté (`U`/`D`/`N`/`None`), tests de régression ajoutés.
+- **TAF** : groupes TX/TN (température max/min prévue, WMO FM 51-XV) -
+  totalement absents avant cette passe : ces tokens tombaient dans le
+  filet "unrecognized token, skip defensively" du décodeur, silencieusement
+  ignorés, aucun champ ne les portait. Ajouté comme un scan dédié
+  (`TAFReport.max_temp_c`/`max_temp_day`/`max_temp_hour` +
+  `min_temp_c`/`min_temp_day`/`min_temp_hour`), tests de régression ajoutés
+  (valeur présente ET absence honnête à `None`).
+
+**Non traité cette passe, toujours disclosed** : groupes de cisaillement de
+vent WS (TAF), remarques complètes (RMK), état de piste, remarques
+givrage/cendres volcaniques — la liste "still incomplete" des docstrings
+des 2 décodeurs a été mise à jour pour retirer les 2 items maintenant
+fermés, en gardant les autres explicitement ouverts.
+
+Tests : `tests/test_metar_decoder.py`/`test_taf_decoder.py` (47 tests
+combinés, tous verts), plus vérification que les 2 consommateurs réels de
+`METARReport`/`TAFReport` (`awci_messages_panel.py`, pont de qualité
+`metar_report_quality()`) restent inchangés et verts.
+
 ## 4. Feuille de route réelle restante (non traitée cette passe, disclosed)
 
 Périmètre trop vaste pour une seule passe honnête (130+ fichiers touchent
@@ -148,9 +175,10 @@ documenté dans `docs/STATUS.md` :
    exhaustif sur les ~30k lignes de `gui/`. Chercher tout usage de
    `datetime.now()` non-UTC dans du code affichant une donnée météo, et
    tout mélange d'unités (kt vs m/s, ft vs m) sans conversion explicite.
-2. **Grammaire METAR/TAF complète** — compléter les groupes non couverts
-   déjà disclosed dans les docstrings (RVR trend arrows, remarques
-   complètes, TX/TN, groupes WS, état de piste).
+2. **Grammaire METAR/TAF complète** — ✅ partiellement fait cette passe
+   (§3ter) : RVR trend U/D/N (METAR) et TX/TN (TAF) fermés. Restent
+   ouverts : groupes WS (cisaillement, TAF), remarques complètes (RMK),
+   état de piste.
 3. **`wmo_tables.py`** — scoper et peupler avec de vraies tables de codes
    OMM (ex. Common Code Table C-1 à C-14) une fois le périmètre exact
    défini.

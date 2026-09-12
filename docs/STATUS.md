@@ -1142,3 +1142,18 @@ régression ajoutés. Les 6 autres adaptateurs ont le même bug, non
 corrigé - hors périmètre strict de cette session, disclosed dans
 `docs/compliance/ICAO_WMO_COMPLIANCE_AUDIT.md` §3bis pour une passe
 dédiée "intégrité de `acf.data.integration`".
+
+## Mise à jour (2026-09-12, suite 3) : complétion de grammaire METAR/TAF (RVR trend, TX/TN)
+
+Suite de l'audit ICAO/OMM (roadmap §4.2) : ajout de 2 groupes réels
+disclosed comme manquants dans les docstrings des décodeurs existants -
+indicateur de tendance RVR U/D/N (`metar_decoder.py`) et groupes TX/TN
+température max/min prévue (`taf_decoder.py`, WMO FM 51-XV). Le TX/TN
+tombait auparavant silencieusement dans le filet générique
+"unrecognized token, skip defensively" du décodeur TAF - aucun champ ne
+portait cette valeur. Tests de régression ajoutés
+(`test_metar_decoder.py`/`test_taf_decoder.py`, 47 tests combinés
+verts), consommateurs réels vérifiés inchangés
+(`test_metar_quality_bridge.py`/`test_awci_messages_panel.py`).
+Restent disclosed, non traités : groupes WS (cisaillement TAF),
+remarques complètes, état de piste.

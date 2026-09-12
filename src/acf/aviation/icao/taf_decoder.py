@@ -20,6 +20,7 @@ Grammar covered (WMO FM 51-XV / ICAO Annex 3):
     [BECMG DDHH/DDHH <wind visibility weather clouds [CAVOK]>]*
     [TEMPO DDHH/DDHH <wind visibility weather clouds [CAVOK]>]*
     [PROB30|PROB40 [TEMPO] DDHH/DDHH <wind visibility weather clouds>]*
+    [TXtt/DDHHZ] [TNtt/DDHHZ]
     [RMK ...]
 
 Each change-group's wind/visibility/weather/cloud sub-fields reuse the
@@ -29,12 +30,12 @@ rather than duplicated, per the project's single-source-of-truth rule.
 
 WARNING (same spirit as metar_decoder.py's own warning): this covers the
 commonly-used TAF groups and change-group types (FM/BECMG/TEMPO/PROB30/
-PROB40, including combined PROB+TEMPO) but does NOT implement the full
-WMO Doc 782 grammar (e.g. TX/TN temperature groups, wind shear WS
-groups, full remarks-section parsing beyond truncating at "RMK", NSW/NSC
-edge cases beyond the basic no-significant-weather/cloud markers already
-handled). Verify against the current ICAO Annex 3 / WMO No. 306 text
-before any operational use.
+PROB40, including combined PROB+TEMPO, and TX/TN max/min temperature
+groups) but does NOT implement the full WMO Doc 782 grammar (e.g. wind
+shear WS groups, full remarks-section parsing beyond truncating at
+"RMK", NSW/NSC edge cases beyond the basic no-significant-weather/cloud
+markers already handled). Verify against the current ICAO Annex 3 /
+WMO No. 306 text before any operational use.
 
 Reference:
     ICAO Annex 3 to the Convention on International Civil Aviation —
@@ -60,6 +61,15 @@ _FM_RE = re.compile(r"^FM(?P<day>\d{2})(?P<hour>\d{2})(?P<minute>\d{2})$")
 _PERIOD_RE = re.compile(r"^(?P<fday>\d{2})(?P<fhour>\d{2})/(?P<uday>\d{2})(?P<uhour>\d{2})$")
 
 _CHANGE_KEYWORDS = ("BECMG", "TEMPO", "PROB30", "PROB40")
+
+# TX/TN max/min temperature groups (WMO FM 51-XV / ICAO Annex 3) - e.g.
+# "TX28/1220Z" (max 28°C forecast at day 12, hour 20Z), "TNM03/1310Z"
+# (min -3°C forecast at day 13, hour 10Z). Added 2026-09-12 - previously
+# silently skipped by the main decode loop's own "unrecognized token,
+# skip defensively" fallback (verified: no field carried this value at
+# all before this fix).
+_TX_RE = re.compile(r"^TX(?P<sign>M)?(?P<temp>\d{2})/(?P<day>\d{2})(?P<hour>\d{2})Z$")
+_TN_RE = re.compile(r"^TN(?P<sign>M)?(?P<temp>\d{2})/(?P<day>\d{2})(?P<hour>\d{2})Z$")
 
 
 @dataclass
@@ -100,6 +110,12 @@ class TAFReport:
     valid_until_day: int | None
     valid_until_hour: int | None
     periods: list[TAFForecastPeriod] = field(default_factory=list)
+    max_temp_c: float | None = None
+    max_temp_day: int | None = None
+    max_temp_hour: int | None = None
+    min_temp_c: float | None = None
+    min_temp_day: int | None = None
+    min_temp_hour: int | None = None
 
 
 def _parse_wind_visibility_weather_clouds(tokens: list[str], start: int, end: int, period: TAFForecastPeriod) -> None:
@@ -288,6 +304,25 @@ class TAFDecoder:
             # Unrecognized token outside any known group (e.g. stray text) - skip defensively rather than looping.
             idx += 1
 
+        # TX/TN groups (dedicated scan, not part of the change-group state
+        # machine above - they can appear anywhere among the trailing
+        # tokens, not gated behind a change-group marker like FM/BECMG/
+        # TEMPO/PROB are).
+        max_temp_c = max_temp_day = max_temp_hour = None
+        min_temp_c = min_temp_day = min_temp_hour = None
+        for token in tokens:
+            tx_match = _TX_RE.match(token)
+            if tx_match:
+                temp = float(tx_match.group("temp"))
+                max_temp_c = -temp if tx_match.group("sign") else temp
+                max_temp_day, max_temp_hour = int(tx_match.group("day")), int(tx_match.group("hour"))
+                continue
+            tn_match = _TN_RE.match(token)
+            if tn_match:
+                temp = float(tn_match.group("temp"))
+                min_temp_c = -temp if tn_match.group("sign") else temp
+                min_temp_day, min_temp_hour = int(tn_match.group("day")), int(tn_match.group("hour"))
+
         return TAFReport(
             raw_text=raw_taf,
             icao_code=icao_code,
@@ -301,6 +336,12 @@ class TAFDecoder:
             valid_until_day=valid_until_day,
             valid_until_hour=valid_until_hour,
             periods=periods,
+            max_temp_c=max_temp_c,
+            max_temp_day=max_temp_day,
+            max_temp_hour=max_temp_hour,
+            min_temp_c=min_temp_c,
+            min_temp_day=min_temp_day,
+            min_temp_hour=min_temp_hour,
         )
 
 

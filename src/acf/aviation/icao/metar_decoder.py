@@ -18,13 +18,13 @@ parsing.
 
 WARNING (kept from the original plan, still true): this decoder covers
 the commonly-used METAR groups (wind incl. VRB/gusts/variable
-direction, visibility incl. statute miles and CAVOK, present weather,
-cloud layers incl. CB/TCU and vertical visibility, temperature/
-dewpoint, altimeter in both hPa and inHg, NOSIG/BECMG/TEMPO trend
-detection) but does NOT implement the complete WMO Doc 782 grammar
-(e.g. RVR trend arrows, full remarks-section parsing, runway state
-groups, volcanic ash/wind shear remarks). Verify against the current
-ICAO Annex 3 / WMO No. 306 text before any operational use.
+direction, visibility incl. statute miles and CAVOK, RVR incl. its
+U/D/N tendency indicator, present weather, cloud layers incl. CB/TCU
+and vertical visibility, temperature/dewpoint, altimeter in both hPa
+and inHg, NOSIG/BECMG/TEMPO trend detection) but does NOT implement the
+complete WMO Doc 782 grammar (e.g. full remarks-section parsing, runway
+state groups, volcanic ash/wind shear remarks). Verify against the
+current ICAO Annex 3 / WMO No. 306 text before any operational use.
 
 Reference:
     ICAO Annex 3 to the Convention on International Civil Aviation —
@@ -45,7 +45,8 @@ _WIND_VAR_RE = re.compile(r"^(?P<from>\d{3})V(?P<to>\d{3})$")
 _VIS_M_RE = re.compile(r"^(?P<vis>\d{4})$")
 _VIS_SM_RE = re.compile(r"^(?P<whole>\d+)?(?:(?P<num>\d)/(?P<den>\d))?SM$")
 _RVR_RE = re.compile(
-    r"^R(?P<runway>\d{2}[LRC]?)/(?P<mod>[MP])?(?P<value>\d{4})(V(?P<mod2>[MP])?(?P<value2>\d{4}))?(?P<unit>FT)?$"
+    r"^R(?P<runway>\d{2}[LRC]?)/(?P<mod>[MP])?(?P<value>\d{4})(V(?P<mod2>[MP])?(?P<value2>\d{4}))?"
+    r"(?P<unit>FT)?(?P<trend>[UDN])?$"
 )
 _CLOUD_RE = re.compile(r"^(?P<cover>FEW|SCT|BKN|OVC)(?P<height>\d{3})(?P<type>CB|TCU)?$")
 _VV_RE = re.compile(r"^VV(?P<height>\d{3}|///)$")
@@ -209,6 +210,8 @@ class METARDecoder:
                     "runway": m.group("runway"),
                     "value_m": float(m.group("value")),
                     "modifier": m.group("mod"),
+                    # ICAO Annex 3 / WMO No. 306 tendency indicator: "U" (upward),
+                    "trend": m.group("trend"),  # "D" (downward), "N" (no change), or None if absent.
                 }
             )
             idx += 1
