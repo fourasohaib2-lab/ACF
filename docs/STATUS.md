@@ -1175,3 +1175,14 @@ UTC "aware" ne casse rien. Tests de régression ajoutés
 (`test_briefing_generator_utc.py`, nouveau test dans `test_events.py`).
 37+ tests combinés verts. Volet unités (kt/m/s, ft/m) du même item de
 roadmap reste ouvert, non traité cette passe.
+
+## Mise à jour (2026-09-12, suite 5) : groupe de cisaillement de vent WS (TAF)
+
+Dernier item raisonnablement fermable du §4.2 de l'audit ICAO/OMM :
+groupe WS numérique standard (WMO FM 51-XV) ajouté à
+`taf_decoder.py` (`wind_shear_height_ft`/`wind_shear_direction_deg`/
+`wind_shear_speed_kt`), variante US "WS ALL WPTS" disclosed non
+couverte. 38 tests METAR/TAF verts, 3 consommateurs réels vérifiés
+inchangés. La grammaire METAR/TAF est maintenant largement fermée pour
+les groupes numériques standards ; restent ouverts : remarques
+complètes (RMK), état de piste.

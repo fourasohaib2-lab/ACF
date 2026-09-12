@@ -46,6 +46,11 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
   l'UTC exclusivement pour toute information météorologique
   aéronautique.
+- Groupe de cisaillement de vent WS standard (TAF, WMO FM 51-XV) -
+  dernier item de grammaire disclosed traité cette passe :
+  `TAFForecastPeriod.wind_shear_height_ft`/`wind_shear_direction_deg`/
+  `wind_shear_speed_kt`. Variante US "WS ALL WPTS" explicitement non
+  couverte.
 - Sweep UTC systématique (`datetime.now()` sur tout `src/acf`) : 2 vrais
   bugs de faux étiquetage UTC trouvés et corrigés -
   `BriefingGenerator.generate_briefing()` (générait un "OFFICIAL

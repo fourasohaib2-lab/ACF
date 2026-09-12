@@ -22,6 +22,8 @@ Grammar covered (WMO FM 51-XV / ICAO Annex 3):
     [PROB30|PROB40 [TEMPO] DDHH/DDHH <wind visibility weather clouds>]*
     [TXtt/DDHHZ] [TNtt/DDHHZ]
     [RMK ...]
+Each <wind visibility weather clouds> group may itself include a
+[WShhh/dddffKT] wind shear group right after wind, before visibility.
 
 Each change-group's wind/visibility/weather/cloud sub-fields reuse the
 exact same, already-verified regex groups as METARDecoder (same TAC
@@ -30,12 +32,13 @@ rather than duplicated, per the project's single-source-of-truth rule.
 
 WARNING (same spirit as metar_decoder.py's own warning): this covers the
 commonly-used TAF groups and change-group types (FM/BECMG/TEMPO/PROB30/
-PROB40, including combined PROB+TEMPO, and TX/TN max/min temperature
-groups) but does NOT implement the full WMO Doc 782 grammar (e.g. wind
-shear WS groups, full remarks-section parsing beyond truncating at
-"RMK", NSW/NSC edge cases beyond the basic no-significant-weather/cloud
-markers already handled). Verify against the current ICAO Annex 3 /
-WMO No. 306 text before any operational use.
+PROB40, including combined PROB+TEMPO, TX/TN max/min temperature
+groups, and the standard numeric WS wind shear group) but does NOT
+implement the full WMO Doc 782 grammar (e.g. the US-specific "WS ALL
+WPTS" wind shear variant, full remarks-section parsing beyond
+truncating at "RMK", NSW/NSC edge cases beyond the basic
+no-significant-weather/cloud markers already handled). Verify against
+the current ICAO Annex 3 / WMO No. 306 text before any operational use.
 
 Reference:
     ICAO Annex 3 to the Convention on International Civil Aviation —
@@ -71,6 +74,13 @@ _CHANGE_KEYWORDS = ("BECMG", "TEMPO", "PROB30", "PROB40")
 _TX_RE = re.compile(r"^TX(?P<sign>M)?(?P<temp>\d{2})/(?P<day>\d{2})(?P<hour>\d{2})Z$")
 _TN_RE = re.compile(r"^TN(?P<sign>M)?(?P<temp>\d{2})/(?P<day>\d{2})(?P<hour>\d{2})Z$")
 
+# Wind shear group (WMO FM 51-XV / ICAO Annex 3) - e.g. "WS020/24045KT"
+# (shear at 2000 ft, wind 240deg/45kt). Added 2026-09-12. Deliberately
+# scoped to this standard numeric form only - the US-specific "WS ALL
+# WPTS" (shear affects all runways) variant is NOT covered, stays
+# unparsed rather than guessed.
+_WS_RE = re.compile(r"^WS(?P<hgt>\d{3})/(?P<dir>\d{3})(?P<speed>\d{2,3})KT$")
+
 
 @dataclass
 class TAFForecastPeriod:
@@ -92,6 +102,9 @@ class TAFForecastPeriod:
     present_weather: list[str] = field(default_factory=list)
     cloud_layers: list[dict[str, Any]] = field(default_factory=list)
     vertical_visibility_ft: int | None = None
+    wind_shear_height_ft: int | None = None
+    wind_shear_direction_deg: int | None = None
+    wind_shear_speed_kt: float | None = None
 
 
 @dataclass
@@ -131,6 +144,14 @@ def _parse_wind_visibility_weather_clouds(tokens: list[str], start: int, end: in
             if m.group("gust"):
                 gust = float(m.group("gust"))
                 period.wind_gust_kt = gust * 1.94384 if m.group("unit") == "MPS" else gust
+            idx += 1
+
+    if idx < end:
+        m = _WS_RE.match(tokens[idx])
+        if m:
+            period.wind_shear_height_ft = int(m.group("hgt")) * 100
+            period.wind_shear_direction_deg = int(m.group("dir"))
+            period.wind_shear_speed_kt = float(m.group("speed"))
             idx += 1
 
     if idx < end and tokens[idx] == "CAVOK":

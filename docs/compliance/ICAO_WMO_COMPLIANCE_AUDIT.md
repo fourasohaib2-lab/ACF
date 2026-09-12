@@ -208,6 +208,21 @@ seulement `gui`/`aviation`/`awci` — les 12 autres fichiers utilisant
 aéronautique/officielle" régi par l'Annexe 3 (horodatages internes de
 fichiers/logs/grilles de calcul) - non modifiés.
 
+## 3quinquies. Passe suivante (2026-09-12) : groupe de cisaillement de vent WS (TAF)
+
+Dernier item du §4.2 restant à portée raisonnable : le groupe WS
+numérique standard (WMO FM 51-XV / ICAO Annex 3, ex. "WS020/24045KT" =
+cisaillement à 2000 ft, vent 240°/45kt). Ajouté à `_parse_wind_visibility_
+weather_clouds()` (juste après le groupe de vent, avant la visibilité -
+même ordre que le TAC réel) : `TAFForecastPeriod.wind_shear_height_ft`/
+`wind_shear_direction_deg`/`wind_shear_speed_kt`. Variante américaine
+"WS ALL WPTS" (cisaillement affectant toutes les pistes) explicitement
+non couverte, disclosed. Tests de régression ajoutés (présence ET
+absence honnête à `None`,+ non-confusion avec le groupe de visibilité
+suivant). 38 tests METAR/TAF combinés verts, 3 consommateurs réels
+vérifiés inchangés (`awci_messages_panel.py`, `live_source.py`,
+`esoc_products_panel`).
+
 ## 4. Feuille de route réelle restante (non traitée cette passe, disclosed)
 
 Périmètre trop vaste pour une seule passe honnête (130+ fichiers touchent
@@ -220,10 +235,10 @@ documenté dans `docs/STATUS.md` :
    réels trouvés et corrigés (briefings, événements météo). Reste
    ouvert : audit des mélanges d'unités (kt vs m/s, ft vs m) sans
    conversion explicite - non fait cette passe.
-2. **Grammaire METAR/TAF complète** — ✅ partiellement fait cette passe
-   (§3ter) : RVR trend U/D/N (METAR) et TX/TN (TAF) fermés. Restent
-   ouverts : groupes WS (cisaillement, TAF), remarques complètes (RMK),
-   état de piste.
+2. **Grammaire METAR/TAF complète** — ✅ largement fait cette passe
+   (§3ter, §3quinquies) : RVR trend U/D/N (METAR), TX/TN et le groupe WS
+   numérique standard (TAF) fermés. Restent ouverts : variante
+   américaine "WS ALL WPTS", remarques complètes (RMK), état de piste.
 3. **`wmo_tables.py`** — scoper et peupler avec de vraies tables de codes
    OMM (ex. Common Code Table C-1 à C-14) une fois le périmètre exact
    défini.

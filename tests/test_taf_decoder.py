@@ -187,6 +187,29 @@ def test_tx_tn_absent_stays_honestly_none():
     assert r.min_temp_c is None
 
 
+def test_wind_shear_group_parsed():
+    """WMO FM 51-XV / ICAO Annex 3 standard numeric WS group - real
+    regression added 2026-09-12; previously not covered at all (the
+    decoder's own docstring disclosed it as a gap)."""
+    r = TAFDecoder.decode("TAF KXXX 021130Z 0212/0318 24045G55KT WS020/24045KT 9999 SCT040")
+    base = r.periods[0]
+
+    assert base.wind_shear_height_ft == 2000
+    assert base.wind_shear_direction_deg == 240
+    assert base.wind_shear_speed_kt == 45.0
+    # The wind shear group must not be mistaken for the visibility group.
+    assert base.visibility_m == 10000.0
+
+
+def test_wind_shear_absent_stays_honestly_none():
+    r = TAFDecoder.decode("TAF KXXX 021130Z 0212/0318 18010KT 9999 SCT040")
+    base = r.periods[0]
+
+    assert base.wind_shear_height_ft is None
+    assert base.wind_shear_direction_deg is None
+    assert base.wind_shear_speed_kt is None
+
+
 def test_raises_on_missing_icao_code():
     with pytest.raises(ValueError, match="ICAO station identifier"):
         TAFDecoder.decode("TAF 020600Z 0206/0312 24015KT 9999")
