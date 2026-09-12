@@ -255,6 +255,46 @@ def test_vertical_profile_data_carries_the_real_module_scores_per_level(qapp):
     }
 
 
+def test_vertical_profile_suggestion_label_names_the_real_lowest_awci_level(qapp):
+    """§30's "optimisation de niveau de vol" gap, closed 2026-09-12 -
+    the label shown alongside the vertical-profile bars must name the
+    same level acf.awci.vertical_field.suggest_lowest_complexity_level()
+    would independently pick from the exact same real per-level data,
+    never a different/recomputed value."""
+    from acf.awci.vertical_field import suggest_lowest_complexity_level
+
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+
+    expected = suggest_lowest_complexity_level(dashboard._vertical_profile_data)
+    assert expected["best_level"] is not None  # demo-mode data is always fully comparable
+    label_text = dashboard._vertical_profile_suggestion_label.text()
+    assert expected["best_level"] in label_text
+    assert f"{expected['best_score']:.1f}" in label_text
+    assert "not an ATC clearance" in label_text
+
+
+def test_vertical_profile_suggestion_label_updates_when_the_profile_is_reopened(qapp):
+    """Re-opening the dialog after the point of interest changes must
+    refresh the suggestion label from the new real data, never leave a
+    stale suggestion from the previous point behind."""
+    dashboard = AWCIDashboard()
+    dashboard._open_vertical_profile()
+    first_text = dashboard._vertical_profile_suggestion_label.text()
+    assert first_text  # real text was set on the very first open, not left blank
+
+    dashboard._point_of_interest = (dashboard._point_of_interest[0] + 5.0, dashboard._point_of_interest[1] + 5.0)
+    dashboard._open_vertical_profile()
+
+    from acf.awci.vertical_field import suggest_lowest_complexity_level
+
+    expected = suggest_lowest_complexity_level(dashboard._vertical_profile_data)
+    assert expected["best_level"] in dashboard._vertical_profile_suggestion_label.text()
+    # Not asserted to differ from first_text (a different point can honestly
+    # still have the same lowest-complexity level) - only that it is real
+    # and consistent with the freshly recomputed data, not stale in either case.
+
+
 def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(qapp):
     dashboard = AWCIDashboard()
     dashboard._open_vertical_profile()

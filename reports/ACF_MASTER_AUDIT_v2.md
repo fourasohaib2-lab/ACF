@@ -12285,3 +12285,58 @@ fabriquée.
 dégagé, non-comparabilité honnête (température/visibilité manquante),
 et vérification explicite qu'aucune métrique d'erreur numérique n'est
 produite pour ce module.
+
+## Mise à jour 2026-09-12 (suite, selon jugement) — Recentrage sur AWCI : le gap "optimisation de niveau de vol" (§30) enfin câblé dans le vrai dashboard
+
+**Pourquoi** : jusqu'ici, `acf.awci.vertical_field.suggest_lowest_
+complexity_level()` (fermé le 2026-09-11) n'existait que comme une
+capacité back-end testée en isolation - jamais réellement affichée
+nulle part dans `AWCIDashboard`, alors que la fenêtre "Vertical
+Profile" (`_open_vertical_profile()`) calcule déjà, à chaque ouverture,
+exactement les données `{level_label: {"hpa", "result"}}` que cette
+fonction attend. Une extension du périmètre de l'audit ACF-wide vers
+les 19 derniers paquets non explicitement clôturés (`ai`, `aviation`,
+`dashboard`, `digital_twin`, `earth_physics`, `geoengineering`,
+`geology`, `hpc_connector`, `hpc_workflow`, `hydrology`, `importers`,
+`intelligence`, `monitoring`, `ocean`, `planetary`, `simulation_engine`,
+`space_weather`, `verification`, `web`) a confirmé, en recoupant leurs
+propres entrées déjà écrites dans ce rapport, qu'ils sont TOUS déjà
+audités (18 de façon exhaustive et disclosée explicitement ; le 19e,
+`acf.simulation_engine`, cumulativement à 100% via 14 fichiers relus
+intégralement le 2026-09-06 + 9 autres déjà porteurs de `NOTE
+(correction)` de sessions antérieures - les deux ensembles couvrant
+exactement ses 23 fichiers substantiels). Seul `acf.science` (170
+fichiers) reste en vérification par échantillonnage plutôt
+qu'exhaustive - explicitement proposé à l'utilisateur, qui a choisi de
+revenir sur AWCI plutôt que d'y engager une passe systématique.
+
+**Contrainte du dashboard respectée** : conformément à la consigne
+explicite de l'utilisateur ("tu peux ajouter des boutons tu peux
+modifier le dashboard mais ne touche pas au design garde le comme
+il est"), aucun widget/style/layout existant n'a été modifié - un
+unique nouveau `QLabel` (même convention `label_style("text_muted",
+"xs")` que le "hint" déjà présent juste au-dessus) a été ajouté sous
+les barres du profil vertical, dans la même fenêtre secondaire déjà
+existante.
+
+**Construit** : `_open_vertical_profile()` appelle désormais
+`suggest_lowest_complexity_level(self._vertical_profile_data)` -
+strictement la même donnée déjà construite pour les barres
+elles-mêmes, jamais un second calcul - et affiche le résultat
+("✅ Lowest computed complexity: FL340 (AWCI 12.3) — meteorological
+signal only, not an ATC clearance.") ou, honnêtement, le statut
+`NO_COMPARABLE_LEVELS` si aucun niveau n'avait de score réel défini.
+Le libellé "not an ATC clearance" reprend mot pour mot la limite de
+portée déjà documentée dans la fonction elle-même.
+
+**Tests** : 2 tests ajoutés à `tests/gui/test_awci_dashboard_reference_
+parity.py` (total 40) - le libellé affiché nomme bien le même niveau
+et le même score qu'un appel indépendant à
+`suggest_lowest_complexity_level()` sur les mêmes données, et le
+libellé se rafraîchit réellement (jamais figé sur l'ancien point) à
+la réouverture de la fenêtre après un changement de point d'intérêt.
+
+**Validation réelle** : `ruff check` et `mypy` propres sur
+`awci_dashboard.py` et le fichier de test. Suite ciblée
+(`tests/gui/test_awci_dashboard_reference_parity.py`) : 40 passed, 7
+skipped.

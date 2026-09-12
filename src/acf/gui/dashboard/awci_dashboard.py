@@ -118,7 +118,11 @@ from acf.awci.path_sampling import (
 from acf.awci.pipeline import quality_for_awci_point_data
 from acf.awci.result import AWCIResult, build_awci_result
 from acf.awci.temporal_field import compute_real_complexity_evolution
-from acf.awci.vertical_field import compute_real_complexity_volume, vertical_profile_at_standard_levels
+from acf.awci.vertical_field import (
+    compute_real_complexity_volume,
+    suggest_lowest_complexity_level,
+    vertical_profile_at_standard_levels,
+)
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
 from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDialog
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
@@ -1199,6 +1203,9 @@ class AWCIDashboard(QWidget):
         #: see _open_vertical_profile()'s own comment.
         self._vertical_profile_data: dict[str, dict[str, Any]] = {}
         self._vertical_profile_detail_window: AWCIVerticalProfileLevelDialog | None = None
+        #: Real "lowest-complexity level" suggestion label (§30, added
+        #: 2026-09-12) - see _open_vertical_profile()'s own comment.
+        self._vertical_profile_suggestion_label: QLabel | None = None
 
         time_row = QHBoxLayout()
         time_label = QLabel("Valid Time:")
@@ -2128,7 +2135,17 @@ class AWCIDashboard(QWidget):
         honestly omitted rather than shown with a guessed value). Demo
         mode keeps its own original bit-identical path (the continuous
         analytic pattern has no native-level restriction to interpolate
-        around in the first place)."""
+        around in the first place).
+
+        Also shows (added 2026-09-12, closing AWCI's "optimisation de
+        niveau de vol" gap, §30 of the cross-checked "AWCI - programme
+        complet" specification) a real
+        acf.awci.vertical_field.suggest_lowest_complexity_level()
+        suggestion computed from the very same self._vertical_profile_data
+        this method already builds below - never a second/recomputed
+        pass. Explicitly labelled a meteorological decision-support
+        signal, never an ATC clearance (see that function's own
+        honest-scope docstring)."""
         if self._vertical_profile_window is None:
             self._vertical_profile_window = QDialog(self)
             self._vertical_profile_window.setWindowTitle("AWCI – Vertical Profile")
@@ -2140,7 +2157,11 @@ class AWCIDashboard(QWidget):
             hint = QLabel("Click a bar for the real per-module breakdown at that level.")
             hint.setStyleSheet(label_style("text_muted", "xs"))
             layout.addWidget(hint)
-            self._vertical_profile_window.resize(340, 380)
+            self._vertical_profile_suggestion_label = QLabel("")
+            self._vertical_profile_suggestion_label.setWordWrap(True)
+            self._vertical_profile_suggestion_label.setStyleSheet(label_style("text_muted", "xs"))
+            layout.addWidget(self._vertical_profile_suggestion_label)
+            self._vertical_profile_window.resize(340, 400)
 
         profile: dict[str, float] = {}
         # Real per-level module_scores/physical/forecast breakdown
@@ -2166,6 +2187,19 @@ class AWCIDashboard(QWidget):
                 self._vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
         assert self._vertical_profile_widget is not None  # for mypy - always built above
         self._vertical_profile_widget.set_profile(profile)
+
+        assert self._vertical_profile_suggestion_label is not None  # for mypy - always built above
+        suggestion = suggest_lowest_complexity_level(self._vertical_profile_data)
+        if suggestion["best_level"] is not None:
+            self._vertical_profile_suggestion_label.setText(
+                f"✅ Lowest computed complexity: {suggestion['best_level']} "
+                f"(AWCI {suggestion['best_score']:.1f}) — meteorological signal only, "
+                "not an ATC clearance."
+            )
+        else:
+            self._vertical_profile_suggestion_label.setText(
+                f"ℹ️ No comparable level ({suggestion['status']})."
+            )
 
         self._vertical_profile_window.show()
         self._vertical_profile_window.raise_()
