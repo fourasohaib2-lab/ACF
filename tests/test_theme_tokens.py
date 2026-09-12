@@ -133,3 +133,41 @@ def test_dashboard_stylesheet_includes_modern_scrollbar_styling():
     sheet = dashboard_stylesheet()
     assert "QScrollBar" in sheet
     assert TOKENS.border_strong in sheet
+
+
+# ------------------------------------------------- Phase 46 (2026-09-12)
+# ACF Workstation redesign: real QGroupBox/QComboBox/QListWidget rules -
+# every one of this Workstation's ~20 real QGroupBox sections and its 2
+# real QListWidget nav lists had NO rule here at all before this.
+
+
+def test_dashboard_stylesheet_includes_real_groupbox_styling():
+    sheet = dashboard_stylesheet()
+    assert "QGroupBox" in sheet
+    assert "QGroupBox::title" in sheet
+    assert TOKENS.bg_surface in sheet
+
+
+def test_dashboard_stylesheet_includes_real_combobox_styling():
+    sheet = dashboard_stylesheet()
+    assert "QComboBox" in sheet
+    assert "QComboBox::drop-down" in sheet
+
+
+def test_dashboard_stylesheet_includes_real_listwidget_styling_with_a_distinct_active_tint():
+    sheet = dashboard_stylesheet()
+    assert "QListWidget" in sheet
+    assert "QListWidget::item:selected" in sheet
+    assert TOKENS.accent_real in sheet  # the active/selected item's own real color
+
+
+def test_rgba_helper_computes_the_real_channels_from_a_real_hex_token():
+    from acf.gui.theme_tokens import _rgba
+
+    assert _rgba("#22d3a8", 0.14) == "rgba(34, 211, 168, 0.14)"
+
+
+def test_rgba_helper_accepts_a_hex_string_without_the_leading_hash():
+    from acf.gui.theme_tokens import _rgba
+
+    assert _rgba("22d3a8", 0.5) == _rgba("#22d3a8", 0.5)

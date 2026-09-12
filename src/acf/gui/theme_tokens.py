@@ -191,14 +191,42 @@ def label_style(color: str = "text_primary", size: str = "md", weight: str = "no
     return f"color: {COLORS[color]}; font-size: {font_size}px; font-weight: {weight};"
 
 
+def _rgba(hex_color: str, alpha: float) -> str:
+    """Real `rgba(...)` QSS literal from a token's own hex value - QSS
+    has no `color-mix()`/CSS-variable-with-opacity syntax, so a
+    translucent tint (e.g. a nav item's own "active" background) has
+    to be computed from the token's real RGB channels, not a second,
+    independently-chosen hex literal."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
 def dashboard_stylesheet() -> str:
     """Full Qt stylesheet for a top-level dashboard widget (used by
     AWCIDashboard._apply_theme()) - real, token-driven replacement for
     the previous 6-line hardcoded `QWidget { background-color: #0d1b2a; ... }`
     block. Modernized with real QSS-achievable depth: rounded corners
     and hover/pressed states on buttons and sliders, consistent borders
-    instead of none, all from the same tokens ESOC's own QSS files use."""
+    instead of none, all from the same tokens ESOC's own QSS files use.
+
+    UPDATE (2026-09-12, ACF Workstation redesign Phase 46): added real
+    QGroupBox/QComboBox/QListWidget rules - every one of this
+    Workstation's ~20 real QGroupBox sections (Key Metrics, Model
+    Consensus, Alerts & Hazards, Quick Actions, every Lab's own group
+    boxes, ...) and its 2 real QListWidget nav lists had NO rule here
+    at all before this, so they rendered with the native OS default
+    (grey outline, black title text, OS-native blue selection
+    highlight) against this dashboard's own dark background - jarring,
+    and the nav list's own "active item" teal-pill look this
+    Workstation's docstrings already described was never actually
+    wired into real QSS. Purely additive - no existing selector's
+    rule changed, so no risk to AWCI's own already pixel-matched
+    chrome (which uses none of these 3 widget types in its own
+    reference-matched panels)."""
     t = TOKENS
+    active_tint = _rgba(t.accent_real, 0.14)
+    hover_tint = _rgba(t.accent_real, 0.07)
     return f"""
         QWidget {{
             background-color: {t.bg_root};
@@ -315,6 +343,63 @@ def dashboard_stylesheet() -> str:
         QMenu::item:selected {{
             background-color: {t.bg_surface_alt};
             color: {t.accent_primary};
+        }}
+        QGroupBox {{
+            background-color: {t.bg_surface};
+            border: 1px solid {t.border};
+            border-radius: {t.radius_md}px;
+            margin-top: {t.spacing_lg}px;
+            padding-top: {t.spacing_sm}px;
+            font-weight: 700;
+        }}
+        QGroupBox::title {{
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            left: {t.spacing_sm}px;
+            padding: 0 {t.spacing_xs}px;
+            color: {t.text_secondary};
+        }}
+        QComboBox {{
+            background-color: {t.bg_surface_alt};
+            color: {t.text_primary};
+            border: 1px solid {t.border};
+            border-radius: {t.radius_sm}px;
+            padding: {t.spacing_xs}px {t.spacing_sm}px;
+        }}
+        QComboBox:hover {{
+            border-color: {t.accent_primary};
+        }}
+        QComboBox::drop-down {{
+            border: none;
+        }}
+        QComboBox QAbstractItemView {{
+            background-color: {t.bg_card};
+            color: {t.text_primary};
+            border: 1px solid {t.border};
+            selection-background-color: {t.bg_surface_alt};
+            selection-color: {t.accent_primary};
+            outline: none;
+        }}
+        QListWidget {{
+            background-color: {t.bg_surface};
+            border: 1px solid {t.border};
+            border-radius: {t.radius_md}px;
+            outline: none;
+        }}
+        QListWidget::item {{
+            color: {t.text_secondary};
+            padding: {t.spacing_xs}px {t.spacing_sm}px;
+            border-radius: {t.radius_sm}px;
+        }}
+        QListWidget::item:hover {{
+            background-color: {hover_tint};
+        }}
+        QListWidget::item:selected {{
+            background-color: {active_tint};
+            color: {t.accent_real};
+        }}
+        QListWidget::item:disabled {{
+            color: {t.text_muted};
         }}
     """
 
