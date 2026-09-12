@@ -50,16 +50,28 @@ def test_play_button_hidden_before_real_physics(qapp):
     assert dashboard.play_evolution_button.isVisible() is False
 
 
-def test_play_button_visible_after_real_physics_ready(qapp):
+def test_play_button_enabled_after_real_physics_ready(qapp):
+    """NOTE (updated 2026-09-12, explicit user request "je veux que le
+    dashboard soit exactement comme celui dans la photo... adapte
+    toi"): this button (like the other 8 real header buttons) is no
+    longer shown directly in the header - docs/reference/
+    awci_dashboard_reference.jpg's own header has none - it is real,
+    connected and enabled/disabled exactly as before, just reached
+    through the real "☰" menu instead (see AWCIDashboard._build_header_
+    menu()'s own docstring). isVisible() is therefore now always False
+    regardless of Real Physics state - the real, meaningful assertion
+    is isEnabled(), both directly on the button (the single source of
+    truth every other method in this file still updates) and via the
+    menu action _sync_header_menu() refreshes from it."""
     dashboard = AWCIDashboard()
-    # isVisible() reflects EFFECTIVE visibility (whole parent chain
-    # shown on screen), not just this widget's own setVisible(True)
-    # flag - the dashboard must actually be shown for this assertion
-    # to mean anything (found by a real failure, not assumed).
     dashboard.show()
     dashboard._on_real_physics_ready(_real_volume())
-    assert dashboard.play_evolution_button.isVisible() is True
+    assert dashboard.play_evolution_button.isVisible() is False
     assert dashboard.play_evolution_button.isEnabled() is True
+
+    dashboard._sync_header_menu()
+    play_action = next(a for b, a in dashboard._header_menu_entries if b is dashboard.play_evolution_button)
+    assert play_action.isEnabled() is True
 
 
 def test_evolution_ready_starts_playback_and_renders_first_frame(qapp):

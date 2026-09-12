@@ -91,7 +91,7 @@ def test_awci_dashboard_fits_a_real_1920x1080_screen_maximized_without_scrolling
     assert scroll.horizontalScrollBar().maximum() <= 40  # real, negligible padding rounding, not a real scroll need
 
 
-def test_play_evolution_button_is_always_visible_and_does_not_change_the_header_width(qtbot):
+def test_play_evolution_button_state_toggles_and_does_not_change_the_header_width(qtbot):
     """
     NOTE (correction, 2026-09-07 - real bug, found by directly
     reproducing the user's own complaint "la resolution du dashboard
@@ -108,6 +108,18 @@ def test_play_evolution_button_is_always_visible_and_does_not_change_the_header_
     to match "🧊 3D View" right next to it (always visible, only its
     enabled state toggles) - now real Physics starting/stopping changes
     NOTHING about the header's own width.
+
+    NOTE (updated 2026-09-12, explicit user request "je veux que le
+    dashboard soit exactement comme celui dans la photo... adapte
+    toi"): this button (like the other 8 real header buttons) is no
+    longer shown directly in the header at all - docs/reference/
+    awci_dashboard_reference.jpg's own header has none - reached
+    instead through the real "☰" menu (AWCIDashboard._build_header_
+    menu()). isVisible() is therefore always False regardless of Real
+    Physics state now; the real width-stability guarantee this test
+    exists for is, if anything, even stronger today (none of these 9
+    buttons occupy any header layout slot any more, so none of them can
+    ever change header.sizeHint() - verified below exactly as before).
     """
     from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
@@ -116,7 +128,7 @@ def test_play_evolution_button_is_always_visible_and_does_not_change_the_header_
     dashboard.show()  # isVisible() below needs real effective (on-screen) visibility, not just the setVisible(True) flag
     header = dashboard.real_physics_button.parentWidget()
 
-    assert dashboard.play_evolution_button.isVisible() is True
+    assert dashboard.play_evolution_button.isVisible() is False
     assert dashboard.play_evolution_button.isEnabled() is False
     width_before = header.sizeHint().width()
 

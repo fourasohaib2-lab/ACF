@@ -12931,3 +12931,67 @@ l'ancien code (`99 >= 109` → `AssertionError`, chevauchement de 10px
 reproduit exactement), puis passe une fois le correctif appliqué.
 
 **Validation** : `tests/test_awci_gauge.py` : 9 passed, 0 régression.
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que le dashboard soit exactement comme celui dans la photo... adapte toi") — En-tête AWCI réduit au menu "☰", parité visuelle avec `docs/reference/awci_dashboard_reference.jpg`
+
+**Contexte** : l'utilisateur a fourni la photo de référence (déjà
+présente au dépôt sous `docs/reference/awci_dashboard_reference.jpg`,
+utilisée pour la parité de la jauge demi-cercle) et a demandé une
+correspondance pixel pour pixel. Constat honnête : la photo ne montre
+AUCUN bouton d'en-tête (Real Physics, 4D Evolution, 3D View, Connect
+HPC, Import Model File, Message, Alerts, Report, Real Archive) ni
+d'horloge - fonctionnalités réelles ajoutées depuis. Question posée à
+l'utilisateur avant d'agir (perte de fonctionnalité potentielle) :
+réponse - garder toutes les fonctions réelles, les regrouper derrière
+un bouton "☰" en haut à droite.
+
+**Câblé** : les 9 boutons réels + l'horloge (`self.clock_label`) ne
+sont plus ajoutés à `header_row` - ils restent de vrais widgets
+construits, connectés et synchronisés exactement comme avant
+(`.setParent(self); .hide()`), seulement retirés de la mise en page
+visible. Un nouveau `QToolButton("☰")` (`AWCIDashboard.
+_build_header_menu()`) porte un `QMenu` dont chaque `QAction` appelle
+`button.click()` du bouton réel correspondant (respecte automatiquement
+son `isEnabled()` réel - aucune règle d'activation dupliquée) ;
+`_sync_header_menu()` rafraîchit texte/état/tooltip de chaque action
+depuis son bouton au moment de l'ouverture (`aboutToShow`), gardant
+les boutons cachés comme SEULE source de vérité. L'horloge UTC réelle
+(toujours `QTimer`-driven) est exposée comme première entrée du menu
+(désactivée, info seule) plutôt que retirée.
+
+**Bug réel trouvé et corrigé pendant ce travail** : un
+`menu_button.setStyleSheet(...)` local cassait la cascade CSS Qt vers
+le `QMenu` descendant (tout widget portant SA PROPRE feuille de style,
+même sans sélecteur pertinent, arrête la remontée vers la feuille de
+style de l'ancêtre pour Qt) - remplacé par un ajustement `QFont`
+(API non-cascadante) pour l'icône, laissant les vraies règles globales
+`QToolButton`/`QMenu` déjà correctes (`theme_tokens.py`) s'appliquer.
+Confirmé par échantillonnage direct des pixels du PNG produit
+(`0xff1a2540`, couleur exacte du thème) après une fausse alerte visuelle
+initiale sur une miniature.
+
+**Tests** : `tests/gui/test_awci_dashboard_header_menu.py` (6 tests
+nouveaux - visibilité réelle des 9 boutons, présence des 9 entrées,
+synchronisation texte/état réelle, rafraîchissement de l'horloge,
+déclenchement réel d'une action active, no-op réel d'une action
+désactivée). 2 tests existants mis à jour pour refléter le nouveau
+comportement réel et disclosed (`isVisible()` maintenant toujours
+`False` pour ces 9 boutons - `test_awci_dashboard_evolution.py`,
+`test_awci_dashboard_fullscreen.py`), l'invariant de stabilité de
+largeur d'en-tête étant conservé et même renforcé (aucun de ces
+boutons n'occupe plus le moindre emplacement de mise en page).
+
+**Validation** : suite ciblée dashboard/gui : 155 passed, 9 skipped,
+0 régression réelle (le seul run McATAR/`panel_manager.py` en arrière-
+plan affichant une trace `RuntimeError: Signal source has been deleted`
+est un bruit de fin de process pré-existant, sans rapport, sans échec
+de test associé).
+
+**Reste à faire (parité visuelle, disclosed, non traité ce tour)** :
+palette de couleurs de la carte globale (jet plus saturé/texturé dans
+la photo), ordre décroissant de la légende AWCI SCALE (la photo liste
+100→0 de haut en bas ; ACF garde ses vrais seuils 0/20/35/50/65/85 déjà
+utilisés par `AWCICalculator`/`AWCIGauge` - les valeurs de la photo
+0/20/40/60/80/100 ne sont pas la vraie échelle scientifique ACF et ne
+seront donc pas copiées, seul l'ordre d'affichage le sera), icônes
+avion multiples sur la carte globale.
