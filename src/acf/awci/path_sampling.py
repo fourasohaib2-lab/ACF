@@ -260,6 +260,19 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     computed relative humidity is non-positive at that point - see
     each module's own honest scope.
 
+    "turbulence" (upgraded 2026-09-12, explicit user request "je veux
+    que AWCI travaille avec les lois de l'OACI et l'OMM"): this real
+    Physics-mode counterpart now returns the real, complete Ellrod &
+    Knapp (1992) Turbulence Index (TI2/EI, cited by ICAO Doc 9837) -
+    see `acf.awci.cat_turbulence.compute_real_cat_index_at_level()`'s
+    own module docstring for the full real composition/honest scope -
+    genuinely more rigorous than `awci_layer_grids()`'s own demo-mode
+    wind-speed-gradient proxy (kept unchanged there: demo mode has no
+    real u/v vector decomposition to compute deformation/convergence
+    from). `nan` (never fabricated) wherever the real per-point EI
+    itself was honestly undefined (pole row, degenerate real level
+    separation, or a real volume with only 1 native level).
+
     Parameters
     ----------
     volume : a real compute_real_complexity_volume() result.
@@ -268,15 +281,14 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     Returns
     -------
     dict with "lats"/"lons" (the volume's own 1D coordinate arrays)
-    and "wind" (m/s, real speed magnitude), "turbulence" (m/s per grid
-    step, real horizontal gradient magnitude of that same real wind
-    field - the same disclosed proxy `awci_layer_grids()` uses, not
-    the full Ellrod-Knapp CAT index), "icing" ([0, 1], real
+    and "wind" (m/s, real speed magnitude), "turbulence" (raw s^-2,
+    real Ellrod-Knapp TI2/EI - see above), "icing" ([0, 1], real
     `acf.awci.hydrometeor_phase` severity from this level's own real
     T/q/P), "ceiling" (m, raw estimated LCL height), "visibility"
     ([0, 1], real visibility-degradation risk), "dust" ([0, 1], real
     dust/sand-storm risk) - each a 2D numpy array (n_lat, n_lon).
     """
+    from acf.awci.cat_turbulence import compute_real_cat_index_at_level
     from acf.awci.ceiling import compute_real_ceiling_at_point
     from acf.awci.dust import compute_real_dust_risk_at_point
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
@@ -287,8 +299,8 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     specific_humidity = np.asarray(volume["specific_humidity_volume"][level_idx])
     pressure_hpa = np.asarray(volume["pressure_volume_hpa"][level_idx])
 
-    d_dlat, d_dlon = np.gradient(wind_speed)
-    turbulence = np.hypot(d_dlat, d_dlon)
+    cat_result = compute_real_cat_index_at_level(volume, level_idx)
+    turbulence = cat_result["ei_field"]
 
     n_lat, n_lon = wind_speed.shape
     icing = np.zeros((n_lat, n_lon))
@@ -324,6 +336,7 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
         "lons": volume["lons"],
         "wind": wind_speed,
         "turbulence": turbulence,
+        "turbulence_category": cat_result["category_field"],
         "icing": icing,
         "ceiling": ceiling,
         "visibility": visibility,

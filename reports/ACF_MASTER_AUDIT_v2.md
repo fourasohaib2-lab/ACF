@@ -12569,3 +12569,100 @@ source + 3 test).
 cases Wind/Turbulence/Icing étendue) et `AWCI_COMPONENT_INVENTORY.md`
 (§12 mis à jour à "10 toggles réels", nouvelle entrée #44 ajoutée
 suivant la convention numérotée déjà établie du fichier).
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que AWCI travaille avec les lois de l'OACI et l'OMM") — Indice réel de turbulence Ellrod & Knapp (1992, cité ICAO Doc 9837) câblé dans la couche carte "Turbulence" en mode Real Physics
+
+**Contexte** : après un état des lieux (beaucoup de conformité OACI/OMM
+déjà réelle : LIFR/IFR/MVFR/VFR, METAR/TAF/SIGMET, seuil microburst
+OACI Doc 9837/FAA AC 00-54, altitude-pression OACI Doc 7488, seuil
+pluie forte OMM, échelles Orlanski/OMM), investigation ciblée a trouvé
+`acf.science.wind_turbulence.CATIndex` - implémentation réelle et déjà
+testée de l'indice complet de Clear Air Turbulence d'Ellrod & Knapp
+(1992) (TI1/TI2/EI) - **jamais appelée nulle part dans `acf.awci`**.
+La couche carte "Turbulence" n'utilisait qu'un proxy simplifié
+(gradient de la vitesse du vent scalaire), déjà explicitement disclosé
+comme "PAS l'indice Ellrod-Knapp complet" (`docs/awci/
+future-improvements.md` §5). `AVIATION_HAZARDS_REGISTRY["cat_turbulence"]`
+cite déjà les vraies références (ICAO Doc 9837, Ellrod & Knapp 1992)
+mais n'était pas plus connecté à AWCI que ne l'était le registre
+microburst avant sa propre fermeture le 2026-09-11.
+
+**Tous les ingrédients réels existaient déjà, séparément, jamais
+assemblés** :
+1. Gradients horizontaux réels (du/dx, du/dy, dv/dx, dv/dy, s⁻¹) - la
+   même conversion réelle degrés→mètres en plan tangent local
+   (`acf.awci.workstation_fields.real_grid_spacing_m()`, dy=R·dφ,
+   dx=R·cos(φ)·dλ) déjà utilisée et auditée par la vraie vorticité/
+   divergence de ce même fichier - réutilisée directement (import, pas
+   réimplémentation).
+2. Cisaillement vertical réel (du/dz, dv/dz, s⁻¹) entre 2 niveaux
+   natifs réels adjacents - `compute_real_wind_shear_at_point()`
+   fournit une vraie différence de vitesse (m/s) mais PAS divisée par
+   une vraie hauteur (ses propres niveaux natifs ne sont pas ancrés à
+   une hauteur physique réelle) - un vrai Δz est nécessaire pour
+   respecter l'unité physique s⁻¹ qu'exige `CATIndex.
+   vertical_wind_shear()`. Résolu en réutilisant
+   `calculate_isa_pressure_altitude()` (construite plus tôt cette
+   session) sur la pression réelle de chaque niveau - honnêtement une
+   différence d'altitude-pression ISA, pas une vraie différence de
+   hauteur géopotentielle (même disclosure déjà établie pour cette
+   fonction).
+3. `acf.science.wind_turbulence.CATIndex` lui-même - `deformation()`,
+   `convergence()`, `vertical_wind_shear()`, `ti2()`, `category()` -
+   appelées directement sur ces vraies valeurs per-point, jamais
+   réimplémentées.
+
+**Nouveau module** `src/acf/awci/cat_turbulence.py` -
+`compute_real_cat_index_at_level()` : sélectionne automatiquement le
+vrai niveau adjacent réel (au-dessus, ou en dessous si déjà au sommet),
+calcule VWS/DEF/CVG/EI/catégorie per-point, `nan`/`"UNDEFINED"`
+honnête (jamais fabriqué) aux lignes polaires, où le Δz réel est trop
+proche de zéro, ou si le volume n'a qu'un seul niveau réel.
+
+**Divulgation honnête cruciale** : le TI2/EI d'Ellrod (une technique
+opérationnelle de PRÉVISION) n'est PAS la même grandeur que le vrai
+EDR (Eddy Dissipation Rate, dérivé de mesures accéléromètre en vol)
+que le même registre `AVIATION_HAZARDS_REGISTRY["cat_turbulence"]`
+cite aussi - les deux sont réels, les deux cités par le même OACI
+Doc 9837, mais ce sont deux métriques réelles DIFFÉRENTES - jamais
+présenté comme une valeur EDR ni comparé numériquement aux seuils EDR
+du registre.
+
+**Décision utilisateur explicite sur l'intégration** : remplacer le
+proxy existant de la case "Turbulence" en mode Real Physics (tooltip
+mis à jour pour citer ICAO Doc 9837), garder le proxy simplifié
+inchangé en mode démo (qui n'a pas de vraie décomposition vectorielle
+u/v, seulement une vitesse scalaire - la déformation/convergence ne
+peuvent honnêtement pas en être dérivées).
+
+**Vrai bug trouvé et corrigé en cours de route, indépendant du
+chantier principal** : `AWCIMapPanel.update_data()`'s propre branche
+de reconstruction Real Physics codait en dur `("Wind", "Turbulence",
+"Icing")` - un vrai rafraîchissement (ex. déplacement du slider de
+niveau de vol) alors que Ceiling/Visibility/Dust (ajoutés plus tôt ce
+même tour) étaient cochés faisait silencieusement disparaître leur
+contour, `self._extra_layer_contours` étant reconstruit de zéro à
+chaque `update_data()`. Corrigé en une vérification générique
+(`key not in self._external_layer_grids`), plus robuste qu'un tuple à
+maintenir. Reproduit ET vérifié corrigé explicitement (test annulé
+temporairement pour confirmer l'échec réel avant restauration du
+correctif).
+
+**Tests** : `tests/test_awci_cat_turbulence.py` (7 tests, dont une
+recomposition indépendante à partir des mêmes primitives réelles pour
+un point intérieur - vérification décisive que la fonction fait bien
+ce que son docstring annonce) ; `tests/test_awci_path_sampling.py`
+(1 test réécrit) ; `tests/test_awci_map_panel_reference_fidelity.py`
+(1 nouveau test de régression pour le bug de survie au rafraîchissement,
+2 tests existants corrigés pour appeler `set_external_field()` en plus
+de `set_external_layer_grids()` - sans quoi ils testaient
+silencieusement le mauvais chemin de code, le mode démo au lieu du
+mode Real Physics). Suite ciblée : 55 passed. `ruff`/`mypy` propres
+sur les 3 fichiers source touchés.
+
+**Ce qui reste réellement** : le givrage (`airframe_icing`, seuils
+LWC réels ICAO Annex 3 Ch.3) reste NON fermable honnêtement -
+`CoupledEarthSolver` n'a aucun champ de contenu en eau liquide nuageux
+(`qc`) ; le proxy existant (sévérité de phase par température du
+thermomètre mouillé, `acf.awci.hydrometeor_phase`) reste la meilleure
+approximation honnête disponible.

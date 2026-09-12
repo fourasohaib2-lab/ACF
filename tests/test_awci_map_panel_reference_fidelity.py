@@ -264,11 +264,42 @@ def test_ceiling_visibility_dust_are_real_in_real_physics_mode_too(qtbot):
     panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
     qtbot.addWidget(panel)
     volume = compute_real_complexity_volume(model="ALADIN", n_lat=8, n_lon=12, n_levels=6, steps=2, seed=3)
+    # set_external_field() must be called too (real production sequence
+    # - see awci_dashboard.py's own _apply_volume_at_level()) for
+    # update_data() to actually take its Real Physics branch at all;
+    # set_external_layer_grids() alone leaves self._external_field
+    # None, silently falling back to the demo-mode branch instead.
+    panel.set_external_field(volume["lons"], volume["lats"], volume["awci_volume"][0], "REAL PHYSICS")
     panel.set_external_layer_grids(real_layer_grids_at_level(volume, level_idx=0))
 
     for name in ("Ceiling", "Visibility", "Dust"):
         panel.extra_layer_checkboxes[name].setChecked(True)
         assert name in panel._extra_layer_contours, f"{name} should have built a real contour in Real Physics mode"
+
+
+def test_ceiling_visibility_dust_survive_a_real_data_refresh_in_real_physics_mode(qtbot):
+    """Real regression guard (2026-09-12): update_data()'s own Real
+    Physics rebuild branch used to hardcode ("Wind", "Turbulence",
+    "Icing") - a real redraw (e.g. the flight-level slider) while
+    Ceiling/Visibility/Dust was checked silently dropped its contour,
+    since self._extra_layer_contours is rebuilt from scratch on every
+    update_data() call. Same real bug class as
+    test_layers_panel_state_survives_a_real_data_refresh above, for
+    Real Physics mode specifically."""
+    from acf.awci.path_sampling import real_layer_grids_at_level
+    from acf.awci.vertical_field import compute_real_complexity_volume
+
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    volume = compute_real_complexity_volume(model="ALADIN", n_lat=8, n_lon=12, n_levels=6, steps=2, seed=3)
+    panel.set_external_field(volume["lons"], volume["lats"], volume["awci_volume"][0], "REAL PHYSICS")
+    panel.set_external_layer_grids(real_layer_grids_at_level(volume, level_idx=0))
+    panel.extra_layer_checkboxes["Ceiling"].setChecked(True)
+    assert "Ceiling" in panel._extra_layer_contours
+
+    panel.update_data(flight_level_hpa=500.0, time_offset_hours=3.0)
+
+    assert "Ceiling" in panel._extra_layer_contours, "Ceiling's real contour must survive a real data refresh"
 
 
 def test_set_extent_applies_to_the_real_camera(qtbot):

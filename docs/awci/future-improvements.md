@@ -75,6 +75,25 @@ now real in Real Physics mode (`acf.awci.path_sampling.
 real_layer_grids_at_level()`, same disclosed proxy, applied to that
 mode's own real wind field).
 
+**Update 2026-09-12 (closed for Real Physics mode):** explicit user
+request "je veux que AWCI travaille avec les lois de l'OACI et l'OMM"
+- the real horizontal wind gradients this note said "no per-point
+pipeline computes yet" turned out to already be derivable in Real
+Physics mode: `acf.awci.workstation_fields.real_grid_spacing_m()`
+already gives the real local-Cartesian dx/dy needed, and a real Δz
+between 2 native levels is now obtainable via
+`calculate_isa_pressure_altitude()` (built this same session). New
+module `acf.awci.cat_turbulence.compute_real_cat_index_at_level()`
+composes these with `CATIndex` itself (never reimplemented) into the
+real, complete Ellrod-Knapp TI2/EI - now what the "Turbulence" LAYERS
+checkbox shows in Real Physics mode (replacing the old proxy there,
+per explicit user choice). Demo mode's own wind-speed-gradient proxy
+is unchanged and stays open as disclosed above - demo mode has no
+real u/v vector decomposition to derive deformation/convergence from.
+See `reports/ACF_MASTER_AUDIT_v2.md`'s 2026-09-12 entry for the full
+disclosure (including why TI2/EI is not the same real quantity as a
+true EDR measurement, despite both being cited by ICAO Doc 9837).
+
 ## 6. Real per-grid-cell CAPE contour map layer
 
 **Closed 2026-09-03 (suite)**, explicit user request "je veux rendre

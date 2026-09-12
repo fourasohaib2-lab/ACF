@@ -222,13 +222,23 @@ def test_real_layer_grids_at_level_icing_bounded_0_1():
     assert np.all(result["icing"] <= 1.0)
 
 
-def test_real_layer_grids_at_level_turbulence_is_a_real_nonnegative_gradient():
+def test_real_layer_grids_at_level_turbulence_is_the_real_ellrod_knapp_index():
+    """2026-09-12 upgrade (explicit user request "je veux que AWCI
+    travaille avec les lois de l'OACI et l'OMM"): "turbulence" here is
+    no longer the old wind-speed-gradient proxy - it is now
+    acf.awci.cat_turbulence.compute_real_cat_index_at_level()'s own
+    real Ellrod & Knapp TI2/EI (ICAO Doc 9837), reused directly (never
+    a second/recomputed value) - and a signed quantity (EI can be
+    genuinely negative in a divergent region - VWS*(DEF+CVG) with a
+    negative CVG - unlike the old proxy's own always-nonnegative
+    np.hypot() magnitude)."""
+    from acf.awci.cat_turbulence import compute_real_cat_index_at_level
+
     volume = _real_volume_for_hazards()
     result = real_layer_grids_at_level(volume, level_idx=2)
-    d_dlat, d_dlon = np.gradient(volume["wind_speed_volume"][2])
-    expected = np.hypot(d_dlat, d_dlon)
-    assert np.allclose(result["turbulence"], expected)
-    assert np.all(result["turbulence"] >= 0.0)
+    expected = compute_real_cat_index_at_level(volume, level_idx=2)
+    assert np.array_equal(result["turbulence"], expected["ei_field"], equal_nan=True)
+    assert np.array_equal(result["turbulence_category"], expected["category_field"])
 
 
 def test_real_layer_grids_at_level_has_no_cape_convection_clouds_keys():

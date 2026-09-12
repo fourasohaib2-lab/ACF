@@ -656,8 +656,11 @@ class AWCIMapPanel(EventMixin, QWidget):
         ),
         "Turbulence": (
             "turbulence", "Purples",
-            "Real horizontal wind-speed gradient magnitude - a disclosed PROXY, not the full Ellrod-Knapp "
-            "CAT index (see docs/awci/future-improvements.md).",
+            "Demo mode: real horizontal wind-speed gradient magnitude - a disclosed PROXY. Real Physics "
+            "mode (upgraded 2026-09-12): the real, complete Ellrod & Knapp (1992) Turbulence Index "
+            "(TI2/EI), cited by ICAO Doc 9837 - acf.awci.cat_turbulence - genuinely more rigorous, not "
+            "just a proxy, though still distinct from a true EDR measurement (see that module's own "
+            "docstring).",
         ),
         "Icing": (
             "icing", "PuBu",
@@ -1103,11 +1106,25 @@ class AWCIMapPanel(EventMixin, QWidget):
                     self._extra_layer_contours[name] = artist
             elif self._external_layer_grids is not None:
                 self._last_layer_grids = self._external_layer_grids
-                for name in ("Wind", "Turbulence", "Icing"):
+                # NOTE (correction, 2026-09-12): this used to hardcode
+                # ("Wind", "Turbulence", "Icing") - the only 3 layers
+                # with a real Real Physics counterpart when this branch
+                # was first written. Ceiling/Visibility/Dust (added
+                # 2026-09-12) genuinely have one too (see
+                # set_external_layer_grids()'s own docstring) but this
+                # hardcoded tuple was never updated for them - a real
+                # redraw while one of those 3 was checked (e.g. moving
+                # the flight-level slider) would have silently dropped
+                # its contour, since self._extra_layer_contours is
+                # rebuilt from scratch on every update_data() call.
+                # Checking `key in self._external_layer_grids` instead
+                # is the real, generic fix - never needs updating again
+                # for a future real-Physics-capable layer.
+                for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
                     if not self.extra_layer_checkboxes[name].isChecked():
                         continue
-                    key = self._EXTRA_LAYER_SPECS[name][0]
-                    cmap = self._EXTRA_LAYER_SPECS[name][1]
+                    if key not in self._external_layer_grids:
+                        continue  # real no-op - see set_external_layer_grids()'s own docstring
                     artist = self.axis.contourf(
                         self._external_layer_grids["lons"],
                         self._external_layer_grids["lats"],
