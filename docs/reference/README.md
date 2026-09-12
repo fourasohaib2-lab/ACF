@@ -22,12 +22,29 @@ not screenshots of this codebase.
   user request "on vas repartir a zero toutes les images du dashboard
   AWCI... suprime les"): this was the AWCI-specific mockup
   `acf.gui.dashboard.awci_dashboard` was built/pixel-matched against
-  through this session (global/regional maps, vertical cross-section,
-  AWCI components radar, risk summary, route planning, stats bar,
-  footer, AWCI SCALE legend, Flight Level/Rendered info boxes, Point
-  Information card, Layers panel). The many source-code comments
-  citing this file (e.g. "docs/reference/awci_dashboard_reference.jpg
-  parity work") describe real, already-shipped design decisions made
-  while it existed - left as-is, historically accurate, not rewritten
-  just because the image itself is gone. A new AWCI reference, if any,
-  replaces this entry.
+  earlier in this session (global/regional maps, vertical
+  cross-section, AWCI components radar, risk summary, route planning,
+  stats bar, footer, AWCI SCALE legend, Flight Level/Rendered info
+  boxes, Point Information card, Layers panel). The many source-code
+  comments citing this file (e.g. "docs/reference/
+  awci_dashboard_reference.jpg parity work") describe real,
+  already-shipped design decisions made while it existed - left as-is,
+  historically accurate, not rewritten just because the image itself
+  is gone.
+- **`awci_dashboard_reference.png`** - the CURRENT AWCI reference,
+  provided 2026-09-12 (explicit user request "je veux que le dashboard
+  soit exactement comme celui dans la photo... 100%... tous les
+  boutons fonctionnelles"), replacing the removed `.jpg` above with a
+  substantially different design: a light sidebar-navigation shell
+  (Overview / Map & Visualization / Hazards / Analysis / Data &
+  Reports sections) and a light top bar (Area/Date/Forecast/Model
+  selectors, system status, user profile) around the SAME dark
+  operational content area - global map with a Layers panel and 2D/
+  3D/4D toggle, a hazard summary row (AWCI Global gauge + 6 hazard
+  cards), Current Situation / Model Agreement / Airport Complexity
+  cards, 5 analysis panels (Vertical Cross Section, Atmospheric
+  Profile, Flight Route Analysis, Time Evolution, AWCI Vertical
+  Profile), and a Recent Alerts / Latest Updates / Quick Actions
+  footer row. Being built in verified phases against the real PySide6
+  dashboard (`acf.gui.dashboard.awci_dashboard`) - see
+  `reports/ACF_MASTER_AUDIT_v2.md` for progress.
