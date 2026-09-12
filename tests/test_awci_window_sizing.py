@@ -7,12 +7,15 @@ minimum size of ~1489x1064 - larger than plenty of real screens
 (1366x768/1280x800/1024x768 laptops). `fit_window_to_screen`'s own
 resize()/margin clamp cannot fix this on its own: Qt floors a
 QMainWindow's actual minimum size to its central widget's, no matter
-what size was requested. Wrapped in a QScrollArea - the same pattern,
-and the same real AWCIDashboard widget class, `PanelManager.
-AWCIDashboardPanel` already uses to embed this identical dashboard
-inside ESOC's own dock (see that class's own docstring) - the window's
-own minimum drops to just the scroll area's frame, and the window can
+what size was requested. Wrapped in a QScrollArea - the window's own
+minimum drops to just the scroll area's frame, and the window can
 always be shrunk to whatever the operator's screen allows.
+
+(ESOC used to also embed this identical AWCIDashboard widget a second
+time, redundantly, as a tab in its own bottom dock, wrapped the same
+way - that embedding was removed 2026-09-12; this standalone window,
+opened via ESOC's own "AWCI" toolbar button, is now the one real way
+to reach it.)
 """
 
 from __future__ import annotations

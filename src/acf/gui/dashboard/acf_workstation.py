@@ -1303,8 +1303,8 @@ class ACFWorkstation(QWidget):
         # after switching back to a small panel like "Atmosphere State"
         # (147px) - on a small screen, a single visit to a heavy Lab
         # panel permanently outgrows the display. Wrapping in a
-        # QScrollArea (same established pattern as panel_manager.py's
-        # own AWCIDashboardPanel scroll wrap, for the exact same reason)
+        # QScrollArea (same established pattern the AWCI dashboard's own
+        # standalone window already used, for the exact same reason)
         # decouples the window's minimum from EVERY Lab panel's content
         # entirely; a panel that doesn't fit the space actually given
         # scrolls instead of forcing the window to grow.

@@ -269,8 +269,8 @@ class ESOCLayout:
         # then STAYED there after switching back to a tiny tab like
         # "Hpc Dashboard" (154px) - on a small screen, a single visit to
         # a heavy tab permanently outgrows the display. Wrapping in a
-        # QScrollArea (same established pattern as AWCIDashboardPanel's
-        # own scroll wrap above, for the exact same reason) decouples
+        # QScrollArea (same established pattern the AWCI dashboard's own
+        # standalone window wraps itself in, for the exact same reason) decouples
         # the dock's minimum from EVERY tab's content entirely - Qt
         # never queries a QScrollArea's child for its size when deciding
         # the scroll area's own minimum - so the window can always be

@@ -424,12 +424,14 @@ class ESOCWindow(QMainWindow):
     def _open_awci_dashboard(self) -> None:
         """Open (or raise) the AWCI dashboard as its own top-level window.
 
-        The AWCIDashboard widget was already reachable twice, but badly: as the
-        28th and last tab of the bottom dock (where it is clipped - it declares a
-        1200x900 minimum and lives in a QScrollArea, see AWCIDashboardPanel), and
-        as a button inside the Classic View window, two clicks away. This action
-        opens acf.gui.dashboard.awci_window.AWCIDashboardWindow (1500x950)
-        directly, reusing the exact pattern of _open_classic_dashboard() above.
+        By explicit design decision (2026-09-12), the AWCI dashboard is never
+        embedded inside the ACF/ESOC dashboard itself - it previously also lived
+        as the bottom dock's 28th tab (a redundant, clipped second instance of
+        the exact same widget), which has been removed. This toolbar action is
+        now the one real, already-built way to reach it: it opens
+        acf.gui.dashboard.awci_window.AWCIDashboardWindow (1500x950) as its own
+        top-level window, reusing the exact pattern of _open_classic_dashboard()
+        above.
 
         The import is deliberately local for the same reason as there:
         acf.gui.dashboard pulls in acf.gui, whose __init__ eagerly imports THIS

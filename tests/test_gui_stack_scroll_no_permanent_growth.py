@@ -17,11 +17,13 @@ for ACFWorkstation's "Complexity Explorer" Lab panel (737px tall, 633
 
 The fix wraps `ESOCLayout.bottom_tabs`/`ACFWorkstation.stack` each in
 their own `QScrollArea` (`setWidgetResizable(True)`) - the exact same
-pattern this codebase already uses for `AWCIDashboardPanel` inside
-`PanelManager`, for the identical reason (see that class's own
-docstring) - which fully decouples the window's own minimum size from
-any one page/tab's content: a page that doesn't fit the space actually
-given scrolls instead of forcing the window to grow.
+pattern the AWCI dashboard's own standalone window already used for the
+identical reason (before this fix, ESOC also embedded a second,
+redundant AWCI dashboard instance as a tab wrapped the same way; that
+embedding was removed 2026-09-12, the standalone window remains the one
+real way to open it) - which fully decouples the window's own minimum
+size from any one page/tab's content: a page that doesn't fit the space
+actually given scrolls instead of forcing the window to grow.
 """
 
 from __future__ import annotations

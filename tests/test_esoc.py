@@ -78,10 +78,10 @@ def test_panel_manager(qapp):
     registry = ModuleRegistry()
     dispatcher = CommandDispatcher()
     pm = PanelManager(registry, dispatcher)
-    assert len(pm.list_panel_names()) == 44
+    assert len(pm.list_panel_names()) == 43
     assert pm.get_panel("earth_monitoring") is not None
     assert pm.get_panel("simulation") is not None
-    assert pm.get_panel("awci_dashboard") is not None
+    assert pm.get_panel("awci_dashboard") is None  # removed 2026-09-12: no longer embedded, see esoc_window._open_awci_dashboard()
     assert pm.get_panel("volcanoes_panel") is not None
     assert pm.get_panel("wildfires_panel") is not None
     assert pm.get_panel("aerosols_panel") is not None

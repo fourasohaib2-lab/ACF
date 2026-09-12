@@ -63,10 +63,8 @@ class AWCIDashboardWindow(QMainWindow):
         # above alone can't keep this window on-screen: Qt floors a
         # QMainWindow's actual minimum to its central widget's, no
         # matter what resize() was asked for. Wrapped in a QScrollArea -
-        # the exact same pattern, and the exact same real widget class,
-        # `PanelManager.AWCIDashboardPanel` already uses to embed this
-        # identical dashboard inside ESOC's own dock for the identical
-        # reason (see that class's own docstring) - so the window can
+        # the window's own minimum drops to just the scroll area's frame,
+        # so the window can
         # always shrink to whatever the operator's screen allows, with
         # scrollbars for whatever doesn't fit instead of the window
         # itself growing past the display.

@@ -44,9 +44,12 @@ class ESOCToolbar(QToolBar):
             ("📷 Screenshot", "take_screenshot"),
             ("⚙️ Settings", "open_settings"),
             ("🗂️ Classic View", "open_classic_dashboard"),
-            # The AWCI dashboard already existed in two places, both awkward to
-            # reach: the 28th (last) tab of the bottom dock, and a button inside
-            # the Classic View window. This opens AWCIDashboardWindow directly.
+            # By explicit design decision (2026-09-12), the AWCI dashboard is
+            # never embedded inside the ACF/ESOC dashboard itself - it used to
+            # also live, redundantly, as the 28th (last) tab of the bottom
+            # dock (removed) and as a button inside the Classic View window.
+            # This button is the one real way to reach it: it opens
+            # AWCIDashboardWindow as its own top-level window.
             ("✈️ AWCI", "open_awci_dashboard"),
             # Explicit user request ("une vraie application séparée...
             # pas juste une 2e fenêtre Qt dans le même processus") -
