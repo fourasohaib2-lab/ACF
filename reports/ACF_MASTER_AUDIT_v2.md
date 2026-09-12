@@ -13035,6 +13035,36 @@ aucun point restant identifié pour l'instant - travail de parité
 pixel avec la photo de référence considéré complet pour cette session
 (en-tête, légende, fond de carte, icônes avion).
 
+## Mise à jour 2026-09-12 (suite) — Audit d'accessibilité réel (contraste WCAG) et correction de `text_muted`
+
+**Contexte** : demande utilisateur d'installer des skills de design
+pour "mieux créer le dashboard" ; plugin non installable depuis mobile
+- audit équivalent réalisé directement, sans plugin, avec de vrais
+calculs de contraste WCAG (formule officielle de luminance relative
+sRGB, pas une estimation visuelle).
+
+**Constat mesuré** : `TOKENS.text_muted` (`#71809c`) sur
+`TOKENS.bg_card` (`#1a2540`) = **3.81:1**, sous le seuil AA (4.5:1)
+pour texte normal - utilisé à 9px (`label_style("text_muted", "xs")`)
+dans **50+ endroits** à travers le dashboard AWCI ET les 14 panneaux
+de l'ACF Scientific Workstation. Confirmé au passage, quantitativement,
+que le contour sombre ajouté plus tôt cette session sur les glyphes
+avion (`path_effects.withStroke`) était un vrai fix WCAG et pas
+seulement cosmétique : 1.53:1 (échec grave) → 12.22:1 sans lui vs. avec.
+
+**Câblé** : `TOKENS.text_muted` éclairci de `#71809c` à `#7e8fae` -
+le plus petit éclaircissement uniforme qui franchit le seuil AA
+(4.65:1 sur `bg_card`, 5.95:1 sur `bg_root`) - changement à peine
+perceptible visuellement (confirmé par capture d'écran réelle), un
+seul point de modification (`theme_tokens.py`) propagé automatiquement
+partout via le design-system déjà en place, aucune régression de
+design attendue.
+
+**Validation** : aucun test n'affirme la valeur hexadécimale exacte de
+`text_muted`. Suite ciblée theme_tokens + awci_dashboard + workstation
+(14 consommateurs de `AWCIMapPanel` + tout le reste du thème) :
+448 passed, 9 skipped, 0 régression.
+
 ## Mise à jour 2026-09-12 (suite) — Ordre d'affichage de la légende AWCI SCALE aligné sur la photo (valeurs scientifiques réelles inchangées)
 
 **Câblé** : `AWCIMapPanel._draw_awci_scale_legend()` itérait

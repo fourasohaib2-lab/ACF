@@ -57,7 +57,15 @@ class _Tokens:
     # Text
     text_primary: str = "#eef2f9"
     text_secondary: str = "#a7b6d1"
-    text_muted: str = "#71809c"
+    # text_muted lightened 2026-09-12 (real WCAG contrast audit, no
+    # plugin needed - computed via the standard relative-luminance
+    # formula): the previous #71809c only reached 3.81:1 against
+    # bg_card (#1a2540) - below the 4.5:1 AA threshold for normal text
+    # - while used at 9px ("xs") in 50+ labels across AWCI and every
+    # ACF Scientific Workstation panel (label_style("text_muted", "xs")).
+    # #7e8fae is the minimal uniform lightening that clears AA
+    # (4.65:1) - a barely perceptible change, not a redesign.
+    text_muted: str = "#7e8fae"
 
     # Accents - primary kept as the established cyan (brand
     # continuity), secondary a real gradient partner (violet) via
