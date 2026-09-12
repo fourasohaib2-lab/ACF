@@ -1125,3 +1125,20 @@ pour le détail complet. Résumé :
 Tests de régression ajoutés : `tests/test_standards_parameter_tables.py`,
 `test_header_clock_shows_genuine_utc_not_local_time`. Suite ciblée verte
 (15 passed), ruff/mypy clean sur tous les fichiers touchés.
+
+## Mise à jour (2026-09-12, suite 2) : `acf.data.integration.AdapterFactory` — BUFR/GRIB non-disclosed empty-load
+
+En vérifiant l'item ouvert "existe-t-il un vrai support BUFR ?" de
+l'audit ICAO/OMM ci-dessus, trouvé : les 8 adaptateurs de
+`acf.data.integration.AdapterFactory` (NetCDF/GRIB/BUFR/JSON/XML/HDF5/
+GeoTIFF/CSV) retournent tous inconditionnellement un `Dataset` bien
+formé mais silencieusement vide, sans disclosure - `AdapterFactory`
+n'a aucun appelant réel hors de ses propres tests (vérifié via grep),
+donc pas de donnée actuellement corrompue en production, mais un piège
+non disclosed pour un futur appelant. Corrigé pour les 2 formats
+directement réglementés OACI/OMM (`BUFRAdapter`/`GRIBAdapter`) :
+`dataset.metadata["is_real_data"] = False` + raison explicite, tests de
+régression ajoutés. Les 6 autres adaptateurs ont le même bug, non
+corrigé - hors périmètre strict de cette session, disclosed dans
+`docs/compliance/ICAO_WMO_COMPLIANCE_AUDIT.md` §3bis pour une passe
+dédiée "intégrité de `acf.data.integration`".

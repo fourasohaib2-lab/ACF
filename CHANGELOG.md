@@ -46,6 +46,16 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
   l'UTC exclusivement pour toute information météorologique
   aéronautique.
+- `BUFRAdapter.load()`/`GRIBAdapter.load()` (`acf.data.integration`) :
+  retournaient silencieusement un `Dataset` bien formé mais vide, sans
+  aucune disclosure, quel que soit le contenu réel du fichier - aucun
+  appelant réel actuellement (`AdapterFactory` n'a pas de caller hors
+  de ses propres tests), mais un piège silencieux pour un futur
+  appelant. `dataset.metadata["is_real_data"]` désormais honnêtement
+  `False` avec la raison. Les 6 autres adaptateurs de cette même
+  fabrique (NetCDF/CSV/JSON/XML/HDF5/GeoTIFF) ont le même bug non
+  corrigé - hors périmètre OACI/OMM de cette session, disclosed pour
+  une passe dédiée.
 
 ### Changed
 - Le dashboard AWCI n'est plus jamais embarqué dans le dock ESOC :

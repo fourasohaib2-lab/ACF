@@ -108,6 +108,34 @@ style US, non-SIGMET (ce qu'il est réellement aujourd'hui), soit
 6 — un travail scientifique/produit réel, pas un renommage.
 **Aucun changement fait ici** — décision produit à prendre, pas un bug.
 
+## 3bis. Passe suivante (2026-09-12) : support BUFR/GRIB dans `acf.data.integration`
+
+En vérifiant l'item §4.4 ci-dessous ("existe-t-il un vrai support BUFR ?"),
+found : **`acf.data.integration.AdapterFactory`** (8 adaptateurs : NetCDF,
+GRIB, BUFR, JSON, XML, HDF5, GeoTIFF, CSV) a un `load()` qui retourne
+**inconditionnellement** un `Dataset` bien formé (`.variables`/
+`.dimensions`/`.metadata` réels, mais silencieusement vides) quel que soit
+le contenu réel du fichier - aucune bibliothèque de décodage utilisée nulle
+part dans ces 8 classes. Non disclosed avant cette passe (contrairement au
+stub déjà honnête `acf.importers.readers.bufr_reader.BufrReader`, corrigé
+lors de l'audit du 2026-09-06). Vérifié via `grep` : `AdapterFactory`
+n'a aucun appelant réel en dehors de ses propres tests - un risque
+silencieux dormant, pas une donnée actuellement corrompue en production.
+
+Corrigé pour les 2 formats directement réglementés OACI/OMM (GRIB2/BUFR
+sont les formats d'échange standard du Manuel des codes OMM n°306) :
+`BUFRAdapter.load()`/`GRIBAdapter.load()` posent maintenant
+`dataset.metadata["is_real_data"] = False` + une raison explicite, au lieu
+d'un `Dataset` silencieusement vide indiscernable d'un vrai fichier vide.
+Tests de régression ajoutés (`test_load_honestly_discloses_it_is_not_a_real_decode`
+dans `test_bufr_adapter.py`/`test_grib_adapter.py`).
+
+**Non corrigé, disclosed** : les 6 autres adaptateurs
+(NetCDF/CSV/JSON/XML/HDF5/GeoTIFF) ont le même bug non-disclosed, mais
+hors du périmètre OACI/OMM strict de cette session - à traiter dans une
+passe dédiée "intégrité de `acf.data.integration`", pas ici, pour ne pas
+diluer le périmètre demandé.
+
 ## 4. Feuille de route réelle restante (non traitée cette passe, disclosed)
 
 Périmètre trop vaste pour une seule passe honnête (130+ fichiers touchent
@@ -126,9 +154,11 @@ documenté dans `docs/STATUS.md` :
 3. **`wmo_tables.py`** — scoper et peupler avec de vraies tables de codes
    OMM (ex. Common Code Table C-1 à C-14) une fois le périmètre exact
    défini.
-4. **BUFR** — vérifier s'il existe un vrai support BUFR (format
-  d'observation OMM standard) dans ce codebase ou seulement GRIB — non
-  vérifié cette passe.
+4. **BUFR** — ✅ vérifié cette passe (§3bis) : aucun vrai décodeur BUFR
+   nulle part dans ce codebase (dépendance manquante, ex. eccodes/
+   pybufrkit) — disclosed, pas un travail à faire "sans risque" ici
+   (nécessite d'ajouter une vraie dépendance). Un vrai support BUFR
+   reste un travail de fonctionnalité à part entière, pas un audit.
 5. **Décision produit §3 ci-dessus** — clarifier le statut SIGMET vs
    NOAA SPC de l'écran "Alerts & Hazards".
 6. **Annexe 5 OACI (unités de mesure)** — vérifier la cohérence des
