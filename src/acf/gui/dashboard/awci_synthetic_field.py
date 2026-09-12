@@ -258,6 +258,25 @@ def awci_layer_grids(
       cloud-fraction/cloud-cover quantity exists anywhere in this
       pipeline; higher precipitation genuinely correlates with cloud
       presence, but this is not literally a cloud-cover field).
+    - "ceiling" (added 2026-09-12, AWCI dashboard map panel's own
+      "LAYERS" checkboxes): raw `acf.awci.ceiling.
+      compute_real_ceiling_at_point()` height in meters, NOT a [0, 1]
+      risk score like every other layer here - a LOWER value is more
+      hazardous (unlike every other layer, where higher = worse), so
+      this is the one layer plotted with a REVERSED colormap
+      (`"YlOrRd_r"` - see `AWCIMapPanel._EXTRA_LAYER_SPECS`'s own
+      tooltip) so a dangerously low ceiling still reads as an intense
+      color, consistent with every other layer's visual convention.
+    - "visibility"/"dust" (added 2026-09-12): real
+      `acf.awci.visibility`/`acf.awci.dust` [0, 1] risk proxies -
+      genuinely usable at the layer panel's existing (higher = worse)
+      convention with no colormap reversal needed, unlike "ceiling".
+      Same "non-positive relative humidity -> `nan`, never a
+      fabricated value" honest scope as "ceiling" for all 3 (dust's
+      own `compute_real_dust_risk_at_point()` returns `dust_risk_score:
+      None` in that case too, not "always real" as one might assume
+      from it depending on one more real input than ceiling/
+      visibility).
 
     Returns
     -------
@@ -271,10 +290,17 @@ def awci_layer_grids(
     disclosed nonlinear function of CAPE, not independent information
     from "cape" below - see that function's own docstring), "cape"
     (J/kg, raw), "clouds" (mm/h, raw precipitation rate - see honest
-    limitation above).
+    limitation above), "ceiling" (m, raw estimated LCL height),
+    "visibility" ([0, 1], real visibility-degradation risk), "dust"
+    ([0, 1], real dust/sand-storm risk) - all 3 are `nan` (never a
+    fabricated value) wherever the real computed relative humidity was
+    non-positive at that point (see each module's own honest scope).
     """
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+    from acf.awci.dust import compute_real_dust_risk_at_point
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
     from acf.awci.updraft import compute_real_max_updraft_velocity
+    from acf.awci.visibility import compute_real_visibility_risk_at_point
     from acf.science.clouds.dynamics import CloudDynamicsEngine
 
     lats = _frange(lat_range[0], lat_range[1], lat_step)
@@ -290,8 +316,12 @@ def awci_layer_grids(
     convection: list[list[float]] = []
     cape: list[list[float]] = []
     clouds: list[list[float]] = []
+    ceiling: list[list[float]] = []
+    visibility: list[list[float]] = []
+    dust: list[list[float]] = []
     for lat in lats:
         wind_row, icing_row, convection_row, cape_row, clouds_row = [], [], [], [], []
+        ceiling_row, visibility_row, dust_row = [], [], []
         for lon in lons:
             raw = _synthetic_inputs(lat, lon, flight_level_hpa, time_offset_hours)
             wind_row.append(raw["wind_speed"])
@@ -301,11 +331,22 @@ def awci_layer_grids(
             convection_row.append(updraft["w_max_m_s"])
             cape_row.append(raw["cape"])
             clouds_row.append(raw["precipitation"])
+            ceil = compute_real_ceiling_at_point(raw["temperature"], raw["specific_humidity"], flight_level_hpa)
+            ceiling_row.append(ceil["ceiling_height_m"] if ceil["is_real_data"] else float("nan"))
+            vis = compute_real_visibility_risk_at_point(raw["temperature"], raw["specific_humidity"], flight_level_hpa)
+            visibility_row.append(vis["visibility_risk_score"] if vis["is_real_data"] else float("nan"))
+            sand = compute_real_dust_risk_at_point(
+                raw["temperature"], raw["specific_humidity"], flight_level_hpa, raw["wind_speed"]
+            )
+            dust_row.append(sand["dust_risk_score"] if sand["is_real_data"] else float("nan"))
         wind.append(wind_row)
         icing.append(icing_row)
         convection.append(convection_row)
         cape.append(cape_row)
         clouds.append(clouds_row)
+        ceiling.append(ceiling_row)
+        visibility.append(visibility_row)
+        dust.append(dust_row)
 
     # Real horizontal gradient magnitude of the wind_speed grid (see
     # "turbulence" honest limitation above) - np.gradient() over the
@@ -325,6 +366,9 @@ def awci_layer_grids(
         "convection": convection,
         "cape": cape,
         "clouds": clouds,
+        "ceiling": ceiling,
+        "visibility": visibility,
+        "dust": dust,
     }
 
 

@@ -45,7 +45,9 @@ toggles backed by real formulas (see _EXTRA_LAYER_SPECS' own
 docstring for the exact real source/proxy and honest scope limits per
 layer - Wind/Turbulence/Icing are real in both demo and Real Physics
 mode, Convection/CAPE/Clouds are real in demo mode only since the Real
-Physics solver volume carries no CAPE/precipitation field).
+Physics solver volume carries no CAPE/precipitation field). Ceiling/
+Visibility/Dust added 2026-09-12 (real in both modes - see
+_EXTRA_LAYER_SPECS' own NOTE).
 
 Aircraft glyph + city labels + real extent helper (added 2026-09-03,
 docs/reference/awci_dashboard_reference.jpg parity work): flight-path
@@ -631,6 +633,21 @@ class AWCIMapPanel(EventMixin, QWidget):
     #: documented for the AWCI module scores themselves in Real
     #: Physics mode), so those 3 checkboxes stay enabled but a real
     #: no-op there rather than a fabricated contour.
+    #:
+    #: NOTE (addition, 2026-09-12): Ceiling/Visibility/Dust added -
+    #: same real `acf.awci.ceiling`/`acf.awci.visibility`/`acf.awci.dust`
+    #: per-point formulas already wired into ESOC's own
+    #: `MODULE_COMPLEXITY_LAYERS` (a separate, non-interoperable layer
+    #: system - see AWCI_BUTTON_CONTRACT.md's own note on this
+    #: architectural split), applied here to this panel's own real
+    #: per-point pipeline instead. Unlike Convection/CAPE/Clouds, all 3
+    #: are real in BOTH demo and Real Physics mode (they only need
+    #: temperature/specific humidity/pressure/wind speed, all real and
+    #: already available in either mode - see
+    #: `real_layer_grids_at_level()`'s own docstring). "Ceiling" is the
+    #: one layer plotted with a REVERSED colormap ("YlOrRd_r") since a
+    #: LOWER value is more hazardous there, unlike every other layer -
+    #: see `awci_layer_grids()`'s own docstring for why.
     _EXTRA_LAYER_SPECS: dict[str, tuple[str, str, str]] = {
         "Wind": (
             "wind", "Blues",
@@ -661,6 +678,23 @@ class AWCIMapPanel(EventMixin, QWidget):
             "clouds", "Greys",
             "Real precipitation rate (mm/h) - a disclosed PROXY; no real cloud-fraction quantity exists "
             "anywhere in this pipeline. Demo mode only - the real solver volume carries no precipitation field.",
+        ),
+        "Ceiling": (
+            "ceiling", "YlOrRd_r",
+            "Real estimated ceiling height (m, acf.awci.ceiling - LCL approximation). Reversed colormap: "
+            "unlike every other layer here, a LOWER value is more hazardous, so low ceiling still reads as "
+            "an intense color. Real in both demo and Real Physics mode.",
+        ),
+        "Visibility": (
+            "visibility", "BuPu",
+            "Real visibility-degradation risk proxy [0, 1] (acf.awci.visibility - fog proximity; "
+            "precipitation always 0.0, no real precipitation field in Real Physics mode). Real in both "
+            "demo and Real Physics mode.",
+        ),
+        "Dust": (
+            "dust", "YlOrBr",
+            "Real dust/sand-storm emission-favorable-conditions risk proxy [0, 1] (acf.awci.dust - wind "
+            "erosion x dry surface). Real in both demo and Real Physics mode.",
         ),
     }
 
@@ -870,14 +904,15 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 
     def set_external_layer_grids(self, layer_grids: dict[str, Any]) -> None:
-        """Real Physics mode's own Wind/Turbulence/Icing LAYERS data
-        (acf.awci.path_sampling.real_layer_grids_at_level()'s own
-        dict) - call alongside set_external_field(), before or after,
-        either order (both redraw via update_data()). CAPE/Convection/
-        Clouds have no real counterpart in Real Physics mode - see
-        that function's own docstring - so those 3 checkboxes stay a
-        real no-op (self._extra_layer_contours has no entry for them)
-        rather than drawing a fabricated contour."""
+        """Real Physics mode's own Wind/Turbulence/Icing/Ceiling/
+        Visibility/Dust LAYERS data (acf.awci.path_sampling.
+        real_layer_grids_at_level()'s own dict) - call alongside
+        set_external_field(), before or after, either order (both
+        redraw via update_data()). CAPE/Convection/Clouds have no real
+        counterpart in Real Physics mode - see that function's own
+        docstring - so those 3 checkboxes stay a real no-op
+        (self._extra_layer_contours has no entry for them) rather than
+        drawing a fabricated contour."""
         self._external_layer_grids = layer_grids
         self.update_data(self._flight_level_hpa, self._time_offset_hours)
 

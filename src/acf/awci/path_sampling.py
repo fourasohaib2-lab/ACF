@@ -244,10 +244,21 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     function's own docstring - convective/microphysical inputs are not
     part of the real solver state today, same limitation already
     disclosed for the AWCI module scores themselves in Real Physics
-    mode). Only the 3 layers derivable from what IS real are returned
+    mode). Only the layers derivable from what IS real are returned
     here - a caller (`AWCIMapPanel`) must leave the "CAPE"/
     "Convection"/"Clouds" checkboxes as a real no-op in Real Physics
     mode rather than fabricate a value for them.
+
+    "ceiling"/"visibility"/"dust" (added 2026-09-12) ARE derivable here
+    - unlike CAPE/precipitation, they only need temperature/specific
+    humidity/pressure(/wind speed for "dust"), all real and already
+    available in this same real volume - the same
+    `acf.awci.ceiling`/`acf.awci.visibility`/`acf.awci.dust` real
+    per-point formulas `awci_layer_grids()`'s own demo-mode counterpart
+    uses, applied to this level's real T/q/P/wind instead of a
+    synthetic pattern. `nan` (never fabricated) wherever the real
+    computed relative humidity is non-positive at that point - see
+    each module's own honest scope.
 
     Parameters
     ----------
@@ -262,9 +273,14 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
     field - the same disclosed proxy `awci_layer_grids()` uses, not
     the full Ellrod-Knapp CAT index), "icing" ([0, 1], real
     `acf.awci.hydrometeor_phase` severity from this level's own real
-    T/q/P) - each a 2D numpy array (n_lat, n_lon).
+    T/q/P), "ceiling" (m, raw estimated LCL height), "visibility"
+    ([0, 1], real visibility-degradation risk), "dust" ([0, 1], real
+    dust/sand-storm risk) - each a 2D numpy array (n_lat, n_lon).
     """
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+    from acf.awci.dust import compute_real_dust_risk_at_point
     from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+    from acf.awci.visibility import compute_real_visibility_risk_at_point
 
     wind_speed = np.asarray(volume["wind_speed_volume"][level_idx])
     temperature = np.asarray(volume["temperature_volume"][level_idx])
@@ -276,14 +292,32 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
 
     n_lat, n_lon = wind_speed.shape
     icing = np.zeros((n_lat, n_lon))
+    ceiling = np.full((n_lat, n_lon), np.nan)
+    visibility = np.full((n_lat, n_lon), np.nan)
+    dust = np.full((n_lat, n_lon), np.nan)
     for i in range(n_lat):
         for j in range(n_lon):
+            t_k = float(temperature[i, j])
+            q = float(specific_humidity[i, j])
+            p_hpa = float(pressure_hpa[i, j])
             phase = compute_real_hydrometeor_phase_at_point(
-                temperature_k=float(temperature[i, j]),
-                specific_humidity=float(specific_humidity[i, j]),
-                pressure_hpa=float(pressure_hpa[i, j]),
+                temperature_k=t_k,
+                specific_humidity=q,
+                pressure_hpa=p_hpa,
             )
             icing[i, j] = phase["phase_severity"]
+
+            ceil = compute_real_ceiling_at_point(t_k, q, p_hpa)
+            if ceil["is_real_data"]:
+                ceiling[i, j] = ceil["ceiling_height_m"]
+
+            vis = compute_real_visibility_risk_at_point(t_k, q, p_hpa)
+            if vis["is_real_data"]:
+                visibility[i, j] = vis["visibility_risk_score"]
+
+            sand = compute_real_dust_risk_at_point(t_k, q, p_hpa, float(wind_speed[i, j]))
+            if sand["is_real_data"]:
+                dust[i, j] = sand["dust_risk_score"]
 
     return {
         "lats": volume["lats"],
@@ -291,6 +325,9 @@ def real_layer_grids_at_level(volume: dict[str, Any], level_idx: int) -> dict[st
         "wind": wind_speed,
         "turbulence": turbulence,
         "icing": icing,
+        "ceiling": ceiling,
+        "visibility": visibility,
+        "dust": dust,
     }
 
 

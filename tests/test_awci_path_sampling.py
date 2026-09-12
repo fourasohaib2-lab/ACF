@@ -241,6 +241,62 @@ def test_real_layer_grids_at_level_has_no_cape_convection_clouds_keys():
     assert "clouds" not in result
 
 
+def test_real_layer_grids_at_level_has_ceiling_visibility_dust_keys():
+    """2026-09-12: unlike CAPE/precipitation, ceiling/visibility/dust
+    only need temperature/specific humidity/pressure(/wind speed) -
+    all real and already available in this real volume - so they ARE
+    derivable here, unlike cape/convection/clouds above."""
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=0)
+    n_lat, n_lon = len(volume["lats"]), len(volume["lons"])
+    for key in ("ceiling", "visibility", "dust"):
+        assert result[key].shape == (n_lat, n_lon)
+
+
+def test_real_layer_grids_at_level_ceiling_matches_a_direct_real_call():
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=1)
+    i, j = 2, 4
+    expected = compute_real_ceiling_at_point(
+        float(volume["temperature_volume"][1, i, j]),
+        float(volume["specific_humidity_volume"][1, i, j]),
+        float(volume["pressure_volume_hpa"][1, i, j]),
+    )
+    if expected["is_real_data"]:
+        assert result["ceiling"][i, j] == pytest.approx(expected["ceiling_height_m"])
+    else:
+        assert np.isnan(result["ceiling"][i, j])
+
+
+def test_real_layer_grids_at_level_visibility_and_dust_are_bounded_or_nan():
+    volume = _real_volume_for_hazards(seed=11, perturbation_scale=6.0)
+    result = real_layer_grids_at_level(volume, level_idx=0)
+    for key in ("visibility", "dust"):
+        arr = result[key]
+        real_values = arr[~np.isnan(arr)]
+        assert np.all(real_values >= 0.0) and np.all(real_values <= 1.0)
+
+
+def test_real_layer_grids_at_level_dust_matches_a_direct_real_call():
+    from acf.awci.dust import compute_real_dust_risk_at_point
+
+    volume = _real_volume_for_hazards()
+    result = real_layer_grids_at_level(volume, level_idx=2)
+    i, j = 1, 3
+    expected = compute_real_dust_risk_at_point(
+        float(volume["temperature_volume"][2, i, j]),
+        float(volume["specific_humidity_volume"][2, i, j]),
+        float(volume["pressure_volume_hpa"][2, i, j]),
+        float(volume["wind_speed_volume"][2, i, j]),
+    )
+    if expected["is_real_data"]:
+        assert result["dust"][i, j] == pytest.approx(expected["dust_risk_score"])
+    else:
+        assert np.isnan(result["dust"][i, j])
+
+
 def test_crop_field_to_extent_keeps_only_points_inside_it():
     result = compute_real_complexity_field(model="ARPEGE", n_lat=20, n_lon=40, n_levels=4, steps=2)
     extent = (-12.0, 35.0, 15.0, 40.0)  # lon_min, lon_max, lat_min, lat_max (North Africa)

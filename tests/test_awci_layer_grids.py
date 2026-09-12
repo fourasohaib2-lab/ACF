@@ -18,9 +18,78 @@ from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs, awci_layer
 def test_returns_the_real_expected_grid_shape():
     result = awci_layer_grids(lat_step=8.0, lon_step=8.0, lat_range=(-40.0, 40.0), lon_range=(-40.0, 40.0))
     n_lat, n_lon = len(result["lats"]), len(result["lons"])
-    for key in ("wind", "turbulence", "icing", "convection", "cape", "clouds"):
+    for key in ("wind", "turbulence", "icing", "convection", "cape", "clouds", "ceiling", "visibility", "dust"):
         arr = np.asarray(result[key])
         assert arr.shape == (n_lat, n_lon)
+
+
+# ------------------------------------------------------- ceiling/visibility/dust (2026-09-12)
+
+
+def test_ceiling_matches_a_direct_real_ceiling_call():
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+
+    result = awci_layer_grids(lat_step=10.0, lon_step=10.0, lat_range=(-20.0, 20.0), lon_range=(-20.0, 20.0))
+    lat, lon = result["lats"][0], result["lons"][0]
+    raw = _synthetic_inputs(lat, lon, 300.0, 0.0)
+    expected = compute_real_ceiling_at_point(raw["temperature"], raw["specific_humidity"], 300.0)
+    if expected["is_real_data"]:
+        assert result["ceiling"][0][0] == pytest.approx(expected["ceiling_height_m"])
+    else:
+        assert np.isnan(result["ceiling"][0][0])
+
+
+def test_visibility_matches_a_direct_real_visibility_call():
+    from acf.awci.visibility import compute_real_visibility_risk_at_point
+
+    result = awci_layer_grids(lat_step=10.0, lon_step=10.0, lat_range=(-20.0, 20.0), lon_range=(-20.0, 20.0))
+    lat, lon = result["lats"][0], result["lons"][0]
+    raw = _synthetic_inputs(lat, lon, 300.0, 0.0)
+    expected = compute_real_visibility_risk_at_point(raw["temperature"], raw["specific_humidity"], 300.0)
+    if expected["is_real_data"]:
+        assert result["visibility"][0][0] == pytest.approx(expected["visibility_risk_score"])
+    else:
+        assert np.isnan(result["visibility"][0][0])
+
+
+def test_dust_matches_a_direct_real_dust_call():
+    from acf.awci.dust import compute_real_dust_risk_at_point
+
+    result = awci_layer_grids(lat_step=10.0, lon_step=10.0, lat_range=(-20.0, 20.0), lon_range=(-20.0, 20.0))
+    lat, lon = result["lats"][0], result["lons"][0]
+    raw = _synthetic_inputs(lat, lon, 300.0, 0.0)
+    expected = compute_real_dust_risk_at_point(raw["temperature"], raw["specific_humidity"], 300.0, raw["wind_speed"])
+    if expected["is_real_data"]:
+        assert result["dust"][0][0] == pytest.approx(expected["dust_risk_score"])
+    else:
+        assert np.isnan(result["dust"][0][0])
+
+
+def test_visibility_and_dust_are_real_bounded_risk_scores_in_0_1():
+    result = awci_layer_grids(lat_step=6.0, lon_step=6.0, lat_range=(-40.0, 40.0), lon_range=(-40.0, 40.0))
+    for key in ("visibility", "dust"):
+        arr = np.asarray(result[key])
+        real_values = arr[~np.isnan(arr)]
+        assert len(real_values) > 0
+        assert np.all(real_values >= 0.0) and np.all(real_values <= 1.0)
+
+
+def test_ceiling_is_never_a_fabricated_value_when_honestly_not_computed():
+    """Same discipline as every other acf.awci module: non-positive
+    real relative humidity must give a real NaN, never a fabricated
+    0.0 (which would falsely mean 'ground-level ceiling everywhere')."""
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+
+    result = awci_layer_grids(lat_step=4.0, lon_step=4.0, lat_range=(-85.0, 85.0), lon_range=(-180.0, 180.0))
+    ceiling = np.asarray(result["ceiling"])
+    lats, lons = result["lats"], result["lons"]
+    nan_positions = np.argwhere(np.isnan(ceiling))
+    if len(nan_positions) == 0:
+        pytest.skip("this real grid had real humidity everywhere - nothing to check")
+    i, j = nan_positions[0]
+    raw = _synthetic_inputs(lats[i], lons[j], 300.0, 0.0)
+    direct = compute_real_ceiling_at_point(raw["temperature"], raw["specific_humidity"], 300.0)
+    assert direct["is_real_data"] is False
 
 
 def test_wind_matches_the_real_synthetic_inputs_wind_speed():
@@ -117,6 +186,11 @@ def test_deterministic_across_repeated_calls():
     b = awci_layer_grids(lat_step=10.0, lon_step=10.0, lat_range=(-20.0, 20.0), lon_range=(-20.0, 20.0))
     for key in ("wind", "turbulence", "icing", "convection", "cape", "clouds"):
         assert a[key] == b[key]
+    # ceiling/visibility/dust can genuinely be NaN (honest "not computed"),
+    # and NaN != NaN under plain list equality - np.array_equal's own
+    # equal_nan=True is the real, correct way to compare these.
+    for key in ("ceiling", "visibility", "dust"):
+        assert np.array_equal(a[key], b[key], equal_nan=True)
 
 
 def test_time_offset_genuinely_shifts_the_grids():

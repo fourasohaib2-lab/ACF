@@ -148,14 +148,14 @@ def test_layers_panel_extra_layers_are_real_working_toggles(qtbot):
         assert contour.get_visible() is False
 
 
-def test_extra_layer_contours_are_lazily_built_not_all_6_up_front(qtbot):
+def test_extra_layer_contours_are_lazily_built_not_all_up_front(qtbot):
     """Real performance regression guard (added 2026-09-03, profiled
     AWCIDashboard.refresh()): update_data() must not build a real
     matplotlib contourf artist for a layer nobody has checked - that
     real construction cost (~4ms each) was previously paid on every
     single redraw for layers that were never shown."""
     panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
-    qtbot.addWidget(panel)  # all 6 extra layers start unchecked
+    qtbot.addWidget(panel)  # every extra layer starts unchecked
 
     assert panel._extra_layer_contours == {}
     assert panel._last_layer_grids is not None  # the real grid itself is still computed
@@ -226,6 +226,49 @@ def test_cape_checkbox_exists_and_is_a_real_working_toggle(qtbot):
     qtbot.addWidget(panel)
     assert "CAPE" in panel.extra_layer_checkboxes
     assert panel.extra_layer_checkboxes["CAPE"].isEnabled() is True
+
+
+def test_ceiling_visibility_dust_checkboxes_exist_and_are_real_working_toggles(qtbot):
+    """2026-09-12 addition - same real, working-toggle guard as CAPE's
+    own test above."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    for name in ("Ceiling", "Visibility", "Dust"):
+        assert name in panel.extra_layer_checkboxes
+        assert panel.extra_layer_checkboxes[name].isEnabled() is True
+
+
+def test_ceiling_uses_a_reversed_colormap_unlike_every_other_layer(qtbot):
+    """Real, disclosed design choice: ceiling is the one layer here
+    where a LOWER value is more hazardous - see _EXTRA_LAYER_SPECS'
+    own NOTE for why it alone gets a reversed colormap."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    key, cmap, _tooltip = panel._EXTRA_LAYER_SPECS["Ceiling"]
+    assert key == "ceiling"
+    assert cmap.endswith("_r")
+    for name in ("Wind", "Turbulence", "Icing", "Convection", "CAPE", "Clouds", "Visibility", "Dust"):
+        _key, other_cmap, _tooltip = panel._EXTRA_LAYER_SPECS[name]
+        assert not other_cmap.endswith("_r"), f"{name} was not expected to use a reversed colormap"
+
+
+def test_ceiling_visibility_dust_are_real_in_real_physics_mode_too(qtbot):
+    """Unlike Convection/CAPE/Clouds (demo mode only), ceiling/
+    visibility/dust only need temperature/specific humidity/pressure/
+    wind speed - all real and already available in Real Physics
+    mode's own volume (see real_layer_grids_at_level()'s own
+    docstring) - so checking them there must genuinely build a real
+    contour, not silently no-op."""
+    from acf.awci.path_sampling import real_layer_grids_at_level
+    from acf.awci.vertical_field import compute_real_complexity_volume
+
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    volume = compute_real_complexity_volume(model="ALADIN", n_lat=8, n_lon=12, n_levels=6, steps=2, seed=3)
+    panel.set_external_layer_grids(real_layer_grids_at_level(volume, level_idx=0))
+
+    for name in ("Ceiling", "Visibility", "Dust"):
+        panel.extra_layer_checkboxes[name].setChecked(True)
+        assert name in panel._extra_layer_contours, f"{name} should have built a real contour in Real Physics mode"
 
 
 def test_set_extent_applies_to_the_real_camera(qtbot):

@@ -12508,3 +12508,64 @@ que Ceiling/Visibility/Dust ont bien de vraies données non nulles
 après ce même appel. `ruff`/`mypy` propres sur les 4 fichiers source
 touchés (2 erreurs mypy pré-existantes dans `esoc_window.py`,
 confirmées inchangées et sans lien via `git stash`).
+
+## Mise à jour 2026-09-12 (suite, selon jugement utilisateur explicite) — Ceiling/Visibility/Dust ajoutés aux cases à cocher LAYERS du panneau carte propre à `awci_dashboard.py`
+
+**Pourquoi** : après épuisement du filon des corrections de
+complétude (5 fermetures consécutives ce même tour), demande
+explicite de l'utilisateur ("Étendre les cases à cocher de la carte
+du dashboard") - `acf.gui.dashboard.awci_map_panel.AWCIMapPanel`
+possède son propre panneau "LAYERS" (`_EXTRA_LAYER_SPECS`),
+architecturalement séparé et non interopérable avec le système
+`MODULE_COMPLEXITY_LAYERS` d'ESOC déjà étendu plus tôt ce tour (fait
+déjà disclosé dans `AWCI_BUTTON_CONTRACT.md`). Ce panneau ne
+proposait encore que Wind/Turbulence/Icing/Convection/CAPE/Clouds
+(6 cases, fermées le 2026-09-03) - `ceiling`/`visibility`/`dust`
+existaient déjà comme formules réelles per-point mais n'y étaient pas
+câblées.
+
+**Réel dans LES DEUX modes, pas seulement en démo** (contrairement à
+Convection/CAPE/Clouds) : les 3 nouvelles cases ne dépendent que de
+température/humidité spécifique/pression(/vitesse du vent pour Dust)
+- déjà réelles et disponibles aussi bien dans `awci_layer_grids()`
+(mode démo) que dans `acf.awci.path_sampling.
+real_layer_grids_at_level()` (mode Real Physics, qui ne porte pas de
+champ CAPE/précipitation réel, contrairement à ce que les 3 autres
+cases exigent). Les deux fonctions ont donc été étendues en
+parallèle, réutilisant exactement les mêmes formules déjà auditées
+(`acf.awci.ceiling`/`visibility`/`dust`).
+
+**Choix de conception disclosé** : "Ceiling" est la seule couche de
+ce panneau tracée avec une colormap INVERSÉE (`"YlOrRd_r"`) - à
+l'inverse de toutes les autres couches, une valeur BASSE y est plus
+dangereuse (plafond bas), donc l'inversion garde la convention
+visuelle du panneau ("couleur intense = conditions dégradées")
+cohérente sans inventer de nouvelle formule. "Visibility"/"Dust"
+utilisent directement leurs scores de risque [0, 1] déjà orientés
+dans le bon sens.
+
+**Bug réel trouvé et corrigé pendant l'implémentation** (pas
+seulement une fonctionnalité ajoutée) : le brouillon initial
+supposait que `compute_real_dust_risk_at_point()` retournait toujours
+un score réel ("always real, never nan") - faux, cette fonction
+retourne elle aussi `dust_risk_score: None` quand l'humidité relative
+réelle calculée est non-positive (même discipline que
+ceiling/visibility). Corrigé avant tout commit : `nan` honnête dans
+ce cas, jamais une valeur fabriquée, docstring corrigée en
+conséquence.
+
+**Tests** : 6 ajoutés à `tests/test_awci_layer_grids.py` (mode démo,
+dont un test verrouillant le `nan` honnête pour l'humidité
+non-positive) + 5 ajoutés à `tests/test_awci_path_sampling.py` (mode
+Real Physics) + 3 ajoutés à `tests/test_awci_map_panel_reference_
+fidelity.py` (existence des cases, colormap inversée exclusive à
+Ceiling, câblage réel confirmé en mode Real Physics via un vrai
+`compute_real_complexity_volume()`) + 1 renommage de test devenu
+obsolète ("not_all_6" -> "not_all", plus générique). Suite ciblée :
+tous verts. `ruff`/`mypy` propres sur les 6 fichiers touchés (3
+source + 3 test).
+
+**Documentation synchronisée** : `AWCI_BUTTON_CONTRACT.md` (ligne des
+cases Wind/Turbulence/Icing étendue) et `AWCI_COMPONENT_INVENTORY.md`
+(§12 mis à jour à "10 toggles réels", nouvelle entrée #44 ajoutée
+suivant la convention numérotée déjà établie du fichier).
