@@ -12881,3 +12881,53 @@ numéro de table erroné plutôt que de le laisser "probablement bon".
 + dashboard reference parity) : 57 passed, 7 skipped, 0 régression -
 changements de commentaires/docstring uniquement, aucun changement de
 comportement.
+
+## Mise à jour 2026-09-12 (suite, `/verify` runtime skill) — Correction du chevauchement visuel de la jauge FORECAST CONFIDENCE (`AWCIGauge`, mode demi-cercle)
+
+**Contexte** : passage complet du skill `/verify` sur AWCI (dashboard +
+ESOC), avec pilotage réel de l'application (`QT_QPA_PLATFORM=offscreen`
++ `QWidget.grab()`, 4 scripts pilotes, ~20 étapes/sondes, dont 3
+sondes adversariales). Zéro erreur runtime détectée sur les
+fonctionnalités touchées cette session. Un défaut cosmétique
+pré-existant (non lié aux changements de cette session) a été trouvé
+et documenté par capture d'écran réelle : la jauge demi-cercle "FORECAST
+CONFIDENCE" (`AWCIStatsBar` → `AWCIGauge(half_circle=True)`) affichait
+le score et le niveau textuel superposés ("100" et "Extreme" illisibles
+l'un sur l'autre).
+
+**Cause racine identifiée** (`src/acf/gui/dashboard/awci_gauge.py`,
+`paintEvent()`) : la boîte de texte du score fait 40px de haut, mais
+`level_text_y` (mode demi-cercle) n'était placé qu'à `score_text_y + 30`
+- un déficit de 10px provoquant le chevauchement visuel. La branche
+plein-cercle, elle, était déjà correcte : son propre écart entre score
+et niveau (`center.y()+50` vs `center.y()+10`) est exactement de 40px.
+
+**Correction** : `level_text_y = score_text_y + 40` en mode demi-cercle
+(au lieu de `+30`), reprenant l'écart déjà correct et déjà utilisé par
+la branche plein-cercle - aucune nouvelle valeur inventée, aucun
+changement de couleur/police/géométrie de l'arc (contrainte utilisateur
+"ne touche pas au design" respectée : seul l'espacement vertical du
+texte, à l'origine du bug, est modifié).
+
+**Vérifié visuellement** (captures réelles avant/après via
+`QWidget.grab()` sur le widget réel `_ConfidenceGaugeBox`, tailles
+220×130 et 180×100 - cette dernière étant la taille minimale réelle
+utilisée en production dans `AWCIStatsBar`) : le chevauchement a
+disparu dans les deux cas ; à la taille minimale réelle (100px de haut,
+contrainte du widget), le bas du texte "Extreme" est très légèrement
+rogné par le bord du widget - amélioration nette par rapport au
+chevauchement total illisible d'avant, limite inhérente à la faible
+hauteur minimale du widget, pas une régression introduite par ce
+correctif.
+
+**Test de régression réel ajouté** :
+`tests/test_awci_gauge.py::test_half_circle_score_and_level_text_boxes_do_not_overlap`
+- espionne les vrais appels `QPainter.drawText()` faits par le vrai
+`paintEvent()` (widget réellement affiché, `QApplication.processEvents()`
+réel, aucun mock de la logique de dessin elle-même) et vérifie que la
+boîte de texte du niveau ne commence jamais avant la fin de la boîte du
+score. **Rigoureusement vérifié en 2 temps** : le test échoue bien sur
+l'ancien code (`99 >= 109` → `AssertionError`, chevauchement de 10px
+reproduit exactement), puis passe une fois le correctif appliqué.
+
+**Validation** : `tests/test_awci_gauge.py` : 9 passed, 0 régression.

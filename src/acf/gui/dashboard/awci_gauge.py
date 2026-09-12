@@ -186,7 +186,16 @@ class AWCIGauge(QWidget):
         font.setBold(False)
         painter.setFont(font)
         painter.setPen(QPen(QColor(180, 180, 200), 1))
-        level_text_y = score_text_y + 30 if self._half_circle else center.y() + 50
+        # Bug found via the /verify runtime-drive skill (2026-09-12,
+        # screenshots showed "100"/"Extreme" superposed in the real
+        # FORECAST CONFIDENCE gauge): the half-circle score box above is
+        # 40px tall, so a +30 gap here always overlapped it by 10px.
+        # +40 matches the full-circle branch's own already-correct gap
+        # (its score box is also 40px tall, and its own level offset is
+        # exactly +40 relative to its score offset: center.y()+50 vs
+        # center.y()+10) - reusing that same real, working spacing here
+        # rather than inventing a new one.
+        level_text_y = score_text_y + 40 if self._half_circle else center.y() + 50
         painter.drawText(center.x() - 50, level_text_y, 100, 20, Qt.AlignmentFlag.AlignCenter, level)
 
         painter.end()
