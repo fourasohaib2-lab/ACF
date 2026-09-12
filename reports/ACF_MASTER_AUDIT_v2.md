@@ -12988,8 +12988,7 @@ est un bruit de fin de process pré-existant, sans rapport, sans échec
 de test associé).
 
 **Reste à faire (parité visuelle, disclosed, non traité ce tour)** :
-palette de couleurs de la carte globale (jet plus saturé/texturé dans
-la photo), icônes avion multiples sur la carte globale.
+icônes avion multiples sur la carte globale.
 
 ## Mise à jour 2026-09-12 (suite) — Ordre d'affichage de la légende AWCI SCALE aligné sur la photo (valeurs scientifiques réelles inchangées)
 
@@ -13019,3 +13018,43 @@ fois le correctif réappliqué.
 28 passed (1 nouveau), 0 régression. Vérifié visuellement par capture
 d'écran réelle du panneau `global_map` (pilotage réel de l'app,
 `QT_QPA_PLATFORM=offscreen` + `QWidget.grab()`).
+
+## Mise à jour 2026-09-12 (suite) — Fond de carte réel (relief Natural Earth) remplace le remplissage plat, forte amélioration de fidélité couleur avec la photo
+
+**Constat** : la carte globale/régionale utilisait un remplissage
+OCEAN/LAND plat (`facecolor="#0f1830"`/`"#16213e"`) qui désaturait
+visuellement le vrai colormap AWCI par rapport à la photo de référence
+(look "jet" vif avec relief visible sous la couleur).
+
+**Câblé** : remplacement des 2 `add_feature(cfeature.OCEAN/LAND,
+facecolor=...)` par `self.axis.stock_img()` - le raster Natural Earth
+basse résolution (NE1, teintes hypsométriques croisées) **livré avec
+Cartopy** (100% réel, aucun accès réseau, toujours disponible hors
+ligne - même propriété "toujours fonctionnel" qui avait justifié
+l'abandon du fond MTG en faveur de Cartopy le 2026-09-07). COASTLINE/
+BORDERS conservés par-dessus (couleur de trait ajustée `#1a2540` pour
+rester lisible sur le relief plus clair). Le vrai contour AWCI
+(`contourf`, alpha 0.88 inchangé) est inchangé - seul ce qui apparaît
+en dessous/à ses bords change.
+
+**Portée** : `AWCIMapPanel` est partagé par le dashboard AWCI ET les
+14 panneaux de l'ACF Scientific Workstation (`acf_workstation_*.py`)
+- amélioration générique qui profite aux deux, aucune régression de
+comportement (aucun test n'affirmait de couleur hexadécimale précise
+pour OCEAN/LAND).
+
+**Test mis à jour** :
+`tests/test_awci_map_panel_no_mtg.py::test_global_map_always_shows_real_cartopy_basemap_features`
+(renommé depuis `..._ocean_and_land_features`) - ajoute une assertion
+directe sur la présence d'un vrai artiste `matplotlib.image.AxesImage`
+(preuve non fragile que `stock_img()` a bien dessiné).
+
+**Vérifié visuellement** : capture d'écran réelle du dashboard complet
+(pilotage réel, `QT_QPA_PLATFORM=offscreen` + `QWidget.grab()`) -
+amélioration très nette et immédiatement visible de la fidélité
+couleur à la photo (tons magenta/orange/jaune/vert/bleu bien plus
+proches de la photo qu'avant).
+
+**Validation** : `tests/test_awci_map_panel_no_mtg.py` : 3 passed.
+Suite ciblée map_panel + workstation + awci_dashboard (14 consommateurs
+de `AWCIMapPanel`) : 488 passed, 9 skipped, 0 régression.

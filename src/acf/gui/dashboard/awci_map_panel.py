@@ -978,10 +978,22 @@ class AWCIMapPanel(EventMixin, QWidget):
         # below), which is 100% real, always available offline, has no
         # network dependency, and needs no authentication - genuinely
         # functional on every launch, not just when EUMETSAT answers.
-        self.axis.add_feature(cfeature.OCEAN, facecolor="#0f1830")
-        self.axis.add_feature(cfeature.LAND, facecolor="#16213e")
-        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#34445f", linewidth=0.5)
-        self.axis.add_feature(cfeature.BORDERS, edgecolor="#34445f", linewidth=0.3)
+        # Real Natural Earth relief raster (added 2026-09-12, docs/
+        # reference/awci_dashboard_reference.jpg pixel-parity pass,
+        # explicit user request "chaque pixel"): stock_img() ships
+        # bundled with Cartopy (the low-res NE1 cross-blended
+        # hypsometric-tint raster) - 100% real, offline, no network
+        # dependency, same "always available" property the flat OCEAN/
+        # LAND facecolors below it replace were chosen for in the first
+        # place (see the NOTE above on removing MTG). Replaces the flat
+        # dark navy fill with real visible terrain (mountain ranges,
+        # ocean depth shading) much closer to the reference photo's own
+        # vibrant, textured basemap - the AWCI contour drawn on top
+        # (below) still carries the real signal; this only changes what
+        # shows through underneath/at its edges.
+        self.axis.stock_img()
+        self.axis.add_feature(cfeature.COASTLINE, edgecolor="#1a2540", linewidth=0.5)
+        self.axis.add_feature(cfeature.BORDERS, edgecolor="#1a2540", linewidth=0.3)
 
         if self._external_field is not None:
             lons, lats, grid = self._external_field

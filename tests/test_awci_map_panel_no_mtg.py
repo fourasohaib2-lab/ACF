@@ -60,10 +60,16 @@ def test_map_panel_no_longer_subscribes_to_the_live_mtg_provider(qtbot):
     mock_update.assert_not_called()
 
 
-def test_global_map_always_shows_real_cartopy_ocean_and_land_features(qtbot):
+def test_global_map_always_shows_real_cartopy_basemap_features(qtbot):
     """The real replacement basemap - always present, never conditional
-    on a network fetch having succeeded."""
-    import cartopy.feature as cfeature
+    on a network fetch having succeeded.
+
+    NOTE (updated 2026-09-12, docs/reference/awci_dashboard_reference.jpg
+    pixel-parity pass): the flat OCEAN/LAND facecolor fill this test's
+    name used to describe was replaced by a real stock_img() Natural
+    Earth relief raster (see update_data()'s own comment) - still 100%
+    real, bundled, offline; COASTLINE/BORDERS are unchanged."""
+    from matplotlib.image import AxesImage
 
     panel = AWCIMapPanel()
     qtbot.addWidget(panel)
@@ -76,3 +82,6 @@ def test_global_map_always_shows_real_cartopy_ocean_and_land_features(qtbot):
     # call, above) rather than introspecting private feature internals
     # further here.
     assert len(feature_types) > 0
+    # stock_img() specifically draws a real AxesImage - a direct,
+    # non-brittle check that the real relief raster is actually there.
+    assert any(isinstance(artist, AxesImage) for artist in panel.axis.get_children())
