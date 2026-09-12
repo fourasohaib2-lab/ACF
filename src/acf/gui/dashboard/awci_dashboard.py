@@ -131,6 +131,7 @@ from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDi
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
 from acf.gui.dashboard.awci_footer import AWCIFooter
+from acf.gui.dashboard.awci_hazard_row import AWCIHazardRow
 from acf.gui.dashboard.awci_toast import AWCIToastManager
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, flight_level_ft_to_pressure_hpa
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
@@ -1176,6 +1177,17 @@ class AWCIDashboard(QWidget):
         view_mode_row.addStretch()
         outer.addLayout(view_mode_row)
 
+        # Real "AWCI GLOBAL" gauge + 6 hazard cards (added 2026-09-12,
+        # docs/reference/awci_dashboard_reference.png, Phase 2/6) - see
+        # awci_hazard_row.py's own module docstring for the real
+        # module_scores -> card mapping. Fed the exact same real
+        # (module_scores, overall_awci) every _*_ready()/_on_*() point
+        # handler already passes to self.risk_summary.update_data()
+        # (see those call sites' own new self.hazard_row.update_data()
+        # line, added alongside the existing risk_summary one).
+        self.hazard_row = AWCIHazardRow()
+        outer.addWidget(self.hazard_row)
+
         # --- Row 1: global map (left) + cross-section & radar (right) -----
         row1 = QHBoxLayout()
         row1.setSpacing(8)
@@ -1845,6 +1857,7 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+        self.hazard_row.update_data(point_result["module_scores"], overall_awci)
         # Stored so "🔔 Alerts" reads the exact same real values
         # risk_summary just displayed, not a second/independent guess.
         self._last_risk_inputs = (
@@ -2034,6 +2047,7 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+        self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],
@@ -2339,6 +2353,7 @@ class AWCIDashboard(QWidget):
             physical_score=point_result["physical_score"],
             forecast_score=point_result["forecast_score"],
         )
+        self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],

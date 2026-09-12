@@ -13204,3 +13204,44 @@ honnêtement désactivé, boutons réels tous actifs).
 **Validation** : 12 tests dédiés nouveaux : 12 passed. Suite complète
 GUI + dashboard + map_panel : 434 passed, 9 skipped, **0 régression**
 malgré une restructuration structurelle majeure du layout racine.
+Suite complète du projet : 4921 passed, 28 skipped, 1 échec
+pré-existant confirmé indépendant (`test_acf_encyclopedia_adapter.py`).
+
+## Mise à jour 2026-09-12 (suite) — Redesign AWCI, Phase 2/6 : jauge AWCI Global + 6 cartes de risques
+
+**Câblé** : `acf.gui.dashboard.awci_hazard_row.AWCIHazardRow` (nouveau
+fichier) - réutilise `AWCIGauge` (déjà existant) pour la jauge "AWCI
+GLOBAL", plus 6 cartes de risques (Turbulence/Convection/Icing/Wind
+Shear/Visibility/Ceiling). Chaque valeur est le VRAI score de module
+déjà calculé par `AWCICalculator.calculate_module_scores()` (Turbulence
+← `dynamic`, Convection ← `convective`, Icing ← `microphysical`,
+Visibility ← `visibility`, Ceiling ← `ceiling` - la même convention
+déjà établie par `AWCIRiskSummary`). Sévérité dérivée de
+`acf.gui.dashboard.awci_colors.level_for()`, la même vraie échelle
+0-100 déjà partagée par la légende de carte/jauge/badges de risque.
+
+**Choix honnête disclosed** : "Wind Shear" n'a **aucun score de module
+réel distinct** dans `AWCICalculator` (à part le "dynamic" déjà utilisé
+pour Turbulence) - plutôt que dupliquer ce même nombre sous un second
+libellé (ce qui laisserait croire à 2 mesures indépendantes), la carte
+affiche honnêtement "—" avec une tooltip explicative, même pattern déjà
+établi pour les items de sidebar sans contrepartie réelle.
+
+**Bug réel trouvé et corrigé pendant le développement** : première
+version multipliait par 100 un `module_scores` qui est **déjà** sur
+l'échelle 0-100 (`AWCICalculator.calculate_module_scores()` fait déjà
+`round(v * 100, 1)` en interne) - "Turbulence: 10000" au lieu de "100".
+Corrigé en retirant la double mise à l'échelle.
+
+**Câblage** : `self.hazard_row.update_data(module_scores, overall_awci)`
+appelé aux 3 mêmes points d'appel réels que `self.risk_summary.
+update_data(...)` (demo, imported-model, real physics) - jamais un
+second calcul indépendant.
+
+**Tests ajoutés** : `tests/gui/test_awci_hazard_row.py` (5 tests -
+jauge réelle, valeurs de cartes sans double échelle, Wind Shear
+honnêtement "—", sévérité réelle partagée, clés manquantes par défaut
+à zéro honnête).
+
+**Validation** : 5 tests dédiés : 5 passed. Vérifié visuellement par
+capture d'écran réelle (pilotage réel de l'app).
