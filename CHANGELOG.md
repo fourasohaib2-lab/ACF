@@ -8,6 +8,36 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 > primaire). Il est repris à jour à partir du 6 septembre 2026 et sera
 > maintenu à chaque changement notable, comme le demande `AGENTS.md`.
 
+## [Unreleased] - 2026-09-12
+
+### Added
+- Refonte de l'ACF Scientific Workstation (`acf.gui.dashboard.
+  acf_workstation`) vers le nouveau mockup de référence, en 4 passes :
+  nouvel écran d'accueil (`ACFOverviewLandingPanel`) avec sections
+  "Key Metrics" (complexité spatiale/CAPE/RH/cisaillement réels),
+  "Model Consensus" (`ModelConsensusEngine` réel, off-thread),
+  "Alerts & Hazards" (`ForecastDecisionEngine.assess_severe_weather_
+  risk()` réel, seuils NOAA SPC/Doswell et al. 1996) et "Quick Actions"
+  (4 boutons câblés à des handlers réels existants) ; nouvelles
+  sections nav "REPORTS"/"HPC / JOBS" (horloge, statut moteur, connexion
+  HPC réelle off-thread). Le mockup de référence montrait un "Complexity
+  Index"/"Agreement Level %" composites - remplacés par ces valeurs
+  physiques réelles et disclosed (§21/§67 du master prompt interdisent
+  le score composite fabriqué). Voir `docs/STATUS.md` pour le détail
+  des 4 phases.
+- `theme_tokens.dashboard_stylesheet()` : vraies règles QSS
+  `QGroupBox`/`QComboBox`/`QListWidget` (aucune règle avant pour les
+  ~20 QGroupBox et 2 QListWidget de la Workstation), nouveau helper
+  `_rgba()`.
+
+### Changed
+- Le dashboard AWCI n'est plus jamais embarqué dans le dock ESOC :
+  `PanelManager.AWCIDashboardPanel` (28e onglet, 2e instance redondante
+  d'`AWCIDashboard()`) supprimée (`PanelManager.panels` : 44 → 43
+  entrées). Le bouton toolbar existant "✈️ AWCI" (ouvre
+  `AWCIDashboardWindow` en fenêtre autonome) reste le seul et unique
+  chemin réel vers ce dashboard, sans changement de comportement.
+
 ## [Unreleased] - 2026-09-11
 
 ### Added

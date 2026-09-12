@@ -1030,3 +1030,58 @@ fichiers : 20 `*_engine.py` + orchestrateur + 130 autres, plus
 100%, une première pour ce package. Reste Tier X (zéro appelant réel
 ailleurs dans `src/acf/`) — la couverture complète change ce qu'on
 sait du code, pas si le produit livré l'utilise réellement.
+
+## Mise à jour (2026-09-12) : refonte ACF Scientific Workstation (Phases 43-46) + retrait de l'embarquement AWCI dans ESOC
+
+**Refonte `acf.gui.dashboard.acf_workstation`** (`ACFWorkstation`), sur
+demande explicite de reprendre le nouveau mockup de référence
+(`docs/reference/acf_atmospheric_analysis_reference.png`), en 4 passes :
+
+- Phase 43 : nouvel écran d'accueil `ACFOverviewLandingPanel`, nouvelles
+  sections nav "REPORTS"/"HPC / JOBS" (statut moteur, horloge, HPC
+  connect réel via `_HPCConnectWorker`/SSH off-thread), `_ENABLED_MODULES`
+  étendu par **ajout en fin de liste seulement** (indices 0-10 inchangés,
+  11-13 = "Multi-Model Lab"/"3D Atmosphere View"/"Data Quality Center")
+  pour ne casser aucun test/raccourci indexé existant.
+- Phase 44 : "Key Metrics" (complexité spatiale, CAPE, RH, cisaillement -
+  réutilise `compute_real_spatial_complexity`/`compute_real_stability_
+  indices_at_point`/`compute_real_theta_e_at_point`, zéro nouvelle
+  formule) et "Model Consensus" (réutilise `ModelConsensusEngine.
+  compute_real_multi_model_disagreement()` off-thread via
+  `_ConsensusWorker`) - le mockup de référence montrait un "Complexity
+  Index"/"Agreement Level %" composites fabriqués ; substitués par ces
+  valeurs physiques réelles et disclosed, per §21/§67 du master prompt
+  (interdiction du score composite fabriqué).
+- Phase 45 : "Alerts & Hazards" (réutilise `ForecastDecisionEngine.
+  assess_severe_weather_risk()`, seuils NOAA SPC/Doswell et al. 1996
+  déjà cités dans ce codebase, nourri seulement du CAPE/cisaillement
+  réels de ce Workstation - sous-ensemble honnête, disclosed, jamais
+  une couverture complète du risque sévère) et "Quick Actions" (4
+  boutons, tous câblés à des handlers réels déjà existants : `refresh()`,
+  `_save_configuration()`, nouvelle `_export_diagnostics_data()`,
+  navigation vers `multimodel_panel`).
+- Phase 46 : `theme_tokens.dashboard_stylesheet()` étendu avec de vraies
+  règles QSS `QGroupBox`/`QComboBox`/`QListWidget` (les ~20 QGroupBox et
+  2 QListWidget de ce Workstation n'avaient aucune règle avant), nouveau
+  helper `_rgba()` pour calculer une teinte active/hover réelle à partir
+  d'un token hex existant plutôt qu'une valeur inventée.
+
+Chaque phase : tests de régression ajoutés (`tests/gui/
+test_acf_workstation_phase4{3,4,5}_*.py`, extensions `tests/
+test_theme_tokens.py`), `ruff`/`mypy` clean, suite complète verte avant
+commit.
+
+**Retrait de l'embarquement AWCI dans le dock ESOC** (2026-09-12,
+demande explicite : "je veux pas que AWCI dashboard soit affiché dans
+ACF dashboard je veux qu'un AWCI bouton seulement... qui mène à un
+nouveau dashboard AWCI qui est deja réalisé") : `PanelManager.
+AWCIDashboardPanel` (28e onglet du dock, une 2e instance complète
+d'`AWCIDashboard()` redondante avec la fenêtre autonome) supprimée -
+`PanelManager.panels` passe de 44 à 43 entrées. Le bouton toolbar
+"✈️ AWCI" (`open_awci_dashboard` → `AWCIDashboardWindow`, fenêtre
+autonome) existait déjà et satisfaisait pleinement la demande - aucun
+nouveau code nécessaire pour lui, seuls ses commentaires obsolètes
+(référençant l'onglet supprimé) ont été mis à jour. Tests mis à jour
+(`tests/test_esoc.py` : assertion de comptage 43 + assertion explicite
+que `"awci_dashboard"` n'est plus un panel enregistré). Suite complète
+verte (46 + 10 tests ciblés).
