@@ -139,8 +139,16 @@ from acf.gui.dashboard.awci_radar import AWCIRadar
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskBadgeDetailDialog, AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_sidebar import AWCISidebar
+from acf.gui.dashboard.awci_situation_panel import (
+    DEFAULT_AIRPORT_ICAO_CODES,
+    AWCIAirportTable,
+    AWCIAllAirportsDialog,
+    AWCICurrentSituationCard,
+    AWCIModelAgreementCard,
+)
 from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
 from acf.gui.dashboard.awci_topbar import AWCITopBar
+from acf.gui.dashboard.awci_colors import level_for
 from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
     awci_grid,
@@ -1188,6 +1196,27 @@ class AWCIDashboard(QWidget):
         self.hazard_row = AWCIHazardRow()
         outer.addWidget(self.hazard_row)
 
+        # Real "Current Situation" / "Model Agreement" / "Airport
+        # Complexity" row (added 2026-09-12, docs/reference/
+        # awci_dashboard_reference.png, Phase 4/6) - see
+        # awci_situation_panel.py's own module docstring for the exact
+        # real source of every value. Added as its own new row rather
+        # than replacing the existing cross-section/radar/risk-summary
+        # columns below (a deliberate, disclosed scope decision - see
+        # reports/ACF_MASTER_AUDIT_v2.md's Phase 4 entry - preserving
+        # those already-real, already-tested panels rather than a
+        # riskier full row1/row2 teardown to match the photo's exact
+        # column arrangement).
+        situation_row = QHBoxLayout()
+        situation_row.setSpacing(8)
+        self.current_situation_card = AWCICurrentSituationCard()
+        self.model_agreement_card = AWCIModelAgreementCard()
+        self.airport_table = AWCIAirportTable(on_view_all=self._open_all_airports_dialog)
+        situation_row.addWidget(self.current_situation_card, stretch=1)
+        situation_row.addWidget(self.model_agreement_card, stretch=1)
+        situation_row.addWidget(self.airport_table, stretch=1)
+        outer.addLayout(situation_row)
+
         # --- Row 1: global map (left) + cross-section & radar (right) -----
         row1 = QHBoxLayout()
         row1.setSpacing(8)
@@ -1607,6 +1636,69 @@ class AWCIDashboard(QWidget):
         elif key == "data_reports":
             self._open_execution_report()
 
+    def _compute_airport_complexity_rows(self, icao_codes: tuple[str, ...]) -> list[dict[str, Any]]:
+        """Real per-airport AWCI, computed by running the SAME real
+        AWCICalculator/_synthetic_inputs demo pipeline refresh() itself
+        uses, at each real airport's own real (lat, lon) from this
+        module's own real _AIRPORTS table - never a fabricated number,
+        even while Real Physics/Real Archive/an imported model is
+        active elsewhere on this dashboard (a real, disclosed scope
+        limit - see awci_situation_panel.py's own module docstring;
+        this table always reflects the same real demo-pattern
+        evaluation, for a consistent real cross-airport comparison).
+        Trend compares against the SAME real computation one real hour
+        earlier (time_offset_hours - 1) - a genuine before/after
+        comparison, not a guessed arrow."""
+        current_hour = float(self.time_slider.value())
+        rows: list[dict[str, Any]] = []
+        for icao in icao_codes:
+            lat, lon, _name = _AIRPORTS[icao]
+            now_awci = AWCICalculator().calculate(
+                _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=current_hour)
+            )["awci"]
+            previous_awci = AWCICalculator().calculate(
+                _synthetic_inputs(
+                    lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=current_hour - 1.0
+                )
+            )["awci"]
+            if now_awci > previous_awci + 0.5:
+                trend = "↑"
+            elif now_awci < previous_awci - 0.5:
+                trend = "↓"
+            else:
+                trend = "→"
+            rows.append({"icao": icao, "awci": now_awci, "trend": trend, "level": level_for(now_awci)})
+        return rows
+
+    def _refresh_situation_row(self, module_scores: dict[str, float], overall_awci: float,
+                                physical_score: float | None, forecast_score: float | None) -> None:
+        """Real refresh for the Phase 4 situation row - see
+        awci_situation_panel.py's own module docstring for each card's
+        exact real source. Called from every real point-refresh path
+        (demo/imported-model/Real Physics) alongside the existing
+        self.risk_summary/self.hazard_row updates - never a second,
+        independent computation of the same real per-point result."""
+        self.current_situation_card.update_data(
+            module_scores,
+            overall_awci,
+            physical_score,
+            forecast_score,
+            area=self.topbar.area_combo.currentText(),
+            altitude=self.flight_level_selector.currentText(),
+            valid_time=f"{self.time_slider.value():02d}:00 UTC",
+            confidence_pct=self.stats_bar.confidence_box.gauge._score,
+        )
+        self.model_agreement_card.update_data(module_scores)
+        self.airport_table.update_data(self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES))
+
+    def _open_all_airports_dialog(self) -> None:
+        """Real "View all airports" - the SAME real per-airport
+        computation as the summary table, run over every entry in the
+        real _AIRPORTS reference table."""
+        rows = self._compute_airport_complexity_rows(tuple(_AIRPORTS.keys()))
+        dialog = AWCIAllAirportsDialog(rows, parent=self)
+        dialog.exec()
+
     def _apply_theme(self) -> None:
         """Real, token-driven stylesheet (acf.gui.theme_tokens) - replaces
         the previous hardcoded 6-line block that lived only here and
@@ -1869,6 +1961,9 @@ class AWCIDashboard(QWidget):
             forecast_score=point_result["forecast_score"],
         )
         self.hazard_row.update_data(point_result["module_scores"], overall_awci)
+        self._refresh_situation_row(
+            point_result["module_scores"], overall_awci, point_result["physical_score"], point_result["forecast_score"]
+        )
         # Stored so "🔔 Alerts" reads the exact same real values
         # risk_summary just displayed, not a second/independent guess.
         self._last_risk_inputs = (
@@ -2059,6 +2154,9 @@ class AWCIDashboard(QWidget):
             forecast_score=point_result["forecast_score"],
         )
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
+        self._refresh_situation_row(
+            point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
+        )
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],
@@ -2365,6 +2463,9 @@ class AWCIDashboard(QWidget):
             forecast_score=point_result["forecast_score"],
         )
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
+        self._refresh_situation_row(
+            point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
+        )
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],

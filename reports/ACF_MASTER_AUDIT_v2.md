@@ -13291,3 +13291,51 @@ démarre à la vraie valeur courante).
 **Validation** : `tests/test_awci_map_panel_reference_fidelity.py` :
 39 passed (8 nouveaux), 0 régression. Vérifié visuellement par capture
 d'écran réelle (pilotage réel de l'app).
+
+## Mise à jour 2026-09-12 (suite) — Redesign AWCI, Phase 4/6 : Current Situation / Model Agreement / Airport Complexity
+
+**Câblé** : `acf.gui.dashboard.awci_situation_panel` (nouveau fichier,
+4 classes) :
+1. **`AWCICurrentSituationCard`** - sévérité réelle (`level_for(overall_awci)`),
+   liste "Main Hazards" réelle (réutilise directement
+   `compute_elevated_risks()`, la même fonction déjà utilisée par la
+   fonctionnalité Alertes), Affected Area (réel - sélecteur Area de la
+   topbar), Main Altitude (réel - sélecteur Flight Level), Valid Time
+   (réel - `time_slider`), barre de confiance réelle (même valeur que
+   la jauge FORECAST CONFIDENCE existante).
+2. **`AWCIModelAgreementCard`** - score réel `model_disagreement`
+   (honnêtement ~0 par défaut, aucun ensemble multi-modèle réel câblé
+   dans ACF - même limite déjà disclosed ailleurs pour cette clé).
+3. **`AWCIAirportTable`** + **`AWCIAllAirportsDialog`** - vrai score
+   AWCI par aéroport, calculé en exécutant le vrai pipeline
+   `AWCICalculator`/`_synthetic_inputs` aux vraies coordonnées de
+   chaque aéroport (table `_AIRPORTS` déjà réelle et citée,
+   `awci_dashboard.py`). Tendance réelle (comparaison avec le même
+   calcul réel une heure plus tôt). "View all airports" ouvre un vrai
+   dialogue calculant TOUS les aéroports de la table de référence.
+
+**Bug logique réel trouvé et corrigé pendant le développement** :
+`level_for()` est une échelle de sévérité (plus haut = pire, "Extreme"
+= le pire) - appliquée naïvement à un score d'ACCORD, un désaccord réel
+de 0.0 (accord parfait) affichait "Model Agreement: Extreme" -
+exactement l'inverse du sens réel. Corrigé en classifiant le vrai
+désaccord sur l'échelle réelle (couleur correcte), puis en traduisant
+ce niveau vers son opposé sémantique pour le texte affiché
+("Very Low" désaccord → "Very High" agreement).
+
+**Choix disclosed** : la nouvelle rangée est ajoutée en plus des
+panneaux existants (coupe verticale, radar, résumé des risques) plutôt
+que de les remplacer, pour ne pas risquer une refonte structurelle
+majeure de row1/row2 en une seule fois. **Mise à jour immédiate** :
+demande explicite ultérieure de l'utilisateur de supprimer ces anciens
+panneaux - traité dans la Phase 5/6 (voir tâches de session).
+
+**Tests ajoutés** : `tests/gui/test_awci_situation_panel.py` (9 tests)
++ `tests/gui/test_awci_dashboard_airport_complexity.py` (5 tests) -
+dont un test de régression prouvant directement le bug Model Agreement
+(vérifie "Very High" et jamais "Extreme" pour un désaccord de 0.0), et
+un test prouvant que la valeur de chaque aéroport correspond à un
+recalcul indépendant du même vrai pipeline aux vraies coordonnées.
+
+**Validation** : 14 tests dédiés : 14 passed. Vérifié visuellement par
+capture d'écran réelle (pilotage réel de l'app).
