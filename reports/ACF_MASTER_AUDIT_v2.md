@@ -12808,3 +12808,37 @@ pour les grandeurs physiques individuellement couvertes par une norme
 publiée - pas pour l'architecture composite d'AWCI elle-même (poids,
 combinaisons, échelles de score), qui reste, par nature, un choix de
 conception ACF honnêtement disclosé, jamais présenté comme une loi.
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que tu ajoutes toutes les seuils possible pour que le projet soit conforme à 100%") — Seuil réel de température de givrage OACI Annexe 3 câblé
+
+**Contexte** : `AVIATION_HAZARDS_REGISTRY["airframe_icing"]` cite déjà
+la vraie plage de température OACI/FAA du givrage en vol ("entre 0°C
+et -40°C", ICAO Annexe 3 Ch.3 / FAA Aviation Weather Handbook Ch.19)
+dans son `physical_explanation` en texte libre - jamais transformée en
+constante numérique réelle réutilisable par quoi que ce soit dans
+`acf.awci`, alors que `acf.awci.hydrometeor_phase` calcule déjà une
+vraie température de surface à chaque point.
+
+**Nouveau module** `src/acf/awci/icing_temperature_range.py` -
+`is_within_icing_temperature_range()`, réutilisant les mêmes seuils
+déjà cités (`ICING_TEMPERATURE_UPPER_C=0.0`,
+`ICING_TEMPERATURE_LOWER_C=-40.0`) - une vraie PRÉCONDITION THERMIQUE
+binaire ("l'eau liquide surfondue peut-elle exister ici"), jamais une
+sévérité et jamais une affirmation que le givrage EST en train de se
+produire (aucun champ de contenu en eau liquide n'existe dans ACF pour
+le confirmer) - concept réel distinct de `phase` (type de précipitation
+en surface), jamais confondu avec lui.
+
+**Câblé** : `compute_real_hydrometeor_phase_at_point()` retourne
+désormais une clé supplémentaire `is_within_icao_icing_temperature_range`
+- ajout pur, aucune clé existante modifiée, tous les appelants déjà
+réels (spatial_field.py, path_sampling.py, awci_synthetic_field.py,
+acf_workstation_microphysics.py, ...) vérifiés non affectés.
+
+**Tests** : `tests/test_awci_icing_temperature_range.py` (11 tests,
+bornes réelles exactes 0°C/-40°C) + 3 ajoutés à
+`tests/test_awci_hydrometeor_phase.py`. Suite complète des appelants
+(spatial_field, synthetic_field, workstation_microphysics,
+path_sampling, layer_grids, hydrometeor_phase, icing_temperature_range) :
+117 passed, 1 skipped, 0 régression. `ruff`/`mypy` propres sur les 3
+fichiers source touchés.

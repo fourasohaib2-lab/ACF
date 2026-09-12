@@ -75,6 +75,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from acf.awci.icing_temperature_range import is_within_icing_temperature_range
 from acf.physics_guard import PhysicsGuard
 from acf.science.precipitation import HydrometeorType
 from acf.science.thermodynamics import Thermodynamics
@@ -125,6 +126,11 @@ def compute_real_hydrometeor_phase_at_point(
             real, disclosed ACF ordinal ranking (see module docstring).
         relative_humidity_pct, wet_bulb_c : the real intermediate
             values actually used, for transparency/debugging.
+        is_within_icao_icing_temperature_range : bool - real ICAO
+            Annex 3/FAA airframe-icing thermal precondition at this
+            same temperature (see acf.awci.icing_temperature_range's
+            own module docstring) - a distinct real concept from
+            `phase` above, never conflated with it.
         status, is_real_data, honest_limitation.
 
     Raises
@@ -152,6 +158,13 @@ def compute_real_hydrometeor_phase_at_point(
         "phase_severity": PHASE_SEVERITY[phase],
         "relative_humidity_pct": relative_humidity_pct,
         "wet_bulb_c": wet_bulb_c,
+        # Added 2026-09-12 (explicit user request "je veux que tu
+        # ajoutes toutes les seuils possible...") - real ICAO Annex 3/
+        # FAA airframe-icing thermal precondition (see acf.awci.
+        # icing_temperature_range's own module docstring) at this same
+        # real temperature - a distinct real concept from `phase`
+        # above (surface precipitation type), never conflated with it.
+        "is_within_icao_icing_temperature_range": is_within_icing_temperature_range(temperature_k),
         "status": "REAL_HYDROMETEOR_PHASE_SURFACE_HEURISTIC",
         "is_real_data": True,
         "honest_limitation": (
@@ -160,6 +173,9 @@ def compute_real_hydrometeor_phase_at_point(
             "reliably distinguish freezing rain from ice pellets/sleet (merged into one real category - "
             "see acf.science.precipitation.HydrometeorType's own docstring). phase_severity is a real, "
             "disclosed ACF ordinal design choice (see this module's own docstring), not a published "
-            "numeric severity index."
+            "numeric severity index. is_within_icao_icing_temperature_range is a real thermal "
+            "precondition only (can supercooled liquid water plausibly exist here), never a claim that "
+            "airframe icing IS occurring - no real liquid water content field exists anywhere in this "
+            "codebase to confirm that."
         ),
     }

@@ -25,6 +25,33 @@ def test_warm_humid_point_is_classified_rain():
     assert result["phase_severity"] == pytest.approx(0.2)
 
 
+def test_is_within_icao_icing_temperature_range_key_matches_a_direct_real_call():
+    """2026-09-12 addition - a distinct real concept from `phase`,
+    reused directly from acf.awci.icing_temperature_range, never
+    reimplemented or conflated with the phase heuristic."""
+    from acf.awci.icing_temperature_range import is_within_icing_temperature_range
+
+    for temperature_k in (250.0, 265.0, 273.15, 290.0, 320.0):
+        result = compute_real_hydrometeor_phase_at_point(
+            temperature_k=temperature_k, specific_humidity=0.005, pressure_hpa=1000.0
+        )
+        assert result["is_within_icao_icing_temperature_range"] == is_within_icing_temperature_range(temperature_k)
+
+
+def test_warm_point_is_never_within_the_real_icing_temperature_range():
+    result = compute_real_hydrometeor_phase_at_point(
+        temperature_k=293.15, specific_humidity=0.010, pressure_hpa=1000.0
+    )
+    assert result["is_within_icao_icing_temperature_range"] is False
+
+
+def test_freezing_point_is_within_the_real_icing_temperature_range():
+    result = compute_real_hydrometeor_phase_at_point(
+        temperature_k=265.0, specific_humidity=0.002, pressure_hpa=1000.0
+    )
+    assert result["is_within_icao_icing_temperature_range"] is True
+
+
 def test_cold_dry_point_is_classified_snow():
     result = compute_real_hydrometeor_phase_at_point(
         temperature_k=263.15, specific_humidity=0.0015, pressure_hpa=1000.0
