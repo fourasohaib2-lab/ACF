@@ -764,7 +764,11 @@ from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialo
 from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
 from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
 from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
-from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel, compute_real_key_metrics_at_point
+from acf.gui.dashboard.acf_workstation_overview_landing import (
+    ACFOverviewLandingPanel,
+    compute_real_alerts,
+    compute_real_key_metrics_at_point,
+)
 from acf.gui.dashboard.acf_workstation_pipeline_checks import (
     run_real_derivation_consistency_check,
     run_real_range_qc,
@@ -1239,7 +1243,13 @@ class ACFWorkstation(QWidget):
             navigate_to=self._navigate_to,
             module_names=_ENABLED_MODULES + _TOOLBAR_MODULES,
             compute_consensus=self._start_consensus,
+            run_new_analysis=self.refresh,
+            export_report=self._save_configuration,
+            export_data=self._export_diagnostics_data,
         )
+        self._last_key_metrics: dict[str, Any] | None = None
+        self._last_alerts: dict[str, Any] | None = None
+        self._last_consensus_result: dict[str, Any] | None = None
         self.overview_panel = ACFOverviewPanel()
         self.dynamics_panel = ACFDynamicsLabPanel()
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
@@ -1614,9 +1624,33 @@ class ACFWorkstation(QWidget):
 
         self.overview_landing_panel.set_consensus_pending()
         self._consensus_worker = _ConsensusWorker(lat=lat, lon=lon, models=list(MODEL_CONFIGS.keys()))
-        self._consensus_worker.signals.finished.connect(self.overview_landing_panel.set_consensus_result)
+        self._consensus_worker.signals.finished.connect(self._on_consensus_ready)
         self._consensus_worker.signals.failed.connect(self.overview_landing_panel.set_consensus_failed)
         QThreadPool.globalInstance().start(self._consensus_worker)
+
+    def _on_consensus_ready(self, result: dict[str, Any]) -> None:
+        self._last_consensus_result = result
+        self.overview_landing_panel.set_consensus_result(result)
+
+    def _export_diagnostics_data(self) -> None:
+        """Real "Export Data" Quick Action (added Phase 45, 2026-09-12) -
+        writes the currently real, already-displayed Key Metrics/
+        alerts/consensus values to a real JSON file. Never the settings
+        _export_configuration() already covers, and never a value not
+        yet genuinely computed - an unset field is honestly `null`."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Diagnostics Data", "acf_workstation_diagnostics.json", "JSON File (*.json)"
+        )
+        if not path:
+            return
+        payload = {
+            "key_metrics": self._last_key_metrics,
+            "alerts": self._last_alerts,
+            "model_consensus": self._last_consensus_result,
+        }
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+        self.status_label.setText(f"✅ Diagnostics data exported to {path}.")
 
     def _on_hpc_connect_done(self, real_transport: bool, label: str, detail: str) -> None:
         self.hpc_connect_button.setEnabled(True)
@@ -1764,9 +1798,15 @@ class ACFWorkstation(QWidget):
         # _on_level_changed() below.
         self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(volume, lat, lon))
 
-        # Real Overview "Key Metrics" update (added Phase 44, 2026-09-12) -
-        # same real point as the sounding/stability indices above.
-        self.overview_landing_panel.set_key_metrics(compute_real_key_metrics_at_point(volume, lat, lon))
+        # Real Overview "Key Metrics"/"Alerts & Hazards" update (added
+        # Phase 44/45, 2026-09-12) - same real point as the sounding/
+        # stability indices above.
+        self._last_key_metrics = compute_real_key_metrics_at_point(volume, lat, lon)
+        self.overview_landing_panel.set_key_metrics(self._last_key_metrics)
+        self._last_alerts = compute_real_alerts(
+            self._last_key_metrics["cape_j_kg"], self._last_key_metrics["bulk_wind_shear_ms"]
+        )
+        self.overview_landing_panel.set_alerts(self._last_alerts)
 
         # Real Atmospheric Interaction Graph update (added Phase 34,
         # 2026-09-05) - real per-level Pearson correlations, re-derived
@@ -1796,7 +1836,12 @@ class ACFWorkstation(QWidget):
         if self._volume is not None:
             self.sounding_panel.update_from_volume_and_point(self._volume, lat, lon, level_index=self._level_index)
             self.stability_indices_panel.set_indices(compute_real_stability_indices_at_point(self._volume, lat, lon))
-            self.overview_landing_panel.set_key_metrics(compute_real_key_metrics_at_point(self._volume, lat, lon))
+            self._last_key_metrics = compute_real_key_metrics_at_point(self._volume, lat, lon)
+            self.overview_landing_panel.set_key_metrics(self._last_key_metrics)
+            self._last_alerts = compute_real_alerts(
+                self._last_key_metrics["cape_j_kg"], self._last_key_metrics["bulk_wind_shear_ms"]
+            )
+            self.overview_landing_panel.set_alerts(self._last_alerts)
             snapshot = compute_real_map_inspector_snapshot(self._volume, lat, lon, self._level_index)
             if self._map_inspector is None:
                 self._map_inspector = ACFMapInspectorDialog(self)

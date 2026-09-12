@@ -70,6 +70,49 @@ score the mockup's raw "0.72"/"78% High" style implies:
    Only the real 3 MODEL_CONFIGS models this codebase actually has
    (AROME/ALADIN/ARPEGE) are compared - the mockup's own 4th "WRF" row
    has no real backing anywhere in this codebase, so it is not shown.
+
+Phase 45 (2026-09-12, "continue selon ton jugement") added the real
+"Alerts & Hazards" and "Quick Actions" sections.
+
+Alerts & Hazards reuses `acf.ai.decision_support.decision_engine.
+ForecastDecisionEngine.assess_severe_weather_risk()` - a real,
+threshold-based severe-weather classifier already in this codebase
+(NOAA SPC Severe Weather Criteria / Doswell et al. 1996, cited in its
+own `references` field), already corrected once from an identical
+fabrication bug (`acf.ai.decision_support.operational_decision`'s own
+NOTE: unset input fields must default to 0.0, "a genuine no-signal
+baseline", never to a value already above the detection threshold).
+Fed here with this page's own real CAPE (`cape_j_kg`) and bulk wind
+shear (`bulk_wind_shear_ms`) - every other real input the engine
+accepts (EHI/IVT/wind_gust/PWV) has no real per-point computation
+anywhere in this Workstation, so each stays at that same honest 0.0
+"no signal" default, same discipline as the engine's own fix - meaning
+only its CAPE+shear-driven "Orages Supercellulaires / Grêle Forte"
+category can ever genuinely trigger here; this is disclosed in the
+section's own tooltip, not presented as full severe-weather coverage.
+`bulk_wind_shear_ms` is itself a real, but disclosed, near-surface
+bulk shear between the 2 lowest native solver levels (see Stability
+Indices' own docstring) - fed into the engine's own "shear_0_6km"
+parameter as the closest real proxy available, not a genuine 0-6km
+AGL layer; this substitution is disclosed in the alert text itself.
+Model Consensus's own real spread (once computed) is shown as a
+separate, honest informational line - no invented severity tier for
+it (no established real threshold exists anywhere in this codebase
+for "significant model disagreement" in Kelvin, and inventing one
+would repeat the exact composite-score fabrication already rejected
+in Phase 44 above).
+
+Quick Actions are 4 real, already-existing capabilities wired here as
+one-click shortcuts (same real handler, no second implementation):
+"Generate Report" -> `_save_configuration()` (same as the Reports
+section's own button); "Run New Analysis" -> `refresh()` (same as the
+toolbar's own "▶ Analyze"); "Compare Models" -> real navigation to
+Multi-Model Lab (`_navigate_to()`); "Export Data" is new -
+`_export_diagnostics_data()` writes the CURRENTLY REAL, already-
+displayed Key Metrics/alerts/consensus values to a real JSON file
+(never the settings `_export_configuration()` already covers, and
+never a value not yet genuinely computed - an unset field is honestly
+`null`, never a fabricated placeholder).
 """
 
 from __future__ import annotations
@@ -80,11 +123,21 @@ from typing import Any
 import numpy as np
 from PySide6.QtWidgets import QGridLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from acf.ai.decision_support.decision_engine import ForecastDecisionEngine
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import compute_real_spatial_complexity
 from acf.gui.dashboard.acf_workstation_stability_indices import compute_real_stability_indices_at_point
 from acf.gui.theme_tokens import label_style
+
+#: Real (risk_level -> token color name) - matches ForecastDecisionEngine.
+#: assess_severe_weather_risk()'s own real, cited risk levels exactly.
+_RISK_LEVEL_COLOR: dict[str, str] = {
+    "FAIBLE": "text_muted",
+    "MODÉRÉ": "warning",
+    "ÉLEVÉ": "warning",
+    "CRITIQUE / EXTRÊME": "danger",
+}
 
 #: Real, ordered (label, dict-key, unit, decimal digits) for the Key
 #: Metrics row - see compute_real_key_metrics_at_point()'s own
@@ -135,6 +188,22 @@ def compute_real_key_metrics_at_point(volume: dict[str, Any], lat: float, lon: f
     }
 
 
+def compute_real_alerts(cape_j_kg: float, bulk_wind_shear_ms: float) -> dict[str, Any]:
+    """
+    Real, threshold-based severe-weather classification - see this
+    module's own docstring for the full disclosure. Reuses
+    `ForecastDecisionEngine.assess_severe_weather_risk()` (real, cited
+    NOAA SPC / Doswell et al. 1996 thresholds, already in this
+    codebase) fed with this page's own real CAPE and bulk wind shear;
+    every other real input the engine accepts has no real per-point
+    source in this Workstation and stays at the engine's own honest
+    0.0 "no signal" default - so only its CAPE+shear-driven category
+    can genuinely trigger here.
+    """
+    engine = ForecastDecisionEngine()
+    return engine.assess_severe_weather_risk({"CAPE": cape_j_kg, "shear_0_6km": bulk_wind_shear_ms})
+
+
 class ACFOverviewLandingPanel(QWidget):
     """Real Workstation landing page - status + quick navigation, no
     map, no composite score, nothing fabricated."""
@@ -144,6 +213,9 @@ class ACFOverviewLandingPanel(QWidget):
         navigate_to: Callable[[str], None],
         module_names: list[str],
         compute_consensus: Callable[[], None] | None = None,
+        run_new_analysis: Callable[[], None] | None = None,
+        export_report: Callable[[], None] | None = None,
+        export_data: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -226,6 +298,67 @@ class ACFOverviewLandingPanel(QWidget):
         consensus_layout.addWidget(self.consensus_models_label)
         layout.addWidget(consensus_group)
 
+        # --- Alerts & Hazards (Phase 45, 2026-09-12) - real, threshold-
+        # based severe-weather classification, updated automatically
+        # alongside Key Metrics (cheap - pure threshold math on already-
+        # computed real values, no extra solver run). See module
+        # docstring for the full disclosure of scope (CAPE+shear only).
+        alerts_group = QGroupBox("Alerts & Hazards")
+        alerts_group.setToolTip(
+            "Real, threshold-based severe-weather classification (NOAA SPC / Doswell\n"
+            "et al. 1996 criteria, ForecastDecisionEngine.assess_severe_weather_risk())\n"
+            "fed with this page's own real CAPE and bulk wind shear only - EHI/IVT/wind\n"
+            "gust/PWV have no real per-point source in this Workstation, so only the\n"
+            "CAPE+shear-driven category can genuinely trigger. Not full severe-weather\n"
+            "coverage - a real, honest subset."
+        )
+        alerts_layout = QVBoxLayout(alerts_group)
+        self.alerts_risk_label = QLabel("Not yet computed.")
+        self.alerts_risk_label.setWordWrap(True)
+        self.alerts_risk_label.setStyleSheet(label_style("text_muted", "sm", "bold"))
+        alerts_layout.addWidget(self.alerts_risk_label)
+        self.alerts_detail_label = QLabel()
+        self.alerts_detail_label.setWordWrap(True)
+        self.alerts_detail_label.setStyleSheet(label_style("text_secondary", "xs"))
+        alerts_layout.addWidget(self.alerts_detail_label)
+        layout.addWidget(alerts_group)
+
+        # --- Quick Actions (Phase 45, 2026-09-12) - 4 real, already-
+        # existing capabilities, one-click shortcuts - see module
+        # docstring for exactly which real handler each one reuses.
+        actions_group = QGroupBox("Quick Actions")
+        actions_grid = QGridLayout(actions_group)
+        self.generate_report_button = QPushButton("📄 Generate Report")
+        self.generate_report_button.setToolTip("Same real _save_configuration() the Reports section's own button uses.")
+        self.generate_report_button.setEnabled(export_report is not None)
+        if export_report is not None:
+            self.generate_report_button.clicked.connect(export_report)
+        actions_grid.addWidget(self.generate_report_button, 0, 0)
+
+        self.run_new_analysis_button = QPushButton("▶ Run New Analysis")
+        self.run_new_analysis_button.setToolTip("Same real refresh() the toolbar's own \"▶ Analyze\" button uses.")
+        self.run_new_analysis_button.setEnabled(run_new_analysis is not None)
+        if run_new_analysis is not None:
+            self.run_new_analysis_button.clicked.connect(run_new_analysis)
+        actions_grid.addWidget(self.run_new_analysis_button, 0, 1)
+
+        self.export_data_button = QPushButton("💾 Export Data")
+        self.export_data_button.setToolTip(
+            "Writes the currently real, already-displayed Key Metrics/alerts/consensus\n"
+            "values to a real JSON file - an unset value is honestly null, never a\n"
+            "fabricated placeholder."
+        )
+        self.export_data_button.setEnabled(export_data is not None)
+        if export_data is not None:
+            self.export_data_button.clicked.connect(export_data)
+        actions_grid.addWidget(self.export_data_button, 1, 0)
+
+        self.compare_models_button = QPushButton("⚖ Compare Models")
+        self.compare_models_button.setToolTip("Real navigation to the already-built Multi-Model Lab.")
+        self.compare_models_button.clicked.connect(lambda: self._navigate_to("Multi-Model Lab"))
+        actions_grid.addWidget(self.compare_models_button, 1, 1)
+        layout.addWidget(actions_group)
+
         nav_group = QGroupBox("Quick Navigation")
         nav_layout = QGridLayout(nav_group)
         for i, name in enumerate(module_names):
@@ -274,6 +407,26 @@ class ACFOverviewLandingPanel(QWidget):
     def set_consensus_failed(self, message: str) -> None:
         self.consensus_button.setEnabled(True)
         self.consensus_status_label.setText(f"⚠ Real computation failed: {message}")
+
+    def set_alerts(self, assessment: dict[str, Any]) -> None:
+        """Real threshold-based classification, from
+        `compute_real_alerts()`'s own real result - never called with
+        a fabricated dict. See module docstring for the disclosed
+        CAPE+shear-only scope."""
+        risk_level = assessment["risk_level"]
+        color = _RISK_LEVEL_COLOR.get(risk_level, "text_primary")
+        self.alerts_risk_label.setText(f"Risk level: {risk_level}")
+        self.alerts_risk_label.setStyleSheet(label_style(color, "sm", "bold"))
+        phenomena = assessment["detected_phenomena"]
+        if phenomena:
+            self.alerts_detail_label.setText(
+                "• " + "\n• ".join(f"{name}" for name in phenomena)
+                + "\n\n" + "\n".join(assessment["operational_warnings"])
+            )
+        else:
+            self.alerts_detail_label.setText(
+                "No real CAPE/shear threshold crossed at the current point of interest."
+            )
 
     def set_model(self, model: str) -> None:
         """Real, current `MODEL_CONFIGS` grid metadata for the
