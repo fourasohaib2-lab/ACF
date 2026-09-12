@@ -1186,3 +1186,22 @@ couverte. 38 tests METAR/TAF verts, 3 consommateurs réels vérifiés
 inchangés. La grammaire METAR/TAF est maintenant largement fermée pour
 les groupes numériques standards ; restent ouverts : remarques
 complètes (RMK), état de piste.
+
+## Mise à jour (2026-09-12, suite 6) : nouveau décodeur AIRMET
+
+Retour sur la demande initiale ("Critères SIGMET/AIRMET") : AIRMET
+n'avait aucun décodeur nulle part dans ce codebase (METAR/TAF/SIGMET
+l'avaient déjà). Créé `acf.aviation.icao.airmet_decoder` (Annexe 3
+Appendice 6 Table A6-2), répliquant exactement la structure et la
+discipline conservative de `sigmet_decoder.py` - champs structurés
+fiables (FIR/séquence/validité/centre/phénomène/niveaux de vol/
+mouvement) extraits, description géographique libre disclosed comme
+non parsée. Câblé dans `ICAOMetDecoder.decode_airmet()` et exporté
+(`AIRMETData`) suivant exactement le motif SIGMET existant - pas une
+classe orpheline. 66 tests METAR/TAF/SIGMET/AIRMET combinés verts.
+
+La grammaire/couverture des 4 produits aéronautiques OACI centraux
+(METAR/TAF/SIGMET/AIRMET) est maintenant réelle et testée pour leurs
+groupes numériques standards - restent disclosed comme hors périmètre :
+remarques complètes (RMK), état de piste, description géographique
+libre des SIGMET/AIRMET, variante US "WS ALL WPTS".

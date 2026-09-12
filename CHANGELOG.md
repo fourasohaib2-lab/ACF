@@ -46,6 +46,14 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
   l'UTC exclusivement pour toute information météorologique
   aéronautique.
+- Nouveau décodeur **AIRMET** (`acf.aviation.icao.airmet_decoder`,
+  Annexe 3 Appendice 6 Table A6-2) - un des 2 produits explicitement
+  demandés par l'utilisateur ("Critères SIGMET/AIRMET"), qui n'avait
+  aucun décodeur nulle part dans ce codebase avant cette passe. Même
+  structure/discipline que `sigmet_decoder.py` (champs structurés
+  fiables extraits, description géographique libre non parsée,
+  disclosed). Câblé dans `ICAOMetDecoder.decode_airmet()` et exporté
+  (`AIRMETData`), pas une classe orpheline.
 - Groupe de cisaillement de vent WS standard (TAF, WMO FM 51-XV) -
   dernier item de grammaire disclosed traité cette passe :
   `TAFForecastPeriod.wind_shear_height_ft`/`wind_shear_direction_deg`/

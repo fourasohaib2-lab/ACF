@@ -8,6 +8,7 @@ ICAO Aviation Weather Products & Decoders Module (METAR, TAF, SIGMET, PIREP, IWX
 from dataclasses import dataclass
 from typing import Any
 
+from acf.aviation.icao.airmet_decoder import AIRMETDecoder
 from acf.aviation.icao.metar_decoder import METARDecoder
 from acf.aviation.icao.sigmet_decoder import SIGMETDecoder
 from acf.aviation.icao.taf_decoder import TAFDecoder
@@ -53,6 +54,20 @@ class SIGMETData:
     phenomenon: str  # "TS", "TURB", "ICE", "VA", "TC", "MTW"
     severity: str  # "SEV", "MOD"
     flight_levels: str  # e.g., "SFC/FL350"
+    valid_from: str
+    valid_until: str
+    movement_dir_speed: str
+
+
+@dataclass
+class AIRMETData:
+    """Structure d'un message d'information de vol AIRMET (moderate-severity, low-level flight)."""
+
+    raw_text: str
+    airmet_id: str
+    fir_code: str
+    phenomenon: str  # "MOD TURB", "MOD ICE", "SFC WIND", "MT OBSC", etc. - see airmet_decoder.py's own keyword list
+    flight_levels: str  # e.g., "SFC/FL100"
     valid_from: str
     valid_until: str
     movement_dir_speed: str
@@ -228,6 +243,66 @@ class ICAOMetDecoder:
             fir_code=report.fir_code or "",
             phenomenon=report.phenomenon or "",
             severity=report.severity or "",
+            flight_levels=flight_levels,
+            valid_from=valid_from,
+            valid_until=valid_until,
+            movement_dir_speed=movement,
+        )
+
+    @staticmethod
+    def decode_airmet(raw_airmet: str) -> AIRMETData:
+        """
+        Décode un message d'information de vol AIRMET.
+
+        Délègue à AIRMETDecoder (aviation/icao/airmet_decoder.py) pour
+        l'analyse réelle du message, puis adapte le résultat au
+        dataclass AIRMETData ci-dessus.
+
+        NOTE (ajout, 2026-09-12, audit de conformité ICAO/OMM) : AIRMET
+        n'avait aucun décodeur nulle part dans ce codebase avant cette
+        passe (vérifié via grep) - un des 2 produits explicitement
+        nommés par la demande utilisateur ("Critères SIGMET/AIRMET").
+        Même discipline conservative que decode_sigmet() ci-dessus : les
+        champs structurés (FIR, séquence, validité, centre, phénomène,
+        niveaux de vol, mouvement) sont extraits de façon fiable ; la
+        description géographique libre reste non structurée. Voir
+        airmet_decoder.py et tests/test_airmet_decoder.py.
+        """
+        report = AIRMETDecoder.decode(raw_airmet)
+
+        valid_from = (
+            f"{report.valid_from_day:02d}{report.valid_from_hour:02d}{report.valid_from_minute:02d}"
+            if report.valid_from_day is not None
+            else ""
+        )
+        valid_until = (
+            f"{report.valid_until_day:02d}{report.valid_until_hour:02d}{report.valid_until_minute:02d}"
+            if report.valid_until_day is not None
+            else ""
+        )
+
+        if report.flight_level_bottom is not None and report.flight_level_top is not None:
+            bottom = "SFC" if report.flight_level_bottom == 0 else f"FL{report.flight_level_bottom:03d}"
+            flight_levels = f"{bottom}/FL{report.flight_level_top:03d}"
+        elif report.flight_level_top is not None:
+            flight_levels = f"TOP FL{report.flight_level_top:03d}"
+        elif report.flight_level_bottom is not None:
+            flight_levels = f"ABV FL{report.flight_level_bottom:03d}"
+        else:
+            flight_levels = ""
+
+        if report.is_stationary:
+            movement = "STNR"
+        elif report.movement_dir is not None and report.movement_speed_kt is not None:
+            movement = f"MOV {report.movement_dir} {report.movement_speed_kt:.0f}KT"
+        else:
+            movement = ""
+
+        return AIRMETData(
+            raw_text=report.raw_text,
+            airmet_id=report.sequence_number or "",
+            fir_code=report.fir_code or "",
+            phenomenon=report.phenomenon or "",
             flight_levels=flight_levels,
             valid_from=valid_from,
             valid_until=valid_until,

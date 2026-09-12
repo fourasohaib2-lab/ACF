@@ -90,6 +90,29 @@ def test_icao_met_decoder():
     assert sigmet2.phenomenon != sigmet.phenomenon
     assert sigmet2.fir_code != sigmet.fir_code
 
+    # ADDED (2026-09-12, ICAO/WMO compliance audit): AIRMET had no
+    # decoder anywhere in this codebase before this - see
+    # airmet_decoder.py and tests/test_airmet_decoder.py for full
+    # coverage. Same conservative structured-field extraction as
+    # SIGMET, distinct moderate-severity phenomenon list.
+    airmet = ICAOMetDecoder.decode_airmet("LFFF AIRMET 1 VALID 020800/021200 LFPW- LFFF PARIS FIR MOD TURB")
+    assert airmet.phenomenon == "MOD TURB"
+    assert airmet.fir_code == "LFFF"
+    assert airmet.airmet_id == "1"
+    assert airmet.valid_from == "020800"
+    assert airmet.valid_until == "021200"
+
+    airmet2 = ICAOMetDecoder.decode_airmet(
+        "KZAK AIRMET 2 VALID 021200/021600 KZAK- KZAK OAKLAND OCEANIC FIR MOD ICE "
+        "FCST AT 1200Z S OF N30 FL020/FL080 MOV NE 20KT INTSF"
+    )
+    assert airmet2.fir_code == "KZAK"
+    assert airmet2.phenomenon == "MOD ICE"
+    assert airmet2.flight_levels == "FL020/FL080"
+    assert airmet2.movement_dir_speed == "MOV NE 20KT"
+    assert airmet2.phenomenon != airmet.phenomenon
+    assert airmet2.fir_code != airmet.fir_code
+
 
 def test_aviation_hazards_registry():
     """Test du registre des dangers météorologiques pour l'aviation."""

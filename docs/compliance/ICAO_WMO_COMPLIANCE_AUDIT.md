@@ -223,6 +223,32 @@ suivant). 38 tests METAR/TAF combinés verts, 3 consommateurs réels
 vérifiés inchangés (`awci_messages_panel.py`, `live_source.py`,
 `esoc_products_panel`).
 
+## 3sexies. Passe suivante (2026-09-12) : nouveau décodeur AIRMET (produit manquant en entier)
+
+Retour sur la demande initiale de l'utilisateur, qui nommait
+explicitement "Critères SIGMET/AIRMET" - `grep` a confirmé qu'AIRMET
+n'avait **aucun** décodeur nulle part dans ce codebase (contrairement à
+METAR/TAF/SIGMET, tous les trois déjà réels). AIRMET est un produit
+OACI distinct (Annexe 3 Appendice 6, Table A6-2) - phénomènes de
+sévérité modérée pour le vol à basse altitude/VFR (turbulence modérée,
+givrage modéré, vent de surface fort, visibilité de surface réduite
+étendue, plafond bas étendu, montagnes obscurcies), par opposition aux
+phénomènes sévères du SIGMET.
+
+Créé `acf.aviation.icao.airmet_decoder` en répliquant exactement la
+structure et la discipline conservative de `sigmet_decoder.py` (même
+regex d'en-tête, même traitement FL/mouvement, même refus de parser la
+description géographique libre - disclosed comme telle). Câblé dans
+`ICAOMetDecoder.decode_airmet()` (`products.py`) et exporté depuis
+`acf.aviation.__init__` (`AIRMETData`), suivant exactement le même
+motif que `decode_sigmet()`/`SIGMETData` - pas une classe orpheline.
+
+Tests : `tests/test_airmet_decoder.py` (10 tests, 4 AIRMET de FIR/
+phénomènes distincts pour prouver un décodage réel et non un cas
+figé), extension de `tests/test_operational_flight_meteorology.py`
+(le point d'entrée public `ICAOMetDecoder`). 66 tests combinés
+METAR/TAF/SIGMET/AIRMET verts.
+
 ## 4. Feuille de route réelle restante (non traitée cette passe, disclosed)
 
 Périmètre trop vaste pour une seule passe honnête (130+ fichiers touchent
