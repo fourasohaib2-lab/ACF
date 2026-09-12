@@ -12244,3 +12244,44 @@ visibilité verticale, humidité spécifique réelle croissante avec le
 point de rosée, cas de brouillard réel avec erreur bornée, cas saturé
 donnant un plafond estimé de 0 m, et tous les cas de non-comparabilité
 honnête.
+
+## Mise à jour 2026-09-12 (suite, selon jugement) — Extension de la vérification METAR à `visibility`
+
+**Contexte** : extension naturelle de la vérification METAR de
+`ceiling` à son module compagnon `visibility`, proposée en fin de
+session précédente.
+
+**Différence honnête assumée avec la vérification `ceiling`** :
+`visibility_risk_score` est un proxy [0, 1], pas une distance littérale
+(disclosure déjà établie de `acf.awci.visibility`) - donc **pas de
+métrique d'erreur numérique** possible entre ce score et une visibilité
+METAR réelle en mètres (grandeurs non commensurables). La fonction
+`compare_estimated_visibility_risk_to_metar()` rapporte les deux
+grandeurs réelles côte à côte plutôt que de prétendre à un accord
+quantitatif faux - vérifié explicitement par test qu'aucun champ de
+type `error_m` n'apparaît dans son résultat.
+
+**`classify_visibility_category()`** ajoutée à `metar_verification.py`
+- vrais seuils FAA/NOAA de catégorie de vol côté visibilité seule
+  (1/3/5 miles terrestres), le pendant réel des seuils côté plafond
+  déjà dans `acf.awci.ceiling.classify_ceiling_category()`.
+
+**Cohérence directionnelle observée** (pas une validation formelle,
+juste une confirmation de sens physique) : sur un cas réel de
+brouillard (BR, BKN003, visibilité 4000 m), le score de risque
+(0.67, élevé) coïncide avec une catégorie METAR réelle IFR ; sur un cas
+de ciel dégagé (visibilité 10000 m), le score est à 0.0 et la
+catégorie réelle est VFR.
+
+**Discipline honnête reprise** : `precipitation_mm_h` toujours à `0.0`
+(même limite déjà disclosée pour l'intégration `compute_visibility` de
+`spatial_field.py` - aucune table de conversion réelle des codes de
+temps présent METAR type "+RA" vers un taux quantitatif n'existe dans
+ACF) ; CAVOK/visibilité absente jamais substituée par une valeur
+fabriquée.
+
+**Tests** : 8 tests ajoutés à `tests/test_awci_metar_verification.py`
+(total 18) - classification des seuils réels, cas de brouillard et cas
+dégagé, non-comparabilité honnête (température/visibilité manquante),
+et vérification explicite qu'aucune métrique d'erreur numérique n'est
+produite pour ce module.
