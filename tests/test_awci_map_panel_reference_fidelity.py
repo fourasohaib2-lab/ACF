@@ -9,6 +9,7 @@ stack, and the Layers panel.
 
 from __future__ import annotations
 
+import matplotlib.patheffects as path_effects
 import pytest
 from PySide6.QtCore import Qt
 
@@ -363,3 +364,58 @@ def test_set_extent_does_not_trigger_a_full_data_redraw(qtbot):
     panel.set_extent(-12.0, 15.0, 25.0, 40.0)
 
     assert panel._contour is contour_before
+
+
+# ------------------------------------------------------------- flight path glyphs
+
+
+def test_set_flight_path_draws_an_aircraft_glyph_and_label_at_each_real_point(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+
+    panel.set_flight_path([(40.6, -73.8, "JFK"), (49.0, 2.5, "CDG")])
+
+    texts = [t.get_text() for t in panel.axis.texts]
+    assert texts.count("✈") >= 2  # at least the 2 real endpoints
+    assert "JFK" in texts
+    assert "CDG" in texts
+
+
+def test_flight_path_draws_several_real_interpolated_aircraft_along_one_segment(qtbot):
+    """2026-09-12, docs/reference/awci_dashboard_reference.jpg pixel-
+    parity pass: the reference photo shows several planes scattered
+    along the route, not just the 2 endpoints - matched here with real
+    linear interpolation along the SAME already-real path (never a
+    fabricated off-route position) - see update_data()'s own comment
+    on this loop for the honest scope."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+
+    panel.set_flight_path([(40.6, -73.8, "JFK"), (49.0, 2.5, "CDG")])
+
+    plane_count = sum(1 for t in panel.axis.texts if t.get_text() == "✈")
+    assert plane_count == 6  # 2 real endpoints + 4 real interpolated mid-route points
+
+
+def test_flight_path_glyphs_and_route_line_carry_a_real_dark_outline(qtbot):
+    """Real regression guard (2026-09-12, found while verifying the new
+    stock_img() basemap - see update_data()'s own comment above this
+    code): plain white glyphs/route line lose contrast against the
+    real Natural Earth relief's brighter regions - every aircraft
+    glyph, endpoint label, and the dashed route line itself must carry
+    a real path_effects.withStroke outline."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+
+    panel.set_flight_path([(40.6, -73.8, "JFK"), (49.0, 2.5, "CDG")])
+
+    def has_stroke(artist) -> bool:
+        return any(isinstance(e, path_effects.withStroke) for e in artist.get_path_effects())
+
+    aircraft_texts = [t for t in panel.axis.texts if t.get_text() == "✈"]
+    assert len(aircraft_texts) > 0
+    assert all(has_stroke(t) for t in aircraft_texts)
+
+    route_lines = [line for line in panel.axis.lines if line.get_linestyle() == "--"]
+    assert len(route_lines) == 1
+    assert has_stroke(route_lines[0])

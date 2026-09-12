@@ -72,6 +72,7 @@ from typing import Any, Protocol
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 import numpy as np
 import shiboken6
@@ -1164,23 +1165,39 @@ class AWCIMapPanel(EventMixin, QWidget):
                     artist.set_visible(True)
                     self._extra_layer_contours[name] = artist
 
+        # Real dark outline (added 2026-09-12, docs/reference/
+        # awci_dashboard_reference.jpg pixel-parity pass, found while
+        # verifying the new stock_img() basemap above): plain white
+        # aircraft glyphs/labels/route line read fine against the OLD
+        # flat dark-navy fill, but the real Natural Earth relief now
+        # underneath is often bright (yellow/green terrain, pale
+        # ocean), where white-on-white loses almost all contrast - a
+        # real regression this same session's own map-fidelity work
+        # just introduced. Fixed the same way the reference photo
+        # itself keeps its markers legible over a busy colored heatmap:
+        # a thin dark stroke behind the white fill (matplotlib's own
+        # standard path_effects.withStroke), applied uniformly below,
+        # never a change to the real underlying position/label/color.
+        _outline = [path_effects.withStroke(linewidth=2.2, foreground="#0a1220")]
+
         for lat, lon, label in self._flight_path:
             # Real rotated aircraft glyph (added 2026-09-03, mockup
             # parity) instead of a plain triangle marker - same real
             # (lat, lon) position, cosmetic change only.
             self.axis.text(
                 lon, lat, "✈", color="white", fontsize=11, ha="center", va="center",
-                transform=ccrs.PlateCarree(), zorder=15,
+                transform=ccrs.PlateCarree(), zorder=15, path_effects=_outline,
             )
             self.axis.text(
                 lon, lat - 3, label, color="white", fontsize=8, fontweight="bold",
-                ha="center", transform=ccrs.PlateCarree(),
+                ha="center", transform=ccrs.PlateCarree(), path_effects=_outline,
             )
         if len(self._flight_path) >= 2:
             path_lons = [p[1] for p in self._flight_path]
             path_lats = [p[0] for p in self._flight_path]
             self.axis.plot(
-                path_lons, path_lats, linestyle="--", color="white", linewidth=1.3, transform=ccrs.PlateCarree()
+                path_lons, path_lats, linestyle="--", color="white", linewidth=1.3,
+                transform=ccrs.PlateCarree(), path_effects=_outline,
             )
             # A few real intermediate aircraft glyphs (linear
             # interpolation along the SAME already-real path segments,
@@ -1190,19 +1207,23 @@ class AWCIMapPanel(EventMixin, QWidget):
             for j in range(len(self._flight_path) - 1):
                 lat_a, lon_a, _ = self._flight_path[j]
                 lat_b, lon_b, _ = self._flight_path[j + 1]
-                for t in (0.33, 0.66):
+                for t in (0.2, 0.4, 0.6, 0.8):
                     mid_lat = lat_a + t * (lat_b - lat_a)
                     mid_lon = lon_a + t * (lon_b - lon_a)
                     self.axis.text(
-                        mid_lon, mid_lat, "✈", color="white", fontsize=8, alpha=0.75,
+                        mid_lon, mid_lat, "✈", color="white", fontsize=8, alpha=0.85,
                         ha="center", va="center", transform=ccrs.PlateCarree(), zorder=14,
+                        path_effects=_outline,
                     )
 
         for lat, lon, name in self._city_labels:
-            self.axis.plot(lon, lat, marker="o", color="#e8edf5", markersize=3, transform=ccrs.PlateCarree())
+            self.axis.plot(
+                lon, lat, marker="o", color="#e8edf5", markersize=3, transform=ccrs.PlateCarree(),
+                path_effects=_outline,
+            )
             self.axis.text(
                 lon + 0.3, lat, name, color="#e8edf5", fontsize=7, ha="left", va="center",
-                transform=ccrs.PlateCarree(), zorder=14,
+                transform=ccrs.PlateCarree(), zorder=14, path_effects=_outline,
             )
 
         if self._point_marker is not None:

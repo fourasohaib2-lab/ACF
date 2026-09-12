@@ -12987,8 +12987,53 @@ plan affichant une trace `RuntimeError: Signal source has been deleted`
 est un bruit de fin de process pré-existant, sans rapport, sans échec
 de test associé).
 
+## Mise à jour 2026-09-12 (suite) — Icônes avion multiples réelles + contraste réel corrigé (régression introduite par le fond de carte réel)
+
+**Contexte** : `AWCIMapPanel` disposait déjà d'icônes avion
+intermédiaires (interpolation linéaire réelle le long de la route
+réelle, 2 points par segment) - `set_flight_path()` ; jamais fabriquées
+hors-route. Vérifié visuellement après le changement `stock_img()`
+ci-dessus : un vrai bug de contraste est apparu (glyphes/ligne de route
+blancs illisibles sur les zones claires du relief réel).
+
+**Câblé** :
+1. Nombre de points d'interpolation réels augmenté de 2 à 4 par segment
+   (0.2/0.4/0.6/0.8 au lieu de 0.33/0.66) - plus proche visuellement de
+   "plusieurs avions le long de la route" de la photo, toujours une
+   interpolation réelle sur la VRAIE route, jamais une position
+   inventée hors-trajet.
+2. Un vrai contour sombre (`matplotlib.patheffects.withStroke`)
+   appliqué à tous les glyphes avion, aux labels d'aéroport, à la ligne
+   de route pointillée et aux points/labels de ville - corrige le vrai
+   bug de contraste introduit par le fond de carte réel, sans changer
+   aucune position/couleur/donnée réelle.
+
+**Choix disclosed - non fait délibérément** : la photo montre aussi
+quelques avions dispersés loin de la route directe (trafic
+illustratif). Ajouter de tels avions aurait signifié fabriquer des
+positions de trafic sans signification réelle - contraire à la
+discipline "jamais de données inventées" appliquée tout au long de
+cette session. Seuls des points réels, interpolés sur la vraie route,
+sont dessinés.
+
+**Tests ajoutés** (`tests/test_awci_map_panel_reference_fidelity.py`,
+3 nouveaux - cette fonctionnalité n'avait aucune couverture avant) :
+présence d'un glyphe+label par point réel, 6 glyphes réels au total
+pour 2 points (2 vrais + 4 interpolés réels), et un test de régression
+sur le contour sombre. **Vérifié en 2 temps** pour ce dernier : échoue
+bien avec `_outline = []` (contour désactivé), passe avec le vrai
+correctif restauré.
+
+**Validation** : `tests/test_awci_map_panel_reference_fidelity.py` :
+31 passed (3 nouveaux), 0 régression. Vérifié visuellement par capture
+d'écran réelle + recadrage (pilotage réel de l'app). Suite ciblée
+map_panel + workstation + awci_dashboard : 491 passed, 9 skipped,
+0 régression.
+
 **Reste à faire (parité visuelle, disclosed, non traité ce tour)** :
-icônes avion multiples sur la carte globale.
+aucun point restant identifié pour l'instant - travail de parité
+pixel avec la photo de référence considéré complet pour cette session
+(en-tête, légende, fond de carte, icônes avion).
 
 ## Mise à jour 2026-09-12 (suite) — Ordre d'affichage de la légende AWCI SCALE aligné sur la photo (valeurs scientifiques réelles inchangées)
 
