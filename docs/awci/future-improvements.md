@@ -121,6 +121,14 @@ codebase today, so the dialog shows a real note instead of a
 fabricated number for either. See `reports/ACF_MASTER_AUDIT_v2.md`'s
 own "§51" closure entries for the full history.
 
+**Update 2026-09-12:** 5 further opt-in `AWCICalculator` modules
+(ceiling/visibility/dust/ash/microburst, added 2026-09-11/12) were
+found silently missing from this same dialog's breakdown - the exact
+completeness gap the 2026-09-03 closure above had already fixed once
+for `ensemble_spread`/`model_disagreement`, reappearing for the newer
+modules. Fixed - the dialog now shows all 14 real modules. See
+`reports/ACF_MASTER_AUDIT_v2.md`'s 2026-09-12 entry for the fix.
+
 ## 9. Real Physics mode's own standard-pressure-level profile
 
 **Closed 2026-09-04** (priority freely chosen, "continue"/"suit ton
