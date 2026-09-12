@@ -12761,3 +12761,50 @@ l'indice composite) est honnêtement disclosé comme un choix de
 conception ACF, jamais présenté comme une loi - ce qui EST la
 conformité complète possible pour un indice qui n'est pas lui-même un
 produit réglementé.
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que tu ajoutes toutes les seuils possible pour que le projet soit conforme à 100%") — Échelle de Beaufort (OMM) et seuil de jet-stream câblés
+
+**Contexte** : poursuite du balayage systématique. Deux vrais seuils
+cités mais jamais utilisés dans `acf.awci` trouvés :
+1. L'échelle de Beaufort réelle (WMO Code Table 1855) - aucune
+   fonction ACF ne l'exposait, alors que la vitesse du vent est déjà
+   calculée à chaque point.
+2. `acf.science.wind_turbulence.JetStream.is_jet_stream()` (seuil
+   réel de 30 m/s, "widely used textbook definition") - déjà réel et
+   cité, mais jamais appelé nulle part dans `acf.awci`, même motif
+   "documenté mais jamais câblé" déjà trouvé et corrigé pour CAPE/
+   wind-shear/microburst/CAT-turbulence.
+
+**Nouveau module** `src/acf/awci/wind_classification.py` -
+`classify_wind_beaufort_force()` (13 vrais paliers OMM 0-12, seuils en
+m/s non inventés) et `classify_jet_stream()` (réutilise directement
+`JetStream.is_jet_stream()`, jamais réimplémenté). Aucun des deux ne
+modifie `AWCICalculator.calculate_module_scores()` - `Normalizer.
+normalize_wind()` reste le même choix de conception ACF déjà disclosé
+- ces fonctions ajoutent un CONTEXTE réel et nommé à côté du score
+existant, même convention que `classify_ceiling_category()`/
+`classify_visibility_category()`/`classify_precipitation_intensity()`.
+
+**Câblé dans le vrai dashboard** : `AWCIComponentDetailDialog` (popup
+de détail du module "dynamic") affiche désormais une nouvelle section
+"Real classification (WMO/textbook)" montrant la force de Beaufort et
+le statut jet-stream réels du point cliqué - masquée honnêtement pour
+tout autre module (aucune donnée de vent n'y existe). Design du
+dashboard non touché - nouvelle section ajoutée dans ce popup déjà
+extensible par sections (suit exactement le même patron que les
+sections "Diagnostic documentation"/"Drill-down chain" déjà ajoutées
+lors de fermetures précédentes).
+
+**Tests** : `tests/test_awci_wind_classification.py` (16 tests, dont
+les bornes réelles exactes de l'échelle de Beaufort et la
+correspondance directe avec `JetStream.is_jet_stream()`) ; 2 ajoutés à
+`tests/test_awci_component_detail.py` (affichage réel pour "dynamic",
+masquage honnête pour tout autre module). Suite ciblée : 93 passed, 7
+skipped. `ruff`/`mypy` propres sur les 4 fichiers touchés.
+
+**Rappel du cadrage** (déjà donné, reste valable) : "100% de
+conformité à toutes les lois" n'est atteignable, au sens exact, que
+pour les grandeurs physiques individuellement couvertes par une norme
+publiée - pas pour l'architecture composite d'AWCI elle-même (poids,
+combinaisons, échelles de score), qui reste, par nature, un choix de
+conception ACF honnêtement disclosé, jamais présenté comme une loi.

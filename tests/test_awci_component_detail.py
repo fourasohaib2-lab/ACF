@@ -192,3 +192,32 @@ def test_dialog_shows_an_honest_fallback_for_modules_not_yet_in_the_registry(qtb
     for key in ("temporal", "confidence"):
         dialog.show_component(key, 50.0, {}, "demo")
         assert "not yet in the centralized diagnostic registry" in dialog.diagnostic_label.text()
+
+
+def test_dialog_shows_the_real_wmo_beaufort_and_jet_stream_classification_for_dynamic(qtbot):
+    """2026-09-12 addition - real WMO Beaufort force + real jet-stream
+    threshold, shown alongside the existing real wind_speed input."""
+    from acf.awci.wind_classification import classify_jet_stream, classify_wind_beaufort_force
+
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("dynamic", 79.3, {"wind_speed": 39.65}, "demo")
+
+    expected_beaufort = classify_wind_beaufort_force(39.65)
+    expected_jet = classify_jet_stream(39.65)
+    assert dialog.classification_label.isVisible()
+    text = dialog.classification_label.text()
+    assert f"Beaufort force {expected_beaufort['force']}" in text
+    assert expected_beaufort["name"] in text
+    assert expected_jet["is_jet_stream"] is True  # 39.65 m/s is real jet-stream strength
+    assert "jet-stream strength" in text
+
+
+def test_dialog_hides_the_wind_classification_for_every_other_module(qtbot):
+    """No wind_speed input exists for these modules - the section must
+    stay honestly hidden, never show a stale/fabricated classification."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    for key in ("thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence"):
+        dialog.show_component(key, 50.0, {}, "demo")
+        assert not dialog.classification_label.isVisible()

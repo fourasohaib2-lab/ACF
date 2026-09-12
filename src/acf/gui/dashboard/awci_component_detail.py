@@ -34,6 +34,7 @@ from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
 
 from acf.awci.diagnostic_registry import DIAGNOSTIC_REGISTRY
 from acf.awci.weights import WeightsManager
+from acf.awci.wind_classification import classify_jet_stream, classify_wind_beaufort_force
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
 from acf.gui_screen_utils import fit_dialog_to_screen
 
@@ -190,6 +191,20 @@ class AWCIComponentDetailDialog(QDialog):
         self.formula_label.setWordWrap(True)
         outer.addWidget(self.formula_label)
 
+        # Real WMO Beaufort force / jet-stream classification (added
+        # 2026-09-12, explicit user request "je veux que tu ajoutes
+        # toutes les seuils possible...") - only shown for the
+        # "dynamic" module, whose own real_inputs already carries
+        # wind_speed. Hidden (see show_component()) for every other
+        # module, never a fabricated section with nothing real to show.
+        self.classification_header = QLabel("Real classification (WMO/textbook)")
+        self.classification_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        outer.addWidget(self.classification_header)
+        self.classification_label = QLabel("")
+        self.classification_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 10px;")
+        self.classification_label.setWordWrap(True)
+        outer.addWidget(self.classification_label)
+
         self.weight_status_header = QLabel("Scientific status (docs/ACF_MASTER_PROMPT.md §80)")
         self.weight_status_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
         outer.addWidget(self.weight_status_header)
@@ -287,6 +302,24 @@ class AWCIComponentDetailDialog(QDialog):
                 input_lines.append(f"{field_name} = (not supplied - AWCICalculator's own default applies)")
         self.inputs_label.setText("\n".join(input_lines))
         self.formula_label.setText(info.formula)
+
+        if key == "dynamic" and raw_data is not None and "wind_speed" in raw_data:
+            wind_speed = raw_data["wind_speed"]
+            beaufort = classify_wind_beaufort_force(wind_speed)
+            jet = classify_jet_stream(wind_speed)
+            jet_text = (
+                f"jet-stream strength (>= {jet['threshold_m_s']:.0f} m/s)"
+                if jet["is_jet_stream"]
+                else f"below jet-stream strength (< {jet['threshold_m_s']:.0f} m/s)"
+            )
+            self.classification_header.show()
+            self.classification_label.show()
+            self.classification_label.setText(
+                f"WMO Beaufort force {beaufort['force']} ({beaufort['name']}) — {jet_text}"
+            )
+        else:
+            self.classification_header.hide()
+            self.classification_label.hide()
 
         weight_status = WeightsManager().get_weight_status(key)
         self.weight_status_label.setText(
