@@ -128,7 +128,7 @@ Phase 9 (2026-09-04, same "continue" progressive discipline) added:
 
 Phase 10 (2026-09-04, same "continue" progressive discipline) added:
 - **Real keyboard shortcuts** - Ctrl+R re-triggers the exact same real
-  `refresh()` the "🔄 Run" button already does; F11 toggles the exact
+  `refresh()` the "▶ Analyze" button already does; F11 toggles the exact
   same real fullscreen the "⛶" button already does; Ctrl+1..Ctrl+9/
   Ctrl+0 jump to one of this Workstation's real enabled modules by its
   real position in `_ENABLED_MODULES` - one real shortcut per real
@@ -156,7 +156,7 @@ Phase 12 (2026-09-04, same "continue" progressive discipline) added:
   real computed DATA is never saved/replayed as a stand-in for a fresh
   solver run (this project's own no-fake-functionality rule); loading
   a configuration only restores what to look at, then the user still
-  presses "🔄 Run" for real data. Also reachable from the Command
+  presses "▶ Analyze" for real data. Also reachable from the Command
   Palette. A level_index restored before any real volume exists yet is
   honestly held pending and clamped against the next real volume's own
   real level count once computed.
@@ -197,7 +197,7 @@ Phase 15 (2026-09-04, same "continue" progressive discipline) added:
   configuration()`/`_apply_configuration()`) the user bookmarks -
   never a claim that a real historical event is being replayed. Same
   "settings, never data" rule as Configuration Management: loading a
-  case still requires pressing "🔄 Run" for fresh real data. Saved
+  case still requires pressing "▶ Analyze" for fresh real data. Saved
   durably as real JSON under `<repo_root>/data/workstation/
   case_studies.json` (same real `data/*` convention as
   `events_router`/`datasets_router`'s own storage).
@@ -483,7 +483,7 @@ real bar chart of each real model's own mean field value plus the real
 ensemble spread as text. Stays on-demand (its own "▶ Compare" button,
 not automatic) - same real-cost discipline as every other genuinely
 expensive computation in this Workstation, and NOT tied to the main
-"🔄 Run" volume (same "stays whatever it was" convention as Confidence
+"▶ Analyze" volume (same "stays whatever it was" convention as Confidence
 Lab / CAPE/CIN). Honest disclosure: the mockup's own literal x-axis
 label reads "Sun N, N-1, N-2" (successive forecast RUNS over time) -
 this Workstation has no real archived forecast-run history to compare
@@ -648,13 +648,63 @@ identified structural items) is now built - see `reports/
 ACF_MASTER_AUDIT_v2.md`'s own Phase 32-42 entries for the full,
 disclosed history of this project.
 
+Phase 43 (2026-09-12, explicit user request, new reference image)
+supersedes the "reference-mockup-parity project closed" framing above:
+the user supplied a SECOND, materially different reference mockup
+("Atmospheric Analysis" - a card-based layout with Key Metrics
+sparkline tiles, a circular Model Consensus gauge, an Alerts &
+Hazards list, Quick Actions, and a different nav taxonomy: Overview /
+Data / Physics / Diagnostics / Complexity / Models & Consensus /
+Visualization / Reports / HPC-Jobs / Validation) and, after being
+shown the conflict with `docs/reference/
+acf_scientific_workstation_reference.jpg` (the Phase 31-42 mockup
+above) in a table, explicitly chose full replacement over a visual-
+only reskin or a separate parallel view. This is a real, deliberate,
+user-confirmed departure from Phase 31's own "ne change rien à 100%"
+directive - not a silent regression of it.
+
+Real, honest engineering choice made here: the new mockup's flat,
+10-item nav does not distinguish this Workstation's own 14 real,
+independently useful Labs (Atmosphere State/Dynamics/Thermodynamics/
+Convection/Microphysics/Terrain/Temporal Evolution/Forecast
+Consistency, all real physics-domain Labs the new mockup would
+otherwise collapse into one generic "Physics" row) - collapsing them
+would hide real, already-built, already-tested capability behind a
+single nav entry, which this project's own "ne détruis pas l'existant"
+discipline forbids. So `_ENABLED_MODULES`' own real Phase-31 order
+(indices 0-10) is kept EXACTLY as-is (every existing index-based
+test/shortcut/Command-Palette entry keeps working unchanged), and 3
+real modules the new mockup's own taxonomy explicitly names
+("Multi-Model Lab" -> Models & Consensus, "3D Atmosphere View" ->
+Visualization, "Data Quality Center" -> Validation) are PROMOTED from
+`_TOOLBAR_MODULES` into the primary nav list (moved, never
+duplicated) - real capability becomes more discoverable, nothing real
+is hidden or deleted. "Data" and "Diagnostics" already had an exact
+real structural match in this Workstation's own pre-existing "DATA
+SOURCES"/"DIAGNOSTICS" nav sections (Phase 31) - unchanged here. Two
+new real nav sections close the remaining gap honestly rather than
+faking their content: "REPORTS" reuses the real, already-tested
+`_save_configuration()` JSON settings-snapshot export (labelled
+honestly as a configuration/settings report - this Workstation has no
+real PDF/HTML report generator to point to, so none is claimed);
+"HPC / JOBS" reuses ESOC's own real `HPCConnectionDialog` +
+`HPCConnectionManager` (the exact same real, honest, off-thread SSH
+connect flow `esoc_window.py`'s own "Connect HPC" toolbar action
+already uses - genuine reuse, not a second implementation) so a
+scientist can check/attempt a real HPC connection without leaving the
+Workstation; neither section fabricates a job list or report content
+that doesn't exist. The Key-Metrics-sparkline-tiles/circular-gauge/
+Alerts-list VISUAL components the new mockup shows are a separate,
+larger follow-on phase (real per-component data wiring, not yet
+started as of this phase) - not silently promised complete here.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
 `acf.awci.vertical_field.compute_real_complexity_volume()` (a real
 `CoupledEarthSolver` run at AROME/ALADIN/ARPEGE's own real
 `MODEL_CONFIGS` grid - the exact 3 real names the reference photo's
-own Model chip shows) on "🔄 Run" or a Model-selector change. Every
+own Model chip shows) on "▶ Analyze" or a Model-selector change. Every
 content panel re-slices the SAME resulting volume (compute once,
 re-slice per tab/level, this codebase's own established discipline -
 `AWCIDashboard`/`ACFGeneralDashboard` already use it) - never a second
@@ -673,7 +723,7 @@ from collections.abc import Callable
 from typing import Any
 
 import shiboken6
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtCore import QDateTime, QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
@@ -742,6 +792,17 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: Lab this Workstation already had keeps its own real backend/tests
 #: unchanged - only its nav LABEL and position changed here to match
 #: the mockup; nothing real was removed.
+#:
+#: UPDATE (2026-09-12, explicit user request, superseding Phase 31's
+#: "ne change rien à 100%" directive after being shown the conflict
+#: between the two reference mockups and choosing full replacement -
+#: see the module docstring's own Phase-after-31 entry): the first 11
+#: entries keep their exact real order/position from Phase 31
+#: (indices 0-10, so every existing index-based test/shortcut keeps
+#: working unchanged) - 3 real modules the new reference's own nav
+#: doesn't separately group are PROMOTED here from `_TOOLBAR_MODULES`
+#: into the primary nav (never duplicated - moved), matching the new
+#: mockup's "Models & Consensus"/"Visualization"/"Validation" items.
 _ENABLED_MODULES = [
     "Overview",
     "Atmosphere State",
@@ -754,17 +815,17 @@ _ENABLED_MODULES = [
     "Terrain Lab",
     "Temporal Evolution Lab",
     "Forecast Consistency Lab",
+    "Multi-Model Lab",
+    "3D Atmosphere View",
+    "Data Quality Center",
 ]
 _PLANNED_MODULES: list[str] = []
 
-#: Real, built modules the mockup's own "ACF CORE" nav tree does NOT
-#: show - kept, never deleted (this project's own established
-#: "ne détruis pas l'existant" discipline), reachable from the real
+#: Real, built modules neither reference mockup's own primary nav
+#: shows - kept, never deleted (this project's own established "ne
+#: détruis pas l'existant" discipline), reachable from the real
 #: "🧰 More Labs" toolbar menu instead of the main nav list.
 _TOOLBAR_MODULES = [
-    "Multi-Model Lab",
-    "Data Quality Center",
-    "3D Atmosphere View",
     "Case Study Lab",
 ]
 
@@ -792,6 +853,41 @@ class _VolumeWorker(QRunnable):
             self.signals.failed.emit(str(exc))
             return
         self.signals.finished.emit(result)
+
+
+class _HPCConnectWorkerSignals(QObject):
+    finished = Signal(bool, str, str)  # (real_transport, profile_label, detail)
+
+
+class _HPCConnectWorker(QRunnable):
+    """Runs HPCConnectionManager.connect() off the GUI thread - added
+    Phase 43 (2026-09-12), same real QRunnable/QThreadPool +
+    QObject-signals pattern as `_VolumeWorker` above (never touch a
+    GUI widget directly from `run()`, which executes on a worker
+    thread - only the connected slot on `finished`, delivered back on
+    the GUI thread by Qt's own queued connection, may do that)."""
+
+    def __init__(self, hpc: Any, profile: str, config: dict[str, Any], label: str) -> None:
+        super().__init__()
+        self.hpc = hpc
+        self.profile = profile
+        self.config = config
+        self.label = label
+        self.signals = _HPCConnectWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            try:
+                workflow_ok = self.hpc.connect(self.profile, overrides=self.config)
+            except TypeError:
+                # Connector implementation predating the overrides parameter.
+                workflow_ok = self.hpc.connect(self.profile)
+        except Exception as exc:  # noqa: BLE001 - must not crash the worker thread
+            logger.exception("ACF Scientific Workstation: HPC connect(%r) raised", self.profile)
+            self.signals.finished.emit(False, self.label, f"raised: {exc}")
+            return
+        real_transport = bool(getattr(self.hpc.ssh_connector, "is_real_connection", False))
+        self.signals.finished.emit(real_transport, self.label, f"workflow_completed={workflow_ok}")
 
 
 class ACFWorkstation(QWidget):
@@ -829,7 +925,7 @@ class ACFWorkstation(QWidget):
         # ACFGeneralDashboard's own constructors: no real background
         # computation starts merely from constructing this widget - the
         # panels open in their real "Not yet computed" state until the
-        # user (or the hosting window, on open) triggers "🔄 Run".
+        # user (or the hosting window, on open) triggers "▶ Analyze".
 
     # ------------------------------------------------------------------ UI
 
@@ -844,6 +940,41 @@ class ACFWorkstation(QWidget):
         header.setStyleSheet(label_style("text_primary", "lg", "bold"))
         top_bar.addWidget(header)
         top_bar.addStretch()
+
+        # Real header status cluster (added Phase 43, 2026-09-12,
+        # matching the new reference mockup's own top-right "ACF
+        # ENGINE ONLINE" / date-time / user cluster). "ONLINE" here is
+        # an honest, narrow claim - this Workstation process is running
+        # and responsive - never a claim about a real solver run being
+        # in progress or a real cluster being reached (that is what
+        # the HPC / Jobs status label below, and the real status_label
+        # below this bar, separately and honestly report). Date/time
+        # and the OS account name are both real, read once at
+        # construction and refreshed on a real QTimer tick - never
+        # fabricated placeholder values (no invented person name).
+        self.engine_status_label = QLabel("🟢 ACF ENGINE ONLINE")
+        self.engine_status_label.setStyleSheet(label_style("accent_real", "sm", "bold"))
+        self.engine_status_label.setToolTip(
+            "This Workstation process is running and responsive - not a claim about a\n"
+            "real solver run in progress or a real HPC cluster connection (see the\n"
+            "status line below, and the HPC / Jobs section, for those)."
+        )
+        top_bar.addWidget(self.engine_status_label)
+
+        self.clock_label = QLabel()
+        self.clock_label.setStyleSheet(label_style("text_secondary", "xs"))
+        top_bar.addWidget(self.clock_label)
+        self._clock_timer = QTimer(self)
+        self._clock_timer.timeout.connect(self._update_clock)
+        self._clock_timer.start(30_000)
+        self._update_clock()
+
+        import getpass
+
+        self.user_label = QLabel(f"👤 {getpass.getuser()}")
+        self.user_label.setStyleSheet(label_style("text_secondary", "xs"))
+        self.user_label.setToolTip("Real OS account name running this Workstation process.")
+        top_bar.addWidget(self.user_label)
 
         top_bar.addWidget(self._label("Model:"))
         self.model_selector = QComboBox()
@@ -872,7 +1003,7 @@ class ACFWorkstation(QWidget):
         self.domain_selector.currentTextChanged.connect(self._on_domain_changed)
         top_bar.addWidget(self.domain_selector)
 
-        self.run_button = QPushButton("🔄 Run")
+        self.run_button = QPushButton("▶ Analyze")
         self.run_button.setToolTip(
             "Real, off-thread compute_real_complexity_volume() run (CoupledEarthSolver,\n"
             "the selected model's own real grid configuration) - drives every real\n"
@@ -1014,6 +1145,53 @@ class ACFWorkstation(QWidget):
         self.pipeline_monitor = ACFPipelineMonitorWidget()
         nav_col.addWidget(self.pipeline_monitor)
 
+        # Real "REPORTS" nav section (added Phase 43, 2026-09-12,
+        # matching the new reference mockup's own "Reports" nav item) -
+        # reuses the real, already-tested _save_configuration() JSON
+        # settings-snapshot export, never a second implementation.
+        # Honestly labelled: this Workstation has no real PDF/HTML
+        # report generator, so none is claimed - only the real
+        # model/level/nav/selector SETTINGS this session holds, same
+        # scope _export_configuration()'s own docstring discloses.
+        reports_header = QLabel("REPORTS")
+        reports_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        nav_col.addWidget(reports_header)
+        self.export_report_button = QPushButton("📄 Export Configuration Report")
+        self.export_report_button.setToolTip(
+            "Real JSON export of this session's own model/level/nav/selector settings\n"
+            "(the same real _save_configuration() the ⚙ menu's own 'Save Configuration…'\n"
+            "uses) - not a generated PDF/HTML report; this Workstation has no real report\n"
+            "generator to point to, so none is claimed."
+        )
+        self.export_report_button.clicked.connect(self._save_configuration)
+        nav_col.addWidget(self.export_report_button)
+
+        # Real "HPC / JOBS" nav section (added Phase 43, 2026-09-12,
+        # matching the new reference mockup's own "HPC / Jobs" nav
+        # item) - reuses ESOC's own real HPCConnectionDialog +
+        # HPCConnectionManager, the exact same real, honest, off-thread
+        # SSH connect flow esoc_window.py's own "Connect HPC" toolbar
+        # action already uses (see _connect_to_hpc()'s own docstring) -
+        # genuine reuse, not a second implementation, and never a
+        # fabricated job list (this Workstation has no real job
+        # scheduler of its own to query).
+        hpc_header = QLabel("HPC / JOBS")
+        hpc_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        nav_col.addWidget(hpc_header)
+        self.hpc_status_label = QLabel("Not connected.")
+        self.hpc_status_label.setStyleSheet(label_style("text_muted", "xs"))
+        self.hpc_status_label.setWordWrap(True)
+        nav_col.addWidget(self.hpc_status_label)
+        self.hpc_connect_button = QPushButton("🔌 Connect to HPC Cluster")
+        self.hpc_connect_button.setToolTip(
+            "Opens the real HPC Connection Wizard (same one ESOC's own toolbar uses -\n"
+            "acf.hpc_connector.HPCConnectionManager over Paramiko SSH). Reports honestly\n"
+            "whether a real SSH transport was actually confirmed, never a fabricated\n"
+            "'Connected' for a local/offline workflow."
+        )
+        self.hpc_connect_button.clicked.connect(self._connect_to_hpc)
+        nav_col.addWidget(self.hpc_connect_button)
+
         body.addLayout(nav_col)
 
         # NOTE (real responsive-sizing fix, 2026-09-05): a plain
@@ -1153,7 +1331,7 @@ class ACFWorkstation(QWidget):
     def _setup_shortcuts(self) -> None:
         """Real keyboard shortcuts (added 2026-09-04) - faster real
         access to already-real actions, nothing new invented: Ctrl+R
-        re-triggers the exact same real refresh() the "🔄 Run" button
+        re-triggers the exact same real refresh() the "▶ Analyze" button
         already does; F11 toggles the exact same real fullscreen the
         "⛶" button already does; Ctrl+1..Ctrl+9/Ctrl+0 jump to one of
         this Workstation's real enabled modules by its real position in
@@ -1280,7 +1458,7 @@ class ACFWorkstation(QWidget):
         """Real UI configuration snapshot - the real user-chosen
         SETTINGS this Workstation's own model/level/nav/selectors
         currently hold. Never the computed data itself: real data is
-        always re-computed fresh from a real solver run on "🔄 Run",
+        always re-computed fresh from a real solver run on "▶ Analyze",
         never saved/replayed as a stand-in for one (this project's own
         no-fake-functionality rule) - loading a configuration restores
         what to look at, not a snapshot pretending to already be a
@@ -1350,6 +1528,58 @@ class ACFWorkstation(QWidget):
             return
         self._apply_configuration(config)
         self.status_label.setText(f"✅ Configuration loaded from {path}.")
+
+    def _connect_to_hpc(self) -> None:
+        """Real HPC connect, added Phase 43 (2026-09-12) for the new
+        reference mockup's own "HPC / Jobs" nav item - genuine reuse of
+        ESOC's own real `HPCConnectionDialog` + `HPCConnectionManager`
+        (acf.hpc_connector, over Paramiko SSH), the exact same real,
+        off-thread flow `esoc_window.ESOCWindow._connect_hpc()` already
+        uses - not a second implementation, and not a fabricated
+        "Connected" for a local/offline dev workflow. See that
+        method's own NOTE for why is_real_connection (not the local
+        workflow's own bool return) is what this reports."""
+        from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
+
+        dialog = HPCConnectionDialog(self)
+        if dialog.exec() != HPCConnectionDialog.DialogCode.Accepted:
+            return
+        config = dialog.get_connection_config()
+        profile = config.get("profile_key") or "fennec"
+        label = config.get("profile_name", profile)
+
+        from acf.hpc_connector import HPCConnectionManager
+
+        hpc = HPCConnectionManager()
+        self.hpc_connect_button.setEnabled(False)
+        self.hpc_status_label.setText(f"⏳ Connecting (profile: {label})…")
+
+        # Held on self, not just a local - a worker with no surviving
+        # reference can be garbage-collected mid-run (same real race
+        # awci_dashboard.py's own _HPCConnectWorker already documents).
+        self._hpc_connect_worker = _HPCConnectWorker(hpc, profile, config, label)
+        self._hpc_connect_worker.signals.finished.connect(self._on_hpc_connect_done)
+        QThreadPool.globalInstance().start(self._hpc_connect_worker)
+
+    def _on_hpc_connect_done(self, real_transport: bool, label: str, detail: str) -> None:
+        self.hpc_connect_button.setEnabled(True)
+        if real_transport:
+            self.hpc_status_label.setText(f"✅ Connected to {label} (real SSH transport confirmed).")
+        else:
+            self.hpc_status_label.setText(
+                f"⚠ {label}: local/offline dev mode - no real SSH transport confirmed ({detail})."
+            )
+
+    def _update_clock(self) -> None:
+        """Real system date/time (added Phase 43, 2026-09-12) - the
+        Workstation's own real header clock, ticked by `self._clock_timer`
+        (30s - a live clock reading nobody needs to the second). Local
+        system time, honestly labelled as such - never claimed as UTC
+        (the new mockup's own header shows "UTC", but QDateTime.
+        currentDateTime() is this machine's real local time; showing a
+        "UTC" label on a value that is not genuinely UTC would be a
+        fabricated claim, not a cosmetic one)."""
+        self.clock_label.setText(QDateTime.currentDateTime().toString("ddd, d MMM yyyy  HH:mm (local)"))
 
     @staticmethod
     def _label(text: str) -> QLabel:

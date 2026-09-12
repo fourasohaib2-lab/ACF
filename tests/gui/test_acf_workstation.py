@@ -153,18 +153,22 @@ def test_nav_selection_switches_the_real_stacked_content(qapp):
     ws.nav_list.setCurrentRow(10)  # Forecast Consistency Lab
     assert ws.stack.currentWidget() is ws.confidence_panel
 
-    # Real modules the mockup's own nav tree doesn't show - kept,
-    # reachable via _navigate_to() (the "🧰 More Labs" toolbar path),
-    # never deleted.
-    ws._navigate_to("Multi-Model Lab")
+    # Phase 43 (2026-09-12): promoted from _TOOLBAR_MODULES into the
+    # primary nav (rows 11-13, matching the new reference mockup's own
+    # "Models & Consensus"/"Visualization"/"Validation" items) - now
+    # real, direct nav_list rows, not just _navigate_to()-reachable.
+    ws.nav_list.setCurrentRow(11)  # Multi-Model Lab
     assert ws.stack.currentWidget() is ws.multimodel_panel
 
-    ws._navigate_to("Data Quality Center")
-    assert ws.stack.currentWidget() is ws.quality_panel
-
-    ws._navigate_to("3D Atmosphere View")
+    ws.nav_list.setCurrentRow(12)  # 3D Atmosphere View
     assert ws.stack.currentWidget() is ws.atmosphere_3d_panel
 
+    ws.nav_list.setCurrentRow(13)  # Data Quality Center
+    assert ws.stack.currentWidget() is ws.quality_panel
+
+    # The one real module neither reference mockup's own nav tree
+    # shows - kept, reachable via _navigate_to() (the "🧰 More Labs"
+    # toolbar path), never deleted.
     ws._navigate_to("Case Study Lab")
     assert ws.stack.currentWidget() is ws.case_study_panel
 

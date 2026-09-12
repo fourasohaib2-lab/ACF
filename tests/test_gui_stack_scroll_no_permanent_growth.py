@@ -120,6 +120,14 @@ def test_acf_workstation_window_can_still_be_explicitly_shrunk_after_visiting_co
     own_chrome_minimum = window.minimumSizeHint().height()
     assert own_chrome_minimum < 737, "the window's own real minimum must no longer include Complexity Explorer's 737px"
 
-    window.resize(700, own_chrome_minimum + 20)
+    # BUG FIX (2026-09-12): own_chrome_minimum + 20 assumed a fixed
+    # amount of real headroom below 737px - Phase 43's own real new
+    # "REPORTS"/"HPC / JOBS" nav sections legitimately grew the
+    # Workstation's own chrome minimum, shrinking (not eliminating)
+    # that headroom. Clamped so the target stays a genuine, meaningful
+    # test of "smaller than 737" regardless of the chrome's own real,
+    # evolving minimum height.
+    target_height = min(own_chrome_minimum + 20, 736)
+    window.resize(700, target_height)
     qapp.processEvents()
     assert window.height() < 737
