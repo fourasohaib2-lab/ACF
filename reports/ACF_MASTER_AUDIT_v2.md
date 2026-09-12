@@ -13245,3 +13245,49 @@ honnêtement "—", sévérité réelle partagée, clés manquantes par défaut
 
 **Validation** : 5 tests dédiés : 5 passed. Vérifié visuellement par
 capture d'écran réelle (pilotage réel de l'app).
+
+## Mise à jour 2026-09-12 (suite) — Redesign AWCI, Phase 3/6 : toggle 2D/3D/4D + slider d'opacité réel sur la carte
+
+**Câblé** :
+1. `AWCIMapPanel` gagne un paramètre opt-in `show_view_toggle` (défaut
+   `False`, aucun changement pour les 13 autres consommateurs) - un
+   vrai widget flottant "2D / 3D / 4D" en haut à droite de la carte.
+   "2D" reste coché et désactivé en permanence (ce panneau n'a pas de
+   vrai mode 3D/4D propre - c'est SA seule vraie vue) ; "3D"/"4D"
+   émettent de vrais signaux (`view3dRequested`/`view4dRequested`) sans
+   rien faire eux-mêmes, gardant le widget générique/réutilisable. Câblé
+   côté `AWCIDashboard` sur `self.global_map` uniquement (comme la
+   photo) vers les fonctionnalités réelles déjà existantes
+   `_open_3d_view`/`_toggle_evolution_playback` - jamais un second
+   mécanisme 3D/4D.
+2. Vrai slider d'opacité dans le panneau Layers (absent avant, présent
+   dans la photo) - agit réellement sur `set_alpha()` du contour AWCI
+   principal ET de chaque contour de couche supplémentaire déjà
+   construit. Défaut 88% (la valeur déjà réglée cette session pour la
+   fidélité couleur), pas les 70% arbitraires de la photo (pas une
+   constante scientifique, juste le point de départ du mockup).
+
+**Bugs réels trouvés et corrigés pendant le développement** :
+- Les boutons "2D"/"3D"/"4D" à taille fixe 28px tronquaient leur propre
+  texte (sizeHint réel de "2D" : 39px) - une capture d'écran réelle a
+  montré une simple barre verticale au lieu du texte. Corrigé à 36px.
+- `update_data()` reconstruit le contour principal à chaque rafraîchissement
+  (changement de niveau de vol, glissement temporel) avec un alpha
+  codé en dur - un vrai réglage utilisateur du slider aurait été
+  silencieusement réinitialisé au prochain rafraîchissement. Corrigé
+  pour lire la vraie valeur courante du slider. Même correctif appliqué
+  aux 3 sites de construction lazy des contours de couches
+  supplémentaires.
+
+**Tests ajoutés** : 8 nouveaux dans
+`tests/test_awci_map_panel_reference_fidelity.py` (désactivé par
+défaut, "2D" coché+désactivé en permanence, "3D"/"4D" émettent de vrais
+signaux sans persister d'état, slider absent sans panneau Layers,
+valeur par défaut réelle, changement réel du slider, **persistance
+réelle vérifiée après un rafraîchissement de données** - preuve directe
+du bug ci-dessus, nouvelle couche cochée après déplacement du slider
+démarre à la vraie valeur courante).
+
+**Validation** : `tests/test_awci_map_panel_reference_fidelity.py` :
+39 passed (8 nouveaux), 0 régression. Vérifié visuellement par capture
+d'écran réelle (pilotage réel de l'app).

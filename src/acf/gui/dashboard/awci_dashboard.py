@@ -1201,9 +1201,20 @@ class AWCIDashboard(QWidget):
             show_legend=True,
             show_info_boxes=True,
             show_layers_panel=True,
+            show_view_toggle=True,
             figsize_scale=self._screen_scale,
         )
         self.global_map.set_flight_path(_GLOBAL_ROUTE)
+        # Real dispatch (added 2026-09-12, docs/reference/
+        # awci_dashboard_reference.png, Phase 3/6) - the global map's
+        # own real "3D"/"4D" toggle buttons emit these signals rather
+        # than doing anything themselves (see AWCIMapPanel's own
+        # show_view_toggle docstring); routed here to the SAME real
+        # features the sidebar's own "3D View"/"Time Evolution" nav
+        # items and the (now-hidden) header buttons already reach -
+        # never a second/duplicated 3D or 4D mechanism.
+        self.global_map.view3dRequested.connect(self._open_3d_view)
+        self.global_map.view4dRequested.connect(self._toggle_evolution_playback)
         # Real regression guard (found while adding this session's own
         # new fixed-height widgets elsewhere in the layout - VIEW MODE
         # row, regional trend sparkline, recommendation banner - which

@@ -419,3 +419,92 @@ def test_flight_path_glyphs_and_route_line_carry_a_real_dark_outline(qtbot):
     route_lines = [line for line in panel.axis.lines if line.get_linestyle() == "--"]
     assert len(route_lines) == 1
     assert has_stroke(route_lines[0])
+
+
+# ------------------------------------------------ 2D/3D/4D view toggle (Phase 3/6)
+
+
+def test_view_toggle_off_by_default(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+    assert not hasattr(panel, "view_toggle_widget")
+
+
+def test_2d_button_is_checked_and_permanently_disabled(qtbot):
+    """2026-09-12, docs/reference/awci_dashboard_reference.png: this
+    panel has no real 3D/4D mode of its own - 2D is its only real
+    view, so that button stays checked and disabled rather than a
+    fake toggle that would do nothing when clicked."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_view_toggle=True)
+    qtbot.addWidget(panel)
+    assert panel.view_2d_button.isChecked() is True
+    assert panel.view_2d_button.isEnabled() is False
+
+
+def test_3d_and_4d_buttons_emit_real_signals_and_do_not_toggle_this_panel(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_view_toggle=True)
+    qtbot.addWidget(panel)
+    seen_3d = []
+    seen_4d = []
+    panel.view3dRequested.connect(lambda: seen_3d.append(True))
+    panel.view4dRequested.connect(lambda: seen_4d.append(True))
+
+    panel.view_3d_button.click()
+    panel.view_4d_button.click()
+
+    assert seen_3d == [True]
+    assert seen_4d == [True]
+    assert panel.view_3d_button.isChecked() is False  # a momentary press, not a persisted mode
+    assert panel.view_4d_button.isChecked() is False
+    assert panel.view_2d_button.isChecked() is True  # this panel's own real view never changes
+
+
+# --------------------------------------------------------- real opacity slider
+
+
+def test_opacity_slider_only_exists_with_a_layers_panel(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+    assert not hasattr(panel, "opacity_slider")
+
+
+def test_opacity_slider_default_matches_the_real_tuned_main_contour_alpha(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    assert panel.opacity_slider.value() == 88
+    assert panel._contour.get_alpha() == pytest.approx(0.88)
+
+
+def test_moving_the_opacity_slider_really_changes_the_main_contour_alpha(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+
+    panel.opacity_slider.setValue(40)
+
+    assert panel._contour.get_alpha() == pytest.approx(0.40)
+    assert panel.opacity_value_label.text() == "40%"
+
+
+def test_a_real_data_refresh_keeps_the_users_own_opacity_not_the_hardcoded_default(qtbot):
+    """Real regression guard: update_data() rebuilds self._contour
+    from scratch on every redraw - a real bug found while adding this
+    slider would have silently reset a real user-chosen opacity back
+    to the hardcoded 0.88 default on the very next flight-level change
+    or time-slider move."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    panel.opacity_slider.setValue(40)
+
+    panel.update_data(flight_level_hpa=250.0)
+
+    assert panel._contour.get_alpha() == pytest.approx(0.40)
+
+
+def test_extra_layer_contour_checked_after_moving_the_slider_starts_at_that_real_value(qtbot):
+    panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
+    qtbot.addWidget(panel)
+    panel.opacity_slider.setValue(40)
+
+    panel.extra_layer_checkboxes["Wind"].setChecked(True)
+
+    assert panel._extra_layer_contours["Wind"].get_alpha() == pytest.approx(0.40)

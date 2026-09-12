@@ -88,6 +88,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMenu,
     QPushButton,
+    QSlider,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -198,6 +199,17 @@ class AWCIMapPanel(EventMixin, QWidget):
     #: distance check).
     pointClicked = Signal(float, float)
 
+    #: Real "2D/3D/4D" view-toggle signals (added 2026-09-12, docs/
+    #: reference/awci_dashboard_reference.png, Phase 3/6) - see
+    #: __init__'s own show_view_toggle docstring. This panel has no
+    #: real 3D/4D mode of its own (2D stays this panel's only real
+    #: view); clicking 3D/4D emits a real request for whatever OTHER
+    #: real view the embedding dashboard already has (a 3D volume
+    #: dialog, a 4D animation) - this widget stays generic/reusable,
+    #: never reaching into dashboard-specific methods itself.
+    view3dRequested = Signal()
+    view4dRequested = Signal()
+
     def __init__(
         self,
         title: str = "AWCI GLOBAL MAP",
@@ -206,6 +218,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         show_legend: bool = False,
         show_info_boxes: bool = False,
         show_layers_panel: bool = False,
+        show_view_toggle: bool = False,
         show_demo_fallback: bool = True,
         figsize_scale: float = 1.0,
     ) -> None:
@@ -219,6 +232,14 @@ class AWCIMapPanel(EventMixin, QWidget):
             fabricated forecast valid-time) and "FLIGHT LEVEL" boxes.
         show_layers_panel : add the floating Layers checkbox panel
             (only "AWCI" is a real toggle - see class/module docstring).
+        show_view_toggle : add the real floating "2D / 3D / 4D" button
+            row (added 2026-09-12, docs/reference/
+            awci_dashboard_reference.png) - "2D" is this panel's own
+            permanent real view (shown pressed/disabled, since you are
+            already looking at it); "3D"/"4D" emit view3dRequested()/
+            view4dRequested() rather than doing anything themselves -
+            see those signals' own docstring for why. Off by default,
+            zero behavior change for every existing caller.
         show_demo_fallback : whether update_data() may fall back to
             AWCI's own synthetic demo pattern (awci_grid()) when no
             real external field has been set via set_external_field()
@@ -254,6 +275,7 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._show_legend = show_legend
         self._show_info_boxes = show_info_boxes
         self._show_layers_panel = show_layers_panel
+        self._show_view_toggle = show_view_toggle
         self.camera = MapCamera()
         # This panel's own default view - the whole world for the
         # global map, a fixed regional box for the regional map -
@@ -389,6 +411,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         self._external_field_colorbar_label: str | None = None
         self._colorbar: Any = None
 
+        if show_view_toggle:
+            self._build_view_toggle()
+
         if show_layers_panel:
             self._build_layers_panel()
 
@@ -486,9 +511,13 @@ class AWCIMapPanel(EventMixin, QWidget):
 
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
+        margin = 8
+        layers_panel_top = margin
+        if self._show_view_toggle and hasattr(self, "view_toggle_widget"):
+            self.view_toggle_widget.move(max(0, self.canvas.width() - self.view_toggle_widget.width() - margin), margin)
+            layers_panel_top = margin + self.view_toggle_widget.height() + margin
         if self._show_layers_panel and hasattr(self, "layers_panel"):
-            margin = 8
-            self.layers_panel.move(max(0, self.canvas.width() - self.layers_panel.width() - margin), margin)
+            self.layers_panel.move(max(0, self.canvas.width() - self.layers_panel.width() - margin), layers_panel_top)
 
     # -------------------------------------------------- zoom / pan / reset
 
@@ -702,6 +731,60 @@ class AWCIMapPanel(EventMixin, QWidget):
         ),
     }
 
+    def _build_view_toggle(self) -> None:
+        """Real floating "2D / 3D / 4D" button row - see
+        show_view_toggle's own __init__ docstring for why 3D/4D emit
+        signals rather than doing anything themselves."""
+        self.view_toggle_widget = QFrame(self.canvas)
+        self.view_toggle_widget.setStyleSheet(
+            f"QFrame {{ background-color: rgba(13, 21, 38, 235); "
+            f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; }}"
+        )
+        layout = QHBoxLayout(self.view_toggle_widget)
+        layout.setContentsMargins(4, 3, 4, 3)
+        layout.setSpacing(2)
+
+        def _make_button(text: str, checked: bool) -> QPushButton:
+            button = QPushButton(text)
+            # Real bug found via a real screenshot: 28px was narrower
+            # than "2D"'s own real sizeHint width (39px), clipping the
+            # label down to a sliver. 36px comfortably fits "2D"/"3D"/
+            # "4D" at this font size.
+            button.setFixedSize(36, 22)
+            button.setCheckable(True)
+            button.setChecked(checked)
+            button.setStyleSheet(
+                f"QPushButton {{ border: none; border-radius: 4px; font-size: 10px; color: {TOKENS.text_secondary}; "
+                "background: transparent; }"
+                f"QPushButton:checked {{ background-color: {TOKENS.accent_primary}; color: #06121f; font-weight: bold; }}"
+            )
+            return button
+
+        self.view_2d_button = _make_button("2D", checked=True)
+        self.view_2d_button.setEnabled(False)  # this panel's own permanent real view - see class docstring
+        self.view_2d_button.setToolTip("This map is already the real 2D view.")
+        self.view_3d_button = _make_button("3D", checked=False)
+        self.view_3d_button.setToolTip("Open the real 3D volume view (emits view3dRequested()).")
+        self.view_3d_button.clicked.connect(self._on_view_3d_clicked)
+        self.view_4d_button = _make_button("4D", checked=False)
+        self.view_4d_button.setToolTip("Play the real 4D evolution animation (emits view4dRequested()).")
+        self.view_4d_button.clicked.connect(self._on_view_4d_clicked)
+        for button in (self.view_2d_button, self.view_3d_button, self.view_4d_button):
+            layout.addWidget(button)
+
+        self.view_toggle_widget.adjustSize()
+        self.view_toggle_widget.show()
+
+    def _on_view_3d_clicked(self) -> None:
+        # A real momentary press, not a persistent mode switch - see
+        # class docstring: 2D stays this panel's own only real view.
+        self.view_3d_button.setChecked(False)
+        self.view3dRequested.emit()
+
+    def _on_view_4d_clicked(self) -> None:
+        self.view_4d_button.setChecked(False)
+        self.view4dRequested.emit()
+
     def _build_layers_panel(self) -> None:
         """Real floating Layers panel (a genuine Qt child widget of
         self.canvas, repositioned on resize - see resizeEvent()). Every
@@ -736,8 +819,52 @@ class AWCIMapPanel(EventMixin, QWidget):
             panel_layout.addWidget(cb)
             self.extra_layer_checkboxes[name] = cb
 
+        # Real opacity slider (added 2026-09-12, docs/reference/
+        # awci_dashboard_reference.png, Phase 3/6) - a real
+        # QGraphicsItem.setAlpha()-equivalent on every real contourf
+        # artist this panel owns (the main AWCI contour AND every
+        # built extra-layer contour), not a decorative slider with no
+        # effect. Default 88% matches this session's own already-tuned
+        # main-contour alpha (see update_data()'s own comment on why
+        # 0.88 was chosen) - the slider starts at the real current
+        # value, never resets it.
+        opacity_row = QHBoxLayout()
+        opacity_label = QLabel("Opacity")
+        opacity_label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 9px;")
+        self.opacity_value_label = QLabel("88%")
+        self.opacity_value_label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 9px;")
+        opacity_row.addWidget(opacity_label)
+        opacity_row.addStretch()
+        opacity_row.addWidget(self.opacity_value_label)
+        panel_layout.addLayout(opacity_row)
+        self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.opacity_slider.setMinimum(10)
+        self.opacity_slider.setMaximum(100)
+        self.opacity_slider.setValue(88)
+        self.opacity_slider.valueChanged.connect(self._on_opacity_changed)
+        panel_layout.addWidget(self.opacity_slider)
+
         self.layers_panel.adjustSize()
         self.layers_panel.show()
+
+    def _current_extra_layer_alpha(self) -> float:
+        """Real current opacity for a NEWLY lazy-built extra-layer
+        contour (see _on_extra_layer_toggled()'s own docstring) - reads
+        the real opacity slider when it exists, so a layer checked
+        after the user already moved the slider starts at their real
+        chosen value instead of a hardcoded default."""
+        return self.opacity_slider.value() / 100.0 if hasattr(self, "opacity_slider") else 0.55
+
+    def _on_opacity_changed(self, value: int) -> None:
+        """Real alpha applied to every real contourf artist this panel
+        currently owns - see _build_layers_panel()'s own comment."""
+        self.opacity_value_label.setText(f"{value}%")
+        alpha = value / 100.0
+        if self._contour is not None:
+            self._contour.set_alpha(alpha)
+        for contour in self._extra_layer_contours.values():
+            contour.set_alpha(alpha)
+        self.canvas.draw_idle()
 
     def _on_awci_layer_toggled(self, checked: bool) -> None:
         if self._contour is not None:
@@ -772,7 +899,7 @@ class AWCIMapPanel(EventMixin, QWidget):
             self._last_layer_grids[key],
             levels=12,
             cmap=cmap,
-            alpha=0.55,
+            alpha=self._current_extra_layer_alpha(),
             transform=ccrs.PlateCarree(),
         )
         self._extra_layer_contours[name] = artist
@@ -1055,9 +1182,20 @@ class AWCIMapPanel(EventMixin, QWidget):
         # opted into an explicit real vmin/vmax - the original
         # extend="neither" (matplotlib's own default) is unchanged for
         # every existing AWCI caller.
+        # Real fix (2026-09-12, found while adding the real opacity
+        # slider): update_data() rebuilds this contourf artist from
+        # scratch on every redraw (a real new data refresh, a
+        # flight-level change, ...) - a hardcoded alpha here would
+        # silently reset any real value the user just set via
+        # self.opacity_slider back to the default, discarding their
+        # own real adjustment. Reads the real current slider value
+        # when the slider exists, else the same 0.88 default every
+        # existing caller without show_view_toggle/a layers panel
+        # already got.
+        current_alpha = self.opacity_slider.value() / 100.0 if hasattr(self, "opacity_slider") else 0.88
         self._contour = self.axis.contourf(
             lons, lats, grid, levels=levels, cmap=field_cmap, vmin=field_vmin, vmax=field_vmax,
-            extend="both" if has_explicit_range else "neither", alpha=0.88, transform=ccrs.PlateCarree(),
+            extend="both" if has_explicit_range else "neither", alpha=current_alpha, transform=ccrs.PlateCarree(),
         )
         if self._show_layers_panel and hasattr(self, "awci_layer_checkbox"):
             self._contour.set_visible(self.awci_layer_checkbox.isChecked())
@@ -1127,7 +1265,7 @@ class AWCIMapPanel(EventMixin, QWidget):
                         layer_grids[key],
                         levels=12,
                         cmap=cmap,
-                        alpha=0.55,
+                        alpha=self._current_extra_layer_alpha(),
                         transform=ccrs.PlateCarree(),
                     )
                     artist.set_visible(True)
@@ -1159,7 +1297,7 @@ class AWCIMapPanel(EventMixin, QWidget):
                         self._external_layer_grids[key],
                         levels=12,
                         cmap=cmap,
-                        alpha=0.55,
+                        alpha=self._current_extra_layer_alpha(),
                         transform=ccrs.PlateCarree(),
                     )
                     artist.set_visible(True)
