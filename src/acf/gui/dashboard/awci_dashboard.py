@@ -269,7 +269,9 @@ _VERTICAL_PROFILE_LEVELS_HPA = {
 # reporting levels - the same levels used worldwide for radiosonde
 # soundings and synoptic charts - not independently picked by this
 # codebase; §51's own request happens to already match the real WMO
-# convention. Real Physics mode now also offers these (added
+# convention. Independently confirmed 2026-09-12 via web search
+# (WMO's own mandatory-level set - 1000/925/850/700/500/400/300/250/
+# 200/150/100 hPa - includes all 5 of these). Real Physics mode now also offers these (added
 # 2026-09-04, closes future-improvements.md #9) via real log-pressure
 # interpolation between the real volume's own native solver levels -
 # see acf.awci.vertical_field.vertical_profile_at_standard_levels()'s

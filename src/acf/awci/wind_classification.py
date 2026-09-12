@@ -14,12 +14,20 @@ raw values already get a real FAA/NOAA category via
 
 Real, cited scales composed, none invented
 ----------------------------------------------
-1. `classify_wind_beaufort_force()` - the real WMO Beaufort scale
-   (WMO Code Table 1855, "Wind force, Beaufort scale" - the standard,
-   universally used wind-speed classification for marine/general
-   meteorological reporting). The 13 real force/threshold pairs below
-   (0-12, in m/s, standard 10 m equivalent wind) are the well-known,
-   widely published WMO values, not independently chosen by ACF.
+1. `classify_wind_beaufort_force()` - the real WMO Beaufort wind force
+   scale (WMO Manual on Codes, WMO-No. 306 - the standard, universally
+   used wind-speed classification for marine/general meteorological
+   reporting). The 13 real force/threshold pairs below (0-12, in m/s,
+   standard 10 m equivalent wind) - independently confirmed 2026-09-12
+   via web search against multiple sources (NOAA SPC, UK Met Office)
+   after this module was first written from memory - are the
+   well-known, widely published WMO values, not independently chosen
+   by ACF. (NOTE, 2026-09-12: this docstring originally cited "WMO
+   Code Table 1855" from memory - corrected here to the general Manual
+   on Codes reference after the specific table number itself could not
+   be independently confirmed against a primary source; the 13
+   threshold VALUES themselves, unlike that specific table-number
+   citation, were independently confirmed exact.)
 2. `classify_jet_stream()` - `acf.science.wind_turbulence.JetStream.
    is_jet_stream()` already existed, real and cited ("the widely used
    textbook definition for an upper-level jet streak", 30 m/s / ~58
@@ -53,11 +61,12 @@ from __future__ import annotations
 
 from acf.science.wind_turbulence import JET_STREAM_THRESHOLD_M_S, JetStream
 
-#: Real WMO Beaufort scale (WMO Code Table 1855) - (force, name,
-#: upper bound in m/s, standard 10 m equivalent wind, inclusive).
-#: Force 12 has no upper bound. Not an ACF invention - the same
-#: universally published values used in every real WMO/marine
-#: forecast product.
+#: Real WMO Beaufort wind force scale (WMO Manual on Codes, WMO-No.
+#: 306) - (force, name, upper bound in m/s, standard 10 m equivalent
+#: wind, inclusive). Force 12 has no upper bound. Not an ACF invention
+#: - independently confirmed 2026-09-12 via web search (NOAA SPC, UK
+#: Met Office) against the same universally published values used in
+#: every real WMO/marine forecast product.
 BEAUFORT_SCALE_M_S: tuple[tuple[int, str, float], ...] = (
     (0, "Calm", 0.3),
     (1, "Light air", 1.6),

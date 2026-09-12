@@ -12842,3 +12842,42 @@ bornes réelles exactes 0°C/-40°C) + 3 ajoutés à
 path_sampling, layer_grids, hydrometeor_phase, icing_temperature_range) :
 117 passed, 1 skipped, 0 régression. `ruff`/`mypy` propres sur les 3
 fichiers source touchés.
+
+## Mise à jour 2026-09-12 (suite, question directe utilisateur "toutes les seuils sont vérifiés ??") — Vérification externe web des 2 seuils non re-vérifiés, 1 erreur de citation trouvée et corrigée
+
+**Contexte** : question directe de l'utilisateur sur le statut de
+vérification réel. Réponse honnête donnée avant d'agir : le CODE est
+vérifié à 100% (tests), mais 2 chiffres introduits ce tour
+(l'échelle de Beaufort complète, l'attribution OMM des niveaux de
+pression standard) provenaient de la connaissance générale du modèle,
+jamais confirmés contre une source primaire dans cette session (pas
+d'accès internet jusqu'ici). Recherche web effectuée sur demande de
+l'utilisateur (qui n'a pas exprimé de préférence claire - option
+recommandée suivie).
+
+**Résultat de la vérification** :
+1. **Échelle de Beaufort** : les 13 seuils exacts en m/s
+   (0.3/1.6/3.4/5.5/8.0/10.8/13.9/17.2/20.8/24.5/28.5/32.7) confirmés
+   EXACTEMENT par une recherche web indépendante, recoupés par NOAA
+   SPC et le UK Met Office. **Une vraie erreur de citation trouvée et
+   corrigée** : le docstring citait de mémoire "WMO Code Table 1855"
+   - numéro de table incorrect/non confirmable ; corrigé en la
+   référence générale "WMO Manual on Codes (WMO-No. 306)", jamais
+   présenté comme un numéro de table précis que je ne peux pas
+   confirmer par une lecture directe. Les 13 VALEURS elles-mêmes,
+   elles, sont confirmées exactes - seule la référence bibliographique
+   précise était fautive.
+2. **Niveaux de pression OMM** : confirmé que 1000/925/850/700/500/
+   400/300/250/200/150/100 hPa constituent bien l'ensemble réel des
+   niveaux obligatoires OMM de radiosondage - les 5 niveaux du
+   sélecteur AWCI (850/700/500/300/250 hPa) en font tous partie.
+   Attribution confirmée exacte.
+
+**Discipline appliquée** : ne pas laisser une citation non vérifiable
+dans le code une fois le doute soulevé - correction immédiate du
+numéro de table erroné plutôt que de le laisser "probablement bon".
+
+**Validation** : `ruff check` propre, suite ciblée (wind_classification
++ dashboard reference parity) : 57 passed, 7 skipped, 0 régression -
+changements de commentaires/docstring uniquement, aucun changement de
+comportement.
