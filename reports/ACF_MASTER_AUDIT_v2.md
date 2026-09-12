@@ -12379,3 +12379,78 @@ Suite ciblée (`test_awci_dashboard_synchronization.py` +
 `test_awci_dashboard_reference_parity.py` + `test_awci_vertical_
 profile.py`) : 66 passed, 7 skipped. `ruff`/`mypy` propres sur les 3
 fichiers source touchés.
+
+## Mise à jour 2026-09-12 (suite, selon jugement) — `acf.awci.microburst` câblé dans le champ spatial 2D (`compute_microburst`), nouvelle fonction ISA réelle ajoutée à l'encyclopédie
+
+**Pourquoi** : `acf.awci.microburst.compute_real_microburst_risk_at_point()`
+existait déjà et était déjà câblé dans `AWCICalculator` (2026-09-11),
+mais - comme `ceiling`/`visibility`/`dust`/`ash` avant leur propre
+clôture - n'avait aucun appelant dans `acf.awci.spatial_field`,
+laissant le champ spatial 2D honnêtement muet sur ce module malgré
+que TOUTES ses entrées réelles (cisaillement de vent, CAPE) soient
+déjà, individuellement, disponibles ailleurs dans ce même pipeline
+(`compute_wind_shear=True`, `compute_convective_energy=True`).
+
+**Seul chaînon manquant identifié** : `altitude_m` - ni
+`CoupledEarthSolver` ni `EarthGrid` n'exposent de champ de hauteur
+géopotentielle réelle. Résolu sans invention : `acf.science.
+encyclopedia.aerodynamics.isa_atmosphere.calculate_isa_pressure()`
+(déjà réelle, déjà citée ICAO Doc 7488) n'avait jamais son inverse
+analytique construit - `calculate_isa_pressure_altitude()` ajoutée
+(inverse algébrique exact, vérifié par test de round-trip sur 6
+altitudes réelles couvrant les deux branches, à la précision flottante
+près, avec une exception minime et honnêtement disclosée de ~2cm
+exactement à la frontière des 11000m, héritée de la constante déjà
+arrondie `p_11km=22632.1` de la fonction directe elle-même, pas de
+cette nouvelle inversion). Enregistrée comme sa propre entrée
+d'encyclopédie (`isa_pressure_altitude`) suivant la convention déjà
+établie dans ce fichier ("every real law gets registered"). L'altitude
+produite est honnêtement une altitude-pression ISA (le même concept
+qui définit déjà les niveaux de vol sous calage QNE), pas une
+altitude géométrique/AGL réelle - disclosure explicite reprise du
+même fichier.
+
+**Discipline "réutilisation, jamais recalcul"** : `compute_microburst=True`
+exige `compute_wind_shear=True` ET `compute_convective_energy=True`
+(lève `ValueError` sinon) - même garde-fou déjà utilisé pour
+`compute_updraft_velocity`/`compute_convective_energy`. Le
+cisaillement et le CAPE réutilisés sont exactement les mêmes valeurs
+déjà calculées pour ces deux modules, jamais une seconde valeur
+indépendante et potentiellement incohérente.
+
+**Discipline "jamais de valeur fabriquée"** : `microburst_risk_field`
+reste `numpy.nan` en tout point où le CAPE ou le cisaillement réel
+lui-même n'a pas pu être calculé (colonne avec trop peu de niveaux
+réels) - jamais un 0.0 fabriqué pour un signal honnêtement non
+évaluable.
+
+**`acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS` délibérément non
+modifié** : vérifié que le vrai appelant GUI
+(`esoc_window._show_awci_field_on_map()`) n'active aujourd'hui que
+`compute_convective_energy=True`, jamais `compute_wind_shear=True` -
+enregistrer "microburst" comme couche de carte activable produirait
+donc, dans l'usage réel actuel, exactement la même carte de chaleur
+plate et trompeuse que celle qui justifie déjà l'exclusion disclosée
+de `ceiling`/`visibility`/`dust`/`ash` dans ce même fichier. L'exclusion
+existante reste donc honnête et n'a pas été touchée - activer
+`compute_wind_shear` par défaut dans le vrai appelant GUI est une
+décision plus large, distincte, non entreprise ici (même limite
+explicitement déjà disclosée par ce fichier pour les 4 autres
+modules).
+
+**Tests** : `tests/test_isa_pressure_altitude.py` (8 tests, dont le
+round-trip et l'exception documentée à 11000m) ; `tests/
+test_awci_spatial_field_microburst.py` (10 tests, dont l'exigence des
+2 flags, la correspondance avec un appel direct au point API, la
+cohérence avec le module_fields, le NaN honnête sans CAPE réel, le
+poids toujours nul par défaut, et la coexistence avec
+ceiling/visibility/dust). Suite ciblée : 90 passed, 1 skipped
+(dépendant de l'environnement, cas déjà couvert par un autre test).
+`ruff`/`mypy` propres sur les 3 fichiers source touchés
+(`isa_atmosphere.py`, `spatial_field.py`) et les 2 fichiers de test.
+
+**Vérification numérique de sanité** (pas une validation formelle,
+juste une confirmation de sens physique) : `calculate_isa_pressure_altitude()`
+retrouve les valeurs standard connues (1013.25 hPa -> 0 m ; 850 hPa ->
+1457 m ; 500 hPa -> 5574 m ; 300 hPa -> 9164 m ; 250 hPa -> 10363 m,
+proche du réel FL340).

@@ -57,12 +57,14 @@ from acf.awci.ceiling import compute_real_ceiling_at_point
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.dust import compute_real_dust_risk_at_point
 from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+from acf.awci.microburst import compute_real_microburst_risk_at_point
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.awci.updraft import compute_real_max_updraft_velocity
 from acf.awci.visibility import compute_real_visibility_risk_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.science.clouds.dynamics import CloudDynamicsEngine
+from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
 from acf.simulation_engine.coupled_solver.coupled_earth_solver import CoupledEarthSolver
 from acf.simulation_engine.numerical_core.earth_grid import EarthGrid
 
@@ -94,6 +96,9 @@ _VISIBILITY_FIELDS_USED = ("visibility_risk",)
 #: Added when `compute_dust=True` - see that parameter's own docstring
 #: and `acf.awci.dust`.
 _DUST_FIELDS_USED = ("dust_risk",)
+#: Added when `compute_microburst=True` - see that parameter's own
+#: docstring and `acf.awci.microburst`.
+_MICROBURST_FIELDS_USED = ("microburst_risk",)
 
 
 def compute_real_complexity_field(
@@ -115,6 +120,7 @@ def compute_real_complexity_field(
     compute_ceiling: bool = False,
     compute_visibility: bool = False,
     compute_dust: bool = False,
+    compute_microburst: bool = False,
     validate_physics: bool = False,
 ) -> dict[str, Any]:
     """
@@ -264,6 +270,38 @@ def compute_real_complexity_field(
         `level`, and feeds it into AWCICalculator's opt-in `dust`
         module. Off by default, same convention as `compute_ceiling`
         above (including the separate real-weight requirement).
+    compute_microburst : bool
+        When True, genuinely computes a real per-point microburst/LLWS
+        alert-proximity risk proxy (see `acf.awci.microburst.
+        compute_real_microburst_risk_at_point()`) from each grid
+        point's real wind shear (reusing the SAME real bulk shear
+        already computed for `compute_wind_shear` - never a second,
+        possibly inconsistent one) and real CAPE (reusing the SAME
+        real CAPE already computed for `compute_convective_energy`),
+        and feeds it into AWCICalculator's opt-in `microburst` module.
+        Requires `compute_wind_shear=True` AND
+        `compute_convective_energy=True` (raises ValueError otherwise)
+        - same reuse-not-recompute reasoning as `compute_updraft_velocity`
+        above.
+
+        The one real input this module needs that nothing above
+        already supplies is altitude: real per-point pressure (`pressure_hpa`,
+        always available) is converted to a real ICAO pressure altitude
+        via `acf.science.encyclopedia.aerodynamics.isa_atmosphere.
+        calculate_isa_pressure_altitude()` - the exact analytic inverse
+        of that same module's own already-real, already-cited ISA
+        pressure formula, not an independently invented conversion.
+        Honestly disclosed: this is a real ISA PRESSURE altitude (the
+        same standard-atmosphere concept flight levels are themselves
+        defined against under QNE), not a true geometric/AGL altitude
+        - `CoupledEarthSolver`'s state has no real terrain elevation or
+        non-standard QNH to derive one instead (same "Honest
+        limitation" this module's own docstring already discloses for
+        terrain/orography). Off by default, same real-cost/opt-in
+        reasoning as the other `compute_*` flags above.
+        `microburst_risk_field` stays `numpy.nan` wherever either
+        real per-point CAPE or real per-point wind shear was itself
+        not computed - never a fabricated value from a partial input.
     validate_physics : bool
         When True, propagates a real, opt-in PhysicsGuard sanity check
         (docs/ACF_MASTER_PROMPT.md section 11) into every
@@ -375,6 +413,12 @@ def compute_real_complexity_field(
             emission-favorable-conditions risk proxy from
             `acf.awci.dust`, `numpy.nan` wherever the real computed
             relative humidity was non-positive.
+        microburst_risk_field : 2D numpy array ([0, 1]), present only
+            when `compute_microburst=True` - real per-point microburst/
+            LLWS alert-proximity risk proxy from `acf.awci.microburst`,
+            `numpy.nan` wherever the real per-point CAPE or wind shear
+            it depends on was itself not computed (see
+            `compute_microburst`'s own docstring).
         model, level, fields_used : provenance. fields_used includes
             "cape"/"cin" only when compute_convective_energy=True.
         status, is_real_data, honest_limitation : see module docstring.
@@ -387,6 +431,14 @@ def compute_real_complexity_field(
             "maximum updraft velocity (acf.awci.updraft) is derived from real per-point CAPE, "
             "and reuses the SAME real CAPE already computed for the convective module rather "
             "than silently computing a second, possibly inconsistent one."
+        )
+    if compute_microburst and not (compute_wind_shear and compute_convective_energy):
+        raise ValueError(
+            "compute_microburst=True requires compute_wind_shear=True AND "
+            "compute_convective_energy=True - real microburst/LLWS alert-proximity risk "
+            "(acf.awci.microburst) is derived from real per-point wind shear and real CAPE, "
+            "and reuses the SAME real values already computed for those modules rather than "
+            "silently computing second, possibly inconsistent ones."
         )
     config = MODEL_CONFIGS[model]
 
@@ -492,6 +544,11 @@ def compute_real_complexity_field(
     # compute_real_dust_risk_at_point() itself honestly reports "not
     # computed".
     dust_risk_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_dust else None
+    # Real per-point microburst/LLWS alert-proximity risk proxy, only
+    # when compute_microburst=True - np.nan wherever the real
+    # per-point CAPE or wind shear it depends on was itself not
+    # computed (see compute_microburst's own docstring).
+    microburst_risk_field = np.full((n_lat_actual, n_lon_actual), np.nan) if compute_microburst else None
 
     # NOTE (found while building this, not fixed here - out of scope):
     # AWCICalculator.calculate_module_scores() accepts a "pressure" key
@@ -657,6 +714,27 @@ def compute_real_complexity_field(
                 # dust_risk_field stays np.nan - same discipline as
                 # compute_ceiling above.
 
+            if compute_microburst and "wind_shear" in data and "cape" in data:
+                # Real per-point pressure -> real ICAO pressure altitude
+                # (see compute_microburst's own docstring for why this,
+                # not a fabricated altitude, and its honest scope).
+                # Reuses the SAME real wind_shear/cape already computed
+                # above for compute_wind_shear/compute_convective_energy
+                # - never a second, possibly inconsistent value.
+                altitude_m = calculate_isa_pressure_altitude(float(pressure_hpa[i, j]) * 100.0)
+                microburst = compute_real_microburst_risk_at_point(
+                    wind_shear_m_s=data["wind_shear"],
+                    cape=data["cape"],
+                    altitude_m=altitude_m,
+                )
+                data["microburst_risk"] = microburst["microburst_risk_score"]
+                assert microburst_risk_field is not None  # for mypy - real whenever compute_microburst
+                microburst_risk_field[i, j] = microburst["microburst_risk_score"]
+            # else (compute_microburst=True but this point's real CAPE or
+            # wind shear was itself not computed): honestly leave
+            # data["microburst_risk"] unset and microburst_risk_field
+            # stays np.nan - same discipline as compute_ceiling above.
+
             result = calc.calculate(data)
             awci_field[i, j] = result["awci"]
             physical_field[i, j] = result["physical_score"] if result["physical_score"] is not None else np.nan
@@ -682,6 +760,8 @@ def compute_real_complexity_field(
         fields_used = fields_used + _VISIBILITY_FIELDS_USED
     if compute_dust:
         fields_used = fields_used + _DUST_FIELDS_USED
+    if compute_microburst:
+        fields_used = fields_used + _MICROBURST_FIELDS_USED
 
     output: dict[str, Any] = {
         "lats": grid.lats,
@@ -750,5 +830,8 @@ def compute_real_complexity_field(
 
     if compute_dust:
         output["dust_risk_field"] = dust_risk_field
+
+    if compute_microburst:
+        output["microburst_risk_field"] = microburst_risk_field
 
     return output

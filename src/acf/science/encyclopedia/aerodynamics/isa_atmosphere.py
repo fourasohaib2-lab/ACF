@@ -36,6 +36,62 @@ def calculate_isa_pressure(altitude_m: float) -> float:
     return p_11km * math.exp(-g * (altitude_m - 11000.0) / (r_d * temp_strat))
 
 
+def calculate_isa_pressure_altitude(pressure_pa: float) -> float:
+    """
+    Real ICAO pressure altitude (m) - the exact analytic inverse of
+    `calculate_isa_pressure()` above (algebraically solved for
+    altitude_m given pressure_pa, both branches), not an independently
+    derived or approximated formula. This is the same real quantity
+    aviation flight levels (FL280, FL340, ...) are themselves defined
+    against under standard QNE (1013.25 hPa) calibration - a real,
+    named, operational altitude concept (ICAO Doc 7488), distinct from
+    true geometric/AGL altitude, which this ISA model has no way to
+    know without a real terrain elevation and a real, non-standard QNH.
+
+    Verified by round-trip (see tests/test_isa_pressure_altitude.py):
+    `calculate_isa_pressure_altitude(calculate_isa_pressure(h)) == h`
+    for real altitudes spanning both branches (sea level, 5000, 15000,
+    20000 m), to floating-point precision. Honest, pre-existing
+    exception right at the exact 11000 m boundary itself: `p_11km =
+    22632.1` above is `calculate_isa_pressure()`'s own already-real,
+    already-cited ISA table constant (rounded to 1 decimal), which
+    differs by ~0.07 Pa from that same function's own tropospheric
+    branch evaluated at exactly 11000.0 m - a real, tiny (~2 cm)
+    round-trip discontinuity inherited from that pre-existing
+    constant, not from this inverse's own algebra, and never material
+    at the real, non-boundary NWP pressures acf.awci.spatial_field
+    actually evaluates this against.
+
+    Parameters
+    ----------
+    pressure_pa : float
+        Real atmospheric pressure in Pa. Must be > 0.
+
+    Returns
+    -------
+    float
+        Real ISA pressure altitude in meters.
+
+    Raises
+    ------
+    ValueError
+        If `pressure_pa` is not strictly positive - never silently
+        clamped or extrapolated into a fabricated altitude.
+    """
+    if pressure_pa <= 0.0:
+        raise ValueError(f"pressure_pa must be > 0, got {pressure_pa}")
+    p0 = 101325.0
+    t0 = 288.15
+    lapse_rate = 0.0065
+    g = 9.80665
+    r_d = 287.0528
+    p_11km = 22632.1
+    if pressure_pa >= p_11km:
+        return (t0 / lapse_rate) * (1.0 - (pressure_pa / p0) ** ((r_d * lapse_rate) / g))
+    temp_strat = 216.65
+    return 11000.0 - (r_d * temp_strat / g) * math.log(pressure_pa / p_11km)
+
+
 def calculate_speed_of_sound(temp_k: float, gamma: float = 1.4, r_d: float = 287.058) -> float:
     """Vitesse du son a = sqrt(gamma * Rd * T) en m/s."""
     if temp_k <= 0.0:
@@ -140,6 +196,35 @@ ENTRIES: list[EncyclopediaEntry] = [
         limitations=["Atmosphère idéale moyenne (ne reflète pas les conditions météo réelles du jour)"],
         references=["ICAO Doc 7488 / Manual of the ICAO Standard Atmosphere", "ISO 2533:1975"],
         compute_func=calculate_isa_pressure,
+    ),
+    EncyclopediaEntry(
+        # NOTE (addition, not a correction, 2026-09-12): calculate_isa_
+        # pressure_altitude() is the exact analytic inverse of
+        # "isa_standard_atmosphere_pressure" above (solved for
+        # altitude_m given pressure_pa) - built to give
+        # acf.awci.microburst a real, cited altitude when only a real
+        # per-point pressure is available (acf.awci.spatial_field's
+        # compute_microburst=True). Registered as its own entry per
+        # this file's own "every real law gets registered" convention.
+        key="isa_pressure_altitude",
+        name="Altitude-Pression OACI (ICAO Pressure Altitude)",
+        domain="Aéronautique",
+        subdomain="Atmosphère de référence",
+        equation="z(p) = (T0/Gamma) * (1 - (p/p0)^(R*Gamma/g))  [p>=22632.1 Pa]  ;  z(p) = 11000 - (R*T_strat/g)*ln(p/p_11km)  [p<22632.1 Pa]",
+        latex_equation=r"z(p) = \frac{T_0}{\Gamma}\left(1 - \left(\frac{p}{p_0}\right)^{\frac{R\Gamma}{g}}\right) \; (p \ge p_{11\text{km}}), \quad z(p) = 11000 - \frac{R T_{\text{strat}}}{g}\ln\left(\frac{p}{p_{11\text{km}}}\right) \; (p < p_{11\text{km}})",
+        variables={
+            "p0": "1013.25 hPa (101325 Pa) au niveau de la mer",
+            "T0": "288.15 K",
+            "Gamma": "6.5 K/km (lapse rate troposphérique)",
+            "g": "9.80665 m/s²",
+            "R": "287.0528 J/(kg·K) (constante spécifique de l'air sec)",
+        },
+        units={"z": "m"},
+        description="Altitude-pression OACI - l'inverse analytique exact du profil de pression ISA, référence standard (calage QNE 1013.25 hPa) des niveaux de vol (FL) en aviation, distincte de l'altitude géométrique/AGL réelle.",
+        application_conditions=["Altimétrie aéronautique et performances d'avions", "Calage standard QNE (niveaux de vol)"],
+        limitations=["Atmosphère idéale moyenne (ne reflète pas les conditions météo réelles du jour)", "Altitude-pression, pas une altitude géométrique/AGL réelle"],
+        references=["ICAO Doc 7488 / Manual of the ICAO Standard Atmosphere", "ISO 2533:1975"],
+        compute_func=calculate_isa_pressure_altitude,
     ),
     EncyclopediaEntry(
         key="mach_number_flight",
