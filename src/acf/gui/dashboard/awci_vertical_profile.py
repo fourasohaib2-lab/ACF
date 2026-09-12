@@ -263,8 +263,9 @@ class AWCIVerticalProfile(QWidget):
 #: Real §51 label per real AWCICalculator module_scores key - the
 #: honest mapping from that section's own requested variable list
 #: ("vent, température, humidité, stabilité, convection, turbulence,
-#: givrage, complexité, incertitude") onto the 9 real modules this
-#: project's own AWCICalculator actually computes (see
+#: givrage, complexité, incertitude") onto the 9 core modules this
+#: project's own AWCICalculator originally computed (5 further opt-in
+#: modules added since - see the NOTE just below) (see
 #: AWCIVerticalProfileLevelDialog's own docstring for which §51 words
 #: have no real dedicated module and are honestly disclosed as such,
 #: rather than force-mapped). ensemble_spread/model_disagreement are
