@@ -97,6 +97,7 @@ from typing import Any
 import numpy as np
 
 from acf.awci.workstation_fields import real_grid_spacing_m
+from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
 from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
 from acf.science.wind_turbulence import CATIndex
 
@@ -105,6 +106,22 @@ from acf.science.wind_turbulence import CATIndex
 #: degenerate-dx case - <1m of real zonal spacing is the pole itself
 #: on any Earth-radius grid, not an arbitrary tolerance.
 _DEGENERATE_DISTANCE_M = 1.0
+
+
+def get_cat_turbulence_hazard_reference() -> AviationHazardInfo | None:
+    """
+    Real, full reference entry this module's index is grounded in -
+    `acf.aviation.hazards.aviation_hazards.AVIATION_HAZARDS_REGISTRY
+    ["cat_turbulence"]` (physical explanation, governing Richardson-
+    number equation, real ICAO EDR thresholds, operational impacts,
+    flight recommendations, references - ICAO Doc 9837, Ellrod & Knapp
+    1992), exposed here so a caller (or a future GUI detail panel) can
+    connect `compute_real_cat_index_at_level()`'s real per-point EI
+    value back to the real encyclopedia entry it is grounded in - same
+    real traceability pattern already established by
+    `acf.awci.microburst.get_microburst_hazard_reference()`.
+    """
+    return AviationHazardEngine.get_hazard("cat_turbulence")
 
 
 def compute_real_cat_index_at_level(volume: dict[str, Any], level_idx: int) -> dict[str, Any]:

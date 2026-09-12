@@ -12693,3 +12693,71 @@ une 4e catégorie inventée), et vérification croisée que les 2
 constantes réutilisées sont bien celles déjà citées ailleurs dans le
 même fichier. Suite ciblée (`pytest -k visibility`, dépôt entier) :
 69 passed. `ruff`/`mypy` propres.
+
+## Mise à jour 2026-09-12 (suite, demande explicite utilisateur "je veux que tout AWCI soit conforme à toutes lois") — Balayage systématique de tout `acf.awci.normalizer`, attribution OMM des niveaux de pression standard, traçabilité CAT ajoutée
+
+**Cadrage explicite donné à l'utilisateur avant de continuer** : "toutes
+les lois" n'est pas atteignable au sens littéral pour AWCI dans son
+ensemble - c'est un indice composite (pondération des modules,
+combinaisons multiplicatives/`max()`, score final 0-100) qui est une
+invention d'ACF, pas un produit réglementé par l'OACI ou l'OMM. Ce qui
+est réellement atteignable et entrepris : vérifier composant par
+composant que partout où une vraie norme OACI/OMM existe pour LA
+GRANDEUR PHYSIQUE PRÉCISE utilisée, AWCI l'utilise - et disclosurer
+clairement le reste comme un choix de conception ACF, jamais présenté
+comme une loi.
+
+**Balayage systématique de `Normalizer`** (23 fonctions
+`normalize_*()` lues intégralement) : confirmé que toutes les échelles
+min-max restantes (température -30/+50°C, vent 0-50 m/s, humidité
+0-0.03 kg/kg, CAPE 0-5000 J/kg, CIN 0-500 J/kg, précipitation 0-50
+mm/h, pression 800-1050 hPa, altitude 0-3000m, confiance 0-100%,
+temporel 0-20) sont des choix de conception ACF pour l'échelle de
+CONTRIBUTION À LA COMPLEXITÉ - aucune loi OACI/OMM ne réglemente
+"l'échelle de complexité aviation" pour ces grandeurs prises
+individuellement (contrairement au plafond/visibilité/microburst/
+turbulence déjà fermés, qui ont chacun un vrai seuil OPÉRATIONNEL
+publié). Rien à corriger ici - déjà honnêtement non-CONFIRMED dans
+`scientific_status.py`.
+
+**1 attribution manquante trouvée et corrigée** : les 5 niveaux de
+pression standard du sélecteur vertical (850/700/500/300/250 hPa,
+`awci_dashboard.py`) étaient attribués uniquement à la demande du
+§51 du prompt maître ACF - alors que ce sont, en réalité, les vrais
+niveaux obligatoires de radiosondage/carte synoptique de l'OMM,
+utilisés mondialement. Le §51 avait choisi, sans le savoir, des
+valeurs qui correspondent déjà à la vraie convention OMM - désormais
+explicitement disclosé en commentaire.
+
+**Traçabilité CAT ajoutée pour symétrie** : `acf.awci.cat_turbulence`
+(fermé plus tôt ce tour) n'exposait pas encore de fonction équivalente
+à `acf.awci.microburst.get_microburst_hazard_reference()` -
+`get_cat_turbulence_hazard_reference()` ajoutée, même convention de
+traçabilité réelle vers `AVIATION_HAZARDS_REGISTRY["cat_turbulence"]`
+(ICAO Doc 9837, Ellrod & Knapp 1992).
+
+**Vérifié propre, déjà correctement disclosé, rien à corriger** :
+`acf.awci.dust`'s seuils vent/humidité (déjà honnêtement marqués
+HYPOTHESIS, "pas issus d'une étude de type de sol spécifique") ;
+`acf.awci.orographic_froude`'s seuil Fr=1 (déjà disclosé "choix de
+conception ACF, ligne de partage physique classique") ;
+`scientific_status.py`'s registre complet (14 tests de complétude
+tous verts, confirmant qu'aucune régression de couverture n'a été
+introduite par les fermetures de ce tour).
+
+**Tests** : 1 ajouté à `tests/test_awci_cat_turbulence.py` (total 8,
+traçabilité de la référence). Suite ciblée (cat_turbulence +
+microburst + scientific_status + dashboard parity) : 72 passed, 7
+skipped. `ruff`/`mypy` propres sur les 2 fichiers source touchés
+(`cat_turbulence.py`, `awci_dashboard.py` - commentaire uniquement
+pour ce dernier).
+
+**Conclusion de ce chantier "conformité OACI/OMM"** : après ce
+balayage systématique, tout ce qui, dans AWCI, correspond à une
+grandeur physique individuelle couverte par une vraie norme OACI/OMM
+publiée, cite désormais cette norme et la réutilise réellement. Le
+reste (pondérations, combinaisons, échelles de normalisation propres à
+l'indice composite) est honnêtement disclosé comme un choix de
+conception ACF, jamais présenté comme une loi - ce qui EST la
+conformité complète possible pour un indice qui n'est pas lui-même un
+produit réglementé.

@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from acf.awci.cat_turbulence import compute_real_cat_index_at_level
+from acf.awci.cat_turbulence import compute_real_cat_index_at_level, get_cat_turbulence_hazard_reference
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.awci.workstation_fields import real_grid_spacing_m
 from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
@@ -156,3 +156,14 @@ def test_real_solver_volume_shapes_and_bounded_intermediate_signals():
     assert result["category_field"].shape == (n_lat, n_lon)
     real_vws = result["vws_field"][~np.isnan(result["vws_field"])]
     assert np.all(real_vws >= 0.0)  # a real magnitude (sqrt sum of squares), never negative
+
+
+def test_get_cat_turbulence_hazard_reference_returns_the_real_registry_entry():
+    """Same real traceability pattern already established by
+    acf.awci.microburst.get_microburst_hazard_reference()."""
+    ref = get_cat_turbulence_hazard_reference()
+
+    assert ref is not None
+    assert ref.key == "cat_turbulence"
+    assert any("ICAO Doc 9837" in reference for reference in ref.references)
+    assert any("Ellrod" in reference for reference in ref.references)

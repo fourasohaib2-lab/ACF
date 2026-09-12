@@ -262,7 +262,14 @@ _VERTICAL_PROFILE_LEVELS_HPA = {
 # freely chosen from the 90-section exhaustive audit's own remaining ⚠️
 # gaps. "Surface" is the real ICAO/ISA standard sea-level pressure
 # (1013.25 hPa) - a real, disclosed meteorological convention, not a
-# guessed round number. Real Physics mode now also offers these (added
+# guessed round number. The 5 pressure levels themselves are not an
+# arbitrary ACF choice either (NOTE added 2026-09-12, explicit user
+# request "je veux que AWCI travaille avec les lois de l'OACI et
+# l'OMM"): 850/700/500/300/250 hPa are real WMO mandatory upper-air
+# reporting levels - the same levels used worldwide for radiosonde
+# soundings and synoptic charts - not independently picked by this
+# codebase; §51's own request happens to already match the real WMO
+# convention. Real Physics mode now also offers these (added
 # 2026-09-04, closes future-improvements.md #9) via real log-pressure
 # interpolation between the real volume's own native solver levels -
 # see acf.awci.vertical_field.vertical_profile_at_standard_levels()'s
