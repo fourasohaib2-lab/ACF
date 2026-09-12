@@ -1682,15 +1682,15 @@ class ACFWorkstation(QWidget):
             )
 
     def _update_clock(self) -> None:
-        """Real system date/time (added Phase 43, 2026-09-12) - the
-        Workstation's own real header clock, ticked by `self._clock_timer`
-        (30s - a live clock reading nobody needs to the second). Local
-        system time, honestly labelled as such - never claimed as UTC
-        (the new mockup's own header shows "UTC", but QDateTime.
-        currentDateTime() is this machine's real local time; showing a
-        "UTC" label on a value that is not genuinely UTC would be a
-        fabricated claim, not a cosmetic one)."""
-        self.clock_label.setText(QDateTime.currentDateTime().toString("ddd, d MMM yyyy  HH:mm (local)"))
+        """Real UTC date/time (added Phase 43, 2026-09-12; switched from
+        local to genuine UTC 2026-09-12 per ICAO Annex 3 §4.1 - all
+        aeronautical meteorological information must be expressed in
+        UTC, never local time). Ticked by `self._clock_timer` (30s - a
+        live clock reading nobody needs to the second).
+        `QDateTime.currentDateTimeUtc()` is a real UTC conversion, not a
+        relabelled local time - the label is now genuinely accurate,
+        not just honestly-disclosed-as-wrong."""
+        self.clock_label.setText(QDateTime.currentDateTimeUtc().toString("ddd, d MMM yyyy  HH:mm 'UTC'"))
 
     @staticmethod
     def _label(text: str) -> QLabel:

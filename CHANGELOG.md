@@ -29,6 +29,23 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   `QGroupBox`/`QComboBox`/`QListWidget` (aucune règle avant pour les
   ~20 QGroupBox et 2 QListWidget de la Workstation), nouveau helper
   `_rgba()`.
+- Première passe d'audit de conformité technique ICAO/OMM
+  (`docs/compliance/ICAO_WMO_COMPLIANCE_AUDIT.md`, sur demande
+  explicite) : `acf.standards.grib2_tables`/`ecmwf_parameters`/
+  `noaa_parameters` peuplés avec de vraies identités de paramètres
+  (WMO Table 4.2, ECMWF GRIB Table 128, NCEP GRIB1 Table 2) pour les 9
+  quantités déjà présentes dans `cf_standard_names.py` - ces 3 fichiers
+  (+ `wmo_tables.py`, laissé honnêtement vide) n'avaient auparavant
+  qu'un docstring auto-généré générique, zéro contenu réel, jamais
+  importés nulle part (même famille de bug que le faux
+  `"ACF-UI-001 Production Certified"` déjà corrigé dans ce projet).
+
+### Fixed
+- Horloge du header ACF Workstation : affichait l'heure locale
+  (honnêtement étiquetée "(local)") - passée à une vraie heure UTC
+  (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
+  l'UTC exclusivement pour toute information météorologique
+  aéronautique.
 
 ### Changed
 - Le dashboard AWCI n'est plus jamais embarqué dans le dock ESOC :

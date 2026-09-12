@@ -1085,3 +1085,43 @@ nouveau code nécessaire pour lui, seuls ses commentaires obsolètes
 (`tests/test_esoc.py` : assertion de comptage 43 + assertion explicite
 que `"awci_dashboard"` n'est plus un panel enregistré). Suite complète
 verte (46 + 10 tests ciblés).
+
+## Mise à jour (2026-09-12, suite) : première passe d'audit de conformité ICAO/OMM
+
+Sur demande explicite de l'utilisateur ("je veux que tout ACF soit
+conforme à toutes les lois de l'OACI et de l'OMM"), première passe
+d'audit réelle - voir `docs/compliance/ICAO_WMO_COMPLIANCE_AUDIT.md`
+pour le détail complet. Résumé :
+
+- **Clarification honnête faite d'abord** : une conformité légale
+  complète (désignation MWO, certification d'État) n'est pas
+  atteignable par du code - l'audit porte sur la conformité
+  *technique* (formats, unités, seuils, conventions) uniquement.
+- **Déjà réel et conforme, confirmé** : décodeurs METAR/TAF/SIGMET
+  (`acf.aviation.icao.*`, citent Annexe 3/OMM n°306), registre de
+  seuils d'aléas aviation (`aviation_hazards.py`, EDR/LWC cités),
+  atmosphère standard OACI (`isa_atmosphere.py`, vérifiée
+  numériquement), `ForecastDecisionEngine` (cite honnêtement NOAA SPC,
+  ne prétend jamais être un critère SIGMET OACI).
+- **Corrigé cette passe** : `acf.standards.{grib2_tables,
+  ecmwf_parameters,noaa_parameters}` étaient des stubs vides
+  (docstring auto-généré, zéro contenu réel, jamais importés) -
+  peuplés avec de vraies identités de paramètres (WMO Table 4.2, ECMWF
+  Table 128, NCEP GRIB1 Table 2) pour les 9 quantités CF déjà connues
+  du codebase. Horloge du header ACF Workstation passée d'heure locale
+  (honnêtement disclosed) à heure UTC réelle (Annexe 3 OACI §4.1).
+- **Écart disclosed, PAS corrigé** (décision produit, pas un bug) :
+  l'écran "Alerts & Hazards" de l'ACF Workstation utilise des seuils
+  NOAA SPC (convectifs, US) honnêtement cités comme tels - à
+  distinguer des vrais critères d'émission SIGMET de l'Annexe 3
+  Appendice 6, qui sont catégoriels (phénomène observé/prévu), pas
+  dérivés d'un seuil de CAPE.
+- **Reste ouvert, priorisé pour les passes suivantes** : audit
+  systématique unités/UTC sur tout `gui/`, complétion de la grammaire
+  METAR/TAF, `wmo_tables.py` (laissé vide, portée à définir), vérifier
+  l'existence d'un vrai support BUFR, Annexe 5 OACI (unités de
+  mesure aéronautiques).
+
+Tests de régression ajoutés : `tests/test_standards_parameter_tables.py`,
+`test_header_clock_shows_genuine_utc_not_local_time`. Suite ciblée verte
+(15 passed), ruff/mypy clean sur tous les fichiers touchés.

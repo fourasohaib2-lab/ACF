@@ -1,28 +1,32 @@
 """
-Atmospheric Complexity Framework (ACF)
+WMO Code Tables (general)
+=========================
 
-STANDARDS - Wmo Tables
+NOTE (correction, 2026-09-12): this file previously contained only
+generic auto-generated boilerplate ("Manage wmo tables logic and state
+representations... Module functions and constants") with zero actual
+tables, functions, or constants - a real docstring-overclaim (same
+pattern as `grib2_tables.py`'s own correction, see that module's
+docstring for the full finding). Confirmed via grep that nothing in
+`src/`/`tests/` ever imported this module.
 
-Purpose:
---------
-Standard parameter tables (WMO, GRIB2, ECMWF) and CF standard names.
+Deliberately left empty rather than populated with invented content:
+unlike `grib2_tables.py` (a bounded, well-known Table 4.2 subset this
+codebase could map directly from its own existing `cf_standard_names`),
+"WMO code tables" as a general label spans dozens of distinct WMO
+Manual on Codes tables (Common Code Table C-1 through C-14 and others)
+this session did not have time to scope and verify individually without
+risking a wrong/invented value - populating this honestly needs its own
+dedicated pass, tracked as open work, not rushed here.
 
-Responsibilities:
------------------
-• Manage wmo tables logic and state representations.
-• Integrate with the standards subsystem of the ACF scientific engine.
+Real WMO code-table content that DOES already exist in this codebase,
+elsewhere, and should be reused rather than duplicated here once this
+module is scoped:
+    - `acf.science.observations.wmo_code_tables` (surface/upper-air
+      observation code tables)
+    - `acf.standards.cf_standard_names` (CF Conventions standard names)
+    - `acf.standards.grib2_tables` (GRIB2 Table 4.2 subset)
 
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.standards module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Reference:
+    WMO No. 306, Manual on Codes (scope to be defined per future pass).
 """

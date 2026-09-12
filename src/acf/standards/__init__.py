@@ -1,28 +1,12 @@
 """
-Atmospheric Complexity Framework (ACF)
+Standard parameter tables (WMO, GRIB2, ECMWF, NOAA/NCEP) and CF
+standard names.
 
-STANDARDS -   Init
-
-Purpose:
---------
-Standard parameter tables (WMO, GRIB2, ECMWF) and CF standard names.
-
-Responsibilities:
------------------
-• Manage   init   logic and state representations.
-• Integrate with the standards subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Module functions and constants
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.standards module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+NOTE (correction, 2026-09-12): every file in this package previously
+carried identical generic auto-generated boilerplate with zero real
+content - see `grib2_tables.py`'s module docstring for the full
+finding and fix. Real content now in `cf_standard_names.py`,
+`grib2_tables.py`, `ecmwf_parameters.py`, `noaa_parameters.py`;
+`wmo_tables.py` remains honestly empty pending its own scoping pass
+(see that module's own docstring for why).
 """

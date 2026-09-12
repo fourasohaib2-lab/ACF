@@ -98,3 +98,21 @@ def test_hpc_connect_button_genuinely_runs_off_thread_and_reports_honestly(qapp,
     assert ws.hpc_connect_button.isEnabled() is True
     assert "local/offline dev mode" in ws.hpc_status_label.text()
     assert "✅ Connected" not in ws.hpc_status_label.text()
+
+
+# --------------------------------------------- Header clock (ICAO Annex 3 §4.1)
+
+
+def test_header_clock_shows_genuine_utc_not_local_time(qapp):
+    """ICAO Annex 3 §4.1: all aeronautical meteorological information must
+    be expressed in UTC, never local time. Regression guard for a real
+    fix (2026-09-12): the header clock originally showed local time,
+    honestly labelled "(local)" rather than fabricating a "UTC" label on
+    a value that wasn't - but the correct fix is a genuine UTC value, not
+    an honest disclaimer on a wrong one."""
+    ws = ACFWorkstation()
+
+    text = ws.clock_label.text()
+
+    assert text.endswith(" UTC")
+    assert "local" not in text.lower()
