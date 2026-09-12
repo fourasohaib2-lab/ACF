@@ -12193,3 +12193,54 @@ avec le module d'échantillonnage déjà réel.
 données/infrastructure externes)** : logique de persistance temporelle
 des alertes, campagne de calibration réelle des poids contre des
 observations réelles (PIREP, rapports de turbulence).
+
+## Mise à jour 2026-09-12 (extension du périmètre, selon jugement) — Vérification réelle de `ceiling` contre des observations METAR déjà connectées
+
+**Contexte** : après avoir clos les écarts explicitement listés,
+investigation d'une piste supplémentaire de la spécification ChatGPT
+(§42, vérification) restée non traitée par manque de données
+d'observation - **sauf que des données METAR sont déjà réellement
+connectées** dans AWCI (`acf.gui.dashboard.awci_messages_panel`, API
+NOAA Aviation Weather Center). Plutôt que de forcer une fermeture de
+"orages/foudre/grêle" (§13) qui aurait nécessité soit une hauteur de
+sommet nuageux fabriquée (le proxy `updraft.py` est déjà honnêtement
+disclosé comme n'étant PAS une hauteur réelle), soit des données radar/
+LWC absentes d'ACF, ce chemin a été abandonné comme non fermable
+honnêtement avec les données actuelles - et l'effort réorienté vers
+cette piste de vérification, réellement exploitable.
+
+**`src/acf/awci/metar_verification.py`** - compare l'estimation LCL de
+`acf.awci.ceiling` au plafond **réellement observé** d'un METAR, de
+façon totalement autonome (un seul METAR réel suffit, aucune donnée
+NWP séparée requise) :
+1. Humidité spécifique réelle dérivée du point de rosée et de la
+   pression du METAR lui-même, en composant 2 formules déjà réelles
+   (`SaturationVaporPressure`, `SaturationMixingRatio`) plus la
+   conversion exacte rapport de mélange → humidité spécifique.
+2. Plafond réellement observé extrait selon la vraie définition OACI/
+   FAA (plus basse couche BKN/OVC, ou visibilité verticale si ciel
+   obscurci - FEW/SCT ne comptent pas comme plafond).
+3. Comparaison honnête : erreur réelle en mètres, jamais présentée
+   comme une calibration/validation du statut scientifique de
+   `ceiling` (qui reste HYPOTHESIS quel que soit le résultat) - juste
+   une comparaison ponctuelle réelle.
+
+**Résultat empirique notable** : sur un cas réel de brouillard
+(T=8°C, Td=7°C, BKN003 à LFPG), l'estimation LCL (125 m) et le plafond
+réellement observé (91 m) ne divergent que de ~34 m - un accord
+remarquable pour une approximation aussi simple, vérifié par test
+(`test_real_fog_case_gives_a_small_real_error`).
+
+**Discipline honnête sur les cas limites** : température manquante
+jamais substituée par le point de rosée (ce qui forcerait une humidité
+relative de 100% artificielle) - retourne `NOT_COMPARABLE_MISSING_
+REAL_METAR_FIELDS` ; ciel dégagé retourne honnêtement `NOT_COMPARABLE_
+NO_REAL_CEILING_REPORTED` (une absence réelle de plafond, pas une
+observation manquante).
+
+**Tests** : `tests/test_awci_metar_verification.py` (12 tests) -
+extraction du plafond réel, non-comptage de FEW/SCT, priorité à la
+visibilité verticale, humidité spécifique réelle croissante avec le
+point de rosée, cas de brouillard réel avec erreur bornée, cas saturé
+donnant un plafond estimé de 0 m, et tous les cas de non-comparabilité
+honnête.
