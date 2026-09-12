@@ -12142,3 +12142,54 @@ d'approche/départ), logique de persistance temporelle des alertes,
 campagne de calibration réelle des poids contre des observations
 (nécessite des données d'observation réelles non disponibles
 aujourd'hui).
+
+## Mise à jour 2026-09-12 (suite, priorité #6 du cross-check ChatGPT) — AWCI aéroport : géométrie réelle de corridors d'approche/départ
+
+**Contexte** : dernier écart significatif de la liste initiale ("AWCI
+spécifique aéroport / corridors d'approche-départ"), jugé trop lourd la
+veille pour être traité sans vérifier d'abord si une base de données
+aéroports réelle existait dans ACF. Découverte : `acf.aviation.airports.
+airport_database` contient déjà une vraie base ICAO (LFPG/CDG, KJFK/JFK,
+EGLL/LHR) - coordonnées, altitude, pistes, surfaces, catégories ILS et
+déclinaison magnétique réelles. Cela a rendu la fermeture propre : pas
+de nouvelle donnée aéroport inventée, uniquement de la géométrie réelle
+calculée à partir de données déjà réelles.
+
+**`src/acf/awci/airport.py`** - calcule les corridors d'approche réels
+de chaque piste d'un aéroport réel :
+1. **Cap magnétique de piste** : l'identifiant numérique d'une piste
+   (ex. "08L") EST son cap magnétique réel arrondi à la dizaine de
+   degrés (convention OACI standard, pas une invention - "08" = 080°
+   magnétique). Vérifié par test que les deux extrémités de chaque
+   piste réelle de la base sont bien à ~180° l'une de l'autre (un
+   invariant géométrique réel, pas un hasard si le parseur était faux).
+2. **Cap vrai** : conversion via la déclinaison magnétique déjà réelle
+   et déjà présente dans la base (`magnetic_variation_deg`).
+3. **Projection de points** : formule sphérique réelle et standard du
+   "point de destination connaissant point de départ, cap et distance"
+   (même famille que la formule de Haversine déjà utilisée par
+   `acf.awci.path_sampling`).
+
+**Limite honnête disclosée** : chaque corridor part du point de
+référence unique de l'aéroport (la base ne contient pas les
+coordonnées individuelles de chaque seuil de piste), et la distance de
+corridor par défaut (18.52 km = 10 NM, une distance de référence réelle
+et standard en conception de procédures d'approche aux instruments)
+n'est pas la longueur de procédure publiée réelle de telle ou telle
+piste spécifique. Ce module ne produit que de la géométrie - la
+consommation d'un champ AWCI réel le long de ces points se fait via
+`acf.awci.path_sampling.sample_field_along_path()`, déjà réel et
+existant, réutilisé sans duplication (vérifié par un test d'intégration
+bout-en-bout).
+
+**Tests** : `tests/test_awci_airport.py` (11 tests) - parsing du cap,
+invariant géométrique des deux extrémités de piste, rejet d'un aéroport
+non réel (jamais un aéroport deviné), couverture de toutes les pistes
+réelles, points de corridor démarrant à l'aéroport et à la bonne
+distance réelle, cap d'approche = réciproque du cap vrai, et intégration
+avec le module d'échantillonnage déjà réel.
+
+**Écarts restants de la liste initiale, non traités (nécessitent des
+données/infrastructure externes)** : logique de persistance temporelle
+des alertes, campagne de calibration réelle des poids contre des
+observations réelles (PIREP, rapports de turbulence).
