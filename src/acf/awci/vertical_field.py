@@ -421,3 +421,95 @@ def vertical_profile_at_standard_levels(
         )
         profile[label] = {"hpa": hpa, "result": result, "interpolation": state}
     return profile
+
+
+def suggest_lowest_complexity_level(
+    profile: dict[str, dict[str, Any]],
+    score_key: str = "awci",
+) -> dict[str, Any]:
+    """
+    Real comparison of AWCI complexity across named flight/pressure
+    levels, from a real `vertical_profile_at_standard_levels()` result
+    - closes AWCI's "optimisation de niveau de vol" gap (post-model4d
+    audit, 2026-09-11, §30 of the cross-checked "AWCI - programme
+    complet" specification). Identifies which level has the LOWEST
+    real `score_key` value among those a real, defined score exists
+    for - a pure comparison of already-real numbers, no new physics or
+    formula invented here.
+
+    Honest scope - a meteorological comparison, NOT an operational
+    flight-level recommendation
+    -----------------------------------------------------------------
+    This answers "which level has the lowest computed meteorological
+    complexity right now" - never "which level this flight should
+    use." It has no knowledge of, and makes no claim about, air
+    traffic control clearance, other traffic, fuel burn, terrain
+    clearance, or aircraft performance envelope - any one of which can
+    make the "best_level" below operationally unusable for a real
+    flight. This is a meteorological decision-support signal only,
+    the same "aide à la décision, jamais une clairance ATC automatique"
+    boundary explicitly requested when this gap was identified.
+
+    Parameters
+    ----------
+    profile : dict
+        A real `vertical_profile_at_standard_levels()` return value -
+        `{level_label: {"hpa", "result", "interpolation"}}`.
+    score_key : str
+        Which real `AWCICalculator.calculate()` output field to
+        compare - `"awci"` (default), `"physical_score"`, or
+        `"forecast_score"`. A level whose `score_key` value is
+        honestly `None` (an undefined renormalization - see
+        `AWCICalculator._renormalized_score()`) is excluded from
+        comparison, never treated as 0 (which would fabricate "zero
+        complexity" for an undefined result).
+
+    Returns
+    -------
+    dict
+        best_level : the label with the lowest real `score_key` value
+            among comparable levels, or `None` if `profile` was empty
+            or every candidate's score was honestly undefined.
+        best_score : that level's real score, or `None`.
+        ranking : list of `(label, score)` tuples, real values sorted
+            ascending (lowest complexity first) - never fabricated or
+            reordered by anything but the real score itself.
+        levels_compared : how many levels had a real, comparable score.
+        status, honest_limitation.
+    """
+    candidates = [
+        (label, entry["result"][score_key])
+        for label, entry in profile.items()
+        if entry["result"].get(score_key) is not None
+    ]
+
+    if not candidates:
+        return {
+            "best_level": None,
+            "best_score": None,
+            "ranking": [],
+            "levels_compared": 0,
+            "status": "NO_COMPARABLE_LEVELS",
+            "honest_limitation": (
+                f"No level in the supplied profile had a real, defined {score_key!r} value to compare - "
+                "either the profile was empty or every candidate's renormalization was honestly undefined "
+                "(see AWCICalculator._renormalized_score())."
+            ),
+        }
+
+    ranking = sorted(candidates, key=lambda label_score: label_score[1])
+    best_label, best_score = ranking[0]
+
+    return {
+        "best_level": best_label,
+        "best_score": best_score,
+        "ranking": ranking,
+        "levels_compared": len(candidates),
+        "status": "REAL_LEVEL_COMPARISON",
+        "honest_limitation": (
+            "Real comparison of AWCI meteorological complexity across named levels, from real (interpolated, "
+            "not fabricated) per-level inputs - NOT an operational flight-level recommendation: no knowledge "
+            "of ATC clearance, other traffic, fuel, terrain clearance, or aircraft performance. A "
+            "meteorological decision-support signal only."
+        ),
+    }

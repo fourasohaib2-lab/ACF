@@ -12100,3 +12100,45 @@ deux appels `AWCICalculator().calculate()` sur les mêmes données
 extraites avec/sans la clé optionnelle - jamais deux exécutions
 séparées du solveur, qui ne reproduisent pas de façon bit-identique
 même à graine égale, comme déjà documenté par ce module).
+
+## Mise à jour 2026-09-11 (suite, priorité #5 du cross-check ChatGPT) — Optimisation de niveau de vol : comparaison réelle, jamais une recommandation opérationnelle
+
+**Contexte** : dernier écart de la liste initiale
+(`acf.awci.vertical_field` calcule déjà l'AWCI par niveau nommé, mais
+rien ne compare ces niveaux entre eux pour identifier le moins
+complexe).
+
+**`suggest_lowest_complexity_level()`** (ajoutée à
+`src/acf/awci/vertical_field.py`) - fonction pure comparant les scores
+déjà réels d'un résultat `vertical_profile_at_standard_levels()` :
+identifie le niveau au score minimum parmi ceux disposant d'une valeur
+réellement définie (`awci`, `physical_score` ou `forecast_score` au
+choix de l'appelant). Aucune nouvelle physique inventée - un simple
+tri/minimum sur des valeurs déjà réelles.
+
+**Disclosure explicite de portée** (reprenant la mise en garde de
+ChatGPT lui-même) : cette fonction répond à « quel niveau a la
+complexité météorologique la plus basse **en ce moment** », jamais à
+« quel niveau ce vol devrait utiliser ». Elle ne connaît ni les
+clairances ATC, ni le trafic, ni le carburant, ni le dégagement de
+terrain, ni l'enveloppe de performance de l'appareil - un signal d'aide
+à la décision météorologique uniquement, jamais une recommandation
+opérationnelle automatique.
+
+**Discipline honnête** : un niveau dont le score est honnêtement
+`None` (renormalisation indéfinie, ex. tous les poids d'une catégorie
+mis à zéro par l'appelant) est **exclu** de la comparaison, jamais
+traité comme un zéro qui le ferait apparaître à tort comme le meilleur
+choix - vérifié par test dédié.
+
+**Tests** : `tests/test_awci_vertical_field_level_optimization.py`
+(8 tests) - couvrant le profil vide, la correspondance exacte avec le
+minimum réel, le tri croissant, le changement de `score_key`, et
+l'exclusion honnête des niveaux à score indéfini (y compris le cas où
+tous les niveaux sont indéfinis).
+
+**Écarts restants, non traités** : AWCI spécifique aéroport (corridors
+d'approche/départ), logique de persistance temporelle des alertes,
+campagne de calibration réelle des poids contre des observations
+(nécessite des données d'observation réelles non disponibles
+aujourd'hui).
