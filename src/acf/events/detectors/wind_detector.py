@@ -2,7 +2,7 @@
 Real strong-wind event detection from a real wind speed field.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -61,7 +61,10 @@ def detect_strong_wind_events(
     field = np.asarray(wind_speed_field)
     lats_arr = np.asarray(lats)
     lons_arr = np.asarray(lons)
-    when = valid_time or datetime.now()
+    # NOTE (correction, 2026-09-12 ICAO/WMO compliance audit): was
+    # datetime.now() - this machine's real local time - same fix as
+    # Event.start_time's own default_factory.
+    when = valid_time or datetime.now(timezone.utc)
 
     events = []
     for i in range(field.shape[0]):

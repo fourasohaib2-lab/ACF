@@ -46,6 +46,14 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   (`QDateTime.currentDateTimeUtc()`), l'Annexe 3 OACI §4.1 exigeant
   l'UTC exclusivement pour toute information météorologique
   aéronautique.
+- Sweep UTC systématique (`datetime.now()` sur tout `src/acf`) : 2 vrais
+  bugs de faux étiquetage UTC trouvés et corrigés -
+  `BriefingGenerator.generate_briefing()` (générait un "OFFICIAL
+  METEOROLOGICAL BRIEFING" étiqueté "UTC" mais calculé en heure locale
+  réelle - code réellement câblé, pas mort) et
+  `acf.events.event.Event.start_time`/`detect_strong_wind_events()`/
+  `detect_fog_favorable_events()` (horodatage d'événement météo en
+  heure locale non-disclosed, sérialisé sans offset).
 - Grammaire METAR/TAF (`acf.aviation.icao`), items disclosed comme
   manquants dans les docstrings des décodeurs : indicateur de tendance
   RVR U/D/N (METAR) et groupes TX/TN température max/min (TAF) - ce

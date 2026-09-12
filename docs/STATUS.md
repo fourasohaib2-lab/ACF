@@ -1157,3 +1157,21 @@ verts), consommateurs réels vérifiés inchangés
 (`test_metar_quality_bridge.py`/`test_awci_messages_panel.py`).
 Restent disclosed, non traités : groupes WS (cisaillement TAF),
 remarques complètes, état de piste.
+
+## Mise à jour (2026-09-12, suite 4) : sweep UTC systématique sur tout `src/acf`
+
+Suite de l'audit ICAO/OMM (roadmap §4.1). `grep` de tous les
+`datetime.now()` dans `src/acf` (15 fichiers) - la majorité sont des
+horodatages internes hors du champ Annexe 3. 3 vrais bugs trouvés et
+corrigés : `BriefingGenerator.generate_briefing()` (un "OFFICIAL
+METEOROLOGICAL BRIEFING" réellement câblé, étiqueté "UTC" mais calculé
+en heure locale - 2e bug de fabrication distinct trouvé dans cette même
+méthode, la 1re avait déjà été corrigée), `acf.events.event.Event.
+start_time` (default_factory en heure locale, sérialisé sans offset -
+ambigu), `detect_strong_wind_events()`/`detect_fog_favorable_events()`
+(même fallback). Vérifié qu'aucun code ne compare `start_time`
+arithmétiquement (seul `.isoformat()` le lit) - passer à un datetime
+UTC "aware" ne casse rien. Tests de régression ajoutés
+(`test_briefing_generator_utc.py`, nouveau test dans `test_events.py`).
+37+ tests combinés verts. Volet unités (kt/m/s, ft/m) du même item de
+roadmap reste ouvert, non traité cette passe.

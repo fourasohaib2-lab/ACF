@@ -4,7 +4,7 @@ Event: the Prompt Maître ACF v2.0's section 12-13 weather event contract + real
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from acf.core.contracts.provenance import Provenance
@@ -85,7 +85,14 @@ class Event:
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     type: str = ""
     geometry: dict[str, float] = field(default_factory=dict)
-    start_time: datetime = field(default_factory=datetime.now)
+    # NOTE (correction, 2026-09-12 ICAO/WMO compliance audit): was
+    # datetime.now() - this machine's real local time, serialized via
+    # isoformat() with no offset, so a naive/ambiguous timestamp on
+    # every real weather event. Real meteorological event times should
+    # be UTC (ICAO Annex 3 §4.1's own rule, applied here even though
+    # Event itself isn't aviation-specific - a real event's own time
+    # should never be timezone-ambiguous).
+    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     end_time: datetime | None = None
     intensity: float = 0.0
     probability: float = 0.0

@@ -163,6 +163,51 @@ combinés, tous verts), plus vérification que les 2 consommateurs réels de
 `METARReport`/`TAFReport` (`awci_messages_panel.py`, pont de qualité
 `metar_report_quality()`) restent inchangés et verts.
 
+## 3quater. Passe suivante (2026-09-12) : sweep UTC systématique (`datetime.now()`)
+
+Suite de l'item §4.1 de la feuille de route. `grep -rn "datetime.now()"`
+sur tout `src/acf` (15 fichiers) - la plupart sont des horodatages
+internes (logs, cache, grilles temporelles `model4d`) hors du champ
+"information météorologique aéronautique" que l'Annexe 3 régit. 3 vrais
+bugs trouvés et corrigés :
+
+- **`BriefingGenerator.generate_briefing()`** (`reports/briefings/`) —
+  générait un "OFFICIAL METEOROLOGICAL BRIEFING" avec un horodatage
+  `datetime.now().strftime("...UTC")` : `datetime.now()` sans fuseau est
+  l'heure locale réelle de la machine, donc le suffixe "UTC" était un
+  faux étiquetage sur CHAQUE briefing jamais généré — code réellement
+  câblé (`gui/esoc/panel_manager.py`, `module_registry.py`,
+  `science/query_engine.py`), pas mort. Ce fichier avait déjà eu un
+  bug de fabrication corrigé une fois (un score de consensus de modèle
+  en dur) — c'est un second bug distinct dans la même méthode. Corrigé,
+  aucun test n'existait pour ce générateur avant cette passe -
+  `tests/test_briefing_generator_utc.py` créé (preuve par mock
+  local≠UTC qui aurait échoué contre l'ancien code, + vérification
+  contre l'heure système réelle).
+- **`acf.events.event.Event.start_time`** (le contrat d'événement
+  météo générique du Prompt Maître §12-13) — son `default_factory`
+  était `datetime.now()` (heure locale, sérialisée sans offset via
+  `isoformat()` — un horodatage ambigu sur chaque événement météo réel
+  détecté). Corrigé en `datetime.now(timezone.utc)`.
+- **`detect_strong_wind_events()`/`detect_fog_favorable_events()`**
+  (`events/detectors/`) — même fallback `valid_time or datetime.now()`,
+  même correction. Vérifié qu'aucun appelant réel ne passe `valid_time`
+  aujourd'hui (donc 100% des événements détectés utilisaient l'heure
+  locale avant ce fix) et qu'aucun code ne compare `start_time`
+  arithmétiquement à un autre datetime (seul `.isoformat()` le lit) -
+  donc passer à un datetime "aware" ne casse rien.
+
+Tests de régression ajoutés (`test_event_default_start_time_is_genuinely_utc_not_local`
+dans `test_events.py`). 37 tests combinés verts (events + certification
+engine + briefing generator).
+
+**Portée du sweep** : ce grep couvrait `src/acf` en entier, pas
+seulement `gui`/`aviation`/`awci` — les 12 autres fichiers utilisant
+`datetime.now()` (catalog, model4d, logs/console ESOC, workspace) ont
+été inspectés et jugés hors du champ "information météorologique
+aéronautique/officielle" régi par l'Annexe 3 (horodatages internes de
+fichiers/logs/grilles de calcul) - non modifiés.
+
 ## 4. Feuille de route réelle restante (non traitée cette passe, disclosed)
 
 Périmètre trop vaste pour une seule passe honnête (130+ fichiers touchent
@@ -170,11 +215,11 @@ ICAO/OMM d'une façon ou d'une autre dans ce codebase) — liste priorisée
 pour les passes suivantes, même discipline que le sweep Tier F/C/E déjà
 documenté dans `docs/STATUS.md` :
 
-1. **Unités & UTC, audit systématique** — un premier spot-check (aviation/
-   awci, header clock) n'a rien trouvé d'autre de faux mais n'est pas
-   exhaustif sur les ~30k lignes de `gui/`. Chercher tout usage de
-   `datetime.now()` non-UTC dans du code affichant une donnée météo, et
-   tout mélange d'unités (kt vs m/s, ft vs m) sans conversion explicite.
+1. **Unités & UTC** — ✅ le volet UTC est fait cette passe (§3quater) :
+   sweep complet de tous les `datetime.now()` de `src/acf`, 3 bugs
+   réels trouvés et corrigés (briefings, événements météo). Reste
+   ouvert : audit des mélanges d'unités (kt vs m/s, ft vs m) sans
+   conversion explicite - non fait cette passe.
 2. **Grammaire METAR/TAF complète** — ✅ partiellement fait cette passe
    (§3ter) : RVR trend U/D/N (METAR) et TX/TN (TAF) fermés. Restent
    ouverts : groupes WS (cisaillement, TAF), remarques complètes (RMK),

@@ -11,7 +11,7 @@ not "fog", so a consumer never mistakes a precondition for a
 confirmed observation.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import metpy.calc as mpcalc
@@ -80,7 +80,10 @@ def detect_fog_favorable_events(
     wind_speed = np.asarray(wind_speed_field)
     lats_arr = np.asarray(lats)
     lons_arr = np.asarray(lons)
-    when = valid_time or datetime.now()
+    # NOTE (correction, 2026-09-12 ICAO/WMO compliance audit): was
+    # datetime.now() - this machine's real local time - same fix as
+    # Event.start_time's own default_factory / wind_detector.py's own.
+    when = valid_time or datetime.now(timezone.utc)
 
     relative_humidity_pct = (
         mpcalc.relative_humidity_from_specific_humidity(

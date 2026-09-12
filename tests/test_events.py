@@ -22,6 +22,18 @@ def test_event_defaults_have_a_real_uuid_and_starts_detected():
     assert event.status == "DETECTED"
 
 
+def test_event_default_start_time_is_genuinely_utc_not_local():
+    """Regression guard (2026-09-12 ICAO/WMO compliance audit):
+    start_time's default_factory used to be plain datetime.now() - this
+    machine's real local time, serialized via isoformat() with no UTC
+    offset - a timezone-ambiguous timestamp on every real weather event."""
+    event = Event()
+
+    assert event.start_time.tzinfo is not None
+    assert event.start_time.utcoffset().total_seconds() == 0
+    assert event.to_dict()["start_time"].endswith("+00:00")
+
+
 def test_event_rejects_out_of_range_probability():
     with pytest.raises(ValueError, match="probability"):
         Event(probability=1.5)
