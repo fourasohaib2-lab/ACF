@@ -1576,6 +1576,15 @@ class ACFWorkstation(QWidget):
             values["relative_humidity_pct"],
         )
 
+        # The Complexity Overview's Instability/Moisture/Shear/Convection
+        # factors read these very `last_center_values`, which only exist
+        # once the real convection indices land (off-thread, always AFTER
+        # Complexity Explorer's own `resultsUpdated` has already fired
+        # from `_render_all_panels()`). Without this second refresh those
+        # 4 real, available factors would stay NOT_COMPUTED for the whole
+        # run even though the real values are sitting right here.
+        self._update_complexity_overview()
+
     # ------------------------------------------------- complexity overview
 
     def _update_complexity_overview(self) -> None:
