@@ -4,7 +4,9 @@ import numpy as np
 import pytest
 from PySide6.QtWidgets import QApplication
 
+from acf.awci.workstation_fields import CONVECTION_GRID_STRIDE
 from acf.gui.dashboard.acf_workstation_key_variables import KeyVariablesPanel
+from acf.science.moisture import Moisture
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +32,8 @@ def _fake_volume(n_levels=3, n_lat=4, n_lon=4):
 def test_key_variables_panel_shows_real_values(qapp, qtbot):
     panel = KeyVariablesPanel()
     qtbot.addWidget(panel)
-    panel.update_from_volume(_fake_volume(), level_index=0)
+    volume = _fake_volume()
+    panel.update_from_volume(volume, level_index=0)
 
     assert panel.temperature_value.text() != ""
     assert "K" in panel.temperature_value.text() or "°C" in panel.temperature_value.text()
@@ -39,6 +42,54 @@ def test_key_variables_panel_shows_real_values(qapp, qtbot):
     # NaN-only on this tiny synthetic grid, but must render SOMETHING, not crash.
     assert panel.cape_value.text() != ""
     assert panel.lcl_value.text() != ""
+
+    # Relative humidity must be the real Moisture conversion at the
+    # SAME full-resolution center grid cell (ci, cj) the temperature
+    # readout uses - not a fabricated q/0.02 formula.
+    lats = volume["lats"]
+    lons = volume["lons"]
+    ci, cj = len(lats) // 2, len(lons) // 2
+    temp_k = float(volume["temperature_volume"][0, ci, cj])
+    q_kg_kg = float(volume["specific_humidity_volume"][0, ci, cj])
+    pressure_hpa = float(volume["pressure_volume_hpa"][0, ci, cj])
+    expected_rh_pct = min(
+        100.0,
+        100.0 * Moisture.relative_humidity_from_temperature(q_kg_kg, pressure_hpa, temp_k),
+    )
+    assert panel.humidity_value.text() == f"{expected_rh_pct:.0f} %"
+
+
+def test_key_variables_panel_reads_the_same_grid_cell_for_convection_indices(qapp, qtbot):
+    """CAPE/CIN/LCL must come from the strided sub-grid cell nearest to
+    the SAME full-resolution (ci, cj) center point used for
+    Temperature/Wind Speed/Relative Humidity - not an independently
+    halved sub-grid shape."""
+    from acf.awci.workstation_fields import compute_real_convection_indices_field
+
+    panel = KeyVariablesPanel()
+    qtbot.addWidget(panel)
+    volume = _fake_volume()
+    panel.update_from_volume(volume, level_index=0)
+
+    lats = volume["lats"]
+    lons = volume["lons"]
+    ci, cj = len(lats) // 2, len(lons) // 2
+    sub_ci, sub_cj = ci // CONVECTION_GRID_STRIDE, cj // CONVECTION_GRID_STRIDE
+
+    indices = compute_real_convection_indices_field(
+        volume["temperature_volume"],
+        volume["specific_humidity_volume"],
+        volume["pressure_volume_hpa"],
+        volume["u_volume"],
+        volume["v_volume"],
+        lats,
+        lons,
+    )
+    lcl_expected = indices["lcl_m"][sub_ci, sub_cj]
+    if np.isnan(lcl_expected):
+        assert panel.lcl_value.text() == "NOT_COMPUTED"
+    else:
+        assert panel.lcl_value.text() == f"{lcl_expected:.0f} m"
 
 
 def test_key_variables_panel_before_any_volume_is_honest(qapp, qtbot):

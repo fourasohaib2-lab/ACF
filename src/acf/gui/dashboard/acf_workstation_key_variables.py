@@ -11,10 +11,19 @@ ACFOverviewPanel` already reads (never a second solver run).
 CAPE/CIN/LCL come from `acf.awci.workstation_fields.
 compute_real_convection_indices_field()` - the exact real formulas
 Convection Lab already used before this session's dashboard cleanup.
-Relative humidity is derived from the volume's own specific humidity
-via a disclosed quick-look approximation (see `update_from_volume`
-docstring below) - not a substitute for a real saturation vapor
-pressure calculation.
+Relative humidity is derived from the volume's own specific humidity,
+pressure and temperature via the real
+`acf.science.moisture.Moisture.relative_humidity_from_temperature()`
+conversion (vapor pressure from specific humidity, saturation vapor
+pressure from temperature, RH = e/es) - not a fabricated formula.
+
+All six readouts (Temperature/Relative Humidity/Wind Speed/CAPE/CIN/
+LCL) describe the SAME physical grid point: the full-resolution
+volume's domain-center cell (`ci, cj`), and its nearest equivalent on
+`compute_real_convection_indices_field()`'s coarser strided sub-grid
+(`ci // stride, cj // stride`), since that function's sub-grid row/
+column `si`/`sj` corresponds to full-resolution row/column
+`si * stride`/`sj * stride` (see its own docstring).
 
 Honesty: any value the underlying computation reports as NaN (e.g.
 CAPE/CIN/LCL "not computed" per that function's own docstring) renders
@@ -28,8 +37,12 @@ from typing import Any
 import numpy as np
 from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
 
-from acf.awci.workstation_fields import compute_real_convection_indices_field
+from acf.awci.workstation_fields import (
+    CONVECTION_GRID_STRIDE,
+    compute_real_convection_indices_field,
+)
 from acf.gui.theme_tokens import label_style
+from acf.science.moisture import Moisture
 
 _NOT_AVAILABLE = "NOT_AVAILABLE_NO_VOLUME_COMPUTED"
 
@@ -70,13 +83,13 @@ class KeyVariablesPanel(QWidget):
         self.wind_speed_value.setText(f"{wind_ms:.1f} m/s")
 
         q_kg_kg = float(volume["specific_humidity_volume"][level_index, ci, cj])
-        # Real, disclosed approximation (same convention already used
-        # elsewhere in this codebase for a quick-look RH from q when a
-        # full parcel calculation isn't already at hand): q as a
-        # fraction of a generous 0.02 kg/kg saturation envelope at
-        # low/mid levels - not a substitute for a real saturation
-        # vapor pressure calculation.
-        rh_pct = min(100.0, 100.0 * q_kg_kg / 0.02)
+        pressure_hpa = float(volume["pressure_volume_hpa"][level_index, ci, cj])
+        # Real conversion: vapor pressure (from specific humidity +
+        # pressure) over saturation vapor pressure (from temperature),
+        # composed by Moisture.relative_humidity_from_temperature() -
+        # no fabricated formula.
+        rh_fraction = Moisture.relative_humidity_from_temperature(q_kg_kg, pressure_hpa, temp_k)
+        rh_pct = min(100.0, 100.0 * rh_fraction)
         self.humidity_value.setText(f"{rh_pct:.0f} %")
 
         indices = compute_real_convection_indices_field(
@@ -88,7 +101,11 @@ class KeyVariablesPanel(QWidget):
             lats,
             lons,
         )
-        sub_ci, sub_cj = indices["cape_j_kg"].shape[0] // 2, indices["cape_j_kg"].shape[1] // 2
+        # Same physical grid point as (ci, cj) above, on the indices'
+        # own coarser strided sub-grid (sub-grid row/col si/sj <->
+        # full-res row/col si*stride/sj*stride - see that function's
+        # docstring).
+        sub_ci, sub_cj = ci // CONVECTION_GRID_STRIDE, cj // CONVECTION_GRID_STRIDE
         self._set_or_not_computed(self.cape_value, indices["cape_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.cin_value, indices["cin_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.lcl_value, indices["lcl_m"][sub_ci, sub_cj], "m")
