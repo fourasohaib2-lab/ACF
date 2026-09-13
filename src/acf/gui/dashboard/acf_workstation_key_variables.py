@@ -52,6 +52,19 @@ class KeyVariablesPanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        #: Real, already-computed values of the most recent
+        #: `update_from_volume()` call (added 2026-09-13 for the
+        #: Workstation composer): the real convection-indices dict this
+        #: panel computed (or was handed), and the real scalar values
+        #: it actually displayed at the domain-center point. Kept so a
+        #: caller (e.g. `HazardAlertsPanel`, which needs the same real
+        #: CAPE/bulk shear/relative humidity) can REUSE them instead of
+        #: running the genuinely expensive real MetPy parcel-ascent
+        #: pipeline a second time. None until a real update happens -
+        #: never a fabricated placeholder value.
+        self.last_indices: dict[str, Any] | None = None
+        self.last_center_values: dict[str, float] | None = None
+
         layout = QGridLayout(self)
 
         self.temperature_value = self._row(layout, 0, "Temperature (850 hPa)")
@@ -69,9 +82,24 @@ class KeyVariablesPanel(QWidget):
         layout.addWidget(value, row, 1)
         return value
 
-    def update_from_volume(self, volume: dict[str, Any], level_index: int) -> None:
+    def update_from_volume(
+        self, volume: dict[str, Any], level_index: int, indices: dict[str, Any] | None = None
+    ) -> None:
         """Real re-slice of the already-computed volume at its domain
-        center grid point - no new solver run."""
+        center grid point - no new solver run.
+
+        `indices` (added 2026-09-13) accepts a real
+        `compute_real_convection_indices_field()` result ALREADY
+        computed for this exact volume (the Workstation composer runs
+        it once, off the GUI thread, and shares the same real result
+        with this panel and the Hazard Alerts panel). Left at None -
+        every pre-existing caller - this panel computes it itself
+        exactly as before; the call is genuinely expensive (a real
+        MetPy parcel ascent per strided grid point, measured ~3s on
+        ARPEGE's own real grid), which is precisely why the composer
+        hands it in rather than triggering it once per panel and once
+        per level change.
+        """
         lats = volume["lats"]
         lons = volume["lons"]
         ci, cj = len(lats) // 2, len(lons) // 2
@@ -92,15 +120,16 @@ class KeyVariablesPanel(QWidget):
         rh_pct = min(100.0, 100.0 * rh_fraction)
         self.humidity_value.setText(f"{rh_pct:.0f} %")
 
-        indices = compute_real_convection_indices_field(
-            volume["temperature_volume"],
-            volume["specific_humidity_volume"],
-            volume["pressure_volume_hpa"],
-            volume["u_volume"],
-            volume["v_volume"],
-            lats,
-            lons,
-        )
+        if indices is None:
+            indices = compute_real_convection_indices_field(
+                volume["temperature_volume"],
+                volume["specific_humidity_volume"],
+                volume["pressure_volume_hpa"],
+                volume["u_volume"],
+                volume["v_volume"],
+                lats,
+                lons,
+            )
         # Same physical grid point as (ci, cj) above, on the indices'
         # own coarser strided sub-grid (sub-grid row/col si/sj <->
         # full-res row/col si*stride/sj*stride - see that function's
@@ -109,6 +138,20 @@ class KeyVariablesPanel(QWidget):
         self._set_or_not_computed(self.cape_value, indices["cape_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.cin_value, indices["cin_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.lcl_value, indices["lcl_m"][sub_ci, sub_cj], "m")
+
+        # Real, already-computed values kept for reuse (see
+        # `last_indices`'s own comment in __init__) - exactly what was
+        # just displayed, nothing re-derived.
+        self.last_indices = indices
+        self.last_center_values = {
+            "temperature_c": temp_k - 273.15,
+            "wind_speed_m_s": wind_ms,
+            "relative_humidity_pct": rh_pct,
+            "cape_j_kg": float(indices["cape_j_kg"][sub_ci, sub_cj]),
+            "cin_j_kg": float(indices["cin_j_kg"][sub_ci, sub_cj]),
+            "lcl_m": float(indices["lcl_m"][sub_ci, sub_cj]),
+            "bulk_shear_m_s": float(indices["bulk_shear_m_s"][sub_ci, sub_cj]),
+        }
 
     @staticmethod
     def _set_or_not_computed(label: QLabel, value: float, unit: str) -> None:

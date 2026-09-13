@@ -116,6 +116,13 @@ class ACFMultiModelLabPanel(QWidget):
     """Real Multi-Model Lab - raw per-model fields + a real pairwise
     difference map, on-demand. No AWCI content anywhere."""
 
+    #: Emitted with the real `compute_real_multi_model_disagreement_field()`
+    #: result whenever this panel's own on-demand comparison genuinely
+    #: completes (added 2026-09-13) - so the Workstation composer's Model
+    #: Agreement panel updates from the SAME real result rather than
+    #: running a second real solver run per model.
+    comparisonComputed = Signal(dict)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._volume: dict[str, Any] | None = None
@@ -195,6 +202,16 @@ class ACFMultiModelLabPanel(QWidget):
         lbl.setStyleSheet(label_style("text_muted", "xs"))
         return lbl
 
+    def last_comparison_result(self) -> dict[str, Any] | None:
+        """The real `compute_real_multi_model_disagreement_field()`
+        result this panel last computed (added 2026-09-13 for the
+        Workstation composer's Model Agreement panel), or None if the
+        user has not run the comparison yet - so a caller REUSES this
+        real result (its real `per_model_field`/
+        `disagreement_spread_field`) rather than paying for a second
+        real solver run per model. Never a fabricated stand-in."""
+        return self._result
+
     def update_from_volume(self, volume: dict[str, Any], level_index: int) -> None:
         """Real bookkeeping only - the comparison is its own separate,
         on-demand computation (independent real solver runs of its
@@ -229,6 +246,7 @@ class ACFMultiModelLabPanel(QWidget):
             f"mean |Δ| {abs(diff).mean():.3f}, max |Δ| {abs(diff).max():.3f})."
         )
         self._redraw()
+        self.comparisonComputed.emit(result)
 
     def _on_comparison_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)

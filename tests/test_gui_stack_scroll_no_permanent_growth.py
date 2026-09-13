@@ -15,7 +15,15 @@ heavy tab/panel permanently outgrows the display. Same measured effect
 for ACFWorkstation's "Complexity Explorer" Lab panel (737px tall, 633
 -> 978).
 
-The fix wraps `ESOCLayout.bottom_tabs`/`ACFWorkstation.stack` each in
+UPDATE (2026-09-13, Workstation rebuild): `ACFWorkstation` no longer
+has a `stack` - the rebuilt layout (`acf_workstation_reference.jpg`)
+puts every real Lab panel in a `science_tabs` QTabWidget inside one
+scrolled content column (`ACFWorkstation.content_scroll`). The
+regression guarded here is unchanged and still real: visiting the
+heavy "Complexity Explorer" panel must not permanently grow the window,
+so these tests now switch tabs instead of stack pages.
+
+The fix wraps `ESOCLayout.bottom_tabs`/`ACFWorkstation`'s content in
 their own `QScrollArea` (`setWidgetResizable(True)`) - the exact same
 pattern this codebase already uses for `AWCIDashboardPanel` inside
 `PanelManager`, for the identical reason (see that class's own
@@ -88,11 +96,11 @@ def test_acf_workstation_window_does_not_permanently_grow_after_visiting_complex
 
     initial_height = window.height()
 
-    workstation.stack.setCurrentWidget(workstation.complexity_panel)
+    workstation.science_tabs.setCurrentWidget(workstation.complexity_panel)
     qapp.processEvents()
     assert window.height() == initial_height
 
-    workstation.stack.setCurrentWidget(workstation.overview_panel)
+    workstation.science_tabs.setCurrentWidget(workstation.overview_panel)
     qapp.processEvents()
     assert window.height() == initial_height
 
@@ -112,9 +120,9 @@ def test_acf_workstation_window_can_still_be_explicitly_shrunk_after_visiting_co
     window.show()
     workstation = window.workstation
 
-    workstation.stack.setCurrentWidget(workstation.complexity_panel)
+    workstation.science_tabs.setCurrentWidget(workstation.complexity_panel)
     qapp.processEvents()
-    workstation.stack.setCurrentWidget(workstation.overview_panel)
+    workstation.science_tabs.setCurrentWidget(workstation.overview_panel)
     qapp.processEvents()
 
     own_chrome_minimum = window.minimumSizeHint().height()

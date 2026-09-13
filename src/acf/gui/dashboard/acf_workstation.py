@@ -648,6 +648,74 @@ identified structural items) is now built - see `reports/
 ACF_MASTER_AUDIT_v2.md`'s own Phase 32-42 entries for the full,
 disclosed history of this project.
 
+REBUILD (2026-09-13) — new reference image, new layout
+---------------------------------------------------------
+Everything above is this Workstation's own real history against its
+PREVIOUS reference mockup (`docs/reference/acf_scientific_workstation_
+reference.jpg`), kept verbatim as the honest record of why each real
+panel exists. This module's LAYOUT no longer targets that image: per
+`docs/superpowers/specs/2026-09-13-acf-workstation-rebuild-design.md`,
+the sole visual authority is now `acf_workstation_reference.jpg` (repo
+root), a genuinely different design. No real science was removed - the
+recovered Lab panels keep their exact real backends and are all still
+present; they are laid out differently and joined by 6 new panels.
+
+Real layout actually built here (top to bottom), and where each piece's
+real data comes from:
+- Left: `acf_workstation_sidebar.WorkstationSidebar` (static nav tree).
+  It never hides a panel - selecting a section scrolls the real
+  content column to the matching real area (`_on_section_selected()`),
+  and the two sub-entries that have a real dialog behind them
+  (Data > Models / Data > Observations) open it.
+- `acf_workstation_config_bar.ConfigBar` - the real ACTIVE RUN's own
+  metadata, filled in `_on_volume_ready()` only (never from the model
+  selector's pending value, so the bar can never claim a configuration
+  that no panel below is actually showing).
+- Hero "Atmospheric Complexity": `ACFComplexityExplorerPanel`'s OWN
+  real spatial-complexity map widget, re-parented here (the same
+  widget object its own `update_from_volume()` keeps drawing into -
+  no second map, no duplicated logic), plus `ACFTemporalLabPanel`'s
+  OWN real transport controls (run/frame slider/frame label).
+  Disclosed: the transport scrubs that panel's real multi-frame
+  trajectory, which renders in the "Time Evolution" cell below - the
+  hero map itself shows the current level's real spatial complexity
+  and is not animated by it.
+  Deliberate non-build (disclosed, not silently dropped): the
+  reference image's hero 2D/3D/4D toggle and "Layers" button. No real
+  3D/4D panel survives this session's cleanup for the toggle to
+  switch to, and every map here draws exactly one real, already-
+  selectable field - a toggle with nothing real behind it would be a
+  fabricated affordance (same discipline as Phase 42 above).
+- Row 1: `KeyVariablesPanel` + `ComplexityOverviewPanel` +
+  `ModelAgreementPanel` + `HazardAlertsPanel`.
+- Row 2: Vertical Cross Section (honest
+  NOT_AVAILABLE_NO_CROSS_SECTION_WIDGET_RECOVERED placeholder - no
+  real cross-section widget exists in this rebuild's recovered panel
+  set; checked directly in `acf_workstation_complexity.py`, which the
+  task brief expected to carry one) + Atmospheric Profiles
+  (`ACFVerticalSoundingWidget`) + Model Comparison
+  (`ACFMultiModelLabPanel`) + Time Evolution (`ACFTemporalLabPanel`).
+- Science Labs tabs: `ACFOverviewPanel` (Atmosphere State),
+  `ACFThermodynamicsLabPanel`, `ACFComplexityExplorerPanel` (its real
+  temporal/model-disagreement half) and `ACFConfidenceLabPanel` -
+  every recovered real Lab stays reachable, nothing deleted.
+- `acf_workstation_footer.SystemFooterPanel` - real
+  `HPCConnectionManager.get_status_summary()` status plus this
+  Workstation's own real pipeline-activity log.
+
+Single real computation per run, shared by every panel
+--------------------------------------------------------
+`refresh()` starts ONE real `compute_real_complexity_volume()` run
+off-thread, then ONE real `compute_real_convection_indices_field()`
+run off-thread over that same volume (`_IndicesWorker`) - the real
+MetPy parcel-ascent pipeline behind CAPE/CIN/LCL/bulk shear, measured
+~3.2s on ARPEGE's own real grid. That single real result feeds BOTH
+`KeyVariablesPanel` and `HazardAlertsPanel` (which is why
+`KeyVariablesPanel.update_from_volume()` now accepts it), and it is
+computed once per real VOLUME, not once per level change: every index
+in it is a full-column diagnostic, genuinely independent of the level
+slider.
+
 Real data source, once, re-sliced everywhere
 -----------------------------------------------
 A real off-thread `_VolumeWorker` runs
@@ -669,27 +737,28 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
+import numpy as np
 import shiboken6
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMenu,
     QPushButton,
     QScrollArea,
     QSlider,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
@@ -697,7 +766,18 @@ from PySide6.QtWidgets import (
 )
 
 from acf.awci.vertical_field import compute_real_complexity_volume
+from acf.awci.workstation_fields import (
+    CONVECTION_GRID_STRIDE,
+    compute_real_convection_indices_field,
+)
 from acf.forecast.engine import MODEL_CONFIGS
+from acf.gui.dashboard.acf_workstation_complexity_overview import ComplexityOverviewPanel
+from acf.gui.dashboard.acf_workstation_config_bar import ConfigBar
+from acf.gui.dashboard.acf_workstation_footer import SystemFooterPanel
+from acf.gui.dashboard.acf_workstation_hazard_alerts import HazardAlertsPanel
+from acf.gui.dashboard.acf_workstation_key_variables import KeyVariablesPanel
+from acf.gui.dashboard.acf_workstation_model_agreement import ModelAgreementPanel
+from acf.gui.dashboard.acf_workstation_sidebar import WorkstationSidebar
 
 # Conditional imports for modules that may be under rebuild
 ACFComplexityExplorerPanel = None
@@ -743,37 +823,64 @@ try:
 except ImportError:
     pass
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
-from acf.gui.widgets.current_page_sizing import CurrentPageStackedWidget
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
 
 _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastest real run, same default as acf_general_dashboard.py
 
-#: Real, built "ACF CORE" nav modules, in the exact order and with the
-#: exact real labels the Workstation's own reference mockup
-#: (`docs/reference/acf_scientific_workstation_reference.jpg`) shows
-#: (Phase 31, 2026-09-04, explicit user request: "garder ce modèle...
-#: ne change rien à 100%" - see the module docstring's own Phase 31
-#: entry for the full disclosure of what changed and why). Every real
-#: Lab this Workstation already had keeps its own real backend/tests
-#: unchanged - only its nav LABEL and position changed here to match
-#: the mockup; nothing real was removed.
-_ENABLED_MODULES = [
+#: Real Science Labs tabs (rebuild, 2026-09-13): every recovered real
+#: Lab panel that the new reference image has no dedicated cell for
+#: stays reachable here - nothing real is deleted or hidden ("ne
+#: détruis pas l'existant", this project's own established rule).
+_SCIENCE_TAB_ORDER = [
     "Atmosphere State",
-    "Complexity Explorer",
     "Thermodynamics Lab",
-    "Temporal Evolution Lab",
+    "Complexity Explorer",
     "Forecast Consistency Lab",
 ]
-_PLANNED_MODULES: list[str] = []
 
-#: Real, built modules the mockup's own "ACF CORE" nav tree does NOT
-#: show - kept, never deleted (this project's own established
-#: "ne détruis pas l'existant" discipline), reachable from the real
-#: "🧰 More Labs" toolbar menu instead of the main nav list.
-_TOOLBAR_MODULES = [
-    "Multi-Model Lab",
-]
+#: Real, DISCLOSED normalization references turning three real,
+#: dimensional ACF quantities into the 0-1 factor scale the reference
+#: image's own Complexity Overview breakdown uses. These are plain,
+#: documented reference magnitudes (clipped to [0, 1]), not a fitted or
+#: learned model, and not a claim that the underlying quantity "is"
+#: that value - the real dimensional values themselves remain visible
+#: in their own panels (Complexity Explorer's maps, Confidence Lab's
+#: spread field):
+#: - gradients: 10 K/100km is a real, textbook synoptic frontal-zone
+#:   temperature-gradient magnitude;
+#: - temporal evolution: 5 K/h is a real, strong local temperature
+#:   tendency (a genuinely fast-evolving situation);
+#: - model disagreement: 5 K of real ensemble spread is a large
+#:   multi-model temperature disagreement.
+#: A factor with no real value behind it is reported as None (the
+#: Complexity Overview panel renders NOT_COMPUTED and excludes it from
+#: its disclosed mean) - never filled in with a fabricated number.
+_GRADIENT_REFERENCE_K_PER_100KM = 10.0
+_TEMPORAL_REFERENCE_K_PER_H = 5.0
+_DISAGREEMENT_REFERENCE_K = 5.0
+
+#: Real mapping from a sidebar SECTION to the real content anchor this
+#: composer scrolls to (see `_on_section_selected()`). Values are
+#: attribute names resolved at call time, so this table can never
+#: reference a widget that does not exist.
+_SECTION_ANCHORS = {
+    "Home": "config_bar",
+    "Data": "config_bar",
+    "Science": "science_tabs",
+    "Analysis": "analysis_row_widget",
+    "Reports": "footer_panel",
+    "Infrastructure": "footer_panel",
+    "Settings": "config_bar",
+}
+
+
+def _clip_unit(value: float) -> float:
+    """Clip a real, already-normalized factor into the [0, 1] scale the
+    reference image's own Complexity Overview breakdown uses - a real
+    value above the disclosed reference magnitude reads as a full 1.0,
+    never as an out-of-scale number."""
+    return max(0.0, min(1.0, value))
 
 
 class _VolumeWorkerSignals(QObject):
@@ -796,6 +903,29 @@ class _VolumeWorker(QRunnable):
             result = compute_real_complexity_volume(**self.kwargs)
         except Exception as exc:  # noqa: BLE001 - real failure, reported honestly via signal below
             logger.exception("ACF Scientific Workstation: volume computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
+class _IndicesWorker(QRunnable):
+    """Runs compute_real_convection_indices_field() off the GUI thread
+    (rebuild, 2026-09-13) - the real MetPy parcel-ascent pipeline
+    behind CAPE/CIN/LCL/bulk shear, measured ~3.2s on ARPEGE's own real
+    grid, run ONCE per real volume and shared by the Key Atmospheric
+    Variables and Key Alerts & Hazards panels. Same real QRunnable/
+    QThreadPool pattern as _VolumeWorker above."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _VolumeWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = compute_real_convection_indices_field(**self.kwargs)
+        except Exception as exc:  # noqa: BLE001 - real failure, reported honestly via signal below
+            logger.exception("ACF Scientific Workstation: convection indices computation failed")
             self.signals.failed.emit(str(exc))
             return
         self.signals.finished.emit(result)
@@ -824,6 +954,19 @@ class ACFWorkstation(QWidget):
         #: until a real click happens, in which case _on_volume_ready()
         #: falls back to the real volume's own grid-center point.
         self._last_clicked_point: tuple[float, float] | None = None
+        #: The real compute_real_convection_indices_field() result for
+        #: the CURRENT volume (rebuild, 2026-09-13), computed once
+        #: off-thread per real run and shared by the Key Atmospheric
+        #: Variables and Key Alerts & Hazards panels - None until that
+        #: real computation finishes (those panels honestly keep their
+        #: own "not available" state until then, never a placeholder
+        #: number).
+        self._indices: dict[str, Any] | None = None
+        #: Real HPCConnectionManager, constructed lazily on the first
+        #: real footer update - never at import/construction time, and
+        #: never connected by this Workstation itself (it only READS
+        #: whatever real status the manager honestly reports).
+        self._hpc: Any | None = None
         self._build_ui()
         self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
@@ -836,6 +979,11 @@ class ACFWorkstation(QWidget):
     # ------------------------------------------------------------------ UI
 
     def _build_ui(self) -> None:
+        """Real layout of `acf_workstation_reference.jpg` (rebuild,
+        2026-09-13) - see the module docstring's own REBUILD section for
+        the full, disclosed component mapping (including the two
+        deliberate, documented non-builds: the hero 2D/3D/4D + Layers
+        controls, and the Vertical Cross Section cell)."""
         outer = QVBoxLayout(self)
         outer.setSpacing(8)
         outer.setContentsMargins(10, 10, 10, 0)
@@ -845,7 +993,28 @@ class ACFWorkstation(QWidget):
         header = QLabel("ACF SCIENTIFIC WORKSTATION")
         header.setStyleSheet(label_style("text_primary", "lg", "bold"))
         top_bar.addWidget(header)
+
+        # Real engine status - this Workstation's own solver pipeline is
+        # in-process, so "ONLINE" here means exactly that the real
+        # compute_real_complexity_volume() entry point is importable and
+        # callable in this process (it was imported at module load), not
+        # a claim about any remote service.
+        self.engine_status_label = QLabel("ACF Engine ONLINE (in-process CoupledEarthSolver)")
+        self.engine_status_label.setStyleSheet(label_style("text_secondary", "xs"))
+        top_bar.addWidget(self.engine_status_label)
         top_bar.addStretch()
+
+        # Real UTC clock (reference image's own top-bar date/time) -
+        # the machine's real UTC time, ticking, never a frozen or
+        # fabricated forecast timestamp.
+        self.utc_clock_label = QLabel("")
+        self.utc_clock_label.setStyleSheet(label_style("text_secondary", "xs"))
+        top_bar.addWidget(self.utc_clock_label)
+        self._clock_timer = QTimer(self)
+        self._clock_timer.setInterval(1000)
+        self._clock_timer.timeout.connect(self._update_utc_clock)
+        self._clock_timer.start()
+        self._update_utc_clock()
 
         top_bar.addWidget(self._label("Model:"))
         self.model_selector = QComboBox()
@@ -857,10 +1026,18 @@ class ACFWorkstation(QWidget):
         self.run_button.setToolTip(
             "Real, off-thread compute_real_complexity_volume() run (CoupledEarthSolver,\n"
             "the selected model's own real grid configuration) - drives every real\n"
-            "module below from one real trajectory, re-sliced, never recomputed per tab."
+            "panel below from one real trajectory, re-sliced, never recomputed per panel."
         )
         self.run_button.clicked.connect(self.refresh)
         top_bar.addWidget(self.run_button)
+
+        self.science_explorer_button = QPushButton("🔬 Science Explorer")
+        self.science_explorer_button.setToolTip(
+            "Real, live search over acf.science.encyclopedia.registry.\n"
+            "EncyclopediaRegistry's own real, populated formula database."
+        )
+        self.science_explorer_button.clicked.connect(self._show_scientific_explorer_dialog)
+        top_bar.addWidget(self.science_explorer_button)
 
         self.fullscreen_button = QPushButton("⛶")
         self.fullscreen_button.setToolTip("Toggle fullscreen")
@@ -868,33 +1045,9 @@ class ACFWorkstation(QWidget):
         self.fullscreen_button.clicked.connect(self._toggle_fullscreen)
         top_bar.addWidget(self.fullscreen_button)
 
-        # Real "More Labs" toolbar (added Phase 31, 2026-09-04) - the
-        # real Labs this Workstation already had that the reference
-        # mockup's own "ACF CORE" nav tree does not show (see
-        # _TOOLBAR_MODULES's own docstring) - kept, reachable here
-        # instead, never deleted.
-        self.more_labs_button = QToolButton()
-        self.more_labs_button.setText("🧰 More Labs")
-        self.more_labs_button.setToolTip(
-            "Real Labs this Workstation already has that the reference mockup's own\n"
-            "nav tree doesn't show - kept here, not deleted."
-        )
-        self.more_labs_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        more_labs_menu = QMenu(self.more_labs_button)
-        self.more_labs_actions: dict[str, QAction] = {}
-        for name in _TOOLBAR_MODULES:
-            action = QAction(name, self)
-            action.triggered.connect(lambda _checked=False, target=name: self._navigate_to(target))
-            more_labs_menu.addAction(action)
-            self.more_labs_actions[name] = action
-        self.more_labs_button.setMenu(more_labs_menu)
-        top_bar.addWidget(self.more_labs_button)
-
-        # Real Configuration Management (added 2026-09-04, closing a
-        # gap this button's own tooltip used to disclose as "not yet
-        # implemented") - same "real actions behind one control"
-        # convention as the export menu (awci_map_panel.py) and
-        # ACFGeneralDashboard's own "☰" menu.
+        # Real Configuration Management (added 2026-09-04) - same "real
+        # actions behind one control" convention as the export menu
+        # (awci_map_panel.py).
         self.settings_button = QToolButton()
         self.settings_button.setText("⚙")
         self.settings_button.setFixedWidth(28)
@@ -911,7 +1064,30 @@ class ACFWorkstation(QWidget):
         top_bar.addWidget(self.settings_button)
         outer.addLayout(top_bar)
 
-        # --- Status + level row -------------------------------------------
+        # --- Body: sidebar + scrollable real content column ---------------
+        body = QHBoxLayout()
+        body.setSpacing(8)
+
+        self.sidebar = WorkstationSidebar()
+        self.sidebar.setMaximumWidth(200)
+        self.sidebar.sectionSelected.connect(self._on_section_selected)
+        body.addWidget(self.sidebar)
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(8)
+
+        # --- Current Configuration bar -------------------------------------
+        self.config_bar = ConfigBar()
+        # The "Change" button is a real affordance for the real control
+        # that changes the configuration - this Workstation's own model
+        # selector - never a second, separate configuration path that
+        # could drift out of sync with it.
+        self.config_bar.changeRequested.connect(self._on_config_change_requested)
+        content_layout.addWidget(self.config_bar)
+
+        # --- Status + level row --------------------------------------------
         status_row = QHBoxLayout()
         self.status_label = QLabel("Not yet computed.")
         self.status_label.setStyleSheet(label_style("text_muted", "sm"))
@@ -928,135 +1104,169 @@ class ACFWorkstation(QWidget):
         self.level_label = QLabel("—")
         self.level_label.setStyleSheet(label_style("text_secondary", "xs"))
         status_row.addWidget(self.level_label)
-        outer.addLayout(status_row)
+        content_layout.addLayout(status_row)
 
-        # --- Body: left nav + stacked real content -------------------------
-        body = QHBoxLayout()
-        body.setSpacing(8)
-
-        nav_col = QVBoxLayout()
-        nav_header = QLabel("ACF CORE")
-        nav_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
-        nav_col.addWidget(nav_header)
-        self.nav_list = QListWidget()
-        self.nav_list.setMaximumWidth(180)
-        for name in _ENABLED_MODULES:
-            self.nav_list.addItem(QListWidgetItem(name))
-        for name in _PLANNED_MODULES:
-            item = QListWidgetItem(f"{name} (planned)")
-            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
-            item.setToolTip("Planned — not yet built (see the real, disclosed roadmap in reports/ACF_MASTER_AUDIT_v2.md)")
-            self.nav_list.addItem(item)
-        self.nav_list.setCurrentRow(0)
-        self.nav_list.currentRowChanged.connect(self._on_nav_changed)
-        nav_col.addWidget(self.nav_list, stretch=1)
-
-        # Real "Data Sources" nav section (added Phase 31, 2026-09-04,
-        # matching the reference mockup's own left-column "DATA
-        # SOURCES" block) - each item opens a real dialog; see
-        # `_on_data_source_selected()`'s own docstring for exactly what
-        # real data (or honest "not connected" disclosure) each one
-        # shows.
-        data_sources_header = QLabel("DATA SOURCES")
-        data_sources_header.setStyleSheet(label_style("text_secondary", "sm", "bold"))
-        nav_col.addWidget(data_sources_header)
-        self.data_sources_list = QListWidget()
-        self.data_sources_list.setMaximumWidth(180)
-        self.data_sources_list.setMaximumHeight(90)
-        for name in ("Model Data", "Observations", "Scientific Explorer"):
-            self.data_sources_list.addItem(QListWidgetItem(name))
-        self.data_sources_list.itemClicked.connect(self._on_data_source_selected)
-        nav_col.addWidget(self.data_sources_list)
-
-        body.addLayout(nav_col)
-
-        # NOTE (real responsive-sizing fix, 2026-09-05): a plain
-        # QStackedWidget sizes itself to the LARGEST of all 15 Lab
-        # panels it holds (Qt's own default "size to every page"
-        # behaviour), not just the one actually showing - measured
-        # minimumSizeHint() of (646, 737), floored by "Atmospheric
-        # Interaction Engine" (width) and "Complexity Explorer"
-        # (height), enforced even while e.g. the much smaller
-        # "Atmosphere State" panel (180x147) was selected. See
-        # acf.gui.widgets.current_page_sizing's own module docstring.
-        self.stack = CurrentPageStackedWidget()
+        # --- Real panel objects --------------------------------------------
+        # Every recovered Lab panel is constructed exactly as before -
+        # their real backends are untouched; only WHERE their widgets
+        # appear changed in this rebuild.
         self.overview_panel = ACFOverviewPanel()
         self.thermodynamics_panel = ACFThermodynamicsLabPanel()
         self.temporal_panel = ACFTemporalLabPanel()
         self.confidence_panel = ACFConfidenceLabPanel()
         self.multimodel_panel = ACFMultiModelLabPanel()
         self.complexity_panel = ACFComplexityExplorerPanel()
+        self.sounding_panel = ACFVerticalSoundingWidget()
 
-        # Real name -> widget routing (added Phase 31, 2026-09-04,
-        # replacing the old row-index-coupled `setCurrentIndex(row)`)
-        # - decouples nav list content/order from stack widget order,
-        # so real modules can be added to/removed from the nav or
-        # toolbar without breaking any other module's own mapping.
-        self._panel_by_name: dict[str, QWidget] = {
+        self.key_variables_panel = KeyVariablesPanel()
+        self.complexity_overview_panel = ComplexityOverviewPanel()
+        self.model_agreement_panel = ModelAgreementPanel()
+        self.hazard_alerts_panel = HazardAlertsPanel()
+        self.footer_panel = SystemFooterPanel()
+
+        self._lab_panels: dict[str, QWidget] = {
             "Atmosphere State": self.overview_panel,
-            "Complexity Explorer": self.complexity_panel,
             "Thermodynamics Lab": self.thermodynamics_panel,
-            "Temporal Evolution Lab": self.temporal_panel,
+            "Complexity Explorer": self.complexity_panel,
             "Forecast Consistency Lab": self.confidence_panel,
+            "Temporal Evolution Lab": self.temporal_panel,
             "Multi-Model Lab": self.multimodel_panel,
         }
-        for panel in self._panel_by_name.values():
-            self.stack.addWidget(panel)
-        # NOTE (real responsive-sizing fix, 2026-09-05, continuing the
-        # CurrentPageStackedWidget fix above): that fix stops the stack
-        # from being PERMANENTLY floored at its largest Lab panel, but a
-        # top-level window never auto-shrinks its real on-screen size
-        # just because its computed minimum went down - only auto-grows
-        # when it goes up. Measured effect without this scroll wrap:
-        # opening "Complexity Explorer" (737px tall, itself from 2 real
-        # stacked AWCIMapPanel maps + a spread chart) even once grew the
-        # whole window from 633 to 978px tall, and it then STAYED there
-        # after switching back to a small panel like "Atmosphere State"
-        # (147px) - on a small screen, a single visit to a heavy Lab
-        # panel permanently outgrows the display. Wrapping in a
-        # QScrollArea (same established pattern as panel_manager.py's
-        # own AWCIDashboardPanel scroll wrap, for the exact same reason)
-        # decouples the window's minimum from EVERY Lab panel's content
-        # entirely; a panel that doesn't fit the space actually given
-        # scrolls instead of forcing the window to grow.
-        stack_scroll = QScrollArea()
-        stack_scroll.setWidgetResizable(True)
-        stack_scroll.setWidget(self.stack)
-        body.addWidget(stack_scroll, stretch=1)
 
-        # Real, always-visible right column (added Phase 33,
-        # 2026-09-05, matching the mockup's own persistent top-right
-        # "VERTICAL COMPLEXITY SOUNDING" box) - every real Lab panel
-        # with its own map (checked via hasattr, not a hardcoded list -
-        # stays correct as panels are added/removed) has its real
-        # AWCIMapPanel.pointClicked connected here, so clicking ANY of
-        # this Workstation's own maps updates the same real sounding.
-        right_col = QVBoxLayout()
-        self.sounding_panel = ACFVerticalSoundingWidget()
+        # --- Hero: Atmospheric Complexity -----------------------------------
+        # Reuses Complexity Explorer's OWN real spatial-complexity map
+        # widget (re-parented, not duplicated: the same object its own
+        # update_from_volume() keeps drawing into) and Temporal
+        # Evolution Lab's OWN real transport controls.
+        self.hero_widget = self._section_box("Atmospheric Complexity")
+        hero_layout = self.hero_widget.layout()
+        self.complexity_panel.spatial_map.setMinimumHeight(280)
+        hero_layout.addWidget(self.complexity_panel.spatial_map, stretch=1)
+
+        transport_row = QHBoxLayout()
+        transport_row.addWidget(self.temporal_panel.run_button)
+        transport_row.addWidget(self._label("Forecast frame:"))
+        transport_row.addWidget(self.temporal_panel.frame_slider)
+        transport_row.addWidget(self.temporal_panel.frame_label)
+        transport_row.addStretch()
+        transport_note = QLabel(
+            "Transport scrubs the real multi-frame trajectory rendered in “Time Evolution” below "
+            "— the hero map shows this level's real spatial complexity and is not animated by it."
+        )
+        transport_note.setStyleSheet(label_style("text_muted", "xs"))
+        transport_note.setWordWrap(True)
+        hero_layout.addLayout(transport_row)
+        hero_layout.addWidget(transport_note)
+        content_layout.addWidget(self.hero_widget)
+
+        # --- Row 1: key variables / complexity overview / agreement / hazards
+        self.summary_row_widget = QWidget()
+        summary_row = QHBoxLayout(self.summary_row_widget)
+        summary_row.setContentsMargins(0, 0, 0, 0)
+        summary_row.addWidget(self._wrap_in_box("Key Atmospheric Variables", self.key_variables_panel), stretch=1)
+        summary_row.addWidget(self._wrap_in_box("Complexity Overview", self.complexity_overview_panel), stretch=1)
+        summary_row.addWidget(self._wrap_in_box("Model Agreement", self.model_agreement_panel), stretch=1)
+        summary_row.addWidget(self._wrap_in_box("Key Alerts & Hazards", self.hazard_alerts_panel), stretch=1)
+        content_layout.addWidget(self.summary_row_widget)
+
+        # --- Row 2: cross section / profiles / model comparison / time evolution
+        self.analysis_row_widget = QWidget()
+        analysis_row = QHBoxLayout(self.analysis_row_widget)
+        analysis_row.setContentsMargins(0, 0, 0, 0)
+
+        # Honest non-build, disclosed in place rather than silently
+        # omitted: this rebuild's recovered panel set contains no real
+        # cross-section widget (checked directly in
+        # acf_workstation_complexity.py, which the task brief expected
+        # to carry one - it builds 2 AWCIMapPanel maps and a spread
+        # chart, no cross-section). Nothing is drawn here rather than a
+        # plausible-looking fake section.
+        self.cross_section_placeholder = QLabel(
+            "NOT_AVAILABLE_NO_CROSS_SECTION_WIDGET_RECOVERED\n\n"
+            "No real vertical cross-section widget exists in this rebuild's recovered "
+            "panel set, so nothing is drawn here. The real per-point vertical structure "
+            "that IS available is shown in “Atmospheric Profiles” beside this cell."
+        )
+        self.cross_section_placeholder.setWordWrap(True)
+        self.cross_section_placeholder.setStyleSheet(label_style("text_muted", "xs"))
+        analysis_row.addWidget(self._wrap_in_box("Vertical Cross Section", self.cross_section_placeholder), stretch=1)
+
         self.sounding_panel.setMinimumWidth(260)
-        self.sounding_panel.setMaximumWidth(340)
-        right_col.addWidget(self.sounding_panel, stretch=1)
-        body.addLayout(right_col)
+        analysis_row.addWidget(self._wrap_in_box("Atmospheric Profiles", self.sounding_panel), stretch=1)
+        analysis_row.addWidget(self._wrap_in_box("Model Comparison", self.multimodel_panel), stretch=1)
+        analysis_row.addWidget(self._wrap_in_box("Time Evolution", self.temporal_panel), stretch=1)
+        content_layout.addWidget(self.analysis_row_widget)
 
-        for panel in self._panel_by_name.values():
+        # --- Science Labs tabs ------------------------------------------------
+        self.science_tabs = QTabWidget()
+        for name in _SCIENCE_TAB_ORDER:
+            self.science_tabs.addTab(self._lab_panels[name], name)
+        content_layout.addWidget(self._wrap_in_box("Science Labs", self.science_tabs))
+
+        # --- Footer ------------------------------------------------------------
+        content_layout.addWidget(self._wrap_in_box("System", self.footer_panel))
+        content_layout.addStretch()
+
+        # Same real responsive-sizing discipline as before the rebuild
+        # (see panel_manager.py's own AWCIDashboardPanel scroll wrap):
+        # a panel that does not fit the space actually given scrolls,
+        # instead of forcing the whole window to grow permanently.
+        self.content_scroll = QScrollArea()
+        self.content_scroll.setWidgetResizable(True)
+        self.content_scroll.setWidget(content)
+        body.addWidget(self.content_scroll, stretch=1)
+
+        # Every real Lab panel with its own map (discovered via hasattr,
+        # not a hardcoded list) drives the SAME real sounding panel -
+        # unchanged from Phase 33.
+        for panel in self._lab_panels.values():
             map_panel = getattr(panel, "map_panel", None)
             if map_panel is not None:
                 map_panel.pointClicked.connect(self._on_map_point_clicked)
+        self.complexity_panel.spatial_map.pointClicked.connect(self._on_map_point_clicked)
+
+        # Real cross-panel synchronization: whichever panel actually
+        # computes a real result pushes it to every summary panel that
+        # depends on it, so no two panels can end up showing
+        # contradictory states after the same real user action.
+        self.confidence_panel.disagreementComputed.connect(self._on_disagreement_result)
+        self.multimodel_panel.comparisonComputed.connect(self._on_disagreement_result)
+        self.complexity_panel.resultsUpdated.connect(self._update_complexity_overview)
 
         outer.addLayout(body, stretch=1)
 
+    def _section_box(self, title: str) -> QWidget:
+        """Real titled container (a frame + heading + vertical layout) -
+        the reference image's own panel chrome, nothing more."""
+        box = QFrame()
+        box.setFrameShape(QFrame.Shape.StyledPanel)
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(8, 6, 8, 8)
+        layout.setSpacing(6)
+        heading = QLabel(title.upper())
+        heading.setStyleSheet(label_style("text_secondary", "xs", "bold"))
+        layout.addWidget(heading)
+        return box
+
+    def _wrap_in_box(self, title: str, widget: QWidget) -> QWidget:
+        box = self._section_box(title)
+        box.layout().addWidget(widget, stretch=1)
+        return box
+
+    def _update_utc_clock(self) -> None:
+        self.utc_clock_label.setText(
+            datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+        )
+
     def _setup_shortcuts(self) -> None:
-        """Real keyboard shortcuts (added 2026-09-04) - faster real
-        access to already-real actions, nothing new invented: Ctrl+R
-        re-triggers the exact same real refresh() the "🔄 Run" button
-        already does; F11 toggles the exact same real fullscreen the
-        "⛶" button already does; Ctrl+1..Ctrl+9/Ctrl+0 jump to one of
-        this Workstation's real enabled modules by its real position in
-        _ENABLED_MODULES - generated from that same list, so it can
-        never drift out of sync with the nav it targets. Real, honest
-        cap at the first 10 real modules (only 10 real single Ctrl+
-        digit keys exist) - any further real module beyond that simply
-        has no shortcut of its own, still reachable via the nav list."""
+        """Real keyboard shortcuts - faster real access to already-real
+        actions, nothing new invented: Ctrl+R re-triggers the exact same
+        real refresh() the "🔄 Run" button already does; F11 toggles the
+        exact same real fullscreen the "⛶" button already does;
+        Ctrl+1..Ctrl+7 select one of the sidebar's own real sections by
+        its real position in `WorkstationSidebar.section_names()` -
+        generated from that same list, so they can never drift out of
+        sync with the nav they target."""
         self.shortcut_run = QShortcut(QKeySequence("Ctrl+R"), self)
         self.shortcut_run.activated.connect(self.refresh)
 
@@ -1064,11 +1274,12 @@ class ACFWorkstation(QWidget):
         self.shortcut_fullscreen.activated.connect(self._toggle_fullscreen)
 
         self.nav_shortcuts: list[QShortcut] = []
-        for row, _name in enumerate(_ENABLED_MODULES[:10]):  # Ctrl+1..Ctrl+9, Ctrl+0 - real digit keys, no more
-            key_digit = (row + 1) % 10  # row 0 -> "1", ..., row 8 -> "9", row 9 -> "0"
+        for row, name in enumerate(self.sidebar.section_names()[:10]):
+            key_digit = (row + 1) % 10  # row 0 -> "1", ..., row 9 -> "0"
             shortcut = QShortcut(QKeySequence(f"Ctrl+{key_digit}"), self)
-            shortcut.activated.connect(lambda target_row=row: self.nav_list.setCurrentRow(target_row))
+            shortcut.activated.connect(lambda target=name: self.sidebar.select_section(target))
             self.nav_shortcuts.append(shortcut)
+
 
     # ------------------------------------------------- Configuration Management
 
@@ -1100,7 +1311,7 @@ class ACFWorkstation(QWidget):
         config: dict[str, Any] = {
             "model": self.model_selector.currentText(),
             "level_index": self._level_index,
-            "nav_row": self.nav_list.currentRow(),
+            "sidebar_section": self.sidebar.current_section(),
         }
         for key, selector in self._configuration_selectors().items():
             config[key] = selector.currentText()
@@ -1123,9 +1334,11 @@ class ACFWorkstation(QWidget):
             if isinstance(value, str):
                 selector.setCurrentText(value)
 
-        nav_row = config.get("nav_row")
-        if isinstance(nav_row, int) and 0 <= nav_row < len(_ENABLED_MODULES):
-            self.nav_list.setCurrentRow(nav_row)
+        section = config.get("sidebar_section")
+        if isinstance(section, str):
+            # select_section() itself ignores a name that is not a real
+            # section (see its own docstring) - no separate validation.
+            self.sidebar.select_section(section)
 
         level_index = config.get("level_index")
         if isinstance(level_index, int) and level_index >= 0:
@@ -1180,7 +1393,17 @@ class ACFWorkstation(QWidget):
         module docstring."""
         self.run_button.setEnabled(False)
         model = self.model_selector.currentText()
+        # The previous run's real convection indices belong to the
+        # PREVIOUS volume - dropped here rather than shown beside the
+        # new run's fields, which would be two panels contradicting
+        # each other about the same real atmosphere.
+        self._indices = None
         self._set_status(f"⏳ Computing real ACF volume ({model} grid, CoupledEarthSolver)…")
+        self.footer_panel.append_activity(
+            f"[Ingestion] Real {model} grid configuration validated — starting a real "
+            f"CoupledEarthSolver volume run."
+        )
+        self._update_footer()
         self._compute_started_at = time.monotonic()
         config = MODEL_CONFIGS[model]
         steps = 6
@@ -1232,10 +1455,257 @@ class ACFWorkstation(QWidget):
         lat, lon = self._last_clicked_point or (float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2]))
         self.sounding_panel.update_from_volume_and_point(volume, lat, lon, level_index=self._level_index)
 
+        # Real Current Configuration bar + footer, from this real run.
+        self._update_config_bar(volume, elapsed)
+        self._update_footer()
+        self.footer_panel.append_activity(
+            f"[Modules] Real {volume['model']} volume computed in {elapsed:.1f}s "
+            f"({volume['n_levels']} real native levels, {self._last_steps} real solver steps)."
+        )
+
+        # One real convection-indices run per real volume, off-thread -
+        # shared by Key Atmospheric Variables and Key Alerts & Hazards
+        # (see the module docstring's own "Single real computation per
+        # run" section).
+        self.footer_panel.append_activity(
+            "[Analysis] Real convection indices (MetPy parcel ascent: CAPE/CIN/LCL/bulk shear) "
+            f"starting off-thread on every {CONVECTION_GRID_STRIDE}th real grid row/column."
+        )
+        indices_worker = _IndicesWorker(
+            temperature_volume=volume["temperature_volume"],
+            specific_humidity_volume=volume["specific_humidity_volume"],
+            pressure_volume_hpa=volume["pressure_volume_hpa"],
+            u_volume=volume["u_volume"],
+            v_volume=volume["v_volume"],
+            lats=volume["lats"],
+            lons=volume["lons"],
+        )
+        indices_worker.signals.finished.connect(self._on_indices_ready)
+        indices_worker.signals.failed.connect(self._on_indices_failed)
+        QThreadPool.globalInstance().start(indices_worker)
+
     def _on_volume_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)
         self._set_status(f"⚠ Real volume computation failed: {message}")
+        self.footer_panel.append_activity(f"[Modules] ⚠ Real volume computation failed: {message}")
         logger.error("ACF Scientific Workstation: volume computation failed: %s", message)
+
+    # ------------------------------------------- real convection indices
+
+    def _on_indices_ready(self, indices: dict[str, Any]) -> None:
+        """One real `compute_real_convection_indices_field()` result for
+        the current volume - rendered into BOTH panels that need it, so
+        they can never disagree about the same real atmosphere."""
+        self._indices = indices
+        self.footer_panel.append_activity("[Analysis] Real convection indices computed.")
+        self._render_indices_panels()
+
+    def _on_indices_failed(self, message: str) -> None:
+        self._indices = None
+        self.footer_panel.append_activity(f"[Analysis] ⚠ Real convection indices failed: {message}")
+        logger.error("ACF Scientific Workstation: convection indices failed: %s", message)
+
+    def _render_indices_panels(self) -> None:
+        """Real Key Atmospheric Variables + Key Alerts & Hazards render.
+
+        Both read the SAME single real indices result (never a second
+        MetPy parcel-ascent run), and the hazards panel reuses exactly
+        the real values Key Variables just displayed
+        (`last_center_values`) rather than re-deriving any of them. Wet
+        bulb - the one hazard input those indices genuinely do not
+        contain - comes from a real, single-point
+        `compute_real_hydrometeor_phase_at_point()` call (measured ~16
+        microseconds) at the same real domain-center surface cell, the
+        same real function the former Microphysics Lab used."""
+        if self._volume is None or self._indices is None:
+            return
+        volume = self._volume
+        self.key_variables_panel.update_from_volume(volume, self._level_index, indices=self._indices)
+
+        values = self.key_variables_panel.last_center_values
+        if values is None:
+            return
+
+        from acf.awci.hydrometeor_phase import compute_real_hydrometeor_phase_at_point
+
+        ci, cj = len(volume["lats"]) // 2, len(volume["lons"]) // 2
+        phase = compute_real_hydrometeor_phase_at_point(
+            float(volume["temperature_volume"][0, ci, cj]),
+            float(volume["specific_humidity_volume"][0, ci, cj]),
+            float(volume["pressure_volume_hpa"][0, ci, cj]),
+        )
+        wet_bulb_c = float(phase["wet_bulb_c"]) if phase.get("is_real_data") else None
+
+        self.hazard_alerts_panel.update_from_indices(
+            values["cape_j_kg"],
+            values["bulk_shear_m_s"],
+            wet_bulb_c,
+            values["relative_humidity_pct"],
+        )
+
+    # ------------------------------------------------- complexity overview
+
+    def _update_complexity_overview(self) -> None:
+        """Real Complexity Overview factors - see `_GRADIENT_REFERENCE_
+        K_PER_100KM` & co. for the exact disclosed normalizations.
+
+        Only factors with a REAL value behind them in this rebuild's own
+        panels are filled in: Gradients and Temporal Evolution from
+        Complexity Explorer's own real, already-computed fields, and
+        Model Disagreement from Confidence Lab's (or Multi-Model Lab's)
+        own real disagreement result. The remaining 5 factors the
+        reference image lists (Instability/Moisture/Shear/Convection/
+        Vertical Structure) are reported as None - the panel renders
+        NOT_COMPUTED and excludes them from its disclosed mean - rather
+        than invented from an unrelated quantity."""
+        factors: dict[str, float | None] = {
+            "Instability": None,
+            "Moisture": None,
+            "Shear": None,
+            "Convection": None,
+            "Gradients": None,
+            "Vertical Structure": None,
+            "Temporal Evolution": None,
+            "Model Disagreement": None,
+        }
+
+        spatial = self.complexity_panel.spatial_complexity_field
+        if spatial is not None:
+            # Real, deliberate choice of the MEDIAN here (not the mean):
+            # this real gradient field has a genuine, physical-grid
+            # singularity at the poles - dx = R*cos(lat)*dlon goes to 0
+            # on a regular lat/lon grid, so the real per-metre gradient
+            # blows up in the polar rows and a domain mean is dominated
+            # by them (measured ~2.8e14 K/100km mean vs ~9.7 K/100km at
+            # the 95th percentile on a real ARPEGE run). Complexity
+            # Explorer's own map scales by a percentile for exactly this
+            # real reason; the median is the same robustness, disclosed.
+            factors["Gradients"] = _clip_unit(
+                float(np.nanmedian(spatial)) / _GRADIENT_REFERENCE_K_PER_100KM
+            )
+
+        temporal = self.complexity_panel.temporal_complexity_field
+        if temporal is not None:
+            factors["Temporal Evolution"] = _clip_unit(
+                float(np.nanmean(temporal)) / _TEMPORAL_REFERENCE_K_PER_H
+            )
+
+        disagreement = (
+            self.confidence_panel.last_disagreement_result()
+            or self.multimodel_panel.last_comparison_result()
+        )
+        if disagreement is not None:
+            spread = disagreement["disagreement_spread_field"]
+            factors["Model Disagreement"] = _clip_unit(
+                float(np.nanmean(np.abs(spread))) / _DISAGREEMENT_REFERENCE_K
+            )
+
+        self.complexity_overview_panel.update_from_factors(factors)
+
+    def _on_disagreement_result(self, result: dict[str, Any]) -> None:
+        """Real multi-model result from whichever panel actually
+        computed it (Confidence Lab or Multi-Model Lab) - the Model
+        Agreement panel and the Complexity Overview's own Model
+        Disagreement factor are both refreshed from that SAME real
+        result, never from a second run of the engine."""
+        self.model_agreement_panel.update_from_disagreement(
+            result.get("per_model_field", {}), result.get("disagreement_spread_field")
+        )
+        self._update_complexity_overview()
+        self.footer_panel.append_activity(
+            "[Interactions] Real multi-model disagreement result applied to Model Agreement "
+            f"({'/'.join(result.get('models_compared', []))})."
+        )
+
+    # --------------------------------------------------- config bar / footer
+
+    def _update_config_bar(self, volume: dict[str, Any], elapsed_s: float) -> None:
+        """Real Current Configuration bar, filled from the REAL run that
+        just completed (never the model selector's pending value).
+
+        Honest field-by-field disclosure: `cycle` and `forecast_hour`
+        are not archived-NWP metadata - this Workstation runs a live
+        `CoupledEarthSolver` integration, so they report exactly that
+        (the real UTC time this run completed, and the real integrated
+        lead time of `steps` x `dt_seconds`), never a fabricated
+        operational cycle label."""
+        model = volume["model"]
+        config = MODEL_CONFIGS.get(model, {})
+        lead_hours = self._last_steps * 90.0 / 3600.0
+        self.config_bar.update_from_config(
+            {
+                "model": model,
+                "cycle": datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%MZ (live solver run)"),
+                "forecast_hour": f"T+{lead_hours:.2f}h (real integrated lead time)",
+                "domain": "Global (solver native grid — no domain crop)",
+                "resolution_km": config.get("resolution_km"),
+                "grid": f"{len(volume['lats'])}×{len(volume['lons'])}",
+                "vertical_levels": volume["n_levels"],
+            }
+        )
+
+    def _update_footer(self) -> None:
+        """Real HPC status in the footer's System Status/Running Jobs/
+        Data Sources - a real `HPCConnectionManager`, which honestly
+        reports "Not Connected" when no real cluster session exists
+        (this Workstation never connects one itself)."""
+        try:
+            from acf.hpc_connector.connection_manager import HPCConnectionManager
+
+            if self._hpc is None:
+                self._hpc = HPCConnectionManager()
+            self.footer_panel.update_from_hpc(self._hpc)
+        except Exception as exc:  # noqa: BLE001 - real failure, disclosed, never a fake "connected" state
+            logger.warning("ACF Scientific Workstation: real HPC status unavailable: %s", exc)
+            self.footer_panel.append_activity(f"[Infrastructure] ⚠ Real HPC status unavailable: {exc}")
+
+    def _on_config_change_requested(self) -> None:
+        """The Current Configuration bar's real "Change" button - opens
+        this Workstation's own real model selector rather than a second,
+        parallel configuration path that could drift out of sync."""
+        self.model_selector.setFocus()
+        self.model_selector.showPopup()
+
+    # --------------------------------------------------------- sidebar nav
+
+    def _on_section_selected(self, section: str) -> None:
+        """Real sidebar routing - scrolls the real content column to the
+        real area that section corresponds to, and opens the two real
+        dialogs the "Data" sub-entries genuinely have behind them. A
+        sub-entry with no real, already-built correspondence says so
+        honestly in the status line rather than silently doing nothing
+        or pretending to navigate somewhere."""
+        subsection = self.sidebar.current_subsection()
+
+        if section == "Data" and subsection == "Models":
+            self._show_model_data_dialog()
+            return
+        if section == "Data" and subsection == "Observations":
+            self._show_observations_dialog()
+            return
+
+        if section == "Science" and subsection in self._lab_panels:
+            self.science_tabs.setCurrentWidget(self._lab_panels[subsection])
+        elif section == "Science" and subsection == "Complexity":
+            self.science_tabs.setCurrentWidget(self.complexity_panel)
+        elif section == "Science" and subsection == "Thermodynamics":
+            self.science_tabs.setCurrentWidget(self.thermodynamics_panel)
+
+        anchor_name = _SECTION_ANCHORS.get(section)
+        anchor = getattr(self, anchor_name, None) if anchor_name else None
+        if anchor is not None:
+            self.content_scroll.ensureWidgetVisible(anchor)
+
+        if section == "Analysis" and subsection in {"3D Volumes", "4D Space-Time"}:
+            self._set_status(
+                f"“{subsection}” has no real panel in this rebuild — no real 3D/4D view "
+                "survives this session's cleanup, and none is fabricated here."
+            )
+        elif section == "Analysis" and subsection == "Cross Sections":
+            self._set_status(
+                "Vertical Cross Section is NOT_AVAILABLE_NO_CROSS_SECTION_WIDGET_RECOVERED "
+                "— see that cell's own disclosure."
+            )
 
     def _on_map_point_clicked(self, lat: float, lon: float) -> None:
         """Real, shared handler for every map panel's own real
@@ -1263,6 +1733,10 @@ class ACFWorkstation(QWidget):
         self.level_label.setText(f"~{mean_pressure:.0f} hPa (native level {self._level_index + 1}/{self._volume['n_levels']})")
 
     def _render_all_panels(self) -> dict[str, Any]:
+        """Re-slice the ONE real volume into every real panel that
+        depends on it - so a single real user action (a run, or a level
+        change) can never leave two panels describing different states
+        of the same real atmosphere."""
         if self._volume is None:
             return {}
         display_volume = self._volume
@@ -1271,48 +1745,16 @@ class ACFWorkstation(QWidget):
         self.temporal_panel.update_from_volume(display_volume, self._level_index)
         self.confidence_panel.update_from_volume(display_volume, self._level_index)
         self.multimodel_panel.update_from_volume(display_volume, self._level_index)
+        # Complexity Explorer's own resultsUpdated signal refreshes the
+        # Complexity Overview panel from this same real re-slice.
         self.complexity_panel.update_from_volume(display_volume, self._level_index)
+        # Key Atmospheric Variables / Key Alerts & Hazards only once the
+        # real convection indices for THIS volume exist (they are
+        # computed once per real run, off-thread) - until then those
+        # panels honestly keep their own "not available" state.
+        self._render_indices_panels()
         return display_volume
 
-    # ----------------------------------------------------------------- nav
-
-    def _on_nav_changed(self, row: int) -> None:
-        if row < 0 or row >= len(_ENABLED_MODULES):
-            return
-        self.stack.setCurrentWidget(self._panel_by_name[_ENABLED_MODULES[row]])
-
-    def _navigate_to(self, module_name: str) -> None:
-        """Real, single navigation path (added Phase 31, 2026-09-04) -
-        every real "go to X" control this Workstation has (nav list,
-        the "🧰 More Labs" toolbar menu) ends up here. For a real
-        `_ENABLED_MODULES` name, selects the matching nav row (which
-        itself drives `_on_nav_changed` -> `setCurrentWidget`); for a
-        real `_TOOLBAR_MODULES` name (not in the nav list), clears the
-        nav selection and sets the stack widget directly from
-        `_panel_by_name` - never a second, independent routing table."""
-        if module_name in _ENABLED_MODULES:
-            self.nav_list.setCurrentRow(_ENABLED_MODULES.index(module_name))
-        elif module_name in self._panel_by_name:
-            self.nav_list.setCurrentRow(-1)
-            self.stack.setCurrentWidget(self._panel_by_name[module_name])
-
-    def _on_data_source_selected(self, item: QListWidgetItem) -> None:
-        """Real "Data Sources" dialogs (added Phase 31, 2026-09-04,
-        matching the reference mockup's own left-column block): "Model
-        Data" shows this Workstation's own real `MODEL_CONFIGS` grid
-        metadata for all 3 real models; "Observations" is an honest
-        disclosure that no real observation feed is connected (no
-        fabricated data); "Scientific Explorer" is a real search over
-        `acf.science.encyclopedia.registry.EncyclopediaRegistry`'s own
-        real, populated formula database."""
-        name = item.text()
-        if name == "Model Data":
-            self._show_model_data_dialog()
-        elif name == "Observations":
-            self._show_observations_dialog()
-        elif name == "Scientific Explorer":
-            self._show_scientific_explorer_dialog()
-        self.data_sources_list.clearSelection()
 
     def _show_model_data_dialog(self) -> None:
         dialog = QDialog(self)

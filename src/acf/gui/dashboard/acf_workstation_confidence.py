@@ -87,6 +87,14 @@ class ACFConfidenceLabPanel(QWidget):
     """Real Confidence Lab - full-grid multi-model disagreement
     spread/mean, on-demand. No AWCI content, no single score anywhere."""
 
+    #: Emitted with the real `compute_real_multi_model_disagreement_field()`
+    #: result whenever this panel's own on-demand run genuinely completes
+    #: (added 2026-09-13) - so the Workstation composer's Model Agreement
+    #: and Complexity Overview panels update from the SAME real result
+    #: instead of running the computation a second time, and can never sit
+    #: showing a state contradicting this panel's own.
+    disagreementComputed = Signal(dict)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._volume: dict[str, Any] | None = None
@@ -131,6 +139,15 @@ class ACFConfidenceLabPanel(QWidget):
         lbl.setStyleSheet(label_style("text_muted", "xs"))
         return lbl
 
+    def last_disagreement_result(self) -> dict[str, Any] | None:
+        """The real `compute_real_multi_model_disagreement_field()`
+        result this panel last computed (added 2026-09-13 for the
+        Workstation composer's Model Agreement / Complexity Overview
+        panels), or None if the user has not run it yet - so a caller
+        REUSES this real result instead of paying for a second real
+        solver run per model. Never a fabricated stand-in."""
+        return self._result
+
     def update_from_volume(self, volume: dict[str, Any], level_index: int) -> None:
         """Real bookkeeping only - the disagreement field is its own
         separate, on-demand computation (2 independent real solver
@@ -162,6 +179,7 @@ class ACFConfidenceLabPanel(QWidget):
             f"mean spread {spread.mean():.3f} K, max {spread.max():.3f} K)."
         )
         self._redraw()
+        self.disagreementComputed.emit(result)
 
     def _on_confidence_failed(self, message: str) -> None:
         self.run_button.setEnabled(True)

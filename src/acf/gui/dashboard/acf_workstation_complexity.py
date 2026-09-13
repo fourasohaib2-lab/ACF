@@ -45,14 +45,19 @@ from acf.awci.temporal_field import compute_real_complexity_evolution
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
 
-# Conditional imports for modules under rebuild
-real_grid_spacing_m = None
-AWCIModelSpreadChart = None
+# NOTE (real fix, 2026-09-13): this used to import real_grid_spacing_m
+# from acf.gui.dashboard.acf_workstation_dynamics behind a try/except,
+# which this session's dashboard cleanup deleted - so the name silently
+# stayed None and every real spatial-complexity redraw raised
+# "TypeError: 'NoneType' object is not callable". The real function's
+# single source of truth is acf.awci.workstation_fields (that module's
+# own docstring says so explicitly, and the deleted GUI module only
+# ever re-exported it) - imported from there directly, unconditionally,
+# since it genuinely exists.
+from acf.awci.workstation_fields import real_grid_spacing_m
 
-try:
-    from acf.gui.dashboard.acf_workstation_dynamics import real_grid_spacing_m
-except ImportError:
-    pass
+# Conditional import for a module still under rebuild.
+AWCIModelSpreadChart = None
 
 try:
     from acf.gui.dashboard.awci_model_spread_chart import AWCIModelSpreadChart
@@ -146,10 +151,27 @@ class ACFComplexityExplorerPanel(QWidget):
     """Real, multidimensional Complexity Explorer - see module
     docstring. Never combines its 3 real dimensions into one score."""
 
+    #: Emitted whenever one of this panel's own real dimensions has
+    #: genuinely been recomputed (added 2026-09-13) - the Workstation
+    #: composer's Complexity Overview panel listens, so it always shows
+    #: the SAME real per-dimension values this panel is displaying and
+    #: can never contradict them. This panel itself still never combines
+    #: its dimensions into a score.
+    resultsUpdated = Signal()
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._volume: dict[str, Any] | None = None
         self._level_index = 0
+        #: The real, already-computed results this panel last RENDERED
+        #: (added 2026-09-13 for the Workstation composer's Complexity
+        #: Overview panel) - the exact arrays passed to the maps below,
+        #: retained rather than recomputed. None until the matching
+        #: real computation has actually run (spatial: on every real
+        #: volume update; temporal: only after the user's own on-demand
+        #: "Run Temporal Analysis") - never a fabricated stand-in.
+        self.spatial_complexity_field: np.ndarray | None = None
+        self.temporal_complexity_field: np.ndarray | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -231,6 +253,7 @@ class ACFComplexityExplorerPanel(QWidget):
         temperature = self._volume["temperature_volume"][self._level_index]
         lats, lons = self._volume["lats"], self._volume["lons"]
         spatial_complexity = compute_real_spatial_complexity(temperature, lats, lons)
+        self.spatial_complexity_field = spatial_complexity
         self.spatial_map.set_external_field(
             lons,
             lats,
@@ -241,6 +264,7 @@ class ACFComplexityExplorerPanel(QWidget):
             vmax=float(np.nanpercentile(spatial_complexity, 95)) or 1.0,
             colorbar_label="Temperature gradient (K/100km)",
         )
+        self.resultsUpdated.emit()
 
     # ------------------------------------------------------- temporal
 
@@ -263,6 +287,7 @@ class ACFComplexityExplorerPanel(QWidget):
         self.temporal_button.setEnabled(True)
         level = min(self._level_index, evolution["n_levels"] - 1)
         rates = compute_real_temporal_complexity(evolution, level)
+        self.temporal_complexity_field = rates
         self.temporal_status_label.setText(
             f"✅ Real {evolution['n_frames']}-frame evolution computed ({evolution['model']} grid)."
         )
@@ -276,6 +301,7 @@ class ACFComplexityExplorerPanel(QWidget):
             vmax=float(np.nanpercentile(rates, 95)) or 1.0,
             colorbar_label="Rate of change (K/h)",
         )
+        self.resultsUpdated.emit()
 
     def _on_temporal_failed(self, message: str) -> None:
         self.temporal_button.setEnabled(True)
