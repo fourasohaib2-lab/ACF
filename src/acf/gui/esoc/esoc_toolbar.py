@@ -43,6 +43,12 @@ class ESOCToolbar(QToolBar):
             ("💾 Export", "export_data"),
             ("📷 Screenshot", "take_screenshot"),
             ("⚙️ Settings", "open_settings"),
+            # Real, AWCI-free ACF Scientific Workstation as its own
+            # top-level window (acf.gui.dashboard.acf_workstation_window.
+            # ACFWorkstationWindow) - restored here after this session's
+            # dashboard cleanup removed it along with the old
+            # implementation; the rebuilt Workstation is its real target.
+            ("🔬 ACF Scientific Workstation", "open_acf_workstation"),
             # Real acf.awci.spatial_field.compute_real_complexity_field()
             # overlay on THIS window's central map (explicit user
             # request "ajoute la 4eme dimension au niveau d'affichage

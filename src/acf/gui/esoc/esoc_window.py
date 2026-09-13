@@ -106,6 +106,10 @@ class ESOCWindow(QMainWindow):
         # actually triggered from this window - a chosen theme, an opened log viewer).
         self._current_theme = "dark"
         self._log_viewer: LogViewerDialog | None = None
+        #: Real, AWCI-free ACF Scientific Workstation window - created
+        #: on the first real "🔬 ACF Scientific Workstation" toolbar
+        #: click, then raised (never a second window per click).
+        self._acf_workstation_window: Any | None = None
 
         # 4. Connect Signals & Select Default Profile
         self._setup_connections()
@@ -194,6 +198,8 @@ class ESOCWindow(QMainWindow):
             self._take_screenshot()
         elif cmd == "open_settings":
             self._open_settings()
+        elif cmd == "open_acf_workstation":
+            self._open_acf_workstation()
         elif cmd == "show_awci_field_on_map":
             self._show_awci_field_on_map()
         elif cmd == "open_help":
@@ -376,6 +382,33 @@ class ESOCWindow(QMainWindow):
         self._log_viewer.show()
         self._log_viewer.raise_()
         self._log_viewer.activateWindow()
+
+    def _open_acf_workstation(self) -> None:
+        """Open (or raise) the real, AWCI-free ACF Scientific
+        Workstation as its own top-level window.
+
+        Restored 2026-09-13 with the rebuilt Workstation (this session's
+        earlier dashboard cleanup removed both this handler and its
+        target); its real implementation is unchanged from the version
+        recovered from git history - same open-or-raise pattern, and the
+        same reason for a local import (circular via acf.gui.dashboard
+        -> acf.gui.__init__ -> this module). The Workstation's own
+        window triggers one real, off-thread CoupledEarthSolver volume
+        run on open.
+        """
+        from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
+
+        if self._acf_workstation_window is None:
+            self._acf_workstation_window = ACFWorkstationWindow(self)
+        self._acf_workstation_window.show()
+        self._acf_workstation_window.raise_()
+        self._acf_workstation_window.activateWindow()
+        self.dispatcher.log_message_emitted.emit(
+            "INFO",
+            "ACF Scientific Workstation opened - computing real CoupledEarthSolver "
+            "volume off-thread (acf.awci.vertical_field.compute_real_complexity_volume), "
+            "no AWCI score/gauge anywhere in this window.",
+        )
 
     def _show_awci_field_on_map(self) -> None:
         """Compute a real acf.awci.spatial_field.compute_real_complexity_field()
