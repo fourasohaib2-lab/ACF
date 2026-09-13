@@ -3,7 +3,8 @@ ACF Scientific Workstation — Key Alerts & Hazards
 =====================================================
 
 Matches acf_workstation_reference.jpg's "Key Alerts & Hazards" panel
-(Convection/Turbulence/Low Visibility/Icing, each High/Moderate/Low).
+(Convection/Turbulence/Low Visibility/Icing, each a colored icon +
+title + subtitle + a High/Moderate/Low severity badge on the right).
 
 These are real, simple, DISCLOSED threshold heuristics over fields
 already computed elsewhere in this Workstation (CAPE, bulk wind shear,
@@ -13,7 +14,11 @@ Each threshold below is intentionally conservative/textbook (SPC-style
 CAPE bands for convection, generic bulk-shear bands for turbulence
 potential, a simple RH band for a fog/visibility proxy, and a
 wet-bulb-near-freezing band for icing potential) and documented right
-here, not hidden behind a magic function.
+here, not hidden behind a magic function. Subtitles describe the real
+basis of each classification (e.g. "CAPE-based") rather than the
+reference image's own illustrative place-names ("over Alps"/"Po
+Valley") - this Workstation has no real per-point geographic hazard
+attribution to honestly claim those.
 
 Honesty: any `NaN`/`None` input (the underlying computation reporting
 "not computed" - see `acf.awci.workstation_fields.
@@ -25,9 +30,20 @@ from __future__ import annotations
 
 import math
 
-from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from acf.gui.theme_tokens import label_style
+
+#: (level -> (icon background color, badge text color)) - visually
+#: matches acf_workstation_reference.jpg's own red/orange/green
+#: High/Medium/Low severity coloring.
+_LEVEL_COLORS: dict[str, tuple[str, str]] = {
+    "High": ("#ef4444", "#ef4444"),
+    "Moderate": ("#f97316", "#f97316"),
+    "Low": ("#22c55e", "#22c55e"),
+    "NOT_COMPUTED": ("#4b5563", "#8ea0b5"),
+}
 
 
 def _convection_level(cape_j_kg: float) -> str:
@@ -75,19 +91,54 @@ class HazardAlertsPanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        layout = QGridLayout(self)
-        self.convection_level = self._row(layout, 0, "Convection")
-        self.turbulence_level = self._row(layout, 1, "Turbulence")
-        self.visibility_level = self._row(layout, 2, "Low Visibility")
-        self.icing_level = self._row(layout, 3, "Icing")
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
 
-    def _row(self, layout: QGridLayout, row: int, title: str) -> QLabel:
-        heading = QLabel(title)
-        heading.setStyleSheet(label_style("text_muted", "xs"))
-        value = QLabel("NOT_COMPUTED")
-        layout.addWidget(heading, row, 0)
-        layout.addWidget(value, row, 1)
-        return value
+        self._icons: dict[str, QLabel] = {}
+        self._levels: dict[str, QLabel] = {}
+        self.convection_level = self._build_row(layout, "convection", "⚠️", "Convection", "CAPE-based convective potential")
+        self.turbulence_level = self._build_row(layout, "turbulence", "〰️", "Turbulence", "Bulk shear-based potential")
+        self.visibility_level = self._build_row(layout, "visibility", "🌫️", "Low Visibility", "Relative humidity-based fog risk")
+        self.icing_level = self._build_row(layout, "icing", "❄️", "Icing", "Wet-bulb temperature band")
+        layout.addStretch(1)
+
+    def _build_row(self, layout: QVBoxLayout, key: str, icon: str, title: str, subtitle: str) -> QLabel:
+        row = QHBoxLayout()
+        row.setSpacing(10)
+
+        icon_label = QLabel(icon)
+        icon_label.setFixedSize(28, 28)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_label.setStyleSheet("background-color: #4b5563; border-radius: 14px; font-size: 13px;")
+        row.addWidget(icon_label)
+        self._icons[key] = icon_label
+
+        text_col = QVBoxLayout()
+        text_col.setSpacing(1)
+        title_label = QLabel(title)
+        title_label.setStyleSheet(label_style("text_primary", "sm", "bold"))
+        text_col.addWidget(title_label)
+        subtitle_label = QLabel(subtitle)
+        subtitle_label.setWordWrap(True)
+        subtitle_label.setStyleSheet(label_style("text_muted", "xs"))
+        text_col.addWidget(subtitle_label)
+        row.addLayout(text_col, stretch=1)
+
+        level_label = QLabel("NOT_COMPUTED")
+        level_label.setStyleSheet(label_style("text_muted", "xs", "bold"))
+        level_label.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        row.addWidget(level_label)
+
+        layout.addLayout(row)
+        self._levels[key] = level_label
+        return level_label
+
+    def _apply_level(self, key: str, level: str) -> None:
+        icon_color, badge_color = _LEVEL_COLORS.get(level, _LEVEL_COLORS["NOT_COMPUTED"])
+        self._icons[key].setStyleSheet(f"background-color: {icon_color}; border-radius: 14px; font-size: 13px;")
+        label = self._levels[key]
+        label.setText(level)
+        label.setStyleSheet(f"color: {badge_color}; font-weight: bold; font-size: 11px;")
 
     def update_from_indices(
         self,
@@ -96,7 +147,7 @@ class HazardAlertsPanel(QWidget):
         wet_bulb_c: float | None,
         relative_humidity_pct: float | None,
     ) -> None:
-        self.convection_level.setText(_convection_level(cape_j_kg))
-        self.turbulence_level.setText(_turbulence_level(bulk_shear_m_s))
-        self.visibility_level.setText(_visibility_level(relative_humidity_pct))
-        self.icing_level.setText(_icing_level(wet_bulb_c))
+        self._apply_level("convection", _convection_level(cape_j_kg))
+        self._apply_level("turbulence", _turbulence_level(bulk_shear_m_s))
+        self._apply_level("visibility", _visibility_level(relative_humidity_pct))
+        self._apply_level("icing", _icing_level(wet_bulb_c))

@@ -86,17 +86,25 @@ def test_key_variables_panel_reads_the_same_grid_cell_for_convection_indices(qap
         lats,
         lons,
     )
-    lcl_expected = indices["lcl_m"][sub_ci, sub_cj]
-    if np.isnan(lcl_expected):
+    lcl_expected_m = indices["lcl_m"][sub_ci, sub_cj]
+    if np.isnan(lcl_expected_m):
         assert panel.lcl_value.text() == "NOT_COMPUTED"
     else:
-        assert panel.lcl_value.text() == f"{lcl_expected:.0f} m"
+        # Real display conversion (matches acf_workstation_reference.jpg's
+        # own "LCL" row, shown in hPa): the standard barometric/hypsometric
+        # formula, using the same-cell real surface pressure.
+        surface_pressure_hpa = float(volume["pressure_volume_hpa"][0, ci, cj])
+        lcl_expected_hpa = surface_pressure_hpa * (1.0 - lcl_expected_m / 44330.0) ** 5.255
+        assert panel.lcl_value.text() == f"{lcl_expected_hpa:.0f} hPa"
 
-    shear_expected = indices["bulk_shear_m_s"][sub_ci, sub_cj]
-    if np.isnan(shear_expected):
+    shear_expected_ms = indices["bulk_shear_m_s"][sub_ci, sub_cj]
+    if np.isnan(shear_expected_ms):
         assert panel.shear_value.text() == "NOT_COMPUTED"
     else:
-        assert panel.shear_value.text() == f"{shear_expected:.0f} m/s"
+        # Real unit conversion (matches the reference image's own "kt"
+        # units for wind/shear rows): 1 m/s = 1.9438445 kt.
+        shear_expected_kt = shear_expected_ms * 1.9438445
+        assert panel.shear_value.text() == f"{shear_expected_kt:.0f} kt"
 
 
 def test_key_variables_panel_before_any_volume_is_honest(qapp, qtbot):

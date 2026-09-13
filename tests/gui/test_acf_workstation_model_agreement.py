@@ -3,8 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from PySide6.QtCore import QEvent
-from PySide6.QtWidgets import QApplication, QProgressBar
+from PySide6.QtWidgets import QApplication
 
+from acf.gui.dashboard.acf_workstation_gauges import HorizontalBarGauge
 from acf.gui.dashboard.acf_workstation_model_agreement import ModelAgreementPanel
 
 
@@ -124,7 +125,7 @@ def test_model_agreement_clears_stale_rows_on_no_models(qapp, qtbot):
         np.full((4, 4), 1.0),
     )
     _flush_deferred_deletes(qapp)
-    assert len(panel.findChildren(QProgressBar)) == 2
+    assert len(panel.findChildren(HorizontalBarGauge)) == 2
 
     panel.update_from_disagreement(
         {
@@ -135,10 +136,10 @@ def test_model_agreement_clears_stale_rows_on_no_models(qapp, qtbot):
         np.full((4, 4), 1.0),
     )
     _flush_deferred_deletes(qapp)
-    assert len(panel.findChildren(QProgressBar)) == 3
+    assert len(panel.findChildren(HorizontalBarGauge)) == 3
 
     panel.update_from_disagreement({}, None)
     _flush_deferred_deletes(qapp)
     assert panel.model_scores == {}
     assert "NOT_COMPUTED" in panel.verdict_label.text()
-    assert len(panel.findChildren(QProgressBar)) == 0
+    assert len(panel.findChildren(HorizontalBarGauge)) == 0

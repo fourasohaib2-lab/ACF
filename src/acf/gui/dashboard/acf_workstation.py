@@ -800,7 +800,7 @@ from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
-from acf.gui.theme_tokens import dashboard_stylesheet, label_style
+from acf.gui.theme_tokens import card_frame_style, dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
 
@@ -977,8 +977,8 @@ class ACFWorkstation(QWidget):
         deliberate, documented non-builds: the hero 2D/3D/4D + Layers
         controls, and the Vertical Cross Section cell)."""
         outer = QVBoxLayout(self)
-        outer.setSpacing(8)
-        outer.setContentsMargins(10, 10, 10, 0)
+        outer.setSpacing(6)
+        outer.setContentsMargins(8, 6, 8, 0)
 
         # --- Top bar -----------------------------------------------------
         top_bar = QHBoxLayout()
@@ -1068,7 +1068,7 @@ class ACFWorkstation(QWidget):
         content = QWidget()
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(8)
+        content_layout.setSpacing(6)
 
         # --- Current Configuration bar -------------------------------------
         self.config_bar = ConfigBar()
@@ -1132,7 +1132,7 @@ class ACFWorkstation(QWidget):
         # Evolution Lab's OWN real transport controls.
         self.hero_widget = self._section_box("Atmospheric Complexity")
         hero_layout = self.hero_widget.layout()
-        self.complexity_panel.spatial_map.setMinimumHeight(280)
+        self.complexity_panel.spatial_map.setMinimumHeight(190)
         hero_layout.addWidget(self.complexity_panel.spatial_map, stretch=1)
         # Re-parenting spatial_map orphans its own "SPATIAL COMPLEXITY —"
         # header inside Complexity Explorer's own layout (still shown as a
@@ -1167,7 +1167,12 @@ class ACFWorkstation(QWidget):
         summary_row.setContentsMargins(0, 0, 0, 0)
         summary_row.addWidget(self._wrap_in_box("Key Atmospheric Variables", self.key_variables_panel), stretch=1)
         summary_row.addWidget(self._wrap_in_box("Complexity Overview", self.complexity_overview_panel), stretch=1)
-        summary_row.addWidget(self._wrap_in_box("Model Agreement", self.model_agreement_panel), stretch=1)
+        summary_row.addWidget(
+            self._wrap_in_box(
+                "Model Agreement", self.model_agreement_panel, corner_widget=self.model_agreement_panel.verdict_label
+            ),
+            stretch=1,
+        )
         summary_row.addWidget(self._wrap_in_box("Key Alerts & Hazards", self.hazard_alerts_panel), stretch=1)
         content_layout.addWidget(self.summary_row_widget)
 
@@ -1195,18 +1200,47 @@ class ACFWorkstation(QWidget):
 
         self.sounding_panel.setMinimumWidth(260)
         analysis_row.addWidget(self._wrap_in_box("Atmospheric Profiles", self.sounding_panel), stretch=1)
-        analysis_row.addWidget(self._wrap_in_box("Model Comparison", self.multimodel_panel), stretch=1)
-        analysis_row.addWidget(self._wrap_in_box("Time Evolution", self.temporal_panel), stretch=1)
+
+        # Model Comparison / Time Evolution: re-parent just each Lab's
+        # own real map (same object its own update_from_volume() keeps
+        # drawing into - not duplicated), same technique already used
+        # for the hero's Complexity Explorer map, so this row reads as
+        # a compact map card rather than the whole sprawling Lab panel
+        # (selectors, Compare/Fusion buttons, status text). The full
+        # Multi-Model/Temporal Evolution Lab panels (with those controls)
+        # remain reachable, minus their own map, under Science Labs below
+        # - same disclosed tradeoff the hero's own re-parenting already
+        # accepted for Complexity Explorer.
+        self.multimodel_panel.map_panel.setMinimumHeight(140)
+        analysis_row.addWidget(self._wrap_in_box("Model Comparison", self.multimodel_panel.map_panel), stretch=1)
+        self.temporal_panel.map_panel.setMinimumHeight(140)
+        analysis_row.addWidget(self._wrap_in_box("Time Evolution", self.temporal_panel.map_panel), stretch=1)
         content_layout.addWidget(self.analysis_row_widget)
 
-        # --- Science Labs tabs ------------------------------------------------
+        # --- Science Labs tabs (collapsed by default) --------------------------
+        # Not part of acf_workstation_reference.jpg at all - real, deeper
+        # Lab controls (Confidence/Multi-Model "Run" buttons, per-variable
+        # selectors) that the reference image's own compact layout has no
+        # room for. Collapsed by default (explicit user request "je veux
+        # que ça soit en plein écran sans scroller") so the reference's own
+        # content fits one screen; a real toggle button reveals it on
+        # demand rather than silently removing this real functionality.
         self.science_tabs = QTabWidget()
         for name in _SCIENCE_TAB_ORDER:
             self.science_tabs.addTab(self._lab_panels[name], name)
-        content_layout.addWidget(self._wrap_in_box("Science Labs", self.science_tabs))
+        self.science_tabs.setVisible(False)
+
+        self.science_labs_toggle = QPushButton("▸ Advanced Science Labs (Run Model Agreement / Multi-Model / Confidence)")
+        self.science_labs_toggle.setCheckable(True)
+        self.science_labs_toggle.setStyleSheet(label_style("text_muted", "xs"))
+        self.science_labs_toggle.clicked.connect(self._toggle_science_labs)
+        content_layout.addWidget(self.science_labs_toggle)
+        content_layout.addWidget(self.science_tabs)
 
         # --- Footer ------------------------------------------------------------
-        content_layout.addWidget(self._wrap_in_box("System", self.footer_panel))
+        # SystemFooterPanel builds its own 4 cards (Data Sources/System
+        # Status/Running Jobs/Recent Activity) - no extra outer wrap.
+        content_layout.addWidget(self.footer_panel)
         content_layout.addStretch()
 
         # Same real responsive-sizing discipline as before the rebuild
@@ -1215,6 +1249,11 @@ class ACFWorkstation(QWidget):
         # instead of forcing the whole window to grow permanently.
         self.content_scroll = QScrollArea()
         self.content_scroll.setWidgetResizable(True)
+        # Explicit user request ("je veux que ça soit en plein écran sans
+        # scroller... a gauche et à droite") - real content never scrolls
+        # horizontally; every row above uses stretch-weighted QHBoxLayouts
+        # that compress to fit the available width instead.
+        self.content_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.content_scroll.setWidget(content)
         body.addWidget(self.content_scroll, stretch=1)
 
@@ -1237,23 +1276,39 @@ class ACFWorkstation(QWidget):
 
         outer.addLayout(body, stretch=1)
 
-    def _section_box(self, title: str) -> QWidget:
-        """Real titled container (a frame + heading + vertical layout) -
-        the reference image's own panel chrome, nothing more."""
+    def _section_box(self, title: str, corner_widget: QWidget | None = None) -> QWidget:
+        """Real titled card container - matches
+        acf_workstation_reference.jpg's own dark rounded card chrome
+        (`theme_tokens.card_frame_style()`, already used by AWCI panels
+        elsewhere in this codebase, applied here for the first time in
+        this rebuild) rather than a bare unstyled `QFrame.StyledPanel`.
+        `corner_widget`, when given, sits at the title row's right edge
+        (e.g. a real per-panel verdict label like "Low Agreement")."""
         box = QFrame()
-        box.setFrameShape(QFrame.Shape.StyledPanel)
+        box.setStyleSheet(card_frame_style())
         layout = QVBoxLayout(box)
-        layout.setContentsMargins(8, 6, 8, 8)
-        layout.setSpacing(6)
-        heading = QLabel(title.upper())
-        heading.setStyleSheet(label_style("text_secondary", "xs", "bold"))
-        layout.addWidget(heading)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(4)
+        title_row = QHBoxLayout()
+        heading = QLabel(title)
+        heading.setStyleSheet(label_style("text_primary", "sm", "bold"))
+        title_row.addWidget(heading)
+        title_row.addStretch(1)
+        if corner_widget is not None:
+            title_row.addWidget(corner_widget)
+        layout.addLayout(title_row)
         return box
 
-    def _wrap_in_box(self, title: str, widget: QWidget) -> QWidget:
-        box = self._section_box(title)
+    def _wrap_in_box(self, title: str, widget: QWidget, corner_widget: QWidget | None = None) -> QWidget:
+        box = self._section_box(title, corner_widget)
         box.layout().addWidget(widget, stretch=1)
         return box
+
+    def _toggle_science_labs(self) -> None:
+        expanded = self.science_labs_toggle.isChecked()
+        self.science_tabs.setVisible(expanded)
+        arrow = "▾" if expanded else "▸"
+        self.science_labs_toggle.setText(f"{arrow} Advanced Science Labs (Run Model Agreement / Multi-Model / Confidence)")
 
     def _update_utc_clock(self) -> None:
         self.utc_clock_label.setText(
@@ -1675,9 +1730,15 @@ class ACFWorkstation(QWidget):
         self.config_bar.update_from_config(
             {
                 "model": model,
-                "cycle": datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%MZ (live solver run)"),
-                "forecast_hour": f"T+{lead_hours:.2f}h (real integrated lead time)",
-                "domain": "Global (solver native grid — no domain crop)",
+                # Compact, reference-image-style values - the fuller
+                # honest disclosure (this is a live solver run, not
+                # archived NWP metadata; the real integrated lead time;
+                # no domain crop applied) lives in each label's own
+                # tooltip (see ConfigBar.update_from_config), not forced
+                # inline where it would overflow this bar's fixed width.
+                "cycle": datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%MZ"),
+                "forecast_hour": f"T+{lead_hours:.2f}h",
+                "domain": "Global",
                 "resolution_km": config.get("resolution_km"),
                 "grid": f"{len(volume['lats'])}×{len(volume['lons'])}",
                 "vertical_levels": volume["n_levels"],
