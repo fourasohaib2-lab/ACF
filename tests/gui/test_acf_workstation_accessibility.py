@@ -37,6 +37,18 @@ def test_icon_only_buttons_have_a_real_accessible_name(qapp):
 
     assert ws.fullscreen_button.accessibleName() == "Toggle fullscreen"
     assert ws.settings_button.accessibleName() == "Configuration"
+    assert ws.settings_button.accessibleDescription() == ws.settings_button.toolTip()
+
+
+def test_more_labs_button_has_a_real_accessible_name_and_description(qapp):
+    """Has visible text ("🧰 More Labs"), unlike the pure icon-only
+    controls above, but a screen reader benefits from a description of
+    what its menu actually contains (2026-09-13 follow-up)."""
+    ws = ACFWorkstation()
+
+    assert ws.more_labs_button.accessibleName() == "More Labs"
+    assert ws.more_labs_button.accessibleDescription() == ws.more_labs_button.toolTip()
+    assert ws.more_labs_button.accessibleDescription() != ""
 
 
 def test_selectors_have_a_real_accessible_name_not_just_their_value(qapp):

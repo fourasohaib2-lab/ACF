@@ -223,6 +223,8 @@ class ACFGeneralDashboard(QWidget):
         self.menu_button.setText("☰")
         self.menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.menu_button.setToolTip("Dashboard actions")
+        self.menu_button.setAccessibleName("Dashboard actions")
+        self.menu_button.setAccessibleDescription(self.menu_button.toolTip())
         self.nav_menu = QMenu(self.menu_button)
 
         self.refresh_button = QAction("🔄 Refresh Evolution", self)

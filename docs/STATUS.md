@@ -1291,3 +1291,40 @@ génériques. Gisement de gaps sûrs et pertinents de ce type maintenant
 
 25 tests combinés verts (ai_forecast_center + Phase 44), test de
 régression visuelle vert.
+
+## Mise à jour (2026-09-13, suite 4) : accessibilité étendue aux vrais contrôles icône-seule hors ACFWorkstation
+
+Suite d'investigation de la clôture d'accessibilité du 2026-09-13
+(shell d'ACFWorkstation) : vérification qu'ESOC toolbar
+(`esoc_toolbar.py`) et le dashboard AWCI (`awci_dashboard.py`) n'ont
+en fait AUCUN contrôle vraiment icône-seule (tous leurs boutons
+portent déjà un libellé texte visible en plus de l'emoji, ex. "📂 Open
+Dataset", "🔬 Real Physics") - gap réel mais de sévérité nettement
+moindre que ce qui a été fermé sur ACFWorkstation, pas traité cette
+passe.
+
+En revanche, un grep ciblé (`QToolButton(`) sur tout `acf.gui` a
+révélé 3 vrais contrôles icône-seule oubliés lors de la première passe :
+- `AWCIMapPanel` (utilisé par ~15 panels du Workstation ET par
+  `ACFGeneralDashboard`/`awci_dashboard.py`) : zoom in "+", zoom out
+  "−", reset view "⤢", export "⬇" - aucun texte visible, seulement un
+  tooltip.
+- `ACFGeneralDashboard.menu_button` ("☰") - même gap que le shell
+  d'ACFWorkstation, jamais couvert.
+- `ACFWorkstation.more_labs_button` ("🧰 More Labs" - a du texte
+  visible, donc moins critique, mais sans description accessible) et
+  `settings_button` (avait déjà un accessibleName, mais pas de
+  description).
+
+Tous corrigés avec le même pattern déjà établi (`setAccessibleName`,
+`setAccessibleDescription()` réutilisant le tooltip existant quand il
+existe). `AWCIMapPanel` étant partagé par un grand nombre de panels du
+Workstation, cette fermeture a un rayon d'impact réel plus large que
+les fixes précédents, pour un changement strictement additif (aucune
+signature, aucun comportement modifié).
+
+7 nouveaux tests de régression (3 fichiers : shell ACFWorkstation
+étendu, `ACFGeneralDashboard`, `AWCIMapPanel`). Test de régression
+visuelle vert sans régénération de baseline (changement de métadonnées
+d'accessibilité uniquement, aucun pixel affecté) - confirmé par
+exécution réelle, pas supposé.

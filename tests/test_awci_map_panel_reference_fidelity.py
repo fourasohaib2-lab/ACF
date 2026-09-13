@@ -52,6 +52,21 @@ def test_flight_level_ft_to_pressure_hpa_is_monotonic():
     assert flight_level_ft_to_pressure_hpa(32000.0) < flight_level_ft_to_pressure_hpa(28000.0) < flight_level_ft_to_pressure_hpa(0.0)
 
 
+def test_icon_only_zoom_download_buttons_have_a_real_accessible_name(qtbot):
+    """Zoom in/out (+/−), reset view (⤢), and export (⬇) show no visible
+    text at all - same icon-only accessibility gap already closed for
+    ACFWorkstation's own shell (2026-09-13 master-prompt v4 gap audit),
+    extended here to this widely-reused panel."""
+    panel = AWCIMapPanel("AWCI GLOBAL MAP")
+    qtbot.addWidget(panel)
+
+    assert panel.zoom_in_button.accessibleName() == "Zoom in"
+    assert panel.zoom_out_button.accessibleName() == "Zoom out"
+    assert panel.reset_view_button.accessibleName() == "Reset view"
+    assert panel.download_button.accessibleName() == "Export this map"
+    assert panel.download_button.accessibleDescription() != ""
+
+
 def test_legend_and_info_boxes_off_by_default(qtbot):
     """No visual clutter unless explicitly requested - matches the
     reference, which only shows these on its global map."""

@@ -239,3 +239,14 @@ def test_on_consensus_ready_updates_uncertainty_gauge_from_the_real_normalizer(q
 
     expected = Normalizer.normalize_model_disagreement(1.0, "temperature") * 100.0
     assert dashboard.uncertainty_gauge._score == pytest.approx(expected, abs=0.05)
+
+
+def test_menu_button_has_a_real_accessible_name_and_description(qapp):
+    """The "☰" menu button shows no visible text at all (2026-09-13
+    master-prompt v4 gap audit, extended past ACFWorkstation's own
+    shell to this dashboard's equivalent icon-only control)."""
+    dashboard = ACFGeneralDashboard()
+
+    assert dashboard.menu_button.accessibleName() == "Dashboard actions"
+    assert dashboard.menu_button.accessibleDescription() == dashboard.menu_button.toolTip()
+    assert dashboard.menu_button.accessibleDescription() != ""

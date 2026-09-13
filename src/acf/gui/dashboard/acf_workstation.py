@@ -1084,6 +1084,8 @@ class ACFWorkstation(QWidget):
             more_labs_menu.addAction(action)
             self.more_labs_actions[name] = action
         self.more_labs_button.setMenu(more_labs_menu)
+        self.more_labs_button.setAccessibleName("More Labs")
+        self.more_labs_button.setAccessibleDescription(self.more_labs_button.toolTip())
         top_bar.addWidget(self.more_labs_button)
 
         # Real Configuration Management (added 2026-09-04, closing a
@@ -1106,6 +1108,7 @@ class ACFWorkstation(QWidget):
         self.settings_button.setMenu(settings_menu)
         # Icon-only button ("⚙", no visible text) - name it for screen readers.
         self.settings_button.setAccessibleName("Configuration")
+        self.settings_button.setAccessibleDescription(self.settings_button.toolTip())
         top_bar.addWidget(self.settings_button)
         outer.addLayout(top_bar)
 

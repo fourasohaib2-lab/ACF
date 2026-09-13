@@ -49,6 +49,15 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   aurait exigé un paramètre de tolérance arbitraire pour son
   "agreement_fraction" - le même type de score composite déjà refusé
   pour la jauge "Agreement Level %" du mockup).
+- Accessibilité étendue à 3 vrais contrôles icône-seule oubliés lors de
+  la première passe (ACFWorkstation seule) : `AWCIMapPanel` (zoom
+  in/out, reset view, export - partagé par ~15 panels du Workstation
+  et par `ACFGeneralDashboard`), `ACFGeneralDashboard.menu_button`
+  ("☰"), et description accessible ajoutée à `ACFWorkstation.
+  more_labs_button`/`settings_button`. Vérifié au passage qu'ESOC
+  toolbar et le dashboard AWCI n'ont en fait aucun contrôle vraiment
+  icône-seule (texte visible déjà présent partout) - non traités, gap
+  réel mais nettement moins sévère.
 
 ## [Unreleased] - 2026-09-12
 

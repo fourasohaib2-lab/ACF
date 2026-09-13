@@ -240,13 +240,52 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
   nécessitant un vrai calcul à la demande plutôt qu'un câblage trivial
   - pas un gap "petit" comme initialement supposé.**
 
+## Mise à jour (2026-09-13, suite 5) : accessibilité — extension bornée aux vrais icône-seule oubliés
+
+Suite directe du point "Accessibilité (shell principal)" ci-dessus :
+avant de conclure que "accessibilité repo-wide" est le seul travail
+restant, vérification ciblée des fichiers GUI à fort trafic les plus
+probables pour un contrôle vraiment icône-seule oublié.
+
+- `esoc_toolbar.py` et `awci_dashboard.py` : tous leurs boutons ont déjà
+  un libellé texte visible (`"📂 Open Dataset"`, `"🔬 Real Physics"`,
+  etc.) — pas le même gap qu'ACFWorkstation (dont les `⛶`/`⚙`
+  n'avaient strictement aucun texte). Gap réel mais de sévérité
+  nettement moindre. **Non traité cette passe.**
+- Grep systématique `QToolButton(` sur tout `acf.gui` : a trouvé 3
+  contrôles réellement oubliés lors de la première passe —
+  `AWCIMapPanel` (zoom in "+", zoom out "−", reset view "⤢", export
+  "⬇" — aucun texte, seulement un tooltip ; ce panel est réutilisé par
+  ~15 sections du Workstation et par `ACFGeneralDashboard`/
+  `awci_dashboard.py`, donc rayon d'impact large pour un fix
+  strictement additif), `ACFGeneralDashboard.menu_button` ("☰", même
+  gap que le shell d'ACFWorkstation), et deux oublis mineurs sur
+  `ACFWorkstation` elle-même (`more_labs_button` sans accessibleName/
+  Description malgré son propre texte visible, `settings_button` avec
+  un accessibleName mais sans description). **Fermés** : mêmes
+  `setAccessibleName`/`setAccessibleDescription(tooltip())` déjà
+  établis. 7 nouveaux tests (extension du fichier d'accessibilité
+  existant + 1 nouveau test sur `ACFGeneralDashboard` + 1 nouveau test
+  sur `AWCIMapPanel`). Test de régression visuelle vert sans
+  régénération de baseline (changement de métadonnées uniquement,
+  confirmé par exécution réelle).
+
+Conclusion de ce sous-fil : le gisement de vrais contrôles icône-seule
+"faciles" (déjà tooltippés, juste jamais exposés à un lecteur d'écran)
+est maintenant épuisé pour les fichiers GUI à fort trafic. L'item
+"accessibilité repo-wide" du tableau ci-dessous reste correctement
+`NOT IMPLEMENTED` pour la longue traîne des ~40 autres fichiers GUI
+(chacun demanderait un audit individuel de sa propre sévérité, pas un
+grep mécanique) — non entamé cette passe, disproportionné pour une
+extension bornée.
+
 ## Conclusion honnête (format Phase 47 du master prompt)
 
 | Item | Statut |
 |---|---|
 | Architecture correcte identifiée avant travail | ✅ IMPLEMENTED (corrigée, disclosed à l'utilisateur) |
 | Bulk Richardson Number | ✅ IMPLEMENTED |
-| Accessibilité (shell principal) | ⚠️ PARTIALLY IMPLEMENTED (disclosed, portée limitée) |
+| Accessibilité (shell principal + AWCIMapPanel + ACFGeneralDashboard) | ⚠️ PARTIALLY IMPLEMENTED (disclosed, portée limitée) |
 | Tests de régression visuelle | ✅ IMPLEMENTED (métrique tolérante, disclosed) |
 | Workflow Engine GUI | ❌ BLOCKED BY MISSING DEPENDENCY (Python 3.12+) |
 | "Datasets" nav séparé | ✅ IMPLEMENTED (déjà couvert par "DATA SOURCES", vérifié non-redondant à dupliquer) |

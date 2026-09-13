@@ -278,14 +278,17 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.zoom_in_button = QPushButton("+")
         self.zoom_in_button.setFixedWidth(24)
         self.zoom_in_button.setToolTip("Zoom in")
+        self.zoom_in_button.setAccessibleName("Zoom in")
         self.zoom_in_button.clicked.connect(lambda: self.zoom_in())
         self.zoom_out_button = QPushButton("−")
         self.zoom_out_button.setFixedWidth(24)
         self.zoom_out_button.setToolTip("Zoom out")
+        self.zoom_out_button.setAccessibleName("Zoom out")
         self.zoom_out_button.clicked.connect(lambda: self.zoom_out())
         self.reset_view_button = QPushButton("⤢")
         self.reset_view_button.setFixedWidth(24)
         self.reset_view_button.setToolTip("Reset view")
+        self.reset_view_button.setAccessibleName("Reset view")
         self.reset_view_button.clicked.connect(self.reset_view)
         # A real QToolButton + QMenu (added 2026-09-04, same "put real
         # actions behind one control, not inline clutter" convention
@@ -298,6 +301,10 @@ class AWCIMapPanel(EventMixin, QWidget):
         self.download_button.setText("⬇")
         self.download_button.setFixedWidth(24)
         self.download_button.setToolTip("Export this map")
+        self.download_button.setAccessibleName("Export this map")
+        self.download_button.setAccessibleDescription(
+            "Opens a menu of real export formats: PNG, SVG, CSV data, or JSON data."
+        )
         self.download_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         export_menu = QMenu(self.download_button)
         self.export_png_action = QAction("Save as PNG…", self)
