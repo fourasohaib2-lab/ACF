@@ -121,6 +121,26 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
    k_index + total_totals + sweat_index), 20 tests de régression
    Phase 44/45/accessibilité verts sans changement.
 
+6. **Lifted Index, Showalter Index** (Phase 13, Stability) —
+   `acf.science.{lifted_index,showalter_index}` fermés à leur tour :
+   contrairement à K-Index/TT/SWEAT (interpolation seule), ces deux
+   exigent une vraie température de parcelle d'air ascendante à
+   500 hPa. Utilise le vrai `mpcalc.parcel_profile()` de MetPy (le même
+   primitif réel que `compute_real_cape_cin_at_point()` utilise déjà en
+   interne pour l'ascension adiabatique — pas une seconde implémentation
+   inventée), soulevée depuis la surface native réelle de la colonne
+   (Lifted Index) ou depuis les 850 hPa déjà interpolés (Showalter
+   Index). Honnêtement `None` si 500 hPa hors plage, ou si l'ascension
+   réelle de MetPy ne converge pas pour ce profil (`except Exception`
+   disclosed, jamais un crash ni une valeur de repli fabriquée).
+
+   Ajouté au même panel, même pattern de test. Image de référence de
+   régression visuelle régénérée et vérifiée visuellement (Lifted Index
+   3.1 "Stable", Showalter Index 10.3 "Very Stable" rendus
+   correctement). 20 tests combinés verts (stability indices + lifted/
+   showalter), 20 tests Phase 44/45/accessibilité verts sans
+   changement, test de régression visuelle vert.
+
 ## Vérifié résolu — pas un vrai gap (2026-09-13)
 
 - **"Datasets"** comme concept nav distinct du mockup — vérifié : la
@@ -147,14 +167,6 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 
 ## Reste ouvert (feuille de route, non traité cette passe)
 
-- **Lifted Index / Showalter Index** — 2 autres indices classiques
-  réels trouvés orphelins (`acf.science.{lifted_index,
-  showalter_index}`), non fermés cette passe : contrairement à K-Index/
-  TT/SWEAT (interpolation seule), ces deux exigent une vraie
-  température de parcelle d'air ascendante (ascension adiabatique
-  sèche puis humide via MetPy) à 500 hPa — un calcul réel plus complexe
-  que l'interpolation de profil, pas une simple réutilisation. Candidat
-  réel pour une passe dédiée.
 - **~22 autres modules scientifiques réels orphelins trouvés** (grep
   complet de `acf.science/` contre `acf.gui/`) — ex. `air_density`,
   `dry_static_energy`, `equivalent_potential_temperature`,
@@ -198,5 +210,5 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 | Accessibilité repo-wide | ❌ NOT IMPLEMENTED (disproportionné, disclosed) |
 | Bulk Richardson Number (autres panels) | ❌ NOT IMPLEMENTED (nécessiterait un vrai calcul CAPE à la demande, pas un câblage gratuit - re-scopé) |
 | K-Index / Total Totals / SWEAT Index | ✅ IMPLEMENTED |
-| Lifted Index / Showalter Index | ❌ NOT IMPLEMENTED (exige un vrai calcul d'ascension de parcelle, candidat pour une passe dédiée) |
+| Lifted Index / Showalter Index | ✅ IMPLEMENTED (vraie ascension de parcelle via `mpcalc.parcel_profile()`) |
 | ~22 autres modules `acf.science` orphelins | ❌ NOT IMPLEMENTED (trouvés, non triés/câblés cette passe) |

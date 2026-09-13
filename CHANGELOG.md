@@ -34,6 +34,12 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   câblés dans aucun panel GUI) - interpolation linéaire réelle du
   profil de température/point de rosée/vent vers les niveaux standards
   850/700/500 hPa, honnêtement "n/a" hors plage réelle de niveaux natifs.
+- `ACFStabilityIndicesWidget` affiche maintenant Lifted Index et
+  Showalter Index réels (`acf.science.{lifted_index,showalter_index}`,
+  même situation - existaient déjà, jamais câblés) - vraie ascension de
+  parcelle d'air via `mpcalc.parcel_profile()` de MetPy (le même
+  primitif déjà utilisé en interne par le calcul CAPE/CIN), honnêtement
+  "n/a" si 500 hPa hors plage ou si l'ascension réelle ne converge pas.
 
 ## [Unreleased] - 2026-09-12
 

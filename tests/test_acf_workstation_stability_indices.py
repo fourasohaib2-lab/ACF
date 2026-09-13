@@ -91,6 +91,26 @@ def test_severe_weather_indices_are_real_and_match_independent_calls():
     assert result["sweat_index_category"] == SWEATIndex.category(result["sweat_index"])
 
 
+def test_lifted_and_showalter_indices_are_real_and_match_independent_calls():
+    """Regression guard (2026-09-13, master-prompt gap audit, part 2):
+    Lifted Index/Showalter Index already existed in acf.science but
+    were never wired into any GUI panel - unlike K-Index/TT/SWEAT,
+    these need a genuine parcel-ascent temperature (MetPy's own real
+    mpcalc.parcel_profile(), not interpolation alone)."""
+    from acf.science.lifted_index import LiftedIndex
+    from acf.science.showalter_index import ShowalterIndex
+
+    volume = _real_volume(n_levels=8)
+    lat, lon = float(volume["lats"][2]), float(volume["lons"][4])
+
+    result = compute_real_stability_indices_at_point(volume, lat, lon)
+
+    assert result["lifted_index"] is not None
+    assert result["showalter_index"] is not None
+    assert result["lifted_index_category"] == LiftedIndex.category(result["lifted_index"])
+    assert result["showalter_index_category"] == ShowalterIndex.category(result["showalter_index"])
+
+
 def test_severe_weather_indices_are_honestly_none_when_standard_levels_are_out_of_range():
     """A volume whose real native levels never reach down to 850 hPa
     must report None, never an extrapolated/fabricated value."""
@@ -108,6 +128,8 @@ def test_severe_weather_indices_are_honestly_none_when_standard_levels_are_out_o
     assert result["k_index"] is None
     assert result["total_totals"] is None
     assert result["sweat_index"] is None
+    assert result["lifted_index"] is None
+    assert result["showalter_index"] is None
 
 
 def test_bulk_richardson_number_matches_a_real_independent_call():

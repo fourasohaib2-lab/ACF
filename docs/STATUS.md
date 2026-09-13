@@ -1240,3 +1240,26 @@ Restent identifiés, non traités : Lifted Index/Showalter Index (exigent
 un vrai calcul d'ascension de parcelle, pas juste une interpolation -
 candidat pour une passe dédiée), ~22 autres modules `acf.science`
 orphelins (pertinence à trier au cas par cas, pas câblés en masse).
+
+## Mise à jour (2026-09-13, suite 2) : Lifted Index/Showalter Index câblés
+
+Fermeture du dernier candidat identifié dans la passe précédente :
+`acf.science.{lifted_index,showalter_index}` existaient déjà (avec
+leurs propres tests) mais jamais câblés dans aucun panel GUI.
+Contrairement à K-Index/TT/SWEAT (interpolation seule), ces deux
+exigent une vraie température de parcelle d'air ascendante à 500 hPa -
+utilisé le vrai `mpcalc.parcel_profile()` de MetPy (le même primitif
+déjà utilisé en interne par le calcul CAPE/CIN, pas une seconde
+implémentation). Honnêtement "n/a" si 500 hPa hors plage ou si
+l'ascension réelle ne converge pas. Ajouté au même
+`ACFStabilityIndicesWidget`. Image de référence de régression visuelle
+régénérée et vérifiée. 20 tests combinés verts, aucune régression sur
+les 20 tests Phase 44/45/accessibilité, test de régression visuelle
+vert.
+
+Les 5 indices de stabilité classiques les plus utilisés
+opérationnellement (CAPE/CIN, cisaillement, BRN, K-Index, Total
+Totals, SWEAT, Lifted Index, Showalter Index) sont maintenant tous
+réels et affichés dans l'ACF Scientific Workstation. Reste ouvert :
+~22 autres modules `acf.science` orphelins de pertinence moins directe
+(océan/climat/feu), non triés cette passe.

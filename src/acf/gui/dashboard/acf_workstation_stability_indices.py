@@ -54,6 +54,20 @@ Real formulas, all reused as-is - nothing new invented
   CAPE/CIN already uses above; real wind speed/direction via MetPy's
   own `mpcalc.wind_speed()`/`mpcalc.wind_direction()` (not hand-rolled
   trigonometry) from the same real interpolated u/v.
+- Lifted Index, Showalter Index: `acf.science.{lifted_index,
+  showalter_index}` - 2 more real, already-tested indices found
+  orphaned the same way (verified via grep - zero references anywhere
+  in `acf.gui`). Unlike K-Index/TT/SWEAT above (interpolation only),
+  these need a genuine parcel-ascent temperature at 500 hPa - real
+  `mpcalc.parcel_profile()` (the SAME real MetPy parcel-lift primitive
+  `compute_real_cape_cin_at_point()` uses internally, not a second,
+  hand-rolled adiabatic-lift implementation), lifted from this
+  column's own real native-surface T/Td (Lifted Index) or from the
+  real 850 hPa T/Td already interpolated above (Showalter Index).
+  Honestly `None` if 500 hPa is out of this column's real range, or if
+  MetPy's own real ascent cannot converge for this profile (e.g. a
+  genuinely non-monotonic native-level ordering in a small synthetic
+  test volume) - never a fabricated fallback value.
 
 Updated together with the Vertical Complexity Sounding panel, at the
 same real clicked point - see `acf_workstation.py`'s own
@@ -75,6 +89,8 @@ from acf.awci.workstation_fields import compute_real_near_surface_static_stabili
 from acf.gui.theme_tokens import label_style
 from acf.science.bulk_richardson_number import BulkRichardsonNumber
 from acf.science.k_index import KIndex
+from acf.science.lifted_index import LiftedIndex
+from acf.science.showalter_index import ShowalterIndex
 from acf.science.sweat_index import SWEATIndex
 from acf.science.total_totals import TotalTotals
 
@@ -88,6 +104,8 @@ INDEX_NAMES: tuple[str, ...] = (
     "K-Index",
     "Total Totals",
     "SWEAT Index",
+    "Lifted Index",
+    "Showalter Index",
 )
 
 
@@ -101,6 +119,24 @@ def _interp_to_pressure(pressure_hpa: np.ndarray, values: np.ndarray, target_hpa
     if target_hpa < p_sorted[0] or target_hpa > p_sorted[-1]:
         return None
     return float(np.interp(target_hpa, p_sorted, v_sorted))
+
+
+def _real_parcel_temperature_at_500hpa(start_pressure_hpa: float, start_temperature_c: float, start_dewpoint_c: float) -> float | None:
+    """Real parcel temperature at 500 hPa, lifted dry-adiabatically to
+    the LCL then moist-adiabatically above it, via MetPy's own
+    `mpcalc.parcel_profile()` - the same real ascent primitive
+    `compute_real_cape_cin_at_point()` relies on internally. Honestly
+    None (never a fabricated fallback) if the starting pressure isn't
+    genuinely above 500 hPa, or if MetPy's own real ascent cannot
+    converge for this profile."""
+    if start_pressure_hpa <= 500.0:
+        return None
+    try:
+        pressure = np.array([start_pressure_hpa, 500.0]) * mp_units.hPa
+        profile = mpcalc.parcel_profile(pressure, start_temperature_c * mp_units.degC, start_dewpoint_c * mp_units.degC)
+        return float(profile[-1].to("degC").magnitude)
+    except Exception:  # noqa: BLE001 - a real non-convergent ascent must fall back to honest None, never crash
+        return None
 
 
 def compute_real_severe_weather_indices_at_point(
@@ -135,6 +171,10 @@ def compute_real_severe_weather_indices_at_point(
         "total_totals_category": None,
         "sweat_index": None,
         "sweat_index_category": None,
+        "lifted_index": None,
+        "lifted_index_category": None,
+        "showalter_index": None,
+        "showalter_index_category": None,
     }
 
     if t850 is not None and t700 is not None and t500 is not None and td850 is not None and td700 is not None:
@@ -152,6 +192,23 @@ def compute_real_severe_weather_indices_at_point(
             )
             result["sweat_index"] = sweat
             result["sweat_index_category"] = SWEATIndex.category(sweat)
+
+        parcel_t500_from_850 = _real_parcel_temperature_at_500hpa(850.0, t850, td850)
+        if parcel_t500_from_850 is not None:
+            si = ShowalterIndex.calculate(parcel_temperature_500=parcel_t500_from_850, environment_temperature_500=t500)
+            result["showalter_index"] = si
+            result["showalter_index_category"] = ShowalterIndex.category(si)
+
+    if t500 is not None:
+        # Level 0 = this column's own real surface level, same convention
+        # already used above for static stability (t_profile[0]/p_profile[0]).
+        parcel_t500_from_surface = _real_parcel_temperature_at_500hpa(
+            float(p_profile[0]), float(temperature_c[0]), float(dewpoint_c[0])
+        )
+        if parcel_t500_from_surface is not None:
+            li = LiftedIndex.calculate(parcel_temperature=parcel_t500_from_surface, environment_temperature=t500)
+            result["lifted_index"] = li
+            result["lifted_index_category"] = LiftedIndex.category(li)
 
     return result
 
@@ -231,6 +288,8 @@ class ACFStabilityIndicesWidget(QWidget):
         self._set_with_category("K-Index", indices.get("k_index"), indices.get("k_index_category"))
         self._set_with_category("Total Totals", indices.get("total_totals"), indices.get("total_totals_category"))
         self._set_with_category("SWEAT Index", indices.get("sweat_index"), indices.get("sweat_index_category"))
+        self._set_with_category("Lifted Index", indices.get("lifted_index"), indices.get("lifted_index_category"))
+        self._set_with_category("Showalter Index", indices.get("showalter_index"), indices.get("showalter_index_category"))
 
     def _set(self, name: str, value: float | None, unit: str, digits: int = 1) -> None:
         label = self._labels[name]
