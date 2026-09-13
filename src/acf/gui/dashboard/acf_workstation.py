@@ -1016,6 +1016,10 @@ class ACFWorkstation(QWidget):
         self.model_selector.addItems(list(MODEL_CONFIGS.keys()))
         self.model_selector.setCurrentText(_DEFAULT_MODEL)
         self.model_selector.currentTextChanged.connect(self._on_model_selector_changed)
+        self.model_selector.setAccessibleName("Model selector")
+        self.model_selector.setAccessibleDescription(
+            "Selects which real NWP model configuration (AROME/ALADIN/ARPEGE) the next Analyze run uses."
+        )
         top_bar.addWidget(self.model_selector)
 
         # Real Domain selector (added Phase 40, 2026-09-05, matching
@@ -1036,6 +1040,8 @@ class ACFWorkstation(QWidget):
             "never a second solver run, never fabricated regional data."
         )
         self.domain_selector.currentTextChanged.connect(self._on_domain_changed)
+        self.domain_selector.setAccessibleName("Domain selector")
+        self.domain_selector.setAccessibleDescription(self.domain_selector.toolTip())
         top_bar.addWidget(self.domain_selector)
 
         self.run_button = QPushButton("▶ Analyze")
@@ -1045,12 +1051,17 @@ class ACFWorkstation(QWidget):
             "module below from one real trajectory, re-sliced, never recomputed per tab."
         )
         self.run_button.clicked.connect(self.refresh)
+        self.run_button.setAccessibleName("Analyze")
+        self.run_button.setAccessibleDescription(self.run_button.toolTip())
         top_bar.addWidget(self.run_button)
 
         self.fullscreen_button = QPushButton("⛶")
         self.fullscreen_button.setToolTip("Toggle fullscreen")
         self.fullscreen_button.setFixedWidth(28)
         self.fullscreen_button.clicked.connect(self._toggle_fullscreen)
+        # Icon-only button (no visible text label) - a screen reader would
+        # otherwise announce this control with no name at all.
+        self.fullscreen_button.setAccessibleName("Toggle fullscreen")
         top_bar.addWidget(self.fullscreen_button)
 
         # Real "More Labs" toolbar (added Phase 31, 2026-09-04) - the
@@ -1093,6 +1104,8 @@ class ACFWorkstation(QWidget):
         self.load_configuration_action.triggered.connect(self._load_configuration)
         settings_menu.addAction(self.load_configuration_action)
         self.settings_button.setMenu(settings_menu)
+        # Icon-only button ("⚙", no visible text) - name it for screen readers.
+        self.settings_button.setAccessibleName("Configuration")
         top_bar.addWidget(self.settings_button)
         outer.addLayout(top_bar)
 
@@ -1109,6 +1122,10 @@ class ACFWorkstation(QWidget):
         self.level_slider.setEnabled(False)
         self.level_slider.setFixedWidth(160)
         self.level_slider.valueChanged.connect(self._on_level_changed)
+        self.level_slider.setAccessibleName("Vertical level selector")
+        self.level_slider.setAccessibleDescription(
+            "Selects which real native model level the map/diagnostics below display."
+        )
         status_row.addWidget(self.level_slider)
         self.level_label = QLabel("—")
         self.level_label.setStyleSheet(label_style("text_secondary", "xs"))
@@ -1134,6 +1151,8 @@ class ACFWorkstation(QWidget):
             self.nav_list.addItem(item)
         self.nav_list.setCurrentRow(0)
         self.nav_list.currentRowChanged.connect(self._on_nav_changed)
+        self.nav_list.setAccessibleName("ACF Core navigation")
+        self.nav_list.setAccessibleDescription("Switches the main content area between this Workstation's real modules.")
         nav_col.addWidget(self.nav_list, stretch=1)
 
         # Real "Data Sources" nav section (added Phase 31, 2026-09-04,
@@ -1151,6 +1170,7 @@ class ACFWorkstation(QWidget):
         for name in ("Model Data", "Observations", "Scientific Explorer"):
             self.data_sources_list.addItem(QListWidgetItem(name))
         self.data_sources_list.itemClicked.connect(self._on_data_source_selected)
+        self.data_sources_list.setAccessibleName("Data sources")
         nav_col.addWidget(self.data_sources_list)
 
         # Real "Diagnostics" nav section - relocates the real Research
@@ -1169,6 +1189,7 @@ class ACFWorkstation(QWidget):
             "single value already shown on the map."
         )
         self.research_mode_button.toggled.connect(self._on_research_mode_toggled)
+        self.research_mode_button.setAccessibleDescription(self.research_mode_button.toolTip())
         nav_col.addWidget(self.research_mode_button)
 
         # Real "ACF Pipeline Monitor" (added Phase 32, 2026-09-05,
@@ -1199,6 +1220,7 @@ class ACFWorkstation(QWidget):
             "generator to point to, so none is claimed."
         )
         self.export_report_button.clicked.connect(self._save_configuration)
+        self.export_report_button.setAccessibleDescription(self.export_report_button.toolTip())
         nav_col.addWidget(self.export_report_button)
 
         # Real "HPC / JOBS" nav section (added Phase 43, 2026-09-12,
@@ -1225,6 +1247,7 @@ class ACFWorkstation(QWidget):
             "'Connected' for a local/offline workflow."
         )
         self.hpc_connect_button.clicked.connect(self._connect_to_hpc)
+        self.hpc_connect_button.setAccessibleDescription(self.hpc_connect_button.toolTip())
         nav_col.addWidget(self.hpc_connect_button)
 
         # NOTE (real responsive-sizing fix, 2026-09-12): nav_col's own
