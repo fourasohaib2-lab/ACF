@@ -44,6 +44,27 @@ def test_compute_real_multi_model_disagreement_runs_the_real_solver_per_model():
     assert result["model_realizations"] == {"temperature": values}
 
 
+def test_compute_real_multi_model_disagreement_exposes_the_real_ensemble_statistics_already_computed():
+    """Regression guard (2026-09-13, master-prompt v4 gap audit):
+    median/min/max/p10/p90 were already computed by this method's own
+    EnsembleManager instance but silently discarded - only mean/spread
+    were ever returned. Cross-checked against an independent
+    EnsembleManager built from the same real per-model values."""
+    from acf.ai.ensemble.ensemble_manager import EnsembleManager
+
+    result = ModelConsensusEngine.compute_real_multi_model_disagreement(
+        lat=36.7, lon=3.0, models=["AROME", "ALADIN", "ARPEGE"], steps=2
+    )
+
+    expected = EnsembleManager(list(result["per_model_value"].values()))
+    assert result["disagreement_median"] == expected.median
+    assert result["disagreement_min"] == min(result["per_model_value"].values())
+    assert result["disagreement_max"] == max(result["per_model_value"].values())
+    assert result["disagreement_p10"] == expected.percentile(10.0)
+    assert result["disagreement_p90"] == expected.percentile(90.0)
+    assert result["disagreement_min"] <= result["disagreement_median"] <= result["disagreement_max"]
+
+
 def test_compute_real_multi_model_disagreement_defaults_to_all_three_models():
     result = ModelConsensusEngine.compute_real_multi_model_disagreement(lat=36.7, lon=3.0, steps=2)
     assert set(result["models_compared"]) == {"AROME", "ALADIN", "ARPEGE"}

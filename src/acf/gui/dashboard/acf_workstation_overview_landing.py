@@ -392,14 +392,22 @@ class ACFOverviewLandingPanel(QWidget):
         self.consensus_status_label.setText("⏳ Computing (one real solver run per model)…")
 
     def set_consensus_result(self, result: dict[str, Any]) -> None:
-        """Real per-model values + real spread, from `ModelConsensusEngine.
-        compute_real_multi_model_disagreement()`'s own real result -
-        see module docstring for why no fabricated percentage is shown."""
+        """Real per-model values + real spread/median/min/max/p10/p90,
+        from `ModelConsensusEngine.compute_real_multi_model_
+        disagreement()`'s own real result - see module docstring for
+        why no fabricated agreement percentage is shown (median/min/
+        max/p10/p90 are NOT that: they are real descriptive statistics
+        in the same real physical unit as spread/mean, not a
+        normalized composite confidence score - added 2026-09-13,
+        closing a real gap: this engine's own EnsembleManager already
+        computed them, they were just never returned/displayed)."""
         self.consensus_button.setEnabled(True)
         variable_label = "temperature" if result["field"] == "T" else result["field"]
         self.consensus_status_label.setText(
             f"✅ Real spread ({variable_label}): {result['disagreement_spread']:.3f} K "
-            f"(mean {result['disagreement_mean']:.2f} K)."
+            f"(mean {result['disagreement_mean']:.2f} K, median {result['disagreement_median']:.2f} K, "
+            f"range {result['disagreement_min']:.2f}–{result['disagreement_max']:.2f} K, "
+            f"p10/p90 {result['disagreement_p10']:.2f}/{result['disagreement_p90']:.2f} K)."
         )
         lines = [f"{model}: {value:.2f} K" for model, value in result["per_model_value"].items()]
         self.consensus_models_label.setText(" · ".join(lines))

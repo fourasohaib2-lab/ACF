@@ -40,6 +40,15 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   parcelle d'air via `mpcalc.parcel_profile()` de MetPy (le même
   primitif déjà utilisé en interne par le calcul CAPE/CIN), honnêtement
   "n/a" si 500 hPa hors plage ou si l'ascension réelle ne converge pas.
+- Model Consensus affiche maintenant la médiane, le min/max et les
+  percentiles p10/p90 réels de l'ensemble multi-modèle - déjà calculés
+  par le vrai `EnsembleManager` interne de `ModelConsensusEngine.
+  compute_real_multi_model_disagreement()` mais jamais exposés (seuls
+  mean/spread l'étaient). Décision délibérée de ne pas câbler le module
+  orphelin `acf.science.ensemble_uncertainty` (doublon probable,
+  aurait exigé un paramètre de tolérance arbitraire pour son
+  "agreement_fraction" - le même type de score composite déjà refusé
+  pour la jauge "Agreement Level %" du mockup).
 
 ## [Unreleased] - 2026-09-12
 

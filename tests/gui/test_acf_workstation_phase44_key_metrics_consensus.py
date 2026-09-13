@@ -148,6 +148,10 @@ def test_consensus_button_genuinely_runs_off_thread_and_reports_real_values(qapp
     if "✅" in status_text:
         assert "K" in status_text  # real physical unit, never a fabricated "%"
         assert "%" not in status_text
+        # Real median/range/p10-p90 statistics (2026-09-13 fix) - already
+        # computed by the engine's own EnsembleManager, now displayed.
+        assert "median" in status_text
+        assert "p10/p90" in status_text
         models_text = ws.overview_landing_panel.consensus_models_label.text()
         assert "AROME" in models_text
         assert "WRF" not in models_text  # no real backing anywhere in this codebase

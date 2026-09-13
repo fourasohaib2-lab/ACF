@@ -1263,3 +1263,31 @@ Totals, SWEAT, Lifted Index, Showalter Index) sont maintenant tous
 réels et affichés dans l'ACF Scientific Workstation. Reste ouvert :
 ~22 autres modules `acf.science` orphelins de pertinence moins directe
 (océan/climat/feu), non triés cette passe.
+
+## Mise à jour (2026-09-13, suite 3) : Model Consensus enrichi + gisement de modules orphelins épuisé
+
+Fermeture du candidat "ensemble_uncertainty" - mais pas comme prévu :
+en investiguant, trouvé un problème plus direct et sans risque de
+duplication. `ModelConsensusEngine.compute_real_multi_model_
+disagreement()` construit déjà un vrai `EnsembleManager` et n'en
+extrait que mean/spread - median/min/max/p10/p90 étaient déjà calculés
+par ce même objet mais silencieusement jetés. Corrigé par simple
+exposition (zéro nouveau calcul). Décision délibérée de ne PAS câbler
+le module orphelin `acf.science.ensemble_uncertainty` lui-même : c'est
+un doublon probable d'`EnsembleManager`, et son `agreement_fraction`
+exigerait un paramètre de tolérance arbitraire - le même type de score
+composite non justifié déjà refusé pour la jauge "Agreement Level %"
+du mockup (disclosed dans le docstring du module concerné).
+
+Triage complet des ~22 autres modules `acf.science` orphelins
+initialement listés : 2 faux positifs trouvés et corrigés dans le
+rapport (potential_temperature/equivalent_potential_temperature étaient
+déjà utilisés via acf.awci, pas orphelins - le premier grep ratait
+cette couche intermédiaire), le reste hors périmètre réel (champs 2D
+complets, données historiques/observations absentes, système
+d'interrogation distinct) ou faux positifs de noms de paramètres
+génériques. Gisement de gaps sûrs et pertinents de ce type maintenant
+épuisé pour ce Workstation.
+
+25 tests combinés verts (ai_forecast_center + Phase 44), test de
+régression visuelle vert.

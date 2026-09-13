@@ -141,6 +141,38 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
    showalter), 20 tests Phase 44/45/accessibilité verts sans
    changement, test de régression visuelle vert.
 
+7. **Model Consensus — statistiques d'ensemble réelles déjà calculées
+   mais jetées** (Phase 10, nommé explicitement : "spread, mean,
+   median, standard deviation, uncertainty") — en cherchant à câbler le
+   module orphelin `acf.science.ensemble_uncertainty`, trouvé un
+   problème plus direct et sans risque de duplication : `ModelConsensus
+   Engine.compute_real_multi_model_disagreement()` construit déjà un
+   vrai `EnsembleManager(list(per_model_value.values()))` (`stats`) et
+   n'en extrait que `.mean`/`.spread` — `.median`/`.percentile(10)`/
+   `.percentile(90)`/min/max étaient déjà calculés par ce même objet
+   réel, mais silencieusement jetés avant cette passe (vérifié en
+   lisant le code, pas supposé).
+
+   **Décision délibérée : ne PAS câbler `acf.science.
+   ensemble_uncertainty`** (le module orphelin initialement visé) - il
+   duplique `EnsembleManager` (même mean/median/spread/percentile), et
+   son `ConsensusResult.agreement_fraction` exigerait un paramètre de
+   tolérance arbitraire non justifié - exactement le type de score
+   composite normalisé sans échelle de référence réelle que ce fichier
+   lui-même documente avoir déjà refusé pour la jauge "Agreement Level:
+   78% High" du mockup (voir le docstring du module,
+   `acf_workstation_overview_landing.py`). Median/p10/p90 en revanche
+   sont de vraies statistiques descriptives dans la même unité physique
+   réelle (K) que spread/mean déjà affichés - pas un score composite.
+
+   Corrigé : exposition des 5 champs déjà calculés
+   (`disagreement_median`/`_min`/`_max`/`_p10`/`_p90`) dans le
+   dictionnaire de retour, affichés dans `set_consensus_result()`.
+   Zéro nouveau calcul, zéro nouvelle dépendance. 25 tests combinés
+   verts (ai_forecast_center + Phase 44), test de régression visuelle
+   vert (texte de consensus seulement affiché après clic manuel, hors
+   du rendu de la capture de référence).
+
 ## Vérifié résolu — pas un vrai gap (2026-09-13)
 
 - **"Datasets"** comme concept nav distinct du mockup — vérifié : la
@@ -167,14 +199,28 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 
 ## Reste ouvert (feuille de route, non traité cette passe)
 
-- **~22 autres modules scientifiques réels orphelins trouvés** (grep
-  complet de `acf.science/` contre `acf.gui/`) — ex. `air_density`,
-  `dry_static_energy`, `equivalent_potential_temperature`,
-  `moist_static_energy`, `potential_vorticity`, `wet_bulb_temperature`,
-  etc. Tous n'ont pas la même pertinence directe pour ce Workstation
-  (certains sont plus océan/climat/feu que diagnostics atmosphériques
-  ponctuels) - à trier au cas par cas dans une passe dédiée plutôt que
-  câblés en masse sans évaluer la pertinence de chacun.
+- **Triage approfondi des "~22 autres modules orphelins" (2026-09-13,
+  suite) — gisement épuisé** : re-vérifié contre `acf.awci/` en plus de
+  `acf.gui/` (le premier grep, limité à `acf.gui/`, ratait la couche
+  intermédiaire réelle). **2 faux positifs trouvés** : `potential_
+  temperature` et `equivalent_potential_temperature` sont déjà utilisés
+  réellement (`acf.awci.workstation_fields`/`acf.awci.theta_e`), pas
+  orphelins. `ensemble_uncertainty` s'est avéré être un doublon
+  probable d'`acf.ai.ensemble.EnsembleManager` (déjà utilisé) plutôt
+  qu'un vrai gap à combler - voir point 7 ci-dessus pour la vraie
+  correction trouvée à la place (statistiques déjà calculées mais
+  jetées). Les candidats restants (`air_density`, `mixing_ratio`, etc.)
+  se sont révélés être des noms de paramètres génériques réutilisés
+  dans tout `model4d/physics/` (faux positifs de grep), pas des
+  fonctions orphelines réelles. `cyclones`/`fronts`/`potential_
+  vorticity` opèrent sur des champs 2D complets (pas des diagnostics
+  ponctuels) - hors périmètre de ce panel. `climatology`/`radiosonde`
+  nécessitent des données historiques/d'observation réelles absentes de
+  ce pipeline. `query_engine` est un système d'interrogation distinct,
+  pas une métrique scalaire. **Conclusion : le gisement de gaps sûrs et
+  pertinents de ce type est maintenant épuisé** pour ce Workstation -
+  continuer à chercher mécaniquement produirait plus de faux positifs
+  que de vraies fermetures.
 - **Audit d'unités systématique** (kt/m/s, ft/m) sur `gui/` dans son
   ensemble — hors périmètre de cette passe (voir aussi l'audit ICAO/OMM
   §4 pour la même limite déjà posée).
@@ -211,4 +257,5 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 | Bulk Richardson Number (autres panels) | ❌ NOT IMPLEMENTED (nécessiterait un vrai calcul CAPE à la demande, pas un câblage gratuit - re-scopé) |
 | K-Index / Total Totals / SWEAT Index | ✅ IMPLEMENTED |
 | Lifted Index / Showalter Index | ✅ IMPLEMENTED (vraie ascension de parcelle via `mpcalc.parcel_profile()`) |
-| ~22 autres modules `acf.science` orphelins | ❌ NOT IMPLEMENTED (trouvés, non triés/câblés cette passe) |
+| Model Consensus (median/min/max/p10/p90) | ✅ IMPLEMENTED (déjà calculé, était jeté avant exposition) |
+| ~22 autres modules `acf.science` orphelins | ✅ TRIÉS (2 faux positifs corrigés, le reste hors périmètre ou déjà résolu autrement - gisement épuisé) |

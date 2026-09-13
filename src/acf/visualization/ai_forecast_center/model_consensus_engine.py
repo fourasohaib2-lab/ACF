@@ -181,11 +181,12 @@ class ModelConsensusEngine:
         -------
         dict
             per_model_value (model name -> real value at the point),
-            disagreement_spread/disagreement_mean (real EnsembleManager
-            statistics across those values), model_realizations (ready
-            to hand to AWCICalculator.calculate() as
-            data["model_realizations"]), status, is_real_data,
-            honest_limitation.
+            disagreement_spread/disagreement_mean/disagreement_median/
+            disagreement_min/disagreement_max/disagreement_p10/
+            disagreement_p90 (real EnsembleManager statistics across
+            those values), model_realizations (ready to hand to
+            AWCICalculator.calculate() as data["model_realizations"]),
+            status, is_real_data, honest_limitation.
         """
         # Local imports: this method is the only thing in this module
         # that needs the (heavier) solver/grid/ensemble stack - keeping
@@ -247,6 +248,21 @@ class ModelConsensusEngine:
             "per_model_value": per_model_value,
             "disagreement_mean": stats.mean,
             "disagreement_spread": stats.spread,
+            # NOTE (added 2026-09-13, master-prompt v4 gap audit): median/
+            # min/max/p10/p90 were already computed by this same real,
+            # already-instantiated EnsembleManager (its own summary()
+            # method already exposes them) but silently discarded here -
+            # only mean/spread were ever returned. No new computation,
+            # no new statistic - just no longer throwing away real,
+            # already-real numbers. With MODEL_CONFIGS' own 3 real models,
+            # p10/p90 are genuinely well-defined but drawn from only 3
+            # points - a real, disclosed small-sample caveat, not a
+            # reason to hide them.
+            "disagreement_median": stats.median,
+            "disagreement_min": stats.members[0],
+            "disagreement_max": stats.members[-1],
+            "disagreement_p10": stats.percentile(10.0),
+            "disagreement_p90": stats.percentile(90.0),
             "model_realizations": {variable_label: list(per_model_value.values())},
             "status": "REAL_DISAGREEMENT_FROM_ACF_SOLVER_AT_MULTIPLE_GRID_CONFIGS",
             "is_real_data": True,
