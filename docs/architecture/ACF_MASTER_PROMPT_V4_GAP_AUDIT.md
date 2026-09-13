@@ -222,7 +222,11 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
   continuer à chercher mécaniquement produirait plus de faux positifs
   que de vraies fermetures.
 - **Audit d'unités systématique** (kt/m/s, ft/m) sur `gui/` dans son
-  ensemble — hors périmètre de cette passe (voir aussi l'audit ICAO/OMM
+  ensemble — voir mise à jour suite 6 ci-dessus : premier échantillon
+  réel (vent, altitude/FL, pression, précipitation, température) fait,
+  aucun bug trouvé. Reste hors périmètre : couverture exhaustive de
+  tous les fichiers `gui/` (dont certains fichiers `esoc/` historiques
+  non couverts) et des champs 2D complets (voir aussi l'audit ICAO/OMM
   §4 pour la même limite déjà posée).
 - **Accessibilité repo-wide** (au-delà du shell ACFWorkstation) — gros
   chantier séparé, déjà qualifié disproportionné pour une session dans
@@ -291,7 +295,7 @@ extension bornée.
 | "Datasets" nav séparé | ✅ IMPLEMENTED (déjà couvert par "DATA SOURCES", vérifié non-redondant à dupliquer) |
 | Alerte "model disagreement" | ✅ IMPLEMENTED (déjà honnêtement exposé dans Model Consensus, fusion avec Alerts délibérément évitée) |
 | Messages d'erreur structurés | ✅ IMPLEMENTED (message réel du solveur, plus informatif qu'une catégorie générique) |
-| Audit unités systématique | ❌ NOT IMPLEMENTED (hors périmètre, disclosed) |
+| Audit unités systématique | ⚠️ PARTIALLY CHECKED (5 catégories à risque échantillonnées réellement, aucun bug trouvé - pas exhaustif) |
 | Accessibilité repo-wide | ❌ NOT IMPLEMENTED (disproportionné, disclosed) |
 | Bulk Richardson Number (autres panels) | ❌ NOT IMPLEMENTED (nécessiterait un vrai calcul CAPE à la demande, pas un câblage gratuit - re-scopé) |
 | K-Index / Total Totals / SWEAT Index | ✅ IMPLEMENTED |

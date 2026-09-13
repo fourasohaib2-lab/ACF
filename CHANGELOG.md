@@ -10,6 +10,23 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 
 ## [Unreleased] - 2026-09-13
 
+### Checked (no code change)
+- Première passe réelle de l'audit d'unités systématique demandé
+  (kt/m/s, ft/m, hPa/Pa, mm/h) sur `acf.gui`/`acf.awci` : vitesse du
+  vent affichée uniquement en m/s dans toute la GUI (aucun label "kt"
+  trouvé, donc pas de risque de valeur brute mal étiquetée) ; altitude/
+  niveau de vol passe systématiquement par les mêmes fonctions réelles
+  `pressure_to_flight_level_ft`/`flight_level_ft_to_pressure_hpa`
+  (`awci_map_panel.py`), y compris dans `awci_dashboard.py` (conversion
+  FL→pieds via `fl * 100.0`, convention ICAO correcte) ; conversions
+  hPa/Pa toutes commentées et cohérentes avec l'unité native Pa du
+  solveur ; précipitation cohérente en mm/h partout, avec une seule
+  conversion mm/h→m/s explicite (`panel_manager.py`, modèle de sol).
+  **Aucun bug trouvé** sur ces 4 catégories à plus haut risque - audit
+  non exhaustif (reste : température K/°C, autres champs 2D), mais ce
+  premier passage réel ne confirme pas l'hypothèse initiale d'un
+  problème d'unités latent.
+
 ### Added
 - Audit de conformité "ACF Master Prompt V4"
   (`docs/architecture/ACF_MASTER_PROMPT_V4_GAP_AUDIT.md`) : correction

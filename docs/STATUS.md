@@ -1328,3 +1328,28 @@ signature, aucun comportement modifié).
 visuelle vert sans régénération de baseline (changement de métadonnées
 d'accessibilité uniquement, aucun pixel affecté) - confirmé par
 exécution réelle, pas supposé.
+
+## Mise à jour (2026-09-13, suite 6) : première passe réelle de l'audit d'unités - aucun bug trouvé
+
+Premier des deux items "chantier séparé" restants attaqué en passe
+bornée (pas l'audit exhaustif complet, un vrai échantillon des
+catégories à plus haut risque) : vitesse du vent (kt/m·s⁻¹), altitude/
+niveau de vol (ft/hPa), pression (hPa/Pa), précipitation (mm/h),
+température (K/°C).
+
+Résultat honnête : **aucune incohérence trouvée**. La vitesse du vent
+n'est affichée qu'en m/s dans toute la GUI (zéro label "kt" trouvé) ;
+tous les niveaux de vol passent par les deux mêmes fonctions réelles
+(`pressure_to_flight_level_ft`/`flight_level_ft_to_pressure_hpa`),
+y compris la conversion FL→pieds (`fl * 100.0`, convention ICAO
+correcte) dans `awci_dashboard.py` ; les conversions hPa/Pa et K/°C
+sont toutes commentées et vérifiées cohérentes avec les unités
+natives du solveur (Pa, K) ; la précipitation est cohérente en mm/h
+partout avec une seule conversion explicite vers m/s (modèle de sol).
+
+Ce n'est pas un audit exhaustif de tout `gui/` (champs 2D non
+échantillonnés, quelques fichiers historiques `esoc/panel_manager.py`
+non entièrement couverts) mais l'échantillon réel sur les 5 catégories
+les plus à risque ne confirme pas l'hypothèse initiale d'un problème
+d'unités latent. Documenté dans `CHANGELOG.md` comme "Checked (no code
+change)" plutôt que silencieusement ignoré.
