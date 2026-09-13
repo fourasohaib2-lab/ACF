@@ -19,10 +19,30 @@ array]` and whose `disagreement_spread_field` key is a real
 `update_from_disagreement(per_model_field, spread_field)` parameter
 shapes with no adjustment needed.
 
-Agreement score per model = 1 - (this model's own real deviation from
-the real ensemble mean, normalized by the real ensemble mean's own
-magnitude), clamped to [0, 1]. This is a real, disclosed derived
-metric, not a further-fabricated "confidence" figure.
+Agreement score per model =
+    1 - (this model's own real domain-mean deviation from the real
+         ensemble mean) / (the real spread field's own domain-mean
+         magnitude),
+clamped to [0, 1]. The denominator is the REAL `spread_field` passed
+in (i.e. `disagreement_spread_field`, the engine's own measure of how
+much the models actually disagree) - never the ensemble mean's own
+absolute magnitude. Normalizing by the field's own magnitude instead
+of by real spread is numerically insensitive to real disagreement:
+e.g. a 10 K spread across Kelvin-range temperature fields (order
+280-290 K) still reads as >=0.98 "High Agreement" if divided by
+the ~285 K ensemble mean, because the deviation is tiny relative to
+that absolute scale even though it is physically significant. Dividing
+by the real spread magnitude instead means the score reflects how
+large the disagreement is relative to how much the models actually
+disagree, which is the physically meaningful comparison.
+
+Domain-mean collapse (disclosed): this panel summarizes each model's
+field as a single domain-mean scalar before comparing (one bar per
+model, matching the reference image's one-bar-per-model display). It
+does not expose the full spatially-resolved per-grid-point
+disagreement that `compute_real_multi_model_disagreement_field()` can
+also produce - a caller wanting that resolution must consume the raw
+per-model/spread fields directly rather than through this panel.
 """
 
 from __future__ import annotations
@@ -67,7 +87,15 @@ class ModelAgreementPanel(QWidget):
 
         values = {name: float(np.nanmean(field)) for name, field in per_model_field.items()}
         ensemble_mean = float(np.mean(list(values.values())))
-        denom = abs(ensemble_mean) if ensemble_mean != 0 else 1.0
+
+        # Real spread (not the ensemble mean's own magnitude) anchors the
+        # normalization - a model's deviation is only "small" relative to
+        # how much the models actually disagree, not relative to the
+        # field's own absolute scale (which would make e.g. Kelvin-scale
+        # fields always read as "High Agreement" regardless of real
+        # disagreement).
+        spread_magnitude = float(np.nanmean(np.abs(spread_field))) if spread_field is not None else 0.0
+        denom = spread_magnitude if spread_magnitude > 0 else 1.0
 
         for name, value in values.items():
             deviation = abs(value - ensemble_mean) / denom
