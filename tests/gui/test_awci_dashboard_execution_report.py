@@ -86,3 +86,40 @@ def test_report_dialog_reflects_a_new_point_after_a_map_click(qapp):
     diagnostics_line = next(line for line in rendered if line.startswith("Diagnostics:"))
     expected = len(dashboard._last_awci_result.module_scores) + len(dashboard._last_awci_result.interaction_scores)
     assert diagnostics_line == f"Diagnostics: {expected}"
+
+
+# --------------------------------------------- provenance / traceability (§25)
+
+
+def test_report_dialog_includes_the_real_provenance_section(qapp):
+    """Master Prompt V3 §25 ("Where did this AWCI value come from?") -
+    the SAME real AWCIResult.trace_chain() AWCIComponentDetailDialog's
+    own trace_label already renders, never a second/recomputed one."""
+    dashboard = AWCIDashboard()
+    dashboard._open_execution_report()
+
+    rendered = [label.text() for label in dashboard._execution_report_window._row_labels]
+    assert any("PROVENANCE" in line for line in rendered)
+    expected_chain = dashboard._last_awci_result.trace_chain()
+    for expected_line in expected_chain:
+        assert expected_line in rendered
+
+
+def test_provenance_section_honestly_reports_not_available_fields_in_demo_mode(qapp):
+    """Demo mode attaches no real Provenance/lead_time/vertical_level -
+    the trace must say so honestly, never a fabricated value."""
+    dashboard = AWCIDashboard()
+    dashboard._open_execution_report()
+
+    rendered = "\n".join(label.text() for label in dashboard._execution_report_window._row_labels)
+    assert "Modèle: not available" in rendered
+    assert "Niveau vertical: not available" in rendered
+
+
+def test_provenance_section_shows_the_real_vertical_level_in_real_physics_mode(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._on_real_physics_ready(_real_volume())
+    dashboard._open_execution_report()
+
+    rendered = "\n".join(label.text() for label in dashboard._execution_report_window._row_labels)
+    assert f"Niveau vertical: {dashboard._last_awci_result.vertical_level}" in rendered

@@ -1691,6 +1691,7 @@ class AWCIDashboard(QWidget):
             altitude=self.flight_level_selector.currentText(),
             valid_time=f"{self.time_slider.value():02d}:00 UTC",
             confidence_pct=confidence_pct,
+            decomposition=self._last_awci_result.decomposition if self._last_awci_result is not None else None,
         )
         self.model_agreement_card.update_data(module_scores)
         self.airport_table.update_data(self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES))

@@ -13547,3 +13547,63 @@ par capture d'écran réelle (1920×1080) : bannière de recommandation
 visible pour de vrai, nouveau footer réel (Recent Alerts/Latest
 Updates/Quick Actions) en bas, structure conforme à la photo de
 référence à 100%.
+
+## Mise à jour 2026-09-13 (suite) — §17 Explainability + §25 Provenance (Master Prompt V3)
+
+**Contexte** : suite de l'écart honnête donné à l'utilisateur entre le
+Master Prompt V3 et l'état réel du dashboard - 2 manques identifiés
+comme les plus fondés scientifiquement et les moins risqués (aucune
+nouvelle donnée à calculer, tout existait déjà dans le pipeline réel).
+
+**§17 - "Main Contributors" (pourquoi l'AWCI est-il élevé ?)** : ajouté
+à `AWCICurrentSituationCard` (awci_situation_panel.py). Réutilise
+`AWCICalculator.calculate()['decomposition']` - déjà réel, déjà
+existant : chaque entrée est le vrai nombre de points AWCI (0-100)
+contribué par un module ou un terme d'interaction, et la somme de
+toutes les entrées égale exactement `awci` par construction (vérifié :
+43.2 == 43.2 sur le point par défaut). Le pourcentage affiché
+(`valeur / awci * 100`) est donc de l'arithmétique réelle sur une
+donnée déjà réelle et déjà testée - jamais un chiffre inventé. Top 5
+contributeurs réels (> 0), triés par magnitude, avec un libellé humain
+réel (réutilise `COMPONENT_INFO` d'`awci_component_detail.py` pour les
+9 modules, plus 2 nouveaux libellés réels et exacts pour les 2 termes
+d'interaction - `wind_topo_interaction` = "Wind × Topography",
+`conv_thermo_interaction` = "Convection × Thermodynamics", tirés
+directement d'`AWCICalculator.INTERACTION_TERMS`, jamais devinés).
+
+**§25 - Provenance / Traceability ("d'où vient cette valeur ?")** :
+ajouté à `AWCIExecutionReportDialog` (déjà accessible via l'action
+rapide "Generate Report"). Réutilise `AWCIResult.trace_chain()` -
+déjà réel, déjà existant (Score → Contributions → Variables →
+Diagnostics → données sources → modèle → échéance → niveau vertical,
+§26/§53) et déjà affiché ailleurs (le dialogue de détail par module) -
+jamais un second calcul. Répond honnêtement "not available" pour
+modèle/données sources/échéance en mode démo (aucune vraie Provenance
+attachée), et montre le vrai niveau vertical en mode Real Physics.
+Le dialogue a été élargi et doté d'une vraie zone de défilement
+(QScrollArea) pour accueillir ce contenu réel plus long sans le
+tronquer ni le chevaucher.
+
+**Aucune donnée fabriquée** : les deux fonctionnalités sont de
+l'assemblage/affichage pur de calculs déjà réels et déjà testés
+ailleurs dans ce projet - zéro nouvelle formule, zéro nouvelle
+hypothèse scientifique.
+
+**Tests ajoutés** : 4 nouveaux tests dans `test_awci_situation_panel.py`
+(dont une preuve directe que le pourcentage affiché correspond à un
+recalcul indépendant `valeur/awci`), 3 nouveaux dans
+`test_awci_dashboard_execution_report.py` (dont un test prouvant que
+CHAQUE ligne de `trace_chain()` apparaît verbatim dans le dialogue), 4
+nouveaux dans `tests/test_awci_component_detail.py` (formules réelles
+ceiling/visibility cross-vérifiées contre `acf.awci.normalizer`/
+`acf.awci.ceiling`) + mise à jour de l'ancien test "7 modules" (oublié
+lors de l'ajout de ceiling/visibility plus tôt dans la session) en "9
+modules".
+
+**Validation** : 22 + 9 + 12 tests dédiés (component_detail/execution_
+report/situation_panel) : 43 passed. Suite complète (`tests/gui/` +
+fullscreen + alerts + stats_bar + screen_adaptability + component_
+detail) : **488 passed, 9 skipped, 0 failed** (27 min 23s). Vérifié
+visuellement par capture d'écran réelle (1920×1080) - "Main
+Contributors" visible avec de vrais pourcentages dans Current
+Situation.

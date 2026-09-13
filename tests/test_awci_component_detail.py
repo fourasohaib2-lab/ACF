@@ -16,9 +16,14 @@ from acf.awci.result import build_awci_result
 from acf.gui.dashboard.awci_component_detail import COMPONENT_INFO, AWCIComponentDetailDialog
 
 
-def test_component_info_covers_all_seven_real_modules():
+def test_component_info_covers_all_nine_real_modules():
+    """ceiling/visibility (added 2026-09-13, once AWCIHazardRow's own
+    cards for these 2 real, opt-in AWCICalculator modules became
+    clickable) joined the original 7 - see COMPONENT_INFO's own
+    comment for why both honestly show DEFAULT, never REAL, today."""
     assert set(COMPONENT_INFO.keys()) == {
         "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
+        "ceiling", "visibility",
     }
 
 
@@ -52,11 +57,41 @@ def test_real_in_real_physics_flags_match_the_actual_pipeline():
     """Real, verified fact: only dynamic/thermodynamic are genuinely
     solver-driven in Real Physics mode today (acf.awci.vertical_field.
     compute_real_complexity_volume() supplies no cape/cin/precipitation/
-    altitude/temporal_change/confidence)."""
+    altitude/temporal_change/confidence/ceiling_height_m/visibility_risk)."""
     assert COMPONENT_INFO["dynamic"].real_in_real_physics is True
     assert COMPONENT_INFO["thermodynamic"].real_in_real_physics is True
-    for key in ("convective", "microphysical", "topographic", "temporal", "confidence"):
+    for key in ("convective", "microphysical", "topographic", "temporal", "confidence", "ceiling", "visibility"):
         assert COMPONENT_INFO[key].real_in_real_physics is False, key
+
+
+def test_ceiling_formula_matches_the_real_normalizer():
+    """Cross-check against the REAL Normalizer.normalize_ceiling() and
+    its real FAA/NOAA VFR threshold - not a re-typed copy."""
+    from acf.awci.ceiling import MVFR_CEILING_M
+
+    info = COMPONENT_INFO["ceiling"]
+    assert info.real_inputs == ("ceiling_height_m",)
+    assert Normalizer.normalize_ceiling(MVFR_CEILING_M) == 0.0  # at/above the real VFR threshold -> 0 complexity
+    assert Normalizer.normalize_ceiling(0.0) == 1.0  # surface-level ceiling -> maximum real complexity
+
+
+def test_visibility_formula_matches_the_real_normalizer():
+    """normalize_visibility_risk() is a real pass-through clamp -
+    cross-checked directly, not re-derived."""
+    info = COMPONENT_INFO["visibility"]
+    assert info.real_inputs == ("visibility_risk",)
+    assert Normalizer.normalize_visibility_risk(0.5) == 0.5
+    assert Normalizer.normalize_visibility_risk(1.5) == 1.0  # real clamp, never > 1
+
+
+def test_ceiling_and_visibility_are_genuinely_opt_in_defaults_today():
+    """Neither this dashboard's demo _synthetic_inputs() path nor its
+    Real Physics per-point raw-field dict populates ceiling_height_m/
+    visibility_risk - both must honestly default to 0.0, never a
+    fabricated non-zero score."""
+    result = AWCICalculator().calculate_module_scores({"wind_speed": 30.0})
+    assert result["ceiling"] == 0.0
+    assert result["visibility"] == 0.0
 
 
 def test_dialog_shows_real_score_and_real_inputs_in_demo_mode(qtbot):

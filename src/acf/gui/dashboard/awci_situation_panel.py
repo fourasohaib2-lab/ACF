@@ -33,6 +33,7 @@ from PySide6.QtWidgets import QDialog, QFrame, QHBoxLayout, QLabel, QPushButton,
 
 from acf.gui.dashboard.awci_alerts_panel import compute_elevated_risks
 from acf.gui.dashboard.awci_colors import level_for, risk_qcolor
+from acf.gui.dashboard.awci_component_detail import COMPONENT_INFO
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet
 
 
@@ -40,6 +41,28 @@ def _card_frame() -> QFrame:
     frame = QFrame()
     frame.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
     return frame
+
+
+#: Real interaction-term key -> a real, accurate human label - see
+#: acf.awci.calculator.AWCICalculator.INTERACTION_TERMS's own docstring
+#: for the exact real module pair each term multiplies (never guessed).
+_INTERACTION_LABELS: dict[str, str] = {
+    "wind_topo_interaction": "Wind × Topography",
+    "conv_thermo_interaction": "Convection × Thermodynamics",
+}
+
+
+def _contributor_label(key: str) -> str:
+    """Real, human-readable label for a decomposition() key - reuses
+    AWCIComponentDetailDialog's own COMPONENT_INFO for the 9 real
+    module keys it already documents (never a second/duplicated label
+    table), _INTERACTION_LABELS for the 2 real interaction terms, and
+    an honest generic fallback (never a raw internal key shown to the
+    user) for anything else."""
+    info = COMPONENT_INFO.get(key)
+    if info is not None:
+        return info.label
+    return _INTERACTION_LABELS.get(key, key.replace("_", " ").title())
 
 
 class AWCICurrentSituationCard(QFrame):
@@ -65,6 +88,19 @@ class AWCICurrentSituationCard(QFrame):
         self.hazards_layout = QVBoxLayout()
         self.hazards_layout.setSpacing(1)
         layout.addLayout(self.hazards_layout)
+
+        # Real "why is AWCI high" explainability (added 2026-09-13,
+        # Master Prompt V3 §17) - see update_data()'s own docstring for
+        # the exact real source (AWCICalculator.calculate()'s own
+        # `decomposition`, already real AWCI points per module/
+        # interaction term that sum to `awci` - never an invented
+        # percentage).
+        self.contributors_header = QLabel("Main Contributors")
+        self.contributors_header.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none; margin-top: 4px;")
+        layout.addWidget(self.contributors_header)
+        self.contributors_layout = QVBoxLayout()
+        self.contributors_layout.setSpacing(1)
+        layout.addLayout(self.contributors_layout)
 
         self.area_label = QLabel("Affected Area: —")
         self.altitude_label = QLabel("Main Altitude: —")
@@ -100,7 +136,19 @@ class AWCICurrentSituationCard(QFrame):
         altitude: str,
         valid_time: str,
         confidence_pct: float,
+        decomposition: dict[str, float] | None = None,
     ) -> None:
+        """`decomposition` is the real per-module/interaction-term AWCI
+        points from AWCICalculator.calculate()['decomposition'] (the
+        SAME real dict AWCIResult.decomposition already carries, see
+        acf/awci/calculator.py's own calculate() docstring) - each
+        entry already sums to `overall_awci` by construction, so the
+        "Main Contributors" percentages below (value / overall_awci)
+        are real arithmetic on an already-real, already-tested
+        decomposition, never an invented/guessed contribution. `None`
+        (a caller with no real decomposition attached, e.g. an older
+        call site) shows an honest "not available" line instead of a
+        fabricated list."""
         level = level_for(overall_awci)
         self.severity_label.setText(level)
         color = risk_qcolor(level)
@@ -131,6 +179,40 @@ class AWCICurrentSituationCard(QFrame):
             row.addStretch()
             row.addWidget(level_label)
             self.hazards_layout.addLayout(row)
+
+        while self.contributors_layout.count():
+            item = self.contributors_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        if decomposition is None:
+            missing_label = QLabel("Not available (no real decomposition attached)")
+            missing_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none;")
+            self.contributors_layout.addWidget(missing_label)
+        else:
+            # Real, positive contributors only (a 0-weighted or 0-score
+            # module/interaction term contributes 0 real points - never
+            # shown as a padded/fabricated entry) - top 5 by real
+            # magnitude, largest first.
+            contributors = sorted(
+                ((key, value) for key, value in decomposition.items() if value > 0.0),
+                key=lambda item: item[1],
+                reverse=True,
+            )[:5]
+            if not contributors:
+                none_label = QLabel("No significant contributor (AWCI ≈ 0)")
+                none_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none;")
+                self.contributors_layout.addWidget(none_label)
+            for key, value in contributors:
+                pct = (value / overall_awci * 100.0) if overall_awci > 0 else 0.0
+                row = QHBoxLayout()
+                name_label = QLabel(_contributor_label(key))
+                name_label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 9px; border: none;")
+                pct_label = QLabel(f"{pct:.0f}%")
+                pct_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 9px; font-weight: bold; border: none;")
+                row.addWidget(name_label)
+                row.addStretch()
+                row.addWidget(pct_label)
+                self.contributors_layout.addLayout(row)
 
         self.area_label.setText(f"Affected Area: {area}")
         self.altitude_label.setText(f"Main Altitude: {altitude}")

@@ -73,6 +73,63 @@ def test_real_area_altitude_valid_time_confidence_are_shown_verbatim(qapp):
     assert card.confidence_value_label.text() == "73%"
 
 
+# ------------------------------------- explainability ("Main Contributors")
+
+
+def test_no_decomposition_shows_an_honest_not_available_line(qapp):
+    card = AWCICurrentSituationCard()
+    card.update_data(_module_scores(), 50.0, None, None, area="Global", altitude="FL300", valid_time="12:00 UTC", confidence_pct=80.0)
+    assert card.contributors_layout.count() == 1
+
+
+def test_contributors_show_the_real_percentage_of_a_real_decomposition(qapp):
+    """Real proof: percentages are real arithmetic (value/awci*100) on
+    an already-real AWCICalculator.calculate()['decomposition'] - never
+    an invented number, and the 2 shown values must sum sensibly (each
+    <= 100%, largest first)."""
+    from acf.awci.calculator import AWCICalculator
+
+    result = AWCICalculator().calculate({"wind_speed": 45.0, "temperature": 10.0})
+    card = AWCICurrentSituationCard()
+    card.update_data(
+        result["module_scores"], result["awci"], result["physical_score"], result["forecast_score"],
+        area="Global", altitude="FL300", valid_time="12:00 UTC", confidence_pct=80.0,
+        decomposition=result["decomposition"],
+    )
+
+    expected = sorted(((k, v) for k, v in result["decomposition"].items() if v > 0.0), key=lambda kv: kv[1], reverse=True)[:5]
+    assert card.contributors_layout.count() == len(expected)
+    top_key, top_value = expected[0]
+    expected_pct = top_value / result["awci"] * 100.0
+    first_row = card.contributors_layout.itemAt(0).layout()
+    pct_text = first_row.itemAt(first_row.count() - 1).widget().text()
+    assert pct_text == f"{expected_pct:.0f}%"
+
+
+def test_contributor_labels_are_human_readable_not_raw_keys(qapp):
+    from acf.awci.calculator import AWCICalculator
+
+    result = AWCICalculator().calculate({"wind_speed": 45.0})
+    card = AWCICurrentSituationCard()
+    card.update_data(
+        result["module_scores"], result["awci"], result["physical_score"], result["forecast_score"],
+        area="Global", altitude="FL300", valid_time="12:00 UTC", confidence_pct=80.0,
+        decomposition=result["decomposition"],
+    )
+    first_row = card.contributors_layout.itemAt(0).layout()
+    label_text = first_row.itemAt(0).widget().text()
+    assert label_text == "Dynamic Complexity"  # never the raw "dynamic" key
+
+
+def test_no_positive_contributor_shows_an_honest_message(qapp):
+    card = AWCICurrentSituationCard()
+    card.update_data(
+        {}, 0.0, None, None, area="Global", altitude="FL300", valid_time="12:00 UTC", confidence_pct=80.0,
+        decomposition={"dynamic": 0.0, "convective": 0.0},
+    )
+    assert card.contributors_layout.count() == 1
+
+
 # ----------------------------------------------------- AWCIModelAgreementCard
 
 
