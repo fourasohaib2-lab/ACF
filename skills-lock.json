@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-design/skills/frontend-design/SKILL.md",
+      "computedHash": "b8c8329ad9b98fa57f4a279e37bdf4a0d55743140e54bb7da3e340d754d75b43"
+    },
+    "frontend-visual-qa": {
+      "source": "daymade/claude-code-skills",
+      "sourceType": "github",
+      "skillPath": "frontend-visual-qa/SKILL.md",
+      "computedHash": "e2fc014d20de1c797be9f79d1e496f820c5ee943e755cdad3d2b5c8d03cfeaa6"
+    },
+    "image-to-code": {
+      "source": "plugin87/ux-ui-agent-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/image-to-code/SKILL.md",
+      "computedHash": "d796c217f5df15ffb2cd339b73e33bd499929ed1085fd2dbf02ebd28088a895b"
+    },
+    "screenshot-to-code": {
+      "source": "onewave-ai/claude-skills",
+      "sourceType": "github",
+      "skillPath": "screenshot-to-code/SKILL.md",
+      "computedHash": "983fa7f4870e5b5d6e48b623f2a9bcd25b2caad977a2d36b2214200d0995c4bb"
+    }
+  }
+}

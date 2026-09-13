@@ -15,13 +15,11 @@ from acf.intelligence.optimization.evacuation import EmergencyOptimizationEngine
 from acf.intelligence.planner.mission_planner import MissionPlanner
 from acf.intelligence.reports.executive_report import AutonomousReportGenerator
 from acf.intelligence.scientific_reasoning import ScientificReasoningEngine, ScientificReasoningReport
-from acf.intelligence.visualization.intelligence_dashboard import EarthIntelligenceDashboard
 
 __all__ = [
     "AutonomousReportGenerator",
     "DecisionSupportEngine",
     "EarthAnomalyEngine",
-    "EarthIntelligenceDashboard",
     "EmergencyOptimizationEngine",
     "ForecastReasoningEngine",
     "HypothesisEngine",

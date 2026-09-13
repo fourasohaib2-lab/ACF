@@ -194,7 +194,6 @@ class ModuleRegistry:
         self._safe_import_register("earth_physics", "acf.earth_physics", "AtmosphericDynamicsEngine")
         self._safe_import_register("data_assimilation", "acf.data_assimilation.analysis_state", "EarthAnalysisStateVector")
         self._safe_import_register("digital_twin", "acf.digital_twin.digital_twin_engine", "DigitalTwinEngine")
-        self._safe_import_register("planetary_dashboard", "acf.digital_twin.planetary_dashboard", "PlanetaryDashboard")
         self._safe_import_register("ai_expert", "acf.ai_expert.earth_system_expert", "EarthSystemExpert")
         self._safe_import_register("geoengineering", "acf.geoengineering", "GeoengineeringPlatform")
         self._safe_import_register("space_weather", "acf.space_weather", "SpaceWeatherPlatform")
@@ -206,10 +205,6 @@ class ModuleRegistry:
         self._safe_import_register("forecast", "acf.forecast.forecast_engine", "ForecastEngine")
         self._safe_import_register("hydrology", "acf.ai_expert.hydrology_reasoning", "HydrologyReasoningEngine")
         self._safe_import_register("air_quality", "acf.ai_expert.air_quality_reasoning", "AirQualityReasoningEngine")
-        self._safe_import_register("production_dashboard", "acf.dashboard.manager", "DashboardManager")
-        self._safe_import_register(
-            "visualization", "acf.visualization.ai_forecast_center.forecast_dashboard", "AIForecastDashboard"
-        )
         self._safe_import_register("hpc_connector", "acf.hpc_connector", "HPCConnectionManager")
 
     def _build_search_index(self) -> None:
@@ -237,7 +232,7 @@ class ModuleRegistry:
             ("Sea Surface Temperature (SST)", "Ocean Hydrodynamics", "Temperature of top ocean layer"),
             ("Fourier Neural Operator (FNO)", "AI Surrogate Model", "Neural operator for 1000x NWP acceleration"),
             ("4D-Var Data Assimilation", "Data Assimilation", "Four-Dimensional Variational Data Assimilation"),
-            ("Planetary Health Score", "Planetary Dashboard", "Composite indicator of 9 Earth boundaries"),
+            ("Planetary Health Score", "Planetary Boundaries", "Composite indicator of 9 Earth boundaries"),
         ]
         for name, cat, det in params:
             self.search_index.append({"type": "parameter", "name": name, "category": cat, "detail": det})

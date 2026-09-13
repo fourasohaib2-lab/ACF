@@ -53,8 +53,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Desktop GUI (ESOC window, AWCI/classic dashboards - matplotlib
-# figures embedded via FigureCanvasQTAgg throughout gui/dashboard/).
+# Desktop GUI (ESOC window - matplotlib figures embedded via
+# FigureCanvasQTAgg throughout the panel manager).
 gui = ["PySide6", "matplotlib"]
 # Map rendering and coordinate/geometry transforms (gui/maps/
 # visualization panels, geospatial/ package).
@@ -156,7 +156,6 @@ dev = ["pytest", "pytest-cov", "pytest-timeout", "pytest-qt", "black", "ruff", "
 [project.scripts]
 acf-gui = "acf.gui.app:main"
 acf-web = "acf.web.hpc_dashboard_server:run"
-acf-awci = "acf.awci_app:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

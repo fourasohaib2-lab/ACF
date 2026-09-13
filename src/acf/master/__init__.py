@@ -4,7 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Global Planetary Resilience & Interstellar Master Framework Package (MISSION ACF-041)
 """
 
-from acf.master.awci_master_dashboard import MasterDashboard
 from acf.master.capabilities import ScientificCapabilityRegistry
 from acf.master.documentation_index import DocumentationIndexer
 from acf.master.equation_validator import EquationValidator
@@ -30,7 +29,6 @@ __all__ = [
     "GlobalModuleRegistry",
     "HealthMonitor",
     "HealthReport",
-    "MasterDashboard",
     "MasterExecutiveReport",
     "MasterKnowledgeGraph",
     "MasterRuntime",

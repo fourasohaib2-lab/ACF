@@ -4,7 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Global Geoengineering, Climate Intervention & Planetary Boundaries Control Package (MISSION ACF-040)
 """
 
-from acf.geoengineering.awci_geoengineering_dashboard import PlanetaryBoundariesDashboard
 from acf.geoengineering.carbon_cycle import CarbonCycleEngine
 from acf.geoengineering.carbon_removal import CarbonRemovalEngine
 from acf.geoengineering.climate_ai import ClimateDecisionEngine
@@ -22,7 +21,6 @@ __all__ = [
     "ClimateRestorationEngine",
     "ClimateScenarioEngine",
     "GreenhouseGasEngine",
-    "PlanetaryBoundariesDashboard",
     "PlanetaryBoundary",
     "PlanetaryBoundaryEngine",
     "SolarRadiationManagementEngine",

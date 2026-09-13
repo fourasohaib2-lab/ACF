@@ -7,7 +7,6 @@ Global Planetary Resilience, Cosmic Hazard & Interplanetary Observation Platform
 import pytest
 
 from acf.planetary.astrobiology import HabitabilityAssessment, HabitabilityEngine
-from acf.planetary.awci_planetary_dashboard import PlanetaryDefenseDashboard
 from acf.planetary.cosmic_hazards import CosmicHazardEngine, CosmicRiskLevel
 from acf.planetary.exoplanets import ExoplanetDatabase
 from acf.planetary.impact_engine import ImpactEngine, ImpactSeverity
@@ -160,9 +159,6 @@ def test_planetary_ai_and_dashboard():
     unknown = PlanetaryReasoningEngine.run_planetary_reasoning_chain("2024 XY1 (not in registry)")
     assert unknown["status"] == "UNKNOWN_OBJECT_NOT_IN_REGISTRY"
     assert unknown["is_real_data"] is False
-
-    meta = PlanetaryDefenseDashboard.get_dashboard_metadata()
-    assert meta["workspace_name"] == "PLANETARY DEFENSE & INTERPLANETARY CENTER"
 
 
 def test_query_engine_planetary_queries():

@@ -8,7 +8,6 @@ from acf.monitoring.alert_dispatcher import OperationalAlertDispatcher
 from acf.monitoring.anomaly_monitor import EarthAnomalyMonitor
 from acf.monitoring.earth_health import EarthHealthMonitor
 from acf.monitoring.event_stream import PlanetaryEventStream
-from acf.monitoring.monitoring_dashboard import AWCIMonitoringDashboard
 from acf.monitoring.monitoring_registry import MonitoringRegistry
 from acf.monitoring.observation_stream import ObservationStreamEngine
 from acf.monitoring.realtime_monitor import GlobalRealtimeMonitor
@@ -135,13 +134,8 @@ def test_anomaly_alert_health_and_registry():
     assert reg["registry_health"] == "NOT_CHECKED_NO_HEALTH_PROBE_CONNECTED"
 
 
-def test_monitoring_dashboard_and_query_engine():
-    """Test des métadonnées du tableau de bord et des requêtes du QueryEngine."""
-    dash = AWCIMonitoringDashboard.get_dashboard_metadata()
-    assert dash["workspace_name"] == "GLOBAL REAL-TIME EARTH MONITORING MISSION CONTROL"
-    assert len(dash["live_map_layers"]) >= 20
-    assert "BLACK" in dash["alert_levels"]
-
+def test_monitoring_query_engine():
+    """Test des requêtes du QueryEngine."""
     qe = ScientificQueryEngine()
 
     r1 = qe.ask("Show Live Earth")

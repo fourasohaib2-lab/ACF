@@ -3,7 +3,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
@@ -24,18 +24,13 @@ from acf.gui.esoc.panel_manager import PanelManager
 from acf.gui.esoc.session_manager import SessionManager
 from acf.gui.esoc.settings_dialog import SettingsDialog
 
-if TYPE_CHECKING:
-    from acf.dashboard.window import ClassicDashboardWindow
-    from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
-    from acf.gui.dashboard.awci_window import AWCIDashboardWindow
-
 logger = logging.getLogger("acf.gui.esoc.esoc_window")
 
 
 class _AWCIFieldWorkerSignals(QObject):
-    """QRunnable itself cannot be a QObject (no signals) - same
-    companion-object pattern as acf.gui.dashboard.awci_dashboard's
-    _RealFieldWorkerSignals, reused here rather than duplicated."""
+    """QRunnable itself cannot be a QObject (no signals) - this
+    companion QObject exists solely to carry its finished/failed
+    signals."""
 
     finished = Signal(dict)
     failed = Signal(str)
@@ -111,9 +106,6 @@ class ESOCWindow(QMainWindow):
         # actually triggered from this window - a chosen theme, an opened log viewer).
         self._current_theme = "dark"
         self._log_viewer: LogViewerDialog | None = None
-        self._classic_dashboard_window: ClassicDashboardWindow | None = None
-        self._awci_dashboard_window: AWCIDashboardWindow | None = None
-        self._acf_workstation_window: ACFWorkstationWindow | None = None
 
         # 4. Connect Signals & Select Default Profile
         self._setup_connections()
@@ -202,14 +194,6 @@ class ESOCWindow(QMainWindow):
             self._take_screenshot()
         elif cmd == "open_settings":
             self._open_settings()
-        elif cmd == "open_classic_dashboard":
-            self._open_classic_dashboard()
-        elif cmd == "open_awci_dashboard":
-            self._open_awci_dashboard()
-        elif cmd == "launch_awci_app":
-            self._launch_awci_app()
-        elif cmd == "open_acf_workstation":
-            self._open_acf_workstation()
         elif cmd == "show_awci_field_on_map":
             self._show_awci_field_on_map()
         elif cmd == "open_help":
@@ -393,144 +377,12 @@ class ESOCWindow(QMainWindow):
         self._log_viewer.raise_()
         self._log_viewer.activateWindow()
 
-    def _open_classic_dashboard(self) -> None:
-        """Open (or raise) the classic ACF dashboard (acf.dashboard - MapView plus
-        Explorer/Charts/Properties/Timeline/Console/Status docks) as its own
-        top-level window.
-
-        NOTE: this predates ESOC and was completely unreachable from the running
-        application before this action existed - see ClassicDashboardWindow's own
-        docstring for why it is a separate window rather than one more ESOC tab
-        (its DashboardLayout calls setCentralWidget()/addDockWidget() directly,
-        so it wants to own a whole window, unlike the AWCI dashboard which fit
-        naturally as a tab).
-
-        The import below is deliberately local: acf.dashboard.window imports
-        acf.dashboard.layout, which imports acf.gui.widgets.map_view - importing
-        anything under acf.gui at all triggers acf/gui/__init__.py, which eagerly
-        imports THIS module (ESOCWindow) for its own __all__ - a module-level
-        import here would be a circular import (confirmed: raises ImportError on
-        a partially-initialized module). Deferring it until the button is
-        actually clicked breaks the cycle.
-        """
-        from acf.dashboard.window import ClassicDashboardWindow
-
-        if self._classic_dashboard_window is None:
-            self._classic_dashboard_window = ClassicDashboardWindow(self)
-        self._classic_dashboard_window.show()
-        self._classic_dashboard_window.raise_()
-        self._classic_dashboard_window.activateWindow()
-
-    def _open_awci_dashboard(self) -> None:
-        """Open (or raise) the AWCI dashboard as its own top-level window.
-
-        The AWCIDashboard widget was already reachable twice, but badly: as the
-        28th and last tab of the bottom dock (where it is clipped - it declares a
-        1200x900 minimum and lives in a QScrollArea, see AWCIDashboardPanel), and
-        as a button inside the Classic View window, two clicks away. This action
-        opens acf.gui.dashboard.awci_window.AWCIDashboardWindow (1500x950)
-        directly, reusing the exact pattern of _open_classic_dashboard() above.
-
-        The import is deliberately local for the same reason as there:
-        acf.gui.dashboard pulls in acf.gui, whose __init__ eagerly imports THIS
-        module, so a module-level import would be circular.
-        """
-        from acf.gui.dashboard.awci_window import AWCIDashboardWindow
-
-        first_open = self._awci_dashboard_window is None
-        if first_open:
-            self._awci_dashboard_window = AWCIDashboardWindow(self)
-        if first_open:
-            # NOTE (correction, 2026-09-07 - explicit user request "gère
-            # moi la résolution pour que ça soit en plein écran"): only
-            # on first real open - showMaximized() again on every
-            # re-open (this is an open-OR-raise action, clicked
-            # repeatedly) would silently override an operator's own
-            # manual resize/un-maximize each time, which plain show()
-            # below never did.
-            self._awci_dashboard_window.showMaximized()
-        else:
-            self._awci_dashboard_window.show()
-        self._awci_dashboard_window.raise_()
-        self._awci_dashboard_window.activateWindow()
-        self.dispatcher.log_message_emitted.emit(
-            "INFO",
-            "AWCI dashboard opened. Meteorological INPUT fields are synthetic "
-            "(see acf.gui.dashboard.awci_synthetic_field); the AWCI scores themselves "
-            "are real AWCICalculator output over those inputs.",
-        )
-
-    def _launch_awci_app(self) -> None:
-        """Launch AWCI as a genuinely separate, independent application -
-        its own OS process (acf.awci_app), not a second window inside
-        THIS process the way _open_awci_dashboard() above is. Explicit
-        user request ("une vraie application séparée... pas juste une
-        2e fenêtre Qt dans le même processus"): closing ESOC does not
-        close this, closing this does not close ESOC, and it has its
-        own single-instance guard (acf.awci_app's own distinct server
-        name - see that module's own docstring) so it can never be
-        confused with, or interfere with, ESOC's own guard.
-
-        subprocess.Popen (not QProcess): deliberately fire-and-forget -
-        this window has no reason to track the child's lifetime,
-        collect its output, or be notified when it exits, all of which
-        QProcess exists for for a parent that DOES care. sys.executable
-        (not the "acf-awci" console script by name) so this works
-        identically regardless of whether the console script happens
-        to be on PATH - the only real requirement is the same Python
-        environment ESOC itself is already running in.
-        """
-        import subprocess
-        import sys
-
-        try:
-            subprocess.Popen([sys.executable, "-m", "acf.awci_app"])
-        except OSError as exc:
-            self.dispatcher.log_message_emitted.emit("ERROR", f"Failed to launch AWCI app: {exc}")
-            return
-        self.dispatcher.log_message_emitted.emit(
-            "INFO",
-            "AWCI launched as a separate application (its own process, its own "
-            "single-instance guard) - independent of ESOC's own lifecycle.",
-        )
-
-    def _open_acf_workstation(self) -> None:
-        """Open (or raise) the real, AWCI-free ACF Scientific
-        Workstation as its own top-level window -
-        docs/reference/acf_dashboard_reference.jpg. NOTE (correction,
-        2026-09-04): this used to open ACFGeneralDashboardWindow, but a
-        real audit (prompted by the user's own new "ACF CORE ONLY - NO
-        AWCI" master spec) found that dashboard genuinely AWCI-coupled
-        despite its name (see acf_general_dashboard.py's own NOTE) -
-        acf_workstation_window.ACFWorkstationWindow is the real
-        replacement. Distinct from the AWCI-only dashboard above
-        (_open_awci_dashboard); same open-or-raise pattern, same reason
-        for a local import (circular via acf.gui.dashboard ->
-        acf.gui.__init__ -> this module).
-        """
-        from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
-
-        if self._acf_workstation_window is None:
-            self._acf_workstation_window = ACFWorkstationWindow(self)
-        self._acf_workstation_window.show()
-        self._acf_workstation_window.raise_()
-        self._acf_workstation_window.activateWindow()
-        self.dispatcher.log_message_emitted.emit(
-            "INFO",
-            "ACF Scientific Workstation opened - computing real CoupledEarthSolver "
-            "volume off-thread (acf.awci.vertical_field.compute_real_complexity_volume), "
-            "no AWCI score/gauge anywhere in this window.",
-        )
-
     def _show_awci_field_on_map(self) -> None:
         """Compute a real acf.awci.spatial_field.compute_real_complexity_field()
-        result (off the GUI thread, same QRunnable+Signal pattern as
-        acf.gui.dashboard.awci_dashboard's Real Physics mode) and overlay
-        it on THIS window's own central map (acf.gui.map.map_canvas.
-        MapCanvas, via ViewManager) - explicit user request "ajoute la
-        4eme dimension au niveau d'affichage des cartes". Before this,
-        ESOC's central map never showed any real AWCI/CAPE/CIN data at
-        all - only the separate AWCI dashboard window did.
+        result (off the GUI thread) and overlay it on THIS window's own
+        central map (acf.gui.map.map_canvas.MapCanvas, via ViewManager) -
+        explicit user request "ajoute la 4eme dimension au niveau
+        d'affichage des cartes".
 
         compute_convective_energy=True also surfaces real per-point
         CAPE/CIN (acf.awci.convective_energy) - closing a real,
@@ -548,8 +400,7 @@ class ESOCWindow(QMainWindow):
         )
         # NOTE (found while verifying this end-to-end, not hypothetical):
         # connecting to a bare lambda here (instead of a genuine bound
-        # method, like awci_dashboard.py's own _RealFieldWorker
-        # consumers do) meant PySide6's Auto connection type had no
+        # method) meant PySide6's Auto connection type had no
         # receiver QObject to determine safe cross-thread queuing for -
         # the signal, emitted from the worker thread, never actually
         # invoked the lambda at all (confirmed: it silently never ran,

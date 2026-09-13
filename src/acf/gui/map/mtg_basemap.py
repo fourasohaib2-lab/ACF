@@ -21,12 +21,14 @@ from __future__ import annotations
 
 import io
 import logging
+import weakref
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import cartopy.crs as ccrs
 import numpy as np
 import pyproj
+import shiboken6
 import yaml
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal
 
@@ -362,3 +364,43 @@ def draw_mtg_basemap(axes: Any, zorder: int = 0) -> bool:
         logger.warning("Failed to draw MTG basemap image", exc_info=True)
         return False
     return True
+
+
+class MTGUpdateReceiver(Protocol):
+    """Structural type for make_mtg_update_forwarder()'s `panel` -
+    anything with this one method (e.g. AWCIMapPanel, or
+    acf.gui.esoc.panel_manager.EarthMonitoringPanel)."""
+
+    def _on_mtg_basemap_updated(self) -> None: ...
+
+
+def make_mtg_update_forwarder(panel: "MTGUpdateReceiver", provider: MTGBasemapProvider) -> Any:
+    """Build the callable connected to MTGBasemapProvider.updated for one
+    receiver, without the callable itself holding a real (keep-alive)
+    reference to that receiver.
+
+    NOTE (real bug found while integrating this, and a real second bug
+    found while first fixing it): MTGBasemapProvider is a process-wide
+    singleton (see its own docstring) that outlives any single panel - a
+    panel closed/destroyed used to leave its connection live, so the
+    next real EUMETSAT fetch fired straight into a widget whose C++ side
+    was already gone ("libshiboken: ... already deleted" from inside
+    update_data()). The first fix tried disconnecting from this panel's
+    own `destroyed` signal - but `destroyed` fires DURING the QObject's
+    C++ destructor, and even just resolving a bound method of `panel`
+    for Signal.disconnect() to compare against touches the (by then
+    already invalid) C++ side, raising a second, different crash from
+    inside shiboken's own disconnect(). So this holds only a weakref,
+    and checks shiboken6.isValid() on every firing instead of ever
+    trying to disconnect from a QObject lifetime signal - a dead/invalid
+    panel just becomes a permanent no-op instead of being removed.
+    """
+    panel_ref = weakref.ref(panel)
+
+    def _forward() -> None:
+        live_panel = panel_ref()
+        if live_panel is None or not shiboken6.isValid(live_panel):
+            return
+        live_panel._on_mtg_basemap_updated()
+
+    return _forward

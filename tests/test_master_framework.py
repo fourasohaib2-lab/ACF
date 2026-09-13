@@ -6,7 +6,6 @@ Global Interstellar Master Framework Test Suite (MISSION ACF-041)
 
 import pytest
 
-from acf.master.awci_master_dashboard import MasterDashboard
 from acf.master.capabilities import ScientificCapabilityRegistry
 from acf.master.documentation_index import DocumentationIndexer
 from acf.master.equation_validator import EquationValidator
@@ -165,11 +164,8 @@ def test_master_knowledge_graph_and_workflow_engine():
     assert len(pipeline_res["pipelines_defined_but_not_run"]) == 8
 
 
-def test_master_dashboard_and_executive_reporting():
-    """Test du tableau de bord AWCI Master et du générateur de rapports exécutifs."""
-    meta = MasterDashboard.get_dashboard_metadata()
-    assert meta["workspace_name"] == "ACF MASTER FRAMEWORK UNIFIED CONTROL CENTER"
-
+def test_master_executive_reporting():
+    """Test du générateur de rapports exécutifs."""
     # CORRECTED: generate_report() used to hard-code "PLATINUM
     # CERTIFIED (100% SI & WMO/NOAA/NASA Compliance)" and "2006+
     # Passed" tests into the report text regardless of the framework's

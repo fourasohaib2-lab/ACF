@@ -4,7 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Global Geology, Geophysics, Seismology & Natural Hazards Package (MISSION ACF-035)
 """
 
-from acf.geology.awci_geology_dashboard import GeologyCenterDashboard
 from acf.geology.earthquake_warning import EarthquakeWarningEngine
 from acf.geology.faults import FaultDatabase, FaultSegment
 from acf.geology.geodesy import GeodesyEngine
@@ -32,7 +31,6 @@ __all__ = [
     "GeodesyEngine",
     "GeologicalObservatoryEngine",
     "GeologicalReasoningEngine",
-    "GeologyCenterDashboard",
     "GeologyDatabase",
     "GravityEngine",
     "HazardEngine",

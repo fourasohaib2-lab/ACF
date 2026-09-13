@@ -26,7 +26,6 @@ from acf.release.logging_configuration import LoggingConfiguration
 from acf.release.migration import MigrationManager
 from acf.release.package_validator import PackageValidator
 from acf.release.performance_report import PerformanceReportGenerator
-from acf.release.production_dashboard import AWCIProductionDashboard
 from acf.release.release_manager import ReleaseManager
 from acf.release.release_notes import ReleaseNotesGenerator
 from acf.release.runtime import ProductionRuntime
@@ -299,8 +298,8 @@ def test_installer_updater_logging_and_security():
     assert len(integ["git_commit_sha"]) == 40  # real git SHA-1 hex length
 
 
-def test_documentation_and_production_dashboard():
-    """Test de la génération des 11 manuels et des métadonnées AWCI v1.0."""
+def test_documentation_builder():
+    """Test de la génération des 11 manuels."""
     # CORRECTED: build_all_documentation() used to claim all 11 planned
     # manuals were "compiled" just by counting the static list length -
     # no real doc-generation step ran.
@@ -309,12 +308,3 @@ def test_documentation_and_production_dashboard():
     assert doc["compiled_manuals_count"] == 0
     assert "Developer Guide" in doc["manuals"]
     assert doc["build_status"] == "NOT_BUILT_NO_DOC_GENERATION_EXECUTED"
-
-    # CORRECTED: workspace_name/sections are a genuine static UI
-    # descriptor, but certification/overall_status used to claim
-    # "PLATINUM CERTIFIED / PRODUCTION OPERATIONAL" - same false
-    # certification pattern found duplicated across 4 other places
-    # this session, none backed by a real audit.
-    dash = AWCIProductionDashboard.get_dashboard_metadata()
-    assert dash["workspace_name"] == "ACF v1.0 PRODUCTION MASTER DASHBOARD"
-    assert dash["overall_status"] == "NOT_VERIFIED_NO_OPERATIONAL_READINESS_CHECK_PERFORMED"

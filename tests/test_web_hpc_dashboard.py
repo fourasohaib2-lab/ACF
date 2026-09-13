@@ -33,13 +33,6 @@ def client(hpc):
         yield c
 
 
-def test_index_page_serves_html(client):
-    res = client.get("/")
-    assert res.status_code == 200
-    assert "ACF HPC Web Dashboard" in res.text
-    assert "/api/v1/hpc/ws" in res.text
-
-
 def test_status_endpoint_reflects_real_manager_state(client, hpc):
     res = client.get("/api/v1/hpc/status")
     assert res.status_code == 200

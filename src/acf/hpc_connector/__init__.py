@@ -6,7 +6,6 @@ from acf.hpc_connector.configuration import HPCConfiguration
 from acf.hpc_connector.connection_manager import HPCConnectionManager
 from acf.hpc_connector.environment_manager import EnvironmentManager, ModuleLoader
 from acf.hpc_connector.file_transfer import FileTransferManager
-from acf.hpc_connector.hpc_dashboard import HPCDashboard
 from acf.hpc_connector.hpc_monitor import HPCMonitor
 from acf.hpc_connector.job_manager import JobManager
 from acf.hpc_connector.logging import log_hpc_event
@@ -37,7 +36,6 @@ __all__ = [
     "FileTransferManager",
     "HPCConfiguration",
     "HPCConnectionManager",
-    "HPCDashboard",
     "HPCMonitor",
     "HPCOutputManager",
     "HPCResourceOptimizer",

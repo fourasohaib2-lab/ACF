@@ -10,7 +10,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from acf.data.dataset import Dataset
-from acf.gui.dashboard.awci_colors import AWCI_CMAP
+from acf.gui.map.awci_colors import AWCI_CMAP
 
 logger = logging.getLogger("acf.gui.map.map_layers")
 

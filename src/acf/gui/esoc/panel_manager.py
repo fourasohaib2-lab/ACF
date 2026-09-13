@@ -586,8 +586,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         from acf.connectors.argo_floats import ArgoFloatsConnector
         from acf.connectors.nexrad_stations import NEXRADRadarConnector
         from acf.connectors.pirep_reports import PIREPConnector
-        from acf.gui.dashboard.awci_map_panel import _make_mtg_update_forwarder
-        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider, make_mtg_update_forwarder
 
         self._argo_connector = ArgoFloatsConnector()
         self._nexrad_connector = NEXRADRadarConnector()
@@ -603,7 +602,7 @@ class EarthMonitoringPanel(BasePanelWidget):
         # ownership taking over.
         self._fetch_workers: list[Any] = []
         MTGBasemapProvider.instance().updated.connect(
-            _make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
+            make_mtg_update_forwarder(self, MTGBasemapProvider.instance())
         )
         self._refresh_mtg_row()
         self._fetch_argo_async()
@@ -1823,44 +1822,6 @@ class HPCPanel(BasePanelWidget):
             "• Fault-Tolerant Checkpoint: Step 360 Saved"
         )
         self.main_layout.addWidget(self.txt)
-
-
-class AWCIDashboardPanel(QWidget):
-    """28. Aviation Weather Complexity Index (AWCI) operational dashboard.
-
-    Embeds the full acf.gui.dashboard.AWCIDashboard widget directly (it
-    already has its own header/title, unlike the other panels here, so this
-    intentionally skips BasePanelWidget's extra title bar to avoid a
-    redundant double header). registry/dispatcher are accepted for
-    signature consistency with every other panel constructor but are not
-    used - the AWCI dashboard's own numbers come from the real
-    AWCICalculator over a synthetic demo field (see
-    acf.gui.dashboard.awci_synthetic_field's docstring), not from any
-    registry-managed subsystem.
-
-    Wrapped in a QScrollArea: the dashboard's maps/radar/charts need real
-    vertical space to stay legible, but this panel shares the bottom dock
-    with 27 other tabs at whatever height the operator has left it - a
-    plain embed got compressed and overlapping there instead of scrolling.
-    """
-
-    def __init__(self, registry: ModuleRegistry, dispatcher: CommandDispatcher) -> None:
-        super().__init__()
-        self.registry = registry
-        self.dispatcher = dispatcher
-
-        from acf.gui.dashboard.awci_dashboard import AWCIDashboard
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.awci_dashboard = AWCIDashboard()
-        self.awci_dashboard.setMinimumSize(1200, 900)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(self.awci_dashboard)
-        layout.addWidget(scroll)
 
 
 class CatalogPanel(BasePanelWidget):
@@ -3462,7 +3423,6 @@ class PanelManager:
             "verification": VerificationPanel(registry, dispatcher),
             "system_console": SystemConsolePanel(registry, dispatcher),
             "hpc": HPCPanel(registry, dispatcher),
-            "awci_dashboard": AWCIDashboardPanel(registry, dispatcher),
             "catalog": CatalogPanel(registry, dispatcher),
             "plugins": PluginsPanel(registry, dispatcher),
             "geoengineering": GeoengineeringPanel(registry, dispatcher),

@@ -3,7 +3,7 @@
 Integrates all ACF subsystems into a unified operational command center:
 - Earth Monitoring & Physics
 - Numerical Weather Prediction & Simulation Engine
-- Earth Digital Twin & Planetary Dashboard
+- Earth Digital Twin & Planetary Boundaries
 - Data Assimilation (4D-Var, EnKF, Hybrid)
 - AI Forecast Intelligence & Emergency Assistant
 - Hazard Operations (Cyclones, Floods, Storms, Wildfires)
@@ -20,7 +20,6 @@ from acf.gui.esoc.esoc_statusbar import ESOCStatusBar
 from acf.gui.esoc.esoc_toolbar import ESOCToolbar
 from acf.gui.esoc.esoc_window import ESOCWindow
 from acf.gui.esoc.esoc_workspace import WorkspaceManager, WorkspaceMode
-from acf.gui.esoc.hpc_dashboard_panel import HPCDashboardPanel
 from acf.gui.esoc.hpc_execution_panel import HPCExecutionPanel
 from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.gui.esoc.nwp_forecast_center_panel import NWPForecastCenterPanel
@@ -37,7 +36,6 @@ __all__ = [
     "ESOCStatusBar",
     "ESOCToolbar",
     "ESOCWindow",
-    "HPCDashboardPanel",
     "HPCExecutionPanel",
     "ModuleRegistry",
     "NWPForecastCenterPanel",

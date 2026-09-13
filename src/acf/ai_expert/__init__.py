@@ -7,7 +7,6 @@ Global Autonomous AI Meteorologist & Earth System Expert Package (MISSION ACF-04
 from acf.ai_expert.ai_meteorologist import AIMeteorologist
 from acf.ai_expert.air_quality_reasoning import AirQualityReasoningEngine
 from acf.ai_expert.aviation_reasoning import AviationReasoningEngine
-from acf.ai_expert.awci_ai_dashboard import AWCI_AIDashboard
 from acf.ai_expert.climate_reasoning import ClimateReasoningEngine
 from acf.ai_expert.confidence_engine import ConfidenceEngine
 from acf.ai_expert.convective_analysis import ConvectiveAnalyzer
@@ -36,7 +35,6 @@ __all__ = [
     "AIDecisionSupport",
     "AIKnowledgeEngine",
     "AIMeteorologist",
-    "AWCI_AIDashboard",
     "AirQualityReasoningEngine",
     "AviationReasoningEngine",
     "ClimateReasoningEngine",

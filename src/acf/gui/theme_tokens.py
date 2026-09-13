@@ -6,19 +6,11 @@ GUI - Theme Tokens
 
 Single source of truth for ACF's visual design system - colors,
 spacing, radius, and typography - shared by ESOC's chrome
-(`resources/themes/{dark,light}.qss`, applied via `ThemeManager`) and
-the AWCI dashboard (`acf.gui.dashboard.*`, which used to hardcode its
-own separate hex-literal palette in `awci_dashboard.py`'s
-`_apply_theme()` and every panel's inline `setStyleSheet()` calls).
+(`resources/themes/{dark,light}.qss`, applied via `ThemeManager`).
 
-Before this module, ESOC and AWCI drew from two incompatible dark
-palettes (`#202124`/`#252526` flat-grey chrome vs `#0d1b2a`/`#0a1929`
-navy panels, plus 8+ unrelated per-label Material accent hues in
-`esoc_statusbar.py` alone) - real, working, but not one coherent
-design. This module doesn't replace `acf.gui.dashboard.awci_colors`'s
-0-100 AWCI score colormap (`AWCI_CMAP`) - that is data-driven and
-stays as-is - it replaces the *chrome* palette both windows paint
-around that data.
+This module doesn't replace `acf.gui.map.awci_colors`'s 0-100 AWCI
+score colormap (`AWCI_CMAP`) - that is data-driven and stays as-is -
+it covers the *chrome* palette ESOC paints around that data.
 """
 
 from __future__ import annotations

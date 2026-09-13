@@ -16,7 +16,6 @@ from acf.digital_twin.reports.planetary_report import PlanetaryReportGenerator
 from acf.digital_twin.scenarios.future_projection import PlanetaryScenarioEngine
 from acf.digital_twin.state_vector import GlobalEarthStateVector
 from acf.digital_twin.synchronization.earth_synchronizer import EarthSynchronizationEngine
-from acf.digital_twin.visualization.digital_twin_dashboard import PlanetaryDashboard
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -119,17 +118,14 @@ def test_planetary_knowledge_graph_and_ai_reasoning():
     assert "26.5" in ai_exp["explanation"]
 
 
-def test_scenario_projections_and_dashboard():
-    """Test des projections scénarisées multi-échelles et du tableau de bord AWCI."""
+def test_scenario_projections():
+    """Test des projections scénarisées multi-échelles."""
     weather_scen = PlanetaryScenarioEngine.run_scenario_projection(horizon="+48h")
     assert "GraphCast" in weather_scen["predictive_model_used"]
 
     climate_scen = PlanetaryScenarioEngine.run_scenario_projection(horizon="+100yr", ssp_scenario="SSP2-4.5")
     assert "CMIP6" in climate_scen["predictive_model_used"]
     assert climate_scen["projected_global_temp_change_c"] == 2.7
-
-    dash = PlanetaryDashboard.get_dashboard_metadata()
-    assert dash["workspace_name"] == "PLANETARY DIGITAL TWIN"
 
 
 def test_operations_center_and_briefing_reports():

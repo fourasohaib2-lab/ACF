@@ -26,7 +26,6 @@ from acf.release.logging_configuration import LoggingConfiguration
 from acf.release.migration import MigrationManager
 from acf.release.package_validator import PackageValidator
 from acf.release.performance_report import PerformanceReportGenerator
-from acf.release.production_dashboard import AWCIProductionDashboard
 from acf.release.release_manager import ReleaseManager
 from acf.release.release_notes import ReleaseNotesGenerator
 from acf.release.runtime import ProductionRuntime
@@ -39,7 +38,6 @@ from acf.release.updater import ProductionUpdater
 from acf.release.version_manager import VersionManager
 
 __all__ = [
-    "AWCIProductionDashboard",
     "BenchmarkSuite",
     "BootManager",
     "BuildSystem",

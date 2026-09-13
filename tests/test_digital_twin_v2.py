@@ -14,7 +14,6 @@ from acf.digital_twin.experiment_manager import ExperimentManager
 from acf.digital_twin.feedback_engine import FeedbackEngine
 from acf.digital_twin.geoengineering_lab.geoengineering_lab import GeoengineeringLab
 from acf.digital_twin.planet_model import PlanetModel
-from acf.digital_twin.planetary_dashboard import PlanetaryDashboard
 from acf.digital_twin.planetary_limits.planetary_boundaries import PlanetaryBoundariesSimulator
 from acf.digital_twin.scenario_engine import DigitalTwinScenarioEngine
 from acf.digital_twin.simulation_manager import SimulationManager
@@ -115,7 +114,7 @@ def test_ai_digital_twin_assistant_and_experiments():
 
 
 def test_ancillary_digital_twin_modules():
-    """Test des modules annexes (Feedback, Calibration, Dashboard, PlanetModel)."""
+    """Test des modules annexes (Feedback, Calibration, PlanetModel)."""
     # CORRECTED: used to claim a fabricated "+1.8 W/m^2"/"+0.4 W/m^2"
     # and a fixed total_feedback_factor=1.62 with no real climate model
     # diagnostics connected.
@@ -128,13 +127,6 @@ def test_ancillary_digital_twin_modules():
     cal = CalibrationEngine.calibrate_twin()
     assert cal["status"] == "NOT_CALIBRATED_NO_OBSERVATION_DATA_PROVIDED"
     assert cal["calibration_error_rmse"] is None
-
-    # CORRECTED: used to claim a fabricated "74.5/100" planetary
-    # health index (the same fake number independently found in
-    # EarthHealthMonitor, fixed earlier this session).
-    dash = PlanetaryDashboard.get_dashboard_summary()
-    assert dash["status"] == "NOT_ACTIVE_NO_EXPERIMENT_TRACKER_CONNECTED"
-    assert dash["planetary_health_index"] is None
 
     pm = PlanetModel.get_planet_parameters()
     assert pm["radius_km"] == 6371.0

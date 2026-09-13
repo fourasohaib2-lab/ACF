@@ -5,7 +5,6 @@ Global Planetary Resilience, Cosmic Hazard & Interplanetary Observation Package 
 """
 
 from acf.planetary.astrobiology import HabitabilityEngine
-from acf.planetary.awci_planetary_dashboard import PlanetaryDefenseDashboard
 from acf.planetary.cosmic_hazards import CosmicHazardEngine, CosmicRiskLevel, ThreatAssessment
 from acf.planetary.exoplanets import ExoplanetDatabase
 from acf.planetary.impact_engine import ImpactEngine, ImpactSeverity
@@ -38,7 +37,6 @@ __all__ = [
     "PlanetaryAtmosphereEngine",
     "PlanetaryClimateEngine",
     "PlanetaryDatabase",
-    "PlanetaryDefenseDashboard",
     "PlanetaryDefenseRegistry",
     "PlanetaryReasoningEngine",
     "PotentialHazard",

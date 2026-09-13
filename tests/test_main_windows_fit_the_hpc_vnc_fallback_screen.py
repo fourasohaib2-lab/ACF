@@ -32,8 +32,6 @@ import pytest
 from PySide6.QtCore import QRect
 from PySide6.QtWidgets import QApplication
 
-from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
-from acf.gui.dashboard.awci_window import AWCIDashboardWindow
 from acf.gui.esoc.esoc_window import ESOCWindow
 from acf.gui_screen_utils import fit_window_to_screen
 
@@ -41,15 +39,13 @@ from acf.gui_screen_utils import fit_window_to_screen
 #: hardcodes this exact size for its auto-configured headless-fallback
 #: VNC platform - kept as a literal here (not imported) so this test
 #: fails loudly, rather than silently tracking a change, if that real
-#: fallback size is ever edited without re-checking these 3 windows.
+#: fallback size is ever edited without re-checking this window.
 _HPC_VNC_FALLBACK_SIZE = (1280, 720)
 
 #: Each window's own real desired size, as passed to fit_window_to_screen
 #: at construction - see each window's own __init__.
 _WINDOWS_AND_DESIRED_SIZE = [
     (ESOCWindow, (1600, 1000)),
-    (ACFWorkstationWindow, (1600, 1000)),
-    (AWCIDashboardWindow, (1500, 950)),
 ]
 
 
