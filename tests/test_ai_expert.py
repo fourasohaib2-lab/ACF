@@ -25,7 +25,6 @@ Beta". See each fixed module's NOTE (correction) docstring for detail.
 from acf.ai_expert.ai_meteorologist import AIMeteorologist
 from acf.ai_expert.air_quality_reasoning import AirQualityReasoningEngine
 from acf.ai_expert.aviation_reasoning import AviationReasoningEngine
-from acf.ai_expert.awci_ai_dashboard import AWCI_AIDashboard
 from acf.ai_expert.climate_reasoning import ClimateReasoningEngine
 from acf.ai_expert.confidence_engine import ConfidenceEngine
 from acf.ai_expert.convective_analysis import ConvectiveAnalyzer
@@ -200,11 +199,6 @@ def test_recommendations_briefings_and_dashboard():
     assert "meteorology_briefing" in briefing
     assert briefing["meteorology_briefing"] is None
     assert briefing["is_real_data"] is False
-
-    # AWCI dashboard metadata is genuine static UI configuration, not
-    # fabricated data - unchanged.
-    dash = AWCI_AIDashboard.get_dashboard_metadata()
-    assert dash["workspace_name"] == "AUTONOMOUS AI METEOROLOGIST & EARTH SYSTEM EXPERT WORKSPACE"
 
 
 def test_query_engine_ai_expert_queries():

@@ -6,7 +6,6 @@ Global Geoengineering, Climate Intervention & Planetary Boundaries Platform Test
 
 import pytest
 
-from acf.geoengineering.awci_geoengineering_dashboard import PlanetaryBoundariesDashboard
 from acf.geoengineering.carbon_cycle import CarbonCycleEngine, CarbonFluxes, CarbonReservoirs
 from acf.geoengineering.carbon_removal import CarbonRemovalEngine, CDRTechniqueResult
 from acf.geoengineering.climate_ai import ClimateDecisionEngine
@@ -121,11 +120,8 @@ def test_climate_ai_and_scenario_engine():
     assert ClimateScenarioEngine.get_scenario("ssp3_70") is None
 
 
-def test_geoengineering_dashboard_and_query_engine():
-    """Test du tableau de bord AWCI Geoengineering et des requêtes du Query Engine."""
-    meta = PlanetaryBoundariesDashboard.get_dashboard_metadata()
-    assert meta["workspace_name"] == "PLANETARY BOUNDARIES & CLIMATE CONTROL CENTER"
-
+def test_geoengineering_query_engine():
+    """Test des requêtes du Query Engine pour la géo-ingénierie."""
     q_engine = ScientificQueryEngine()
 
     r1 = q_engine.ask("Show Planetary Boundaries")

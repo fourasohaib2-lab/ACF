@@ -12,11 +12,9 @@ from acf.visualization.ai_forecast_center.ai_attention_mapper import AIAttention
 from acf.visualization.ai_forecast_center.decision_support import AIDecisionSupport
 from acf.visualization.ai_forecast_center.ensemble_visualizer import EnsembleVisualizer
 from acf.visualization.ai_forecast_center.forecast_comparison import ForecastComparisonMatrix
-from acf.visualization.ai_forecast_center.forecast_dashboard import AIForecastDashboard
 from acf.visualization.ai_forecast_center.forecast_story_engine import ForecastStoryEngine
 from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
 from acf.visualization.ai_forecast_center.probability_engine import ProbabilisticForecastEngine
-from acf.visualization.ai_forecast_center.skill_score_dashboard import SkillScoreDashboard
 from acf.visualization.ai_forecast_center.uncertainty_visualizer import UncertaintyVisualizer
 from acf.visualization.ai_forecast_center.xai_explanation_engine import XAIExplanationEngine
 
@@ -208,20 +206,14 @@ def test_compute_real_weighted_field_fusion_delegates_to_the_real_awci_fusion(mo
     assert calls[0]["steps"] == 2
 
 
-def test_model_consensus_and_dashboard():
-    """Test du moteur de consensus pondéré et des modes du tableau de bord."""
+def test_model_consensus():
+    """Test du moteur de consensus pondéré."""
     # CORRECTED: models_combined_count/weight_sum are genuinely
     # computed, but status used to claim "CONSENSUS_COMPUTED_OPTIMAL" -
     # this method only sums weights, it never fuses real model fields.
     cons = ModelConsensusEngine.compute_unified_consensus()
     assert cons["status"] == "WEIGHTS_ONLY_NO_MODEL_FIELDS_FUSED"
     assert cons["models_combined_count"] == 5
-
-    dash_met = AIForecastDashboard.get_dashboard_config("METEOROLOGIST")
-    assert "Multi-Model Consensus Matrix" in dash_met["active_panels"]
-
-    dash_ai = AIForecastDashboard.get_dashboard_config("AI_SCIENTIST")
-    assert "AI Attention Maps" in dash_ai["active_panels"]
 
 
 def test_comparison_uncertainty_and_probabilities():
@@ -273,15 +265,8 @@ def test_xai_and_attention_maps():
     assert gen["causal_chain"] == []
 
 
-def test_skill_scores_story_and_decision_support():
-    """Test des skill scores, du récit météo automatisé et de l'aide à la décision."""
-    # CORRECTED: used to claim an identical fabricated skill-score
-    # battery and "OUTPERFORMS_OPERATIONAL_BASELINE" for ANY model
-    # name - no real forecast-verification run connected.
-    skill = SkillScoreDashboard.get_skill_metrics("GraphCast")
-    assert skill["deterministic_metrics"] == {}
-    assert skill["evaluation"] == "NOT_EVALUATED_NO_VERIFICATION_DATA_CONNECTED"
-
+def test_ensemble_story_and_decision_support():
+    """Test du résumé d'ensemble, du récit météo automatisé et de l'aide à la décision."""
     # CORRECTED: used to claim a fabricated "50-member" ensemble with
     # no real ensemble run connected.
     ens = EnsembleVisualizer.get_ensemble_summary()

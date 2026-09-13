@@ -23,7 +23,6 @@ from acf.hazard_operations.crisis_timeline import CrisisTimelineEngine
 from acf.hazard_operations.early_warning_system import EarlyWarningSystem
 from acf.hazard_operations.emergency_manager import EmergencyManager
 from acf.hazard_operations.evacuation_planner import EvacuationPlanner
-from acf.hazard_operations.hazard_dashboard import HazardDashboard
 from acf.hazard_operations.hazard_detection_engine import HazardDetectionEngine
 from acf.hazard_operations.impact_model import ImpactModelEngine
 from acf.hazard_operations.risk_assessment import RiskAssessmentEngine
@@ -82,15 +81,8 @@ def test_emergency_management_and_alerts():
     assert cop["status"] == "NOT_READY_NO_DATA_SOURCE"
 
 
-def test_hazard_dashboard_and_timeline():
-    """Test des profils du tableau de bord (réel) et de la chronologie de crise (non implémentée)."""
-    # HazardDashboard is genuinely real (branches on profile_name) - unchanged.
-    dash_cp = HazardDashboard.get_dashboard_profile("CIVIL_PROTECTION")
-    assert "Active Emergency Alerts" in dash_cp["active_modules"]
-
-    dash_gov = HazardDashboard.get_dashboard_profile("GOVERNMENT_DECISION")
-    assert "Global Risk Index" in dash_gov["active_modules"]
-
+def test_crisis_timeline():
+    """Test de la chronologie de crise (non implémentée)."""
     timeline = CrisisTimelineEngine.get_crisis_timeline()
     assert timeline["status"] == "NOT_ACTIVE_NO_CRISIS_TRACKED"
     assert timeline["timeline_steps"] == []

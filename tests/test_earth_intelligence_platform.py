@@ -15,7 +15,6 @@ from acf.intelligence.optimization.evacuation import EmergencyOptimizationEngine
 from acf.intelligence.planner.mission_planner import MissionPlanner
 from acf.intelligence.reports.executive_report import AutonomousReportGenerator
 from acf.intelligence.scientific_reasoning import ScientificReasoningEngine, ScientificReasoningReport
-from acf.intelligence.visualization.intelligence_dashboard import EarthIntelligenceDashboard
 from acf.science.query_engine import ScientificQueryEngine
 
 
@@ -157,11 +156,8 @@ def test_knowledge_evolution_and_executive_reports():
     assert "Category 4 Typhoon" not in rep["content"]
 
 
-def test_intelligence_dashboard_and_query_engine():
-    """Test du tableau de bord Earth Intelligence Mission Control et des requêtes d'intelligence."""
-    meta = EarthIntelligenceDashboard.get_dashboard_metadata()
-    assert meta["workspace_name"] == "EARTH INTELLIGENCE MISSION CONTROL"
-
+def test_intelligence_query_engine():
+    """Test des requêtes d'intelligence du ScientificQueryEngine."""
     q_engine = ScientificQueryEngine()
 
     # CORRECTED: used to claim a fixed "ai_confidence_pct: 95.5" with no

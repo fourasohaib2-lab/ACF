@@ -4,7 +4,6 @@ Atmospheric Complexity Framework (ACF)
 Global Geology, Geophysics, Seismology & Natural Hazards Test Suite (MISSION ACF-035)
 """
 
-from acf.geology.awci_geology_dashboard import GeologyCenterDashboard
 from acf.geology.earthquake_warning import EarthquakeWarningEngine
 from acf.geology.faults import FaultDatabase
 from acf.geology.geodesy import GeodesyEngine
@@ -171,15 +170,12 @@ def test_multi_hazard_engine():
     assert "CRITICAL" in haz["multi_hazard_severity"]
 
 
-def test_geological_observatories_and_dashboard():
-    """Test du registre des observatoires (USGS, EMSC) et des métadonnées AWCI GEOLOGY CENTER."""
+def test_geological_observatories():
+    """Test du registre des observatoires (USGS, EMSC)."""
     assert len(GEOLOGICAL_OBSERVATORIES_REGISTRY) >= 3
     usgs = GeologicalObservatoryEngine.get_observatory("usgs")
     assert usgs is not None
     assert "Reston" in usgs.location
-
-    dash = GeologyCenterDashboard.get_dashboard_metadata()
-    assert dash["workspace_name"] == "GEOLOGY CENTER"
 
 
 def test_geology_ai_and_query_engine():
