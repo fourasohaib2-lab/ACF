@@ -89,9 +89,16 @@ from acf.awci.workstation_fields import (
     compute_real_temperature_inversion_field,
     compute_real_theta_e_and_rh_fields,
 )
-from acf.gui.dashboard.acf_workstation_thumbnail_strip import ACFVariableThumbnailStrip
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import label_style
+
+# Conditional import for modules under rebuild
+ACFVariableThumbnailStrip = None
+
+try:
+    from acf.gui.dashboard.acf_workstation_thumbnail_strip import ACFVariableThumbnailStrip
+except ImportError:
+    pass
 
 __all__ = ["ACFThermodynamicsLabPanel", "compute_real_cape_cin_fields", "compute_real_theta_e_and_rh_fields"]
 

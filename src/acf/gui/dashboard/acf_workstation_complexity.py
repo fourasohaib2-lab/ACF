@@ -42,10 +42,22 @@ from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.awci.temporal_field import compute_real_complexity_evolution
-from acf.gui.dashboard.acf_workstation_dynamics import real_grid_spacing_m
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
-from acf.gui.dashboard.awci_model_spread_chart import AWCIModelSpreadChart
 from acf.gui.theme_tokens import label_style
+
+# Conditional imports for modules under rebuild
+real_grid_spacing_m = None
+AWCIModelSpreadChart = None
+
+try:
+    from acf.gui.dashboard.acf_workstation_dynamics import real_grid_spacing_m
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.awci_model_spread_chart import AWCIModelSpreadChart
+except ImportError:
+    pass
 from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
 
 #: Same real point-of-interest convention already established

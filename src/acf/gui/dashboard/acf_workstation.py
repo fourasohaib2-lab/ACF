@@ -698,34 +698,165 @@ from PySide6.QtWidgets import (
 
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.forecast.engine import MODEL_CONFIGS
-from acf.gui.dashboard.acf_workstation_3d import ACF3DAtmospherePanel
-from acf.gui.dashboard.acf_workstation_case_study import ACFCaseStudyLabPanel
-from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
-from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
-from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
-from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
-from acf.gui.dashboard.acf_workstation_domain import DOMAIN_BOUNDS, DOMAIN_NAMES, crop_real_volume_to_domain
-from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
-from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
-from acf.gui.dashboard.acf_workstation_global_timeline import ACFGlobalTimelineWidget
-from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
-from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
-from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialog, compute_real_map_inspector_snapshot
-from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
-from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
-from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
-from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
-from acf.gui.dashboard.acf_workstation_pipeline_checks import (
-    run_real_derivation_consistency_check,
-    run_real_range_qc,
-)
-from acf.gui.dashboard.acf_workstation_pipeline_monitor import ACFPipelineMonitorWidget
-from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
-from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
-from acf.gui.dashboard.acf_workstation_stability_indices import ACFStabilityIndicesWidget, compute_real_stability_indices_at_point
-from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
-from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
-from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
+
+# Conditional imports for modules that may be under rebuild
+ACF3DAtmospherePanel = None
+ACFCaseStudyLabPanel = None
+CommandPaletteDialog = None
+ACFComplexityExplorerPanel = None
+ACFConfidenceLabPanel = None
+ACFConvectionLabPanel = None
+DOMAIN_BOUNDS = DOMAIN_NAMES = None
+crop_real_volume_to_domain = None
+ACFDynamicsLabPanel = None
+ACFForecastConsistencyWidget = None
+ACFGlobalTimelineWidget = None
+ACFInteractionGraphWidget = None
+ACFInteractionEnginePanel = None
+ACFMapInspectorDialog = None
+compute_real_map_inspector_snapshot = None
+ACFMicrophysicsLabPanel = None
+ACFMultiModelLabPanel = None
+ACFOverviewPanel = None
+ACFOverviewLandingPanel = None
+run_real_derivation_consistency_check = None
+run_real_range_qc = None
+ACFPipelineMonitorWidget = None
+ACFDataQualityLabPanel = None
+ACFVerticalSoundingWidget = None
+ACFStabilityIndicesWidget = None
+compute_real_stability_indices_at_point = None
+ACFTemporalLabPanel = None
+ACFTerrainLabPanel = None
+ACFThermodynamicsLabPanel = None
+
+try:
+    from acf.gui.dashboard.acf_workstation_3d import ACF3DAtmospherePanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_case_study import ACFCaseStudyLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_command_palette import CommandPaletteDialog
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_convection import ACFConvectionLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_domain import DOMAIN_BOUNDS, DOMAIN_NAMES, crop_real_volume_to_domain
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_dynamics import ACFDynamicsLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_forecast_consistency_panel import ACFForecastConsistencyWidget
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_global_timeline import ACFGlobalTimelineWidget
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_interaction_graph_panel import ACFInteractionGraphWidget
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_interactions import ACFInteractionEnginePanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_map_inspector import ACFMapInspectorDialog, compute_real_map_inspector_snapshot
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_microphysics import ACFMicrophysicsLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_pipeline_checks import (
+        run_real_derivation_consistency_check,
+        run_real_range_qc,
+    )
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_pipeline_monitor import ACFPipelineMonitorWidget
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_quality import ACFDataQualityLabPanel
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_stability_indices import ACFStabilityIndicesWidget, compute_real_stability_indices_at_point
+except ImportError:
+    pass
+
+try:
+    from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
+except ImportError:
+    pass
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 from acf.gui.widgets.current_page_sizing import CurrentPageStackedWidget
 
