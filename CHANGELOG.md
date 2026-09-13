@@ -10,6 +10,37 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 
 ## [Unreleased] - 2026-09-13
 
+### Added (explicit user request: merge the full mockup layout into Overview)
+- ACF Workstation Overview now embeds a real 2D map (2nd `AWCIMapPanel`
+  instance, same real field as "Atmosphere State"), a new real
+  temperature vertical cross-section widget
+  (`acf_workstation_temperature_cross_section.py`, reusing
+  `acf.awci.path_sampling.sample_volume_cross_section()` - the same
+  generic transect sampler `AWCICrossSection` uses internally, with a
+  real temperature colormap instead of the AWCI 0-100 score
+  `AWCICrossSection` always draws), a 2nd `ACF3DAtmospherePanel`
+  instance, a real "Scientific Diagnostics" `QTabWidget`
+  (Thermodynamics/Stability/Convection, fed by a new
+  `compute_real_diagnostics_at_point()` combining already-real
+  `Thermodynamics.calculate_potential_temperature()`/
+  `calculate_virtual_temperature()`, `compute_real_theta_e_at_point()`,
+  and `compute_real_stability_indices_at_point()` - zero new formulas),
+  and a real Data & Provenance panel (`MODEL_CONFIGS` + `acf.__version__`,
+  with an honest "N/A"/disclosed substitution for the mockup's
+  "Cycle"/"Data source" fields, which have no real backing in this
+  single-trajectory-run architecture). Fixed a real
+  `Colorbar.remove()` `AttributeError` on the 2nd+ redraw in the new
+  cross-section widget - the same bug already diagnosed and fixed once
+  in `awci_map_panel.py`, same `figure.delaxes()` workaround applied.
+  Deliberately not reproduced (disclosed, not fabricated): a
+  "Turbulence" diagnostics tab (no real point-wise turbulence index
+  exists in this Workstation), a separate "Gradients"/"Vertical
+  Structure" tab (would duplicate the already-shown Complexity Index
+  card / always-visible sounding panel), and a multi-model vertical
+  profile overlay (would require an automatic expensive multi-model
+  solver run, against this Workstation's established on-demand-only
+  convention). See `docs/STATUS.md` for the full disclosure.
+
 ### Changed (explicit user-approved policy change)
 - ACF Workstation Overview's "Key Metrics" cards and "Model Consensus"
   gauge now show real normalized 0-1/percentage composite scores

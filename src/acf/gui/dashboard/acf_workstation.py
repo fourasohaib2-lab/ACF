@@ -767,6 +767,7 @@ from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
 from acf.gui.dashboard.acf_workstation_overview_landing import (
     ACFOverviewLandingPanel,
     compute_real_alerts,
+    compute_real_diagnostics_at_point,
     compute_real_key_metrics_at_point,
 )
 from acf.gui.dashboard.acf_workstation_pipeline_checks import (
@@ -1434,6 +1435,12 @@ class ACFWorkstation(QWidget):
             map_panel = getattr(panel, "map_panel", None)
             if map_panel is not None:
                 map_panel.pointClicked.connect(self._on_map_point_clicked)
+        # `ACFOverviewLandingPanel`'s own real map is named
+        # `overview_map_panel` (not `map_panel`, to avoid confusion
+        # with `ACFOverviewPanel.map_panel` on the "Atmosphere State"
+        # tab), so the generic `getattr` loop above does not pick it up -
+        # connected explicitly, same real handler.
+        self.overview_landing_panel.overview_map_panel.pointClicked.connect(self._on_map_point_clicked)
 
         outer.addLayout(body, stretch=1)
 
@@ -1883,6 +1890,7 @@ class ACFWorkstation(QWidget):
             self._last_key_metrics["cape_j_kg"], self._last_key_metrics["bulk_wind_shear_ms"]
         )
         self.overview_landing_panel.set_alerts(self._last_alerts)
+        self.overview_landing_panel.set_diagnostics(compute_real_diagnostics_at_point(volume, lat, lon))
 
         # Real Atmospheric Interaction Graph update (added Phase 34,
         # 2026-09-05) - real per-level Pearson correlations, re-derived
@@ -1918,6 +1926,7 @@ class ACFWorkstation(QWidget):
                 self._last_key_metrics["cape_j_kg"], self._last_key_metrics["bulk_wind_shear_ms"]
             )
             self.overview_landing_panel.set_alerts(self._last_alerts)
+            self.overview_landing_panel.set_diagnostics(compute_real_diagnostics_at_point(self._volume, lat, lon))
             snapshot = compute_real_map_inspector_snapshot(self._volume, lat, lon, self._level_index)
             if self._map_inspector is None:
                 self._map_inspector = ACFMapInspectorDialog(self)
@@ -1965,6 +1974,7 @@ class ACFWorkstation(QWidget):
             return {}
         display_volume = self._domain_cropped_volume()
         self.overview_panel.update_from_volume(display_volume, self._level_index)
+        self.overview_landing_panel.update_from_volume(display_volume, self._level_index)
         self.dynamics_panel.update_from_volume(display_volume, self._level_index)
         self.thermodynamics_panel.update_from_volume(display_volume, self._level_index)
         self.microphysics_panel.update_from_volume(display_volume, self._level_index)

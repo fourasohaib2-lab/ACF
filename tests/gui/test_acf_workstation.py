@@ -370,6 +370,59 @@ def test_clicking_a_real_map_updates_the_real_stability_indices(qapp):
     assert ws.stability_indices_panel.status()["has_data"] is True
 
 
+def test_on_volume_ready_populates_the_merged_overview_map_cross_section_and_3d_view(qapp):
+    """2026-09-13, explicit user request to fuse the reference mockup's
+    full single-screen layout into Overview - the new 2D map/cross-
+    section/3D view embedded in the Overview landing page must be
+    genuinely re-sliced from the same real run, same as every other
+    Lab panel `_render_all_panels()` already drives this way."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+
+    ws._on_volume_ready(volume)
+
+    panel = ws.overview_landing_panel
+    assert panel.overview_map_panel.status()["has_contour"] is True
+    assert panel.cross_section_panel.status()["has_colorbar"] is True
+    assert panel._volume is volume
+
+
+def test_clicking_the_merged_overview_map_updates_the_shared_sounding_panel(qapp):
+    """The new Overview map's own real pointClicked signal is wired to
+    the same shared handler every other Lab's map already uses (see
+    acf_workstation.py's own explicit connection for this panel,
+    named differently from the generic `map_panel` attribute the
+    other Labs share)."""
+    ws = ACFWorkstation()
+    volume = _real_volume()
+    ws._on_volume_ready(volume)
+
+    lat, lon = float(volume["lats"][1]), float(volume["lons"][2])
+    ws.overview_landing_panel.overview_map_panel.pointClicked.emit(lat, lon)
+
+    assert ws.stability_indices_panel.status()["has_data"] is True
+    assert ws._last_clicked_point == (lat, lon)
+
+
+def test_on_volume_ready_populates_the_real_scientific_diagnostics_tabs(qapp):
+    """The merged Overview's real "Scientific Diagnostics" tabs must
+    show real θ/θv/θe/RH/CAPE/... values, from
+    `compute_real_diagnostics_at_point()`'s own real result - never a
+    fabricated dict."""
+    from acf.gui.dashboard.acf_workstation_overview_landing import compute_real_diagnostics_at_point
+
+    ws = ACFWorkstation()
+    volume = _real_volume()
+
+    ws._on_volume_ready(volume)
+
+    lat, lon = float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2])
+    expected = compute_real_diagnostics_at_point(volume, lat, lon)
+    panel = ws.overview_landing_panel
+    assert f"{expected['theta_k']:.1f}" in panel._diagnostics_value_labels["theta_k"].text()
+    assert f"{expected['cape_j_kg']:.0f}" in panel._diagnostics_value_labels["cape_j_kg"].text()
+
+
 def test_domain_selector_lists_global_first_then_the_real_named_regions(qapp):
     ws = ACFWorkstation()
     items = [ws.domain_selector.itemText(i) for i in range(ws.domain_selector.count())]

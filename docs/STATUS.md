@@ -1475,3 +1475,79 @@ majeur et intentionnel cette fois) et vérifiée visuellement avant
 commit. 94 tests combinés verts (workstation, accessibilité, phase44/
 45, régression visuelle, normalizer, scientific_status, general
 dashboard), `ruff`/`mypy` propres sur tous les fichiers touchés.
+
+## Mise à jour (2026-09-13, suite 10) : fusion complète de l'écran Overview selon le mockup "Atmospheric Analysis"
+
+Suite directe de la suite 9 : l'utilisateur a fourni un nouveau "master
+prompt" (supposant à tort une app web - corrigé) demandant explicitement
+de fusionner TOUT le contenu du mockup (carte 2D, coupe verticale, vue
+3D, diagnostics scientifiques en onglets, données & provenance) sur
+l'écran Overview lui-même, plutôt que de garder ce contenu réparti sur
+des onglets séparés (décision de périmètre explicitement inversée par
+rapport à la suite 9).
+
+Exploré le code réel avant d'implémenter (agent Explore) pour identifier
+précisément ce qui se réutilise sans rien recalculer :
+
+- **Carte 2D** : 2e instance de `AWCIMapPanel` sur Overview, alimentée
+  par le même vrai champ que l'onglet "Atmosphere State" (aucun second
+  calcul solveur - juste un second affichage du même volume réel déjà
+  stocké).
+- **Vue 3D** : 2e instance de `ACF3DAtmospherePanel` (déjà réel, déjà
+  utilisé par l'onglet "3D Atmosphere View"), même volume réel.
+- **Coupe verticale** : nouveau widget dédié
+  (`acf_workstation_temperature_cross_section.py`) car `AWCICrossSection`
+  existant dessine un score AWCI 0-100, pas une température - inadapté
+  ici. Réutilise `acf.awci.path_sampling.sample_volume_cross_section()`
+  (la même fonction générique de transect déjà utilisée par
+  `AWCICrossSection` en interne), avec un vrai colormap de température
+  à la place. **Bug réel trouvé et corrigé pendant l'intégration** : un
+  `Colorbar.remove()` simple lève une vraie `AttributeError` au 2e
+  redessin (le même bug déjà diagnostiqué et corrigé une fois dans
+  `awci_map_panel.py` - `self.axis.clear()` invalide la référence dont
+  `remove()` a besoin) - corrigé avec le même contournement déjà établi
+  (`figure.delaxes(colorbar.ax)`).
+- **Diagnostics scientifiques** : nouveau `QTabWidget` à 3 onglets
+  (Thermodynamics/Stability/Convection - PAS les 6 du mockup, voir
+  écarts honnêtes ci-dessous), alimenté par une nouvelle fonction
+  combinatrice `compute_real_diagnostics_at_point()` qui réutilise
+  `Thermodynamics.calculate_potential_temperature()`/
+  `calculate_virtual_temperature()` (θ/θv, déjà réels,
+  `acf.science.thermodynamics`), `compute_real_theta_e_at_point()`
+  (θe/RH, déjà utilisé par Key Metrics) et
+  `compute_real_stability_indices_at_point()` (CAPE/CIN/Shear/BRN/
+  K-Index/Total Totals/SWEAT/Lifted/Showalter, déjà utilisé par le
+  panneau Stability Indices toujours visible) - zéro nouvelle formule.
+- **Données & Provenance** : nouveau panneau réel (Modèle, Grille,
+  Résolution, + `acf.__version__` réel) avec disclosure honnête pour
+  "Cycle"/"Source" (voir écarts ci-dessous).
+
+**Écarts honnêtes disclosed, PAS fabriqués** (documentés dans le
+docstring du module et le panneau lui-même) :
+- Pas de "Cycle"/"Forecast hour" réels - cette architecture fait
+  tourner UNE trajectoire à partir d'un état initial idéalisé, pas un
+  cycle NWP réel initialisé par assimilation. Le panneau Provenance
+  affiche honnêtement "N/A — this solver runs one real idealized-
+  initial-state trajectory..." plutôt que d'inventer une heure de cycle.
+- "Source: ACF CoupledEarthSolver (real physics, idealized initial
+  state) — not assimilated observational NWP output" à la place du
+  "Météo-France" du mockup (données non réelles ici).
+- Seulement 3 des 6 onglets diagnostics du mockup : pas de
+  "Turbulence" (aucun indice de turbulence ponctuel réel n'existe dans
+  cette Workstation aujourd'hui), pas de "Gradients" séparé (répéterait
+  la carte "Complexity Index" déjà réelle), pas de "Vertical Structure"
+  séparé (répéterait le sondage déjà toujours visible).
+- Pas de superposition multi-modèle du profil vertical (exigerait un
+  vrai run solveur par modèle en continu, contraire à la convention
+  déjà établie "calcul coûteux à la demande uniquement" ; WRF n'a de
+  toute façon aucun support réel dans ce codebase).
+
+3 nouveaux tests sur `ACFWorkstation` (carte/coupe/3D re-slicées,
+clic sur la nouvelle carte met à jour le sondage partagé, onglets
+diagnostics peuplés avec cross-check indépendant), 2 nouveaux tests sur
+le widget de coupe verticale lui-même (cross-check contre
+`sample_volume_cross_section()` indépendant). Capture d'écran pleine
+page (1600×3200) vérifiée visuellement - toutes les sections rendent
+sans erreur. Image de référence de régression visuelle régénérée et
+revérifiée. Suite complète `tests/gui -k workstation` vérifiée verte,
+`ruff`/`mypy` propres sur tous les fichiers touchés.

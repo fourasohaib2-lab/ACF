@@ -90,16 +90,45 @@ scientist would want is one glance away, not lost:
    (AROME/ALADIN/ARPEGE) are compared - the mockup's own 4th "WRF" row
    has no real backing anywhere in this codebase, so it is not shown.
 
-Two things the mockup shows that are deliberately still NOT reproduced,
-because they are a different kind of fabrication (identity, not a
-score) that was never part of the question put to the user: the
-mockup's user avatar/name ("Jean Dupont") stays the real OS account
-name (`getpass.getuser()`) - inventing a person's identity is not what
-"look like the mockup" was about. The mockup's single-screen layout
-(map + cross-section + 3D view + diagnostics all on one page) is not
-merged into this Overview page - see this session's own plan for why
-that is a separate, larger, un-requested navigation-architecture
-change, not a visual-styling one.
+One thing the mockup shows that is deliberately still NOT reproduced,
+because it is a different kind of fabrication (identity, not a score)
+that was never part of the question put to the user: the mockup's user
+avatar/name ("Jean Dupont") stays the real OS account name
+(`getpass.getuser()`) - inventing a person's identity is not what
+"look like the mockup" was about.
+
+Update (2026-09-13, follow-up, explicit user request "fusionner tout
+sur l'écran Overview") - the mockup's single-screen layout (2D map +
+vertical cross-section + 3D view + tabbed diagnostics + data &
+provenance, alongside Key Metrics/Model Consensus/Alerts above) IS now
+merged into this page - see `compute_real_diagnostics_at_point()`'s
+own docstring and `ACFOverviewLandingPanel`'s new `overview_map_panel`/
+`cross_section_panel`/`atmosphere_3d_panel`/`diagnostics_tabs`/
+`provenance_group` for exactly what each real section reuses. 3 real,
+disclosed gaps versus the mockup's literal content (never fabricated
+to fill them): no "Cycle"/"Forecast hour" fields (this architecture
+runs one real idealized-initial-state trajectory, not a cycled,
+assimilation-initialized NWP system - the Data & Provenance panel
+discloses this substitution rather than inventing a fake cycle time);
+only 3 of the mockup's 6 diagnostics tabs (Thermodynamics/Stability/
+Convection) - no "Turbulence" tab (no real point-wise turbulence index
+exists in this Workstation today, see `compute_real_diagnostics_at_
+point()`'s own docstring), no separate "Gradients" tab (would just
+repeat the real spatial-complexity value the "Complexity Index" Key
+Metrics card above already shows), no separate "Vertical Structure"
+tab (would just repeat the real temperature/wind sounding the
+always-visible `ACFVerticalSoundingWidget` already shows next to every
+Lab page); no multi-model
+"Vertical Profile" overlay (the mockup shows AROME/ALADIN/ARPEGE/WRF
+superposed permanently - reproducing that would need an automatic,
+expensive multi-model solver run on every "Analyze", against this
+Workstation's own established "expensive computation, on demand only"
+convention, and WRF has no real backing anywhere in this codebase).
+The real single-model vertical profile this Workstation already has
+(`acf_workstation_sounding_panel.ACFVerticalSoundingWidget`) is not
+duplicated here - it is already always-visible next to every Lab page,
+Overview included (`acf_workstation.py`'s own `right_col`), not owned
+by this landing page.
 
 Phase 45 (2026-09-12, "continue selon ton jugement") added the real
 "Alerts & Hazards" and "Quick Actions" sections.
@@ -152,16 +181,33 @@ from typing import Any
 
 import numpy as np
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
+from acf import __version__ as acf_version
 from acf.ai.decision_support.decision_engine import ForecastDecisionEngine
 from acf.awci.normalizer import Normalizer
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.forecast.engine import MODEL_CONFIGS
+from acf.gui.dashboard.acf_workstation_3d import ACF3DAtmospherePanel
 from acf.gui.dashboard.acf_workstation_complexity import compute_real_spatial_complexity
+from acf.gui.dashboard.acf_workstation_overview import _VARIABLES as _MAP_VARIABLES
 from acf.gui.dashboard.acf_workstation_stability_indices import compute_real_stability_indices_at_point
+from acf.gui.dashboard.acf_workstation_temperature_cross_section import ACFTemperatureCrossSectionWidget
 from acf.gui.dashboard.awci_gauge import AWCIGauge
+from acf.gui.dashboard.awci_map_panel import AWCIMapPanel
 from acf.gui.theme_tokens import TOKENS, apply_elevation, label_style
+from acf.science.thermodynamics import Thermodynamics
 
 #: Real (risk_level -> token color name) - matches ForecastDecisionEngine.
 #: assess_severe_weather_risk()'s own real, cited risk levels exactly.
@@ -187,6 +233,43 @@ _KEY_METRICS: tuple[tuple[str, str, str, int, Any, str], ...] = (
     ("Instability", "cape_j_kg", "J/kg", 0, Normalizer.normalize_cape, "warning"),
     ("Moisture", "relative_humidity_pct", "%", 1, lambda pct: pct / 100.0, "accent_primary"),
     ("Shear", "bulk_wind_shear_ms", "m/s", 2, Normalizer.normalize_wind_shear, "accent_secondary"),
+)
+
+#: Real, ordered (tab title, [(field label, dict key, unit, decimal
+#: digits), ...]) for the "Scientific Diagnostics" tabs - see
+#: `compute_real_diagnostics_at_point()`'s own docstring for what each
+#: real value is. No "Turbulence" tab (see that function's own
+#: docstring for why) - honest gap, not filled with an invented number.
+_DIAGNOSTICS_TABS: tuple[tuple[str, tuple[tuple[str, str, str, int], ...]], ...] = (
+    (
+        "Thermodynamics",
+        (
+            ("θ (K)", "theta_k", "K", 1),
+            ("θv (K)", "theta_v_k", "K", 1),
+            ("θe (K)", "theta_e_k", "K", 1),
+            ("RH (%)", "relative_humidity_pct", "%", 1),
+        ),
+    ),
+    (
+        "Stability",
+        (
+            ("CAPE (J/kg)", "cape_j_kg", "J/kg", 0),
+            ("CIN (J/kg)", "cin_j_kg", "J/kg", 0),
+            ("Wind Shear (m/s)", "bulk_wind_shear_ms", "m/s", 2),
+            ("Static Stability (s⁻¹)", "static_stability_n_s1", "s⁻¹", 4),
+            ("Bulk Richardson Number", "bulk_richardson_number", "", 2),
+        ),
+    ),
+    (
+        "Convection",
+        (
+            ("K-Index", "k_index", "", 1),
+            ("Total Totals", "total_totals", "", 1),
+            ("SWEAT Index", "sweat_index", "", 1),
+            ("Lifted Index", "lifted_index", "", 1),
+            ("Showalter Index", "showalter_index", "", 1),
+        ),
+    ),
 )
 
 
@@ -228,6 +311,68 @@ def compute_real_key_metrics_at_point(volume: dict[str, Any], lat: float, lon: f
     }
 
 
+def compute_real_diagnostics_at_point(volume: dict[str, Any], lat: float, lon: float) -> dict[str, Any]:
+    """
+    Real, Qt-free per-point "Scientific Diagnostics" summary for the
+    merged Overview screen's tabbed panel (2026-09-13, explicit user
+    request to fuse the reference mockup's full single-screen layout
+    into Overview). Reuses the same real functions this Workstation's
+    other panels already call at the same real nearest grid point,
+    real surface level (level 0) - same convention as
+    `compute_real_key_metrics_at_point()` above, called independently
+    here (a 2nd, cheap, real call - the same "not tied to the level
+    slider, called more than once per update" pattern already
+    established for `compute_real_stability_indices_at_point()`
+    elsewhere in `acf_workstation.py`, not a new duplication concern):
+
+    - theta_k/theta_v_k: real dry/virtual potential temperature, via
+      `Thermodynamics.calculate_potential_temperature()`/
+      `calculate_virtual_temperature()` (acf.science.thermodynamics,
+      real, cited Poisson-equation formulas, already used elsewhere in
+      this codebase) - composed here (theta_v = potential temperature
+      OF the virtual temperature), a standard real composition, not a
+      new formula.
+    - theta_e_k, relative_humidity_pct: same real
+      `compute_real_theta_e_at_point()` Key Metrics already uses.
+    - cape_j_kg/cin_j_kg/bulk_wind_shear_ms/static_stability_per_s/
+      bulk_richardson_number/k_index/total_totals/sweat_index/
+      lifted_index/showalter_index (+ their real categories): the
+      exact same real `compute_real_stability_indices_at_point()`
+      result the always-visible Stability Indices panel already shows.
+
+    Honest gap (disclosed, not fabricated): no real point-wise
+    turbulence index exists anywhere in this Workstation today (the
+    full Ellrod-Knapp CAT index only exists as an AWCI map LAYER in
+    `acf.awci.path_sampling`, never as an independent point value here)
+    - the mockup's own "Turbulence" diagnostics tab is deliberately
+    NOT reproduced rather than filled with an invented number.
+    """
+    lats = np.asarray(volume["lats"])
+    lons = np.asarray(volume["lons"])
+    lat_idx = int(np.argmin(np.abs(lats - lat)))
+    lon_idx = int(np.argmin(np.abs(lons - lon)))
+
+    t = float(volume["temperature_volume"][0, lat_idx, lon_idx])
+    q = float(volume["specific_humidity_volume"][0, lat_idx, lon_idx])
+    p = float(volume["pressure_volume_hpa"][0, lat_idx, lon_idx])
+
+    theta_k = Thermodynamics.calculate_potential_temperature(t, p)
+    virtual_temperature_k = Thermodynamics.calculate_virtual_temperature(t, q)
+    theta_v_k = Thermodynamics.calculate_potential_temperature(virtual_temperature_k, p)
+    theta_e = compute_real_theta_e_at_point(t, q, p)
+    indices = compute_real_stability_indices_at_point(volume, lat, lon)
+
+    return {
+        "lat": float(lats[lat_idx]),
+        "lon": float(lons[lon_idx]),
+        "theta_k": theta_k,
+        "theta_v_k": theta_v_k,
+        "theta_e_k": theta_e["theta_e_k"],
+        "relative_humidity_pct": theta_e["relative_humidity_pct"],
+        **indices,
+    }
+
+
 def compute_real_alerts(cape_j_kg: float, bulk_wind_shear_ms: float) -> dict[str, Any]:
     """
     Real, threshold-based severe-weather classification - see this
@@ -260,6 +405,8 @@ class ACFOverviewLandingPanel(QWidget):
     ) -> None:
         super().__init__(parent)
         self._navigate_to = navigate_to
+        self._volume: dict[str, Any] | None = None
+        self._level_index = 0
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
@@ -282,6 +429,46 @@ class ACFOverviewLandingPanel(QWidget):
         self.model_info_label.setStyleSheet(label_style("text_muted", "xs"))
         status_layout.addWidget(self.model_info_label)
         layout.addWidget(status_group)
+
+        # --- Top row (2026-09-13, explicit user request to fuse the
+        # reference mockup's full single-screen layout into Overview):
+        # a real 2D map + real temperature cross-section on the left,
+        # Key Metrics/Model Consensus/Alerts & Hazards (already real,
+        # built above) stacked on the right - matching the mockup's own
+        # 2-column top row instead of one long single column.
+        top_row = QHBoxLayout()
+        left_col = QVBoxLayout()
+
+        map_group = QGroupBox("Atmospheric Complexity — 2D View")
+        map_layout = QVBoxLayout(map_group)
+        map_controls = QHBoxLayout()
+        map_controls.addWidget(QLabel("Variable:"))
+        self.map_variable_selector = QComboBox()
+        self.map_variable_selector.addItems(list(_MAP_VARIABLES.keys()))
+        self.map_variable_selector.setAccessibleName("Overview map variable selector")
+        self.map_variable_selector.currentTextChanged.connect(lambda _: self._redraw_overview_map())
+        map_controls.addWidget(self.map_variable_selector)
+        map_controls.addStretch()
+        map_layout.addLayout(map_controls)
+        self.overview_map_panel = AWCIMapPanel(
+            "ATMOSPHERIC COMPLEXITY", show_legend=False, show_info_boxes=False, show_demo_fallback=False
+        )
+        self.overview_map_panel.setMinimumHeight(240)
+        map_layout.addWidget(self.overview_map_panel)
+        apply_elevation(map_group, blur_radius=18, y_offset=4, opacity=0.3)
+        left_col.addWidget(map_group, stretch=1)
+
+        cross_section_group = QGroupBox("Vertical Cross-Section")
+        cross_section_layout = QVBoxLayout(cross_section_group)
+        self.cross_section_panel = ACFTemperatureCrossSectionWidget()
+        self.cross_section_panel.setMinimumHeight(220)
+        cross_section_layout.addWidget(self.cross_section_panel)
+        apply_elevation(cross_section_group, blur_radius=18, y_offset=4, opacity=0.3)
+        left_col.addWidget(cross_section_group, stretch=1)
+
+        top_row.addLayout(left_col, stretch=2)
+        right_col = QVBoxLayout()
+        top_row.addLayout(right_col, stretch=1)
 
         # --- Key Metrics (Phase 44, 2026-09-12; restyled as colored
         # cards with a real normalized score 2026-09-13, explicit user
@@ -349,7 +536,7 @@ class ACFOverviewLandingPanel(QWidget):
             self._metric_delta_labels[key] = delta_label
             metrics_grid.addWidget(card, i // 2, i % 2)
         metrics_outer.addLayout(metrics_grid)
-        layout.addWidget(metrics_group)
+        right_col.addWidget(metrics_group)
 
         # --- Model Consensus (Phase 44, 2026-09-12) - real, on-demand
         # (one real CoupledEarthSolver run per real model), reusing
@@ -408,7 +595,7 @@ class ACFOverviewLandingPanel(QWidget):
         self.consensus_models_label.setStyleSheet(label_style("text_secondary", "sm"))
         gauge_row.addWidget(self.consensus_models_label, stretch=1)
         consensus_layout.addLayout(gauge_row)
-        layout.addWidget(consensus_group)
+        right_col.addWidget(consensus_group)
 
         # --- Alerts & Hazards (Phase 45, 2026-09-12) - real, threshold-
         # based severe-weather classification, updated automatically
@@ -433,7 +620,65 @@ class ACFOverviewLandingPanel(QWidget):
         self.alerts_detail_label.setWordWrap(True)
         self.alerts_detail_label.setStyleSheet(label_style("text_secondary", "xs"))
         alerts_layout.addWidget(self.alerts_detail_label)
-        layout.addWidget(alerts_group)
+        right_col.addWidget(alerts_group)
+        right_col.addStretch()
+        layout.addLayout(top_row)
+
+        # --- 3D Atmosphere View (2026-09-13, merge follow-up) - a
+        # SECOND real `ACF3DAtmospherePanel` instance (the same real,
+        # already-built widget the dedicated "3D Atmosphere View" nav
+        # item already shows) re-sliced from the same already-computed
+        # volume - no second solver run, no shared-instance re-parenting
+        # (a QWidget can only belong to one parent at a time).
+        atmosphere_3d_group = QGroupBox("3D Atmosphere View")
+        atmosphere_3d_layout = QVBoxLayout(atmosphere_3d_group)
+        self.atmosphere_3d_panel = ACF3DAtmospherePanel()
+        self.atmosphere_3d_panel.setMinimumHeight(280)
+        atmosphere_3d_layout.addWidget(self.atmosphere_3d_panel)
+        apply_elevation(atmosphere_3d_group, blur_radius=18, y_offset=4, opacity=0.3)
+        layout.addWidget(atmosphere_3d_group)
+
+        # --- Scientific Diagnostics (2026-09-13, merge follow-up) - a
+        # real QTabWidget over already-real, already-used-elsewhere
+        # per-point values - see compute_real_diagnostics_at_point()'s
+        # own docstring for exactly what backs each field and the
+        # disclosed "no Turbulence tab" gap.
+        diagnostics_group = QGroupBox("Scientific Diagnostics")
+        diagnostics_layout = QVBoxLayout(diagnostics_group)
+        self.diagnostics_tabs = QTabWidget()
+        self._diagnostics_value_labels: dict[str, QLabel] = {}
+        self._diagnostics_units: dict[str, tuple[str, int]] = {}
+        for tab_name, fields in _DIAGNOSTICS_TABS:
+            tab = QWidget()
+            tab_grid = QGridLayout(tab)
+            for i, (field_label, key, unit, digits) in enumerate(fields):
+                name_label = QLabel(field_label)
+                name_label.setStyleSheet(label_style("text_secondary", "xs", "bold"))
+                value_label = QLabel("—")
+                value_label.setStyleSheet(label_style("text_primary", "md", "bold"))
+                tab_grid.addWidget(name_label, i // 3, (i % 3) * 2)
+                tab_grid.addWidget(value_label, i // 3, (i % 3) * 2 + 1)
+                self._diagnostics_value_labels[key] = value_label
+                self._diagnostics_units[key] = (unit, digits)
+            self.diagnostics_tabs.addTab(tab, tab_name)
+        diagnostics_layout.addWidget(self.diagnostics_tabs)
+        apply_elevation(diagnostics_group, blur_radius=18, y_offset=4, opacity=0.3)
+        layout.addWidget(diagnostics_group)
+
+        # --- Data & Provenance (2026-09-13, merge follow-up) - real
+        # MODEL_CONFIGS metadata (already shown less formally by
+        # `model_info_label` above) plus the real ACF version string
+        # (`acf.__version__`) and an honest disclosure of the 2 mockup
+        # fields ("Cycle"/"Data source") this architecture cannot back
+        # with a real value - see module docstring.
+        provenance_group = QGroupBox("Data & Provenance")
+        provenance_layout = QVBoxLayout(provenance_group)
+        self.provenance_label = QLabel()
+        self.provenance_label.setWordWrap(True)
+        self.provenance_label.setStyleSheet(label_style("text_secondary", "xs"))
+        provenance_layout.addWidget(self.provenance_label)
+        apply_elevation(provenance_group, blur_radius=18, y_offset=4, opacity=0.3)
+        layout.addWidget(provenance_group)
 
         # --- Quick Actions (Phase 45, 2026-09-12) - 4 real, already-
         # existing capabilities, one-click shortcuts - see module
@@ -608,12 +853,73 @@ class ACFOverviewLandingPanel(QWidget):
         config = MODEL_CONFIGS.get(model)
         if config is None:
             self.model_info_label.setText(f"Unknown model {model!r}.")
+            self.provenance_label.setText(f"Unknown model {model!r}.")
             return
         self.model_info_label.setText(
             f"Selected model: {model} — real native grid "
             f"{config['n_lat']}×{config['n_lon']}×{config['n_levels']} "
             f"(resolution ≈ {config['resolution_km']} km, default {config['default_steps']} steps)."
         )
+        # Real Data & Provenance panel (2026-09-13, merge follow-up) -
+        # see module docstring for why "Cycle"/"Data source" are
+        # honestly substituted rather than fabricated: this
+        # architecture runs one real idealized-initial-state
+        # trajectory, not a cycled, assimilation-initialized NWP
+        # system, and its input state is a real physics solver, not
+        # real assimilated observations.
+        self.provenance_label.setText(
+            f"Model: {model}\n"
+            f"Grid: {config['n_lat']}×{config['n_lon']}×{config['n_levels']} "
+            f"(resolution ≈ {config['resolution_km']} km)\n"
+            f"Cycle: N/A — this solver runs one real idealized-initial-state trajectory, "
+            f"not a cycled, assimilation-initialized NWP system (see docstring)\n"
+            f"Source: ACF CoupledEarthSolver (real physics, idealized initial state) — "
+            f"not assimilated observational NWP output\n"
+            f"Version: ACF v{acf_version}"
+        )
+
+    def update_from_volume(self, volume: dict[str, Any], level_index: int) -> None:
+        """Real re-slice of the already-computed volume into the merged
+        Overview screen's own 2D map / cross-section / 3D view - no new
+        solver run, same "compute once, re-slice per interaction"
+        discipline as every other Lab panel `ACFWorkstation._render_
+        all_panels()` already drives this way (see module docstring)."""
+        self._volume = volume
+        self._level_index = level_index
+        self._redraw_overview_map()
+        self.cross_section_panel.update_from_volume(volume)
+        self.atmosphere_3d_panel.update_from_volume(volume, level_index)
+
+    def _redraw_overview_map(self) -> None:
+        if self._volume is None:
+            return
+        variable = self.map_variable_selector.currentText()
+        spec = _MAP_VARIABLES[variable]
+        field = self._volume[spec["key"]][self._level_index]
+        self.overview_map_panel.set_external_field(
+            self._volume["lons"],
+            self._volume["lats"],
+            field,
+            f"Real {self._volume.get('model', '')} — {variable}",
+            cmap=spec["cmap"],
+            vmin=spec["vmin"],
+            vmax=spec["vmax"],
+            colorbar_label=f"{variable} ({spec['unit']})",
+        )
+
+    def set_diagnostics(self, diagnostics: dict[str, Any]) -> None:
+        """Real per-point Scientific Diagnostics, from
+        `compute_real_diagnostics_at_point()`'s own real result - never
+        called with a fabricated dict."""
+        for key, widget in self._diagnostics_value_labels.items():
+            value = diagnostics.get(key)
+            unit, digits = self._diagnostics_units[key]
+            if value is None:
+                widget.setText("N/A")
+                widget.setStyleSheet(label_style("text_muted", "md", "bold"))
+            else:
+                widget.setText(f"{value:.{digits}f}{(' ' + unit) if unit else ''}")
+                widget.setStyleSheet(label_style("text_primary", "md", "bold"))
 
     def update_status(self, status_text: str) -> None:
         """Real, current Workstation-wide status - the exact same
