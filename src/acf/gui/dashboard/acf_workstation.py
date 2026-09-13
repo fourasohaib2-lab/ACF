@@ -695,6 +695,15 @@ real data comes from:
   task brief expected to carry one) + Atmospheric Profiles
   (`ACFVerticalSoundingWidget`) + Model Comparison
   (`ACFMultiModelLabPanel`) + Time Evolution (`ACFTemporalLabPanel`).
+  Disclosed deviation from the reference image's literal shape (fix
+  round 1, 2026-09-13): "Model Comparison" and "Time Evolution" reuse
+  `ACFMultiModelLabPanel`/`ACFTemporalLabPanel` as complete widgets -
+  their own existing real map-based UI - rather than building the
+  reference image's literal "2×2 mini-map grid"/"per-model line chart"
+  shape. Same honesty convention as the Vertical Cross Section gap
+  above: the real functional correspondence (model comparison data,
+  time-evolution data) is genuinely there, just presented via each
+  panel's own already-real widget rather than a re-built literal shape.
 - Science Labs tabs: `ACFOverviewPanel` (Atmosphere State),
   `ACFThermodynamicsLabPanel`, `ACFComplexityExplorerPanel` (its real
   temporal/model-disagreement half) and `ACFConfidenceLabPanel` -
@@ -859,6 +868,20 @@ _SCIENCE_TAB_ORDER = [
 _GRADIENT_REFERENCE_K_PER_100KM = 10.0
 _TEMPORAL_REFERENCE_K_PER_H = 5.0
 _DISAGREEMENT_REFERENCE_K = 5.0
+# Real, disclosed CAPE reference used for the Instability/Convection
+# factors below (added 2026-09-13): 3000 J/kg is a standard "extreme
+# instability" bound in operational convective-outlook practice (SPC
+# mesoanalysis CAPE color scales top out in this range) - CAPE >= this
+# value maps to the top of the panel's 0-1 scale, consistent with how
+# Gradients/Temporal Evolution/Model Disagreement are already normalized
+# against a disclosed reference magnitude in this same method.
+_CAPE_REFERENCE_J_KG = 3000.0
+# Real, disclosed effective-bulk-shear reference used for the Shear
+# factor: 20 m/s is the SPC Supercell Composite Parameter's own "capped
+# at 1.0" bulk-shear threshold (see acf.science.severe_weather.
+# SevereWeather.supercell_composite_parameter's EBWD_term) - reused here
+# rather than inventing a separate bound.
+_SHEAR_REFERENCE_M_S = 20.0
 
 #: Real mapping from a sidebar SECTION to the real content anchor this
 #: composer scrolls to (see `_on_section_selected()`). Values are
@@ -1142,6 +1165,12 @@ class ACFWorkstation(QWidget):
         hero_layout = self.hero_widget.layout()
         self.complexity_panel.spatial_map.setMinimumHeight(280)
         hero_layout.addWidget(self.complexity_panel.spatial_map, stretch=1)
+        # Re-parenting spatial_map orphans its own "SPATIAL COMPLEXITY —"
+        # header inside Complexity Explorer's own layout (still shown as a
+        # full tab under Science Labs) - hide that specific child widget
+        # rather than deleting it, so the panel's own standalone tests and
+        # behaviour are untouched if it is ever used outside this composer.
+        self.complexity_panel.spatial_header.setVisible(False)
 
         transport_row = QHBoxLayout()
         transport_row.addWidget(self.temporal_panel.run_button)
@@ -1149,6 +1178,10 @@ class ACFWorkstation(QWidget):
         transport_row.addWidget(self.temporal_panel.frame_slider)
         transport_row.addWidget(self.temporal_panel.frame_label)
         transport_row.addStretch()
+        # Same treatment for Temporal Evolution Lab's own orphaned "Frame:"
+        # label, left behind in its own frame_row after frame_slider/
+        # frame_label were re-parented above.
+        self.temporal_panel.frame_row_label.setVisible(False)
         transport_note = QLabel(
             "Transport scrubs the real multi-frame trajectory rendered in “Time Evolution” below "
             "— the hero map shows this level's real spatial complexity and is not animated by it."
@@ -1549,15 +1582,17 @@ class ACFWorkstation(QWidget):
         """Real Complexity Overview factors - see `_GRADIENT_REFERENCE_
         K_PER_100KM` & co. for the exact disclosed normalizations.
 
-        Only factors with a REAL value behind them in this rebuild's own
-        panels are filled in: Gradients and Temporal Evolution from
-        Complexity Explorer's own real, already-computed fields, and
-        Model Disagreement from Confidence Lab's (or Multi-Model Lab's)
-        own real disagreement result. The remaining 5 factors the
-        reference image lists (Instability/Moisture/Shear/Convection/
-        Vertical Structure) are reported as None - the panel renders
-        NOT_COMPUTED and excludes them from its disclosed mean - rather
-        than invented from an unrelated quantity."""
+        Gradients and Temporal Evolution come from Complexity Explorer's
+        own real, already-computed fields; Model Disagreement from
+        Confidence Lab's (or Multi-Model Lab's) own real disagreement
+        result; and Instability/Moisture/Shear/Convection (added
+        2026-09-13) from the SAME real per-cell values Key Atmospheric
+        Variables / Key Alerts & Hazards already display
+        (`key_variables_panel.last_center_values`) - never a second
+        computation. Only Vertical Structure has genuinely no real source
+        in this composer and stays None - the panel renders NOT_COMPUTED
+        and excludes it from its disclosed mean - rather than invented
+        from an unrelated quantity."""
         factors: dict[str, float | None] = {
             "Instability": None,
             "Moisture": None,
@@ -1568,6 +1603,33 @@ class ACFWorkstation(QWidget):
             "Temporal Evolution": None,
             "Model Disagreement": None,
         }
+
+        # Instability/Moisture/Shear/Convection: the real center-cell
+        # values Key Atmospheric Variables just displayed - same NaN
+        # handling as the other factors below (a NaN/missing center-cell
+        # value stays None, never fabricated as 0).
+        center = self.key_variables_panel.last_center_values
+        if center is not None:
+            cape = center.get("cape_j_kg")
+            if cape is not None and not np.isnan(cape):
+                # Real, disclosed CAPE normalization (see
+                # `_CAPE_REFERENCE_J_KG`'s own comment) - shared by
+                # Instability and Convection below: this composer has
+                # exactly one real convective-intensity source per cell
+                # (CAPE), so both factors read the same normalized value
+                # rather than Convection being left NOT_COMPUTED or a
+                # fabricated second quantity being invented for it.
+                factors["Instability"] = _clip_unit(float(cape) / _CAPE_REFERENCE_J_KG)
+                factors["Convection"] = factors["Instability"]
+
+            shear = center.get("bulk_shear_m_s")
+            if shear is not None and not np.isnan(shear):
+                factors["Shear"] = _clip_unit(float(shear) / _SHEAR_REFERENCE_M_S)
+
+            rh_pct = center.get("relative_humidity_pct")
+            if rh_pct is not None and not np.isnan(rh_pct):
+                # Already a real 0-100 percentage - just /100, clamped.
+                factors["Moisture"] = _clip_unit(float(rh_pct) / 100.0)
 
         spatial = self.complexity_panel.spatial_complexity_field
         if spatial is not None:

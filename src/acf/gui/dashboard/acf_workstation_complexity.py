@@ -178,7 +178,12 @@ class ACFComplexityExplorerPanel(QWidget):
         layout.setSpacing(8)
 
         # --- Spatial complexity (real-time, from the current volume) ---
-        layout.addWidget(self._header("SPATIAL COMPLEXITY — real temperature-gradient magnitude (K/100km)"))
+        # Stored on self (added 2026-09-13) so the Workstation composer can
+        # hide this header when it re-parents `spatial_map` into its own
+        # hero section - leaving it visible here would show a header with
+        # no map under it in this panel's own "Complexity Explorer" tab.
+        self.spatial_header = self._header("SPATIAL COMPLEXITY — real temperature-gradient magnitude (K/100km)")
+        layout.addWidget(self.spatial_header)
         self.spatial_map = AWCIMapPanel(
             "SPATIAL COMPLEXITY", show_legend=False, show_info_boxes=False, show_demo_fallback=False
         )

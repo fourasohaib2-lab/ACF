@@ -15,6 +15,10 @@ arithmetic mean of the real per-dimension values passed in via
 `update_from_factors()` (any factor whose real value is `None` -
 "not computed" - is excluded from the mean, not treated as 0). It is
 not an independently-modeled or ML-derived score.
+
+The gauge label discloses its own denominator (added 2026-09-13), e.g.
+"0.62 Moderate (mean of 6 of 8 real factors)", so a viewer never mistakes
+a mean of a handful of real factors for a complete 8-factor score.
 """
 
 from __future__ import annotations
@@ -74,4 +78,7 @@ class ComplexityOverviewPanel(QWidget):
             return
 
         self.composite_score = sum(real_values) / len(real_values)
-        self.gauge_label.setText(f"{self.composite_score:.2f} {_level_for(self.composite_score)}")
+        self.gauge_label.setText(
+            f"{self.composite_score:.2f} {_level_for(self.composite_score)} "
+            f"(mean of {len(real_values)} of {len(factors)} real factors)"
+        )

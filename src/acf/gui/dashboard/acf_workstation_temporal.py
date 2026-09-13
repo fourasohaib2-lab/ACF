@@ -136,7 +136,13 @@ class ACFTemporalLabPanel(QWidget):
         layout.addWidget(self.status_label)
 
         frame_row = QHBoxLayout()
-        frame_row.addWidget(self._label("Frame:"))
+        # Stored on self (added 2026-09-13) so the Workstation composer can
+        # hide this label when it re-parents `frame_slider`/`frame_label`
+        # into its own hero transport row - leaving it visible here would
+        # show a bare "Frame:" label with no slider/value in this panel's
+        # own "Time Evolution" cell.
+        self.frame_row_label = self._label("Frame:")
+        frame_row.addWidget(self.frame_row_label)
         self.frame_slider = QSlider(Qt.Orientation.Horizontal)
         self.frame_slider.setMinimum(0)
         self.frame_slider.setMaximum(0)
