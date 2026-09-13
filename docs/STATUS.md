@@ -1205,3 +1205,20 @@ La grammaire/couverture des 4 produits aéronautiques OACI centraux
 groupes numériques standards - restent disclosed comme hors périmètre :
 remarques complètes (RMK), état de piste, description géographique
 libre des SIGMET/AIRMET, variante US "WS ALL WPTS".
+
+## Mise à jour (2026-09-13) : audit de conformité "ACF Master Prompt V4"
+
+Voir `docs/architecture/ACF_MASTER_PROMPT_V4_GAP_AUDIT.md` pour le détail
+complet. Résumé : un master prompt fourni par l'utilisateur supposait
+une architecture web React/WebGL - corrigé et accepté avant tout travail
+(ACF est une app desktop PySide6/Qt réelle). La majorité des 47 phases
+du prompt correspondent déjà à des capacités réelles de
+`ACFWorkstation` (carte, coupes, profils, Key Metrics, Model Consensus,
+Model Comparison, HPC/Slurm, Quality Control, Time Machine 4D). Gaps
+réels trouvés et fermés cette passe : Bulk Richardson Number (existait
+en backend, jamais câblé dans aucun panel GUI), accessibilité du shell
+principal (0 accessible name/description avant cette passe), tests de
+régression visuelle (0 fichier existant). Gap réel identifié mais
+BLOQUÉ, disclosed : Workflow Engine GUI (backend exige Python 3.12+,
+ce sandbox tourne en 3.11.15 - non câblé pour ne pas livrer une
+intégration non testable).

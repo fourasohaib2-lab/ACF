@@ -8,6 +8,27 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 > primaire). Il est repris à jour à partir du 6 septembre 2026 et sera
 > maintenu à chaque changement notable, comme le demande `AGENTS.md`.
 
+## [Unreleased] - 2026-09-13
+
+### Added
+- Audit de conformité "ACF Master Prompt V4"
+  (`docs/architecture/ACF_MASTER_PROMPT_V4_GAP_AUDIT.md`) : correction
+  d'hypothèse d'architecture (le prompt supposait React/WebGL, ACF est
+  une app desktop PySide6/Qt), puis fermeture de gaps réels trouvés sur
+  l'architecture existante : Bulk Richardson Number câblé dans
+  Stability Indices (formule déjà réelle, jamais utilisée en GUI),
+  accessibilité (noms/descriptions accessibles) sur les contrôles
+  icône-seule/ambigus du shell ACFWorkstation, premier test de
+  régression visuelle réel (rendu offscreen + comparaison miniature
+  tolérante contre une image de référence).
+- `tests/data/visual_baselines/acf_workstation_overview.png` : première
+  image de référence de régression visuelle.
+
+### Fixed
+- `ACFStabilityIndicesWidget` affiche maintenant le Bulk Richardson
+  Number réel (2*CAPE/shear², classification Weisman & Klemp 1982) -
+  honnêtement "n/a" si le cisaillement est nul.
+
 ## [Unreleased] - 2026-09-12
 
 ### Added
