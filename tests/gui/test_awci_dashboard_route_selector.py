@@ -96,8 +96,10 @@ def test_applying_a_route_genuinely_updates_the_map_flight_path(qtbot):
     dashboard.route_to_selector.setCurrentIndex(list(_AIRPORTS).index("EDDF"))
     dashboard._on_apply_route()
 
-    # Real, observable effect on the real map widget, not just internal state.
-    assert dashboard.regional_map._flight_path == dashboard._regional_route
+    # Real, observable effect on the real map widget, not just internal
+    # state (2026-09-13 refonte: the single self.global_map now receives
+    # every call the retired second "regional" map used to).
+    assert dashboard.global_map._flight_path == dashboard._regional_route
 
 
 def test_applying_a_route_recomputes_the_real_route_chart(qtbot):

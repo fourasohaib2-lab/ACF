@@ -20,8 +20,19 @@ these tests lock in that floor.
 
 from __future__ import annotations
 
-from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 from acf.gui.dashboard.awci_risk_summary import AWCIRiskSummary
+
+# NOTE (2026-09-13 refonte): self.component_list (_ComponentValueList) -
+# the narrow low-stretch-factor sidebar column this regression test
+# used to guard - was retired: the reference photo has no such column,
+# and its real per-module drill-down is now reached via AWCIHazardRow's
+# own cards instead (see awci_dashboard.py's NOTE in _build_ui()), laid
+# out with an equal stretch factor each rather than as one narrow
+# column squeezed against a wide matplotlib sibling - the specific
+# clipping failure mode this file's own module docstring describes no
+# longer applies to that removed widget. AWCIRiskSummary itself
+# (tested below) is untouched and still real/reachable code, even
+# though the live dashboard no longer instantiates it.
 
 
 def test_risk_summary_badges_have_a_real_minimum_width_wide_enough_for_the_longest_band_name(qtbot):
@@ -33,11 +44,3 @@ def test_risk_summary_badges_have_a_real_minimum_width_wide_enough_for_the_longe
 
     for _label, badge in summary._rows.values():
         assert badge.minimumWidth() >= 60
-
-
-def test_component_value_list_values_have_a_real_minimum_width(qtbot):
-    dashboard = AWCIDashboard()
-    qtbot.addWidget(dashboard)
-
-    for row in dashboard.component_list._rows.values():
-        assert row.value_label.minimumWidth() >= 36

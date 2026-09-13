@@ -120,10 +120,8 @@ def test_awci_dashboard_threads_screen_scale_into_every_real_figure_and_min_heig
 
     assert scaled_dashboard._screen_scale == 0.7
     assert scaled_dashboard.global_map.figure.get_size_inches()[0] < default_dashboard.global_map.figure.get_size_inches()[0]
-    assert scaled_dashboard.radar.figure.get_size_inches()[0] < default_dashboard.radar.figure.get_size_inches()[0]
     assert scaled_dashboard.route_chart.figure.get_size_inches()[0] < default_dashboard.route_chart.figure.get_size_inches()[0]
     assert scaled_dashboard.cross_section.figure.get_size_inches()[0] < default_dashboard.cross_section.figure.get_size_inches()[0]
-    assert scaled_dashboard.regional_map.figure.get_size_inches()[0] < default_dashboard.regional_map.figure.get_size_inches()[0]
     assert scaled_dashboard.global_map.minimumHeight() < default_dashboard.global_map.minimumHeight()
 
 
@@ -139,7 +137,6 @@ def test_awci_dashboard_default_screen_scale_is_1_unchanged_behaviour(qtbot):
 
     assert dashboard._screen_scale == 1.0
     assert dashboard.global_map.figure.get_size_inches()[0] == pytest.approx(6.0)
-    assert dashboard.radar.figure.get_size_inches()[0] == pytest.approx(5.4)
 
 
 def test_awci_dashboard_window_computes_and_threads_a_real_screen_scale(qtbot):

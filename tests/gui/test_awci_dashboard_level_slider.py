@@ -98,18 +98,17 @@ def test_moving_the_level_slider_reslices_the_same_volume_without_recomputing(qa
 
 
 def test_moving_the_level_slider_updates_the_point_component_scores_for_real(qapp):
-    """component_list (the numeric module-score readout next to the
-    radar) is recomputed from the real volume at the point of interest
-    for the newly selected level - real proof this is not just the map
-    that updates."""
+    """The hazard row's own per-module cards are recomputed from the
+    real volume at the point of interest for the newly selected level -
+    real proof this is not just the map that updates."""
     dashboard = AWCIDashboard()
     volume = _real_volume(n_levels=6)
     dashboard._on_real_physics_ready(volume)
-    surface_texts = {key: row.value_label.text() for key, row in dashboard.component_list._rows.items()}
+    surface_texts = {label: card.value_label.text() for label, card in dashboard.hazard_row._cards.items()}
 
     dashboard.level_slider.setValue(5)
 
-    top_texts = {key: row.value_label.text() for key, row in dashboard.component_list._rows.items()}
+    top_texts = {label: card.value_label.text() for label, card in dashboard.hazard_row._cards.items()}
     assert surface_texts != top_texts
 
 

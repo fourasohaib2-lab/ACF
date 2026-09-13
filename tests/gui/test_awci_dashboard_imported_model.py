@@ -2,8 +2,8 @@
 GUI wiring tests for the imported-model data tier (added 2026-09-08) -
 closes the "📂 Import Model File" button's own disclosed
 "loads but never computes AWCI" gap with a real end-to-end test:
-imported dataset -> acf.awci.model_import -> AWCICalculator -> radar/
-component list/risk summary/Point Information card.
+imported dataset -> acf.awci.model_import -> AWCICalculator -> hazard
+row/Current Situation/Point Information card.
 """
 
 from __future__ import annotations
@@ -60,9 +60,11 @@ def test_imported_dataset_computes_real_awci_into_the_point_panels(dashboard: AW
     module_scores, overall_awci, physical, forecast = dashboard._last_risk_inputs
     assert module_scores
     assert 0.0 <= overall_awci <= 100.0
-    # The Point Information card was updated (a real marker set).
-    assert dashboard.regional_map._point_marker == dashboard._point_of_interest
-    assert dashboard.regional_map._point_marker_awci is not None
+    # The Point Information card was updated (a real marker set) - the
+    # single self.global_map now receives the same real call the
+    # retired second "regional" map used to (2026-09-13 refonte).
+    assert dashboard.global_map._point_marker == dashboard._point_of_interest
+    assert dashboard.global_map._point_marker_awci is not None
     # The status line honestly reports the match/absent summary.
     status = dashboard.real_physics_status.text()
     assert "IMPORTED MODEL" in status

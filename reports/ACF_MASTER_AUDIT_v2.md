@@ -13339,3 +13339,211 @@ recalcul indépendant du même vrai pipeline aux vraies coordonnées.
 
 **Validation** : 14 tests dédiés : 14 passed. Vérifié visuellement par
 capture d'écran réelle (pilotage réel de l'app).
+
+## Mise à jour 2026-09-13 — Redesign AWCI, Phase 5/6 : 5 panneaux d'analyse + suppression des anciens panneaux dupliqués
+
+**Contexte** : demande explicite de l'utilisateur, avec réenvoi de la
+photo de référence : *"tu peux enlever toutes l'ancienne paramètres de
+l'ancien dashboard je veux que tout le dashboard soit exactement comme
+la photo envoyé exactement à 100% chaque pixel chaque détails pour tout
+le dashboard"*. Ceci annule explicitement le choix disclosed de la
+Phase 4 (préserver les anciens panneaux row1/row2 plutôt que les
+remplacer) : cette phase les retire (masque, jamais supprime) et
+reconstruit la rangée du bas exactement comme la photo.
+
+**Nettoyage (masquer, jamais supprimer)** : chaque widget réel ci-dessous
+reste pleinement construit et fonctionnel (tous ses appels
+`.update_data()`/signaux existants ailleurs dans le fichier continuent
+de fonctionner sans modification) - seulement retiré de son ancien
+emplacement visible :
+- `stats_bar`, `radar`, `component_list`, `regional_map`,
+  `regional_trend`, `vertical_profile_button`, `risk_summary`,
+  `compare_fl_button`, `recommendation_banner`, `level_control_widget`,
+  le reliquat "VIEW MODE" (radios déjà masqués en Phase 1) - masqués
+  (`setParent(self); .hide()`), chacun déjà réel-accessible autrement
+  (onglets de la sidebar, dialogues de détail).
+- `route_from_selector`/`route_to_selector`/`apply_route_button`
+  regroupés dans un nouveau conteneur `route_selector_widget` et
+  `Valid Time` dans `time_control_widget` - **relocalisés**, pas
+  masqués, réutilisés directement dans la nouvelle rangée d'analyse
+  (voir ci-dessous).
+- `self.cross_section` et `self.route_chart` restent construits sans
+  être placés jusqu'à la construction de la nouvelle rangée.
+
+**5 panneaux réels construits** (`analysis_row`, sous la carte globale) -
+chaque widget dessine déjà son propre titre matplotlib/interne ; le
+wrapper `_analysis_panel()` ajoute seulement un fond de carte, jamais un
+second titre :
+1. **Vertical Cross Section** - `self.cross_section` (déjà réel,
+   simplement relocalisé depuis l'ancien row1).
+2. **Atmospheric Profile** - `ACFVerticalSoundingWidget` (déjà réel,
+   code mort jusqu'ici - voir son propre docstring de module), câblé en
+   Real Physics via `update_from_volume_and_point()` dans
+   `_apply_volume_at_level()` ; reste honnêtement sur son propre
+   placeholder "Click a map to inspect a real column" en mode
+   démo/modèle importé (aucune sonde 3D réelle disponible).
+3. **Flight Route Analysis** - `route_selector_widget` +
+   `self.route_chart` (déjà réels, relocalisés depuis l'ancien row2).
+4. **Time Evolution (AWCI)** - `time_control_widget` (relocalisé) +
+   `AWCIEvolutionChart` (déjà réel, code mort jusqu'ici). Alimenté par
+   la même série réelle déjà calculée pour `regional_trend` (échantillon
+   ±6h au point courant) en mode démo/modèle importé - jamais un second
+   calcul indépendant ; alimenté par la vraie moyenne/max sur toute la
+   grille, par frame réel, du vrai résultat 4D CoupledEarthSolver
+   pendant la lecture "▶ 4D Evolution" (`_render_evolution_frame()`).
+5. **AWCI Vertical Profile** - `AWCIVerticalProfile` intégré en direct
+   (jusqu'ici seulement accessible via le dialogue
+   `_open_vertical_profile()`), alimenté par le nouveau helper partagé
+   `_compute_vertical_profile()` (extrait de `_open_vertical_profile()`
+   lui-même, qui l'appelle désormais aussi) - le dialogue et le panneau
+   intégré lisent donc exactement le même calcul réel, jamais deux
+   calculs indépendants. `_sync_vertical_profile_panel()` est appelé aux
+   3 mêmes points réels de rafraîchissement par point que
+   `self.hazard_row.update_data()`/`self._refresh_situation_row()`
+   (démo, modèle importé, Real Physics).
+
+**Aucune nouvelle métrique fabriquée** : chaque panneau réutilise soit
+un widget déjà réel et déjà testé, soit une donnée déjà calculée
+ailleurs dans ce même rafraîchissement.
+
+**Bug potentiel évité avant exécution** : après le retrait de la
+déclaration de `row2` et de tous ses `.addLayout()`/`.addWidget()`, une
+ligne résiduelle `outer.addLayout(row2, stretch=2)` restait plus loin
+dans le fichier (aurait levé `NameError: name 'row2' is not defined` à
+l'exécution) - trouvée par un audit `grep` des références résiduelles à
+`row2`/`left_col2`/`right_col2` et supprimée avant tout test.
+
+**L'ancien footer à icônes** (Synthetic View / Decision Support /
+Multi-Scale / Adaptive to Mission / Research Stage) reste affiché tel
+quel - explicitement différé à la Phase 6/6.
+
+**Tests ajoutés** : `tests/gui/test_awci_dashboard_analysis_panels.py`
+(7 tests) - dont une preuve directe que `_open_vertical_profile()` (le
+dialogue) et `_sync_vertical_profile_panel()` (le panneau intégré)
+lisent exactement le même calcul, et une preuve directe que le panneau
+"Time Evolution (AWCI)" trace exactement la même série que
+`regional_trend`.
+
+**Validation** : 7 tests dédiés : 7 passed. Suite ciblée
+(`test_awci_dashboard_reference_parity.py` + panneaux Phase 3/4 +
+carte) : 110 passed, 7 skipped, 0 failed. Suite complète GUI +
+`test_awci_dashboard_fullscreen.py` lancée en tâche de fond avant cette
+phase (masquage/relocalisation seuls) : 433 passed, 9 skipped, 0
+failed. Vérifié visuellement par capture d'écran réelle (1600×1000 et
+1920×1080) - structure de la rangée du bas conforme à la photo de
+référence (mêmes 5 panneaux, même ordre).
+
+## Mise à jour 2026-09-13 (suite) — Refonte complète (Master Prompt V3)
+
+**Contexte** : demande explicite et directe de l'utilisateur : *"je
+veux que tu oublie le dashboard ancien et tu reconstruit un nouveau
+dashboard en suivant le prompt que je viens de t'envoyer"* (un "AWCI
+Master Prompt V3" détaillé, imposant entre autres : rien de fabriqué,
+chaque bouton fonctionnel, fidélité pixel à la photo de référence,
+séparation données/présentation, ne jamais supprimer une fonctionnalité
+réelle sans la comprendre d'abord). Après inspection complète du
+fichier (`awci_dashboard.py`, ~3480 lignes, ~15 chaînes de calcul
+réelles indépendantes : Real Physics/CoupledEarthSolver, 4D réel,
+Real Archive RESTOR/ALADIN, modèle importé + sa coupe/évolution
+propres, HPC, comparaison FL, profil vertical, alertes, rapport
+d'exécution, METAR live), confirmation avec l'utilisateur : refonte
+complète de la structure UI, en préservant **chaque** capacité réelle
+existante (jamais de suppression à l'aveugle - conforme aux règles #2
+et #41 du Master Prompt V3 lui-même).
+
+**Widgets réellement retirés** (plus seulement masqués - suppression
+définitive de leur instanciation dans `AWCIDashboard`, code source
+conservé dans leurs propres modules) :
+- `_ComponentRow`/`_ComponentValueList` (liste de 7 modules à côté du
+  radar) - aucune place dans la photo ; le drill-down réel par module
+  est réintégré via les cartes cliquables d'`AWCIHazardRow` (5 des 6
+  cartes, celles ayant un vrai module `AWCICalculator` distinct -
+  "Wind Shear" reste honnêtement non cliquable).
+- `AWCIRadar` (`self.radar`) - aucune place dans la photo, superflu
+  une fois la carte AWCI GLOBAL + les cartes de risques en place.
+- `AWCIStatsBar` (`self.stats_bar`) - aucune place dans la photo ; ses
+  2 seules valeurs encore utiles ailleurs (confiance, nom du modèle
+  actif) sont désormais des valeurs réelles passées directement
+  (`point_result["confidence"]`, `self._current_model_label`) au lieu
+  d'un aller-retour redondant par ce widget retiré.
+- `AWCIRiskSummary`/`AWCIRiskBadgeDetailDialog` (`self.risk_summary`)
+  - même liste de risques déjà réelle dans la carte "Current
+  Situation" (`compute_elevated_risks`) ; le drill-down des 3 modules
+  concernés (turbulence/icing/convective) est réintégré via
+  `AWCIHazardRow.cardClicked`. Le détail composite "overall/physical/
+  forecast" (sans formule de module unique) n'a aucun équivalent dans
+  la photo et a été honnêtement retiré (aucune perte de donnée réelle -
+  la même information reste visible dans "Current Situation").
+- `AWCIMapPanel` régionale (`self.regional_map`) - une pure duplication
+  de caméra de `self.global_map` ; la même vraie interaction
+  (clic-pour-point, marqueur, champ Real Physics recadré) est
+  maintenant portée par la seule carte réelle, zoomable via le vrai
+  sélecteur "Area" de la topbar.
+- `AWCITimeline` (`self.regional_trend`) + le bouton dialogue "🔍 See
+  Vertical Profile" (`self.vertical_profile_button`/
+  `_open_vertical_profile()`) - strictement redondants avec,
+  respectivement, le panneau "Time Evolution (AWCI)" et le panneau
+  "AWCI Vertical Profile" déjà intégrés en direct depuis la Phase 5.
+- Ancien footer à 5 icônes (`AWCIFooter`) - remplacé par le nouveau
+  footer réel (voir plus bas) ; chacune de ses 5 actions réelles reste
+  atteignable (menu Réglages, navigation latérale).
+- Ancien menu "☰" séparé - déjà redondant depuis la Phase 1 avec le
+  vrai menu Réglages (`self.topbar.settings_button`), qui ouvrait déjà
+  exactement le même `QMenu` réel.
+
+**2 vrais bugs trouvés et corrigés pendant l'audit** :
+1. **Le slider "Valid Time" (et les boutons ◀/▶/Now de la topbar)
+   n'avait plus aucun effet visible** depuis la Phase 5 : son handler
+   (`_on_time_changed`) ne rafraîchissait que l'ex-`regional_map`,
+   désormais masquée puis retirée - en violation directe du Master
+   Prompt V3 §11 ("quand le temps change : carte, KPI, alertes, route,
+   aéroports, graphiques doivent tous changer"). Corrigé en
+   factorisant le triple dispatch déjà dupliqué (`_on_map_point_
+   clicked`/`_on_flight_level_selector_changed`) en une seule méthode
+   partagée `_refresh_current_point()`, maintenant aussi appelée par
+   `_on_time_changed()`.
+2. **`AWCIComponentDetailDialog.COMPONENT_INFO` n'avait pas d'entrée
+   pour les modules réels `ceiling`/`visibility`** - en rendant les
+   cartes de risques correspondantes cliquables (ci-dessus), un clic
+   levait un `KeyError` réel (trouvé par les tests, pas par
+   inspection). Corrigé en ajoutant 2 entrées réelles et exactes
+   (formule/description tirées de `acf.awci.normalizer.
+   normalize_ceiling`/`normalize_visibility_risk`, jamais inventées) -
+   les deux modules étant opt-in et jamais alimentés par ce dashboard
+   aujourd'hui, ils affichent honnêtement `DEFAULT`, jamais `REAL`.
+
+**Nouveau footer réel** (`acf/gui/dashboard/awci_footer_summary.py`,
+nouveau fichier) : "Recent Alerts" (réutilise `compute_elevated_risks`,
+zéro horodatage par alerte fabriqué - même zone/heure réelle affichée
+pour toutes les lignes, faute d'un vrai journal d'alertes horodaté),
+"Latest Updates" (3 lignes réelles : horodatage réel du dernier calcul,
+source de données active, heure de validité), "Quick Actions" (4
+boutons réels : Generate Report → rapport d'exécution existant, Route
+Analysis → zoom réel de la carte sur la route active, Save Scenario →
+sauvegarde JSON réelle de l'état courant via `QFileDialog`, Export Data
+→ réutilise le vrai menu d'export de la carte, jamais dupliqué).
+
+**Aucune perte de fonctionnalité réelle** : chaque capacité (Real
+Physics, Real Archive RESTOR, modèle importé, connexion HPC,
+comparaison FL280/FL320, 4D, profil vertical) reste intégralement
+câblée et testée, atteignable via la barre latérale et/ou le menu
+Réglages (⚙) de la topbar - jamais retirée, seulement relocalisée
+derrière l'icône réelle que la photo montre déjà.
+
+**Tests** : ~15 fichiers de tests mis à jour pour refléter la nouvelle
+structure (plus de `dashboard.radar`/`.stats_bar`/`.risk_summary`/
+`.regional_map`/`.regional_trend`/`.footer` - remplacés par les vrais
+équivalents `hazard_row`/`current_situation_card`/`global_map`/
+`evolution_chart`/`recent_alerts_card`/etc.), `tests/gui/
+test_awci_footer_buttons.py` remplacé par `tests/gui/
+test_awci_footer_summary.py` (9 nouveaux tests), 2 nouvelles entrées
+`COMPONENT_INFO` testées.
+
+**Validation finale** : suite complète (`tests/gui/` +
+`test_awci_dashboard_fullscreen.py` + `test_awci_alerts_panel.py` +
+`test_awci_stats_bar.py` + `test_awci_screen_adaptability.py`) :
+**459 passed, 9 skipped, 0 failed** (23 min 43s). Vérifié visuellement
+par capture d'écran réelle (1920×1080) : bannière de recommandation
+visible pour de vrai, nouveau footer réel (Recent Alerts/Latest
+Updates/Quick Actions) en bas, structure conforme à la photo de
+référence à 100%.

@@ -7,10 +7,13 @@ la photo, adapte toi" - docs/reference/awci_dashboard_reference.jpg's
 own header shows no buttons at all).
 
 See AWCIDashboard._build_header_menu()'s own docstring for the design:
-the 9 real header buttons (+ the UTC clock) are hidden from the visible
-header but stay real, connected, and state-synced exactly as before -
-this menu is a thin, always-current presentation layer over that SAME
-single source of truth, never a second independently-tracked copy.
+the 10 real header buttons (+ the UTC clock) are hidden from the
+visible header but stay real, connected, and state-synced exactly as
+before - this menu is a thin, always-current presentation layer over
+that SAME single source of truth, never a second independently-tracked
+copy. compare_fl_button (2026-09-13 refonte) joined the original 9 once
+its own floating button - the FL280/FL320 comparison, with no place in
+the reference photo - was relocated here instead of retired.
 """
 
 from __future__ import annotations
@@ -35,6 +38,7 @@ _HIDDEN_BUTTON_ATTRS = (
     "view_3d_button",
     "hpc_button",
     "import_model_button",
+    "compare_fl_button",
     "messages_button",
     "alerts_button",
     "execution_report_button",
@@ -42,7 +46,7 @@ _HIDDEN_BUTTON_ATTRS = (
 )
 
 
-def test_all_9_real_buttons_and_the_clock_are_hidden_from_the_visible_header(qapp):
+def test_all_10_real_buttons_and_the_clock_are_hidden_from_the_visible_header(qapp):
     dashboard = AWCIDashboard()
     dashboard.show()
     for attr in _HIDDEN_BUTTON_ATTRS:
@@ -55,7 +59,7 @@ def test_all_9_real_buttons_and_the_clock_are_hidden_from_the_visible_header(qap
 def test_hamburger_button_exists_with_the_real_menu_attached(qapp):
     dashboard = AWCIDashboard()
     entries = dict(dashboard._header_menu_entries)
-    assert len(dashboard._header_menu_entries) == 9
+    assert len(dashboard._header_menu_entries) == 10
     for attr in _HIDDEN_BUTTON_ATTRS:
         assert getattr(dashboard, attr) in entries
 

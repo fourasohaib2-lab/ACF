@@ -2,15 +2,17 @@
 Tests for AWCIDashboard's real interactivity closures (docs/awci/
 AWCI_UI_AUDIT.md / AWCI_INTERACTION_MATRIX.md - the pre-implementation
 audit's "dead UI" findings): map click sets a real single source of
-truth for the point of interest, and risk-summary badges open a real
+truth for the point of interest, and hazard-row cards open a real
 detail popup instead of doing nothing.
 
 Signals are emitted directly (dashboard.global_map.pointClicked.emit(...),
-dashboard.risk_summary.rowClicked.emit(...)) - the exact real mechanism
-AWCIMapPanel.mouseReleaseEvent()/_RiskRow.mousePressEvent() themselves
+dashboard.hazard_row.cardClicked.emit(...)) - the exact real mechanism
+AWCIMapPanel.mouseReleaseEvent()/_HazardCard.mousePressEvent() themselves
 use (see test_awci_map_panel_point_click.py for full mouse-event-level
 coverage of the map's own click-vs-drag detection - not re-tested here).
 """
+
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -49,24 +51,18 @@ def test_clicking_the_global_map_updates_the_single_source_of_truth(qapp):
     assert dashboard._point_of_interest == (10.0, 20.0)
 
 
-def test_clicking_the_regional_map_updates_the_single_source_of_truth(qapp):
-    dashboard = AWCIDashboard()
-    dashboard.regional_map.pointClicked.emit(30.0, 5.0)
-    assert dashboard._point_of_interest == (30.0, 5.0)
-
-
 def test_clicking_the_map_re_runs_the_real_per_point_pipeline_in_demo_mode(qapp):
     """The per-point pipeline (point_raw_data -> AWCICalculator ->
-    radar/component list/risk summary/regional-map marker) re-runs at
-    the NEW point, not a stale value left over from the old one."""
+    hazard row/Current Situation/map marker) re-runs at the NEW point,
+    not a stale value left over from the old one."""
     dashboard = AWCIDashboard()
 
     dashboard.global_map.pointClicked.emit(-40.0, 170.0)  # a real, far-away point
 
     assert dashboard._point_of_interest == (-40.0, 170.0)
-    # The regional map's own Point Information card must reflect the
-    # SAME new point, not the old one.
-    assert dashboard.regional_map._point_marker == (-40.0, 170.0)
+    # The map's own Point Information card must reflect the SAME new
+    # point, not the old one.
+    assert dashboard.global_map._point_marker == (-40.0, 170.0)
     # The raw inputs risk-badge clicks read (self._last_point_raw_data)
     # are the real ones _synthetic_inputs() computed AT THIS new point,
     # not the default point's.
@@ -89,94 +85,57 @@ def test_clicking_the_map_in_real_physics_mode_re_slices_the_real_volume_at_the_
     assert dashboard._last_point_mode == "real_physics"
 
 
-# --------------------------------------------------------- risk badge click
+# --------------------------------------------------------- hazard card click
+#
+# 2026-09-13 refonte: the since-retired self.risk_summary's own 6-row
+# rowClicked (turbulence/icing/convective/overall/physical/forecast) is
+# superseded by AWCIHazardRow.cardClicked, which only ever fires for a
+# card with a real, distinct AWCICalculator module of its own
+# (dynamic/convective/microphysical/visibility/ceiling - see
+# HAZARD_CARDS' own docstring on "Wind Shear") and always opens the
+# same real AWCIComponentDetailDialog - never AWCIRiskBadgeDetailDialog
+# (retired: "overall"/"physical"/"forecast" have no single-module
+# formula of their own and no dedicated card in the reference photo;
+# the same real elevated-risk information they surfaced is still shown,
+# non-fabricated, in Current Situation's "Main Hazards" list).
 
 
-def test_clicking_the_turbulence_badge_opens_the_same_component_detail_dialog(qapp):
+def test_clicking_the_turbulence_card_opens_the_component_detail_dialog(qapp):
     dashboard = AWCIDashboard()
     assert dashboard._component_detail_window is None
 
-    dashboard.risk_summary.rowClicked.emit("turbulence")
+    dashboard.hazard_row.cardClicked.emit("dynamic")
 
     assert dashboard._component_detail_window is not None
-    assert "Dynamic" in dashboard._component_detail_window.windowTitle() or dashboard._component_detail_window.windowTitle() != ""
+    assert dashboard._component_detail_window.windowTitle() != ""
 
 
-def test_clicking_the_icing_badge_maps_to_the_microphysical_module(qapp):
+def test_clicking_the_icing_card_maps_to_the_microphysical_module(qapp):
     dashboard = AWCIDashboard()
-    dashboard.risk_summary.rowClicked.emit("icing")
-    assert dashboard._component_detail_window is not None
-
-
-def test_clicking_the_convective_badge_maps_to_the_convective_module(qapp):
-    dashboard = AWCIDashboard()
-    dashboard.risk_summary.rowClicked.emit("convective")
+    dashboard.hazard_row.cardClicked.emit("microphysical")
     assert dashboard._component_detail_window is not None
 
 
-def test_clicking_the_overall_badge_opens_the_composite_detail_dialog(qapp):
+def test_clicking_the_convective_card_maps_to_the_convective_module(qapp):
     dashboard = AWCIDashboard()
-    assert dashboard._risk_badge_detail_window is None
-
-    dashboard.risk_summary.rowClicked.emit("overall")
-
-    assert dashboard._risk_badge_detail_window is not None
-    assert "Overall Complexity" in dashboard._risk_badge_detail_window.windowTitle()
-    assert "Score:" in dashboard._risk_badge_detail_window._score_label.text()
+    dashboard.hazard_row.cardClicked.emit("convective")
+    assert dashboard._component_detail_window is not None
 
 
-def test_clicking_the_physical_and_forecast_badges_reuse_the_same_composite_dialog(qapp):
+def test_hazard_card_click_dispatches_the_real_current_module_score(qapp):
+    """Real proof the dispatch itself carries the exact real value
+    self._last_risk_inputs currently holds for this module - not a
+    stale or fabricated one (the dialog's own exact text formatting is
+    already covered by test_awci_dashboard_component_clicks.py)."""
     dashboard = AWCIDashboard()
-    dashboard.risk_summary.rowClicked.emit("physical")
-    first = dashboard._risk_badge_detail_window
-    assert "Physical Complexity" in first.windowTitle()
-
-    dashboard.risk_summary.rowClicked.emit("forecast")
-    assert dashboard._risk_badge_detail_window is first
-    assert "Forecast Complexity" in dashboard._risk_badge_detail_window.windowTitle()
-
-
-def test_composite_dialog_shows_the_real_module_score_breakdown(qapp):
-    dashboard = AWCIDashboard()
-    dashboard.risk_summary.rowClicked.emit("overall")
-
-    dialog = dashboard._risk_badge_detail_window
     module_scores = dashboard._last_risk_inputs[0]
-    dynamic_text = dialog._module_rows["dynamic"].text()
-    assert f"{module_scores['dynamic']:.1f}" in dynamic_text
 
+    with patch.object(dashboard, "_on_component_clicked") as mock_clicked:
+        dashboard.hazard_row.cardClicked.emit("dynamic")
 
-def test_composite_dialog_shows_all_14_real_modules_not_just_7(qapp):
-    """Real regression guard: ensemble_spread/model_disagreement were 2
-    real AWCICalculator.calculate_module_scores() keys found missing
-    from this dialog's own breakdown while closing §51's vertical-
-    profile detail dialog (fixed 2026-09-03); ceiling/visibility/dust/
-    ash/microburst were the same completeness gap found again on
-    2026-09-12, once those 5 opt-in modules existed - must not silently
-    drop any real module key here."""
-    dashboard = AWCIDashboard()
-    dashboard.risk_summary.rowClicked.emit("overall")
-
-    dialog = dashboard._risk_badge_detail_window
-    assert set(dialog._module_rows.keys()) == {
-        "dynamic", "thermodynamic", "convective", "microphysical", "topographic", "temporal", "confidence",
-        "ensemble_spread", "model_disagreement",
-        "ceiling", "visibility", "dust", "ash", "microburst",
-    }
-
-
-def test_risk_row_and_component_row_have_real_tooltips(qapp):
-    """Real accessibility/discoverability polish - previously
-    disclosed as missing ("none — no setToolTip() yet") in
-    docs/awci/AWCI_BUTTON_CONTRACT.md."""
-    from acf.gui.dashboard.awci_dashboard import _ComponentRow
-    from acf.gui.dashboard.awci_risk_summary import _RiskRow
-
-    risk_row = _RiskRow("turbulence", "🌪️", "Turbulence Risk")
-    assert risk_row.toolTip() != ""
-
-    component_row = _ComponentRow("dynamic", "🌀", "Dynamic")
-    assert component_row.toolTip() != ""
+    mock_clicked.assert_called_once_with(
+        "dynamic", module_scores["dynamic"], dashboard._last_point_raw_data, dashboard._last_point_mode
+    )
 
 
 # --------------------------------------------------- flight-level selector
@@ -204,18 +163,16 @@ def test_changing_the_selector_in_demo_mode_re_runs_the_point_pipeline_at_the_ne
     assert dashboard._last_point_raw_data == pytest.approx(expected)
 
 
-def test_changing_the_selector_does_not_touch_the_map_titles_or_other_routes(qapp):
+def test_changing_the_selector_does_not_touch_the_map_title(qapp):
     """The selector drives only the point-of-interest pipeline - the
-    map panel titles (fixed "(FL300)"/"(FL100)" text matching the
-    reference mockup) must stay exactly as constructed."""
+    map panel's own title (fixed "(FL300)" text matching the reference
+    mockup) must stay exactly as constructed."""
     dashboard = AWCIDashboard()
     global_title_before = dashboard.global_map._base_title
-    regional_title_before = dashboard.regional_map._base_title
 
     dashboard.flight_level_selector.setCurrentText("FL390")
 
     assert dashboard.global_map._base_title == global_title_before
-    assert dashboard.regional_map._base_title == regional_title_before
 
 
 def test_changing_the_selector_in_real_physics_mode_snaps_to_the_nearest_native_level(qapp):

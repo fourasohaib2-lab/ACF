@@ -142,6 +142,36 @@ COMPONENT_INFO: dict[str, ComponentInfo] = {
         real_inputs=("confidence",),
         real_in_real_physics=False,
     ),
+    # ceiling/visibility (added 2026-09-13, once AWCIHazardRow's own
+    # cards for these 2 real, opt-in AWCICalculator modules became
+    # clickable) - both are genuinely opt-in: AWCICalculator.calculate()
+    # only computes a real score when the caller supplies
+    # ceiling_height_m/visibility_risk (see that method's own docstring)
+    # and otherwise honestly defaults to 0.0 - neither this dashboard's
+    # demo _synthetic_inputs() path nor its Real Physics per-point
+    # raw-field dict currently populates either key, so both correctly
+    # show DEFAULT in every mode today, never a fabricated REAL badge.
+    "ceiling": ComponentInfo(
+        key="ceiling",
+        icon="☁️",
+        label="Ceiling Complexity",
+        description="Real estimated ceiling height (LCL approximation, acf.awci.ceiling).",
+        formula=(
+            "normalize_ceiling(ceiling_height_m): 1 - ceiling_height_m / MVFR_CEILING_M "
+            "(914.4 m / 3000 ft, the real FAA/NOAA VFR threshold), clipped to [0, 1]"
+        ),
+        real_inputs=("ceiling_height_m",),
+        real_in_real_physics=False,
+    ),
+    "visibility": ComponentInfo(
+        key="visibility",
+        icon="👁️",
+        label="Visibility Complexity",
+        description="Real visibility-degradation risk proxy (acf.awci.visibility) - not a literal visibility distance.",
+        formula="normalize_visibility_risk(visibility_risk): pass-through clamp to [0, 1]",
+        real_inputs=("visibility_risk",),
+        real_in_real_physics=False,
+    ),
 }
 
 

@@ -49,9 +49,8 @@ def test_real_physics_ready_switches_to_real_mode_and_updates_panels(qapp):
     assert "Back to Demo" in dashboard.real_physics_button.text()
     assert "REAL PHYSICS" in dashboard.real_physics_status.text()
     assert dashboard.global_map._external_field is not None
-    assert dashboard.stats_bar.model_box.value_lbl.text() == "CoupledEarthSolver"
-    assert dashboard.component_list._rows["convective"].value_label.text() != "—"
-    assert dashboard.risk_summary._rows["physical"][1].text() != "—"
+    assert dashboard._current_model_label == "CoupledEarthSolver"
+    assert dashboard.hazard_row._cards["Convection"].value_label.text() != "—"
 
 
 def test_real_physics_ready_wires_route_and_cross_section_too(qapp):
@@ -67,24 +66,16 @@ def test_real_physics_ready_wires_route_and_cross_section_too(qapp):
     assert len(distances_km) == len(scores) == 40
 
 
-def test_real_physics_ready_wires_regional_map_when_grid_is_fine_enough(qapp):
-    """A finer real grid (AROME-scale override) should have >= 2x2 real points inside the regional extent -> regional map gets wired."""
-    dashboard = AWCIDashboard()
-    volume = _real_volume(n_lat=40, n_lon=80)
-
-    dashboard._on_real_physics_ready(volume)
-
-    assert dashboard.regional_map._external_field is not None
-
-
-def test_real_physics_ready_leaves_regional_map_synthetic_when_grid_too_coarse(qapp):
-    """A very coarse real grid should fall back to the synthetic regional map rather than crash or show a broken plot."""
-    dashboard = AWCIDashboard()
-    volume = _real_volume(n_lat=3, n_lon=5)  # too coarse for North Africa's extent
-
-    dashboard._on_real_physics_ready(volume)
-
-    assert dashboard.regional_map._external_field is None
+# NOTE (2026-09-13 refonte): test_real_physics_ready_wires_regional_
+# map_when_grid_is_fine_enough / ..._leaves_regional_map_synthetic_
+# when_grid_too_coarse (the crop_field_to_extent() fine/coarse-grid
+# distinction for a SEPARATE cropped regional map) were retired along
+# with self.regional_map itself - the single self.global_map always
+# shows the full real-physics field directly (no separate crop step);
+# a user reaches the same regional view for real by picking a smaller
+# Area in the topbar, which zooms this SAME real data
+# (_on_view_mode_changed()) rather than a second, separately-cropped
+# contour.
 
 
 def test_revert_to_demo_restores_synthetic_state(qapp):
@@ -97,10 +88,9 @@ def test_revert_to_demo_restores_synthetic_state(qapp):
     assert dashboard._real_physics_active is False
     assert "Real Physics" in dashboard.real_physics_button.text()
     assert dashboard.global_map._external_field is None
-    assert dashboard.regional_map._external_field is None
     assert dashboard.route_chart._external_route is None
     assert dashboard.cross_section._external_cross_section is None
-    assert dashboard.stats_bar.model_box.value_lbl.text() == "ACF Demo Grid"
+    assert dashboard._current_model_label == "ACF Demo Grid"
 
 
 def test_real_physics_failure_reports_the_error_and_stays_in_demo_mode(qapp):

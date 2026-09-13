@@ -87,47 +87,43 @@ def test_header_badge_text_matches_the_real_research_stage_framing(qapp):
 
 
 def test_tunis_city_label_is_wired_into_the_regional_map(qapp):
+    """2026-09-13 refonte: the second "regional" map was retired (see
+    awci_dashboard.py's own NOTE in _build_ui()) - the single real
+    self.global_map now receives the same real city labels."""
     dashboard = AWCIDashboard()
-    assert dashboard.regional_map._city_labels == _REGIONAL_CITY_LABELS
+    assert dashboard.global_map._city_labels == _REGIONAL_CITY_LABELS
 
 
 # --------------------------------------------------- confidence gauge
 
 
 def test_confidence_gauge_shows_the_real_point_of_interest_confidence(qapp):
+    """2026-09-13 refonte: the now-retired self.stats_bar's own
+    confidence gauge is superseded by Current Situation's real
+    confidence bar/label (same real point_result["confidence"] value,
+    passed in directly - see _refresh_situation_row()'s own docstring)."""
     dashboard = AWCIDashboard()
-    assert dashboard.stats_bar.confidence_box.gauge._score >= 0.0
+    assert dashboard.current_situation_card.confidence_value_label.text().endswith("%")
 
 
 # ------------------------------------------------------- vertical profile
 
 
-def test_vertical_profile_dialog_opens_lazily(qapp):
+def test_vertical_profile_panel_is_populated_after_a_real_refresh(qapp):
+    """2026-09-13 refonte: the dialog-based "🔍 See Vertical Profile"
+    (_open_vertical_profile()) is retired - Phase 5 already embeds the
+    exact same real AWCIVerticalProfile live in the analysis row, kept
+    in sync by _sync_vertical_profile_panel() on every real per-point
+    refresh (called from __init__'s own refresh())."""
     dashboard = AWCIDashboard()
-    assert dashboard._vertical_profile_window is None
-
-    dashboard._open_vertical_profile()
-
-    assert dashboard._vertical_profile_window is not None
-    assert dashboard._vertical_profile_widget is not None
-    assert dashboard._vertical_profile_widget._profile  # real, non-empty profile
-
-
-def test_vertical_profile_reuses_the_same_dialog_instance(qapp):
-    dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
-    first = dashboard._vertical_profile_window
-
-    dashboard._open_vertical_profile()
-
-    assert dashboard._vertical_profile_window is first
+    assert dashboard.vertical_profile_panel._profile  # real, non-empty profile
 
 
 def test_vertical_profile_has_a_real_score_per_named_flight_level(qapp):
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    profile = dashboard._vertical_profile_widget._profile
+    profile = dashboard.vertical_profile_panel._profile
     assert "FL100" in profile
     assert "FL320" in profile
     for score in profile.values():
@@ -138,9 +134,9 @@ def test_vertical_profile_now_also_covers_the_real_standard_pressure_levels(qapp
     """§51 of docs/ACF_MASTER_PROMPT.md: "Surface / 850 hPa / 700 hPa /
     500 hPa / 300 hPa / 250 hPa / Flight levels" - closed 2026-09-03."""
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    profile = dashboard._vertical_profile_widget._profile
+    profile = dashboard.vertical_profile_panel._profile
     for label in ("Surface", "850 hPa", "700 hPa", "500 hPa", "300 hPa", "250 hPa"):
         assert label in profile
         assert 0.0 <= profile[label] <= 100.0
@@ -157,9 +153,9 @@ def test_vertical_profile_in_real_physics_mode_uses_real_interpolation(qapp):
     dashboard = AWCIDashboard()
     dashboard._on_real_physics_ready(_real_volume())
 
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    profile = dashboard._vertical_profile_widget._profile
+    profile = dashboard.vertical_profile_panel._profile
     assert profile  # at least the real point's own native-range levels got a real bar
     for level_label, score in profile.items():
         assert 0.0 <= score <= 100.0
@@ -169,7 +165,7 @@ def test_vertical_profile_in_real_physics_mode_uses_real_interpolation(qapp):
 
 
 def test_vertical_profile_in_real_physics_mode_never_shows_a_level_it_did_not_really_bracket(qapp):
-    """Real, deliberate refusal to extrapolate - the dialog must only
+    """Real, deliberate refusal to extrapolate - the panel must only
     ever show labels vertical_profile_at_standard_levels() actually
     returned (see interpolated_state_at_pressure()'s own docstring for
     when it refuses: a target pressure outside this point's real native
@@ -187,9 +183,9 @@ def test_vertical_profile_in_real_physics_mode_never_shows_a_level_it_did_not_re
     volume = _real_volume(n_levels=3, steps=1)
     dashboard._on_real_physics_ready(volume)
 
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    profile = dashboard._vertical_profile_widget._profile
+    profile = dashboard.vertical_profile_panel._profile
     lat, lon = dashboard._point_of_interest
     expected_labels = set(
         vertical_profile_at_standard_levels(volume, lat, lon, _ALL_VERTICAL_PROFILE_LEVELS_HPA).keys()
@@ -201,18 +197,18 @@ def test_vertical_profile_in_real_physics_mode_never_shows_a_level_it_did_not_re
 
 def test_vertical_profile_switching_from_real_physics_back_to_demo_recomputes(qapp):
     """Real regression guard: toggling Real Physics off must not leave
-    the vertical-profile dialog showing stale interpolated data - the
-    next _open_vertical_profile() call while back in demo mode must use
+    the embedded panel showing stale interpolated data - the next
+    _sync_vertical_profile_panel() call while back in demo mode must use
     _synthetic_inputs() again."""
     dashboard = AWCIDashboard()
     dashboard._on_real_physics_ready(_real_volume())
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
     assert dashboard._real_physics_active is True
 
-    dashboard._real_physics_active = False  # same real flag refresh()/_open_vertical_profile() itself reads
-    dashboard._open_vertical_profile()
+    dashboard._real_physics_active = False  # same real flag refresh()/_compute_vertical_profile() itself reads
+    dashboard._sync_vertical_profile_panel()
 
-    profile = dashboard._vertical_profile_widget._profile
+    profile = dashboard.vertical_profile_panel._profile
     assert "FL100" in profile and "FL320" in profile  # demo mode's own full level list, unconstrained by any real column
 
 
@@ -243,9 +239,9 @@ def test_vertical_profile_data_carries_the_real_module_scores_per_level(qapp):
     level, not just the composite score) - priority freely chosen
     ("suit ton jugement")."""
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    assert set(dashboard._vertical_profile_data.keys()) == set(dashboard._vertical_profile_widget._profile.keys())
+    assert set(dashboard._vertical_profile_data.keys()) == set(dashboard.vertical_profile_panel._profile.keys())
     entry = dashboard._vertical_profile_data["300 hPa"]
     assert entry["hpa"] == pytest.approx(300.0)
     assert "module_scores" in entry["result"]
@@ -264,32 +260,32 @@ def test_vertical_profile_suggestion_label_names_the_real_lowest_awci_level(qapp
     from acf.awci.vertical_field import suggest_lowest_complexity_level
 
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
     expected = suggest_lowest_complexity_level(dashboard._vertical_profile_data)
     assert expected["best_level"] is not None  # demo-mode data is always fully comparable
-    label_text = dashboard._vertical_profile_suggestion_label.text()
+    label_text = dashboard._vertical_profile_panel_suggestion_label.text()
     assert expected["best_level"] in label_text
     assert f"{expected['best_score']:.1f}" in label_text
     assert "not an ATC clearance" in label_text
 
 
-def test_vertical_profile_suggestion_label_updates_when_the_profile_is_reopened(qapp):
-    """Re-opening the dialog after the point of interest changes must
-    refresh the suggestion label from the new real data, never leave a
-    stale suggestion from the previous point behind."""
+def test_vertical_profile_suggestion_label_updates_when_the_point_changes(qapp):
+    """Re-syncing after the point of interest changes must refresh the
+    suggestion label from the new real data, never leave a stale
+    suggestion from the previous point behind."""
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
-    first_text = dashboard._vertical_profile_suggestion_label.text()
-    assert first_text  # real text was set on the very first open, not left blank
+    dashboard._sync_vertical_profile_panel()
+    first_text = dashboard._vertical_profile_panel_suggestion_label.text()
+    assert first_text  # real text was set on the very first sync, not left blank
 
     dashboard._point_of_interest = (dashboard._point_of_interest[0] + 5.0, dashboard._point_of_interest[1] + 5.0)
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
     from acf.awci.vertical_field import suggest_lowest_complexity_level
 
     expected = suggest_lowest_complexity_level(dashboard._vertical_profile_data)
-    assert expected["best_level"] in dashboard._vertical_profile_suggestion_label.text()
+    assert expected["best_level"] in dashboard._vertical_profile_panel_suggestion_label.text()
     # Not asserted to differ from first_text (a different point can honestly
     # still have the same lowest-complexity level) - only that it is real
     # and consistent with the freshly recomputed data, not stale in either case.
@@ -297,10 +293,10 @@ def test_vertical_profile_suggestion_label_updates_when_the_profile_is_reopened(
 
 def test_clicking_a_real_bar_opens_the_real_level_detail_dialog(qapp):
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
     assert dashboard._vertical_profile_detail_window is None
 
-    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+    dashboard.vertical_profile_panel.levelClicked.emit("FL280")
 
     assert dashboard._vertical_profile_detail_window is not None
     assert "FL280" in dashboard._vertical_profile_detail_window.windowTitle()
@@ -313,8 +309,8 @@ def test_level_detail_dialog_shows_all_14_real_modules_not_just_9(qapp):
     real opt-in AWCICalculator modules but were still silently missing
     from this dialog's own §51 breakdown."""
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
-    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+    dashboard._sync_vertical_profile_panel()
+    dashboard.vertical_profile_panel.levelClicked.emit("FL280")
 
     dialog = dashboard._vertical_profile_detail_window
     assert set(dialog._module_rows.keys()) == {
@@ -326,11 +322,11 @@ def test_level_detail_dialog_shows_all_14_real_modules_not_just_9(qapp):
 
 def test_clicking_a_different_bar_reuses_the_same_dialog_instance(qapp):
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
-    dashboard._vertical_profile_widget.levelClicked.emit("FL280")
+    dashboard._sync_vertical_profile_panel()
+    dashboard.vertical_profile_panel.levelClicked.emit("FL280")
     first = dashboard._vertical_profile_detail_window
 
-    dashboard._vertical_profile_widget.levelClicked.emit("850 hPa")
+    dashboard.vertical_profile_panel.levelClicked.emit("850 hPa")
 
     assert dashboard._vertical_profile_detail_window is first
     assert "850 hPa" in dashboard._vertical_profile_detail_window.windowTitle()
@@ -338,9 +334,9 @@ def test_clicking_a_different_bar_reuses_the_same_dialog_instance(qapp):
 
 def test_level_detail_dialog_reflects_the_real_awci_score_for_that_level(qapp):
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
+    dashboard._sync_vertical_profile_panel()
 
-    dashboard._vertical_profile_widget.levelClicked.emit("500 hPa")
+    dashboard.vertical_profile_panel.levelClicked.emit("500 hPa")
 
     expected = dashboard._vertical_profile_data["500 hPa"]["result"]
     dialog = dashboard._vertical_profile_detail_window
@@ -354,8 +350,8 @@ def test_clicking_a_real_bar_via_a_real_mouse_event_opens_the_dialog(qapp):
     from PySide6.QtGui import QMouseEvent
 
     dashboard = AWCIDashboard()
-    dashboard._open_vertical_profile()
-    widget = dashboard._vertical_profile_widget
+    dashboard._sync_vertical_profile_panel()
+    widget = dashboard.vertical_profile_panel
     widget.resize(400, 300)
     widget.repaint()
     assert widget._bar_geometry  # real geometry ready before the click
@@ -371,23 +367,32 @@ def test_clicking_a_real_bar_via_a_real_mouse_event_opens_the_dialog(qapp):
     assert level in dashboard._vertical_profile_detail_window.windowTitle()
 
 
-# ------------------------------------------------------ regional trend
+# ------------------------------------------------------ time evolution chart
 
 
-def test_regional_trend_sparkline_has_real_data_after_refresh(qapp):
+def test_evolution_chart_has_real_data_after_refresh(qapp):
+    """2026-09-13 refonte: the now-retired self.regional_trend sparkline
+    is superseded by the embedded "Time Evolution (AWCI)" analysis panel
+    (self.evolution_chart), fed by the exact same real +/-6h series -
+    see refresh()'s own comment."""
     dashboard = AWCIDashboard()
-    assert dashboard.regional_trend._data
-    assert len(dashboard.regional_trend._data) == 7  # -6..+6h in steps of 2
+    plotted = dashboard.evolution_chart.axis.lines[0].get_ydata()
+    assert len(plotted) == 7  # -6..+6h in steps of 2
 
 
-def test_regional_trend_sparkline_updates_when_the_time_slider_moves(qapp):
+def test_evolution_chart_updates_when_the_time_slider_moves(qapp):
+    """The real +/-6h sample is centered on the slider's own current
+    hour, so its X-axis (real hours-of-day) shifts with the slider even
+    when the Y values (a function of the RELATIVE time offset only, not
+    the absolute hour - see awci_synthetic_field.py) coincidentally
+    stay the same."""
     dashboard = AWCIDashboard()
-    before = list(dashboard.regional_trend._data)
+    before = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
 
     dashboard.time_slider.setValue(20)
     dashboard.refresh()
 
-    after = list(dashboard.regional_trend._data)
+    after = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
     assert before != after
 
 

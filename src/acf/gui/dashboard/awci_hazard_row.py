@@ -19,6 +19,7 @@ below) rather than a fabricated/duplicated one.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_colors import level_for, risk_qcolor
@@ -45,13 +46,25 @@ class _HazardCard(QFrame):
     """One real hazard mini-card - icon/label, a real 0-100 value, and
     its real AWCI-scale severity name (acf.gui.dashboard.awci_colors.
     level_for() - the SAME real 6-tier scale the map legend/gauge/risk
-    badges already use, not a separately invented one)."""
+    badges already use, not a separately invented one).
 
-    def __init__(self, icon: str, label: str, tooltip: str = "") -> None:
+    Clickable (added 2026-09-13, AWCI redesign Phase 5/6 cleanup) only
+    when it has a real, distinct AWCICalculator module behind it (see
+    HAZARD_CARDS' own docstring on "Wind Shear") - opens the exact same
+    real per-module detail dialog the old, now-retired risk-summary
+    badges used to (AWCIDashboard._on_risk_badge_clicked() ->
+    AWCIComponentDetailDialog), never a second/fabricated drill-down."""
+
+    clicked = Signal()
+
+    def __init__(self, icon: str, label: str, tooltip: str = "", clickable: bool = False) -> None:
         super().__init__()
         self.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
         if tooltip:
             self.setToolTip(tooltip)
+        if clickable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._clickable = clickable
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(2)
@@ -82,12 +95,22 @@ class _HazardCard(QFrame):
             f"color: rgb({color.red()},{color.green()},{color.blue()}); font-size: 10px; font-weight: bold; border: none;"
         )
 
+    def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt override signature
+        if self._clickable and event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
 
 class AWCIHazardRow(QWidget):
     """Real "AWCI GLOBAL" gauge + 6 hazard mini-cards row - see module
     docstring. `update_data()` is the single real entry point, fed the
     SAME `module_scores`/`overall_awci` every other real panel in this
     dashboard already receives."""
+
+    #: (module_scores key, real per-module score) - emitted only for a
+    #: card with a real, distinct module behind it (never for "Wind
+    #: Shear" - see HAZARD_CARDS' own docstring).
+    cardClicked = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -117,7 +140,9 @@ class AWCIHazardRow(QWidget):
                     "than a duplicated/fabricated number."
                 )
             )
-            card = _HazardCard(icon, label, tooltip)
+            card = _HazardCard(icon, label, tooltip, clickable=key is not None)
+            if key is not None:
+                card.clicked.connect(lambda k=key: self.cardClicked.emit(k))
             self._cards[label] = card
             layout.addWidget(card, stretch=1)
 

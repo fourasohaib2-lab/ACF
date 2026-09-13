@@ -77,6 +77,7 @@ AWCIVerticalProfileLevelDialog exactly as "🔍 See Vertical Profile"
 does, just fed from this real archive instead.
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -112,7 +113,6 @@ from acf.awci.archive_field import (
 from acf.awci.calculator import AWCICalculator
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
-    crop_field_to_extent,
     real_layer_grids_at_level,
     sample_cross_section_hazards,
     sample_field_along_path,
@@ -126,17 +126,21 @@ from acf.awci.vertical_field import (
     suggest_lowest_complexity_level,
     vertical_profile_at_standard_levels,
 )
+from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
 from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDialog
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
-from acf.gui.dashboard.awci_footer import AWCIFooter
+from acf.gui.dashboard.awci_evolution_chart import AWCIEvolutionChart
+from acf.gui.dashboard.awci_footer_summary import (
+    AWCILatestUpdatesCard,
+    AWCIQuickActionsCard,
+    AWCIRecentAlertsCard,
+)
 from acf.gui.dashboard.awci_hazard_row import AWCIHazardRow
 from acf.gui.dashboard.awci_toast import AWCIToastManager
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, flight_level_ft_to_pressure_hpa
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
-from acf.gui.dashboard.awci_radar import AWCIRadar
-from acf.gui.dashboard.awci_risk_summary import AWCIRiskBadgeDetailDialog, AWCIRiskSummary
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
 from acf.gui.dashboard.awci_sidebar import AWCISidebar
 from acf.gui.dashboard.awci_situation_panel import (
@@ -146,12 +150,10 @@ from acf.gui.dashboard.awci_situation_panel import (
     AWCICurrentSituationCard,
     AWCIModelAgreementCard,
 )
-from acf.gui.dashboard.awci_stats_bar import AWCIStatsBar
 from acf.gui.dashboard.awci_topbar import AWCITopBar
 from acf.gui.dashboard.awci_colors import level_for
 from acf.gui.dashboard.awci_synthetic_field import (
     _synthetic_inputs,
-    awci_grid,
     cross_section_phase_severity_field,
     route_profile,
 )
@@ -314,6 +316,20 @@ _ALL_VERTICAL_PROFILE_LEVELS_HPA: dict[str, float] = dict(
         reverse=True,
     )
 )
+
+
+def _format_vertical_profile_suggestion(suggestion: dict[str, Any]) -> str:
+    """Real text for AWCIDashboard._compute_vertical_profile()'s own
+    suggest_lowest_complexity_level() result - shared by the dialog
+    (_open_vertical_profile()) and the embedded live panel
+    (_sync_vertical_profile_panel()) so both word this identically."""
+    if suggestion["best_level"] is not None:
+        return (
+            f"✅ Lowest computed complexity: {suggestion['best_level']} "
+            f"(AWCI {suggestion['best_score']:.1f}) — meteorological signal only, "
+            "not an ATC clearance."
+        )
+    return f"ℹ️ No comparable level ({suggestion['status']})."
 # Real single-source-of-truth options for the "Flight Level:" selector
 # (added 2026-09-03, docs/awci/AWCI_UI_AUDIT.md - the pre-implementation
 # audit found ~7 independently hardcoded flight_level_hpa/cruise_hpa
@@ -344,114 +360,6 @@ _FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA: dict[str, float] = {
 #: home in the science layer, not duplicated in the GUI layer that
 #: merely calls it. quality_for_awci_point_data() is that module's own
 #: real function - imported directly above, not reimplemented here.
-
-
-class _ComponentRow(QFrame):
-    """One real, clickable complexity-component row - a QFrame (not a
-    QPushButton) so the original icon-left/value-right layout is kept
-    exactly, with a real mousePressEvent()-driven click and hover
-    feedback added on top."""
-
-    clicked = Signal(str)
-
-    def __init__(self, key: str, icon: str, label: str, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._key = key
-        self._base_style = "border: none; border-radius: 4px;"
-        self._hover_style = f"border: none; border-radius: 4px; background-color: {TOKENS.bg_surface_alt};"
-        self.setStyleSheet(self._base_style)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setToolTip(f"Click for the real formula, status, and drill-down trace behind {label}.")
-
-        row_layout = QHBoxLayout(self)
-        row_layout.setContentsMargins(4, 2, 4, 2)
-        lbl = QLabel(f"{icon}  {label}")
-        lbl.setStyleSheet(label_style("text_secondary", "sm"))
-        row_layout.addWidget(lbl)
-        row_layout.addStretch()
-        self.value_label = QLabel("—")
-        self.value_label.setStyleSheet(label_style("text_primary", "sm", "bold"))
-        # Real fix (2026-09-07, found by rendering at a real 1920x1080
-        # size and looking at the screenshot, not just checking
-        # scrollbar metrics): with no floor here, a tight layout squeeze
-        # clipped this value mid-digit instead of shrinking a wider
-        # sibling first - see AWCIRadar's own figsize note for the
-        # matching space freed for this column.
-        self.value_label.setMinimumWidth(36)
-        row_layout.addWidget(self.value_label)
-
-    def mousePressEvent(self, event: Any) -> None:
-        self.clicked.emit(self._key)
-        super().mousePressEvent(event)
-
-    def enterEvent(self, event: Any) -> None:
-        self.setStyleSheet(self._hover_style)
-        super().enterEvent(event)
-
-    def leaveEvent(self, event: Any) -> None:
-        self.setStyleSheet(self._base_style)
-        super().leaveEvent(event)
-
-
-class _ComponentValueList(QFrame):
-    """Compact, real CLICKABLE list of module scores next to the radar -
-    mirrors the reference's numeric readout ('Dynamic 0.72',
-    'Thermodynamic 0.81', ...) alongside its radar.
-
-    Made clickable (added 2026-09-03, explicit user request "rend les
-    bouton des différents complexité utilisable pour rendre tout le
-    details de la situation"): each row now opens
-    AWCIComponentDetailDialog for that module - the real current
-    score, the real raw input(s) that fed it (threaded through from
-    update_data()'s new `raw_data`/`mode` parameters), the real
-    acf.awci.normalizer.Normalizer formula, and an honest real-vs-
-    default badge (see awci_component_detail.py's own docstring).
-    """
-
-    _LABELS = [
-        ("dynamic", "🌀", "Dynamic"),
-        ("thermodynamic", "🌡️", "Thermodynamic"),
-        ("convective", "⛈️", "Convective"),
-        ("microphysical", "❄️", "Microphysical"),
-        ("topographic", "⛰️", "Topographic"),
-        ("temporal", "🕐", "Temporal"),
-        ("confidence", "❓", "Uncertainty"),
-    ]
-
-    componentClicked = Signal(str, float, dict, str)  # key, score, raw_data, mode
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setStyleSheet("border: none;")
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 4, 0, 4)
-        layout.setSpacing(2)
-
-        self._rows: dict[str, _ComponentRow] = {}
-        self._current_scores: dict[str, float] = {}
-        self._current_raw_data: dict[str, Any] = {}
-        self._current_mode: str = "demo"
-        for key, icon, label in self._LABELS:
-            row = _ComponentRow(key, icon, label)
-            row.clicked.connect(self._on_row_clicked)
-            layout.addWidget(row)
-            self._rows[key] = row
-
-    def update_data(
-        self,
-        module_scores: dict[str, float],
-        raw_data: dict[str, Any] | None = None,
-        mode: str = "demo",
-    ) -> None:
-        self._current_scores = dict(module_scores)
-        self._current_raw_data = dict(raw_data) if raw_data is not None else {}
-        self._current_mode = mode
-        for key, _icon, _label in self._LABELS:
-            value = module_scores.get(key, 0.0) / 100.0  # display as a 0-1 fraction, like the reference
-            self._rows[key].value_label.setText(f"{value:.2f}")
-
-    def _on_row_clicked(self, key: str) -> None:
-        self.componentClicked.emit(key, self._current_scores.get(key, 0.0), self._current_raw_data, self._current_mode)
 
 
 class _RealFieldWorkerSignals(QObject):
@@ -684,6 +592,12 @@ class AWCIDashboard(QWidget):
         #: entre les aeroports"), defaulting to the exact same demo
         #: route as before so nothing changes until a user picks one.
         self._regional_route: list[tuple[float, float, str]] = list(_REGIONAL_ROUTE)
+        #: Real active-data-source label shown in the topbar's "Model"
+        #: field (2026-09-13 refonte - previously read back through the
+        #: now-retired self.stats_bar.model_box, a redundant round-trip
+        #: for a value already known at every real call site that used
+        #: to set it there).
+        self._current_model_label: str = "ACF Demo Grid"
         self._real_physics_active = False
         self._real_volume: dict[str, Any] | None = None
         # The real vertical level (0 = surface) currently shown -
@@ -1015,6 +929,25 @@ class AWCIDashboard(QWidget):
         self.real_archive_button.setParent(self)
         self.real_archive_button.hide()
 
+        # Real FL280 vs FL320 comparison - relocated 2026-09-13 into this
+        # SAME real ⚙ Settings menu (see _build_header_menu() below,
+        # constructed later in this method) rather than a floating
+        # button with no place in the reference photo; still real/
+        # functional, also reachable via the sidebar's own "Model
+        # Comparison" nav item (_on_sidebar_nav()). Built here (grouped
+        # with the other real header-menu entries) so it already exists
+        # by the time _build_header_menu() reads it.
+        self.compare_fl_button = QPushButton("🛩 Compare FL280/FL320")
+        self.compare_fl_button.setToolTip(
+            "Sample the same real route a second time at FL320's real ISA pressure\n"
+            "(acf.gui.dashboard.awci_map_panel.flight_level_ft_to_pressure_hpa) and show\n"
+            "both real flight levels as comparison lines."
+        )
+        self.compare_fl_button.clicked.connect(self._toggle_fl_comparison)
+        self._fl_comparison_active = False
+        self.compare_fl_button.setParent(self)
+        self.compare_fl_button.hide()
+
         # Real, static status badge (added 2026-09-03, docs/reference/
         # awci_dashboard_reference.jpg parity work) - the mockup's own
         # top-right "RESEARCH STAGE / Prototype Version" badge. Pure
@@ -1086,7 +1019,6 @@ class AWCIDashboard(QWidget):
         self._alerts_window: AWCIAlertsDialog | None = None
         self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
-        self._risk_badge_detail_window: AWCIRiskBadgeDetailDialog | None = None
         # Real Archive mode state (added 2026-09-04, extended same day
         # with a real lead-time selector - "continue") - each real
         # lead time's decoded archive is loaded lazily (on first
@@ -1183,7 +1115,17 @@ class AWCIDashboard(QWidget):
         # it across the whole row width - confirmed in a real
         # screenshot. A trailing stretch keeps it compact again.
         view_mode_row.addStretch()
-        outer.addLayout(view_mode_row)
+        # Hidden as a whole row 2026-09-12 (docs/reference/
+        # awci_dashboard_reference.png has no page-level "Flight
+        # Level:" control on its overview page - the photo's own
+        # Vertical Cross Section/AWCI Vertical Profile panels show
+        # every level at once instead) - still real/functional
+        # (self.flight_level_selector still drives the real
+        # point-of-interest pipeline via _on_flight_level_selector_
+        # changed(), just not shown here any more).
+        view_mode_widget = QWidget(self)
+        view_mode_widget.setLayout(view_mode_row)
+        view_mode_widget.hide()
 
         # Real "AWCI GLOBAL" gauge + 6 hazard cards (added 2026-09-12,
         # docs/reference/awci_dashboard_reference.png, Phase 2/6) - see
@@ -1258,49 +1200,33 @@ class AWCIDashboard(QWidget):
         self.global_map.setMinimumHeight(max(140, int(240 * self._screen_scale)))
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
-        row1.addWidget(self.global_map, stretch=3)
-
-        right_col = QVBoxLayout()
-        right_col.setSpacing(8)
-        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
-        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
-        apply_elevation(self.cross_section)
-        right_col.addWidget(self.cross_section, stretch=1)
-
-        radar_row = QHBoxLayout()
-        self.radar = AWCIRadar("AWCI COMPONENTS (example at point)", figsize_scale=self._screen_scale)
-        apply_elevation(self.radar)
-        self.component_list = _ComponentValueList()
-        self.component_list.componentClicked.connect(self._on_component_clicked)
-        radar_row.addWidget(self.radar, stretch=2)
-        radar_row.addWidget(self.component_list, stretch=1)
-        right_col.addLayout(radar_row, stretch=1)
-
-        row1.addLayout(right_col, stretch=2)
+        row1.addWidget(self.global_map, stretch=1)
         outer.addLayout(row1, stretch=3)
 
-        # --- Stats bar -----------------------------------------------------
-        self.stats_bar = AWCIStatsBar()
-        apply_elevation(self.stats_bar, blur_radius=18, y_offset=3, opacity=0.3)
-        outer.addWidget(self.stats_bar)
+        # NOTE (2026-09-13, docs/reference/awci_dashboard_reference.png,
+        # explicit user request "reconstruis le dashboard à partir d'une
+        # page blanche en suivant le Master Prompt V3 et en préservant
+        # chaque capacité réelle" - refonte Phase 5/6): the map used to
+        # share row1 with a cross-section+radar+component-list column,
+        # and a whole second "regional" map lived in a since-removed
+        # row2 (see below) - the reference photo shows ONE map, full-
+        # width, that zooms via the real Area selector
+        # (_on_topbar_area_changed()/_on_view_mode_changed()) instead of
+        # a second map instance. self.radar/_ComponentValueList (module-
+        # level per-point breakdown) and self.regional_map (a plain
+        # camera-extent duplicate of self.global_map) had no distinct
+        # real data of their own left to show once the photo's own
+        # Current Situation/hazard-row/single-map panels covered the
+        # same ground - genuinely retired, not hidden: every real value
+        # they used to show is still reachable (per-module drill-down ->
+        # AWCIHazardRow.cardClicked below; per-point marker/route line ->
+        # self.global_map, which now receives every call regional_map
+        # used to). self.cross_section stays fully real, just relocated
+        # into Phase 5's "Vertical Cross Section" analysis panel below.
+        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
+        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
 
-        # --- Row 2: regional map (left) + route/risk (right) --------------
-        row2 = QHBoxLayout()
-        row2.setSpacing(8)
-
-        left_col2 = QVBoxLayout()
-        self.regional_map = AWCIMapPanel(
-            "AWCI REGIONAL MAP – NORTH AFRICA (FL100)", extent=_REGIONAL_EXTENT, figsize_scale=self._screen_scale
-        )
-        # same real fix as global_map above, same 2026-09-07 screen-adaptability scaling
-        self.regional_map.setMinimumHeight(max(120, int(190 * self._screen_scale)))
-        self.regional_map.set_flight_path(self._regional_route)
-        self.regional_map.set_city_labels(_REGIONAL_CITY_LABELS)
-        self.regional_map.pointClicked.connect(self._on_map_point_clicked)
-        apply_elevation(self.regional_map)
-        # Real awci_score set for real by refresh() right after _build_ui()
-        # returns (see __init__) - not left at "no score" here.
-        left_col2.addWidget(self.regional_map, stretch=1)
+        self.global_map.set_city_labels(_REGIONAL_CITY_LABELS)
 
         # Real airport-to-airport route selector (added 2026-09-07,
         # explicit user request "un bouton pour changer la route entre
@@ -1337,37 +1263,28 @@ class AWCIDashboard(QWidget):
         )
         self.apply_route_button.clicked.connect(self._on_apply_route)
         route_row.addWidget(self.apply_route_button)
-        left_col2.addLayout(route_row)
+        # Real container widget (2026-09-12) so this whole real route-
+        # selector row can be relocated wholesale into Phase 5's real
+        # "Flight Route Analysis" panel below, rather than staying in
+        # the now-hidden left_col2/row2 this section used to build.
+        self.route_selector_widget = QWidget()
+        self.route_selector_widget.setLayout(route_row)
 
-        # --- Regional trend sparkline + vertical-profile button (added
-        # 2026-09-03, docs/reference/awci_dashboard_reference.jpg
-        # parity work) - wires 2 real, previously-dead widgets
-        # (AWCITimeline/AWCIVerticalProfile, acf.gui.dashboard - see
-        # their own module docstrings) into the dashboard for the
-        # first time since the rebuild that made them unreachable.
-        regional_extras_row = QHBoxLayout()
-        self.regional_trend = AWCITimeline()
-        self.regional_trend.setFixedHeight(90)
-        self.regional_trend.setMinimumWidth(160)
-        regional_extras_row.addWidget(self.regional_trend, stretch=1)
-        self.vertical_profile_button = QPushButton("🔍 See Vertical Profile")
-        self.vertical_profile_button.setToolTip(
-            "Real AWCICalculator scores at the regional point of interest, computed at\n"
-            "several representative flight levels (acf.gui.dashboard.awci_vertical_profile)."
-        )
-        self.vertical_profile_button.clicked.connect(self._open_vertical_profile)
-        regional_extras_row.addWidget(self.vertical_profile_button)
-        left_col2.addLayout(regional_extras_row)
-        self._vertical_profile_window: QDialog | None = None
-        self._vertical_profile_widget: AWCIVerticalProfile | None = None
-        #: Real per-level module_scores/physical/forecast breakdown -
-        #: see _open_vertical_profile()'s own comment.
+        # Real per-level module_scores/physical/forecast breakdown -
+        # see _compute_vertical_profile()'s own docstring. The old
+        # dialog-based "🔍 See Vertical Profile" button/window (added
+        # 2026-09-03) is retired 2026-09-13, Phase 5/6 refonte: Phase
+        # 5 already embedded the exact same real AWCIVerticalProfile
+        # live in the analysis row below (self.vertical_profile_panel),
+        # fed by this same real data - a standalone dialog duplicating
+        # it had no place in the reference photo and no distinct real
+        # capability left of its own.
         self._vertical_profile_data: dict[str, dict[str, Any]] = {}
         self._vertical_profile_detail_window: AWCIVerticalProfileLevelDialog | None = None
-        #: Real "lowest-complexity level" suggestion label (§30, added
-        #: 2026-09-12) - see _open_vertical_profile()'s own comment.
-        self._vertical_profile_suggestion_label: QLabel | None = None
 
+        # Real container widget (2026-09-12) so this whole real Valid
+        # Time control can relocate wholesale into Phase 5's real
+        # "Time Evolution" panel below.
         time_row = QHBoxLayout()
         time_label = QLabel("Valid Time:")
         time_label.setStyleSheet(label_style("text_muted", "xs"))
@@ -1383,12 +1300,16 @@ class AWCIDashboard(QWidget):
         time_row.addWidget(time_label)
         time_row.addWidget(self.time_slider, stretch=1)
         time_row.addWidget(self.time_readout)
-        left_col2.addLayout(time_row)
+        self.time_control_widget = QWidget()
+        self.time_control_widget.setLayout(time_row)
 
         # Real vertical-level control (explicit user request "ajoute la
         # 4eme dimension") - only meaningful once "🔬 Real Physics" has
         # produced a real volume with a real n_levels; disabled until
         # then rather than shown enabled with nothing real behind it.
+        # Hidden 2026-09-12 (no equivalent in the reference photo) -
+        # still real/functional (still driven by _on_level_slider_
+        # changed() every time a real Physics volume/level changes).
         level_row = QHBoxLayout()
         level_label = QLabel("Level:")
         level_label.setStyleSheet(label_style("text_muted", "xs"))
@@ -1407,50 +1328,31 @@ class AWCIDashboard(QWidget):
         level_row.addWidget(level_label)
         level_row.addWidget(self.level_slider, stretch=1)
         level_row.addWidget(self.level_readout)
-        left_col2.addLayout(level_row)
+        self.level_control_widget = QWidget()
+        self.level_control_widget.setLayout(level_row)
+        self.level_control_widget.hide()
 
-        row2.addLayout(left_col2, stretch=3)
-
-        right_col2 = QVBoxLayout()
-        right_col2.setSpacing(8)
-        op_header = QLabel("AWCI – OPERATIONAL USE EXAMPLE")
-        op_header.setStyleSheet(label_style("text_primary", "sm", "bold"))
-        right_col2.addWidget(op_header)
-
-        op_row = QHBoxLayout()
         self.route_chart = AWCIRouteChart(figsize_scale=self._screen_scale)
-        apply_elevation(self.route_chart)
-        self.risk_summary = AWCIRiskSummary()
-        self.risk_summary.rowClicked.connect(self._on_risk_badge_clicked)
-        apply_elevation(self.risk_summary)
-        op_row.addWidget(self.route_chart, stretch=2)
-        op_row.addWidget(self.risk_summary, stretch=1)
-        right_col2.addLayout(op_row, stretch=1)
 
-        # Real FL280 vs FL320 comparison (added 2026-09-03, docs/
-        # reference/awci_dashboard_reference.jpg parity work) - a real,
-        # user-triggered action (same cost-disclosure convention as
-        # 🔬 Real Physics/🧊 3D View above: a second real route sample
-        # at a different real flight level, not free) rather than
-        # always-on.
-        self.compare_fl_button = QPushButton("🛩 Compare FL280/FL320")
-        self.compare_fl_button.setToolTip(
-            "Sample the same real route a second time at FL320's real ISA pressure\n"
-            "(acf.gui.dashboard.awci_map_panel.flight_level_ft_to_pressure_hpa) and show\n"
-            "both real flight levels as comparison lines."
-        )
-        self.compare_fl_button.clicked.connect(self._toggle_fl_comparison)
-        self._fl_comparison_active = False
-        right_col2.addWidget(self.compare_fl_button)
+        # Real per-hazard-card drill-down (retired self.risk_summary's
+        # own "click a badge" gap, 2026-09-13 refonte) - AWCIHazardRow's
+        # own real cards (dynamic/convective/microphysical/visibility/
+        # ceiling - see HAZARD_CARDS) now open the exact same real
+        # AWCIComponentDetailDialog directly (see _on_hazard_card_
+        # clicked() below), never a second/parallel detail view for the
+        # same real number. The old risk_summary column had no place in
+        # the reference photo (the same elevated-risk rows already show
+        # in Current Situation's "Main Hazards", via the same real
+        # compute_elevated_risks() call).
+        self.hazard_row.cardClicked.connect(self._on_hazard_card_clicked)
 
-        # Real recommendation banner (added 2026-09-03, same parity
-        # work) - real, template-driven text (same discipline as
-        # AWCICalculator._explain()) built from already-real values:
-        # acf.gui.dashboard.awci_alerts_panel.compute_elevated_risks()
-        # for the elevated-risk lines, a real contiguous high-AWCI
-        # route segment for the "detected between X-Y km" line. Hidden
-        # (no text) when nothing is genuinely elevated - never a
-        # fabricated recommendation.
+        # Real recommendation banner - now shown for real (2026-09-13;
+        # was built but left unparented-into-any-layout before), right
+        # under the Current Situation/Model Agreement/Airport Complexity
+        # row. Auto-hidden (setVisible(False)) whenever nothing is
+        # genuinely elevated - see _update_recommendation_banner()) so
+        # it never disturbs the reference photo's own layout when it has
+        # nothing real to say.
         self.recommendation_banner = QLabel("")
         self.recommendation_banner.setWordWrap(True)
         self.recommendation_banner.setStyleSheet(
@@ -1458,15 +1360,108 @@ class AWCIDashboard(QWidget):
             f"border-radius: {TOKENS.radius_sm}px; padding: 6px 10px; font-size: 10px;"
         )
         self.recommendation_banner.setVisible(False)
-        right_col2.addWidget(self.recommendation_banner)
+        outer.addWidget(self.recommendation_banner)
 
-        row2.addLayout(right_col2, stretch=2)
-        outer.addLayout(row2, stretch=2)
+        # --- Row 3: 5 real analysis panels (added 2026-09-13, docs/
+        # reference/awci_dashboard_reference.png, Phase 5/6, explicit
+        # user request "tu peux enlever toutes l'ancienne paramètres...
+        # je veux que tout le dashboard soit exactement comme la photo
+        # à 100%") - matches the reference photo's bottom row of 5
+        # analysis cards. Every panel below hosts an already-real,
+        # already-tested widget - three relocated from the now-dismantled
+        # row1/row2 above (self.cross_section, self.route_chart +
+        # self.route_selector_widget, self.time_control_widget) and two
+        # newly wired-in (AWCIEvolutionChart/ACFVerticalSoundingWidget
+        # were real but previously dead code - see their own module
+        # docstrings; AWCIVerticalProfile was previously only reachable
+        # via the dialog _open_vertical_profile() opens). No new
+        # fabricated metric anywhere in this row - each chart already
+        # draws its own real title internally, so the wrapper below adds
+        # only a card background, never a second/duplicate title.
+        def _analysis_panel(*widgets: QWidget) -> QFrame:
+            frame = QFrame()
+            frame.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
+            panel_layout = QVBoxLayout(frame)
+            panel_layout.setContentsMargins(8, 8, 8, 8)
+            panel_layout.setSpacing(4)
+            for widget in widgets:
+                panel_layout.addWidget(widget)
+            return frame
 
-        # --- Footer ---------------------------------------------------------
-        self.footer = AWCIFooter()
-        self.footer.itemClicked.connect(self._on_footer_item_clicked)
-        outer.addWidget(self.footer)
+        min_panel_height = max(90, int(150 * self._screen_scale))
+
+        # Panel 2/5: "Atmospheric Profile" - real T/wind vertical column
+        # at the point of interest (acf.awci.vertical_field.
+        # vertical_profile_at_point()) - only meaningful once a real
+        # Real-Physics volume exists (see ACFVerticalSoundingWidget's
+        # own module docstring); shows its own honest "Click a map to
+        # inspect a real column" placeholder in demo/imported-model
+        # mode rather than a fabricated sounding.
+        self.atmospheric_profile = ACFVerticalSoundingWidget()
+        self.atmospheric_profile.setMinimumHeight(min_panel_height)
+
+        # Panel 4/5: "Time Evolution (AWCI)" - real AWCI(t) series, fed
+        # by the exact same real per-point +/-6h sampling refresh()
+        # already computes for self.regional_trend (demo/imported-model
+        # mode), or the real 4D CoupledEarthSolver trajectory's own
+        # grid-wide mean/max per frame while "▶ 4D Evolution" is playing
+        # (see _render_evolution_frame()) - never a second/independent
+        # computation.
+        self.evolution_chart = AWCIEvolutionChart(title="TIME EVOLUTION (AWCI)")
+        self.evolution_chart.setMinimumHeight(min_panel_height)
+
+        # Panel 5/5: "AWCI Vertical Profile" - the same real per-level
+        # module_scores/physical/forecast breakdown the "🔍 See Vertical
+        # Profile" dialog shows (_open_vertical_profile()), embedded
+        # live via the shared _compute_vertical_profile()/
+        # _sync_vertical_profile_panel() helpers above so both read the
+        # exact same real computation.
+        self.vertical_profile_panel = AWCIVerticalProfile()
+        self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
+        self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
+        self.vertical_profile_panel.setMinimumHeight(min_panel_height)
+        self._vertical_profile_panel_suggestion_label = QLabel("")
+        self._vertical_profile_panel_suggestion_label.setWordWrap(True)
+        self._vertical_profile_panel_suggestion_label.setStyleSheet(label_style("text_muted", "xs"))
+
+        self.route_chart.setMinimumHeight(min_panel_height)
+
+        analysis_row = QHBoxLayout()
+        analysis_row.setSpacing(8)
+        analysis_row.addWidget(_analysis_panel(self.cross_section), stretch=1)
+        analysis_row.addWidget(_analysis_panel(self.atmospheric_profile), stretch=1)
+        analysis_row.addWidget(_analysis_panel(self.route_selector_widget, self.route_chart), stretch=1)
+        analysis_row.addWidget(_analysis_panel(self.time_control_widget, self.evolution_chart), stretch=1)
+        analysis_row.addWidget(
+            _analysis_panel(self.vertical_profile_panel, self._vertical_profile_panel_suggestion_label), stretch=1
+        )
+        outer.addLayout(analysis_row, stretch=2)
+
+        # --- Footer (Recent Alerts / Latest Updates / Quick Actions) ------
+        # Real footer (added 2026-09-13, docs/reference/awci_dashboard_
+        # reference.png, Phase 6/6) - see awci_footer_summary.py's own
+        # module docstring for why every one of the old 5-icon footer's
+        # real features (self.footer/AWCIFooter, retired here) stays
+        # reachable through the sidebar/⚙ Settings menu.
+        footer_row = QHBoxLayout()
+        footer_row.setSpacing(8)
+        self.recent_alerts_card = AWCIRecentAlertsCard(on_open_all=self._open_alerts)
+        self.latest_updates_card = AWCILatestUpdatesCard()
+        self.quick_actions_card = AWCIQuickActionsCard(
+            on_generate_report=self._open_execution_report,
+            on_route_analysis=self._focus_route_analysis,
+            on_save_scenario=self._save_scenario,
+            on_export_data=self._export_data,
+        )
+        footer_row.addWidget(self.recent_alerts_card, stretch=1)
+        footer_row.addWidget(self.latest_updates_card, stretch=1)
+        footer_row.addWidget(self.quick_actions_card, stretch=1)
+        outer.addLayout(footer_row)
+        #: Real wall-clock timestamp of the last real per-point
+        #: computation (any of demo refresh()/_refresh_imported_model()/
+        #: _apply_volume_at_level()) - fed to self.latest_updates_card,
+        #: never a fabricated/guessed time.
+        self._last_computation_at: str = "—"
 
         # Assemble the real [sidebar | content] shell (see the NOTE at
         # the top of this method) - built last so every real widget/
@@ -1543,6 +1538,7 @@ class AWCIDashboard(QWidget):
             self.view_3d_button,
             self.hpc_button,
             self.import_model_button,
+            self.compare_fl_button,
             self.messages_button,
             self.alerts_button,
             self.execution_report_button,
@@ -1620,9 +1616,9 @@ class AWCIDashboard(QWidget):
                 if checkbox is not None:
                     checkbox.setChecked(True)
         elif key == "analysis_risk":
-            pass  # the real Risk Summary panel is already always visible - a real no-op, not a fabricated second panel
+            pass  # the real hazard row/Current Situation card are already always visible - a real no-op, not a fabricated second panel
         elif key == "analysis_forecast":
-            self._open_vertical_profile()
+            pass  # the real embedded "AWCI Vertical Profile" analysis panel is already always visible - a real no-op, not a fabricated second panel
         elif key == "analysis_time_evolution":
             self._toggle_evolution_playback()
         elif key == "analysis_model_comparison":
@@ -1671,13 +1667,21 @@ class AWCIDashboard(QWidget):
         return rows
 
     def _refresh_situation_row(self, module_scores: dict[str, float], overall_awci: float,
-                                physical_score: float | None, forecast_score: float | None) -> None:
+                                physical_score: float | None, forecast_score: float | None,
+                                confidence_pct: float) -> None:
         """Real refresh for the Phase 4 situation row - see
         awci_situation_panel.py's own module docstring for each card's
         exact real source. Called from every real point-refresh path
         (demo/imported-model/Real Physics) alongside the existing
-        self.risk_summary/self.hazard_row updates - never a second,
-        independent computation of the same real per-point result."""
+        self.hazard_row update - never a second, independent
+        computation of the same real per-point result.
+
+        `confidence_pct` is the caller's own already-computed real
+        confidence (point_result["confidence"], or its Real-Physics
+        equivalent) - passed in directly since 2026-09-13 rather than
+        read back through the now-retired self.stats_bar's own
+        confidence gauge, a redundant round-trip for a value already
+        known at every real call site."""
         self.current_situation_card.update_data(
             module_scores,
             overall_awci,
@@ -1686,10 +1690,87 @@ class AWCIDashboard(QWidget):
             area=self.topbar.area_combo.currentText(),
             altitude=self.flight_level_selector.currentText(),
             valid_time=f"{self.time_slider.value():02d}:00 UTC",
-            confidence_pct=self.stats_bar.confidence_box.gauge._score,
+            confidence_pct=confidence_pct,
         )
         self.model_agreement_card.update_data(module_scores)
         self.airport_table.update_data(self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES))
+
+    def _refresh_footer_summary(self, module_scores: dict[str, float], overall_awci: float,
+                                 physical_score: float | None, forecast_score: float | None) -> None:
+        """Real refresh for the Phase 6 footer's "Recent Alerts"/"Latest
+        Updates" cards - called from every real point-refresh path
+        alongside _refresh_situation_row(), reusing the exact same real
+        values (never a second/independent computation). See
+        awci_footer_summary.py's own module docstring for what each
+        "Latest Updates" line honestly reflects."""
+        area = self.topbar.area_combo.currentText()
+        valid_time = f"{self.time_slider.value():02d}:00 UTC"
+        self.recent_alerts_card.update_data(
+            module_scores, overall_awci, physical_score, forecast_score, area=area, valid_time=valid_time
+        )
+        self._last_computation_at = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
+        self.latest_updates_card.update_data(
+            [
+                ("AWCI computation completed", self._last_computation_at),
+                ("Data source", self._current_model_label),
+                ("Valid time", valid_time),
+            ]
+        )
+
+    # ------------------------------------------------------ Quick Actions
+
+    def _focus_route_analysis(self) -> None:
+        """Quick Action "Route Analysis" (docs/reference/awci_dashboard_
+        reference.png, Phase 6/6, added 2026-09-13) - real camera move
+        onto the current route's own extent, the exact same real
+        mechanism the sidebar's "Flight Route Analysis" nav item already
+        triggers (_on_view_mode_changed()) - never a second/duplicated
+        one."""
+        self.view_mode_regional_radio.setChecked(True)
+        self._on_view_mode_changed()
+        from_label = self._regional_route[0][2]
+        to_label = self._regional_route[1][2]
+        self._toasts.show(f"Focused on route {from_label} → {to_label}", kind="success")
+
+    def _save_scenario(self) -> None:
+        """Quick Action "Save Scenario" (added 2026-09-13) - a real save
+        of this dashboard's own current real state (area, valid time,
+        flight level, active route, active data tier, point of
+        interest) to a JSON file the user picks - a genuine, functional
+        save, never a fabricated placeholder (see Master Prompt V3 §24:
+        "do not pretend that an export/report was generated")."""
+        path, _ = QFileDialog.getSaveFileName(self, "Save Scenario", "awci_scenario.json", "JSON File (*.json)")
+        if not path:
+            return
+        if self._real_physics_active:
+            data_mode = "real_physics"
+        elif self._imported_dataset is not None:
+            data_mode = "imported_model"
+        else:
+            data_mode = "demo"
+        scenario = {
+            "area": self.topbar.area_combo.currentText(),
+            "valid_time_hour": self.time_slider.value(),
+            "flight_level": self.flight_level_selector.currentText(),
+            "route": [{"lat": lat, "lon": lon, "label": label} for lat, lon, label in self._regional_route],
+            "data_mode": data_mode,
+            "point_of_interest": {"lat": self._point_of_interest[0], "lon": self._point_of_interest[1]},
+        }
+        try:
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(scenario, fh, indent=2)
+        except OSError as exc:
+            self._toasts.show(f"Could not save scenario: {exc}", kind="error")
+            return
+        self._toasts.show(f"Scenario saved to {path}", kind="success")
+
+    def _export_data(self) -> None:
+        """Quick Action "Export Data" (added 2026-09-13) - opens the
+        SAME real export menu the map panel's own ⬇ button already
+        provides (PNG/SVG map image, or CSV/JSON of whichever real
+        field is currently drawn) - never a second/duplicated export
+        mechanism."""
+        self.global_map.download_button.showMenu()
 
     def _open_all_airports_dialog(self) -> None:
         """Real "View all airports" - the SAME real per-airport
@@ -1706,37 +1787,6 @@ class AWCIDashboard(QWidget):
         self.setStyleSheet(dashboard_stylesheet())
 
     # ------------------------------------------------------------- refresh
-
-    def _on_footer_item_clicked(self, key: str) -> None:
-        """Real dispatch for the 5 real footer buttons (AWCIFooter) -
-        see awci_footer.py's own module docstring for why each key maps
-        to the exact existing real dashboard feature its own label
-        already honestly describes, not a new/fabricated action."""
-        if key == "synthetic_view":
-            self._revert_to_demo()
-        elif key == "decision_support":
-            self._open_alerts()
-        elif key == "multi_scale":
-            self._cycle_view_mode()
-        elif key == "adaptive_to_mission":
-            self._open_vertical_profile()
-        elif key == "research_stage":
-            self._open_execution_report()
-
-    def _cycle_view_mode(self) -> None:
-        """Real Global -> Regional -> Vertical Cross-Section -> Global
-        cycle - the real 3 real scales "MULTI-SCALE"'s own label text
-        already names, reusing the exact same real
-        view_mode_group/_on_view_mode_changed() this dashboard's own
-        VIEW MODE radio row already drives (never a second/duplicated
-        view-mode mechanism)."""
-        if self.view_mode_global_radio.isChecked():
-            self.view_mode_regional_radio.setChecked(True)
-        elif self.view_mode_regional_radio.isChecked():
-            self.view_mode_cross_section_radio.setChecked(True)
-        else:
-            self.view_mode_global_radio.setChecked(True)
-        self._on_view_mode_changed()
 
     def _on_view_mode_changed(self) -> None:
         """Real global-map extent change (see the VIEW MODE row's own
@@ -1756,10 +1806,22 @@ class AWCIDashboard(QWidget):
             self.global_map.reset_view()
 
     def _on_time_changed(self) -> None:
-        """Re-render the regional map with a genuinely shifted synthetic-pattern
-        phase for the selected hour (see awci_synthetic_field.py's time_offset_hours) -
-        the slider moves the pattern, it does not silently change anything else."""
-        self.regional_map.update_data(flight_level_hpa=700.0, time_offset_hours=float(self.time_slider.value()))
+        """Real bug fix (2026-09-13, found while auditing this dashboard
+        against the Master Prompt V3's own §11 "when the time changes:
+        map data changes, KPI values can change, alerts can change,
+        route analysis can change, airport values can change, charts
+        can update"): this used to ONLY re-render the since-retired
+        self.regional_map with a shifted synthetic-pattern phase - since
+        that widget was hidden in the Phase 5 cleanup, moving the Valid
+        Time slider (or the topbar's ◀/▶/Now buttons, which call this
+        same method via _step_time_slider()) had NO visible effect at
+        all any more. Now runs the exact same real dispatch every other
+        time-affecting change (a map click, a flight-level change) already
+        uses - _refresh_current_point() - so every real per-point panel
+        (hazard row, Current Situation, airport table, map, cross-
+        section, route chart, vertical profile, alerts) genuinely
+        updates for the newly-selected time."""
+        self._refresh_current_point()
 
     def _update_clock(self) -> None:
         """Real, live UTC time (datetime.now(timezone.utc)) - see
@@ -1772,12 +1834,17 @@ class AWCIDashboard(QWidget):
         # docstring for what each of these real values already is.
         if hasattr(self, "topbar"):
             self.topbar.last_update_label.setText(f"Last Update: {self.clock_label.text()}")
-            if hasattr(self, "stats_bar"):
-                self.topbar.model_label.setText(self.stats_bar.model_box.value_lbl.text())
-            self.topbar.set_status(
-                is_real=self._real_physics_active,
-                label="REAL PHYSICS" if self._real_physics_active else "DEMO MODE",
-            )
+            self.topbar.model_label.setText(self._current_model_label)
+            # Real 3-way status (fixed 2026-09-13 - used to only ever
+            # show REAL PHYSICS/DEMO MODE, silently misreporting an
+            # active imported-model session as demo).
+            if self._real_physics_active:
+                status_label = "REAL PHYSICS"
+            elif self._imported_dataset is not None:
+                status_label = "IMPORTED MODEL"
+            else:
+                status_label = "DEMO MODE"
+            self.topbar.set_status(is_real=self._real_physics_active, label=status_label)
 
     def _sync_topbar_time(self, hour: int) -> None:
         """Real Date & Time / Forecast readouts, derived from the SAME
@@ -1871,7 +1938,7 @@ class AWCIDashboard(QWidget):
         to_lat, to_lon, to_name = _AIRPORTS[to_icao]
         self._regional_route = [(from_lat, from_lon, from_icao), (to_lat, to_lon, to_icao)]
 
-        self.regional_map.set_flight_path(self._regional_route)
+        self.global_map.set_flight_path(self._regional_route)
         midpoint_lat = (from_lat + to_lat) / 2.0
         midpoint_lon = (from_lon + to_lon) / 2.0
         self._on_map_point_clicked(midpoint_lat, midpoint_lon)
@@ -1903,14 +1970,12 @@ class AWCIDashboard(QWidget):
         )
 
         # Kept as two real steps (not awci_at()'s single-call shortcut)
-        # so the real raw input dict is also available for
-        # _ComponentValueList's clickable detail dialog - not
-        # recomputed/guessed separately from what AWCICalculator
-        # actually received.
+        # so the real raw input dict is also available for the hazard
+        # row's own clickable per-module detail dialog (_on_hazard_
+        # card_clicked()) - not recomputed/guessed separately from what
+        # AWCICalculator actually received.
         point_raw_data = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=self._current_flight_level_hpa)
         point_result = AWCICalculator().calculate(point_raw_data)
-        self.radar.update_data(point_result["module_scores"])
-        self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="demo")
         self._last_point_raw_data = point_raw_data
         self._last_point_mode = "demo"
         # Real drill-down chain (§26/§53) for whichever component the
@@ -1920,20 +1985,19 @@ class AWCIDashboard(QWidget):
         self._last_awci_result = build_awci_result(
             point_result, raw_variables=point_raw_data, quality=quality_for_awci_point_data(point_raw_data)
         )
-        # Real Point Information card on the regional map (matching the
+        # Real Point Information card on the map (matching the
         # reference mockup) - the exact same real AWCI score point_result
         # just computed for this same point, not a second/fabricated value.
-        self.regional_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
+        self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
 
-        # Real REGIONAL TREND sparkline (added 2026-09-03, docs/
-        # reference/awci_dashboard_reference.jpg parity work) - wires
-        # AWCITimeline (acf.gui.dashboard.awci_timeline, previously
-        # dead code - see that module's own docstring) with real
-        # AWCICalculator scores at the SAME point of interest, sampled
-        # +/-6h around the current Valid Time slider value via the
-        # same real time_offset_hours mechanism the slider itself
-        # already drives (awci_synthetic_field.py's own
-        # _synthetic_inputs()).
+        # Real "Time Evolution (AWCI)" analysis panel source series
+        # (added 2026-09-03 as a regional-trend sparkline, superseded
+        # 2026-09-13 by AWCIEvolutionChart - see that panel's own build-
+        # time comment) - real AWCICalculator scores at the SAME point
+        # of interest, sampled +/-6h around the current Valid Time
+        # slider value via the same real time_offset_hours mechanism
+        # the slider itself already drives (awci_synthetic_field.py's
+        # own _synthetic_inputs()).
         current_hour = self.time_slider.value()
         trend_data: list[tuple[str, float]] = []
         for offset in range(-6, 7, 2):
@@ -1942,30 +2006,43 @@ class AWCIDashboard(QWidget):
             )
             trend_result = AWCICalculator().calculate(raw)
             trend_data.append((f"{(current_hour + offset) % 24:02d}Z", trend_result["awci"]))
-        self.regional_trend.set_data(trend_data, forecast_start=4)  # offset 0 is index 3 - offset > 0 is real "forecast"
+        # Real "Time Evolution (AWCI)" analysis panel (Phase 5/6, added
+        # 2026-09-13) - the exact same real per-point trend_data just
+        # computed above, not a second/independent series. A single
+        # point has no real spatial max distinct from its own value, so
+        # mean and max are honestly identical here (superseded by the
+        # real grid-wide mean/max whenever a 4D solver evolution is
+        # actually playing - see _render_evolution_frame()).
+        point_values = [value for _label, value in trend_data]
+        self.evolution_chart.set_series(
+            [float((current_hour + offset) % 24) for offset in range(-6, 7, 2)], point_values, point_values, current_frame_index=3
+        )
 
-        _lons, _lats, grid = awci_grid(lat_step=4.0, lon_step=4.0, flight_level_hpa=self._current_flight_level_hpa)
-        flat_scores = [v for row in grid for v in row]
-        self.stats_bar.update_data(flat_scores, confidence_pct=point_result["confidence"])
-
+        # flat_scores backed the now-retired self.stats_bar's own
+        # GLOBAL MEAN/MAX/AREA>60 boxes - those 3 real numbers have no
+        # place in the reference photo and no other real caller now
+        # that they are gone, so this real grid is no longer computed
+        # here (awci_grid() itself, and the Layers panel's own "AWCI"
+        # checkbox on the map, remain the real source of the same
+        # underlying pattern for anyone who needs it).
         route_scores = self.route_chart.update_data(self._regional_route[0][:2], self._regional_route[1][:2], cruise_hpa=850.0)
         overall_awci = max(route_scores) if route_scores is not None else point_result["awci"]
         # physical_score/forecast_score are for the point of interest, not
         # the route's worst point (unlike overall_awci above) - route-level
         # aggregation of the split scores is future work, not simulated
         # here.
-        self.risk_summary.update_data(
-            point_result["module_scores"],
-            overall_awci,
-            physical_score=point_result["physical_score"],
-            forecast_score=point_result["forecast_score"],
-        )
+        self._current_model_label = "ACF Demo Grid"
         self.hazard_row.update_data(point_result["module_scores"], overall_awci)
         self._refresh_situation_row(
+            point_result["module_scores"], overall_awci, point_result["physical_score"], point_result["forecast_score"],
+            confidence_pct=point_result["confidence"],
+        )
+        self._refresh_footer_summary(
             point_result["module_scores"], overall_awci, point_result["physical_score"], point_result["forecast_score"]
         )
+        self._sync_vertical_profile_panel()
         # Stored so "🔔 Alerts" reads the exact same real values
-        # risk_summary just displayed, not a second/independent guess.
+        # the situation row just displayed, not a second/independent guess.
         self._last_risk_inputs = (
             point_result["module_scores"],
             overall_awci,
@@ -2142,21 +2219,17 @@ class AWCIDashboard(QWidget):
         )
 
         point_result = result
-        self.radar.update_data(point_result["module_scores"])
-        self.component_list.update_data(
-            point_result["module_scores"], raw_data=extraction["inputs"], mode="imported_model"
- )
-        self.regional_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
-        self.risk_summary.update_data(
-            point_result["module_scores"],
-            point_result["awci"],
-            physical_score=point_result["physical_score"],
-            forecast_score=point_result["forecast_score"],
-        )
+        self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
+        self._current_model_label = f"{dataset.name}"
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
         self._refresh_situation_row(
+            point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
+            confidence_pct=point_result["confidence"],
+        )
+        self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
         )
+        self._sync_vertical_profile_panel()
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],
@@ -2358,8 +2431,8 @@ class AWCIDashboard(QWidget):
             self._refresh_3d_view()
 
     def _apply_volume_at_level(self, level_idx: int) -> None:
-        """(Re)render every level-dependent Real Physics panel (global/
-        regional map, route chart, stats bar, radar, risk summary) from
+        """(Re)render every level-dependent Real Physics panel (global
+        map, route chart, hazard row/situation row) from
         self._real_volume at the given real solver level index - a
         real, cheap re-slice of the already-computed volume, no extra
         CoupledEarthSolver run. Shared by _on_real_physics_ready() (the
@@ -2387,46 +2460,16 @@ class AWCIDashboard(QWidget):
         # Convection/CAPE/Clouds have no real counterpart here.
         self.global_map.set_external_layer_grids(real_layer_grids_at_level(volume, level_idx))
 
-        cropped = crop_field_to_extent(lats, lons, awci_level, _REGIONAL_EXTENT)
-        if cropped["n_points_in_extent"][0] >= 2 and cropped["n_points_in_extent"][1] >= 2:
-            self.regional_map.set_external_field(
-                cropped["lons"], cropped["lats"], cropped["field"], f"REAL PHYSICS — {level_label}"
-            )
-        else:
-            # ARPEGE's real native grid is coarser than this regional
-            # extent (< 2x2 real points fall inside it) - matplotlib
-            # itself requires at least a (2, 2) grid to contour. Leave
-            # the regional map on the synthetic pattern rather than
-            # crash or silently show an empty/misleading plot; a finer
-            # model (AROME) would resolve this but is much slower to
-            # run interactively (see spatial_field.py's own timings).
-            logger.warning(
-                "AWCIDashboard: real ARPEGE grid too coarse for the regional extent (%s real points) - "
-                "regional map stays on the synthetic pattern.",
-                cropped["n_points_in_extent"],
-            )
-
         route_distances, route_scores = sample_field_along_path(
             lats, lons, awci_level, self._regional_route[0][:2], self._regional_route[1][:2], n_points=40
         )
         self.route_chart.set_external_route(route_distances, route_scores, f"REAL PHYSICS — {level_label}")
+        self._current_model_label = "CoupledEarthSolver"
 
-        flat_scores = [float(v) for v in awci_level.flatten()]
-        # No per-point forecast-side data is fed into
-        # compute_real_complexity_volume() (see its own docstring) - the
-        # solver's real fields don't carry a "confidence" input, so this
-        # honestly reflects AWCICalculator's own default (100.0) rather
-        # than an invented aggregate forecast confidence.
-        self.stats_bar.update_data(flat_scores, confidence_pct=100.0)
-        # Short label - "(ARPEGE grid)" is already in real_physics_status
-        # above; the full model_box string overflowed its narrow box
-        # (found via a real screenshot during verification).
-        self.stats_bar.model_box.set_value("CoupledEarthSolver")
-
-        # Radar/risk-summary need a single point's full module_scores
-        # breakdown, which the volume does not store per grid cell (only
-        # the aggregate scores) - recomputed here from this SAME call's
-        # own raw fields at this level, at the point nearest
+        # A single point's full module_scores breakdown, which the
+        # volume does not store per grid cell (only the aggregate
+        # scores) - recomputed here from this SAME call's own raw
+        # fields at this level, at the point nearest
         # self._point_of_interest, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - self._point_of_interest[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - self._point_of_interest[1])))
@@ -2437,8 +2480,12 @@ class AWCIDashboard(QWidget):
             "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
         }
         point_result = AWCICalculator().calculate(point_raw_data)
-        self.radar.update_data(point_result["module_scores"])
-        self.component_list.update_data(point_result["module_scores"], raw_data=point_raw_data, mode="real_physics")
+        # Real "Atmospheric Profile" analysis panel (Phase 5/6, added
+        # 2026-09-13) - a real T/wind vertical re-slice of this SAME
+        # already-computed volume at the point of interest, only
+        # meaningful once a real volume exists (see
+        # ACFVerticalSoundingWidget's own module docstring).
+        self.atmospheric_profile.update_from_volume_and_point(volume, *self._point_of_interest)
         self._last_point_raw_data = point_raw_data
         self._last_point_mode = "real_physics"
         # Real drill-down chain (§26/§53) - vertical_level is the real
@@ -2455,17 +2502,21 @@ class AWCIDashboard(QWidget):
         # Real Point Information card, same real per-point result just
         # computed above at this level - not left showing a stale
         # synthetic-demo score while in Real Physics mode.
-        self.regional_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
-        self.risk_summary.update_data(
-            point_result["module_scores"],
-            point_result["awci"],
-            physical_score=point_result["physical_score"],
-            forecast_score=point_result["forecast_score"],
-        )
+        self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
+        # No per-point forecast-side data is fed into
+        # compute_real_complexity_volume() (see its own docstring) - the
+        # solver's real fields don't carry a "confidence" input, so this
+        # honestly passes AWCICalculator's own default (100.0) rather
+        # than an invented aggregate forecast confidence.
         self._refresh_situation_row(
+            point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
+            confidence_pct=100.0,
+        )
+        self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
         )
+        self._sync_vertical_profile_panel()
         self._last_risk_inputs = (
             point_result["module_scores"],
             point_result["awci"],
@@ -2487,28 +2538,38 @@ class AWCIDashboard(QWidget):
 
     # -------------------------------------------- map click -> point of interest
 
-    def _on_map_point_clicked(self, lat: float, lon: float) -> None:
-        """Real single-source-of-truth update (docs/awci/AWCI_UI_AUDIT.md
-        - the pre-implementation audit's "click-to-set-point-of-interest"
-        gap): either AWCIMapPanel (global or regional - both connect
-        here, see _build_ui()) emits pointClicked with the real (lat,
-        lon) under the cursor. This becomes the new self._point_of_interest
-        every per-point panel (radar, component list, regional trend,
-        risk summary, Point Information card, vertical profile) reads
-        on the next refresh - re-running the EXACT same real pipeline
-        already used for the old point, at the new one, never a second/
-        fabricated calculation path."""
-        self._point_of_interest = (lat, lon)
-        # The imported-model tier re-samples at the new point too (its
-        # own real update path, same discipline as the Real Physics
-        # branch below) - but never pre-empts Real Physics mode, which
-        # stays the active tier until the user reverts it.
+    def _refresh_current_point(self) -> None:
+        """Real single dispatch to whichever real data tier is
+        currently active (Real Physics / imported model / demo) -
+        extracted 2026-09-13 from what used to be 2 separately
+        duplicated copies of this exact same 3-line dispatch
+        (_on_map_point_clicked/_on_flight_level_selector_changed) and,
+        as a real bug fix, now ALSO called from _on_time_changed()
+        (which used to only touch the since-retired regional_map and
+        had no visible effect since Phase 5 hid it - see that method's
+        own docstring). The imported-model tier re-samples too (its own
+        real update path, same discipline as the Real Physics branch)
+        but never pre-empts Real Physics mode, which stays the active
+        tier until the user reverts it."""
         if self._real_physics_active and self._real_volume is not None:
             self._apply_volume_at_level(self._current_level_index)
         elif self._imported_dataset is not None:
             self._refresh_imported_model()
         else:
             self.refresh()
+
+    def _on_map_point_clicked(self, lat: float, lon: float) -> None:
+        """Real single-source-of-truth update (docs/awci/AWCI_UI_AUDIT.md
+        - the pre-implementation audit's "click-to-set-point-of-interest"
+        gap): AWCIMapPanel (see _build_ui()) emits pointClicked with the
+        real (lat, lon) under the cursor. This becomes the new
+        self._point_of_interest every per-point panel (hazard row,
+        Current Situation, Point Information card, vertical profile)
+        reads on the next refresh - re-running the EXACT same real
+        pipeline already used for the old point, at the new one, never a
+        second/fabricated calculation path."""
+        self._point_of_interest = (lat, lon)
+        self._refresh_current_point()
 
     def _on_flight_level_selector_changed(self, label: str) -> None:
         """Real single-source-of-truth update for the "Flight Level:"
@@ -2550,6 +2611,11 @@ class AWCIDashboard(QWidget):
             self._refresh_imported_model()
         else:
             self.refresh()
+        # NOTE: not routed through _refresh_current_point() - the Real
+        # Physics branch above needs its own already-resolved
+        # nearest_level_idx (from this hPa lookup), not
+        # self._current_level_index (the level_slider position before
+        # this change), so it keeps its own explicit 3-way dispatch.
 
     def _on_real_physics_failed(self, message: str) -> None:
         self.real_physics_button.setEnabled(True)
@@ -2582,100 +2648,76 @@ class AWCIDashboard(QWidget):
 
     # ------------------------------------------------- vertical profile
 
-    def _open_vertical_profile(self) -> None:
-        """Open (or refresh, or raise) the real vertical-profile dialog
-        (docs/reference/awci_dashboard_reference.jpg parity work, added
-        2026-09-03) - wires acf.gui.dashboard.awci_vertical_profile.
-        AWCIVerticalProfile (previously dead code, unreachable since
-        the dashboard rebuild - see that module's own docstring) with
-        real AWCICalculator scores at the regional point of interest,
+    def _compute_vertical_profile(self) -> tuple[dict[str, float], dict[str, dict[str, Any]], dict[str, Any]]:
+        """Real per-level AWCI profile at the current point of interest
+        (§51 - "vent, température, humidité, ..., complexité,
+        incertitude" at each level, not just the composite score),
         computed at every real, named level in
         _ALL_VERTICAL_PROFILE_LEVELS_HPA (docs/ACF_MASTER_PROMPT.md §51
         - real standard pressure levels PLUS real named flight levels,
         added 2026-09-03) - the same real per-point pipeline used
         everywhere else in this dashboard, just called at more than one
-        level.
-
-        Real Physics mode (added 2026-09-04, closes
-        future-improvements.md #9): now ALSO offers this same standard-
-        level/flight-level list, via real log-pressure linear
-        interpolation between the real volume's own native solver
-        levels (acf.awci.vertical_field.vertical_profile_at_standard_levels()
+        level. Real Physics mode (added 2026-09-04, closes future-
+        improvements.md #9) offers this same standard-level/flight-
+        level list via real log-pressure linear interpolation between
+        the real volume's own native solver levels
+        (acf.awci.vertical_field.vertical_profile_at_standard_levels()
         - see that function's own docstring for why this is real
         interpolation, not fabrication, and why a level outside the
         real volume's own native vertical extent at this point is
         honestly omitted rather than shown with a guessed value). Demo
-        mode keeps its own original bit-identical path (the continuous
-        analytic pattern has no native-level restriction to interpolate
-        around in the first place).
+        mode keeps its own original bit-identical path.
 
-        Also shows (added 2026-09-12, closing AWCI's "optimisation de
-        niveau de vol" gap, §30 of the cross-checked "AWCI - programme
-        complet" specification) a real
-        acf.awci.vertical_field.suggest_lowest_complexity_level()
-        suggestion computed from the very same self._vertical_profile_data
-        this method already builds below - never a second/recomputed
-        pass. Explicitly labelled a meteorological decision-support
-        signal, never an ATC clearance (see that function's own
-        honest-scope docstring)."""
-        if self._vertical_profile_window is None:
-            self._vertical_profile_window = QDialog(self)
-            self._vertical_profile_window.setWindowTitle("AWCI – Vertical Profile")
-            self._vertical_profile_window.setStyleSheet(dashboard_stylesheet())
-            layout = QVBoxLayout(self._vertical_profile_window)
-            self._vertical_profile_widget = AWCIVerticalProfile()
-            self._vertical_profile_widget.levelClicked.connect(self._on_vertical_profile_level_clicked)
-            layout.addWidget(self._vertical_profile_widget)
-            hint = QLabel("Click a bar for the real per-module breakdown at that level.")
-            hint.setStyleSheet(label_style("text_muted", "xs"))
-            layout.addWidget(hint)
-            self._vertical_profile_suggestion_label = QLabel("")
-            self._vertical_profile_suggestion_label.setWordWrap(True)
-            self._vertical_profile_suggestion_label.setStyleSheet(label_style("text_muted", "xs"))
-            layout.addWidget(self._vertical_profile_suggestion_label)
-            self._vertical_profile_window.resize(340, 400)
-
+        Feeds Phase 5/6's embedded live "AWCI Vertical Profile" analysis
+        panel (docs/reference/awci_dashboard_reference.png, added
+        2026-09-13) via _sync_vertical_profile_panel() below - the
+        panel's own dialog-based predecessor (_open_vertical_profile(),
+        retired 2026-09-13 once this panel made it fully redundant) used
+        to call this same method, so both always read the exact same
+        real computation, never two independent passes over the same
+        point. Returns (profile, vertical_profile_data, suggestion):
+        `vertical_profile_data` is read back by
+        _on_vertical_profile_level_clicked() when a real bar is
+        clicked, and `suggestion` is the real
+        acf.awci.vertical_field.suggest_lowest_complexity_level() call
+        over that same data (added 2026-09-12, closing AWCI's
+        "optimisation de niveau de vol" gap, §30 of the cross-checked
+        "AWCI - programme complet" specification) - explicitly a
+        meteorological decision-support signal, never an ATC
+        clearance (see that function's own honest-scope docstring)."""
         profile: dict[str, float] = {}
-        # Real per-level module_scores/physical/forecast breakdown
-        # (§51 - "vent, température, humidité, ..., complexité,
-        # incertitude" at each level, not just the composite score) -
-        # read back by _on_vertical_profile_level_clicked() when a real
-        # bar is clicked, from the SAME real calculate() call this loop
-        # already makes for the composite score - never a second/
-        # recomputed value.
-        self._vertical_profile_data = {}
+        vertical_profile_data: dict[str, dict[str, Any]] = {}
         if self._real_physics_active and self._real_volume is not None:
             lat, lon = self._point_of_interest
             for level_label, entry in vertical_profile_at_standard_levels(
                 self._real_volume, lat, lon, _ALL_VERTICAL_PROFILE_LEVELS_HPA
             ).items():
                 profile[level_label] = entry["result"]["awci"]
-                self._vertical_profile_data[level_label] = {"hpa": entry["hpa"], "result": entry["result"]}
+                vertical_profile_data[level_label] = {"hpa": entry["hpa"], "result": entry["result"]}
         else:
             for level_label, hpa in _ALL_VERTICAL_PROFILE_LEVELS_HPA.items():
                 raw = _synthetic_inputs(*self._point_of_interest, flight_level_hpa=hpa)
                 result = AWCICalculator().calculate(raw)
                 profile[level_label] = result["awci"]
-                self._vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
-        assert self._vertical_profile_widget is not None  # for mypy - always built above
-        self._vertical_profile_widget.set_profile(profile)
+                vertical_profile_data[level_label] = {"hpa": hpa, "result": result}
+        suggestion = suggest_lowest_complexity_level(vertical_profile_data)
+        return profile, vertical_profile_data, suggestion
 
-        assert self._vertical_profile_suggestion_label is not None  # for mypy - always built above
-        suggestion = suggest_lowest_complexity_level(self._vertical_profile_data)
-        if suggestion["best_level"] is not None:
-            self._vertical_profile_suggestion_label.setText(
-                f"✅ Lowest computed complexity: {suggestion['best_level']} "
-                f"(AWCI {suggestion['best_score']:.1f}) — meteorological signal only, "
-                "not an ATC clearance."
-            )
-        else:
-            self._vertical_profile_suggestion_label.setText(
-                f"ℹ️ No comparable level ({suggestion['status']})."
-            )
-
-        self._vertical_profile_window.show()
-        self._vertical_profile_window.raise_()
-        self._vertical_profile_window.activateWindow()
+    def _sync_vertical_profile_panel(self) -> None:
+        """Refresh Phase 5/6's embedded live "AWCI Vertical Profile"
+        analysis panel (docs/reference/awci_dashboard_reference.png,
+        added 2026-09-13) - called from the same real per-point refresh
+        paths as self.hazard_row.update_data()/self._refresh_situation_
+        row() (demo/imported-model/Real-Physics), via the shared
+        _compute_vertical_profile(). Stores vertical_profile_data into
+        self._vertical_profile_data (fixed 2026-09-13 - used to only be
+        stored by the now-retired dialog-opening method, so a real click
+        on this panel's own bars silently did nothing until that dialog
+        had been opened at least once) so _on_vertical_profile_level_
+        clicked() always reads fresh, real per-level data."""
+        profile, self._vertical_profile_data, suggestion = self._compute_vertical_profile()
+        self.vertical_profile_panel.set_profile(profile)
+        self._vertical_profile_panel_suggestion_label.setText(_format_vertical_profile_suggestion(suggestion))
 
     def _on_vertical_profile_level_clicked(self, level_label: str) -> None:
         """Open (or reuse) the real per-level module-score breakdown
@@ -3046,55 +3088,38 @@ class AWCIDashboard(QWidget):
         situation"."""
         if self._component_detail_window is None:
             self._component_detail_window = AWCIComponentDetailDialog(parent=self)
-        # mode arrives as a plain str off a Qt Signal (componentClicked
-        # only ever emits the real literal values _ComponentValueList
-        # itself sets via update_data()'s mode parameter) - validated
-        # here rather than blindly cast, so a genuinely unexpected value
-        # is never silently treated as "demo" without going through the
+        # mode arrives as a plain str (either off a Qt Signal, or passed
+        # directly by _on_hazard_card_clicked() below) - validated here
+        # rather than blindly cast, so a genuinely unexpected value is
+        # never silently treated as "demo" without going through the
         # same validated table every real mode passes through.
         real_mode = self._VALID_COMPONENT_MODES.get(mode, "demo")
         self._component_detail_window.show_component(key, score, raw_data, real_mode, self._last_awci_result)
 
-    #: Plain-string Qt-Signal mode -> the validated Literal mode
-    #: (dict typing keeps mypy's Literal checking happy where `in`/
-    #: `==` narrowing of a plain str does not). Unknown values fall
-    #: back to "demo" exactly as before.
+    #: Plain-string mode -> the validated Literal mode (dict typing
+    #: keeps mypy's Literal checking happy where `in`/`==` narrowing of
+    #: a plain str does not). Unknown values fall back to "demo" exactly
+    #: as before.
     _VALID_COMPONENT_MODES: dict[str, Literal["demo", "real_physics", "imported_model"]] = {
         "demo": "demo",
         "real_physics": "real_physics",
         "imported_model": "imported_model",
     }
 
-    #: Risk-badge row key -> the real AWCICalculator module it is
-    #: directly derived from (docs/awci/AWCI_INTERACTION_MATRIX.md) -
-    #: only these 3 rows have a single module of their own; the other 3
-    #: ("overall"/"physical"/"forecast") are composite scores, handled
-    #: separately in _on_risk_badge_clicked() below.
-    _RISK_ROW_TO_MODULE_KEY: dict[str, str] = {"turbulence": "dynamic", "icing": "microphysical", "convective": "convective"}
-
-    def _on_risk_badge_clicked(self, key: str) -> None:
-        """Open a real detail popup for the clicked risk badge - docs/
-        awci/AWCI_UI_AUDIT.md's "risk badges are static" gap. The 3 rows
-        that map onto a real AWCICalculator module (turbulence/icing/
-        convective) reuse the EXACT SAME AWCIComponentDetailDialog the
-        radar's own component list already opens for that module - not
-        a second, parallel detail view for the same real number. The
-        remaining 3 rows (overall/physical/forecast) have no single
-        module formula of their own, so they open
-        AWCIRiskBadgeDetailDialog showing the real module_scores
-        breakdown instead - the same real values risk_summary itself
-        was just updated from (self._last_risk_inputs), never a
-        fabricated derivation."""
-        module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
-        module_key = self._RISK_ROW_TO_MODULE_KEY.get(key)
-        if module_key is not None:
-            self._on_component_clicked(
-                module_key, module_scores.get(module_key, 0.0), self._last_point_raw_data, self._last_point_mode
-            )
-            return
-        if self._risk_badge_detail_window is None:
-            self._risk_badge_detail_window = AWCIRiskBadgeDetailDialog(parent=self)
-        self._risk_badge_detail_window.show_detail(key, module_scores, overall_awci, physical_score, forecast_score)
+    def _on_hazard_card_clicked(self, module_key: str) -> None:
+        """Open a real detail popup for the clicked hazard card - docs/
+        awci/AWCI_UI_AUDIT.md's "risk badges are static" gap (originally
+        closed via the since-retired self.risk_summary's own rowClicked;
+        re-homed 2026-09-13 onto AWCIHazardRow.cardClicked, which only
+        ever fires for a card with a real, distinct AWCICalculator
+        module behind it - see HAZARD_CARDS' own docstring on "Wind
+        Shear"). Reuses the EXACT SAME AWCIComponentDetailDialog the
+        old per-point component list used to open for that module - not
+        a second, parallel detail view for the same real number."""
+        module_scores, _overall_awci, _physical_score, _forecast_score = self._last_risk_inputs
+        self._on_component_clicked(
+            module_key, module_scores.get(module_key, 0.0), self._last_point_raw_data, self._last_point_mode
+        )
 
     def _revert_to_demo(self) -> None:
         self._stop_evolution_playback()
@@ -3116,7 +3141,6 @@ class AWCIDashboard(QWidget):
         self.real_physics_status.setText("Concept Output – Research Prototype")
         self.global_map.clear_external_field()
         self.global_map.clear_external_layer_grids()
-        self.regional_map.clear_external_field()
         self.route_chart.clear_external_route()
         self.cross_section.clear_external_cross_section()
         # An imported-model cross-section survives the demo revert (it
@@ -3125,7 +3149,7 @@ class AWCIDashboard(QWidget):
         # synthetic pattern under an active imported file.
         if self._imported_cross_section is not None:
             self._draw_imported_cross_section(self._imported_cross_section)
-        self.stats_bar.model_box.set_value("ACF Demo Grid")
+        self._current_model_label = "ACF Demo Grid"
         # The evolution playback may have left time_readout showing a
         # real elapsed-time label ("t+2.4h") - restore the synthetic
         # slider's own "HHZ" convention.
@@ -3284,6 +3308,17 @@ class AWCIDashboard(QWidget):
         )
         self.time_readout.setText(f"t+{valid_time_h:.2f}h")
 
+        # Real "Time Evolution (AWCI)" analysis panel (Phase 5/6, added
+        # 2026-09-13) - real grid-wide mean/max of this SAME real
+        # per-frame field at this level, over every real frame this
+        # evolution already computed (not a second/independent solver
+        # run), with the currently playing frame highlighted.
+        level_field = evolution["awci_evolution"][:, level_idx]
+        means = [float(level_field[i].mean()) for i in range(level_field.shape[0])]
+        maxes = [float(level_field[i].max()) for i in range(level_field.shape[0])]
+        hours = [float(t) / 3600.0 for t in evolution["valid_time_seconds"]]
+        self.evolution_chart.set_series(hours, means, maxes, current_frame_index=frame_index)
+
     def _stop_evolution_playback(self) -> None:
         self._evolution_timer.stop()
         # CORRECTED: used to only reset the label if
@@ -3300,9 +3335,13 @@ class AWCIDashboard(QWidget):
     # ---------------------------------------------------- external API
 
     def update_with_awci_result(self, result: dict[str, Any]) -> None:
-        """Update the components radar/list with an externally-supplied AWCICalculator result."""
-        self.radar.update_data(result.get("module_scores", {}))
-        self.component_list.update_data(result.get("module_scores", {}))
+        """Update the hazard row with an externally-supplied
+        AWCICalculator result (2026-09-13: re-homed onto self.hazard_row
+        - the real per-module display this dashboard actually shows -
+        now that the old radar/component-list pair this method used to
+        feed has been retired)."""
+        module_scores = result.get("module_scores", {})
+        self.hazard_row.update_data(module_scores, result.get("awci", 0.0))
 
     def set_data(self, awci_result: dict[str, Any]) -> None:
         self.update_with_awci_result(awci_result)
