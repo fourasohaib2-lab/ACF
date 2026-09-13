@@ -28,6 +28,12 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 - `ACFStabilityIndicesWidget` affiche maintenant le Bulk Richardson
   Number réel (2*CAPE/shear², classification Weisman & Klemp 1982) -
   honnêtement "n/a" si le cisaillement est nul.
+- `ACFStabilityIndicesWidget` affiche maintenant K-Index, Total Totals
+  et SWEAT Index réels (`acf.science.{k_index,total_totals,
+  sweat_index}`, existaient déjà avec leurs propres tests mais jamais
+  câblés dans aucun panel GUI) - interpolation linéaire réelle du
+  profil de température/point de rosée/vent vers les niveaux standards
+  850/700/500 hPa, honnêtement "n/a" hors plage réelle de niveaux natifs.
 
 ## [Unreleased] - 2026-09-12
 

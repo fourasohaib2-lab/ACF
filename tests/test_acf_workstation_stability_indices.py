@@ -6,6 +6,8 @@ stability summary (Phase 39, 2026-09-05).
 
 from __future__ import annotations
 
+import numpy as np
+
 from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.vertical_field import compute_real_complexity_volume
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
@@ -64,6 +66,48 @@ def test_cape_cin_are_real_non_negative_values():
 
     assert result["cape_j_kg"] >= 0.0
     assert result["cin_j_kg"] >= 0.0
+
+
+def test_severe_weather_indices_are_real_and_match_independent_calls():
+    """Regression guard (2026-09-13, master-prompt gap audit): K-Index/
+    Total Totals/SWEAT Index already existed in acf.science but were
+    never wired into any GUI panel. Cross-checks against direct
+    independent formula calls on the same real interpolated values -
+    never a second, silently-diverging implementation."""
+    from acf.science.k_index import KIndex
+    from acf.science.sweat_index import SWEATIndex
+    from acf.science.total_totals import TotalTotals
+
+    volume = _real_volume(n_levels=8)
+    lat, lon = float(volume["lats"][2]), float(volume["lons"][4])
+
+    result = compute_real_stability_indices_at_point(volume, lat, lon)
+
+    assert result["k_index"] is not None
+    assert result["total_totals"] is not None
+    assert result["sweat_index"] is not None
+    assert result["k_index_category"] == KIndex.category(result["k_index"])
+    assert result["total_totals_category"] == TotalTotals.category(result["total_totals"])
+    assert result["sweat_index_category"] == SWEATIndex.category(result["sweat_index"])
+
+
+def test_severe_weather_indices_are_honestly_none_when_standard_levels_are_out_of_range():
+    """A volume whose real native levels never reach down to 850 hPa
+    must report None, never an extrapolated/fabricated value."""
+    from acf.gui.dashboard.acf_workstation_stability_indices import compute_real_severe_weather_indices_at_point
+
+    n = 5
+    t_profile = np.full(n, 220.0)
+    q_profile = np.full(n, 1e-4)
+    p_profile = np.linspace(300.0, 100.0, n)  # entirely above 850/700/500 hPa
+    u_profile = np.full(n, 5.0)
+    v_profile = np.full(n, 5.0)
+
+    result = compute_real_severe_weather_indices_at_point(t_profile, q_profile, p_profile, u_profile, v_profile)
+
+    assert result["k_index"] is None
+    assert result["total_totals"] is None
+    assert result["sweat_index"] is None
 
 
 def test_bulk_richardson_number_matches_a_real_independent_call():

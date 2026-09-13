@@ -49,6 +49,19 @@ def test_set_indices_shows_n_a_for_a_real_none_value(qapp):
     assert widget._labels["Bulk Richardson Number"].text() == "n/a"
 
 
+def test_set_indices_shows_the_real_severe_weather_indices(qapp):
+    widget = ACFStabilityIndicesWidget()
+    volume = compute_real_complexity_volume(model="ALADIN", n_lat=10, n_lon=18, n_levels=8, steps=3, perturbation_scale=2.0, seed=1)
+    indices = compute_real_stability_indices_at_point(volume, lat=10.0, lon=20.0)
+
+    widget.set_indices(indices)
+
+    assert f"{indices['k_index']:.1f}" in widget._labels["K-Index"].text()
+    assert indices["k_index_category"] in widget._labels["K-Index"].text()
+    assert f"{indices['total_totals']:.1f}" in widget._labels["Total Totals"].text()
+    assert f"{indices['sweat_index']:.1f}" in widget._labels["SWEAT Index"].text()
+
+
 def test_set_indices_shows_the_real_bulk_richardson_number_and_category(qapp):
     widget = ACFStabilityIndicesWidget()
     volume = compute_real_complexity_volume(model="ALADIN", n_lat=10, n_lon=18, n_levels=8, steps=3, perturbation_scale=2.0, seed=1)

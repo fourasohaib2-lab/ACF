@@ -1222,3 +1222,21 @@ régression visuelle (0 fichier existant). Gap réel identifié mais
 BLOQUÉ, disclosed : Workflow Engine GUI (backend exige Python 3.12+,
 ce sandbox tourne en 3.11.15 - non câblé pour ne pas livrer une
 intégration non testable).
+
+## Mise à jour (2026-09-13, suite) : K-Index/Total Totals/SWEAT Index câblés
+
+Sweep systématique de `acf.science/` contre `acf.gui/` (grep) : ~27
+modules scientifiques réels orphelins trouvés au total (jamais
+référencés dans aucune GUI). Fermés cette passe, mêmes critères que le
+Bulk Richardson Number (formule réelle déjà testée, aucun nouveau
+calcul inventé) : K-Index, Total Totals, SWEAT Index - ajoutés à
+`ACFStabilityIndicesWidget` via une vraie interpolation linéaire du
+profil réel vers les niveaux standards 850/700/500 hPa (honnêtement
+"n/a" hors plage). Image de référence de régression visuelle
+régénérée et vérifiée visuellement. 26 tests combinés verts, 20 tests
+Phase 44/45/accessibilité verts sans régression.
+
+Restent identifiés, non traités : Lifted Index/Showalter Index (exigent
+un vrai calcul d'ascension de parcelle, pas juste une interpolation -
+candidat pour une passe dédiée), ~22 autres modules `acf.science`
+orphelins (pertinence à trier au cas par cas, pas câblés en masse).

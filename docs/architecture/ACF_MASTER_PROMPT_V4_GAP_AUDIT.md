@@ -86,6 +86,41 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
    **Non fait, disclosed comme BLOCKED BY ENVIRONMENT**, pas silencieusement
    ignoré.
 
+## Fermé cette passe (suite, 2026-09-13)
+
+5. **K-Index, Total Totals, SWEAT Index** (Phase 13, Stability —
+   3 indices synoptiques classiques nommés implicitement) — même
+   découverte que le Bulk Richardson Number : `acf.science.{k_index,
+   total_totals,sweat_index}` existaient réellement, avec leurs propres
+   tests, mais 0 référence nulle part dans `acf.gui` (vérifié par grep
+   systématique sur tout `acf.science/` : ~27 modules scientifiques
+   réels orphelins trouvés au total, ces 3 étaient les candidats les
+   plus directement pertinents et sans risque - les 2 autres classiques
+   (Lifted Index/Showalter Index) nécessiteraient un vrai calcul
+   d'ascension de parcelle d'air, pas juste une interpolation de
+   profil, donc non traités cette passe).
+
+   Contrairement à CAPE/shear/BRN (valeurs au niveau natif du modèle),
+   ces indices sont définis à des niveaux de pression standards fixes
+   (850/700/500 hPa) - ajout d'une vraie interpolation linéaire
+   (`np.interp`) du profil réel de température/point de rosée/vent vers
+   ces niveaux, honnêtement `None` si 850/700/500 hPa sort de la plage
+   réelle de niveaux natifs de la colonne (jamais une extrapolation
+   fabriquée). Point de rosée réel via le même `mpcalc.
+   dewpoint_from_specific_humidity()` déjà utilisé pour CAPE/CIN ;
+   vitesse/direction de vent réelles via `mpcalc.wind_speed()`/
+   `mpcalc.wind_direction()` (pas de trigonométrie réinventée à la
+   main).
+
+   Ajouté dans le même `ACFStabilityIndicesWidget` (même panel que BRN,
+   même pattern de test). Image de référence de régression visuelle
+   régénérée et vérifiée visuellement (changement d'UI délibéré, comme
+   documenté dans le test lui-même) : CAPE/CIN/Wind Shear/Static
+   Stability/BRN/K-Index/Total Totals/SWEAT Index tous réels, tous
+   rendus correctement. 26 tests combinés verts (stability indices +
+   k_index + total_totals + sweat_index), 20 tests de régression
+   Phase 44/45/accessibilité verts sans changement.
+
 ## Vérifié résolu — pas un vrai gap (2026-09-13)
 
 - **"Datasets"** comme concept nav distinct du mockup — vérifié : la
@@ -112,6 +147,22 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 
 ## Reste ouvert (feuille de route, non traité cette passe)
 
+- **Lifted Index / Showalter Index** — 2 autres indices classiques
+  réels trouvés orphelins (`acf.science.{lifted_index,
+  showalter_index}`), non fermés cette passe : contrairement à K-Index/
+  TT/SWEAT (interpolation seule), ces deux exigent une vraie
+  température de parcelle d'air ascendante (ascension adiabatique
+  sèche puis humide via MetPy) à 500 hPa — un calcul réel plus complexe
+  que l'interpolation de profil, pas une simple réutilisation. Candidat
+  réel pour une passe dédiée.
+- **~22 autres modules scientifiques réels orphelins trouvés** (grep
+  complet de `acf.science/` contre `acf.gui/`) — ex. `air_density`,
+  `dry_static_energy`, `equivalent_potential_temperature`,
+  `moist_static_energy`, `potential_vorticity`, `wet_bulb_temperature`,
+  etc. Tous n'ont pas la même pertinence directe pour ce Workstation
+  (certains sont plus océan/climat/feu que diagnostics atmosphériques
+  ponctuels) - à trier au cas par cas dans une passe dédiée plutôt que
+  câblés en masse sans évaluer la pertinence de chacun.
 - **Audit d'unités systématique** (kt/m/s, ft/m) sur `gui/` dans son
   ensemble — hors périmètre de cette passe (voir aussi l'audit ICAO/OMM
   §4 pour la même limite déjà posée).
@@ -146,3 +197,6 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 | Audit unités systématique | ❌ NOT IMPLEMENTED (hors périmètre, disclosed) |
 | Accessibilité repo-wide | ❌ NOT IMPLEMENTED (disproportionné, disclosed) |
 | Bulk Richardson Number (autres panels) | ❌ NOT IMPLEMENTED (nécessiterait un vrai calcul CAPE à la demande, pas un câblage gratuit - re-scopé) |
+| K-Index / Total Totals / SWEAT Index | ✅ IMPLEMENTED |
+| Lifted Index / Showalter Index | ❌ NOT IMPLEMENTED (exige un vrai calcul d'ascension de parcelle, candidat pour une passe dédiée) |
+| ~22 autres modules `acf.science` orphelins | ❌ NOT IMPLEMENTED (trouvés, non triés/câblés cette passe) |
