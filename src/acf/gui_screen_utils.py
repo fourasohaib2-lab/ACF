@@ -34,13 +34,37 @@ dependencies of its own has no reason to risk the same trap.
 
 from __future__ import annotations
 
+from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QApplication, QWidget
 
 
 def _resolve_screen(window: QWidget):
+    """Real fix (2026-09-13, user-reported bug on a real multi-monitor
+    machine): a not-yet-shown top-level widget's own `window.screen()`
+    does NOT return None here - PySide6 already defaults it to
+    `QGuiApplication.primaryScreen()` before the window has ever been
+    positioned. On a multi-monitor setup where the user's actual working
+    monitor (a smaller 1366x768 secondary display, confirmed via
+    `xrandr`) is NOT the primary one, every window sized in `__init__`
+    (i.e. before `.show()`) - which is every caller of
+    `fit_window_to_screen` in this codebase - got sized for the WRONG,
+    larger primary screen, then rendered squeezed/overlapping/clipped
+    once the window manager actually placed it on the real, smaller
+    monitor the user was looking at. Real per-monitor cursor detection
+    (`QGuiApplication.screenAt(QCursor.pos())`, real X/Y coordinates
+    reported by the OS - not a guess) identifies the monitor the user is
+    actually working on and is preferred here; `window.screen()` (whatever
+    that resolves to) is the fallback for the (rare, and no worse than
+    before this fix) case where cursor position can't be resolved, and
+    `primaryScreen()` is the last-resort fallback matching the previous
+    behaviour."""
+    app = QApplication.instance()
+    if app is not None:
+        cursor_screen = app.screenAt(QCursor.pos())
+        if cursor_screen is not None:
+            return cursor_screen
     screen = window.screen()
     if screen is None:
-        app = QApplication.instance()
         screen = app.primaryScreen() if app is not None else None
     return screen
 
