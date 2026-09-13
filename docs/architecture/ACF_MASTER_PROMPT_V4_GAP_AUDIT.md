@@ -86,22 +86,43 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
    **Non fait, disclosed comme BLOCKED BY ENVIRONMENT**, pas silencieusement
    ignoré.
 
-## Reste à vérifier/traiter (feuille de route, non traité cette passe)
+## Vérifié résolu — pas un vrai gap (2026-09-13)
 
-- **"Datasets"** comme concept nav distinct du mockup — la Workstation a
-  déjà une section "DATA SOURCES" réelle (Model Data/Observations/
-  Scientific Explorer) qui recouvre partiellement ce rôle ; pas de
-  nouveau panel "Datasets" séparé construit — à évaluer si un vrai gap
-  produit ou une redondance.
+- **"Datasets"** comme concept nav distinct du mockup — vérifié : la
+  Workstation a déjà une section "DATA SOURCES" réelle (Model Data/
+  Observations/Scientific Explorer), le même mapping déjà établi et
+  disclosed pour "Data"/"Diagnostics" (Phase 31 de ce fichier lui-même).
+  Un second panel "Datasets" séparé serait une duplication, pas une
+  fermeture de gap — **pas de changement nécessaire**.
+- **"Model disagreement" comme type d'alerte** (Phase 16) — vérifié :
+  Model Consensus (`ModelConsensusEngine.compute_real_multi_model_
+  disagreement()`) expose déjà honnêtement le vrai spread une fois
+  calculé, mais c'est une action manuelle coûteuse (un run solveur réel
+  par modèle) — jamais auto-déclenchée, par choix de conception déjà
+  établi ailleurs dans ce projet (calcul coûteux sur demande
+  uniquement). Fusionner ça avec les Alerts auto-calculées créerait soit
+  un déclenchement automatique de calculs coûteux non demandés, soit
+  une alerte fabriquée avant tout calcul réel. **Pas un gap réel — déjà
+  honnêtement conçu ainsi.**
+- **Messages d'erreur structurés** (Phase 31) — vérifié `_on_volume_
+  failed()` : affiche déjà le vrai message d'exception du solveur, logué,
+  UI réactivée. Pas de catégorisation rigide (DATA UNAVAILABLE/INVALID
+  GRID/etc.) mais le message réel est plus informatif qu'une catégorie
+  générique inventée. **Pas un gap réel.**
+
+## Reste ouvert (feuille de route, non traité cette passe)
+
 - **Audit d'unités systématique** (kt/m/s, ft/m) sur `gui/` dans son
   ensemble — hors périmètre de cette passe (voir aussi l'audit ICAO/OMM
   §4 pour la même limite déjà posée).
 - **Accessibilité repo-wide** (au-delà du shell ACFWorkstation) — gros
   chantier séparé, déjà qualifié disproportionné pour une session dans
   l'historique de ce projet.
-- **Richardson number affiché ailleurs** (Dynamics Lab, Map Inspector) —
-  seule la Stability Indices l'affiche pour l'instant ; extension
-  possible mais pas faite ici.
+- **Bulk Richardson Number ailleurs** (Dynamics Lab) — vérifié : le Map
+  Inspector n'est délibérément PAS un bon candidat (il exclut déjà
+  CAPE/CIN de son propre calcul par point-cliqué pour rester bon marché
+  sur des clics répétés - voir son propre docstring ; BRN en dépend).
+  Dynamics Lab reste un candidat réel non exploré cette passe.
 
 ## Conclusion honnête (format Phase 47 du master prompt)
 
@@ -112,5 +133,9 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 | Accessibilité (shell principal) | ⚠️ PARTIALLY IMPLEMENTED (disclosed, portée limitée) |
 | Tests de régression visuelle | ✅ IMPLEMENTED (métrique tolérante, disclosed) |
 | Workflow Engine GUI | ❌ BLOCKED BY MISSING DEPENDENCY (Python 3.12+) |
+| "Datasets" nav séparé | ✅ IMPLEMENTED (déjà couvert par "DATA SOURCES", vérifié non-redondant à dupliquer) |
+| Alerte "model disagreement" | ✅ IMPLEMENTED (déjà honnêtement exposé dans Model Consensus, fusion avec Alerts délibérément évitée) |
+| Messages d'erreur structurés | ✅ IMPLEMENTED (message réel du solveur, plus informatif qu'une catégorie générique) |
 | Audit unités systématique | ❌ NOT IMPLEMENTED (hors périmètre, disclosed) |
 | Accessibilité repo-wide | ❌ NOT IMPLEMENTED (disproportionné, disclosed) |
+| Bulk Richardson Number (Dynamics Lab) | ❌ NOT IMPLEMENTED (candidat réel, non traité cette passe) |
