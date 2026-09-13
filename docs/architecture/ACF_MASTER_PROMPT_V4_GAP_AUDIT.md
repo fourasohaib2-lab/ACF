@@ -118,11 +118,18 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 - **Accessibilité repo-wide** (au-delà du shell ACFWorkstation) — gros
   chantier séparé, déjà qualifié disproportionné pour une session dans
   l'historique de ce projet.
-- **Bulk Richardson Number ailleurs** (Dynamics Lab) — vérifié : le Map
-  Inspector n'est délibérément PAS un bon candidat (il exclut déjà
-  CAPE/CIN de son propre calcul par point-cliqué pour rester bon marché
-  sur des clics répétés - voir son propre docstring ; BRN en dépend).
-  Dynamics Lab reste un candidat réel non exploré cette passe.
+- **Bulk Richardson Number ailleurs** — vérifié sur 2 candidats, aucun
+  des deux n'est un vrai "gain facile" : le Map Inspector exclut déjà
+  délibérément CAPE/CIN de son calcul par point-cliqué pour rester bon
+  marché sur des clics répétés (BRN en dépend) ; Dynamics Lab calcule
+  bien un champ de cisaillement gridé, mais PAS de CAPE gridé (celui-ci
+  reste volontairement à la demande et coûteux dans Thermodynamics Lab
+  - même raison de coût déjà disclosed dans le docstring de Stability
+  Indices). Étendre BRN à l'un ou l'autre reproduirait le même problème
+  de coût déjà résolu ailleurs par un calcul à la demande, pas une
+  réutilisation gratuite. **Non fait, correctement identifié comme
+  nécessitant un vrai calcul à la demande plutôt qu'un câblage trivial
+  - pas un gap "petit" comme initialement supposé.**
 
 ## Conclusion honnête (format Phase 47 du master prompt)
 
@@ -138,4 +145,4 @@ fermer les gaps réels un par un avec tests + doc sync + commit.
 | Messages d'erreur structurés | ✅ IMPLEMENTED (message réel du solveur, plus informatif qu'une catégorie générique) |
 | Audit unités systématique | ❌ NOT IMPLEMENTED (hors périmètre, disclosed) |
 | Accessibilité repo-wide | ❌ NOT IMPLEMENTED (disproportionné, disclosed) |
-| Bulk Richardson Number (Dynamics Lab) | ❌ NOT IMPLEMENTED (candidat réel, non traité cette passe) |
+| Bulk Richardson Number (autres panels) | ❌ NOT IMPLEMENTED (nécessiterait un vrai calcul CAPE à la demande, pas un câblage gratuit - re-scopé) |
