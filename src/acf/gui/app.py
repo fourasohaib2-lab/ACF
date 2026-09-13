@@ -1,6 +1,14 @@
 """Atmospheric Complexity Framework (ACF) GUI Application Launcher.
 
-Launches the Unified Earth System Operations Center (ESOC) (ACF-UI-012).
+Launches the ACF Scientific Workstation as the application's real
+general cockpit (explicit user request, 2026-09-13: "je veux que ACF
+Scientific Workstation sera le cockpit général et pas ESOC... on
+enlève complètement ESOC" - a future AWCI rebuild is planned to join
+it here later). ESOC (`acf.gui.esoc.esoc_window.ESOCWindow`) is NOT
+deleted - its ~45 real connected subsystems (HPC, digital twin, hazard
+operations, monitoring, ...) still exist and are still real, just no
+longer this command's default target - kept available for a later,
+deliberate re-integration into the Workstation rather than removed.
 """
 
 import sys
@@ -9,13 +17,12 @@ import time
 from PySide6.QtWidgets import QApplication
 
 from acf import __version__
-from acf.gui.esoc.esoc_window import ESOCWindow
-from acf.gui.main_window.main_window import MainWindow
+from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
 from acf.gui.single_instance import SingleInstanceGuard
 from acf.gui.splash import SplashScreen
 from acf.gui.theme import ThemeManager
 
-__all__ = ["ESOCWindow", "MainWindow", "main", "run"]
+__all__ = ["ACFWorkstationWindow", "main", "run"]
 
 
 def run() -> None:
@@ -60,9 +67,12 @@ def run() -> None:
 
     time.sleep(2)
 
-    # Boot into ESOCWindow as default operational command interface
-    window = ESOCWindow()
-    window.show()
+    # Boot into the real ACF Scientific Workstation as the application's
+    # default general cockpit (see this module's own docstring).
+    # ACFWorkstationWindow's own __init__ already triggers one real
+    # refresh() on construction - no second call here.
+    window = ACFWorkstationWindow()
+    window.showMaximized()
 
     def _activate_existing_window() -> None:
         window.showNormal()

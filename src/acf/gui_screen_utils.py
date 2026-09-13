@@ -50,23 +50,31 @@ def _resolve_screen(window: QWidget):
     `fit_window_to_screen` in this codebase - got sized for the WRONG,
     larger primary screen, then rendered squeezed/overlapping/clipped
     once the window manager actually placed it on the real, smaller
-    monitor the user was looking at. Real per-monitor cursor detection
+    monitor the user was looking at.
+
+    `window.screen()` is trusted FIRST whenever it resolves to anything
+    other than that exact default-fallback value - this also covers a
+    caller that deliberately overrides `window.screen()` itself (e.g.
+    `tests/test_main_windows_fit_the_hpc_vnc_fallback_screen.py`'s own
+    `window.screen = lambda: _FixedSizeScreen(...)` injection), which
+    must keep winning over any cursor guess. Only when `window.screen()`
+    genuinely equals `primaryScreen()` - Qt's own unshown-widget default,
+    indistinguishable from "really is the primary screen" without this
+    heuristic - does real per-monitor cursor detection
     (`QGuiApplication.screenAt(QCursor.pos())`, real X/Y coordinates
-    reported by the OS - not a guess) identifies the monitor the user is
-    actually working on and is preferred here; `window.screen()` (whatever
-    that resolves to) is the fallback for the (rare, and no worse than
-    before this fix) case where cursor position can't be resolved, and
-    `primaryScreen()` is the last-resort fallback matching the previous
-    behaviour."""
+    reported by the OS) get a chance to identify the monitor the user is
+    actually working on instead. `primaryScreen()` remains the
+    last-resort fallback matching the previous behaviour."""
     app = QApplication.instance()
+    screen = window.screen()
+    primary = app.primaryScreen() if app is not None else None
+    if screen is not None and screen is not primary:
+        return screen
     if app is not None:
         cursor_screen = app.screenAt(QCursor.pos())
         if cursor_screen is not None:
             return cursor_screen
-    screen = window.screen()
-    if screen is None:
-        screen = app.primaryScreen() if app is not None else None
-    return screen
+    return screen if screen is not None else primary
 
 
 def _clamp_size(desired_width: int, desired_height: int, available, margin: float) -> tuple[int, int]:
