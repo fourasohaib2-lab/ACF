@@ -21,9 +21,13 @@ import pytest
 
 from acf.gui.esoc.module_registry import ModuleRegistry
 
-#: The 15 registrations found broken and fixed this closure - each
-#: must now resolve to a REAL instance of a REAL class, not the old
-#: silently-substituted bare module.
+#: The registrations found broken and fixed this closure - each must
+#: now resolve to a REAL instance of a REAL class, not the old
+#: silently-substituted bare module. ("production_dashboard" and
+#: "visualization" removed 2026-09-13: their target classes
+#: (DashboardManager, AIForecastDashboard) were deleted along with
+#: every ACF/AWCI dashboard, per explicit user request - see
+#: docs/superpowers/specs/2026-09-13-acf-workstation-rebuild-design.md.)
 _FIXED_REGISTRATIONS: dict[str, str] = {
     "data_assimilation": "EarthAnalysisStateVector",
     "digital_twin": "DigitalTwinEngine",
@@ -34,8 +38,6 @@ _FIXED_REGISTRATIONS: dict[str, str] = {
     "forecast": "ForecastEngine",
     "hydrology": "HydrologyReasoningEngine",
     "air_quality": "AirQualityReasoningEngine",
-    "production_dashboard": "DashboardManager",
-    "visualization": "AIForecastDashboard",
     "planetary_limits": "PlanetaryBoundariesSimulator",
     "aerosols_dust": "CloudAerosolEngine",
     "volcanoes": "VolcanicPhysicsEngine",
@@ -54,7 +56,7 @@ def registry():
     return ModuleRegistry()
 
 
-def test_all_15_fixed_registrations_resolve_to_their_real_named_class(registry):
+def test_all_fixed_registrations_resolve_to_their_real_named_class(registry):
     for key, expected_class_name in _FIXED_REGISTRATIONS.items():
         instance = registry.get_module(key)
         assert instance is not None, f"{key} should be connected to a real instance"
