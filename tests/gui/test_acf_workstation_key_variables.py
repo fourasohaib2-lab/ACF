@@ -38,10 +38,11 @@ def test_key_variables_panel_shows_real_values(qapp, qtbot):
     assert panel.temperature_value.text() != ""
     assert "K" in panel.temperature_value.text() or "°C" in panel.temperature_value.text()
     assert panel.wind_speed_value.text() != ""
-    # CAPE/CIN/LCL come from compute_real_convection_indices_field - may be
+    # CAPE/CIN/LCL/Shear come from compute_real_convection_indices_field - may be
     # NaN-only on this tiny synthetic grid, but must render SOMETHING, not crash.
     assert panel.cape_value.text() != ""
     assert panel.lcl_value.text() != ""
+    assert panel.shear_value.text() != ""
 
     # Relative humidity must be the real Moisture conversion at the
     # SAME full-resolution center grid cell (ci, cj) the temperature
@@ -91,8 +92,15 @@ def test_key_variables_panel_reads_the_same_grid_cell_for_convection_indices(qap
     else:
         assert panel.lcl_value.text() == f"{lcl_expected:.0f} m"
 
+    shear_expected = indices["bulk_shear_m_s"][sub_ci, sub_cj]
+    if np.isnan(shear_expected):
+        assert panel.shear_value.text() == "NOT_COMPUTED"
+    else:
+        assert panel.shear_value.text() == f"{shear_expected:.0f} m/s"
+
 
 def test_key_variables_panel_before_any_volume_is_honest(qapp, qtbot):
     panel = KeyVariablesPanel()
     qtbot.addWidget(panel)
     assert "NOT_" in panel.temperature_value.text()
+    assert "NOT_" in panel.shear_value.text()

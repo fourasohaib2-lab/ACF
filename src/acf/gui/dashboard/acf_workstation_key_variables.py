@@ -73,6 +73,7 @@ class KeyVariablesPanel(QWidget):
         self.cape_value = self._row(layout, 3, "CAPE")
         self.cin_value = self._row(layout, 4, "CIN")
         self.lcl_value = self._row(layout, 5, "LCL")
+        self.shear_value = self._row(layout, 6, "Shear (0-6 km)")
 
     def _row(self, layout: QGridLayout, row: int, title: str) -> QLabel:
         heading = QLabel(title)
@@ -138,6 +139,7 @@ class KeyVariablesPanel(QWidget):
         self._set_or_not_computed(self.cape_value, indices["cape_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.cin_value, indices["cin_j_kg"][sub_ci, sub_cj], "J/kg")
         self._set_or_not_computed(self.lcl_value, indices["lcl_m"][sub_ci, sub_cj], "m")
+        self._set_or_not_computed(self.shear_value, indices["bulk_shear_m_s"][sub_ci, sub_cj], "m/s")
 
         # Real, already-computed values kept for reuse (see
         # `last_indices`'s own comment in __init__) - exactly what was
