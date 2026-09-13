@@ -1402,11 +1402,42 @@ class AWCIDashboard(QWidget):
 
         # Panel 4/5: "Time Evolution (AWCI)" - real AWCI(t) series, fed
         # by the exact same real per-point +/-6h sampling refresh()
-        # already computes for self.regional_trend (demo/imported-model
-        # mode), or the real 4D CoupledEarthSolver trajectory's own
-        # grid-wide mean/max per frame while "▶ 4D Evolution" is playing
-        # (see _render_evolution_frame()) - never a second/independent
+        # already computes (demo/imported-model mode), or the real 4D
+        # CoupledEarthSolver trajectory's own grid-wide mean/max per
+        # frame while "▶ 4D Evolution" is playing (see
+        # _render_evolution_frame()) - never a second/independent
         # computation.
+        #
+        # Real Global/Route/Airport toggle (added 2026-09-13, Master
+        # Prompt V3 §22 - "support global AWCI/route AWCI/airport AWCI;
+        # the graph must update when the selected entity changes") -
+        # see _compute_demo_evolution_series()'s own docstring for each
+        # real source. Demo-mode only (disclosed): while a real 4D
+        # solver trajectory is actually playing, _render_evolution_frame()
+        # keeps driving this same chart from the real grid-wide data
+        # regardless of this toggle's state - re-selecting Route/Airport
+        # here does not (yet) re-sample that real volume along a route
+        # or at an airport.
+        self._evolution_view_mode: Literal["global", "route", "airport"] = "global"
+        evolution_toggle_row = QHBoxLayout()
+        evolution_toggle_row.setSpacing(4)
+        self.evolution_view_buttons: dict[str, QPushButton] = {}
+        for mode, label in (("global", "Global"), ("route", "Route"), ("airport", "Airport")):
+            button = QPushButton(label)
+            button.setCheckable(True)
+            button.setChecked(mode == "global")
+            button.setStyleSheet(
+                f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
+                f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 9px; padding: 2px 8px; }}"
+                f"QPushButton:checked {{ background-color: {TOKENS.accent_primary}; color: {TOKENS.bg_root}; font-weight: bold; }}"
+            )
+            button.clicked.connect(lambda _checked=False, m=mode: self._on_evolution_view_mode_changed(m))
+            evolution_toggle_row.addWidget(button)
+            self.evolution_view_buttons[mode] = button
+        evolution_toggle_row.addStretch()
+        self.evolution_toggle_widget = QWidget()
+        self.evolution_toggle_widget.setLayout(evolution_toggle_row)
+
         self.evolution_chart = AWCIEvolutionChart(title="TIME EVOLUTION (AWCI)")
         self.evolution_chart.setMinimumHeight(min_panel_height)
 
@@ -1441,7 +1472,9 @@ class AWCIDashboard(QWidget):
         analysis_row.addWidget(
             _analysis_panel(self.route_selector_widget, self.route_chart, self.route_segment_table), stretch=1
         )
-        analysis_row.addWidget(_analysis_panel(self.time_control_widget, self.evolution_chart), stretch=1)
+        analysis_row.addWidget(
+            _analysis_panel(self.time_control_widget, self.evolution_toggle_widget, self.evolution_chart), stretch=1
+        )
         analysis_row.addWidget(
             _analysis_panel(self.vertical_profile_panel, self._vertical_profile_panel_suggestion_label), stretch=1
         )
@@ -2001,33 +2034,13 @@ class AWCIDashboard(QWidget):
         # just computed for this same point, not a second/fabricated value.
         self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
 
-        # Real "Time Evolution (AWCI)" analysis panel source series
-        # (added 2026-09-03 as a regional-trend sparkline, superseded
-        # 2026-09-13 by AWCIEvolutionChart - see that panel's own build-
-        # time comment) - real AWCICalculator scores at the SAME point
-        # of interest, sampled +/-6h around the current Valid Time
-        # slider value via the same real time_offset_hours mechanism
-        # the slider itself already drives (awci_synthetic_field.py's
-        # own _synthetic_inputs()).
-        current_hour = self.time_slider.value()
-        trend_data: list[tuple[str, float]] = []
-        for offset in range(-6, 7, 2):
-            raw = _synthetic_inputs(
-                *self._point_of_interest, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(offset)
-            )
-            trend_result = AWCICalculator().calculate(raw)
-            trend_data.append((f"{(current_hour + offset) % 24:02d}Z", trend_result["awci"]))
-        # Real "Time Evolution (AWCI)" analysis panel (Phase 5/6, added
-        # 2026-09-13) - the exact same real per-point trend_data just
-        # computed above, not a second/independent series. A single
-        # point has no real spatial max distinct from its own value, so
-        # mean and max are honestly identical here (superseded by the
-        # real grid-wide mean/max whenever a 4D solver evolution is
-        # actually playing - see _render_evolution_frame()).
-        point_values = [value for _label, value in trend_data]
-        self.evolution_chart.set_series(
-            [float((current_hour + offset) % 24) for offset in range(-6, 7, 2)], point_values, point_values, current_frame_index=3
-        )
+        # Real "Time Evolution (AWCI)" analysis panel - see
+        # _compute_demo_evolution_series()'s own docstring for the real
+        # source of each of the 3 real Global/Route/Airport modes
+        # (superseded by the real grid-wide mean/max whenever a 4D
+        # solver trajectory is actually playing - see
+        # _render_evolution_frame()).
+        self._refresh_evolution_chart()
 
         # flat_scores backed the now-retired self.stats_bar's own
         # GLOBAL MEAN/MAX/AREA>60 boxes - those 3 real numbers have no
@@ -2066,6 +2079,75 @@ class AWCIDashboard(QWidget):
             point_result["module_scores"], overall_awci, point_result["physical_score"], point_result["forecast_score"],
             self.route_chart.last_distances_km, route_scores,
         )
+
+    # ------------------------------------------- Time Evolution (§22)
+
+    def _compute_demo_evolution_series(self, mode: Literal["global", "route", "airport"]) -> tuple[list[float], list[float], list[float]]:
+        """Real +/-6h series for the embedded "Time Evolution (AWCI)"
+        panel's own real Global/Route/Airport toggle (Master Prompt V3
+        §22 - "support global AWCI/route AWCI/airport AWCI"), all
+        sampled around the SAME current Valid Time slider value via the
+        same real time_offset_hours mechanism the slider itself already
+        drives (awci_synthetic_field.py's own _synthetic_inputs()/
+        route_profile()) - demo-mode only (see this panel's own
+        build-time comment for the disclosed Real-Physics-4D exception).
+
+        - "global": the real point-of-interest's own AWCI at each real
+          offset - a single point has no real spatial max distinct from
+          its own value, so mean and max are honestly identical.
+        - "route": the real MEAN/MAX AWCI across 40 real points sampled
+          along the SAME real active route (self._regional_route, same
+          850 hPa cruise level self.route_chart itself uses) at each
+          real offset - genuinely richer than "global" since a route
+          spans real distinct points, not a single one.
+        - "airport": the real departure airport currently selected in
+          the route selector (self.route_from_selector) - single real
+          point, mean/max honestly identical, same as "global"."""
+        current_hour = self.time_slider.value()
+        offsets = list(range(-6, 7, 2))
+        hours = [float((current_hour + offset) % 24) for offset in offsets]
+        means: list[float] = []
+        maxes: list[float] = []
+        if mode == "route":
+            for offset in offsets:
+                _distances, scores = route_profile(
+                    self._regional_route[0][:2], self._regional_route[1][:2],
+                    n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+                )
+                means.append(float(np.mean(scores)))
+                maxes.append(float(np.max(scores)))
+        else:
+            if mode == "airport":
+                icao = self.route_from_selector.currentData()
+                lat, lon, _name = _AIRPORTS[icao]
+            else:
+                lat, lon = self._point_of_interest
+            for offset in offsets:
+                raw = _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(offset))
+                value = AWCICalculator().calculate(raw)["awci"]
+                means.append(value)
+                maxes.append(value)
+        return hours, means, maxes
+
+    def _refresh_evolution_chart(self) -> None:
+        """(Re)draw the Time Evolution panel from the currently
+        selected real Global/Route/Airport mode - called from every
+        real demo-mode per-point refresh (refresh()) and whenever the
+        user clicks a different mode button (_on_evolution_view_mode_
+        changed())."""
+        hours, means, maxes = self._compute_demo_evolution_series(self._evolution_view_mode)
+        self.evolution_chart.set_series(hours, means, maxes, current_frame_index=3)  # offset 0 is index 3
+
+    def _on_evolution_view_mode_changed(self, mode: str) -> None:
+        """Real dispatch for the Time Evolution panel's own Global/
+        Route/Airport buttons - a real QButtonGroup-of-one-checked-at-
+        a-time behavior implemented by hand (plain QPushButtons, not a
+        QButtonGroup, so each can carry its own real per-mode
+        stylesheet :checked state)."""
+        for button_mode, button in self.evolution_view_buttons.items():
+            button.setChecked(button_mode == mode)
+        self._evolution_view_mode = mode  # type: ignore[assignment]
+        self._refresh_evolution_chart()
 
     # ------------------------------------------------- Real Physics mode
 

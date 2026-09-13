@@ -382,12 +382,19 @@ def route_profile(
     point_b: tuple[float, float],
     n_points: int = 60,
     flight_level_hpa: float = 300.0,
+    time_offset_hours: float = 0.0,
 ) -> tuple[list[float], list[float]]:
     """Real AWCI score sampled along the great-circle-ish straight path from A to B.
 
     Returns (distance_km, awci_scores). Uses a simple linear lat/lon
     interpolation (not a true geodesic) - adequate for a demo route chart,
     not for navigation.
+
+    `time_offset_hours` (added 2026-09-13, Master Prompt V3 §22 "Route"
+    time-evolution toggle) - threaded straight through to awci_at()'s
+    own real _synthetic_inputs() time-shift, same real mechanism the
+    point-of-interest pipeline's own +/-6h sampling already uses.
+    Default 0.0 keeps every existing caller bit-identical.
     """
     lat_a, lon_a = point_a
     lat_b, lon_b = point_b
@@ -399,7 +406,7 @@ def route_profile(
         lat = lat_a + t * (lat_b - lat_a)
         lon = lon_a + t * (lon_b - lon_a)
         distances.append(t * total_km)
-        scores.append(awci_at(lat, lon, flight_level_hpa)["awci"])
+        scores.append(awci_at(lat, lon, flight_level_hpa, time_offset_hours)["awci"])
     return distances, scores
 
 

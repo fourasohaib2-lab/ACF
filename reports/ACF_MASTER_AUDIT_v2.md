@@ -13654,3 +13654,67 @@ fichier jamais touché par ce travail - confirmé être un incident
 d'environnement isolé, pas une vraie régression : ce même test passe
 seul à 4/4, et le relancement complet est passé intégralement au vert).
 Vérifié visuellement par capture d'écran réelle (1920×1200).
+
+## Mise à jour 2026-09-13 (suite) — §22 Time Evolution : toggle Global/Route/Airport
+
+**Contexte** : écart honnête Master Prompt V3 - §22 demande que le
+panneau "Time Evolution (AWCI)" "support global AWCI/route AWCI/
+airport AWCI", trois vues réellement distinctes. Le panneau existant
+n'affichait qu'une seule série (le point d'intérêt courant).
+
+**Réel, jamais fabriqué** : `route_profile()`
+(`awci_synthetic_field.py`) a reçu un nouveau paramètre
+`time_offset_hours: float = 0.0` (rétrocompatible - toute valeur par
+défaut omise reste bit-identique), simplement propagé jusqu'à l'appel
+déjà réel `awci_at(lat, lon, flight_level_hpa, time_offset_hours)` -
+le même mécanisme réel de décalage temporel que le point d'intérêt
+utilise déjà pour son propre échantillonnage ±6h. Trois nouveaux
+boutons "Global | Route | Airport" (QPushButton cochables, style
+:checked manuel plutôt qu'un QButtonGroup) au-dessus du graphique
+d'évolution, dispatchés par `_compute_demo_evolution_series(mode)` :
+- **Global** : vrai point d'intérêt courant à chaque vrai décalage
+  ±6h (comportement préexistant, inchangé) - un seul point, donc
+  moyenne = max honnêtement identiques.
+- **Route** : vraie moyenne/max sur 40 vrais points réellement
+  échantillonnés le long de la route active (`self._regional_route`),
+  au même niveau de croisière réel (850 hPa) que `route_chart`
+  lui-même utilise, à chaque décalage - seul mode où moyenne ≠ max
+  puisqu'une route couvre de vrais points distincts.
+- **Airport** : vrai aéroport de départ actuellement sélectionné dans
+  le sélecteur de route (`route_from_selector`/`_AIRPORTS`) - un seul
+  point, moyenne = max comme "Global".
+
+Un changement de mode redessine immédiatement le graphique
+(`_refresh_evolution_chart()`), et un `refresh()` normal (slider Valid
+Time, clic carte, etc.) respecte désormais le mode actuellement
+sélectionné au lieu de toujours revenir à "Global".
+
+**Portée honnête disclosed** : fonctionnalité disponible en mode démo
+uniquement (comme le reste du panneau Time Evolution) ; le mode Real
+Physics 4D garde son propre mécanisme de frames réelles déjà existant
+(`_render_evolution_frame()`), non modifié ici.
+
+**Aucune donnée fabriquée** : zéro nouvelle formule scientifique - les
+3 modes réutilisent exactement les mêmes fonctions réelles
+(`awci_at`/`route_profile`/`AWCICalculator.calculate`) déjà testées
+ailleurs dans ce projet, seulement avec des points d'échantillonnage
+différents.
+
+**Tests ajoutés** : 3 nouveaux dans `tests/test_awci_synthetic_field.py`
+(défaut bit-identique à l'ancien comportement, un décalage non-nul
+produit une vraie série différente, et une preuve directe qu'un point
+du profil correspond à un appel `awci_at()` indépendant) + 9 nouveaux
+dans `tests/gui/test_awci_dashboard_analysis_panels.py` (état coché
+exclusif des 3 boutons, chaque mode recoupé contre un recalcul direct
+indépendant, preuve que "Route" a une vraie moyenne ≠ max alors que
+"Global"/"Airport" ont moyenne = max, et preuve que `refresh()`
+respecte le mode actuellement sélectionné).
+
+**Validation** : 32 tests ciblés (synthetic_field + analysis_panels) :
+32 passed. Suite complète (`tests/gui/` + fullscreen + alerts +
+stats_bar + screen_adaptability + component_detail + route_chart +
+synthetic_field) : **532 passed, 9 skipped, 0 failed** (28 min 05s).
+Vérifié visuellement par capture d'écran réelle (1920×1200) - la
+rangée d'onglets "Global | Route | Airport" apparaît correctement
+au-dessus de "TIME EVOLUTION (AWCI)", "Global" surligné par défaut,
+cohérent avec le style d'onglets de la photo de référence.

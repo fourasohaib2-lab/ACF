@@ -9,16 +9,17 @@ je veux que tout le dashboard soit exactement comme la photo à 100%").
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 from PySide6.QtWidgets import QApplication
 
 from acf.awci.calculator import AWCICalculator
 from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
 from acf.gui.dashboard.awci_cross_section import AWCICrossSection
-from acf.gui.dashboard.awci_dashboard import _ALL_VERTICAL_PROFILE_LEVELS_HPA, AWCIDashboard
+from acf.gui.dashboard.awci_dashboard import _ALL_VERTICAL_PROFILE_LEVELS_HPA, _AIRPORTS, AWCIDashboard
 from acf.gui.dashboard.awci_evolution_chart import AWCIEvolutionChart
 from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
-from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs
+from acf.gui.dashboard.awci_synthetic_field import _synthetic_inputs, route_profile
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile
 
 
@@ -138,3 +139,120 @@ def test_atmospheric_profile_stays_on_its_own_honest_placeholder_in_demo_mode(qa
     dashboard = AWCIDashboard()
     dashboard.refresh()
     assert dashboard.atmospheric_profile._point is None
+
+
+# ------------------------ evolution chart: Global/Route/Airport toggle (§22)
+
+
+def test_evolution_toggle_defaults_to_global_with_global_button_checked(qapp):
+    dashboard = AWCIDashboard()
+    assert dashboard._evolution_view_mode == "global"
+    assert dashboard.evolution_view_buttons["global"].isChecked()
+    assert not dashboard.evolution_view_buttons["route"].isChecked()
+    assert not dashboard.evolution_view_buttons["airport"].isChecked()
+
+
+def test_clicking_route_button_checks_it_exclusively_and_updates_mode(qapp):
+    dashboard = AWCIDashboard()
+    dashboard.evolution_view_buttons["route"].click()
+
+    assert dashboard._evolution_view_mode == "route"
+    assert dashboard.evolution_view_buttons["route"].isChecked()
+    assert not dashboard.evolution_view_buttons["global"].isChecked()
+    assert not dashboard.evolution_view_buttons["airport"].isChecked()
+
+
+def test_clicking_airport_button_checks_it_exclusively_and_updates_mode(qapp):
+    dashboard = AWCIDashboard()
+    dashboard.evolution_view_buttons["airport"].click()
+
+    assert dashboard._evolution_view_mode == "airport"
+    assert dashboard.evolution_view_buttons["airport"].isChecked()
+    assert not dashboard.evolution_view_buttons["global"].isChecked()
+    assert not dashboard.evolution_view_buttons["route"].isChecked()
+
+
+def test_route_mode_series_matches_a_direct_recomputation_of_route_profile(qapp):
+    """Real proof the "Route" mode is not fabricated - its plotted
+    mean/max match an independent direct recomputation via the same
+    real route_profile() sampled at the same real active route/offsets
+    _compute_demo_evolution_series() itself uses."""
+    dashboard = AWCIDashboard()
+    dashboard.refresh()
+    dashboard.evolution_view_buttons["route"].click()
+
+    current_hour = dashboard.time_slider.value()
+    expected_hours = [float((current_hour + offset) % 24) for offset in range(-6, 7, 2)]
+    expected_means = []
+    expected_maxes = []
+    for offset in range(-6, 7, 2):
+        _distances, scores = route_profile(
+            dashboard._regional_route[0][:2], dashboard._regional_route[1][:2],
+            n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+        )
+        expected_means.append(float(np.mean(scores)))
+        expected_maxes.append(float(np.max(scores)))
+
+    plotted_hours = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
+    plotted_mean = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
+    plotted_max = list(dashboard.evolution_chart.axis.lines[1].get_ydata())
+    assert plotted_hours == pytest.approx(expected_hours)
+    assert plotted_mean == pytest.approx(expected_means)
+    assert plotted_max == pytest.approx(expected_maxes)
+
+
+def test_route_mode_mean_and_max_genuinely_differ_a_route_is_not_one_point():
+    """Unlike "global"/"airport" (a single point - mean == max by
+    construction), a route spans real distinct points, so its real
+    mean and max must genuinely differ at at least one real offset -
+    proof this mode is actually richer, not a relabeled duplicate."""
+    dashboard = AWCIDashboard()
+    dashboard.refresh()
+
+    _hours, means, maxes = dashboard._compute_demo_evolution_series("route")
+
+    assert means != maxes
+
+
+def test_global_and_airport_modes_have_identical_mean_and_max_a_single_point_has_no_spread(qapp):
+    dashboard = AWCIDashboard()
+    dashboard.refresh()
+
+    _hours_g, means_g, maxes_g = dashboard._compute_demo_evolution_series("global")
+    _hours_a, means_a, maxes_a = dashboard._compute_demo_evolution_series("airport")
+
+    assert means_g == maxes_g
+    assert means_a == maxes_a
+
+
+def test_airport_mode_series_matches_a_direct_recomputation_at_the_selected_departure_airport(qapp):
+    dashboard = AWCIDashboard()
+    dashboard.refresh()
+    dashboard.evolution_view_buttons["airport"].click()
+
+    icao = dashboard.route_from_selector.currentData()
+    lat, lon, _name = _AIRPORTS[icao]
+    expected_values = [
+        AWCICalculator().calculate(
+            _synthetic_inputs(lat, lon, flight_level_hpa=dashboard._current_flight_level_hpa, time_offset_hours=float(offset))
+        )["awci"]
+        for offset in range(-6, 7, 2)
+    ]
+
+    plotted_mean = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
+    assert plotted_mean == pytest.approx(expected_values)
+
+
+def test_refresh_redraws_the_currently_selected_mode_not_always_global(qapp):
+    """A real refresh() (e.g. moving the Valid Time slider) must
+    respect whichever mode the user last picked, not silently reset to
+    "global" - see _refresh_evolution_chart()'s own docstring."""
+    dashboard = AWCIDashboard()
+    dashboard.evolution_view_buttons["route"].click()
+
+    dashboard.refresh()
+
+    assert dashboard._evolution_view_mode == "route"
+    _hours, means, maxes = dashboard._compute_demo_evolution_series("route")
+    plotted_mean = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
+    assert plotted_mean == pytest.approx(means)

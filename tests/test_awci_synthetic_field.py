@@ -14,6 +14,7 @@ from acf.gui.dashboard.awci_synthetic_field import (
     awci_grid_full,
     cross_section_field,
     cross_section_phase_severity_field,
+    route_profile,
 )
 
 
@@ -153,6 +154,48 @@ def test_cross_section_phase_severity_field_is_cached_a_repeated_call_is_a_real_
 
     assert cross_section_phase_severity_field.cache_info().hits == 1
     assert second == first
+
+
+def test_route_profile_time_offset_hours_defaults_to_bit_identical_behavior():
+    """Master Prompt V3 §22 - route_profile() gained time_offset_hours,
+    threaded straight to awci_at()'s own real time shift. Every existing
+    caller (omitting the new kwarg) must stay bit-identical."""
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances_default, scores_default = route_profile(point_a, point_b, n_points=8)
+    distances_explicit_zero, scores_explicit_zero = route_profile(point_a, point_b, n_points=8, time_offset_hours=0.0)
+
+    assert distances_default == distances_explicit_zero
+    assert scores_default == scores_explicit_zero
+
+
+def test_route_profile_time_offset_hours_produces_a_real_different_series():
+    """A nonzero real time offset must actually shift the synthetic
+    time-varying pattern - a route sampled +6h is genuinely different
+    from the same route at t=0, the same real mechanism the
+    point-of-interest +/-6h sampling already relies on."""
+    point_a, point_b = (36.75, 3.06), (32.90, 13.19)
+    distances_t0, scores_t0 = route_profile(point_a, point_b, n_points=10, time_offset_hours=0.0)
+    distances_t6, scores_t6 = route_profile(point_a, point_b, n_points=10, time_offset_hours=6.0)
+
+    assert distances_t0 == distances_t6  # geometry (distance along the path) is time-independent
+    assert scores_t0 != scores_t6  # the real synthetic field is genuinely time-varying
+
+
+def test_route_profile_time_offset_hours_matches_a_direct_awci_at_call():
+    """route_profile() must not recompute anything of its own - each
+    point's score is exactly awci_at(lat, lon, flight_level_hpa,
+    time_offset_hours)['awci'], the same real AWCICalculator call used
+    everywhere else in the dashboard."""
+    point_a, point_b = (40.64, -73.78), (49.01, 2.55)
+    distances, scores = route_profile(point_a, point_b, n_points=5, flight_level_hpa=250.0, time_offset_hours=3.0)
+
+    i = 2
+    t = i / 4
+    lat = point_a[0] + t * (point_b[0] - point_a[0])
+    lon = point_a[1] + t * (point_b[1] - point_a[1])
+    expected = awci_at(lat, lon, 250.0, 3.0)["awci"]
+
+    assert scores[i] == pytest.approx(expected)
 
 
 def test_cross_section_phase_severity_field_cache_correctly_misses_on_a_real_different_time_offset():
