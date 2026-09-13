@@ -117,6 +117,7 @@ class ACFTemporalLabPanel(QWidget):
         controls.addWidget(self._label("Variable:"))
         self.variable_selector = QComboBox()
         self.variable_selector.addItems(list(_VARIABLES.keys()))
+        self.variable_selector.setAccessibleName("Variable selector")
         self.variable_selector.currentTextChanged.connect(lambda _: self._redraw())
         controls.addWidget(self.variable_selector)
 
@@ -142,6 +143,7 @@ class ACFTemporalLabPanel(QWidget):
         self.frame_slider.setMaximum(0)
         self.frame_slider.setEnabled(False)
         self.frame_slider.setFixedWidth(200)
+        self.frame_slider.setAccessibleName("Frame selector")
         self.frame_slider.valueChanged.connect(lambda _: self._redraw())
         frame_row.addWidget(self.frame_slider)
         self.frame_label = QLabel("—")

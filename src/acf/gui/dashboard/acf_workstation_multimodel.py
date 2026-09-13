@@ -131,12 +131,14 @@ class ACFMultiModelLabPanel(QWidget):
         controls.addWidget(self._label("Model A:"))
         self.model_a_selector = QComboBox()
         self.model_a_selector.addItems(list(MODEL_CONFIGS.keys()))
+        self.model_a_selector.setAccessibleName("Model A selector")
         self.model_a_selector.setCurrentText(_DEFAULT_MODEL_A)
         controls.addWidget(self.model_a_selector)
 
         controls.addWidget(self._label("Model B:"))
         self.model_b_selector = QComboBox()
         self.model_b_selector.addItems(list(MODEL_CONFIGS.keys()))
+        self.model_b_selector.setAccessibleName("Model B selector")
         self.model_b_selector.setCurrentText(_DEFAULT_MODEL_B)
         controls.addWidget(self.model_b_selector)
 
@@ -165,6 +167,7 @@ class ACFMultiModelLabPanel(QWidget):
         display_row = QHBoxLayout()
         display_row.addWidget(self._label("Show:"))
         self.display_selector = QComboBox()
+        self.display_selector.setAccessibleName("Display field selector")
         self.display_selector.addItems(
             [
                 "Model A field",

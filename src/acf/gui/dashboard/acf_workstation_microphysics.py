@@ -123,6 +123,7 @@ class ACFMicrophysicsLabPanel(QWidget):
         controls.addWidget(self._label("Variable:"))
         self.variable_selector = QComboBox()
         self.variable_selector.addItems(list(_AUTO_VARIABLES.keys()))
+        self.variable_selector.setAccessibleName("Variable selector")
         self.variable_selector.currentTextChanged.connect(lambda _: self._redraw())
         controls.addWidget(self.variable_selector)
         controls.addStretch()

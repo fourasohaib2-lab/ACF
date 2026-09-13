@@ -123,6 +123,7 @@ class ACFGlobalTimelineWidget(QWidget):
         controls.addWidget(self._label("Speed:"))
         self.speed_selector = QComboBox()
         self.speed_selector.addItems(list(_SPEED_INTERVALS_MS.keys()))
+        self.speed_selector.setAccessibleName("Speed selector")
         # BUG FIX (2026-09-11, found during a full ACF Workstation rescan):
         # this selector's only reader was _on_play_toggled(), read once at
         # the moment Play is pressed - changing speed while already
@@ -141,6 +142,7 @@ class ACFGlobalTimelineWidget(QWidget):
         self.frame_slider.setMinimum(0)
         self.frame_slider.setMaximum(0)
         self.frame_slider.setEnabled(False)
+        self.frame_slider.setAccessibleName("Frame selector")
         self.frame_slider.valueChanged.connect(self._on_frame_changed)
         layout.addWidget(self.frame_slider)
 

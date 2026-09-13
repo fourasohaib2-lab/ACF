@@ -169,6 +169,7 @@ class ACFConvectionLabPanel(QWidget):
         controls.addWidget(self._label("Variable:"))
         self.variable_selector = QComboBox()
         self.variable_selector.addItems(list(_VARIABLES.keys()))
+        self.variable_selector.setAccessibleName("Variable selector")
         self.variable_selector.setEnabled(False)
         self.variable_selector.currentTextChanged.connect(lambda _: self._redraw())
         controls.addWidget(self.variable_selector)

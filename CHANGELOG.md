@@ -36,6 +36,19 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   noms accessibles à des boutons sans effet réel serait trompeur pour
   un lecteur d'écran, donc délibérément pas touché. Le reste de
   `acf.gui` porte déjà un libellé texte visible sur tous ses boutons.
+- 17 sélecteurs "valeur seule" (`QComboBox`/`QSlider`) corrigés à
+  travers les 13 Labs de la Workstation (`acf_workstation_{3d,
+  confidence,convection,dynamics,global_timeline,interactions,
+  microphysics,multimodel,overview,quality,temporal,terrain,
+  thermodynamics}.py`) : chacun a déjà un vrai label visible adjacent
+  (ex. "Variable:") mais Qt ne l'associe jamais automatiquement à un
+  lecteur d'écran (aucun `setBuddy()` dans ce code) - `setAccessibleName()`
+  ajouté en réutilisant exactement le texte du label déjà affiché,
+  même fix déjà appliqué aux sélecteurs du shell ACFWorkstation. 1
+  nouveau fichier de test consolidé (19 tests paramétrés). Les 11
+  autres fichiers utilisant `QComboBox`/`QSlider` (`esoc/*.py`,
+  `layer_panel.py`, `awci_dashboard.py`, `view_manager.py`) n'ont pas
+  cette structure uniforme et n'ont pas été traités cette passe.
 
 ### Added
 - Audit de conformité "ACF Master Prompt V4"

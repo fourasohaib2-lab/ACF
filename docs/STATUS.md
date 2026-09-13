@@ -1387,3 +1387,39 @@ et le reste de `acf_workstation_*.py`) portent déjà un libellé texte
 visible - pas le même gap de sévérité. Le grep systématique sur ce
 critère (icône pure, aucun texte) est maintenant épuisé pour tout
 `acf.gui`.
+
+## Mise à jour (2026-09-13, suite 8) : accessibilité — sélecteurs "valeur seule" des 13 Labs de la Workstation
+
+Après épuisement des vrais boutons icône-seule (suites 4/7), audit de
+la deuxième classe de gap déjà identifiée sur le shell ACFWorkstation
+lui-même (`model_selector`/`domain_selector`) : un `QComboBox`/
+`QSlider` a un vrai label visible adjacent (ex. "Variable:"), mais Qt
+ne l'associe jamais automatiquement à un lecteur d'écran (il faudrait
+soit `QLabel.setBuddy()` - jamais utilisé dans ce code -, soit un
+`accessibleName` explicite) - sans ça, un lecteur d'écran n'annonce
+que la valeur courante du sélecteur, sans contexte.
+
+Grep systématique de tous les `QComboBox()`/`QSlider(` restants sur
+`acf.gui` : 24 fichiers au total, dont **13 partagent une structure
+quasi identique** - les Labs de la Workstation
+(`acf_workstation_{3d,confidence,convection,dynamics,global_timeline,
+interactions,microphysics,multimodel,overview,quality,temporal,
+terrain,thermodynamics}.py`), chacun avec 1 à 3 sélecteurs de
+"Variable"/"Model"/"Speed"/"Frame"/"Show" déjà libellés visuellement.
+**17 sélecteurs corrigés** au total, en réutilisant systématiquement
+le texte du label réel déjà affiché à côté (jamais inventé) - même
+principe que le fix déjà appliqué au shell ACFWorkstation. 1 nouveau
+fichier de test consolidé (19 tests paramétrés, un par sélecteur -
+choix délibéré d'un seul fichier plutôt que 13 quasi-identiques,
+documenté dans son propre docstring) plutôt qu'une dispersion dans 13
+fichiers de test existants. 130 tests existants sur ces 13 panels +
+test de régression visuelle restent verts sans modification
+(changement de métadonnées uniquement, confirmé par exécution réelle).
+
+Les 11 autres fichiers du grep initial (`esoc/*.py`, `layer_panel.py`,
+`awci_dashboard.py`, `view_manager.py`) n'ont pas cette structure
+répétée uniforme - chacun demanderait une lecture individuelle de son
+propre contexte (label adjacent réel ou non, contrôle fonctionnel ou
+disclosed-mort comme `LayerPanel`) plutôt qu'un fix mécanique en lot -
+non traités cette passe, la valeur/risque restante y est nettement
+plus faible (moins de trafic utilisateur réel que les Labs).
