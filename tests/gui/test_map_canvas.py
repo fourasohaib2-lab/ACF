@@ -16,6 +16,21 @@ def qapp():
     return app
 
 
+def test_zoom_reset_buttons_have_a_real_accessible_name(qapp):
+    """The zoom in (+), zoom out (−), and reset view (⤢) buttons show no
+    visible text at all - same icon-only accessibility gap already
+    closed for AWCIMapPanel's own equivalent zoom stack (2026-09-13
+    master-prompt v4 gap audit), extended here to this base map widget
+    (used by MainWindow and every ESOC view built on it)."""
+    canvas = MapCanvas()
+
+    assert canvas.zoom_in_button.accessibleName() == "Zoom in"
+    assert canvas.zoom_out_button.accessibleName() == "Zoom out"
+    assert canvas.reset_view_button.accessibleName() == "Reset view"
+    assert canvas.reset_view_button.accessibleDescription() == canvas.reset_view_button.toolTip()
+    canvas.close()
+
+
 def test_map_canvas_initialization(qapp):
     canvas = MapCanvas()
     assert canvas is not None

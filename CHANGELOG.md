@@ -26,6 +26,16 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   non exhaustif (reste : température K/°C, autres champs 2D), mais ce
   premier passage réel ne confirme pas l'hypothèse initiale d'un
   problème d'unités latent.
+- Grep systématique de tous les contrôles icône-seule (`QPushButton`/
+  `QToolButton` à texte purement symbolique) restants sur `acf.gui` :
+  `MapCanvas` (zoom in/out, reset view - widget de base réutilisé par
+  `MainWindow`) avait le même gap déjà fermé sur `AWCIMapPanel`, non
+  couvert jusqu'ici. Corrigé. `LayerPanel` (add/remove/up/down) a le
+  même symptôme visuel mais s'est avéré être un contrôle déjà connu et
+  disclosed comme non fonctionnel (docstring existant) - ajouter des
+  noms accessibles à des boutons sans effet réel serait trompeur pour
+  un lecteur d'écran, donc délibérément pas touché. Le reste de
+  `acf.gui` porte déjà un libellé texte visible sur tous ses boutons.
 
 ### Added
 - Audit de conformité "ACF Master Prompt V4"

@@ -289,7 +289,7 @@ extension bornée.
 |---|---|
 | Architecture correcte identifiée avant travail | ✅ IMPLEMENTED (corrigée, disclosed à l'utilisateur) |
 | Bulk Richardson Number | ✅ IMPLEMENTED |
-| Accessibilité (shell principal + AWCIMapPanel + ACFGeneralDashboard) | ⚠️ PARTIALLY IMPLEMENTED (disclosed, portée limitée) |
+| Accessibilité (shell principal + AWCIMapPanel + ACFGeneralDashboard + MapCanvas) | ⚠️ PARTIALLY IMPLEMENTED (disclosed, portée limitée ; épuisement confirmé des vrais icône-seule dans `acf.gui`) |
 | Tests de régression visuelle | ✅ IMPLEMENTED (métrique tolérante, disclosed) |
 | Workflow Engine GUI | ❌ BLOCKED BY MISSING DEPENDENCY (Python 3.12+) |
 | "Datasets" nav séparé | ✅ IMPLEMENTED (déjà couvert par "DATA SOURCES", vérifié non-redondant à dupliquer) |

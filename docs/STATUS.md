@@ -1353,3 +1353,37 @@ non entièrement couverts) mais l'échantillon réel sur les 5 catégories
 les plus à risque ne confirme pas l'hypothèse initiale d'un problème
 d'unités latent. Documenté dans `CHANGELOG.md` comme "Checked (no code
 change)" plutôt que silencieusement ignoré.
+
+## Mise à jour (2026-09-13, suite 7) : accessibilité — `MapCanvas` (widget de base réutilisé par MainWindow)
+
+Extension bornée du deuxième chantier restant (accessibilité
+repo-wide) : grep systématique de tous les `QPushButton`/`QToolButton`
+icône-seule (texte à 1-3 caractères symboliques, ex. "+"/"−"/"⤢")
+restants sur l'ensemble de `acf.gui`, au-delà des fichiers déjà
+couverts.
+
+- **`acf.gui.map.map_canvas.MapCanvas`** (zoom in "+", zoom out "−",
+  reset view "⤢") : même gap que le fix déjà appliqué à `AWCIMapPanel`,
+  jamais couvert sur ce widget de base - réutilisé par `MainWindow` et
+  toutes les vues ESOC construites dessus (`view_manager.py`,
+  `map_rendering.py`, `map_export.py`, `map_status.py`). **Corrigé**
+  (`setAccessibleName`/`setAccessibleDescription(tooltip())`), 1 nouveau
+  test de régression.
+- **`acf.gui.layer_panel.LayerPanel`** (add "+"/remove "-"/up "↑"/down
+  "↓") : même symptôme visuel, mais investigation a révélé que ces 4
+  boutons sont un contrôle **déjà connu et disclosed comme non
+  fonctionnel** (docstring existant : "created here but never
+  connected to any handler... clicking +/-/up/down currently does
+  nothing... not fixed here: wiring this up would mean inventing the
+  intended UI flow"). Ajouter des noms/descriptions accessibles à des
+  boutons qui n'ont aucun effet réel serait trompeur pour un lecteur
+  d'écran (annoncer une action "Add layer" qui ne se produit jamais) -
+  **délibérément pas touché**, cohérent avec le principe déjà établi
+  "flagged rather than fabricated" de ce module.
+
+Tous les autres `QPushButton`/`QToolButton` restants dans `acf.gui`
+(y compris tous ceux de `esoc/panel_manager.py`, `awci_dashboard.py`,
+et le reste de `acf_workstation_*.py`) portent déjà un libellé texte
+visible - pas le même gap de sévérité. Le grep systématique sur ce
+critère (icône pure, aucun texte) est maintenant épuisé pour tout
+`acf.gui`.
