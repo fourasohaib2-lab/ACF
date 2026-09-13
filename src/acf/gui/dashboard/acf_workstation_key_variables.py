@@ -71,8 +71,13 @@ _MS_TO_KT = 1.9438445
 class KeyVariablesPanel(QWidget):
     """Real scalar Key Atmospheric Variables readout, icon + value + bar gauge."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, scale: float = 1.0) -> None:
         super().__init__(parent)
+        #: Real screen-adaptability scale (see
+        #: `acf.gui_screen_utils.compute_screen_scale`) - every fixed
+        #: pixel size this panel sets below is multiplied by it, so rows
+        #: genuinely shrink on a smaller real screen.
+        self._scale = scale
         #: Real, already-computed values of the most recent
         #: `update_from_volume()` call: the real convection-indices dict
         #: this panel computed (or was handed), and the real scalar
@@ -86,7 +91,7 @@ class KeyVariablesPanel(QWidget):
         self.last_center_values: dict[str, float] | None = None
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(5)
+        layout.setSpacing(max(1, round(5 * scale)))
 
         self._value_labels: dict[str, QLabel] = {}
         self._bars: dict[str, HorizontalBarGauge] = {}
@@ -118,14 +123,15 @@ class KeyVariablesPanel(QWidget):
         row = QWidget()
         row_layout = QVBoxLayout(row)
         row_layout.setContentsMargins(0, 0, 0, 0)
-        row_layout.setSpacing(3)
+        row_layout.setSpacing(max(1, round(3 * self._scale)))
 
+        icon_size = max(12, round(18 * self._scale))
         top = QHBoxLayout()
         icon_label = QLabel(icon)
-        icon_label.setFixedSize(18, 18)
+        icon_label.setFixedSize(icon_size, icon_size)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         icon_label.setStyleSheet(
-            f"background-color: {icon_bg}; border-radius: 9px; font-size: 9px;"
+            f"background-color: {icon_bg}; border-radius: {icon_size // 2}px; font-size: {max(7, round(9 * self._scale))}px;"
         )
         top.addWidget(icon_label)
 

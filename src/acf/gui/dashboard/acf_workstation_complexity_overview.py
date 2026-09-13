@@ -52,20 +52,22 @@ def _level_for(score: float) -> str:
 class ComplexityOverviewPanel(QWidget):
     """Real, disclosed-mean Complexity Overview gauge."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, scale: float = 1.0) -> None:
         super().__init__(parent)
         self.composite_score: float | None = None
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(16)
+        outer.setSpacing(max(6, round(16 * scale)))
 
         self.gauge = CircularGaugeWidget()
+        gauge_side = max(72, round(110 * scale))
+        self.gauge.setMinimumSize(gauge_side, gauge_side)
         outer.addWidget(self.gauge)
 
         self.factor_grid = QGridLayout()
-        self.factor_grid.setHorizontalSpacing(8)
-        self.factor_grid.setVerticalSpacing(6)
+        self.factor_grid.setHorizontalSpacing(max(3, round(8 * scale)))
+        self.factor_grid.setVerticalSpacing(max(2, round(6 * scale)))
         outer.addLayout(self.factor_grid, stretch=1)
 
         self._factor_labels: dict[str, QLabel] = {}

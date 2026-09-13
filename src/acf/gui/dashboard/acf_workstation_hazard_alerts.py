@@ -89,10 +89,13 @@ def _icing_level(wet_bulb_c: float | None) -> str:
 class HazardAlertsPanel(QWidget):
     """Real, threshold-based Key Alerts & Hazards panel."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, scale: float = 1.0) -> None:
         super().__init__(parent)
+        #: Real screen-adaptability scale (see
+        #: `acf.gui_screen_utils.compute_screen_scale`).
+        self._scale = scale
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
+        layout.setSpacing(max(4, round(12 * scale)))
 
         self._icons: dict[str, QLabel] = {}
         self._levels: dict[str, QLabel] = {}
@@ -104,12 +107,15 @@ class HazardAlertsPanel(QWidget):
 
     def _build_row(self, layout: QVBoxLayout, key: str, icon: str, title: str, subtitle: str) -> QLabel:
         row = QHBoxLayout()
-        row.setSpacing(10)
+        row.setSpacing(max(4, round(10 * self._scale)))
 
+        icon_size = max(18, round(28 * self._scale))
         icon_label = QLabel(icon)
-        icon_label.setFixedSize(28, 28)
+        icon_label.setFixedSize(icon_size, icon_size)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        icon_label.setStyleSheet("background-color: #4b5563; border-radius: 14px; font-size: 13px;")
+        icon_label.setStyleSheet(
+            f"background-color: #4b5563; border-radius: {icon_size // 2}px; font-size: {max(9, round(13 * self._scale))}px;"
+        )
         row.addWidget(icon_label)
         self._icons[key] = icon_label
 
@@ -135,7 +141,12 @@ class HazardAlertsPanel(QWidget):
 
     def _apply_level(self, key: str, level: str) -> None:
         icon_color, badge_color = _LEVEL_COLORS.get(level, _LEVEL_COLORS["NOT_COMPUTED"])
-        self._icons[key].setStyleSheet(f"background-color: {icon_color}; border-radius: 14px; font-size: 13px;")
+        icon = self._icons[key]
+        icon_size = icon.width() or max(18, round(28 * self._scale))
+        icon.setStyleSheet(
+            f"background-color: {icon_color}; border-radius: {icon_size // 2}px; "
+            f"font-size: {max(9, round(13 * self._scale))}px;"
+        )
         label = self._levels[key]
         label.setText(level)
         label.setStyleSheet(f"color: {badge_color}; font-weight: bold; font-size: 11px;")

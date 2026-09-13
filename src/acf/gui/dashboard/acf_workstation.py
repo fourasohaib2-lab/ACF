@@ -786,6 +786,7 @@ from acf.gui.dashboard.acf_workstation_footer import SystemFooterPanel
 from acf.gui.dashboard.acf_workstation_hazard_alerts import HazardAlertsPanel
 from acf.gui.dashboard.acf_workstation_key_variables import KeyVariablesPanel
 from acf.gui.dashboard.acf_workstation_model_agreement import ModelAgreementPanel
+from acf.gui_screen_utils import compute_screen_scale
 from acf.gui.dashboard.acf_workstation_sidebar import WorkstationSidebar
 
 # These 7 panels are real, recovered files that _build_ui() unconditionally
@@ -959,6 +960,16 @@ class ACFWorkstation(QWidget):
         #: never connected by this Workstation itself (it only READS
         #: whatever real status the manager honestly reports).
         self._hpc: Any | None = None
+        # Explicit user request ("je veux que la fenêtre soit adaptable
+        # automatiquement selon les différentes écrans") - a genuine
+        # scale factor from the REAL screen this window opens on
+        # (already used elsewhere in this codebase for exactly this -
+        # see gui_screen_utils.compute_screen_scale's own docstring,
+        # measured against real 1366x768/1280x800 laptops). Every fixed
+        # pixel size this composer sets below is multiplied by this, so
+        # the layout genuinely shrinks on a smaller real screen instead
+        # of forcing a fixed-size layout to scroll/clip.
+        self._ui_scale = compute_screen_scale(self)
         self._build_ui()
         self._setup_shortcuts()
         self.setStyleSheet(dashboard_stylesheet())
@@ -977,8 +988,9 @@ class ACFWorkstation(QWidget):
         deliberate, documented non-builds: the hero 2D/3D/4D + Layers
         controls, and the Vertical Cross Section cell)."""
         outer = QVBoxLayout(self)
-        outer.setSpacing(6)
-        outer.setContentsMargins(8, 6, 8, 0)
+        s = self._ui_scale
+        outer.setSpacing(max(2, round(6 * s)))
+        outer.setContentsMargins(round(8 * s), round(6 * s), round(8 * s), 0)
 
         # --- Top bar -----------------------------------------------------
         top_bar = QHBoxLayout()
@@ -1068,7 +1080,7 @@ class ACFWorkstation(QWidget):
         content = QWidget()
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(6)
+        content_layout.setSpacing(max(2, round(6 * s)))
 
         # --- Current Configuration bar -------------------------------------
         self.config_bar = ConfigBar()
@@ -1110,10 +1122,10 @@ class ACFWorkstation(QWidget):
         self.complexity_panel = ACFComplexityExplorerPanel()
         self.sounding_panel = ACFVerticalSoundingWidget()
 
-        self.key_variables_panel = KeyVariablesPanel()
-        self.complexity_overview_panel = ComplexityOverviewPanel()
+        self.key_variables_panel = KeyVariablesPanel(scale=self._ui_scale)
+        self.complexity_overview_panel = ComplexityOverviewPanel(scale=self._ui_scale)
         self.model_agreement_panel = ModelAgreementPanel()
-        self.hazard_alerts_panel = HazardAlertsPanel()
+        self.hazard_alerts_panel = HazardAlertsPanel(scale=self._ui_scale)
         self.footer_panel = SystemFooterPanel()
 
         self._lab_panels: dict[str, QWidget] = {
@@ -1132,7 +1144,7 @@ class ACFWorkstation(QWidget):
         # Evolution Lab's OWN real transport controls.
         self.hero_widget = self._section_box("Atmospheric Complexity")
         hero_layout = self.hero_widget.layout()
-        self.complexity_panel.spatial_map.setMinimumHeight(190)
+        self.complexity_panel.spatial_map.setMinimumHeight(round(190 * s))
         hero_layout.addWidget(self.complexity_panel.spatial_map, stretch=1)
         # Re-parenting spatial_map orphans its own "SPATIAL COMPLEXITY —"
         # header inside Complexity Explorer's own layout (still shown as a
@@ -1211,9 +1223,9 @@ class ACFWorkstation(QWidget):
         # remain reachable, minus their own map, under Science Labs below
         # - same disclosed tradeoff the hero's own re-parenting already
         # accepted for Complexity Explorer.
-        self.multimodel_panel.map_panel.setMinimumHeight(140)
+        self.multimodel_panel.map_panel.setMinimumHeight(round(140 * s))
         analysis_row.addWidget(self._wrap_in_box("Model Comparison", self.multimodel_panel.map_panel), stretch=1)
-        self.temporal_panel.map_panel.setMinimumHeight(140)
+        self.temporal_panel.map_panel.setMinimumHeight(round(140 * s))
         analysis_row.addWidget(self._wrap_in_box("Time Evolution", self.temporal_panel.map_panel), stretch=1)
         content_layout.addWidget(self.analysis_row_widget)
 
@@ -1287,8 +1299,9 @@ class ACFWorkstation(QWidget):
         box = QFrame()
         box.setStyleSheet(card_frame_style())
         layout = QVBoxLayout(box)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        s = self._ui_scale
+        layout.setContentsMargins(round(10 * s), round(8 * s), round(10 * s), round(8 * s))
+        layout.setSpacing(max(2, round(4 * s)))
         title_row = QHBoxLayout()
         heading = QLabel(title)
         heading.setStyleSheet(label_style("text_primary", "sm", "bold"))
