@@ -141,7 +141,7 @@ from acf.gui.dashboard.awci_hazard_row import AWCIHazardRow
 from acf.gui.dashboard.awci_toast import AWCIToastManager
 from acf.gui.dashboard.awci_map_panel import AWCIMapPanel, flight_level_ft_to_pressure_hpa
 from acf.gui.dashboard.awci_messages_panel import AWCIMessagesDialog
-from acf.gui.dashboard.awci_route_chart import AWCIRouteChart
+from acf.gui.dashboard.awci_route_chart import AWCIRouteChart, AWCIRouteSegmentTable
 from acf.gui.dashboard.awci_sidebar import AWCISidebar
 from acf.gui.dashboard.awci_situation_panel import (
     DEFAULT_AIRPORT_ICAO_CODES,
@@ -1426,11 +1426,21 @@ class AWCIDashboard(QWidget):
 
         self.route_chart.setMinimumHeight(min_panel_height)
 
+        # Real "Route Segments" breakdown (added 2026-09-13, Master
+        # Prompt V3 §20 - "highlight critical segments") - see
+        # AWCIRouteSegmentTable's own module docstring for the real
+        # equal-distance-bucket honest scope (this dashboard's route is
+        # a single real 2-point great-circle path, not yet a named
+        # multi-waypoint itinerary).
+        self.route_segment_table = AWCIRouteSegmentTable()
+
         analysis_row = QHBoxLayout()
         analysis_row.setSpacing(8)
         analysis_row.addWidget(_analysis_panel(self.cross_section), stretch=1)
         analysis_row.addWidget(_analysis_panel(self.atmospheric_profile), stretch=1)
-        analysis_row.addWidget(_analysis_panel(self.route_selector_widget, self.route_chart), stretch=1)
+        analysis_row.addWidget(
+            _analysis_panel(self.route_selector_widget, self.route_chart, self.route_segment_table), stretch=1
+        )
         analysis_row.addWidget(_analysis_panel(self.time_control_widget, self.evolution_chart), stretch=1)
         analysis_row.addWidget(
             _analysis_panel(self.vertical_profile_panel, self._vertical_profile_panel_suggestion_label), stretch=1
@@ -2027,6 +2037,7 @@ class AWCIDashboard(QWidget):
         # checkbox on the map, remain the real source of the same
         # underlying pattern for anyone who needs it).
         route_scores = self.route_chart.update_data(self._regional_route[0][:2], self._regional_route[1][:2], cruise_hpa=850.0)
+        self.route_segment_table.update_data(self.route_chart.last_distances_km, route_scores)
         overall_awci = max(route_scores) if route_scores is not None else point_result["awci"]
         # physical_score/forecast_score are for the point of interest, not
         # the route's worst point (unlike overall_awci above) - route-level
@@ -2465,6 +2476,7 @@ class AWCIDashboard(QWidget):
             lats, lons, awci_level, self._regional_route[0][:2], self._regional_route[1][:2], n_points=40
         )
         self.route_chart.set_external_route(route_distances, route_scores, f"REAL PHYSICS — {level_label}")
+        self.route_segment_table.update_data(route_distances, route_scores)
         self._current_model_label = "CoupledEarthSolver"
 
         # A single point's full module_scores breakdown, which the

@@ -13607,3 +13607,50 @@ detail) : **488 passed, 9 skipped, 0 failed** (27 min 23s). Vérifié
 visuellement par capture d'écran réelle (1920×1080) - "Main
 Contributors" visible avec de vrais pourcentages dans Current
 Situation.
+
+## Mise à jour 2026-09-13 (suite) — §20 Flight Route Analysis : Route Segments
+
+**Contexte** : suite de l'écart honnête Master Prompt V3 - §20 demande
+"for each segment calculate/display AWCI, dominant risk class;
+highlight critical segments" - la photo de référence montre une liste
+"ALG → TUN / TUN → FCO" avec AWCI/Risk par tronçon.
+
+**Portée honnête disclosed** : la route de ce dashboard est un seul
+vrai trajet grand-cercle à 2 points (départ/arrivée), pas encore un
+itinéraire multi-waypoints avec aéroports intermédiaires nommés -
+inventer des noms d'aéroports intermédiaires aurait été une
+fabrication. `AWCIRouteSegmentTable` (nouvelle classe,
+awci_route_chart.py) découpe donc la route en buckets réels de
+distance égale (défaut : 4), chaque ligne affichant la vraie moyenne
+des points réels déjà échantillonnés par `AWCIRouteChart` (jamais un
+second calcul) et son niveau de risque sur l'échelle AWCI partagée. Le
+segment le pire est signalé "⚠ Critical Zone" avec le même vrai seuil
+(AWCI ≥ 60) que l'annotation "High complexity area" du graphique
+lui-même (jamais un second seuil choisi indépendamment).
+
+**Intégré** dans le panneau "Flight Route Analysis" de la rangée
+d'analyse, mis à jour aux 2 vrais points de rafraîchissement où
+`route_chart` lui-même est redessiné (démo et Real Physics - le mode
+modèle importé ne touche pas `route_chart` aujourd'hui, limite déjà
+existante et disclosed).
+
+**Tests ajoutés** : 5 nouveaux dans `tests/test_awci_route_chart.py`
+(dont une preuve directe que chaque AWCI de segment est la vraie
+moyenne de son propre bucket réel, et 2 tests de seuil critique
+utilisant le vrai flag Qt `WA_WState_Hidden` plutôt que `isVisible()` -
+même piège déjà documenté ailleurs dans ce projet pour un widget jamais
+`.show()`é), 1 nouveau dans `test_awci_dashboard_route_selector.py`
+prouvant que le tableau se rafraîchit avec la vraie nouvelle route.
+
+**Validation** : 138 tests ciblés (reference_parity + synchronization +
+analysis_panels + component_clicks + route_chart + route_selector +
+situation_panel + execution_report + component_detail) : 138 passed, 7
+skipped, 0 failed. Suite complète (`tests/gui/` + fullscreen + alerts +
+stats_bar + screen_adaptability + component_detail + route_chart) :
+**507 passed, 9 skipped, 0 failed** (27 min 23s ; un premier run a
+avorté avec un "Fatal Python error: Aborted" pendant un `qtbot.
+waitUntil()` dans `test_awci_dashboard_imported_cross_section.py`, un
+fichier jamais touché par ce travail - confirmé être un incident
+d'environnement isolé, pas une vraie régression : ce même test passe
+seul à 4/4, et le relancement complet est passé intégralement au vert).
+Vérifié visuellement par capture d'écran réelle (1920×1200).

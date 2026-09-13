@@ -130,3 +130,22 @@ def test_choosing_the_same_airport_twice_is_rejected_honestly(qtbot):
 
     mock_warning.assert_called_once()
     assert dashboard._regional_route == route_before  # unchanged, not silently applied anyway
+
+
+def test_applying_a_route_refreshes_the_real_segment_table(qtbot):
+    """Master Prompt V3 §20 - the segment table must reflect the newly
+    applied real route, not a stale one, via the SAME real
+    (last_distances_km, route_scores) the route chart itself was just
+    redrawn with (never a second/independent sampling)."""
+    dashboard = AWCIDashboard()
+    qtbot.addWidget(dashboard)
+
+    dashboard.route_from_selector.setCurrentIndex(list(_AIRPORTS).index("EGLL"))
+    dashboard.route_to_selector.setCurrentIndex(list(_AIRPORTS).index("EDDF"))
+    dashboard._on_apply_route()
+
+    assert dashboard.route_segment_table._rows_layout.count() >= 1
+    expected_span = f"{dashboard.route_chart.last_distances_km[0]:.0f}"
+    first_row = dashboard.route_segment_table._rows_layout.itemAt(0).layout()
+    first_segment_label = first_row.itemAt(0).widget().text()
+    assert first_segment_label.startswith(expected_span)

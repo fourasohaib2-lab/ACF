@@ -180,3 +180,75 @@ def test_comparison_mode_does_not_use_a_polycollection(qtbot):
 
     collections = [c for c in chart.axis.collections if isinstance(c, PolyCollection)]
     assert collections == []
+
+
+# ------------------------------------------------------ AWCIRouteSegmentTable
+
+
+def test_segment_table_shows_an_honest_empty_state_before_any_real_route(qtbot):
+    from acf.gui.dashboard.awci_route_chart import AWCIRouteSegmentTable
+
+    table = AWCIRouteSegmentTable()
+    qtbot.addWidget(table)
+    table.update_data(None, None)
+    assert table._rows_layout.count() == 1
+
+
+def test_segment_table_builds_n_segments_from_a_real_route(qtbot):
+    from acf.gui.dashboard.awci_route_chart import AWCIRouteSegmentTable
+
+    table = AWCIRouteSegmentTable(n_segments=4)
+    qtbot.addWidget(table)
+    chart = AWCIRouteChart()
+    scores = chart.update_data(_POINT_A, _POINT_B, cruise_hpa=850.0)
+
+    table.update_data(chart.last_distances_km, scores)
+
+    assert table._rows_layout.count() == 4
+
+
+def test_segment_table_awci_is_the_real_mean_of_its_own_real_bucket(qtbot):
+    """Real proof: no fabricated per-segment number - each row's AWCI
+    is the direct mean of the SAME real per-point scores array already
+    passed in, over the real points whose real distance falls in that
+    segment's own real range."""
+    from acf.gui.dashboard.awci_route_chart import AWCIRouteSegmentTable
+
+    distances = [0.0, 25.0, 50.0, 75.0, 100.0]
+    scores = [10.0, 20.0, 30.0, 40.0, 50.0]
+    table = AWCIRouteSegmentTable(n_segments=2)
+    table.update_data(distances, scores)
+
+    first_row = table._rows_layout.itemAt(0).layout()
+    first_awci_text = first_row.itemAt(1).widget().text()
+    # First segment (0-50 km) covers real points at 0/25/50 km (both
+    # boundaries real-inclusive) -> real mean of [10, 20, 30] = 20.
+    assert first_awci_text == "20"
+
+
+def test_segment_table_flags_a_real_critical_zone_above_the_shared_threshold(qtbot):
+    """Qt's own isVisible() reflects EFFECTIVE visibility (the whole
+    parent chain must be shown on screen too, not just this widget's
+    own setVisible(True) flag - a never-.show()'d widget always
+    reports isVisible()=False regardless, the same real gotcha already
+    documented elsewhere in this codebase, e.g. _stop_evolution_
+    playback()'s own NOTE) - checked via the real internal flag Qt
+    exposes for exactly this case instead."""
+    from PySide6.QtCore import Qt
+    from acf.gui.dashboard.awci_route_chart import AWCIRouteSegmentTable
+
+    table = AWCIRouteSegmentTable(n_segments=2)
+    table.update_data([0.0, 50.0, 100.0], [10.0, 90.0, 95.0])
+
+    assert not table.critical_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)
+    assert "Critical Zone" in table.critical_label.text()
+
+
+def test_segment_table_shows_no_critical_zone_when_nothing_crosses_the_threshold(qtbot):
+    from PySide6.QtCore import Qt
+    from acf.gui.dashboard.awci_route_chart import AWCIRouteSegmentTable
+
+    table = AWCIRouteSegmentTable(n_segments=2)
+    table.update_data([0.0, 50.0, 100.0], [10.0, 20.0, 15.0])
+
+    assert table.critical_label.testAttribute(Qt.WidgetAttribute.WA_WState_Hidden)

@@ -29,10 +29,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.collections import PolyCollection
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from acf.gui.dashboard.awci_colors import AWCI_CMAP
+from acf.gui.dashboard.awci_colors import AWCI_CMAP, level_for, risk_qcolor
 from acf.gui.dashboard.awci_synthetic_field import route_profile
+from acf.gui.theme_tokens import TOKENS
 
 
 class AWCIRouteChart(QWidget):
@@ -205,3 +206,126 @@ class AWCIRouteChart(QWidget):
         self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.18)
         self.canvas.draw_idle()
+
+
+class AWCIRouteSegmentTable(QFrame):
+    """Real "Route Segments" breakdown (added 2026-09-13, closing
+    Master Prompt V3 §20's "for each segment calculate/display AWCI,
+    dominant risk class; highlight critical segments" - the reference
+    photo's own per-leg segment list, e.g. "ALG -> TUN" / "TUN -> FCO").
+
+    Honest scope: this dashboard's own route is a single real 2-point
+    great-circle path (departure/arrival - see AWCIDashboard's own
+    route selector), not yet a multi-waypoint itinerary with named
+    intermediate airports - showing fabricated intermediate airport
+    names would misrepresent that. Segments are instead real, honest
+    equal-distance buckets of the SAME real per-point samples
+    AWCIRouteChart already plots (never a second/independent
+    computation) - each row's AWCI is the real mean of every real
+    sampled point whose real distance falls in that bucket, and its
+    risk level reuses the exact same shared AWCI scale
+    (acf.gui.dashboard.awci_colors.level_for()) every other panel on
+    this dashboard already uses. The single worst segment is flagged
+    "Critical Zone" using the exact same real >= 60 threshold
+    AWCIRouteChart's own "High complexity area" chart annotation
+    already uses (see this module's own _draw()) - never a second,
+    independently-chosen threshold.
+    """
+
+    #: Same real threshold as this module's own _draw() "High
+    #: complexity area" chart annotation - one real, shared definition
+    #: of "critical" for this route, never two independently-chosen
+    #: thresholds that could silently disagree.
+    CRITICAL_AWCI_THRESHOLD = 60.0
+
+    def __init__(self, n_segments: int = 4, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._n_segments = max(1, n_segments)
+        self.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_sm}px;")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(2)
+
+        title = QLabel("Route Segments")
+        title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 9px; font-weight: bold; border: none;")
+        layout.addWidget(title)
+
+        header_row = QHBoxLayout()
+        for text, stretch in (("Segment", 3), ("AWCI", 1), ("Risk", 2)):
+            header_label = QLabel(text)
+            header_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 8px; border: none;")
+            header_row.addWidget(header_label, stretch=stretch)
+        layout.addLayout(header_row)
+
+        self._rows_layout = QVBoxLayout()
+        self._rows_layout.setSpacing(1)
+        layout.addLayout(self._rows_layout)
+
+        self.critical_label = QLabel("")
+        self.critical_label.setWordWrap(True)
+        self.critical_label.setStyleSheet(f"color: {TOKENS.warning}; font-size: 8px; font-weight: bold; border: none; margin-top: 2px;")
+        self.critical_label.setVisible(False)
+        layout.addWidget(self.critical_label)
+
+    def update_data(self, distances_km: Any, scores: Any) -> None:
+        """`distances_km`/`scores` are the SAME real arrays
+        AWCIRouteChart._draw() itself just plotted (e.g. from
+        AWCIRouteChart.last_distances_km + the caller's own already-
+        computed real scores) - never resampled/recomputed here."""
+        while self._rows_layout.count():
+            item = self._rows_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self.critical_label.setVisible(False)
+
+        distances = list(distances_km) if distances_km is not None else []
+        values = list(scores) if scores is not None else []
+        if len(distances) < 2 or len(values) < 2 or len(distances) != len(values):
+            empty = QLabel("No real route sampled yet.")
+            empty.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 8px; border: none;")
+            self._rows_layout.addWidget(empty)
+            return
+
+        span_start, span_end = distances[0], distances[-1]
+        span = span_end - span_start
+        n_segments = self._n_segments
+        worst_mean = -1.0
+        worst_label = ""
+        for seg_idx in range(n_segments):
+            seg_start = span_start + span * seg_idx / n_segments
+            seg_end = span_start + span * (seg_idx + 1) / n_segments
+            # Real, inclusive-both-ends bucketing at the boundaries so
+            # the first/last real sampled point are never silently
+            # dropped from every segment's own real mean.
+            bucket = [
+                value for distance, value in zip(distances, values)
+                if (seg_start <= distance <= seg_end) or (seg_idx == n_segments - 1 and distance == span_end)
+            ]
+            if not bucket:
+                continue
+            mean_awci = float(np.mean(bucket))
+            level = level_for(mean_awci)
+            seg_label = f"{seg_start:.0f}–{seg_end:.0f} km"
+            if mean_awci > worst_mean:
+                worst_mean = mean_awci
+                worst_label = seg_label
+
+            row = QHBoxLayout()
+            name_label = QLabel(seg_label)
+            name_label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 8px; border: none;")
+            awci_label = QLabel(f"{mean_awci:.0f}")
+            awci_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 8px; border: none;")
+            color = risk_qcolor(level)
+            risk_label = QLabel(level)
+            risk_label.setStyleSheet(
+                f"color: rgb({color.red()},{color.green()},{color.blue()}); font-size: 8px; font-weight: bold; border: none;"
+            )
+            row.addWidget(name_label, stretch=3)
+            row.addWidget(awci_label, stretch=1)
+            row.addWidget(risk_label, stretch=2)
+            self._rows_layout.addLayout(row)
+
+        if worst_mean >= self.CRITICAL_AWCI_THRESHOLD:
+            self.critical_label.setText(f"⚠ Critical Zone: {worst_label} (AWCI {worst_mean:.0f})")
+            self.critical_label.setVisible(True)
