@@ -28,6 +28,17 @@ Real formulas, all reused as-is - nothing new invented
   kept separate so this per-point panel never pays that function's
   own full-grid elevation/Froude-number cost (~0.5s at AROME's own
   full resolution) just to read one value.
+- Bulk Richardson Number (BRN): `acf.science.bulk_richardson_number.
+  BulkRichardsonNumber` - real formula BRN = 2*CAPE/shear^2, real
+  Weisman & Klemp (1982) classification thresholds (<10 "Weak", 10-45
+  "Supercell", >45 "Multicell") - computed from the SAME real CAPE/
+  shear already fetched above for this exact point, zero new data
+  access. Added 2026-09-13 closing a real gap found during the ACF
+  master-prompt audit: this formula already existed in
+  `acf.science.bulk_richardson_number` (with its own passing tests)
+  but was never wired into any GUI panel anywhere in this codebase
+  (verified via grep before this fix). Honestly "n/a" when shear is
+  exactly 0 (BRN is undefined, not a fabricated infinite/zero value).
 
 Updated together with the Vertical Complexity Sounding panel, at the
 same real clicked point - see `acf_workstation.py`'s own
@@ -45,9 +56,10 @@ from acf.awci.convective_energy import compute_real_cape_cin_at_point
 from acf.awci.wind_shear import compute_real_wind_shear_at_point
 from acf.awci.workstation_fields import compute_real_near_surface_static_stability_at_point
 from acf.gui.theme_tokens import label_style
+from acf.science.bulk_richardson_number import BulkRichardsonNumber
 
 #: Real, ordered index names shown by ACFStabilityIndicesWidget.
-INDEX_NAMES: tuple[str, ...] = ("CAPE", "CIN", "Wind Shear", "Static Stability (N)")
+INDEX_NAMES: tuple[str, ...] = ("CAPE", "CIN", "Wind Shear", "Static Stability (N)", "Bulk Richardson Number")
 
 
 def compute_real_stability_indices_at_point(volume: dict[str, Any], lat: float, lon: float) -> dict[str, Any]:
@@ -71,13 +83,23 @@ def compute_real_stability_indices_at_point(volume: dict[str, Any], lat: float, 
         float(t_profile[0]), float(t_profile[1]), float(p_profile[0]), float(p_profile[1])
     )
 
+    shear_m_s = shear["shear_m_s"]
+    if shear_m_s == 0:
+        brn = None  # BRN = 2*CAPE/shear^2 is genuinely undefined at shear==0 - honestly None, never a fabricated value.
+        brn_category = None
+    else:
+        brn = BulkRichardsonNumber.calculate(cape=cape_cin["cape_j_kg"], shear=shear_m_s)
+        brn_category = BulkRichardsonNumber.category(brn)
+
     return {
         "lat": float(lats[lat_idx]),
         "lon": float(lons[lon_idx]),
         "cape_j_kg": cape_cin["cape_j_kg"],
         "cin_j_kg": cape_cin["cin_j_kg"],
-        "bulk_wind_shear_ms": shear["shear_m_s"],
+        "bulk_wind_shear_ms": shear_m_s,
         "static_stability_n_s1": static_stability,
+        "bulk_richardson_number": brn,
+        "bulk_richardson_category": brn_category,
     }
 
 
@@ -108,6 +130,13 @@ class ACFStabilityIndicesWidget(QWidget):
         self._set("CIN", indices["cin_j_kg"], "J/kg")
         self._set("Wind Shear", indices["bulk_wind_shear_ms"], "m/s")
         self._set("Static Stability (N)", indices["static_stability_n_s1"], "s⁻¹", digits=4)
+        brn = indices.get("bulk_richardson_number")
+        category = indices.get("bulk_richardson_category")
+        label = self._labels["Bulk Richardson Number"]
+        if brn is None:
+            label.setText("n/a")
+        else:
+            label.setText(f"{brn:.1f} ({category})")
 
     def _set(self, name: str, value: float | None, unit: str, digits: int = 1) -> None:
         label = self._labels[name]

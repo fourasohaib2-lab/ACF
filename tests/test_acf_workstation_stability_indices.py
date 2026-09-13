@@ -64,3 +64,24 @@ def test_cape_cin_are_real_non_negative_values():
 
     assert result["cape_j_kg"] >= 0.0
     assert result["cin_j_kg"] >= 0.0
+
+
+def test_bulk_richardson_number_matches_a_real_independent_call():
+    """Regression guard (2026-09-13, master-prompt gap audit): BRN
+    already existed in acf.science.bulk_richardson_number but was never
+    wired into any GUI panel - closes that gap using the exact same
+    CAPE/shear this panel already computes, no second formula."""
+    from acf.science.bulk_richardson_number import BulkRichardsonNumber
+
+    volume = _real_volume()
+    lat, lon = float(volume["lats"][2]), float(volume["lons"][4])
+
+    result = compute_real_stability_indices_at_point(volume, lat, lon)
+
+    if result["bulk_wind_shear_ms"] == 0:
+        assert result["bulk_richardson_number"] is None
+        assert result["bulk_richardson_category"] is None
+    else:
+        expected = BulkRichardsonNumber.calculate(cape=result["cape_j_kg"], shear=result["bulk_wind_shear_ms"])
+        assert result["bulk_richardson_number"] == expected
+        assert result["bulk_richardson_category"] == BulkRichardsonNumber.category(expected)

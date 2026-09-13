@@ -46,3 +46,18 @@ def test_set_indices_shows_n_a_for_a_real_none_value(qapp):
     widget.set_indices({"cape_j_kg": 0.0, "cin_j_kg": 0.0, "bulk_wind_shear_ms": 5.0, "static_stability_n_s1": None})
 
     assert widget._labels["Static Stability (N)"].text() == "n/a"
+    assert widget._labels["Bulk Richardson Number"].text() == "n/a"
+
+
+def test_set_indices_shows_the_real_bulk_richardson_number_and_category(qapp):
+    widget = ACFStabilityIndicesWidget()
+    volume = compute_real_complexity_volume(model="ALADIN", n_lat=10, n_lon=18, n_levels=8, steps=3, perturbation_scale=2.0, seed=1)
+    indices = compute_real_stability_indices_at_point(volume, lat=10.0, lon=20.0)
+
+    widget.set_indices(indices)
+
+    if indices["bulk_richardson_number"] is None:
+        assert widget._labels["Bulk Richardson Number"].text() == "n/a"
+    else:
+        assert f"{indices['bulk_richardson_number']:.1f}" in widget._labels["Bulk Richardson Number"].text()
+        assert indices["bulk_richardson_category"] in widget._labels["Bulk Richardson Number"].text()
