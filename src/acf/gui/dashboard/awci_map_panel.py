@@ -93,7 +93,6 @@ from acf.gui.map.awci_colors import AWCI_CMAP, LEVELS, level_for
 from acf.gui.dashboard.awci_synthetic_field import awci_grid, awci_layer_grids
 from acf.gui.map.map_camera import MapCamera
 from acf.gui.map.map_events import EventMixin
-from acf.gui.map.mtg_basemap import MTGBasemapProvider, MTGUpdateReceiver, make_mtg_update_forwarder
 from acf.gui.theme_tokens import TOKENS, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.awci_map_panel")

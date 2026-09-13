@@ -788,49 +788,18 @@ from acf.gui.dashboard.acf_workstation_key_variables import KeyVariablesPanel
 from acf.gui.dashboard.acf_workstation_model_agreement import ModelAgreementPanel
 from acf.gui.dashboard.acf_workstation_sidebar import WorkstationSidebar
 
-# Conditional imports for modules that may be under rebuild
-ACFComplexityExplorerPanel = None
-ACFConfidenceLabPanel = None
-ACFMultiModelLabPanel = None
-ACFOverviewPanel = None
-ACFVerticalSoundingWidget = None
-ACFTemporalLabPanel = None
-ACFThermodynamicsLabPanel = None
-
-try:
-    from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
-except ImportError:
-    pass
-
-try:
-    from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
-except ImportError:
-    pass
+# These 7 panels are real, recovered files that _build_ui() unconditionally
+# instantiates - no fallback path exists if any import fails, so guarding
+# them with try/except ImportError: pass would only hide a real breakage
+# behind a silent `None`. Left unconditional (no remaining guarded sibling
+# imports for genuinely-not-recovered panels exist in this file).
+from acf.gui.dashboard.acf_workstation_complexity import ACFComplexityExplorerPanel
+from acf.gui.dashboard.acf_workstation_confidence import ACFConfidenceLabPanel
+from acf.gui.dashboard.acf_workstation_multimodel import ACFMultiModelLabPanel
+from acf.gui.dashboard.acf_workstation_overview import ACFOverviewPanel
+from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
+from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
+from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
 from acf.gui.theme_tokens import dashboard_stylesheet, label_style
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
@@ -1741,11 +1710,15 @@ class ACFWorkstation(QWidget):
 
     def _on_section_selected(self, section: str) -> None:
         """Real sidebar routing - scrolls the real content column to the
-        real area that section corresponds to, and opens the two real
-        dialogs the "Data" sub-entries genuinely have behind them. A
-        sub-entry with no real, already-built correspondence says so
-        honestly in the status line rather than silently doing nothing
-        or pretending to navigate somewhere."""
+        section's anchor (`_SECTION_ANCHORS`), and opens the two real
+        dialogs the "Data" sub-entries genuinely have behind them
+        (Models / Observations). Most sidebar sub-entries only get this
+        generic section-anchor scroll with no further message. Exactly
+        three sub-entries, all under Analysis (3D Volumes, 4D
+        Space-Time, Cross Sections), additionally report their own real
+        absence honestly in the status line rather than silently doing
+        nothing or pretending to navigate somewhere real - the other
+        ~20 sub-entries do not yet have this disclosure."""
         subsection = self.sidebar.current_subsection()
 
         if section == "Data" and subsection == "Models":
@@ -1755,9 +1728,7 @@ class ACFWorkstation(QWidget):
             self._show_observations_dialog()
             return
 
-        if section == "Science" and subsection in self._lab_panels:
-            self.science_tabs.setCurrentWidget(self._lab_panels[subsection])
-        elif section == "Science" and subsection == "Complexity":
+        if section == "Science" and subsection == "Complexity":
             self.science_tabs.setCurrentWidget(self.complexity_panel)
         elif section == "Science" and subsection == "Thermodynamics":
             self.science_tabs.setCurrentWidget(self.thermodynamics_panel)

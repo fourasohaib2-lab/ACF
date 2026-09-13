@@ -73,11 +73,22 @@ class ModelAgreementPanel(QWidget):
         self._bars: dict[str, QProgressBar] = {}
 
     def update_from_disagreement(self, per_model_field: dict[str, Any], spread_field: Any) -> None:
-        # Clear previous rows.
+        # Clear previous rows. Each row was added via
+        # `self._rows_layout.addLayout(row)` (a QHBoxLayout, not a widget),
+        # so `item.widget()` is always None for these items - the widgets
+        # actually live one level down, inside that sub-layout. Drain the
+        # sub-layout's own items and delete the widgets found there too,
+        # or stale rows survive (and keep displaying) past this clear.
         while self._rows_layout.count():
             item = self._rows_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+            inner_layout = item.layout()
+            if inner_layout is not None:
+                while inner_layout.count():
+                    inner_item = inner_layout.takeAt(0)
+                    if inner_item.widget():
+                        inner_item.widget().deleteLater()
         self._bars.clear()
         self.model_scores = {}
 

@@ -106,6 +106,31 @@ def test_footer_data_sources_default_before_any_update(qapp, qtbot):
     assert "NOT_CHECKED" in panel.aladin_status_label.text()
 
 
+def test_footer_running_jobs_default_before_any_update_is_honest(qapp, qtbot):
+    panel = SystemFooterPanel()
+    qtbot.addWidget(panel)
+    text = panel.running_jobs_label.text()
+    assert "NOT_CHECKED" in text
+    assert "Running Jobs: 0" != text
+
+
+def test_footer_running_jobs_honest_when_active_jobs_count_missing(qapp, qtbot):
+    """A status dict missing `active_jobs_count` must render an honest
+    NOT_CHECKED placeholder, not a fabricated `0`."""
+    panel = SystemFooterPanel()
+    qtbot.addWidget(panel)
+    hpc = MagicMock()
+    hpc.get_status_summary.return_value = {
+        "connected": True,
+        "scheduler": "Slurm",
+        # active_jobs_count intentionally absent.
+    }
+    hpc.meteorological_stack = {}
+    panel.update_from_hpc(hpc)
+    assert "NOT_CHECKED" in panel.running_jobs_label.text()
+    assert "Running Jobs: 0" != panel.running_jobs_label.text()
+
+
 def test_footer_appends_activity_log_lines(qapp, qtbot):
     panel = SystemFooterPanel()
     qtbot.addWidget(panel)

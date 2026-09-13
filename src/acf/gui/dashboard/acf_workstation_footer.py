@@ -52,7 +52,7 @@ class SystemFooterPanel(QWidget):
         self.system_status_label.setStyleSheet(label_style("text_primary", "sm"))
         layout.addWidget(self.system_status_label)
 
-        self.running_jobs_label = QLabel("Running Jobs: 0")
+        self.running_jobs_label = QLabel(f"Running Jobs: {_NOT_CHECKED_TEXT}")
         self.running_jobs_label.setStyleSheet(label_style("text_secondary", "sm"))
         layout.addWidget(self.running_jobs_label)
 
@@ -76,12 +76,15 @@ class SystemFooterPanel(QWidget):
         status = hpc.get_status_summary()
         connected = bool(status.get("connected"))
         scheduler = status.get("scheduler") or "NOT_AVAILABLE"
-        active_jobs = status.get("active_jobs_count", 0)
+        active_jobs = status.get("active_jobs_count")
 
         self.system_status_label.setText(
             f"{'Connected' if connected else 'Not Connected'} — Scheduler: {scheduler}"
         )
-        self.running_jobs_label.setText(f"Running Jobs: {active_jobs}")
+        if active_jobs is not None:
+            self.running_jobs_label.setText(f"Running Jobs: {active_jobs}")
+        else:
+            self.running_jobs_label.setText(f"Running Jobs: {_NOT_CHECKED_TEXT}")
 
         stack = getattr(hpc, "meteorological_stack", {}) or {}
         self.arome_status_label.setText(

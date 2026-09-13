@@ -55,6 +55,7 @@ from acf.gui.theme_tokens import label_style
 # ever re-exported it) - imported from there directly, unconditionally,
 # since it genuinely exists.
 from acf.awci.workstation_fields import real_grid_spacing_m
+from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
 
 # Conditional import for a module still under rebuild.
 AWCIModelSpreadChart = None
@@ -63,7 +64,6 @@ try:
     from acf.gui.dashboard.awci_model_spread_chart import AWCIModelSpreadChart
 except ImportError:
     pass
-from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
 
 #: Same real point-of-interest convention already established
 #: elsewhere in this codebase (awci_dashboard.py's _REGIONAL_ROUTE,

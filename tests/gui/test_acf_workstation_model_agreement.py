@@ -2,9 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QEvent
+from PySide6.QtWidgets import QApplication, QProgressBar
 
 from acf.gui.dashboard.acf_workstation_model_agreement import ModelAgreementPanel
+
+
+def _flush_deferred_deletes(qapp: QApplication) -> None:
+    """`deleteLater()` only schedules a deferred-delete event - it is not
+    applied until the event loop actually processes it. Flush that
+    explicitly so a `findChildren()` check right after an update reflects
+    real widget removal rather than pending-but-not-yet-applied deletes."""
+    qapp.sendPostedEvents(None, QEvent.DeferredDelete)
+    qapp.processEvents()
+    qapp.sendPostedEvents(None, QEvent.DeferredDelete)
 
 
 @pytest.fixture(scope="module")
@@ -93,3 +104,41 @@ def test_model_agreement_with_no_real_models_is_honest(qapp, qtbot):
     panel.update_from_disagreement({}, None)
     assert panel.model_scores == {}
     assert "NOT_COMPUTED" in panel.verdict_label.text()
+
+
+def test_model_agreement_clears_stale_rows_on_no_models(qapp, qtbot):
+    """Regression: rows were added via `self._rows_layout.addLayout(row)`
+    (a QHBoxLayout, not a widget), so the old clear loop's `item.widget()`
+    was always None and nothing was ever actually removed - stale
+    agreement bars from a previous run survived a later "no models"
+    result, showing real-looking bars underneath a
+    NOT_COMPUTED_NO_MODELS_AVAILABLE verdict."""
+    panel = ModelAgreementPanel()
+    qtbot.addWidget(panel)
+
+    panel.update_from_disagreement(
+        {
+            "AROME": np.full((4, 4), 10.0),
+            "ALADIN": np.full((4, 4), 10.5),
+        },
+        np.full((4, 4), 1.0),
+    )
+    _flush_deferred_deletes(qapp)
+    assert len(panel.findChildren(QProgressBar)) == 2
+
+    panel.update_from_disagreement(
+        {
+            "ARPEGE": np.full((4, 4), 9.0),
+            "WRF": np.full((4, 4), 12.0),
+            "AROME": np.full((4, 4), 11.0),
+        },
+        np.full((4, 4), 1.0),
+    )
+    _flush_deferred_deletes(qapp)
+    assert len(panel.findChildren(QProgressBar)) == 3
+
+    panel.update_from_disagreement({}, None)
+    _flush_deferred_deletes(qapp)
+    assert panel.model_scores == {}
+    assert "NOT_COMPUTED" in panel.verdict_label.text()
+    assert len(panel.findChildren(QProgressBar)) == 0
