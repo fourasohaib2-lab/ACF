@@ -203,9 +203,12 @@ class ACFComplexityExplorerPanel(QWidget):
         consensus_row.addWidget(self.consensus_status_label)
         consensus_row.addStretch()
         layout.addLayout(consensus_row)
-        self.spread_chart = AWCIModelSpreadChart("MODEL DISAGREEMENT")
-        self.spread_chart.setMinimumHeight(160)
-        layout.addWidget(self.spread_chart)
+        self.spread_chart = (
+            AWCIModelSpreadChart("MODEL DISAGREEMENT") if AWCIModelSpreadChart is not None else None
+        )
+        if self.spread_chart is not None:
+            self.spread_chart.setMinimumHeight(160)
+            layout.addWidget(self.spread_chart)
 
     @staticmethod
     def _header(text: str) -> QLabel:
@@ -295,9 +298,10 @@ class ACFComplexityExplorerPanel(QWidget):
         self.consensus_status_label.setText(
             f"✅ Real disagreement spread: {result['disagreement_spread']:.3f} (mean {result['disagreement_mean']:.2f})"
         )
-        self.spread_chart.set_data(
-            result["per_model_value"], result["disagreement_mean"], result["disagreement_spread"], "Temperature (K)"
-        )
+        if self.spread_chart is not None:
+            self.spread_chart.set_data(
+                result["per_model_value"], result["disagreement_mean"], result["disagreement_spread"], "Temperature (K)"
+            )
 
     def _on_consensus_failed(self, message: str) -> None:
         self.consensus_button.setEnabled(True)

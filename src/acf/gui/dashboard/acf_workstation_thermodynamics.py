@@ -264,9 +264,14 @@ class ACFThermodynamicsLabPanel(QWidget):
         # Real thumbnail strip (added Phase 38, 2026-09-05, matching
         # the reference mockup's own bottom "THERMODYNAMICS LAB"
         # thumbnail row) - see _THUMBNAIL_VARIABLES/_all_auto_fields().
-        self.thumbnail_strip = ACFVariableThumbnailStrip(list(_THUMBNAIL_VARIABLES))
-        self.thumbnail_strip.variableSelected.connect(self.variable_selector.setCurrentText)
-        layout.addWidget(self.thumbnail_strip)
+        self.thumbnail_strip = (
+            ACFVariableThumbnailStrip(list(_THUMBNAIL_VARIABLES))
+            if ACFVariableThumbnailStrip is not None
+            else None
+        )
+        if self.thumbnail_strip is not None:
+            self.thumbnail_strip.variableSelected.connect(self.variable_selector.setCurrentText)
+            layout.addWidget(self.thumbnail_strip)
 
         # --- CAPE/CIN (on-demand, full-column real parcel ascent) ---
         layout.addWidget(
@@ -396,12 +401,13 @@ class ACFThermodynamicsLabPanel(QWidget):
 
         fields = self._all_auto_fields()
         field = fields[variable]
-        for name in _THUMBNAIL_VARIABLES:
-            thumb_spec = _AUTO_VARIABLES[name]
-            thumb_field = fields[name]
-            thumb_vmin = thumb_spec["vmin"] if thumb_spec["vmin"] is not None else float(np.nanpercentile(thumb_field, 5))
-            thumb_vmax = thumb_spec["vmax"] if thumb_spec["vmax"] is not None else float(np.nanpercentile(thumb_field, 95))
-            self.thumbnail_strip.set_field(name, thumb_field, thumb_spec["cmap"], thumb_vmin, thumb_vmax)
+        if self.thumbnail_strip is not None:
+            for name in _THUMBNAIL_VARIABLES:
+                thumb_spec = _AUTO_VARIABLES[name]
+                thumb_field = fields[name]
+                thumb_vmin = thumb_spec["vmin"] if thumb_spec["vmin"] is not None else float(np.nanpercentile(thumb_field, 5))
+                thumb_vmax = thumb_spec["vmax"] if thumb_spec["vmax"] is not None else float(np.nanpercentile(thumb_field, 95))
+                self.thumbnail_strip.set_field(name, thumb_field, thumb_spec["cmap"], thumb_vmin, thumb_vmax)
 
         spec = _AUTO_VARIABLES[variable]
         # A None vmin/vmax (θ-e - see _AUTO_VARIABLES' own comment)
