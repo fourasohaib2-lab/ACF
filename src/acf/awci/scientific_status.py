@@ -168,6 +168,7 @@ NORMALIZER_RANGE_STATUS: dict[str, ThresholdStatus] = {
     "mountain_wave_severity": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Severity = 1 - clip(Fr, 0, 1) - the Fr=1 threshold itself is a real, classic physical dividing line (flow blocking/intense stationary waves below it, smoother flow-over above it - acf.awci.orographic_froude.compute_real_mountain_wave_froude_number_at_point()), but treating severity as exactly linear in (1-Fr) between 0 and 1, and exactly 0 above Fr=1, is an ACF design choice, not a published severity index. The underlying real Fr=U/(N*H) formula itself is a real, classic, cited aviation-meteorology diagnostic (ICAO Doc 9817 Wind Shear; AMS Aviation Meteorology)."),
     "confidence": ThresholdStatus(ScientificStatus.CONFIRMED, "Range 0..100% is a real, exact unit definition, not an empirical choice."),
     "temporal": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..20 (default max_change) - unitless, not sourced; caller-overridable."),
+    "spatial_complexity_gradient": ThresholdStatus(ScientificStatus.HYPOTHESIS, "Range 0..5.0 K/100km - a real, commonly cited order-of-magnitude for a sharp synoptic frontal gradient, not sourced from a specific climatology."),
 }
 
 #: Status for Normalizer.ENSEMBLE_SPREAD_REFERENCE / MODEL_DISAGREEMENT_REFERENCE -

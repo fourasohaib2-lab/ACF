@@ -73,6 +73,14 @@ def test_every_real_normalizer_range_has_a_status():
         assert variable in NORMALIZER_RANGE_STATUS, variable
 
 
+def test_spatial_complexity_gradient_range_has_a_real_status():
+    """Added 2026-09-13 (Normalizer.normalize_spatial_complexity_gradient(),
+    user-requested visual parity with the reference mockup's "Complexity
+    Index" card) - same disclosure discipline as every other range."""
+    assert "spatial_complexity_gradient" in NORMALIZER_RANGE_STATUS
+    assert get_normalizer_range_status("spatial_complexity_gradient").status == ScientificStatus.HYPOTHESIS
+
+
 def test_confidence_range_is_genuinely_confirmed_not_a_blanket_hypothesis():
     """0-100% is an exact unit definition, not an empirical choice -
     real proof the registry makes a genuine distinction, not a uniform

@@ -37,39 +37,69 @@ see `compute_real_key_metrics_at_point()`'s own docstring and this
 module's `ACFOverviewLandingPanel.set_key_metrics()`/
 `set_consensus_result()` for exactly what backs each value.
 
-Two deliberate, disclosed departures from the mockup's own numbers -
-this project's own master spec (§21/§67) explicitly and repeatedly
-forbids exactly the kind of single fabricated composite/normalized
-score the mockup's raw "0.72"/"78% High" style implies:
+Update (2026-09-13, explicit user request "reproduire exactement comme
+le mockup") - policy change on the 2 items below, superseding Phase
+44's own original rejection. The user was shown this exact tension
+(fabricated-looking composite score vs. this project's own master-spec
+§21/§67 anti-fabrication rule) and explicitly chose to reproduce the
+mockup's numbers anyway. This is honored WITHOUT reintroducing a
+silent, ungrounded fabrication: both composites below are computed by
+`Normalizer` methods this codebase already had (or, for spatial
+complexity, one new method added the same way, see
+`Normalizer.normalize_spatial_complexity_gradient()`'s own docstring) -
+every one of them already carries the same "HYPOTHESIS-level,
+disclosed" scientific-status classification
+(`acf.awci.scientific_status`) every other `Normalizer.normalize_*()`
+call in this codebase already has. The real underlying physical value
+(CAPE in J/kg, shear in m/s, ...) is ALWAYS still shown alongside the
+normalized score - never replaced or hidden - so the real number a
+scientist would want is one glance away, not lost:
 
-1. The mockup's "Complexity Index" card (a single 0-1 composite) is
-   replaced here with **Spatial Complexity** (K/100km) - one of
-   Complexity Explorer's own 3 already-real, already-disclosed,
-   never-combined complexity dimensions
-   (`acf_workstation_complexity.compute_real_spatial_complexity()`),
-   sampled at this page's own point of interest. "Instability" and
-   "Shear" ARE the real CAPE (J/kg) and bulk wind shear (m/s) already
-   computed by Stability Indices' own `compute_real_stability_indices_
-   at_point()` - shown with their real physical units, not squeezed
-   into a fabricated unitless 0-1 range. "Moisture" is the real
-   relative humidity (%) `compute_real_theta_e_at_point()` already
-   derives - the same real function the Map Inspector and
-   Microphysics Lab already use.
-2. The mockup's circular "Agreement Level: 78% High" gauge implies a
-   normalized confidence percentage that does not exist anywhere in
-   this codebase's real model-consensus math - `ModelConsensusEngine.
-   compute_real_multi_model_disagreement()` returns a real spread/mean
-   in the compared field's own physical unit (K for temperature), not
-   a percentage; inventing a 0-100% mapping from it (with no real,
-   disclosed reference scale to normalize against) would itself be a
-   fabricated composite score. This page instead shows the real
-   per-model values and the real spread, in real units - the exact
-   same real numbers Complexity Explorer's own "Model Disagreement"
-   dimension already surfaces, reused here (same engine, a separate,
-   independently-triggered real computation) rather than reinvented.
-   Only the real 3 MODEL_CONFIGS models this codebase actually has
+1. **Key Metrics cards** now show a real normalized 0-1 score matching
+   the mockup's own card style, computed as: Complexity Index =
+   `Normalizer.normalize_spatial_complexity_gradient(spatial_complexity_
+   k_per_100km)`; Instability = `Normalizer.normalize_cape(cape_j_kg)`;
+   Moisture = `relative_humidity_pct / 100.0` (already a real 0-100
+   quantity - just a fraction instead of a percentage, no new
+   normalization); Shear = `Normalizer.normalize_wind_shear(bulk_wind_
+   shear_ms)`. Each card's tooltip discloses this is a normalized
+   fraction against a disclosed-but-unvalidated reference range, not a
+   validated scientific index, and the real physical value stays
+   printed on the card itself.
+2. **Model Consensus "Agreement Level" gauge** reuses `Normalizer.
+   normalize_model_disagreement()` - the EXACT SAME real function
+   `acf_general_dashboard.ACFGeneralDashboard._on_consensus_ready()`
+   already calls for its own "MODEL UNCERTAINTY" gauge (see that
+   file), so this is not a new fabrication pattern, it is extending an
+   already-shipped one for consistency between ACF's two dashboards.
+   Note the semantic inversion versus that sibling gauge: "agreement"
+   is high when disagreement is low, so this page shows
+   `(1 - normalize_model_disagreement(spread, variable)) * 100`, not
+   the raw normalized value. The qualitative "High"/"Moderate"/"Low"
+   label under the gauge is a new, disclosed, unvalidated 3-tier split
+   of that percentage (>=70/>=40/below - an ACF design choice, not an
+   externally published threshold, same honesty caveat as e.g.
+   `Normalizer.normalize_mountain_wave_severity()`'s own disclosed
+   tiering) - and this reference scale is only defined for
+   `MODEL_DISAGREEMENT_REFERENCE["temperature"]` today (see that
+   dict's own docstring), so the gauge honestly shows "N/A" rather
+   than a fabricated percentage if consensus is ever computed for a
+   different field. The real per-model values and real spread (in K)
+   are kept exactly as before, unchanged - only the gauge is new. Only
+   the real 3 `MODEL_CONFIGS` models this codebase actually has
    (AROME/ALADIN/ARPEGE) are compared - the mockup's own 4th "WRF" row
    has no real backing anywhere in this codebase, so it is not shown.
+
+Two things the mockup shows that are deliberately still NOT reproduced,
+because they are a different kind of fabrication (identity, not a
+score) that was never part of the question put to the user: the
+mockup's user avatar/name ("Jean Dupont") stays the real OS account
+name (`getpass.getuser()`) - inventing a person's identity is not what
+"look like the mockup" was about. The mockup's single-screen layout
+(map + cross-section + 3D view + diagnostics all on one page) is not
+merged into this Overview page - see this session's own plan for why
+that is a separate, larger, un-requested navigation-architecture
+change, not a visual-styling one.
 
 Phase 45 (2026-09-12, "continue selon ton jugement") added the real
 "Alerts & Hazards" and "Quick Actions" sections.
@@ -121,32 +151,42 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
-from PySide6.QtWidgets import QGridLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFrame, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.ai.decision_support.decision_engine import ForecastDecisionEngine
+from acf.awci.normalizer import Normalizer
 from acf.awci.theta_e import compute_real_theta_e_at_point
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation_complexity import compute_real_spatial_complexity
 from acf.gui.dashboard.acf_workstation_stability_indices import compute_real_stability_indices_at_point
-from acf.gui.theme_tokens import label_style
+from acf.gui.dashboard.awci_gauge import AWCIGauge
+from acf.gui.theme_tokens import TOKENS, apply_elevation, label_style
 
 #: Real (risk_level -> token color name) - matches ForecastDecisionEngine.
 #: assess_severe_weather_risk()'s own real, cited risk levels exactly.
+#: FAIBLE maps to "success" (green) here, not the neutral "text_muted" a
+#: plain-text label used before the 2026-09-13 colored-badge restyle -
+#: "no real threshold crossed" is a genuinely good outcome, and a green
+#: badge reads that way at a glance the way muted grey text did not.
 _RISK_LEVEL_COLOR: dict[str, str] = {
-    "FAIBLE": "text_muted",
+    "FAIBLE": "success",
     "MODÉRÉ": "warning",
     "ÉLEVÉ": "warning",
     "CRITIQUE / EXTRÊME": "danger",
 }
 
-#: Real, ordered (label, dict-key, unit, decimal digits) for the Key
-#: Metrics row - see compute_real_key_metrics_at_point()'s own
-#: docstring for what each real value is.
-_KEY_METRICS: tuple[tuple[str, str, str, int], ...] = (
-    ("Spatial Complexity", "spatial_complexity_k_per_100km", "K/100km", 2),
-    ("Instability (CAPE)", "cape_j_kg", "J/kg", 0),
-    ("Moisture (RH)", "relative_humidity_pct", "%", 1),
-    ("Shear", "bulk_wind_shear_ms", "m/s", 2),
+#: Real, ordered (mockup card title, dict-key, unit, decimal digits,
+#: Normalizer function, accent token) for the Key Metrics cards - see
+#: compute_real_key_metrics_at_point()'s own docstring for what each
+#: real physical value is, and this module's own docstring (2026-09-13
+#: update) for why each also gets a real, disclosed 0-1 normalized
+#: score matching the reference mockup's card style.
+_KEY_METRICS: tuple[tuple[str, str, str, int, Any, str], ...] = (
+    ("Complexity Index", "spatial_complexity_k_per_100km", "K/100km", 2, Normalizer.normalize_spatial_complexity_gradient, "success"),
+    ("Instability", "cape_j_kg", "J/kg", 0, Normalizer.normalize_cape, "warning"),
+    ("Moisture", "relative_humidity_pct", "%", 1, lambda pct: pct / 100.0, "accent_primary"),
+    ("Shear", "bulk_wind_shear_ms", "m/s", 2, Normalizer.normalize_wind_shear, "accent_secondary"),
 )
 
 
@@ -243,27 +283,72 @@ class ACFOverviewLandingPanel(QWidget):
         status_layout.addWidget(self.model_info_label)
         layout.addWidget(status_group)
 
-        # --- Key Metrics (Phase 44, 2026-09-12) - real per-point values,
-        # see compute_real_key_metrics_at_point()'s own docstring for
-        # exactly what backs each one and why this differs from the new
-        # reference mockup's own fabricated-looking 0-1 numbers.
+        # --- Key Metrics (Phase 44, 2026-09-12; restyled as colored
+        # cards with a real normalized score 2026-09-13, explicit user
+        # request to match the reference mockup's own card style - see
+        # this module's own docstring for exactly what backs each real
+        # physical value AND each normalized score, and why neither is
+        # a silent fabrication).
         metrics_group = QGroupBox("Key Metrics")
-        metrics_grid = QGridLayout(metrics_group)
-        self._metric_value_labels: dict[str, QLabel] = {}
+        metrics_outer = QVBoxLayout(metrics_group)
         self._metric_point_label = QLabel("No real point of interest yet - click a map, or run a real analysis first.")
         self._metric_point_label.setWordWrap(True)
         self._metric_point_label.setStyleSheet(label_style("text_muted", "xs"))
-        metrics_grid.addWidget(self._metric_point_label, 0, 0, 1, 2)
-        for i, (label, key, unit, _digits) in enumerate(_KEY_METRICS):
-            row = i // 2 + 1
-            col = (i % 2) * 2
-            name_label = QLabel(label)
-            name_label.setStyleSheet(label_style("text_secondary", "xs", "bold"))
+        metrics_outer.addWidget(self._metric_point_label)
+        metrics_grid = QGridLayout()
+        metrics_grid.setSpacing(TOKENS.spacing_md)
+        #: Real normalized 0-1 score per card (big number) - separate
+        #: from `_metric_value_labels` below, which stays the real
+        #: physical value (kept for exact backward compatibility with
+        #: this widget's own existing tests/callers).
+        self._metric_score_labels: dict[str, QLabel] = {}
+        #: Real physical value + unit (small text under the score) -
+        #: name kept from before the 2026-09-13 card restyle; existing
+        #: callers/tests read this dict for the real physical value.
+        self._metric_value_labels: dict[str, QLabel] = {}
+        self._metric_delta_labels: dict[str, QLabel] = {}
+        #: Real previous-run normalized scores, for the real session-
+        #: to-session delta shown on each card (see set_key_metrics()) -
+        #: None until a 2nd real "Analyze"/map-click has happened; never
+        #: a fabricated trend from a single real data point.
+        self._previous_normalized_scores: dict[str, float] | None = None
+        for i, (title, key, unit, _digits, _normalizer, color_token) in enumerate(_KEY_METRICS):
+            card = QFrame()
+            card.setStyleSheet(
+                f"QFrame {{ background-color: {TOKENS.bg_card}; border: 1px solid {TOKENS.border}; "
+                f"border-left: 4px solid {getattr(TOKENS, color_token)}; border-radius: {TOKENS.radius_md}px; }}"
+            )
+            apply_elevation(card, blur_radius=18, y_offset=4, opacity=0.3)
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(TOKENS.spacing_md, TOKENS.spacing_sm, TOKENS.spacing_md, TOKENS.spacing_sm)
+            card_layout.setSpacing(2)
+            title_label = QLabel(title)
+            title_label.setStyleSheet(label_style("text_secondary", "xs", "bold"))
+            card_layout.addWidget(title_label)
+            score_row = QHBoxLayout()
+            score_label = QLabel("—")
+            score_label.setStyleSheet(label_style("text_primary", "xl", "bold"))
+            score_row.addWidget(score_label)
+            delta_label = QLabel()
+            delta_label.setStyleSheet(label_style("text_muted", "xs", "bold"))
+            score_row.addWidget(delta_label)
+            score_row.addStretch()
+            card_layout.addLayout(score_row)
             value_label = QLabel("—")
-            value_label.setStyleSheet(label_style("text_primary", "lg", "bold"))
-            metrics_grid.addWidget(name_label, row, col)
-            metrics_grid.addWidget(value_label, row, col + 1)
+            value_label.setStyleSheet(label_style("text_muted", "xs"))
+            value_label.setToolTip(
+                "Real normalized fraction (Normalizer, HYPOTHESIS-level disclosed reference "
+                "range - not an externally validated scientific index) of the real physical "
+                "value shown below. Added 2026-09-13 at explicit user request to match the "
+                "reference mockup's card style - see this module's own docstring."
+            )
+            card.setToolTip(value_label.toolTip())
+            card_layout.addWidget(value_label)
+            self._metric_score_labels[key] = score_label
             self._metric_value_labels[key] = value_label
+            self._metric_delta_labels[key] = delta_label
+            metrics_grid.addWidget(card, i // 2, i % 2)
+        metrics_outer.addLayout(metrics_grid)
         layout.addWidget(metrics_group)
 
         # --- Model Consensus (Phase 44, 2026-09-12) - real, on-demand
@@ -292,10 +377,37 @@ class ACFOverviewLandingPanel(QWidget):
         self.consensus_status_label.setStyleSheet(label_style("text_muted", "xs"))
         consensus_row.addWidget(self.consensus_status_label, stretch=1)
         consensus_layout.addLayout(consensus_row)
+
+        # --- Agreement Level gauge (2026-09-13, explicit user request
+        # to match the mockup's own circular gauge) - see this module's
+        # own docstring for the real Normalizer.normalize_model_
+        # disagreement() reuse and the semantic inversion involved.
+        gauge_row = QHBoxLayout()
+        gauge_col = QVBoxLayout()
+        gauge_caption = QLabel("Agreement Level")
+        gauge_caption.setStyleSheet(label_style("text_muted", "xs"))
+        gauge_caption.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        gauge_col.addWidget(gauge_caption)
+        self.consensus_gauge = AWCIGauge()
+        self.consensus_gauge.setFixedSize(90, 90)
+        self.consensus_gauge.setToolTip(
+            "Real (1 - Normalizer.normalize_model_disagreement(spread, variable)) * 100 -\n"
+            "the same real normalizer ACFGeneralDashboard's own 'MODEL UNCERTAINTY' gauge\n"
+            "already uses, inverted here to read as agreement. HYPOTHESIS-level disclosed\n"
+            "reference range, not an externally validated confidence score. Only defined\n"
+            "for the 'temperature' field today - shows N/A otherwise."
+        )
+        gauge_col.addWidget(self.consensus_gauge)
+        self.consensus_gauge_label = QLabel("—")
+        self.consensus_gauge_label.setStyleSheet(label_style("text_muted", "xs", "bold"))
+        self.consensus_gauge_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        gauge_col.addWidget(self.consensus_gauge_label)
+        gauge_row.addLayout(gauge_col)
         self.consensus_models_label = QLabel()
         self.consensus_models_label.setWordWrap(True)
         self.consensus_models_label.setStyleSheet(label_style("text_secondary", "sm"))
-        consensus_layout.addWidget(self.consensus_models_label)
+        gauge_row.addWidget(self.consensus_models_label, stretch=1)
+        consensus_layout.addLayout(gauge_row)
         layout.addWidget(consensus_group)
 
         # --- Alerts & Hazards (Phase 45, 2026-09-12) - real, threshold-
@@ -373,19 +485,42 @@ class ACFOverviewLandingPanel(QWidget):
     def set_key_metrics(self, metrics: dict[str, Any]) -> None:
         """Real per-point Key Metrics, from `compute_real_key_metrics_
         at_point()`'s own real result - never called with a fabricated
-        dict."""
+        dict. Also computes each card's real normalized score (see
+        module docstring, 2026-09-13 update) and, when a previous real
+        call already populated `_previous_normalized_scores`, a real
+        session-to-session delta - never a delta from a single point."""
         self._metric_point_label.setText(
             f"Point of interest: {metrics['lat']:.2f}°N, {metrics['lon']:.2f}°E (real surface level)."
         )
-        for label, key, unit, digits in _KEY_METRICS:
+        new_scores: dict[str, float] = {}
+        for _title, key, unit, digits, normalizer, _color_token in _KEY_METRICS:
             value = metrics.get(key)
-            widget = self._metric_value_labels[key]
+            value_widget = self._metric_value_labels[key]
+            score_widget = self._metric_score_labels[key]
+            delta_widget = self._metric_delta_labels[key]
             if value is None:
-                widget.setText("N/A")
-                widget.setStyleSheet(label_style("text_muted", "lg", "bold"))
+                value_widget.setText("N/A")
+                value_widget.setStyleSheet(label_style("text_muted", "xs"))
+                score_widget.setText("—")
+                delta_widget.setText("")
+                continue
+            value_widget.setText(f"{value:.{digits}f} {unit}")
+            value_widget.setStyleSheet(label_style("text_muted", "xs"))
+            score = float(normalizer(value))
+            new_scores[key] = score
+            score_widget.setText(f"{score:.2f}")
+            if self._previous_normalized_scores is not None and key in self._previous_normalized_scores:
+                previous_score = self._previous_normalized_scores[key]
+                if previous_score > 0:
+                    pct_change = (score - previous_score) / previous_score * 100.0
+                    arrow = "↑" if pct_change >= 0 else "↓"
+                    delta_widget.setText(f"{arrow} {pct_change:+.0f}%")
+                    delta_widget.setStyleSheet(label_style("success" if pct_change >= 0 else "danger", "xs", "bold"))
+                else:
+                    delta_widget.setText("")
             else:
-                widget.setText(f"{value:.{digits}f} {unit}")
-                widget.setStyleSheet(label_style("text_primary", "lg", "bold"))
+                delta_widget.setText("")
+        self._previous_normalized_scores = new_scores
 
     def set_consensus_pending(self) -> None:
         self.consensus_button.setEnabled(False)
@@ -412,6 +547,26 @@ class ACFOverviewLandingPanel(QWidget):
         lines = [f"{model}: {value:.2f} K" for model, value in result["per_model_value"].items()]
         self.consensus_models_label.setText(" · ".join(lines))
 
+        # Real Agreement Level gauge (2026-09-13) - see module docstring
+        # for the real Normalizer.normalize_model_disagreement() reuse,
+        # the semantic inversion, and why "temperature" is the only
+        # field with a real reference scale today.
+        try:
+            normalized_disagreement = Normalizer.normalize_model_disagreement(result["disagreement_spread"], variable_label)
+        except KeyError:
+            self.consensus_gauge.set_score(0.0, animate=False)
+            self.consensus_gauge_label.setText("N/A")
+            return
+        agreement_pct = (1.0 - normalized_disagreement) * 100.0
+        self.consensus_gauge.set_score(agreement_pct, animate=True)
+        if agreement_pct >= 70.0:
+            tier = "High"
+        elif agreement_pct >= 40.0:
+            tier = "Moderate"
+        else:
+            tier = "Low"
+        self.consensus_gauge_label.setText(f"{agreement_pct:.0f}% {tier}")
+
     def set_consensus_failed(self, message: str) -> None:
         self.consensus_button.setEnabled(True)
         self.consensus_status_label.setText(f"⚠ Real computation failed: {message}")
@@ -422,9 +577,19 @@ class ACFOverviewLandingPanel(QWidget):
         a fabricated dict. See module docstring for the disclosed
         CAPE+shear-only scope."""
         risk_level = assessment["risk_level"]
-        color = _RISK_LEVEL_COLOR.get(risk_level, "text_primary")
-        self.alerts_risk_label.setText(f"Risk level: {risk_level}")
-        self.alerts_risk_label.setStyleSheet(label_style(color, "sm", "bold"))
+        color_token = _RISK_LEVEL_COLOR.get(risk_level, "text_muted")
+        self.alerts_risk_label.setText(f"  Risk level: {risk_level}  ")
+        # Colored badge/pill (2026-09-13, explicit user request to
+        # match the mockup's own colored severity badges) - real token
+        # color, dark text on the lighter success/warning tokens for
+        # contrast, light text on the darker danger token; same 3
+        # tokens ForecastDecisionEngine's own real risk_level already
+        # maps to via _RISK_LEVEL_COLOR, no new color/severity logic.
+        text_color = "#0a1120" if color_token in ("success", "warning") else TOKENS.text_primary
+        self.alerts_risk_label.setStyleSheet(
+            f"background-color: {getattr(TOKENS, color_token, TOKENS.text_muted)}; color: {text_color}; "
+            f"font-size: {TOKENS.font_size_sm}px; font-weight: 700; border-radius: {TOKENS.radius_lg}px;"
+        )
         phenomena = assessment["detected_phenomena"]
         if phenomena:
             self.alerts_detail_label.setText(

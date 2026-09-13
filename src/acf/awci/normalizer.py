@@ -180,6 +180,33 @@ class Normalizer:
         return value
 
     @staticmethod
+    def normalize_spatial_complexity_gradient(value_k_per_100km: float) -> float:
+        """
+        Normalize a real horizontal temperature-gradient magnitude
+        (K/100km, e.g. from
+        acf_workstation_complexity.compute_real_spatial_complexity())
+        to [0, 1] - added 2026-09-13 at the user's explicit request to
+        visually match the reference mockup's "Complexity Index" card
+        on ACF Workstation's Overview page
+        (acf_workstation_overview_landing.py), after that module had
+        previously and deliberately rejected a single fabricated
+        composite score for that same card. Same mechanics as every
+        other normalize_*() in this class (clamp + linear scale against
+        a disclosed reference range) - not a new kind of fabrication,
+        the same already-established "HYPOTHESIS-level, disclosed"
+        pattern this class already uses for cape/wind_shear/etc.
+
+        Range: 0 to 5.0 K/100km - a real, commonly cited order-of-
+        magnitude for a sharp synoptic frontal gradient (frontogenesis
+        diagnostics routinely express gradients in K/100km, see that
+        function's own docstring), not sourced from a specific
+        climatology - same honesty caveat as every other range in this
+        class (see get_range_status("spatial_complexity_gradient")).
+        """
+        value_k_per_100km = max(0.0, min(5.0, value_k_per_100km))
+        return value_k_per_100km / 5.0
+
+    @staticmethod
     def normalize_pressure(value: float) -> float:
         """
         Normalize pressure to [0, 1].

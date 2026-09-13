@@ -1423,3 +1423,55 @@ propre contexte (label adjacent réel ou non, contrôle fonctionnel ou
 disclosed-mort comme `LayerPanel`) plutôt qu'un fix mécanique en lot -
 non traités cette passe, la valeur/risque restante y est nettement
 plus faible (moins de trafic utilisateur réel que les Labs).
+
+## Mise à jour (2026-09-13, suite 9) : rapprochement visuel de l'écran Overview avec le mockup "Atmospheric Analysis" - changement de politique explicite sur les scores composites
+
+L'utilisateur a comparé une vraie capture d'écran de l'ACF Scientific
+Workstation au mockup de référence déjà présent dans le dépôt
+(`docs/reference/acf_atmospheric_analysis_reference.png`) et a demandé
+un rapprochement visuel réel. Question posée explicitement sur la
+tension avec la règle anti-fabrication (le mockup affiche des scores
+composites 0-1/% que ce module avait délibérément refusés en Phase 44) :
+réponse de l'utilisateur = reproduire exactement comme le mockup.
+
+**Fermé, avec disclosure complète** (voir le nouveau docstring de
+`acf_workstation_overview_landing.py` pour le détail complet) :
+- Nouvelle méthode `Normalizer.normalize_spatial_complexity_gradient()`
+  (même patron HYPOTHESIS-level disclosed que toutes les autres,
+  plage 0-5.0 K/100km).
+- Les 4 cartes "Key Metrics" affichent maintenant un vrai score
+  normalisé 0-1 (Complexity Index/Instability/Moisture/Shear, réutilisant
+  `Normalizer.normalize_cape`/`normalize_wind_shear` déjà réels et le
+  nouveau `normalize_spatial_complexity_gradient`) EN PLUS de la vraie
+  valeur physique (jamais remplacée) - cartes à bordure colorée + ombre
+  réelle (`apply_elevation`), avec un vrai delta de session à session
+  quand un 2e run existe (jamais un delta fabriqué à partir d'un seul
+  point).
+- Jauge circulaire "Agreement Level" (réutilise `AWCIGauge`, déjà
+  utilisé par `ACFGeneralDashboard`) alimentée par
+  `Normalizer.normalize_model_disagreement()` - **exactement la même
+  fonction réelle** que la jauge "MODEL UNCERTAINTY" de
+  `ACFGeneralDashboard` utilise déjà, avec inversion sémantique
+  disclosed (agreement = 1 - disagreement). Honnêtement "N/A" pour tout
+  champ autre que "temperature" (seule entrée réelle de
+  `MODEL_DISAGREEMENT_REFERENCE` aujourd'hui).
+- Badge de sévérité coloré pour "Alerts & Hazards" (vert/orange/rouge,
+  mêmes tokens `success`/`warning`/`danger` déjà réels, aucune nouvelle
+  logique de classification).
+- Top bar : logo mark (glyphe texte, pas un asset image), sélecteurs
+  Model/Domain en "pilule" arrondie, bouton "▶ Analyze" en dégradé
+  accent réel (`accent_gradient_css()`, déjà réel).
+
+**Délibérément pas reproduit** (disclosed, hors du périmètre de la
+question posée) : l'avatar/nom "Jean Dupont" du mockup reste le vrai
+nom de compte OS (`getpass.getuser()`) - fabriquer une identité de
+personne est un autre type de fabrication, jamais demandé. Le layout
+mono-écran du mockup (carte + coupe verticale + vue 3D + diagnostics
+tout sur un seul écran) n'est pas fusionné dans Overview - changement
+d'architecture de navigation séparé, plus risqué, non demandé.
+
+Image de référence de régression visuelle régénérée (changement visuel
+majeur et intentionnel cette fois) et vérifiée visuellement avant
+commit. 94 tests combinés verts (workstation, accessibilité, phase44/
+45, régression visuelle, normalizer, scientific_status, general
+dashboard), `ruff`/`mypy` propres sur tous les fichiers touchés.

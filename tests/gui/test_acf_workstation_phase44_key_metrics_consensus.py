@@ -116,6 +116,55 @@ def test_map_click_refreshes_the_real_key_metrics(qapp):
     assert f"{lat:.2f}" in panel._metric_point_label.text()
 
 
+def test_key_metrics_cards_show_both_a_real_normalized_score_and_the_real_physical_value(qapp):
+    """2026-09-13, explicit user request to match the reference mockup's
+    card style - the real physical value must never be replaced or
+    hidden by the new normalized score, only shown alongside it (see
+    module docstring)."""
+    from acf.awci.normalizer import Normalizer
+
+    ws = ACFWorkstation()
+    volume = _real_small_volume()
+
+    ws._on_volume_ready(volume)
+
+    expected = compute_real_key_metrics_at_point(
+        volume, *ws._last_clicked_point if ws._last_clicked_point else
+        (float(volume["lats"][len(volume["lats"]) // 2]), float(volume["lons"][len(volume["lons"]) // 2]))
+    )
+    panel = ws.overview_landing_panel
+    # Real physical value untouched (same assertion style as the test above).
+    assert f"{expected['cape_j_kg']:.0f} J/kg" in panel._metric_value_labels["cape_j_kg"].text()
+    # Real normalized score, independently cross-checked against Normalizer directly.
+    expected_score = Normalizer.normalize_cape(expected["cape_j_kg"])
+    assert panel._metric_score_labels["cape_j_kg"].text() == f"{expected_score:.2f}"
+    expected_shear_score = Normalizer.normalize_wind_shear(expected["bulk_wind_shear_ms"])
+    assert panel._metric_score_labels["bulk_wind_shear_ms"].text() == f"{expected_shear_score:.2f}"
+    expected_complexity_score = Normalizer.normalize_spatial_complexity_gradient(expected["spatial_complexity_k_per_100km"])
+    assert panel._metric_score_labels["spatial_complexity_k_per_100km"].text() == f"{expected_complexity_score:.2f}"
+    expected_moisture_score = expected["relative_humidity_pct"] / 100.0
+    assert panel._metric_score_labels["relative_humidity_pct"].text() == f"{expected_moisture_score:.2f}"
+
+
+def test_key_metrics_delta_only_appears_after_a_real_second_run(qapp):
+    """No fabricated trend from a single real data point - the delta
+    label stays empty until a genuine 2nd real call exists to compare
+    against (see module docstring/set_key_metrics())."""
+    ws = ACFWorkstation()
+    volume = _real_small_volume()
+
+    ws._on_volume_ready(volume)
+    panel = ws.overview_landing_panel
+    assert panel._metric_delta_labels["cape_j_kg"].text() == ""
+
+    ws._on_map_point_clicked(float(volume["lats"][1]), float(volume["lons"][1]))
+    # A 2nd real call has now happened - a delta may or may not be
+    # non-empty depending on whether the score genuinely changed, but
+    # the mechanism itself (comparing 2 real runs) must be exercised
+    # without raising.
+    assert panel._previous_normalized_scores is not None
+
+
 # ------------------------------------------------------------ Consensus
 
 
@@ -155,3 +204,61 @@ def test_consensus_button_genuinely_runs_off_thread_and_reports_real_values(qapp
         models_text = ws.overview_landing_panel.consensus_models_label.text()
         assert "AROME" in models_text
         assert "WRF" not in models_text  # no real backing anywhere in this codebase
+        # Real Agreement Level gauge (2026-09-13) - genuinely populated,
+        # exact value cross-checked by the dedicated deterministic test
+        # below rather than here (this run's real spread is not known
+        # in advance).
+        assert ws.overview_landing_panel.consensus_gauge_label.text() != "—"
+
+
+def test_consensus_agreement_gauge_matches_an_independent_normalizer_call():
+    """Deterministic cross-check for the real Agreement Level gauge
+    (2026-09-13, explicit user request to match the mockup's own
+    circular gauge) - see module docstring for the real Normalizer.
+    normalize_model_disagreement() reuse and the semantic inversion
+    (agreement = 1 - disagreement)."""
+    from acf.awci.normalizer import Normalizer
+    from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
+
+    panel = ACFOverviewLandingPanel(navigate_to=lambda _n: None, module_names=[], compute_consensus=None)
+    result = {
+        "field": "T",
+        "per_model_value": {"AROME": 288.0, "ALADIN": 289.5, "ARPEGE": 287.5},
+        "disagreement_mean": 288.33,
+        "disagreement_spread": 1.5,
+        "disagreement_median": 288.0,
+        "disagreement_min": 287.5,
+        "disagreement_max": 289.5,
+        "disagreement_p10": 287.7,
+        "disagreement_p90": 289.2,
+    }
+
+    panel.set_consensus_result(result)
+
+    expected_agreement_pct = (1.0 - Normalizer.normalize_model_disagreement(1.5, "temperature")) * 100.0
+    assert panel.consensus_gauge._target_score == pytest.approx(expected_agreement_pct)
+    assert f"{expected_agreement_pct:.0f}%" in panel.consensus_gauge_label.text()
+
+
+def test_consensus_agreement_gauge_is_honestly_n_a_for_a_field_with_no_reference_scale():
+    """MODEL_DISAGREEMENT_REFERENCE only has a real entry for
+    "temperature" today (see Normalizer's own docstring) - the gauge
+    must show N/A, never a fabricated percentage, for any other field."""
+    from acf.gui.dashboard.acf_workstation_overview_landing import ACFOverviewLandingPanel
+
+    panel = ACFOverviewLandingPanel(navigate_to=lambda _n: None, module_names=[], compute_consensus=None)
+    result = {
+        "field": "RH",
+        "per_model_value": {"AROME": 70.0, "ALADIN": 72.0, "ARPEGE": 68.0},
+        "disagreement_mean": 70.0,
+        "disagreement_spread": 2.0,
+        "disagreement_median": 70.0,
+        "disagreement_min": 68.0,
+        "disagreement_max": 72.0,
+        "disagreement_p10": 68.5,
+        "disagreement_p90": 71.5,
+    }
+
+    panel.set_consensus_result(result)
+
+    assert panel.consensus_gauge_label.text() == "N/A"

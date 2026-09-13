@@ -10,6 +10,33 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 
 ## [Unreleased] - 2026-09-13
 
+### Changed (explicit user-approved policy change)
+- ACF Workstation Overview's "Key Metrics" cards and "Model Consensus"
+  gauge now show real normalized 0-1/percentage composite scores
+  matching the reference mockup's own card style
+  (`docs/reference/acf_atmospheric_analysis_reference.png`),
+  reversing Phase 44's original rejection of that style after the
+  user was shown the anti-fabrication tension and explicitly chose to
+  reproduce the mockup exactly. Every score reuses an existing (or,
+  for spatial complexity, newly added the same way) `Normalizer`
+  method already carrying this codebase's own "HYPOTHESIS-level,
+  disclosed" scientific-status classification - never a silent,
+  ungrounded fabrication - and the real physical value is always kept
+  visible alongside the score, never replaced. New
+  `Normalizer.normalize_spatial_complexity_gradient()`. The Model
+  Consensus "Agreement Level" gauge reuses the exact same
+  `Normalizer.normalize_model_disagreement()` call
+  `ACFGeneralDashboard`'s own "MODEL UNCERTAINTY" gauge already uses
+  (inverted: agreement = 1 - disagreement), honestly "N/A" for any
+  field other than "temperature" (the only real reference scale that
+  exists today). Alerts & Hazards now shows a colored severity badge
+  (success/warning/danger tokens, same classification as before, no
+  new logic). Top bar restyled with a real logo mark, pill-shaped
+  Model/Domain selectors, and a gradient "▶ Analyze" button. Visual
+  regression baseline regenerated and visually verified (intentional,
+  disclosed visual change). See `docs/STATUS.md` for the full
+  disclosure of what is and is not reproduced from the mockup.
+
 ### Checked (no code change)
 - Première passe réelle de l'audit d'unités systématique demandé
   (kt/m/s, ft/m, hPa/Pa, mm/h) sur `acf.gui`/`acf.awci` : vitesse du

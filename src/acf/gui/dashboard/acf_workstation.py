@@ -780,7 +780,7 @@ from acf.gui.dashboard.acf_workstation_stability_indices import ACFStabilityIndi
 from acf.gui.dashboard.acf_workstation_temporal import ACFTemporalLabPanel
 from acf.gui.dashboard.acf_workstation_terrain import ACFTerrainLabPanel
 from acf.gui.dashboard.acf_workstation_thermodynamics import ACFThermodynamicsLabPanel
-from acf.gui.theme_tokens import dashboard_stylesheet, label_style
+from acf.gui.theme_tokens import TOKENS, accent_gradient_css, dashboard_stylesheet, label_style
 from acf.gui.widgets.current_page_sizing import CurrentPageStackedWidget
 
 logger = logging.getLogger("acf.gui.dashboard.acf_workstation")
@@ -807,6 +807,20 @@ _DEFAULT_MODEL = "ARPEGE"  # smallest of the 3 real MODEL_CONFIGS grids - fastes
 #: doesn't separately group are PROMOTED here from `_TOOLBAR_MODULES`
 #: into the primary nav (never duplicated - moved), matching the new
 #: mockup's "Models & Consensus"/"Visualization"/"Validation" items.
+#: Real "pill" chip styling for the top-bar Model/Domain selectors
+#: (2026-09-13, explicit user request to visually match the reference
+#: mockup's own rounded top-bar chips) - a per-widget QSS override
+#: (Qt applies a widget's own setStyleSheet() over the app-wide one for
+#: that widget), same tokens as `dashboard_stylesheet()`'s own
+#: QComboBox rule, just a larger radius - no new color, no behavior
+#: change.
+_PILL_SELECTOR_STYLE = (
+    f"QComboBox {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_primary}; "
+    f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_lg}px; "
+    f"padding: {TOKENS.spacing_xs}px {TOKENS.spacing_md}px; }} "
+    f"QComboBox:hover {{ border-color: {TOKENS.accent_primary}; }}"
+)
+
 _ENABLED_MODULES = [
     "Overview",
     "Atmosphere State",
@@ -971,6 +985,13 @@ class ACFWorkstation(QWidget):
 
         # --- Top bar -----------------------------------------------------
         top_bar = QHBoxLayout()
+        # Real logo mark (2026-09-13, explicit user request to visually
+        # match the reference mockup's own logo+wordmark lockup) - a
+        # plain colored Unicode glyph in the real accent gradient's own
+        # start color, not a fabricated image asset/identity.
+        logo_mark = QLabel("◆")
+        logo_mark.setStyleSheet(f"color: {TOKENS.accent_primary}; font-size: {TOKENS.font_size_xl}px; font-weight: 900;")
+        top_bar.addWidget(logo_mark)
         header = QLabel("ACF SCIENTIFIC WORKSTATION")
         header.setStyleSheet(label_style("text_primary", "lg", "bold"))
         top_bar.addWidget(header)
@@ -1014,6 +1035,7 @@ class ACFWorkstation(QWidget):
         top_bar.addWidget(self._label("Model:"))
         self.model_selector = QComboBox()
         self.model_selector.addItems(list(MODEL_CONFIGS.keys()))
+        self.model_selector.setStyleSheet(_PILL_SELECTOR_STYLE)
         self.model_selector.setCurrentText(_DEFAULT_MODEL)
         self.model_selector.currentTextChanged.connect(self._on_model_selector_changed)
         self.model_selector.setAccessibleName("Model selector")
@@ -1035,6 +1057,7 @@ class ACFWorkstation(QWidget):
         top_bar.addWidget(self._label("Domain:"))
         self.domain_selector = QComboBox()
         self.domain_selector.addItems(list(DOMAIN_NAMES))
+        self.domain_selector.setStyleSheet(_PILL_SELECTOR_STYLE)
         self.domain_selector.setToolTip(
             "Real geographic crop of the already-computed volume's own lat/lon grid -\n"
             "never a second solver run, never fabricated regional data."
@@ -1045,6 +1068,13 @@ class ACFWorkstation(QWidget):
         top_bar.addWidget(self.domain_selector)
 
         self.run_button = QPushButton("▶ Analyze")
+        self.run_button.setStyleSheet(
+            f"QPushButton {{ background: {accent_gradient_css()}; color: #04101f; border: none; "
+            f"border-radius: {TOKENS.radius_lg}px; padding: {TOKENS.spacing_xs}px {TOKENS.spacing_lg}px; "
+            f"font-weight: 700; }} "
+            f"QPushButton:hover {{ background: {TOKENS.accent_primary_hover}; }} "
+            f"QPushButton:disabled {{ background: {TOKENS.border}; color: {TOKENS.text_muted}; }}"
+        )
         self.run_button.setToolTip(
             "Real, off-thread compute_real_complexity_volume() run (CoupledEarthSolver,\n"
             "the selected model's own real grid configuration) - drives every real\n"
