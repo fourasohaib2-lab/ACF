@@ -135,7 +135,7 @@ class AWCICurrentSituationCard(QFrame):
         area: str,
         altitude: str,
         valid_time: str,
-        confidence_pct: float,
+        confidence_pct: float | None,
         decomposition: dict[str, float] | None = None,
     ) -> None:
         """`decomposition` is the real per-module/interaction-term AWCI
@@ -148,7 +148,18 @@ class AWCICurrentSituationCard(QFrame):
         decomposition, never an invented/guessed contribution. `None`
         (a caller with no real decomposition attached, e.g. an older
         call site) shows an honest "not available" line instead of a
-        fabricated list."""
+        fabricated list.
+
+        `confidence_pct=None` is this card's honest-uncomputed
+        convention (mirrors AWCIModelAgreementCard's own "NOT_COMPUTED"
+        label a few classes below): callers pass it when they have no
+        real forecast-confidence signal at all for this point (e.g.
+        the Real Physics tier's compute_real_complexity_volume() path,
+        which carries no `confidence` input - see
+        AWCICalculator.calculate()'s own `data.get("confidence",
+        100.0)` fallback) rather than passing that fallback's bare
+        100.0 through as if it were a genuine full-confidence
+        measurement."""
         level = level_for(overall_awci)
         self.severity_label.setText(level)
         color = risk_qcolor(level)
@@ -217,9 +228,13 @@ class AWCICurrentSituationCard(QFrame):
         self.area_label.setText(f"Affected Area: {area}")
         self.altitude_label.setText(f"Main Altitude: {altitude}")
         self.valid_time_label.setText(f"Valid Time: {valid_time}")
-        self.confidence_value_label.setText(f"{confidence_pct:.0f}%")
-        bar_width = int(self.confidence_bar.width() * max(0.0, min(1.0, confidence_pct / 100.0)))
-        self._confidence_fill.setGeometry(0, 0, bar_width, 4)
+        if confidence_pct is None:
+            self.confidence_value_label.setText("NOT_COMPUTED")
+            self._confidence_fill.setGeometry(0, 0, 0, 4)
+        else:
+            self.confidence_value_label.setText(f"{confidence_pct:.0f}%")
+            bar_width = int(self.confidence_bar.width() * max(0.0, min(1.0, confidence_pct / 100.0)))
+            self._confidence_fill.setGeometry(0, 0, bar_width, 4)
 
     def resizeEvent(self, event: Any) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)

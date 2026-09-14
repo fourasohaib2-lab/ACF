@@ -1713,7 +1713,7 @@ class AWCIDashboard(QWidget):
 
     def _refresh_situation_row(self, module_scores: dict[str, float], overall_awci: float,
                                 physical_score: float | None, forecast_score: float | None,
-                                confidence_pct: float) -> None:
+                                confidence_pct: float | None) -> None:
         """Real refresh for the Phase 4 situation row - see
         awci_situation_panel.py's own module docstring for each card's
         exact real source. Called from every real point-refresh path
@@ -1726,7 +1726,12 @@ class AWCIDashboard(QWidget):
         equivalent) - passed in directly since 2026-09-13 rather than
         read back through the now-retired self.stats_bar's own
         confidence gauge, a redundant round-trip for a value already
-        known at every real call site."""
+        known at every real call site. `None` is this row's own
+        honest-uncomputed signal (see AWCICurrentSituationCard.
+        update_data()'s own docstring) - the Real Physics call site
+        passes it instead of AWCICalculator's bare `confidence=100.0`
+        default, which means "no confidence signal was computed", not
+        "maximum confidence"."""
         self.current_situation_card.update_data(
             module_scores,
             overall_awci,
@@ -2620,12 +2625,18 @@ class AWCIDashboard(QWidget):
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
         # No per-point forecast-side data is fed into
         # compute_real_complexity_volume() (see its own docstring) - the
-        # solver's real fields don't carry a "confidence" input, so this
-        # honestly passes AWCICalculator's own default (100.0) rather
-        # than an invented aggregate forecast confidence.
+        # solver's real fields don't carry a "confidence" input, so
+        # AWCICalculator.calculate() falls back to its own
+        # data.get("confidence", 100.0) default. That 100.0 means "no
+        # confidence signal was computed", not "maximum confidence" (see
+        # calculator.py's own calculate() docstring) - passing it
+        # through as a literal would render a fabricated-looking, full
+        # green confidence bar. This honestly signals "not computed"
+        # instead via confidence_pct=None (see AWCICurrentSituationCard.
+        # update_data()'s own docstring).
         self._refresh_situation_row(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
-            confidence_pct=100.0,
+            confidence_pct=None,
         )
         self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]

@@ -73,6 +73,41 @@ def test_real_area_altitude_valid_time_confidence_are_shown_verbatim(qapp):
     assert card.confidence_value_label.text() == "73%"
 
 
+def test_none_confidence_shows_honest_not_computed_never_a_fabricated_100_pct(qapp):
+    """Real Physics tier proof: compute_real_complexity_volume() feeds
+    AWCICalculator.calculate() no `confidence` input at all, so
+    calculate() falls back to its own data.get("confidence", 100.0)
+    default - that 100.0 means "no confidence signal was computed",
+    never "maximum confidence" (see calculator.py's own calculate()
+    docstring). The Real Physics call site in awci_dashboard.py passes
+    confidence_pct=None for exactly this case; the card must render an
+    honest "NOT_COMPUTED" label and an empty confidence bar, never a
+    fabricated-looking full green 100% bar."""
+    card = AWCICurrentSituationCard()
+    card.resize(200, 100)
+    card.update_data(
+        _module_scores(), 50.0, None, None,
+        area="North Africa", altitude="FL280", valid_time="14:00 UTC", confidence_pct=None,
+    )
+    assert card.confidence_value_label.text() == "NOT_COMPUTED"
+    assert card._confidence_fill.width() == 0
+
+
+def test_genuinely_computed_100_pct_confidence_still_renders_as_100_pct(qapp):
+    """Distinguishes the fake default from a real, explicitly-supplied
+    100.0 confidence (e.g. a caller that genuinely measured full
+    confidence) - confidence_pct=100.0 (not None) must still render as
+    an honest "100%", not be conflated with the NOT_COMPUTED case."""
+    card = AWCICurrentSituationCard()
+    card.resize(200, 100)
+    card.update_data(
+        _module_scores(), 50.0, None, None,
+        area="North Africa", altitude="FL280", valid_time="14:00 UTC", confidence_pct=100.0,
+    )
+    assert card.confidence_value_label.text() == "100%"
+    assert card._confidence_fill.width() == card.confidence_bar.width()
+
+
 # ------------------------------------- explainability ("Main Contributors")
 
 
