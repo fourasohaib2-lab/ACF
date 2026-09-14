@@ -111,6 +111,8 @@ from acf.awci.archive_field import (
     sample_archive_at_point,
 )
 from acf.awci.calculator import AWCICalculator
+from acf.awci.ceiling import compute_real_ceiling_at_point
+from acf.awci.visibility import compute_real_visibility_risk_at_point
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
     real_layer_grids_at_level,
@@ -2568,12 +2570,29 @@ class AWCIDashboard(QWidget):
         # self._point_of_interest, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - self._point_of_interest[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - self._point_of_interest[1])))
+        point_temperature_k = float(volume["temperature_volume"][level_idx, lat_idx, lon_idx])
+        point_specific_humidity = float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx])
+        point_pressure_hpa = float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx])
         point_raw_data = {
-            "temperature": float(volume["temperature_volume"][level_idx, lat_idx, lon_idx]),
+            "temperature": point_temperature_k,
             "wind_speed": float(volume["wind_speed_volume"][level_idx, lat_idx, lon_idx]),
-            "specific_humidity": float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx]),
-            "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
+            "specific_humidity": point_specific_humidity,
+            "pressure": point_pressure_hpa,
         }
+        # Same real ceiling/visibility computations _synthetic_inputs()
+        # feeds AWCICalculator with (acf.awci.ceiling/visibility) - not a
+        # second computation path - sourced from this SAME real volume's
+        # temperature/humidity/pressure already in scope above, so the
+        # Real Physics tier's Ceiling/Visibility hazards stop being a
+        # fabricated constant "0 / Very Low" the way the demo tier used to.
+        real_ceiling = compute_real_ceiling_at_point(point_temperature_k, point_specific_humidity, point_pressure_hpa)
+        if real_ceiling["is_real_data"]:
+            point_raw_data["ceiling_height_m"] = real_ceiling["ceiling_height_m"]
+        real_visibility = compute_real_visibility_risk_at_point(
+            point_temperature_k, point_specific_humidity, point_pressure_hpa
+        )
+        if real_visibility["is_real_data"]:
+            point_raw_data["visibility_risk"] = real_visibility["visibility_risk_score"]
         point_result = AWCICalculator().calculate(point_raw_data)
         # Real "Atmospheric Profile" analysis panel (Phase 5/6, added
         # 2026-09-13) - a real T/wind vertical re-slice of this SAME
