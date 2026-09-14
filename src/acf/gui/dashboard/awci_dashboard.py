@@ -3206,7 +3206,7 @@ class AWCIDashboard(QWidget):
         self.recommendation_banner.setText(" ".join(lines))
         self.recommendation_banner.setVisible(True)
 
-    def _on_component_clicked(self, key: str, score: float, raw_data: dict[str, Any], mode: str) -> None:
+    def _on_component_clicked(self, key: str, score: float | None, raw_data: dict[str, Any], mode: str) -> None:
         """Open (or reuse) the real per-component detail dialog -
         explicit user request "rend les bouton des différents
         complexité utilisable pour rendre tout le details de la
@@ -3243,7 +3243,7 @@ class AWCIDashboard(QWidget):
         a second, parallel detail view for the same real number."""
         module_scores, _overall_awci, _physical_score, _forecast_score = self._last_risk_inputs
         self._on_component_clicked(
-            module_key, module_scores.get(module_key, 0.0), self._last_point_raw_data, self._last_point_mode
+            module_key, module_scores.get(module_key), self._last_point_raw_data, self._last_point_mode
         )
 
     def _revert_to_demo(self) -> None:

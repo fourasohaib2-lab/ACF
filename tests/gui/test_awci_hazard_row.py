@@ -73,8 +73,12 @@ def test_severity_labels_match_the_real_shared_awci_scale(qapp):
     assert row._cards["Icing"].severity_label.text() == level_for(52.0)
 
 
-def test_missing_module_score_keys_default_honestly_to_zero(qapp):
+def test_missing_module_score_keys_render_honestly_as_unknown(qapp):
+    """A missing module_scores key must never fabricate a real-looking
+    0 - it must render the same honest "—" (set_value(None)) already
+    used for Wind Shear's permanent gap, matching the fix in
+    awci_hazard_row.py's own update_data()."""
     row = AWCIHazardRow()
     row.update_data({}, overall_awci=0.0)
-    assert row._cards["Turbulence"].value_label.text() == "0"
+    assert row._cards["Turbulence"].value_label.text() == "—"
     assert row._cards["Wind Shear"].value_label.text() == "—"

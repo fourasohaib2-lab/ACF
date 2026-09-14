@@ -155,5 +155,6 @@ class AWCIHazardRow(QWidget):
         dict ever reaches here), so no second scaling is applied."""
         self.gauge.set_score(overall_awci, animate=False)
         for key, _icon, label in HAZARD_CARDS:
-            score = None if key is None else float(module_scores.get(key, 0.0))
+            raw_score = None if key is None else module_scores.get(key)
+            score = None if raw_score is None else float(raw_score)
             self._cards[label].set_value(score)

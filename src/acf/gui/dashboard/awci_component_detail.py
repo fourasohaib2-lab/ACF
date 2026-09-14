@@ -276,7 +276,7 @@ class AWCIComponentDetailDialog(QDialog):
     def show_component(
         self,
         key: str,
-        score: float,
+        score: float | None,
         raw_data: dict[str, Any] | None,
         mode: Mode,
         awci_result: AWCIResult | None = None,
@@ -299,7 +299,13 @@ class AWCIComponentDetailDialog(QDialog):
         self.setWindowTitle(f"AWCI – {info.label}")
         self.header_label.setText(f"{info.icon}  {info.label}")
         self.description_label.setText(info.description)
-        self.score_label.setText(f"Current score: {score:.1f} / 100")
+        if score is None:
+            # Honest "not computed" - a missing module_scores key must
+            # never render as a fabricated 0.0 (see awci_hazard_row.py's
+            # matching Wind Shear "—" pattern this mirrors).
+            self.score_label.setText("Current score: — (NOT_COMPUTED)")
+        else:
+            self.score_label.setText(f"Current score: {score:.1f} / 100")
 
         # "imported_model" (added 2026-09-08): every input the imported
         # file genuinely supplied IS real (matched through ACF's own
