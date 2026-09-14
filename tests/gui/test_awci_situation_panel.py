@@ -133,15 +133,15 @@ def test_no_positive_contributor_shows_an_honest_message(qapp):
 # ----------------------------------------------------- AWCIModelAgreementCard
 
 
-def test_zero_disagreement_shows_very_high_agreement_never_extreme(qapp):
-    """Real bug found and fixed while building this: level_for() is a
-    hazard-severity scale (higher = worse, "Extreme" = worst) - naively
-    applying it to "agreement" showed "Extreme" for a real 0.0
-    disagreement (i.e. perfect real agreement), the opposite of the
-    real meaning."""
+def test_zero_disagreement_shows_not_computed_never_a_fabricated_severity(qapp):
+    """A real 0.0 disagreement is the calculator's own "unmeasured"
+    default (no real model_realizations wired in), not a genuine
+    zero-spread measurement - the headline must say so honestly
+    (NOT_COMPUTED) rather than fabricating a severity word like "Very
+    High" agreement or (an earlier bug) "Extreme"."""
     card = AWCIModelAgreementCard()
     card.update_data({"model_disagreement": 0.0})
-    assert card.level_label.text() == "Very High"
+    assert card.level_label.text() == "NOT_COMPUTED"
     assert "no real multi-model ensemble" in card.detail_label.text().lower()
 
 

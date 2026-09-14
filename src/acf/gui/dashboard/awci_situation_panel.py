@@ -284,7 +284,16 @@ class AWCIModelAgreementCard(QFrame):
     def update_data(self, module_scores: dict[str, float]) -> None:
         disagreement = float(module_scores.get("model_disagreement", 0.0))
         disagreement_level = level_for(disagreement)
-        agreement_label = self._AGREEMENT_LABELS[disagreement_level]
+        #: disagreement == 0.0 is the calculator's own "unmeasured"
+        #: default (no real model_realizations wired in), not a
+        #: genuine zero-spread measurement - reporting it as "Very
+        #: High" agreement fabricates a severity word for a value that
+        #: was never actually computed. Report it honestly instead;
+        #: the disclosing subtext below already explains why.
+        if disagreement == 0.0:
+            agreement_label = "NOT_COMPUTED"
+        else:
+            agreement_label = self._AGREEMENT_LABELS[disagreement_level]
         self.level_label.setText(agreement_label)
         color = risk_qcolor(disagreement_level)
         self.level_label.setStyleSheet(
