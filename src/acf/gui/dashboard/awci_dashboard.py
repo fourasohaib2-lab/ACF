@@ -2114,7 +2114,7 @@ class AWCIDashboard(QWidget):
             for offset in offsets:
                 _distances, scores = route_profile(
                     self._regional_route[0][:2], self._regional_route[1][:2],
-                    n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+                    n_points=40, flight_level_hpa=850.0, time_offset_hours=float(current_hour + offset),
                 )
                 means.append(float(np.mean(scores)))
                 maxes.append(float(np.max(scores)))
@@ -2125,7 +2125,7 @@ class AWCIDashboard(QWidget):
             else:
                 lat, lon = self._point_of_interest
             for offset in offsets:
-                raw = _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(offset))
+                raw = _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(current_hour + offset))
                 value = AWCICalculator().calculate(raw)["awci"]
                 means.append(value)
                 maxes.append(value)

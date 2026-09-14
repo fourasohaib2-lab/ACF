@@ -123,7 +123,7 @@ def test_evolution_chart_matches_a_direct_recomputation_of_the_real_pm6h_series(
             _synthetic_inputs(
                 *dashboard._point_of_interest,
                 flight_level_hpa=dashboard._current_flight_level_hpa,
-                time_offset_hours=float(offset),
+                time_offset_hours=float(current_hour + offset),
             )
         )["awci"]
         for offset in range(-6, 7, 2)
@@ -188,7 +188,7 @@ def test_route_mode_series_matches_a_direct_recomputation_of_route_profile(qapp)
     for offset in range(-6, 7, 2):
         _distances, scores = route_profile(
             dashboard._regional_route[0][:2], dashboard._regional_route[1][:2],
-            n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+            n_points=40, flight_level_hpa=850.0, time_offset_hours=float(current_hour + offset),
         )
         expected_means.append(float(np.mean(scores)))
         expected_maxes.append(float(np.max(scores)))
@@ -232,9 +232,10 @@ def test_airport_mode_series_matches_a_direct_recomputation_at_the_selected_depa
 
     icao = dashboard.route_from_selector.currentData()
     lat, lon, _name = _AIRPORTS[icao]
+    current_hour = dashboard.time_slider.value()
     expected_values = [
         AWCICalculator().calculate(
-            _synthetic_inputs(lat, lon, flight_level_hpa=dashboard._current_flight_level_hpa, time_offset_hours=float(offset))
+            _synthetic_inputs(lat, lon, flight_level_hpa=dashboard._current_flight_level_hpa, time_offset_hours=float(current_hour + offset))
         )["awci"]
         for offset in range(-6, 7, 2)
     ]
