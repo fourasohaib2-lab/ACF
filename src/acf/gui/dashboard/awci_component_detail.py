@@ -308,8 +308,24 @@ class AWCIComponentDetailDialog(QDialog):
         # AWCICalculator's own default, disclosed per-input below, so
         # the badge is real the same way demo mode's is, with the
         # file's own name as the honest source label.
+        # Demo mode (fixed 2026-09-14): _synthetic_inputs() does supply
+        # all 7 original real-shaped inputs on every call, but the 2
+        # opt-in modules added 2026-09-13 (ceiling/visibility) are
+        # genuinely conditional - acf.awci.ceiling.compute_real_ceiling_
+        # at_point()/acf.awci.visibility.compute_real_visibility_risk_
+        # at_point() only add ceiling_height_m/visibility_risk to the
+        # dict when the real computed relative humidity is positive at
+        # that point (their own honest "is_real_data" contract) - a
+        # hardcoded `is_real = True` here would keep claiming REAL for
+        # those points even though AWCICalculator.calculate() fell back
+        # to its own default. Mirrors the same real check already used
+        # by the per-input disclosure loop below and by the Real
+        # Physics branch's own info.real_in_real_physics flag, just
+        # evaluated against the actual data dict for this call instead
+        # of a static per-mode fact.
         if mode == "demo":
-            is_real, source_label = True, "demo synthetic pattern"
+            is_real = raw_data is not None and all(field_name in raw_data for field_name in info.real_inputs)
+            source_label = "demo synthetic pattern"
         elif mode == "imported_model":
             is_real, source_label = True, "imported model file (acf.awci.model_import)"
         else:
@@ -317,6 +333,13 @@ class AWCIComponentDetailDialog(QDialog):
         if is_real:
             self.badge_label.setText(f"✅ REAL - genuinely computed ({source_label})")
             self.badge_label.setStyleSheet(f"color: {TOKENS.success}; font-size: 10px; font-weight: bold;")
+        elif mode == "demo":
+            missing = [f for f in info.real_inputs if raw_data is None or f not in raw_data]
+            self.badge_label.setText(
+                "⚠ DEFAULT - not supplied by the demo synthetic pattern at this point "
+                f"(missing: {', '.join(missing)}) - AWCICalculator's own default applies"
+            )
+            self.badge_label.setStyleSheet(f"color: {TOKENS.warning}; font-size: 10px; font-weight: bold;")
         else:
             self.badge_label.setText(
                 "⚠ DEFAULT - not computed in Real Physics mode today "
