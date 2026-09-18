@@ -155,7 +155,7 @@ class AWCITopBar(QWidget):
         button = QToolButton()
         button.setText(glyph)
         button.setStyleSheet(
-            f"QToolButton {{ border: none; border-radius: 6px; padding: 6px; font-size: 14px; }}"
+            "QToolButton { border: none; border-radius: 6px; padding: 6px; font-size: 14px; }"
             "QToolButton:hover { background-color: #f0f2f5; }"
         )
         button.setCursor(Qt.CursorShape.PointingHandCursor)

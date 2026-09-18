@@ -117,7 +117,6 @@ def test_evolution_chart_matches_a_direct_recomputation_of_the_real_pm6h_series(
     dashboard = AWCIDashboard()
     dashboard.refresh()
 
-    current_hour = dashboard.time_slider.value()
     expected_values = [
         AWCICalculator().calculate(
             _synthetic_inputs(

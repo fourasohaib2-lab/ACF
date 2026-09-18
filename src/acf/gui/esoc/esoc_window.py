@@ -441,6 +441,7 @@ class ESOCWindow(QMainWindow):
         first_open = self._awci_dashboard_window is None
         if first_open:
             self._awci_dashboard_window = AWCIDashboardWindow(self)
+        assert self._awci_dashboard_window is not None
         if first_open:
             # NOTE (correction, 2026-09-07 - explicit user request "gère
             # moi la résolution pour que ça soit en plein écran"): only

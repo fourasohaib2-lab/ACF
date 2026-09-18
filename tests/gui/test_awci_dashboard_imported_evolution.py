@@ -126,7 +126,6 @@ def test_imported_evolution_survives_revert_to_demo(dashboard: AWCIDashboard) ->
     survive it (the ▶ button then replays the imported evolution)."""
     dashboard._imported_dataset = _evolution_dataset()
     dashboard._start_imported_evolution()
-    qtbot_wait = None
     # Simulate an already-computed imported evolution without the wait:
     dashboard._imported_evolution = {
         "awci_evolution": np.zeros((2, 1, 4, 4)),
