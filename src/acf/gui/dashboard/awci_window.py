@@ -14,6 +14,7 @@ from typing import Any
 from PySide6.QtWidgets import QMainWindow, QScrollArea
 
 from acf.gui_screen_utils import compute_screen_scale, fit_window_to_screen
+from acf.gui.dashboard.awci_alert_history import DEFAULT_ALERT_HISTORY_PATH
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
 
@@ -33,7 +34,17 @@ class AWCIDashboardWindow(QMainWindow):
         # the primary screen), same real resolution mechanism
         # fit_window_to_screen below already relies on.
         self._screen_scale = compute_screen_scale(self)
-        self.awci_dashboard = AWCIDashboard(screen_scale=self._screen_scale)
+        # alert_history_path enables real persistence across app
+        # restarts (Master Prompt §23, added 2026-09-20) - this
+        # standalone window is one of this codebase's 2 real
+        # AWCIDashboard entry points (the other, ESOC's dock panel,
+        # opts in the same way - see PanelManager.AWCIDashboardPanel);
+        # every other AWCIDashboard() caller (every GUI test in this
+        # suite) leaves this None, staying in-memory-only exactly as
+        # before this parameter existed.
+        self.awci_dashboard = AWCIDashboard(
+            screen_scale=self._screen_scale, alert_history_path=DEFAULT_ALERT_HISTORY_PATH
+        )
         # NOTE (correction, 2026-09-07 - real bug, found from a real
         # screenshot while modernizing this dashboard's visual design,
         # not a code read): this used to call fit_window_to_screen(self,

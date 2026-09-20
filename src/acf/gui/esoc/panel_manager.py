@@ -1758,12 +1758,19 @@ class AWCIDashboardPanel(QWidget):
         self.registry = registry
         self.dispatcher = dispatcher
 
+        from acf.gui.dashboard.awci_alert_history import DEFAULT_ALERT_HISTORY_PATH
         from acf.gui.dashboard.awci_dashboard import AWCIDashboard
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.awci_dashboard = AWCIDashboard()
+        # alert_history_path enables real persistence across app
+        # restarts (Master Prompt §23, added 2026-09-20) - this dock
+        # panel is one of this codebase's 2 real AWCIDashboard entry
+        # points (the other, AWCIDashboardWindow, opts in the same
+        # way); every OTHER AWCIDashboard() caller (every GUI test)
+        # leaves this None, staying in-memory-only.
+        self.awci_dashboard = AWCIDashboard(alert_history_path=DEFAULT_ALERT_HISTORY_PATH)
         self.awci_dashboard.setMinimumSize(1200, 900)
 
         scroll = QScrollArea()

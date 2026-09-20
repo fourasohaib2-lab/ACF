@@ -617,8 +617,23 @@ class _ModelDisagreementFieldWorker(QRunnable):
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
-    def __init__(self, parent: QWidget | None = None, screen_scale: float = 1.0) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        screen_scale: float = 1.0,
+        alert_history_path: Path | None = None,
+    ) -> None:
         super().__init__(parent)
+        #: Real persistence across app restarts for self.alert_history
+        #: (Master Prompt §23) - None (the default) means "in-memory
+        #: only for this instance", the exact same behavior as before
+        #: this parameter existed, so every existing bare
+        #: AWCIDashboard() caller (every GUI test in this suite, ESOC's
+        #: dock panel) stays unaffected - same "opt-in, safe default"
+        #: convention as screen_scale above. AWCIDashboardWindow (the
+        #: real standalone-window entry point) is the one real caller
+        #: that passes DEFAULT_ALERT_HISTORY_PATH explicitly.
+        self._alert_history_path = alert_history_path
         #: Real screen-adaptability fix (2026-09-07, explicit user
         #: request "assure toi que la resolution est adaptable selon le
         #: type d'ecran elle est ajustable") - AWCIDashboardWindow
@@ -1072,6 +1087,15 @@ class AWCIDashboard(QWidget):
         # alert surface already uses (_refresh_footer_summary()), never
         # a second/independent hazard computation.
         self.alert_history = AlertHistoryLog()
+        # Real persistence across app restarts (added 2026-09-20,
+        # closes the "in-session only" limitation this module's first
+        # version disclosed) - only when self._alert_history_path is
+        # set (see that attribute's own comment above). See
+        # AlertHistoryLog.load()'s own docstring for the honest
+        # corrupted-file handling. A missing file (first-ever real run)
+        # is a real, silent no-op (empty log), never an error.
+        if self._alert_history_path is not None:
+            self.alert_history.load(self._alert_history_path)
         self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
         # Real Archive mode state (added 2026-09-04, extended same day
@@ -1831,6 +1855,7 @@ class AWCIDashboard(QWidget):
         )
         elevated = compute_elevated_risks(module_scores, overall_awci, physical_score, forecast_score)
         self.alert_history.record(elevated, area=area, valid_time=valid_time)
+        self._persist_alert_history_if_dirty()
         self._last_computation_at = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
         self.latest_updates_card.update_data(
             [
@@ -3240,6 +3265,7 @@ class AWCIDashboard(QWidget):
         "Acknowledge" button's own real effect is visible without
         closing/reopening it."""
         self.alert_history.acknowledge(entry_id)
+        self._persist_alert_history_if_dirty()
         if self._alerts_window is not None:
             module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
             live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
@@ -3247,6 +3273,21 @@ class AWCIDashboard(QWidget):
                 module_scores, overall_awci, physical_score, forecast_score, live_bundles,
                 history=self.alert_history.all_entries(),
             )
+
+    def _persist_alert_history_if_dirty(self) -> None:
+        """Real, synchronous save to self._alert_history_path - a
+        real no-op when persistence isn't configured for this instance
+        (see that attribute's own comment in __init__), and only when
+        AlertHistoryLog.is_dirty (a genuine mutation happened), not on
+        every refresh, to avoid unnecessary real disk I/O on the GUI
+        thread for the common no-change case (see
+        AlertHistoryLog.save()'s own docstring)."""
+        if self._alert_history_path is None or not self.alert_history.is_dirty:
+            return
+        try:
+            self.alert_history.save(self._alert_history_path)
+        except OSError as exc:
+            logger.warning("Failed to persist alert history: %s", exc)
 
     def _open_execution_report(self) -> None:
         """Open (or raise) the real §75 execution-report dialog -
