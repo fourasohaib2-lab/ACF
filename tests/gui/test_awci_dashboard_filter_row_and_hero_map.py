@@ -97,6 +97,26 @@ def test_the_settings_button_opens_the_same_single_real_menu_the_gear_opens(qapp
     assert opened == [dashboard._header_menu]
 
 
+def test_the_real_top_bar_gear_button_also_opens_the_same_real_menu(qapp):
+    """Regression guard (review round 1, Finding 1): `_wire_topbar()`
+    used to `.connect(self._open_settings_menu)` directly. PySide6's
+    `clicked` signal delivers `clicked(bool checked=False)` to any slot
+    that accepts a positional argument, so `anchor` silently received
+    `False` (not `None`) - `anchor is not None` then held, and
+    `anchor_widget.mapToGlobal(...)` raised AttributeError on a bool
+    INSIDE the slot, which Qt swallows: no crash, no visible error, the
+    gear button just did nothing. The filter row's own Settings button
+    (covered above) passes its anchor explicitly and can never catch
+    this - only clicking the REAL top bar gear button can."""
+    dashboard = AWCIDashboard()
+    opened: list[object] = []
+    dashboard._header_menu.popup = lambda *_args, **_kwargs: opened.append(dashboard._header_menu)
+
+    dashboard.topbar.settings_button.click()
+
+    assert opened == [dashboard._header_menu]
+
+
 # ------------------------------------------------------------- the hero map
 
 
@@ -110,15 +130,50 @@ def test_the_hero_map_is_materially_taller_and_expands(qapp):
     assert dashboard.global_map.sizePolicy().verticalPolicy() == QSizePolicy.Policy.Expanding
 
 
+def _content_layout_index_containing(layout, widget) -> int | None:
+    """Recursively finds which top-level item of `layout` contains
+    `widget` as a descendant (directly, or nested inside child
+    layouts/widgets), returning that item's own index in `layout`."""
+
+    def _contains(item, target) -> bool:
+        child_widget = item.widget()
+        if child_widget is not None:
+            return child_widget is target or target in child_widget.findChildren(type(target))
+        child_layout = item.layout()
+        if child_layout is not None:
+            for j in range(child_layout.count()):
+                if _contains(child_layout.itemAt(j), target):
+                    return True
+        return False
+
+    for i in range(layout.count()):
+        if _contains(layout.itemAt(i), widget):
+            return i
+    return None
+
+
 def test_the_hero_map_row_outranks_the_analysis_row_for_vertical_space(qapp):
-    """The map row's stretch must genuinely exceed the bottom analysis
-    row's, so on a viewport with room to spare the map is what grows."""
+    """The map row's OWN stretch must genuinely exceed every other row's,
+    so on a viewport with room to spare the map specifically is what
+    grows - not just SOME row somewhere (review round 1, Finding 3: the
+    old assertion, `max(stretches) >= 6`, would still pass if the map's
+    own stretch were reverted and an unrelated row were given stretch 6
+    instead)."""
     dashboard = AWCIDashboard()
-    # The layout that owns both rows is the content column - reached via
+    # The layout that owns every row is the content column - reached via
     # the map's own parent widget rather than a hardcoded index.
     content_layout = dashboard.global_map.parentWidget().layout()
     stretches = [content_layout.stretch(i) for i in range(content_layout.count())]
-    assert max(stretches) >= 6
+
+    map_row_index = _content_layout_index_containing(content_layout, dashboard.global_map)
+    assert map_row_index is not None, "could not locate the map's own row in the content layout"
+
+    map_row_stretch = content_layout.stretch(map_row_index)
+    assert map_row_stretch >= 6
+    assert map_row_stretch == max(stretches)
+    # ...and it must be the UNIQUE maximum, not merely tied with some
+    # other row for first place.
+    assert stretches.count(map_row_stretch) == 1
 
 
 def test_the_map_layers_panel_floats_over_the_maps_own_top_left_corner(qapp):
@@ -151,7 +206,22 @@ def test_the_opacity_slider_is_reachable_inside_the_floating_panel(qapp):
 
 def test_the_awci_scale_legend_rows_never_collapse_on_a_short_map(qapp):
     """Real anti-clipping contract: every LEVELS row must keep a
-    readable share of the axes, whatever the map's real height."""
+    readable share of the axes, whatever the map's real height.
+
+    Review round 1, Finding 2: the old version of this test only
+    checked that all six LEVELS names appeared SOMEWHERE in
+    `axis.texts`, which the old buggy flat `box_h = 0.032` constant
+    ALSO satisfied (it drew every label, just overlapping/unreadable at
+    a small axes height) - so it could not tell the fix apart from the
+    bug. This version measures the actual vertical gap between
+    consecutive label rows and asserts it meets the real ~13-device-px
+    floor `_draw_awci_scale_legend()` now enforces, which is strictly
+    bigger than the old flat 0.032 at this same short height. Confirmed
+    (2026-09-20) by temporarily reverting `box_h` to the old flat
+    `0.032` locally: this test then failed on the `min(gaps) >=
+    expected_floor` assertion (measured gap was exactly 0.032, below
+    the ~0.083 floor this short axes demands); restored the real fix
+    and it passes again."""
     from acf.gui.dashboard.awci_colors import LEVELS
 
     short = AWCIMapPanel("AWCI GLOBAL MAP", show_legend=True)
@@ -160,10 +230,41 @@ def test_the_awci_scale_legend_rows_never_collapse_on_a_short_map(qapp):
     QApplication.processEvents()
     short.update_data(flight_level_hpa=300.0)
 
-    texts = [t.get_text() for t in short.axis.texts]
-    assert "AWCI SCALE" in texts
-    for _threshold, name, _rgb in LEVELS:
-        assert any(name in t for t in texts), f"legend row {name!r} was not drawn"
+    texts = list(short.axis.texts)
+    text_by_label = {}
+    for t in texts:
+        content = t.get_text()
+        for threshold, name, _rgb in LEVELS:
+            # Matched against the exact real "{threshold:g}  {name}"
+            # format _draw_awci_scale_legend() draws each row with
+            # (not a bare substring match: "High" is itself a substring
+            # of "Very High", so a looser match would collide the two).
+            if content == f"{threshold:g}  {name}":
+                text_by_label[name] = t
+                break
+
+    assert "AWCI SCALE" in [t.get_text() for t in texts]
+    assert set(text_by_label) == {name for _threshold, name, _rgb in LEVELS}, (
+        "not every legend row was drawn"
+    )
+
+    # Real device-pixel floor this fix introduced: each row gets at
+    # least ~13 device px of the axes' real (rendered) height, whatever
+    # that height is - see _draw_awci_scale_legend()'s own comment.
+    axes_height_px = float(short.axis.get_window_extent().height)
+    assert axes_height_px > 0
+    expected_floor = min(max(0.032, 13.0 / axes_height_px), 0.5 / max(len(LEVELS), 1))
+    # This axes must actually be short enough to exercise the fix -
+    # otherwise the assertion below would pass trivially against the
+    # old flat 0.032 constant too, and prove nothing.
+    assert expected_floor > 0.032 + 1e-6
+
+    ys = sorted(t.get_position()[1] for t in text_by_label.values())
+    gaps = [b - a for a, b in zip(ys, ys[1:])]
+    assert min(gaps) >= expected_floor - 1e-6, (
+        f"legend rows are packed at {min(gaps):.4f} of the axes height, "
+        f"below the real {expected_floor:.4f} floor for this short a map"
+    )
 
 
 # ------------------------------------------------------- the transport row

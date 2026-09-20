@@ -2188,7 +2188,22 @@ class AWCIDashboard(QWidget):
         self.topbar.now_button.clicked.connect(lambda: self._step_time_slider(0, reset_to=12))
         self.topbar.bell_button.clicked.connect(self._open_alerts)
         self.topbar.hpc_button.clicked.connect(self._toggle_hpc_connection)
-        self.topbar.settings_button.clicked.connect(self._open_settings_menu)
+        # Real fix (2026-09-20, Task 8 review round 1): PySide6's
+        # `clicked` signal delivers `clicked(bool checked=False)` to any
+        # slot that accepts a positional argument, so a direct
+        # `.connect(self._open_settings_menu)` here silently passed
+        # `False` as `anchor` - `anchor is not None` then held, so
+        # `anchor_widget` became the bool `False`, and
+        # `anchor_widget.mapToGlobal(...)` raised AttributeError inside
+        # the slot (Qt swallows exceptions raised in slots, so the gear
+        # button just did nothing, with no crash or visible error). The
+        # lambda swallows that unwanted `checked` argument so
+        # `_open_settings_menu()` always runs with no positional
+        # argument, falling through to its own real
+        # `self.topbar.settings_button` default anchor - unlike the
+        # filter row's OWN "Settings" button just below, which correctly
+        # passes ITS OWN anchor explicitly and must keep doing so.
+        self.topbar.settings_button.clicked.connect(lambda _checked=False: self._open_settings_menu())
         self._sync_topbar_time(self.time_slider.value())
         self._update_clock()
 
