@@ -82,7 +82,7 @@ class AWCIRouteChart(QWidget):
         # est adaptable selon le type d'ecran") - see
         # AWCICrossSection's own matching comment.
         scale = max(0.6, figsize_scale)
-        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor="#0b1220")
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.3 * scale), facecolor="#0b1220")
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)

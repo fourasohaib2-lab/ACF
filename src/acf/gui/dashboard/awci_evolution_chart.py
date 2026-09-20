@@ -28,14 +28,27 @@ from acf.gui.theme_tokens import TOKENS
 class AWCIEvolutionChart(QWidget):
     """Titled real AWCI(t) line chart, one real value per real frame."""
 
-    def __init__(self, title: str = "AWCI EVOLUTION", parent: QWidget | None = None) -> None:
+    def __init__(self, title: str = "AWCI EVOLUTION", parent: QWidget | None = None, figsize_scale: float = 1.0) -> None:
         super().__init__(parent)
         self._title = title
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor=TOKENS.bg_root)
+        # Real bug found 2026-09-20 ("un seul écran sans scroller"
+        # layout audit): unlike every sibling chart in this analysis
+        # row (AWCICrossSection/AWCIRouteChart), this one never took a
+        # figsize/figsize_scale - matplotlib's own default figsize
+        # (6.4x4.8in) meant this single panel alone demanded ~480px of
+        # real height, far more than its 4 siblings, forcing the whole
+        # analysis row (a QHBoxLayout, one shared row height) to grow
+        # to match it - confirmed the single largest contributor to
+        # this dashboard's real vertical overflow past 1080px. Same
+        # real screen_scale-driven sizing as its siblings now, same
+        # honest data underneath (nothing about the real series drawn
+        # changes, only the figure's own physical size).
+        scale = max(0.6, figsize_scale)
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.3 * scale), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -46,7 +59,7 @@ class AWCIEvolutionChart(QWidget):
         self.axis.clear()
         self.axis.set_facecolor(TOKENS.bg_card)
         self.axis.text(0.5, 0.5, "No real evolution yet", transform=self.axis.transAxes, ha="center", va="center", color=TOKENS.text_muted, fontsize=9)
-        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=10, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left")
         self.canvas.draw_idle()
 
     def set_series(self, valid_time_hours: list[float], awci_mean_per_frame: list[float], awci_max_per_frame: list[float], current_frame_index: int | None = None) -> None:
@@ -73,7 +86,7 @@ class AWCIEvolutionChart(QWidget):
         for spine in self.axis.spines.values():
             spine.set_color(TOKENS.border)
         self.axis.legend(fontsize=7, facecolor=TOKENS.bg_card, edgecolor=TOKENS.border, labelcolor=TOKENS.text_primary)
-        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=10, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left")
         self.figure.subplots_adjust(left=0.12, right=0.97, top=0.85, bottom=0.2)
         self.canvas.draw_idle()
 

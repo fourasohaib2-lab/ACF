@@ -708,7 +708,7 @@ class AWCIDashboard(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         content_widget = QWidget()
         outer = QVBoxLayout(content_widget)
-        outer.setSpacing(8)
+        outer.setSpacing(6)
         outer.setContentsMargins(6, 6, 6, 0)
 
         # Real light top bar (added 2026-09-12, docs/reference/
@@ -1197,7 +1197,10 @@ class AWCIDashboard(QWidget):
         # that attribute's own comment) with a 140px floor so a small
         # real screen still gets a genuinely usable map, not just a
         # smaller sizeHint.
-        self.global_map.setMinimumHeight(max(140, int(240 * self._screen_scale)))
+        # Reduced 240 -> 210 floor (2026-09-20, "un seul écran sans
+        # scroller") - same real screen-overflow fix as min_panel_height
+        # above, applied to the map row.
+        self.global_map.setMinimumHeight(max(140, int(210 * self._screen_scale)))
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=1)
@@ -1223,8 +1226,17 @@ class AWCIDashboard(QWidget):
         # self.global_map, which now receives every call regional_map
         # used to). self.cross_section stays fully real, just relocated
         # into Phase 5's "Vertical Cross Section" analysis panel below.
-        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
-        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
+        # Real bug found 2026-09-20 (layout audit, "identique à la
+        # photo"): the default title ("VERTICAL CROSS-SECTION ALONG
+        # FLIGHT PATH") is genuinely too long for this narrow analysis-
+        # row column at any real screen width - confirmed clipped in a
+        # real screenshot, pre-existing (present before this session's
+        # own compaction pass too, not introduced by it). The
+        # reference mockup's own panel title is the shorter "Vertical
+        # Cross Section" - matching it here, real title text only,
+        # nothing about the real chart it labels changes.
+        self.cross_section = AWCICrossSection("VERTICAL CROSS-SECTION", figsize_scale=self._screen_scale)
+        self.cross_section.setMinimumHeight(max(80, int(120 * self._screen_scale)))
 
         self.global_map.set_city_labels(_REGIONAL_CITY_LABELS)
 
@@ -1388,7 +1400,15 @@ class AWCIDashboard(QWidget):
                 panel_layout.addWidget(widget)
             return frame
 
-        min_panel_height = max(90, int(150 * self._screen_scale))
+        # Reduced 150 -> 120 (2026-09-20, explicit user request "un seul
+        # écran sans scroller / adapter comme dans la photo") - the
+        # reference mockup's own analysis-row panels are genuinely more
+        # compact than this row was; 120px keeps every chart legible
+        # (matplotlib figures inside still redraw at their own real
+        # aspect via figsize_scale, nothing here fakes/hides data) while
+        # cutting real vertical overflow measured on a real 1920x1080
+        # screen (screen_scale=1.0).
+        min_panel_height = max(75, int(90 * self._screen_scale))
 
         # Panel 2/5: "Atmospheric Profile" - real T/wind vertical column
         # at the point of interest (acf.awci.vertical_field.
@@ -1397,7 +1417,7 @@ class AWCIDashboard(QWidget):
         # own module docstring); shows its own honest "Click a map to
         # inspect a real column" placeholder in demo/imported-model
         # mode rather than a fabricated sounding.
-        self.atmospheric_profile = ACFVerticalSoundingWidget()
+        self.atmospheric_profile = ACFVerticalSoundingWidget(figsize_scale=self._screen_scale)
         self.atmospheric_profile.setMinimumHeight(min_panel_height)
 
         # Panel 4/5: "Time Evolution (AWCI)" - real AWCI(t) series, fed
@@ -1438,7 +1458,7 @@ class AWCIDashboard(QWidget):
         self.evolution_toggle_widget = QWidget()
         self.evolution_toggle_widget.setLayout(evolution_toggle_row)
 
-        self.evolution_chart = AWCIEvolutionChart(title="TIME EVOLUTION (AWCI)")
+        self.evolution_chart = AWCIEvolutionChart(title="TIME EVOLUTION (AWCI)", figsize_scale=self._screen_scale)
         self.evolution_chart.setMinimumHeight(min_panel_height)
 
         # Panel 5/5: "AWCI Vertical Profile" - the same real per-level
@@ -1447,7 +1467,7 @@ class AWCIDashboard(QWidget):
         # live via the shared _compute_vertical_profile()/
         # _sync_vertical_profile_panel() helpers above so both read the
         # exact same real computation.
-        self.vertical_profile_panel = AWCIVerticalProfile()
+        self.vertical_profile_panel = AWCIVerticalProfile(size_scale=self._screen_scale)
         self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
         self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
         self.vertical_profile_panel.setMinimumHeight(min_panel_height)

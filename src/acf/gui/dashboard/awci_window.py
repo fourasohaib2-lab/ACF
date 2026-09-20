@@ -54,7 +54,18 @@ class AWCIDashboardWindow(QMainWindow):
         # again. Still screen-clamped exactly as before (unchanged for
         # a genuinely small screen, where the QScrollArea below already
         # takes over, per this class's own next NOTE).
-        fit_window_to_screen(self, self.awci_dashboard.sizeHint().width(), 950)
+        # Desired height raised 950 -> 1080 (2026-09-20, "un seul écran
+        # sans scroller"): this dashboard's own real content height was
+        # cut substantially in this same pass (AWCIEvolutionChart/
+        # ACFVerticalSoundingWidget/AWCIVerticalProfile/AWCIHazardRow
+        # all gained a real figsize_scale/size_scale, previously
+        # missing - see each one's own docstring), so the window can
+        # now afford to actually open taller on a real screen that has
+        # the room, rather than leaving free vertical space unused
+        # below a still-hardcoded 950. fit_window_to_screen's own
+        # margin=0.92 clamp still protects every smaller real screen
+        # exactly as before - this is a ceiling raise, not a new floor.
+        fit_window_to_screen(self, self.awci_dashboard.sizeHint().width(), 1080)
         # NOTE (real responsive-sizing fix, 2026-09-05): AWCIDashboard's
         # own real, stacked maps/charts (global map, cross-section,
         # regional map, regional trend, ...) give it a genuine minimum

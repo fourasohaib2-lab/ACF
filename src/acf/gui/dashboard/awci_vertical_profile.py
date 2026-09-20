@@ -56,8 +56,18 @@ class AWCIVerticalProfile(QWidget):
 
     levelClicked = Signal(str)
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None, size_scale: float = 1.0):
         super().__init__(parent)
+
+        # Real fix 2026-09-20 (AWCI "un seul écran sans scroller" layout
+        # audit): sizeHint() used to be a flat (250, 300) regardless of
+        # real screen size, one of the layout's own larger real
+        # contributors to vertical overflow past 1080px on a real
+        # 1920x1080 screen. Same real screen_scale-driven sizing as
+        # every other chart in this dashboard's analysis row - default
+        # 1.0 keeps every other real caller (the "Real Archive" panel,
+        # every existing test) bit-identical.
+        self._size_scale = max(0.6, size_scale)
 
         self._profile: dict[str, float] = {}
         self._highlight_level: str | None = None
@@ -257,7 +267,7 @@ class AWCIVerticalProfile(QWidget):
         super().mousePressEvent(event)
 
     def sizeHint(self):
-        return QSize(250, 300)
+        return QSize(int(250 * self._size_scale), int(210 * self._size_scale))
 
 
 #: Real §51 label per real AWCICalculator module_scores key - the

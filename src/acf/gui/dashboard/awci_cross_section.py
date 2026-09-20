@@ -268,7 +268,7 @@ class AWCICrossSection(QWidget):
         self.axis.tick_params(colors="#9fb0c9", labelsize=7)
         for spine in self.axis.spines.values():
             spine.set_color("#34445f")
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=9, fontweight="bold", loc="left")
 
         # Real AWCI 0-100 colorbar, matching the reference mockup's
         # colorbar under this exact panel.

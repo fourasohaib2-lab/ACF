@@ -72,8 +72,8 @@ class AWCICurrentSituationCard(QFrame):
         super().__init__(parent)
         self.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(4)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(3)
 
         self.title_label = QLabel("CURRENT SITUATION")
         self.title_label.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
@@ -247,8 +247,8 @@ class AWCIModelAgreementCard(QFrame):
         super().__init__(parent)
         self.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(4)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(3)
 
         title = QLabel("MODEL AGREEMENT")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
@@ -313,8 +313,8 @@ class AWCIAirportTable(QFrame):
         super().__init__(parent)
         self.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(4)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(3)
 
         title = QLabel("AIRPORT COMPLEXITY")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")

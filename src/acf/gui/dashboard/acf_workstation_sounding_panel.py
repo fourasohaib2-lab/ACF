@@ -49,12 +49,23 @@ class ACFVerticalSoundingWidget(QWidget):
     """Real temperature/wind-speed vertical profile at a clicked map
     point - see module docstring."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, figsize_scale: float = 1.0) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.figure = plt.figure(facecolor=TOKENS.bg_root)
+        # Real bug found 2026-09-20 (AWCI "un seul écran sans scroller"
+        # layout audit): unlike its sibling charts in that dashboard's
+        # analysis row, this widget never took a figsize/figsize_scale -
+        # matplotlib's own default figsize (6.4x4.8in) demanded ~480px
+        # of real height there, more than any of its 4 siblings, the
+        # single largest contributor (alongside AWCIEvolutionChart's own
+        # identical gap, fixed the same way) to that row forcing the
+        # whole dashboard past 1080px. Default scale=1.0 keeps
+        # acf_workstation.py's own unrelated usage of this same class
+        # bit-identical (it never passes this new parameter).
+        scale = max(0.6, figsize_scale)
+        self.figure = plt.figure(figsize=(5.4 * scale, 1.6 * scale), facecolor=TOKENS.bg_root)
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
         self.axis = self.figure.add_subplot(1, 1, 1)
@@ -70,7 +81,7 @@ class ACFVerticalSoundingWidget(QWidget):
         )
         self.axis.set_xticks([])
         self.axis.set_yticks([])
-        self.axis.set_title("VERTICAL COMPLEXITY SOUNDING", color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left")
+        self.axis.set_title("VERTICAL COMPLEXITY SOUNDING", color=TOKENS.text_primary, fontsize=7.5, fontweight="bold", loc="left")
         self.canvas.draw_idle()
 
     def update_from_volume_and_point(
@@ -116,7 +127,7 @@ class ACFVerticalSoundingWidget(QWidget):
             spine.set_color(TOKENS.border)
         self.axis.set_title(
             f"VERTICAL COMPLEXITY SOUNDING — {profile['lat']:.2f}°, {profile['lon']:.2f}°",
-            color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left",
+            color=TOKENS.text_primary, fontsize=7.5, fontweight="bold", loc="left",
         )
         self.figure.subplots_adjust(left=0.2, right=0.95, top=0.8, bottom=0.16)
         self.canvas.draw_idle()

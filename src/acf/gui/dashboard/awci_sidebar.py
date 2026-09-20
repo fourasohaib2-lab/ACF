@@ -31,8 +31,60 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QButtonGroup, QFrame, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPainterPath
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
+
+class AWCILogoMark(QWidget):
+    """Real, hand-painted (not a font glyph/emoji) stand-in for the
+    reference mockup's own mountain-peaks logo mark
+    (`docs/reference/awci_dashboard_reference.png`, top-left corner) -
+    3 overlapping angular triangles in 3 real shades of the same accent
+    blue already used everywhere else in this dashboard's theme
+    (`acf.gui.theme_tokens.TOKENS.accent_primary` and 2 derived
+    lighter/darker shades), drawn with `QPainter` so it never depends
+    on an emoji font being installed (unlike the previous "🛩️" glyph,
+    which renders as a blank tofu box on any system lacking a color
+    emoji font - confirmed on this session's own headless/xvfb
+    screenshot environment). Honest approximation of the mockup's own
+    icon, not a pixel-traced copy of it - same silhouette family
+    (stacked angular peaks), same 3-tone blue gradient read."""
+
+    def __init__(self, size: int = 28, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+
+    def paintEvent(self, event) -> None:  # noqa: N802 - Qt override
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        w, h = self.width(), self.height()
+
+        def peak(cx: float, top: float, half_w: float, color: str) -> None:
+            path = QPainterPath()
+            path.moveTo(QPointF(cx, top))
+            path.lineTo(QPointF(cx - half_w, h * 0.92))
+            path.lineTo(QPointF(cx + half_w, h * 0.92))
+            path.closeSubpath()
+            painter.setBrush(QColor(color))
+            painter.drawPath(path)
+
+        # Back-to-front so the front (rightmost, lightest) peak overlaps
+        # the other two, matching the reference mark's own layering.
+        peak(w * 0.38, h * 0.10, w * 0.30, "#1e5fd9")
+        peak(w * 0.58, h * 0.22, w * 0.30, "#2f7bf0")
+        peak(w * 0.72, h * 0.30, w * 0.26, "#5fa2ff")
+        painter.end()
 
 
 @dataclass(frozen=True)
@@ -161,12 +213,14 @@ class AWCISidebar(QWidget):
 
         # --- Logo row ---------------------------------------------------
         logo_row = QWidget()
-        logo_layout = QVBoxLayout(logo_row)
-        logo_layout.setContentsMargins(20, 20, 20, 16)
-        logo_layout.setSpacing(0)
-        logo_label = QLabel("🛩️ AWCI")
+        logo_layout = QHBoxLayout(logo_row)
+        logo_layout.setContentsMargins(20, 18, 20, 14)
+        logo_layout.setSpacing(8)
+        logo_layout.addWidget(AWCILogoMark(24))
+        logo_label = QLabel("AWCI")
         logo_label.setStyleSheet(f"color: {self._TEXT}; font-size: 18px; font-weight: bold; border: none;")
         logo_layout.addWidget(logo_label)
+        logo_layout.addStretch()
         outer.addWidget(logo_row)
 
         # --- Scrollable nav ----------------------------------------------

@@ -34,7 +34,7 @@ from PySide6.QtWidgets import QWidget
 class AWCIGauge(QWidget):
     """Circular (or half-circle) gauge widget for a 0-100 score."""
 
-    def __init__(self, parent: QWidget | None = None, half_circle: bool = False):
+    def __init__(self, parent: QWidget | None = None, half_circle: bool = False, min_size: int = 180):
         super().__init__(parent)
 
         self._score = 0.0
@@ -59,7 +59,7 @@ class AWCIGauge(QWidget):
             (85, "Extreme", QColor(255, 0, 0)),
         ]
 
-        self.setMinimumSize(180, 100 if half_circle else 180)
+        self.setMinimumSize(min_size, int(min_size * 100 / 180) if half_circle else min_size)
         self.setStyleSheet("background: transparent;")
 
     def set_score(self, score: float, animate: bool = True):
@@ -171,18 +171,25 @@ class AWCIGauge(QWidget):
         painter.setPen(QPen(Qt.PenStyle.NoPen))
         painter.drawEllipse(center, 8, 8)
 
-        # Score
+        # Score - font/box sizes scaled to the real gauge diameter (not
+        # a fixed 22pt) so a smaller gauge (e.g. the compact hazard-row
+        # instance, min_size=110) reads proportionally instead of an
+        # oversized numeral overflowing its box.
+        text_scale = size / 180.0
         level, color = self._get_level_and_color(self._score)
         painter.setPen(QPen(color, 1))
         font = painter.font()
-        font.setPointSize(22)
+        font.setPointSizeF(max(8.0, 22 * text_scale))
         font.setBold(True)
         painter.setFont(font)
-        score_text_y = center.y() - size // 4 if self._half_circle else center.y() + 10
-        painter.drawText(center.x() - 30, score_text_y, 60, 40, Qt.AlignmentFlag.AlignCenter, f"{int(self._score)}")
+        score_text_y = center.y() - size // 4 if self._half_circle else center.y() + int(10 * text_scale)
+        box_w, box_h = int(60 * text_scale), int(40 * text_scale)
+        painter.drawText(
+            center.x() - box_w // 2, score_text_y, box_w, box_h, Qt.AlignmentFlag.AlignCenter, f"{int(self._score)}"
+        )
 
         # Level
-        font.setPointSize(9)
+        font.setPointSizeF(max(6.0, 9 * text_scale))
         font.setBold(False)
         painter.setFont(font)
         painter.setPen(QPen(QColor(180, 180, 200), 1))
@@ -195,8 +202,11 @@ class AWCIGauge(QWidget):
         # exactly +40 relative to its score offset: center.y()+50 vs
         # center.y()+10) - reusing that same real, working spacing here
         # rather than inventing a new one.
-        level_text_y = score_text_y + 40 if self._half_circle else center.y() + 50
-        painter.drawText(center.x() - 50, level_text_y, 100, 20, Qt.AlignmentFlag.AlignCenter, level)
+        level_text_y = score_text_y + box_h if self._half_circle else center.y() + int(50 * text_scale)
+        level_box_w = int(100 * text_scale)
+        painter.drawText(
+            center.x() - level_box_w // 2, level_text_y, level_box_w, int(20 * text_scale), Qt.AlignmentFlag.AlignCenter, level
+        )
 
         painter.end()
 

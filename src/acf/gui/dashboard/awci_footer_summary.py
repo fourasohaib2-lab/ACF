@@ -65,8 +65,8 @@ class AWCIRecentAlertsCard(QFrame):
             self.setToolTip("Open the full Alerts dialog.")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        layout.setContentsMargins(9, 6, 9, 6)
+        layout.setSpacing(3)
 
         title = QLabel("Recent Alerts")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
@@ -144,8 +144,8 @@ class AWCILatestUpdatesCard(QFrame):
         self.setStyleSheet(_card_style())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        layout.setContentsMargins(9, 6, 9, 6)
+        layout.setSpacing(3)
 
         title = QLabel("Latest Updates")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
@@ -197,8 +197,8 @@ class AWCIQuickActionsCard(QFrame):
         self.setStyleSheet(_card_style())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        layout.setContentsMargins(9, 6, 9, 6)
+        layout.setSpacing(3)
 
         title = QLabel("Quick Actions")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
@@ -219,7 +219,7 @@ class AWCIQuickActionsCard(QFrame):
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setStyleSheet(
                 f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
-                f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 9px; padding: 6px 2px; }}"
+                f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 9px; padding: 3px 2px; }}"
                 f"QPushButton:hover {{ border-color: {TOKENS.accent_primary}; color: {TOKENS.text_primary}; }}"
             )
             button.clicked.connect(handler)

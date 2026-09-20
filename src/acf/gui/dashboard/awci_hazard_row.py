@@ -66,15 +66,15 @@ class _HazardCard(QFrame):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._clickable = clickable
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(2)
+        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setSpacing(1)
 
         header = QLabel(f"{icon}  {label}")
         header.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
         layout.addWidget(header)
 
         self.value_label = QLabel("—")
-        self.value_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 20px; font-weight: bold; border: none;")
+        self.value_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 18px; font-weight: bold; border: none;")
         layout.addWidget(self.value_label)
 
         self.severity_label = QLabel("")
@@ -121,11 +121,17 @@ class AWCIHazardRow(QWidget):
         gauge_card = QFrame()
         gauge_card.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
         gauge_layout = QVBoxLayout(gauge_card)
-        gauge_layout.setContentsMargins(10, 8, 10, 4)
+        gauge_layout.setContentsMargins(10, 6, 10, 4)
         gauge_title = QLabel("AWCI GLOBAL")
         gauge_title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
         gauge_layout.addWidget(gauge_title)
-        self.gauge = AWCIGauge()
+        # Compact size (2026-09-20, "un seul écran sans scroller") -
+        # docs/reference/awci_dashboard_reference.png's own gauge is a
+        # small mini-card element, not the full 180px gauge this same
+        # AWCIGauge class also serves standalone elsewhere
+        # (acf_general_dashboard.py) - min_size lets this one instance
+        # shrink without changing that other, unrelated usage's default.
+        self.gauge = AWCIGauge(min_size=95)
         gauge_layout.addWidget(self.gauge)
         layout.addWidget(gauge_card)
 
