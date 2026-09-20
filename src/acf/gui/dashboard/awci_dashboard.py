@@ -164,6 +164,7 @@ from acf.gui.dashboard.awci_timeline import AWCITimeline
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, apply_elevation, dashboard_stylesheet, label_style
+from acf.gui.widgets.combo_sizing import shrink_combo_min_width
 
 
 def _filter_row_button_style() -> str:
@@ -1208,30 +1209,28 @@ class AWCIDashboard(QWidget):
         # (see those call sites' own new self.hazard_row.update_data()
         # line, added alongside the existing risk_summary one).
         self.hazard_row = AWCIHazardRow()
-        outer.addWidget(self.hazard_row)
 
         # Real "Current Situation" / "Model Agreement" / "Airport
-        # Complexity" row (added 2026-09-12, docs/reference/
+        # Complexity" cards (added 2026-09-12, docs/reference/
         # awci_dashboard_reference.png, Phase 4/6) - see
         # awci_situation_panel.py's own module docstring for the exact
-        # real source of every value. Added as its own new row rather
-        # than replacing the existing cross-section/radar/risk-summary
-        # columns below (a deliberate, disclosed scope decision - see
-        # reports/ACF_MASTER_AUDIT_v2.md's Phase 4 entry - preserving
-        # those already-real, already-tested panels rather than a
-        # riskier full row1/row2 teardown to match the photo's exact
-        # column arrangement).
-        situation_row = QHBoxLayout()
-        situation_row.setSpacing(8)
+        # real source of every value.
+        #
+        # RELOCATED 2026-09-20 (Task 9 of the AWCI dashboard-fixes plan):
+        # these three cards used to be their own full-width row ABOVE the
+        # hero map - a deliberate, disclosed 2026-09-12 scope decision
+        # (preserving already-tested panels rather than a riskier row1/row2
+        # teardown). The reference image instead puts them in a narrow
+        # RIGHT column beside the hero map, which is what row1 below now
+        # builds. Only their parent/layout position changes here: the
+        # widgets themselves, their constructor arguments and every one of
+        # their signal/slot connections (on_view_all -> _open_all_airports_
+        # dialog, and every _refresh_situation_row() feed) are untouched.
         self.current_situation_card = AWCICurrentSituationCard()
         self.model_agreement_card = AWCIModelAgreementCard()
         self.airport_table = AWCIAirportTable(on_view_all=self._open_all_airports_dialog)
-        situation_row.addWidget(self.current_situation_card, stretch=1)
-        situation_row.addWidget(self.model_agreement_card, stretch=1)
-        situation_row.addWidget(self.airport_table, stretch=1)
-        outer.addLayout(situation_row)
 
-        # --- Row 1: global map (left) + cross-section & radar (right) -----
+        # --- Row 1: hazard row + hero map (left) | situation column (right) -
         row1 = QHBoxLayout()
         row1.setSpacing(8)
 
@@ -1286,13 +1285,36 @@ class AWCIDashboard(QWidget):
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
 
-        # Real map column: the hero map with its own transport row beneath
-        # it (reference image), rather than the map alone.
+        # Real map column: the AWCI GLOBAL gauge + 6 hazard cards on top,
+        # then the hero map with its own transport row beneath it - exactly
+        # the reference image's left column. The hazard row used to be a
+        # separate full-width row of `outer`; in the reference it stops
+        # where the Current Situation column begins, so it belongs here.
         map_column = QVBoxLayout()
         map_column.setSpacing(6)
+        map_column.addWidget(self.hazard_row)
         map_column.addWidget(self.global_map, stretch=1)
         map_column.addWidget(self._build_map_transport_row())
-        row1.addLayout(map_column, stretch=1)
+
+        # Real right column (2026-09-20, Task 9): Current Situation +
+        # Model Agreement side by side on top, Airport Complexity beneath -
+        # the reference image's own arrangement. Stretch 70/30 measured off
+        # that image (its right column is ~25% of the content width; 30%
+        # here keeps these three real cards' own longest labels - "Heavy
+        # Precipitation", "NOT_COMPUTED", the airport table's 4 columns -
+        # readable at the 1280-class content widths this dashboard actually
+        # renders at, rather than clipping them to hit an exact percentage).
+        situation_column = QVBoxLayout()
+        situation_column.setSpacing(8)
+        situation_top_row = QHBoxLayout()
+        situation_top_row.setSpacing(8)
+        situation_top_row.addWidget(self.current_situation_card, stretch=3)
+        situation_top_row.addWidget(self.model_agreement_card, stretch=2)
+        situation_column.addLayout(situation_top_row, stretch=1)
+        situation_column.addWidget(self.airport_table, stretch=1)
+
+        row1.addLayout(map_column, stretch=70)
+        row1.addLayout(situation_column, stretch=30)
         outer.addLayout(row1, stretch=6)
 
         # NOTE (2026-09-13, docs/reference/awci_dashboard_reference.png,
@@ -1315,7 +1337,16 @@ class AWCIDashboard(QWidget):
         # self.global_map, which now receives every call regional_map
         # used to). self.cross_section stays fully real, just relocated
         # into Phase 5's "Vertical Cross Section" analysis panel below.
-        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
+        # Title shortened 2026-09-20 (Task 9) from this widget's own default
+        # "VERTICAL CROSS-SECTION ALONG FLIGHT PATH": inside the reference
+        # image's 5-panel analysis row each card is ~250px wide, where that
+        # 40-character matplotlib title clips mid-word. "VERTICAL CROSS
+        # SECTION" is the reference image's own wording for this card, and
+        # the flight path it is drawn along is already named on the card's
+        # own second title line (set_external_cross_section()'s label) and
+        # by the Route selector two panels over. Other callers of
+        # AWCICrossSection (acf_general_dashboard) keep their own titles.
+        self.cross_section = AWCICrossSection("VERTICAL CROSS SECTION", figsize_scale=self._screen_scale)
         self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
 
         self.global_map.set_city_labels(_REGIONAL_CITY_LABELS)
@@ -1340,6 +1371,19 @@ class AWCIDashboard(QWidget):
             self.route_to_selector.addItem(display, icao)
         self.route_from_selector.setCurrentIndex(list(_AIRPORTS).index("DAAG"))
         self.route_to_selector.setCurrentIndex(list(_AIRPORTS).index("HLLT"))
+        # Real clipping fix (2026-09-20, Task 9): these two combos' items
+        # are long ("DAAG – Algiers (Houari Boumediene)"), and QComboBox's
+        # default size-adjust policy floors a combo's MINIMUM width at its
+        # longest item. Inside the 5-panel analysis row that made the
+        # Flight Route Analysis panel's minimum ~650px wide, which the
+        # layout engine paid for by squeezing its equal-stretch siblings -
+        # the Vertical Cross Section and Atmospheric Profile panels - down
+        # to ~84px, clipping their titles to "VERTICAL". Reuses this
+        # codebase's own existing shared fix for exactly this Qt behaviour
+        # rather than a second local workaround; the dropdown popups still
+        # show every airport's full name.
+        shrink_combo_min_width(self.route_from_selector, 12)
+        shrink_combo_min_width(self.route_to_selector, 12)
         route_row.addWidget(self.route_from_selector, stretch=1)
         arrow_label = QLabel("→")
         arrow_label.setStyleSheet(label_style("text_secondary", "xs"))
@@ -1354,13 +1398,24 @@ class AWCIDashboard(QWidget):
             "extent - an honest map-crop limit, not a bug, for a pair further apart."
         )
         self.apply_route_button.clicked.connect(self._on_apply_route)
-        route_row.addWidget(self.apply_route_button)
         # Real container widget (2026-09-12) so this whole real route-
         # selector row can be relocated wholesale into Phase 5's real
         # "Flight Route Analysis" panel below, rather than staying in
         # the now-hidden left_col2/row2 this section used to build.
+        #
+        # Two lines rather than one since 2026-09-20 (Task 9): on ONE line
+        # (label + 2 combos + arrow + a full-width "Apply Route" button)
+        # this row's own minimum width alone still floored the Flight Route
+        # Analysis panel at ~460px inside a 5-panel row whose fair share is
+        # ~250px, and the layout engine again took the difference out of
+        # its narrower siblings. Same real controls, same signals.
+        route_selector_column = QVBoxLayout()
+        route_selector_column.setContentsMargins(0, 0, 0, 0)
+        route_selector_column.setSpacing(4)
+        route_selector_column.addLayout(route_row)
+        route_selector_column.addWidget(self.apply_route_button)
         self.route_selector_widget = QWidget()
-        self.route_selector_widget.setLayout(route_row)
+        self.route_selector_widget.setLayout(route_selector_column)
 
         # Real per-level module_scores/physical/forecast breakdown -
         # see _compute_vertical_profile()'s own docstring. The old

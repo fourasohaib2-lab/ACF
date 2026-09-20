@@ -167,7 +167,12 @@ class AWCICrossSection(QWidget):
         identical to before - the existing overlay (if any) is kept,
         same as this method already did."""
         self._external_cross_section = (distances_km, levels_hpa, grid)
-        self._title = f"{self._base_title} — {label}"
+        # Second LINE rather than " — " on the same line (2026-09-20, Task
+        # 9): this panel renders ~250px wide in the AWCI dashboard's own
+        # 5-card analysis row, where a one-line "<title> — <label>" clips
+        # mid-word. Same real text, same real label, two lines - matching
+        # the reference image's own title/subtitle card header.
+        self._title = f"{self._base_title}\n{label}"
         self._last_grid_context = (distances_km, levels_hpa)
         if hazard_overlay is not None:
             self._hazard_overlay = hazard_overlay
@@ -268,7 +273,7 @@ class AWCICrossSection(QWidget):
         self.axis.tick_params(colors="#9fb0c9", labelsize=7)
         for spine in self.axis.spines.values():
             spine.set_color("#34445f")
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=8, fontweight="bold", loc="left", x=-0.09)
 
         # Real AWCI 0-100 colorbar, matching the reference mockup's
         # colorbar under this exact panel.
@@ -277,7 +282,11 @@ class AWCICrossSection(QWidget):
         self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=6)
         self._colorbar.outline.set_edgecolor("#34445f")
 
-        self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.22)
+        # A two-line title (see set_external_cross_section()) needs its own
+        # real headroom, or matplotlib draws it over the top of the axes.
+        self.figure.subplots_adjust(
+            left=0.09, right=0.98, top=0.80 if "\n" in self._title else 0.88, bottom=0.22
+        )
         self.canvas.draw_idle()
 
     def _draw_hazard_icons(self) -> None:

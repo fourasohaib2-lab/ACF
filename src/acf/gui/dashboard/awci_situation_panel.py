@@ -381,6 +381,15 @@ class AWCIAirportTable(QFrame):
         self._rows_layout = QVBoxLayout()
         self._rows_layout.setSpacing(3)
         layout.addLayout(self._rows_layout)
+        # Real layout fix (2026-09-20, Task 9): this card now lives in the
+        # dashboard's right column, where it is routinely taller than its
+        # own content. Without a trailing stretch Qt spread that surplus
+        # BETWEEN the title, the column header and the rows, opening a wide
+        # empty band under "AIRPORT COMPLEXITY"; with it, the real rows stay
+        # together under the header and "View all airports" sits at the
+        # bottom - the reference image's own arrangement. No behaviour, no
+        # value and no signal changes.
+        layout.addStretch()
 
         self.view_all_button = QPushButton("View all airports")
         self.view_all_button.setFlat(True)
