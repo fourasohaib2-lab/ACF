@@ -103,6 +103,50 @@ def test_dialog_shows_real_score_and_real_inputs_in_demo_mode(qtbot):
     assert "REAL" in dialog.badge_label.text()
 
 
+def test_dialog_does_not_claim_real_in_demo_mode_when_the_modules_own_input_is_missing(qtbot):
+    """Regression test for the fabricated REAL badge (fixed 2026-09-14):
+    demo mode's _synthetic_inputs() does supply ceiling_height_m/
+    visibility_risk MOST of the time (via acf.awci.ceiling/visibility's
+    real per-point computation), but both are genuinely conditional -
+    acf.awci.ceiling.compute_real_ceiling_at_point()'s own documented
+    contract omits ceiling_height_m from the dict entirely whenever the
+    real computed relative humidity is non-positive at that point (see
+    its own "CEILING_NOT_COMPUTED_ZERO_HUMIDITY"/is_real_data=False
+    branch) - AWCICalculator.calculate() then falls back to its own
+    0.0 default for "ceiling", not a genuinely computed score. Before
+    this fix the badge hardcoded `is_real = True` for every demo-mode
+    call regardless of what raw_data actually contained, so it kept
+    claiming "REAL - genuinely computed" even for this honestly-missing
+    case - exactly mirroring the fabrication the Real Physics branch
+    already correctly avoids via info.real_in_real_physics."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    # A real raw_data dict as it would look for a demo point where RH
+    # <= 0 - every OTHER real input present, but ceiling_height_m
+    # genuinely absent because compute_real_ceiling_at_point() didn't
+    # add it, not an artificially truncated dict.
+    raw_data = {"wind_speed": 12.0, "temperature": 290.0, "specific_humidity": 0.0}
+    dialog.show_component("ceiling", 0.0, raw_data, "demo")
+
+    assert "REAL" not in dialog.badge_label.text()
+    assert "✅" not in dialog.badge_label.text()
+    assert "DEFAULT" in dialog.badge_label.text()
+    assert "ceiling_height_m" in dialog.badge_label.text()
+    assert "not supplied" in dialog.inputs_label.text()
+
+
+def test_dialog_still_claims_real_in_demo_mode_when_the_modules_own_input_is_present(qtbot):
+    """Positive counterpart of the regression test above: once
+    ceiling_height_m genuinely IS in raw_data (the common case, RH >
+    0), the badge must still honestly say REAL - the fix must not
+    over-correct into always showing DEFAULT for demo mode."""
+    dialog = AWCIComponentDetailDialog()
+    qtbot.addWidget(dialog)
+    dialog.show_component("ceiling", 42.0, {"ceiling_height_m": 500.0}, "demo")
+    assert "✅ REAL" in dialog.badge_label.text()
+    assert "demo synthetic pattern" in dialog.badge_label.text()
+
+
 def test_dialog_shows_honest_default_badge_in_real_physics_mode_for_a_pinned_module(qtbot):
     dialog = AWCIComponentDetailDialog()
     qtbot.addWidget(dialog)

@@ -120,6 +120,23 @@ class AWCIHazardRow(QWidget):
 
         gauge_card = QFrame()
         gauge_card.setStyleSheet(f"background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px;")
+        # Real, visible disclosure (Task 7, 2026-09-14 AWCI dashboard
+        # fixes pass) - this gauge is the MAX AWCI along the whole demo
+        # route (see AWCIDashboard's own "overall_awci = max(route_
+        # scores)..." call site), while the 6 hazard cards to its right
+        # are the point-of-interest's own module_scores. Both are real,
+        # but they are two different real quantities/locations with
+        # nothing on-screen saying so until now - a tooltip on the
+        # whole gauge card, the same setToolTip() convention this
+        # dashboard already uses everywhere else (e.g. apply_route_
+        # button/flight_level_selector above), rather than a new visual
+        # pattern.
+        gauge_card.setToolTip(
+            "AWCI GLOBAL shows the worst (maximum) real AWCI score along the whole\n"
+            "demo route, not the point of interest. The 6 hazard cards to the right\n"
+            "reflect the point of interest instead - two different real locations,\n"
+            "shown side by side."
+        )
         gauge_layout = QVBoxLayout(gauge_card)
         gauge_layout.setContentsMargins(10, 8, 10, 4)
         gauge_title = QLabel("AWCI GLOBAL")
@@ -155,5 +172,6 @@ class AWCIHazardRow(QWidget):
         dict ever reaches here), so no second scaling is applied."""
         self.gauge.set_score(overall_awci, animate=False)
         for key, _icon, label in HAZARD_CARDS:
-            score = None if key is None else float(module_scores.get(key, 0.0))
+            raw_score = None if key is None else module_scores.get(key)
+            score = None if raw_score is None else float(raw_score)
             self._cards[label].set_value(score)

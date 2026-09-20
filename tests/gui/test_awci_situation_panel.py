@@ -73,6 +73,41 @@ def test_real_area_altitude_valid_time_confidence_are_shown_verbatim(qapp):
     assert card.confidence_value_label.text() == "73%"
 
 
+def test_none_confidence_shows_honest_not_computed_never_a_fabricated_100_pct(qapp):
+    """Real Physics tier proof: compute_real_complexity_volume() feeds
+    AWCICalculator.calculate() no `confidence` input at all, so
+    calculate() falls back to its own data.get("confidence", 100.0)
+    default - that 100.0 means "no confidence signal was computed",
+    never "maximum confidence" (see calculator.py's own calculate()
+    docstring). The Real Physics call site in awci_dashboard.py passes
+    confidence_pct=None for exactly this case; the card must render an
+    honest "NOT_COMPUTED" label and an empty confidence bar, never a
+    fabricated-looking full green 100% bar."""
+    card = AWCICurrentSituationCard()
+    card.resize(200, 100)
+    card.update_data(
+        _module_scores(), 50.0, None, None,
+        area="North Africa", altitude="FL280", valid_time="14:00 UTC", confidence_pct=None,
+    )
+    assert card.confidence_value_label.text() == "NOT_COMPUTED"
+    assert card._confidence_fill.width() == 0
+
+
+def test_genuinely_computed_100_pct_confidence_still_renders_as_100_pct(qapp):
+    """Distinguishes the fake default from a real, explicitly-supplied
+    100.0 confidence (e.g. a caller that genuinely measured full
+    confidence) - confidence_pct=100.0 (not None) must still render as
+    an honest "100%", not be conflated with the NOT_COMPUTED case."""
+    card = AWCICurrentSituationCard()
+    card.resize(200, 100)
+    card.update_data(
+        _module_scores(), 50.0, None, None,
+        area="North Africa", altitude="FL280", valid_time="14:00 UTC", confidence_pct=100.0,
+    )
+    assert card.confidence_value_label.text() == "100%"
+    assert card._confidence_fill.width() == card.confidence_bar.width()
+
+
 # ------------------------------------- explainability ("Main Contributors")
 
 
@@ -133,15 +168,15 @@ def test_no_positive_contributor_shows_an_honest_message(qapp):
 # ----------------------------------------------------- AWCIModelAgreementCard
 
 
-def test_zero_disagreement_shows_very_high_agreement_never_extreme(qapp):
-    """Real bug found and fixed while building this: level_for() is a
-    hazard-severity scale (higher = worse, "Extreme" = worst) - naively
-    applying it to "agreement" showed "Extreme" for a real 0.0
-    disagreement (i.e. perfect real agreement), the opposite of the
-    real meaning."""
+def test_zero_disagreement_shows_not_computed_never_a_fabricated_severity(qapp):
+    """A real 0.0 disagreement is the calculator's own "unmeasured"
+    default (no real model_realizations wired in), not a genuine
+    zero-spread measurement - the headline must say so honestly
+    (NOT_COMPUTED) rather than fabricating a severity word like "Very
+    High" agreement or (an earlier bug) "Extreme"."""
     card = AWCIModelAgreementCard()
     card.update_data({"model_disagreement": 0.0})
-    assert card.level_label.text() == "Very High"
+    assert card.level_label.text() == "NOT_COMPUTED"
     assert "no real multi-model ensemble" in card.detail_label.text().lower()
 
 
@@ -171,3 +206,23 @@ def test_view_all_callback_is_invoked_on_click(qapp):
     table = AWCIAirportTable(on_view_all=lambda: calls.append(True))
     table.view_all_button.click()
     assert calls == [True]
+
+
+def test_demo_tier_tag_hidden_when_demo_is_the_active_tier(qapp):
+    """Task 7 (2026-09-14 AWCI dashboard fixes): default/demo tier is
+    this table's own real tier too, so the "DEMO GRID" mismatch tag
+    must stay hidden - showing it would be a false disclosure."""
+    table = AWCIAirportTable()
+    table.update_data([{"icao": "DAAG", "awci": 33.0, "trend": "→", "level": "Low"}], is_demo_tier=True)
+    assert table.tier_mismatch_tag.isHidden()
+
+
+def test_demo_tier_tag_visible_when_another_real_tier_is_active(qapp):
+    """When Real Physics/Real Archive/an imported model is active
+    elsewhere, this table is still demo-tier under the hood - the
+    mismatch must become visibly disclosed, matching the topbar's own
+    tier-badge visual language."""
+    table = AWCIAirportTable()
+    table.update_data([{"icao": "DAAG", "awci": 33.0, "trend": "→", "level": "Low"}], is_demo_tier=False)
+    assert not table.tier_mismatch_tag.isHidden()
+    assert table.tier_mismatch_tag.text() == "DEMO GRID"

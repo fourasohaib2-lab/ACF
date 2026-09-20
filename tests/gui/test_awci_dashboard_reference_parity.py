@@ -382,18 +382,21 @@ def test_evolution_chart_has_real_data_after_refresh(qapp):
 
 def test_evolution_chart_updates_when_the_time_slider_moves(qapp):
     """The real +/-6h sample is centered on the slider's own current
-    hour, so its X-axis (real hours-of-day) shifts with the slider even
-    when the Y values (a function of the RELATIVE time offset only, not
-    the absolute hour - see awci_synthetic_field.py) coincidentally
-    stay the same."""
+    hour, so both its X-axis (real hours-of-day) AND its Y values (a
+    function of the real ABSOLUTE hour - current_hour + offset - fed
+    into time_offset_hours, see awci_synthetic_field.py) genuinely
+    shift with the slider."""
     dashboard = AWCIDashboard()
-    before = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
+    before_x = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
+    before_y = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
 
     dashboard.time_slider.setValue(20)
     dashboard.refresh()
 
-    after = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
-    assert before != after
+    after_x = list(dashboard.evolution_chart.axis.lines[0].get_xdata())
+    after_y = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
+    assert before_x != after_x
+    assert before_y != after_y, "Time Evolution values are decoupled from the Valid Time slider"
 
 
 # --------------------------------------------------- cross-section overlay

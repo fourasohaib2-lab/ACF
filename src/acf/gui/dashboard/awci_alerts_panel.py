@@ -70,7 +70,7 @@ def compute_elevated_risks(
         elif module in specials:
             score = specials[module]
         else:
-            score = module_scores.get(module, 0.0)
+            score = module_scores.get(module)
         if score is None:
             continue
         level = _band(score)

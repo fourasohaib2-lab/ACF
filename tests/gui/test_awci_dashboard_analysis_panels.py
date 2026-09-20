@@ -123,7 +123,7 @@ def test_evolution_chart_matches_a_direct_recomputation_of_the_real_pm6h_series(
             _synthetic_inputs(
                 *dashboard._point_of_interest,
                 flight_level_hpa=dashboard._current_flight_level_hpa,
-                time_offset_hours=float(offset),
+                time_offset_hours=float(current_hour + offset),
             )
         )["awci"]
         for offset in range(-6, 7, 2)
@@ -188,7 +188,7 @@ def test_route_mode_series_matches_a_direct_recomputation_of_route_profile(qapp)
     for offset in range(-6, 7, 2):
         _distances, scores = route_profile(
             dashboard._regional_route[0][:2], dashboard._regional_route[1][:2],
-            n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+            n_points=40, flight_level_hpa=850.0, time_offset_hours=float(current_hour + offset),
         )
         expected_means.append(float(np.mean(scores)))
         expected_maxes.append(float(np.max(scores)))
@@ -232,9 +232,10 @@ def test_airport_mode_series_matches_a_direct_recomputation_at_the_selected_depa
 
     icao = dashboard.route_from_selector.currentData()
     lat, lon, _name = _AIRPORTS[icao]
+    current_hour = dashboard.time_slider.value()
     expected_values = [
         AWCICalculator().calculate(
-            _synthetic_inputs(lat, lon, flight_level_hpa=dashboard._current_flight_level_hpa, time_offset_hours=float(offset))
+            _synthetic_inputs(lat, lon, flight_level_hpa=dashboard._current_flight_level_hpa, time_offset_hours=float(current_hour + offset))
         )["awci"]
         for offset in range(-6, 7, 2)
     ]
@@ -256,3 +257,82 @@ def test_refresh_redraws_the_currently_selected_mode_not_always_global(qapp):
     _hours, means, maxes = dashboard._compute_demo_evolution_series("route")
     plotted_mean = list(dashboard.evolution_chart.axis.lines[0].get_ydata())
     assert plotted_mean == pytest.approx(means)
+
+
+# ------------------------------------------- real analysis-row height
+#
+# Regression tests for 2026-09-20, Task 2 of the AWCI final-polish plan.
+# The 5 analysis cards used to render 572px tall (measured) against the
+# reference image's own ~250px card - docs/reference/awci_dashboard_
+# reference.png is 1536x1024 and its analysis cards span y~650..900, i.e.
+# ~24% of the image height. The real cause was NOT the wrapper's
+# setMinimumHeight() floor but the matplotlib Figures' own preferred
+# sizes: FigureCanvasQTAgg reports a Figure's inch size x dpi verbatim as
+# its Qt sizeHint, and two of these panels were left at matplotlib's
+# 6.4x4.8in default, i.e. a 480px vertical ask each, while
+# AWCIVerticalProfile hard-coded a 300px sizeHint.
+
+
+def _analysis_card_height(dashboard: AWCIDashboard) -> int:
+    """The real rendered height of the analysis row's first card (all
+    five share one QHBoxLayout row, so they share a height)."""
+    return dashboard.cross_section.parentWidget().height()
+
+
+def test_every_analysis_canvas_asks_for_a_height_near_the_reference_card_not_matplotlibs_default(qapp):
+    dashboard = AWCIDashboard(screen_scale=1.0)
+
+    for chart in (
+        dashboard.cross_section,
+        dashboard.atmospheric_profile,
+        dashboard.route_chart,
+        dashboard.evolution_chart,
+    ):
+        hint = chart.sizeHint().height()
+        assert hint < 250, f"{type(chart).__name__} still asks for {hint}px of preferred height"
+        # ...but not so small that its axis labels/title lose their room.
+        assert hint >= 60
+
+    assert dashboard.vertical_profile_panel.sizeHint().height() < 250
+
+
+def test_the_real_analysis_row_renders_near_the_reference_images_own_card_proportion(qapp):
+    from PySide6.QtWidgets import QMainWindow, QScrollArea
+
+    dashboard = AWCIDashboard(screen_scale=1.0)
+    window = QMainWindow()
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setWidget(dashboard)
+    window.setCentralWidget(scroll)
+    window.resize(1920, 1080)
+    window.show()
+    for _ in range(6):
+        qapp.processEvents()
+
+    height = _analysis_card_height(dashboard)
+    # Reference proportion is ~24% of the viewport; 33% is a real
+    # regression guard (the old row was 53% of a 1080p viewport), not a
+    # claim of pixel-exact parity.
+    assert height < 0.33 * scroll.viewport().height(), f"analysis row is {height}px tall"
+    assert height > 150, "the row must not collapse to an illegible sliver"
+
+
+def test_the_analysis_row_height_still_scales_with_the_real_screen_scale(qapp):
+    """The shrink must not have replaced the real per-screen adaptability
+    with a fixed pixel value (compute_screen_scale's own contract)."""
+    large = AWCIDashboard(screen_scale=1.0)
+    small = AWCIDashboard(screen_scale=0.6)
+
+    assert small.cross_section.sizeHint().height() < large.cross_section.sizeHint().height()
+    assert small.vertical_profile_panel.sizeHint().height() < large.vertical_profile_panel.sizeHint().height()
+
+
+def test_other_callers_of_these_shared_widgets_keep_their_own_original_sizes(qapp):
+    """ACFVerticalSoundingWidget (ACF Scientific Workstation) and
+    AWCIVerticalProfile (the vertical-profile dialog / real-archive
+    view) are shared widgets - only the AWCI dashboard's own instances
+    are shrunk, via explicit calls, never by changing their defaults."""
+    assert ACFVerticalSoundingWidget().sizeHint().height() > 400
+    assert AWCIVerticalProfile().sizeHint().height() == 300
+    assert AWCIEvolutionChart().sizeHint().height() > 400

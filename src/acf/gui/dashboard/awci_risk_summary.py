@@ -194,7 +194,7 @@ class AWCIRiskSummary(QWidget):
             elif module in specials:
                 score = specials[module]
             else:
-                score = module_scores.get(module, 0.0)
+                score = module_scores.get(module)
 
             if score is None:
                 badge.setText("—")

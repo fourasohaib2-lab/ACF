@@ -61,16 +61,46 @@ class ACFVerticalSoundingWidget(QWidget):
         self._point: tuple[float, float] | None = None
         self._draw_empty()
 
+    def set_preferred_canvas_height(self, height_px: int) -> None:
+        """Real preferred (Qt sizeHint) canvas height in pixels - see
+        AWCICrossSection.set_preferred_canvas_height()'s own docstring
+        for the real measurement behind this (2026-09-20, Task 2 of the
+        AWCI final-polish plan). This widget's figure is left at
+        matplotlib's 6.4x4.8in default, i.e. a 480px vertical ask, which
+        was one of the two real drivers of the AWCI dashboard's
+        oversized analysis row (the ACF Scientific Workstation's own
+        sounding panel, which never calls this, is unchanged). Preferred
+        size only: the canvas still stretches to whatever height its
+        layout grants, and the point-sized fonts here are unaffected."""
+        dpi = self.figure.get_dpi()
+        width_in, _ = self.figure.get_size_inches()
+        self.figure.set_size_inches(width_in, max(60, int(height_px)) / dpi)
+        self.canvas.updateGeometry()
+
     def _draw_empty(self) -> None:
         self.axis.clear()
         self.axis.set_facecolor(TOKENS.bg_card)
         self.axis.text(
-            0.5, 0.5, "Click a map to inspect a real column",
+            # Two lines (2026-09-20, Task 9): one line of this honest
+            # placeholder overflows the AWCI dashboard's ~250px-wide
+            # "Atmospheric Profile" card. Same words, same meaning.
+            0.5, 0.5, "Click a map to inspect\na real column",
             transform=self.axis.transAxes, ha="center", va="center", color=TOKENS.text_muted, fontsize=8,
         )
         self.axis.set_xticks([])
         self.axis.set_yticks([])
-        self.axis.set_title("VERTICAL COMPLEXITY SOUNDING", color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left")
+        # x=-0.24 anchors the title at the FIGURE's own left edge rather
+        # than the axes' (which starts ~20% in, leaving room for the
+        # pressure labels): without it this 28-character title overflows
+        # the right edge of the ~250px-wide "Atmospheric Profile" card on
+        # the AWCI dashboard and renders clipped (2026-09-20, Task 9).
+        self.axis.set_title(
+            "VERTICAL COMPLEXITY SOUNDING", color=TOKENS.text_primary,
+            fontsize=7.5, fontweight="bold", loc="left", x=-0.24,
+        )
+        # Same margins as the populated draw below, so the title's x
+        # anchor above lands in the same real place in both states.
+        self.figure.subplots_adjust(left=0.2, right=0.95, top=0.82, bottom=0.16)
         self.canvas.draw_idle()
 
     def update_from_volume_and_point(
@@ -114,11 +144,17 @@ class ACFVerticalSoundingWidget(QWidget):
             spine.set_color(TOKENS.border)
         for spine in wind_axis.spines.values():
             spine.set_color(TOKENS.border)
+        # Point on its own second LINE rather than appended with " — "
+        # (2026-09-20, Task 9 of the AWCI dashboard-fixes plan): this
+        # widget is also the AWCI dashboard's "Atmospheric Profile" card,
+        # ~250px wide there, where the one-line form clipped mid-word.
+        # Two lines matches the reference image's own "Atmospheric Profile
+        # / Point: ..." card header, and costs the Workstation nothing.
         self.axis.set_title(
-            f"VERTICAL COMPLEXITY SOUNDING — {profile['lat']:.2f}°, {profile['lon']:.2f}°",
-            color=TOKENS.text_primary, fontsize=9, fontweight="bold", loc="left",
+            f"VERTICAL COMPLEXITY SOUNDING\n{profile['lat']:.2f}°, {profile['lon']:.2f}°",
+            color=TOKENS.text_primary, fontsize=7.5, fontweight="bold", loc="left", x=-0.24,
         )
-        self.figure.subplots_adjust(left=0.2, right=0.95, top=0.8, bottom=0.16)
+        self.figure.subplots_adjust(left=0.2, right=0.95, top=0.74, bottom=0.16)
         self.canvas.draw_idle()
 
     def status(self) -> dict[str, Any]:

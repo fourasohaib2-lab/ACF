@@ -98,6 +98,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QSlider,
     QToolButton,
     QVBoxLayout,
@@ -111,6 +112,8 @@ from acf.awci.archive_field import (
     sample_archive_at_point,
 )
 from acf.awci.calculator import AWCICalculator
+from acf.awci.ceiling import compute_real_ceiling_at_point
+from acf.awci.visibility import compute_real_visibility_risk_at_point
 from acf.physics_guard import PhysicsGuard
 from acf.awci.path_sampling import (
     real_layer_grids_at_level,
@@ -161,6 +164,29 @@ from acf.gui.dashboard.awci_timeline import AWCITimeline
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, apply_elevation, dashboard_stylesheet, label_style
+from acf.gui.widgets.combo_sizing import shrink_combo_min_width
+
+
+def _filter_row_button_style() -> str:
+    """Styling for the real filter row's own "Layers"/"Settings" buttons
+    (added 2026-09-20, Task 8) - the reference image shows them as two
+    light card-style buttons at the filter row's right end, visually part
+    of that row rather than of the white top bar above it."""
+    t = TOKENS
+    return f"""
+        QPushButton {{
+            background-color: #16233c;
+            color: {t.text_primary};
+            border: 1px solid #25365a;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 12px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: #1b2a47;
+        }}
+    """
 
 
 def _real_data_button_style() -> str:
@@ -720,6 +746,53 @@ class AWCIDashboard(QWidget):
         self.topbar = AWCITopBar()
         outer.addWidget(self.topbar)
 
+        # --- Real filter row (added 2026-09-20, Task 8 of the AWCI
+        # dashboard-fixes plan, docs/reference/awci_dashboard_reference.png)
+        # The reference image keeps the Area/Date & Time/Forecast/Model
+        # selectors OUT of the white top bar, in their own row directly
+        # below it, with "Layers" and "Settings" buttons at its right end.
+        # self.topbar.filter_bar carries the SAME real Qt controls
+        # _wire_topbar() already connects (area_combo, prev/next/now,
+        # forecast_label, model_label) - reparented here, never rebuilt as
+        # a second set of selectors.
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(8)
+        filter_row.setContentsMargins(0, 0, 0, 0)
+        filter_row.addWidget(self.topbar.filter_bar, stretch=1)
+
+        # Real Layers button - toggles the global map's OWN real floating
+        # Map Layers panel (AWCIMapPanel._build_layers_panel()), never a
+        # second, parallel layer-visibility mechanism. self.global_map does
+        # not exist yet at this point in _build_ui(); the slot below only
+        # ever runs on a real click, long after it does.
+        self.layers_button = QPushButton("▤  Layers")
+        self.layers_button.setToolTip(
+            "Show/hide the real Map Layers panel floating over the map's top-left corner\n"
+            "(the same real checkboxes + opacity slider the map itself owns)."
+        )
+        self.layers_button.setStyleSheet(_filter_row_button_style())
+        self.layers_button.clicked.connect(lambda _checked=False: self._toggle_map_layers_panel())
+        filter_row.addWidget(self.layers_button)
+
+        # Real Settings button - opens the EXACT same real QMenu the
+        # topbar's own ⚙ already opens (_open_settings_menu() ->
+        # _build_header_menu()/_sync_header_menu()), per this file's own
+        # established "one real settings menu" convention; only the popup
+        # anchor differs.
+        self.settings_button = QPushButton("⚙  Settings")
+        self.settings_button.setToolTip(
+            "Open the real settings menu (Real Physics, 4D Evolution, 3D View, Connect HPC,\n"
+            "Import Model File, Message, Alerts, Report, Real Archive, FL comparison) - the\n"
+            "same single real menu the top bar's own ⚙ opens."
+        )
+        self.settings_button.setStyleSheet(_filter_row_button_style())
+        self.settings_button.clicked.connect(lambda _checked=False: self._open_settings_menu(self.settings_button))
+        filter_row.addWidget(self.settings_button)
+
+        self.filter_row_widget = QWidget()
+        self.filter_row_widget.setLayout(filter_row)
+        outer.addWidget(self.filter_row_widget)
+
         # NOTE (2026-09-12, docs/reference/awci_dashboard_reference.png):
         # this whole header_row is no longer the visible page header -
         # self.topbar above now owns that real estate and shows the SAME
@@ -1136,30 +1209,28 @@ class AWCIDashboard(QWidget):
         # (see those call sites' own new self.hazard_row.update_data()
         # line, added alongside the existing risk_summary one).
         self.hazard_row = AWCIHazardRow()
-        outer.addWidget(self.hazard_row)
 
         # Real "Current Situation" / "Model Agreement" / "Airport
-        # Complexity" row (added 2026-09-12, docs/reference/
+        # Complexity" cards (added 2026-09-12, docs/reference/
         # awci_dashboard_reference.png, Phase 4/6) - see
         # awci_situation_panel.py's own module docstring for the exact
-        # real source of every value. Added as its own new row rather
-        # than replacing the existing cross-section/radar/risk-summary
-        # columns below (a deliberate, disclosed scope decision - see
-        # reports/ACF_MASTER_AUDIT_v2.md's Phase 4 entry - preserving
-        # those already-real, already-tested panels rather than a
-        # riskier full row1/row2 teardown to match the photo's exact
-        # column arrangement).
-        situation_row = QHBoxLayout()
-        situation_row.setSpacing(8)
+        # real source of every value.
+        #
+        # RELOCATED 2026-09-20 (Task 9 of the AWCI dashboard-fixes plan):
+        # these three cards used to be their own full-width row ABOVE the
+        # hero map - a deliberate, disclosed 2026-09-12 scope decision
+        # (preserving already-tested panels rather than a riskier row1/row2
+        # teardown). The reference image instead puts them in a narrow
+        # RIGHT column beside the hero map, which is what row1 below now
+        # builds. Only their parent/layout position changes here: the
+        # widgets themselves, their constructor arguments and every one of
+        # their signal/slot connections (on_view_all -> _open_all_airports_
+        # dialog, and every _refresh_situation_row() feed) are untouched.
         self.current_situation_card = AWCICurrentSituationCard()
         self.model_agreement_card = AWCIModelAgreementCard()
         self.airport_table = AWCIAirportTable(on_view_all=self._open_all_airports_dialog)
-        situation_row.addWidget(self.current_situation_card, stretch=1)
-        situation_row.addWidget(self.model_agreement_card, stretch=1)
-        situation_row.addWidget(self.airport_table, stretch=1)
-        outer.addLayout(situation_row)
 
-        # --- Row 1: global map (left) + cross-section & radar (right) -----
+        # --- Row 1: hazard row + hero map (left) | situation column (right) -
         row1 = QHBoxLayout()
         row1.setSpacing(8)
 
@@ -1197,11 +1268,54 @@ class AWCIDashboard(QWidget):
         # that attribute's own comment) with a 140px floor so a small
         # real screen still gets a genuinely usable map, not just a
         # smaller sizeHint.
-        self.global_map.setMinimumHeight(max(140, int(240 * self._screen_scale)))
+        # Real hero-map resize (2026-09-20, Task 8): the reference image
+        # gives this map roughly 40% of the page height, far more than the
+        # ~19% it had here. Raised from 240 to 460 logical px (same
+        # _screen_scale factor as before) and paired with row1's own
+        # raised stretch factor below - a minimum height alone would not
+        # grow the map when space is plentiful, and a stretch factor alone
+        # would not defend it here, since AWCIDashboardWindow wraps this
+        # whole dashboard in a QScrollArea whose content already exceeds
+        # the viewport (so every row currently sits at its own minimum and
+        # stretch never gets to arbitrate). The small-screen floor is
+        # raised 140 -> 300 for the same reason: below that this hero map
+        # stops being readable at all, and that window scrolls anyway.
+        self.global_map.setMinimumHeight(max(300, int(460 * self._screen_scale)))
+        self.global_map.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
-        row1.addWidget(self.global_map, stretch=1)
-        outer.addLayout(row1, stretch=3)
+
+        # Real map column: the AWCI GLOBAL gauge + 6 hazard cards on top,
+        # then the hero map with its own transport row beneath it - exactly
+        # the reference image's left column. The hazard row used to be a
+        # separate full-width row of `outer`; in the reference it stops
+        # where the Current Situation column begins, so it belongs here.
+        map_column = QVBoxLayout()
+        map_column.setSpacing(6)
+        map_column.addWidget(self.hazard_row)
+        map_column.addWidget(self.global_map, stretch=1)
+        map_column.addWidget(self._build_map_transport_row())
+
+        # Real right column (2026-09-20, Task 9): Current Situation +
+        # Model Agreement side by side on top, Airport Complexity beneath -
+        # the reference image's own arrangement. Stretch 70/30 measured off
+        # that image (its right column is ~25% of the content width; 30%
+        # here keeps these three real cards' own longest labels - "Heavy
+        # Precipitation", "NOT_COMPUTED", the airport table's 4 columns -
+        # readable at the 1280-class content widths this dashboard actually
+        # renders at, rather than clipping them to hit an exact percentage).
+        situation_column = QVBoxLayout()
+        situation_column.setSpacing(8)
+        situation_top_row = QHBoxLayout()
+        situation_top_row.setSpacing(8)
+        situation_top_row.addWidget(self.current_situation_card, stretch=3)
+        situation_top_row.addWidget(self.model_agreement_card, stretch=2)
+        situation_column.addLayout(situation_top_row, stretch=1)
+        situation_column.addWidget(self.airport_table, stretch=1)
+
+        row1.addLayout(map_column, stretch=70)
+        row1.addLayout(situation_column, stretch=30)
+        outer.addLayout(row1, stretch=6)
 
         # NOTE (2026-09-13, docs/reference/awci_dashboard_reference.png,
         # explicit user request "reconstruis le dashboard à partir d'une
@@ -1223,8 +1337,19 @@ class AWCIDashboard(QWidget):
         # self.global_map, which now receives every call regional_map
         # used to). self.cross_section stays fully real, just relocated
         # into Phase 5's "Vertical Cross Section" analysis panel below.
-        self.cross_section = AWCICrossSection(figsize_scale=self._screen_scale)
-        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
+        # Title shortened 2026-09-20 (Task 9) from this widget's own default
+        # "VERTICAL CROSS-SECTION ALONG FLIGHT PATH": inside the reference
+        # image's 5-panel analysis row each card is ~250px wide, where that
+        # 40-character matplotlib title clips mid-word. "VERTICAL CROSS
+        # SECTION" is the reference image's own wording for this card, and
+        # the flight path it is drawn along is already named on the card's
+        # own second title line (set_external_cross_section()'s label) and
+        # by the Route selector two panels over. Other callers of
+        # AWCICrossSection (acf_general_dashboard) keep their own titles.
+        self.cross_section = AWCICrossSection("VERTICAL CROSS SECTION", figsize_scale=self._screen_scale)
+        # Same floor the analysis row's own `min_panel_height` uses
+        # (lowered 2026-09-20, Task 2 - see its comment there).
+        self.cross_section.setMinimumHeight(max(60, int(100 * self._screen_scale)))
 
         self.global_map.set_city_labels(_REGIONAL_CITY_LABELS)
 
@@ -1248,6 +1373,19 @@ class AWCIDashboard(QWidget):
             self.route_to_selector.addItem(display, icao)
         self.route_from_selector.setCurrentIndex(list(_AIRPORTS).index("DAAG"))
         self.route_to_selector.setCurrentIndex(list(_AIRPORTS).index("HLLT"))
+        # Real clipping fix (2026-09-20, Task 9): these two combos' items
+        # are long ("DAAG – Algiers (Houari Boumediene)"), and QComboBox's
+        # default size-adjust policy floors a combo's MINIMUM width at its
+        # longest item. Inside the 5-panel analysis row that made the
+        # Flight Route Analysis panel's minimum ~650px wide, which the
+        # layout engine paid for by squeezing its equal-stretch siblings -
+        # the Vertical Cross Section and Atmospheric Profile panels - down
+        # to ~84px, clipping their titles to "VERTICAL". Reuses this
+        # codebase's own existing shared fix for exactly this Qt behaviour
+        # rather than a second local workaround; the dropdown popups still
+        # show every airport's full name.
+        shrink_combo_min_width(self.route_from_selector, 12)
+        shrink_combo_min_width(self.route_to_selector, 12)
         route_row.addWidget(self.route_from_selector, stretch=1)
         arrow_label = QLabel("→")
         arrow_label.setStyleSheet(label_style("text_secondary", "xs"))
@@ -1262,13 +1400,24 @@ class AWCIDashboard(QWidget):
             "extent - an honest map-crop limit, not a bug, for a pair further apart."
         )
         self.apply_route_button.clicked.connect(self._on_apply_route)
-        route_row.addWidget(self.apply_route_button)
         # Real container widget (2026-09-12) so this whole real route-
         # selector row can be relocated wholesale into Phase 5's real
         # "Flight Route Analysis" panel below, rather than staying in
         # the now-hidden left_col2/row2 this section used to build.
+        #
+        # Two lines rather than one since 2026-09-20 (Task 9): on ONE line
+        # (label + 2 combos + arrow + a full-width "Apply Route" button)
+        # this row's own minimum width alone still floored the Flight Route
+        # Analysis panel at ~460px inside a 5-panel row whose fair share is
+        # ~250px, and the layout engine again took the difference out of
+        # its narrower siblings. Same real controls, same signals.
+        route_selector_column = QVBoxLayout()
+        route_selector_column.setContentsMargins(0, 0, 0, 0)
+        route_selector_column.setSpacing(4)
+        route_selector_column.addLayout(route_row)
+        route_selector_column.addWidget(self.apply_route_button)
         self.route_selector_widget = QWidget()
-        self.route_selector_widget.setLayout(route_row)
+        self.route_selector_widget.setLayout(route_selector_column)
 
         # Real per-level module_scores/physical/forecast breakdown -
         # see _compute_vertical_profile()'s own docstring. The old
@@ -1388,7 +1537,39 @@ class AWCIDashboard(QWidget):
                 panel_layout.addWidget(widget)
             return frame
 
-        min_panel_height = max(90, int(150 * self._screen_scale))
+        # Lowered 2026-09-20 (Task 2) from max(90, 150*scale): at
+        # scale 1.0 that 150px floor was itself binding on the tallest
+        # card of this row (route selector 47 + chart 150 + segment
+        # table 80 + spacing = 301px minimum), so the row could not
+        # reach the reference image's own ~250px card however small the
+        # canvases' preferred sizes were made. 100*scale still leaves
+        # every canvas taller than the reference's own smallest
+        # analysis plot (the Flight Route mini-map, ~75px of its 250px
+        # card, measured on the reference image), and 60 is an absolute
+        # legibility floor for a plot with axis ticks and a title.
+        min_panel_height = max(60, int(100 * self._screen_scale))
+
+        # Real reference-derived target for this row's card height
+        # (2026-09-20, Task 2 of the AWCI final-polish plan). Measured
+        # directly off docs/reference/awci_dashboard_reference.png
+        # (1536x1024): the 5 analysis cards span y~650..900, i.e. ~250px
+        # = ~24% of that image's own height. Against a 1080p screen's
+        # ~1078px of real viewport that is ~260px, so 250 * the real
+        # screen scale is the honest per-screen equivalent (NOT a fixed
+        # pixel value - it shrinks with self._screen_scale exactly like
+        # every other size in this dashboard). Minus this row's own 8+8
+        # card padding, that leaves the content target below.
+        #
+        # This row previously rendered 572px tall (measured, Task 9 of
+        # the prior plan) - more than twice the reference - and the
+        # cause was NOT the min_panel_height floor above: it was the
+        # DEFAULT matplotlib figure size (6.4x4.8in = 480px) inside
+        # ACFVerticalSoundingWidget and AWCIEvolutionChart, which a
+        # FigureCanvasQTAgg reports verbatim as its sizeHint, plus
+        # AWCIVerticalProfile's own hard-coded 300px sizeHint. All
+        # three are now sized from the real target below.
+        reference_card_height = max(120, int(250 * self._screen_scale))
+        analysis_content_height = reference_card_height - 16
 
         # Panel 2/5: "Atmospheric Profile" - real T/wind vertical column
         # at the point of interest (acf.awci.vertical_field.
@@ -1447,13 +1628,21 @@ class AWCIDashboard(QWidget):
         # live via the shared _compute_vertical_profile()/
         # _sync_vertical_profile_panel() helpers above so both read the
         # exact same real computation.
-        self.vertical_profile_panel = AWCIVerticalProfile()
-        self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
-        self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
-        self.vertical_profile_panel.setMinimumHeight(min_panel_height)
+        # The suggestion label is built first so the profile below can be
+        # given the real remaining height inside its own card, measured
+        # from the label's real sizeHint rather than a second guess.
         self._vertical_profile_panel_suggestion_label = QLabel("")
         self._vertical_profile_panel_suggestion_label.setWordWrap(True)
         self._vertical_profile_panel_suggestion_label.setStyleSheet(label_style("text_muted", "xs"))
+
+        self.vertical_profile_panel = AWCIVerticalProfile(
+            preferred_height=analysis_content_height
+            - self._vertical_profile_panel_suggestion_label.sizeHint().height()
+            - 4,  # _analysis_panel()'s own inter-widget spacing
+        )
+        self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
+        self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
+        self.vertical_profile_panel.setMinimumHeight(min_panel_height)
 
         self.route_chart.setMinimumHeight(min_panel_height)
 
@@ -1464,6 +1653,25 @@ class AWCIDashboard(QWidget):
         # a single real 2-point great-circle path, not yet a named
         # multi-waypoint itinerary).
         self.route_segment_table = AWCIRouteSegmentTable()
+
+        # Real canvas sizing for this row (2026-09-20, Task 2): each
+        # matplotlib panel is told the real height left over inside its
+        # own card once that card's other real widgets (route selector,
+        # segment table, time control, Global/Route/Airport toggle) have
+        # asked for their own real sizeHint heights - so the 5 cards land
+        # at `reference_card_height` instead of each canvas independently
+        # demanding 160-480px and the tallest card dictating the row.
+        # Measured from real sizeHints, never from guessed constants, so
+        # it stays correct if any of those sibling widgets changes.
+        def _size_analysis_canvas(chart: Any, *siblings: QWidget) -> None:
+            used = sum(max(0, widget.sizeHint().height()) for widget in siblings)
+            used += 4 * len(siblings)  # _analysis_panel()'s own spacing
+            chart.set_preferred_canvas_height(max(60, analysis_content_height - used))
+
+        _size_analysis_canvas(self.cross_section)
+        _size_analysis_canvas(self.atmospheric_profile)
+        _size_analysis_canvas(self.route_chart, self.route_selector_widget, self.route_segment_table)
+        _size_analysis_canvas(self.evolution_chart, self.time_control_widget, self.evolution_toggle_widget)
 
         analysis_row = QHBoxLayout()
         analysis_row.setSpacing(8)
@@ -1512,8 +1720,176 @@ class AWCIDashboard(QWidget):
         # self._toggle_fl_comparison, self.view_mode_regional_radio, ...)
         # already exists by the time _build_sidebar() runs.
         self._wire_topbar()
+        # Same deferred-wiring pattern as _wire_topbar() right above: the
+        # map transport row is BUILT early (it lives directly under the
+        # hero map) but only connected to self.time_slider here, once that
+        # real slider exists.
+        self._wire_map_transport()
         root.addWidget(self._build_sidebar())
         root.addWidget(content_widget, stretch=1)
+
+    # ------------------------------------------- hero-map transport row
+
+    def _build_map_transport_row(self) -> QWidget:
+        """Real play/timeline transport row beneath the hero map (added
+        2026-09-20, Task 8, docs/reference/awci_dashboard_reference.png).
+
+        Every control here drives the dashboard's ONE real Valid Time
+        value (`self.time_slider`) - there is deliberately no second time
+        model: `transport_slider` is kept bidirectionally in step with
+        `time_slider` (see `_wire_map_transport()`), and ▶ simply advances
+        that same real slider on a timer, running the exact same real
+        `_on_time_changed()` dispatch a manual drag already runs. The
+        freshness pill is NOT a fabricated "Live Data" claim: it reports
+        this dashboard's own real data tier (demo / imported model / real
+        physics), using the same 3-way rule `_update_clock()` already
+        applies to the top bar's status badge.
+        """
+        row = QHBoxLayout()
+        row.setContentsMargins(10, 6, 10, 6)
+        row.setSpacing(10)
+
+        self.transport_play_button = QPushButton("▶")
+        self.transport_play_button.setFixedWidth(34)
+        self.transport_play_button.setToolTip(
+            "Step the real Valid Time forward once per second (the same real\n"
+            "_on_time_changed() dispatch a manual drag of the Valid Time slider\n"
+            "runs). Honest disclosure (final review, 2026-09-20): in demo tier this\n"
+            "currently updates the Airport Complexity table and the Time Evolution\n"
+            "chart only - the AWCI Global gauge, hazard cards, Current Situation,\n"
+            "hero map, cross-section, route chart and vertical profile are not yet\n"
+            "re-sampled at the new time (tracked follow-up, Task 10 finding F2).\n"
+            "Click again to pause."
+        )
+        self.transport_play_button.setStyleSheet(
+            f"QPushButton {{ background-color: {TOKENS.accent_primary}; color: {TOKENS.bg_root}; "
+            f"border: none; border-radius: {TOKENS.radius_sm}px; padding: 4px 8px; font-weight: bold; }}"
+        )
+        self.transport_play_button.clicked.connect(lambda _checked=False: self._toggle_time_playback())
+        row.addWidget(self.transport_play_button)
+
+        #: Real point-of-interest label (the reference image's own "ALG"
+        #: pill) - the nearest real airport to self._point_of_interest,
+        #: refreshed by _sync_map_transport_row(); never a hardcoded code.
+        self.transport_point_label = QLabel("—")
+        self.transport_point_label.setStyleSheet(
+            f"color: {TOKENS.text_primary}; font-size: 10px; font-weight: bold; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        row.addWidget(self.transport_point_label)
+
+        #: Real forecast lead readout - the SAME arithmetic on the SAME
+        #: real time_slider value _sync_topbar_time() already publishes to
+        #: the filter row's Forecast pill, not a second lead-time field.
+        self.transport_lead_label = QLabel("+0h")
+        self.transport_lead_label.setStyleSheet(
+            f"color: {TOKENS.text_secondary}; font-size: 10px; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        row.addWidget(self.transport_lead_label)
+
+        self.transport_slider = QSlider(Qt.Orientation.Horizontal)
+        self.transport_slider.setToolTip(
+            "The same real Valid Time this dashboard computes everything at - moving this\n"
+            "scrubber moves the Valid Time slider itself (one real time value, not two)."
+        )
+        row.addWidget(self.transport_slider, stretch=1)
+
+        self.transport_time_label = QLabel("--:-- UTC")
+        self.transport_time_label.setStyleSheet(label_style("text_secondary", "xs"))
+        row.addWidget(self.transport_time_label)
+
+        self.transport_tier_label = QLabel("● Demo Data")
+        self.transport_tier_label.setToolTip(
+            "Real current data tier - Demo Data (this dashboard's synthetic pattern),\n"
+            "Imported Model Data, or Real Physics Data. Deliberately NOT labeled\n"
+            "'Live Data' while the active tier is not a live source."
+        )
+        row.addWidget(self.transport_tier_label)
+
+        self.map_transport_widget = QWidget()
+        self.map_transport_widget.setLayout(row)
+        self.map_transport_widget.setStyleSheet(
+            f"QWidget {{ background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px; }}"
+        )
+        return self.map_transport_widget
+
+    def _wire_map_transport(self) -> None:
+        """Connect the transport row to the ONE real Valid Time slider -
+        see `_build_map_transport_row()`'s own docstring. Called from
+        `_build_ui()` once `self.time_slider` exists."""
+        self.transport_slider.setMinimum(self.time_slider.minimum())
+        self.transport_slider.setMaximum(self.time_slider.maximum())
+        self.transport_slider.setValue(self.time_slider.value())
+        # Bidirectional, loop-safe: Qt's own setValue() does not re-emit
+        # valueChanged when the value is unchanged, so each edge fires at
+        # most once per real change.
+        self.transport_slider.valueChanged.connect(self.time_slider.setValue)
+        self.time_slider.valueChanged.connect(self.transport_slider.setValue)
+        self.transport_slider.sliderReleased.connect(self._on_time_changed)
+        self.time_slider.valueChanged.connect(self._sync_map_transport_row)
+        #: Real playback timer for the ▶ button - advances the SAME real
+        #: time_slider, never a second animation clock.
+        self._time_playback_timer = QTimer(self)
+        self._time_playback_timer.setInterval(1000)
+        self._time_playback_timer.timeout.connect(self._advance_time_playback)
+        self._sync_map_transport_row(self.time_slider.value())
+
+    def _sync_map_transport_row(self, hour: int) -> None:
+        """Real readouts for the transport row, derived from the same
+        real values the rest of the dashboard already publishes."""
+        if not hasattr(self, "transport_time_label"):
+            return
+        self.transport_time_label.setText(f"{hour:02d}:00 UTC")
+        self.transport_lead_label.setText(f"+{hour - 6}h")
+        if self._real_physics_active:
+            tier_text, tier_color = "Real Physics Data", TOKENS.accent_real
+        elif self._imported_dataset is not None:
+            tier_text, tier_color = "Imported Model Data", TOKENS.accent_real
+        else:
+            tier_text, tier_color = "Demo Data", TOKENS.warning
+        self.transport_tier_label.setText(f"● {tier_text}")
+        self.transport_tier_label.setStyleSheet(
+            f"color: {tier_color}; font-size: 10px; font-weight: bold; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        lat, lon = self._point_of_interest
+        nearest = min(_AIRPORTS.items(), key=lambda kv: (kv[1][0] - lat) ** 2 + (kv[1][1] - lon) ** 2)
+        self.transport_point_label.setText(nearest[0])
+
+    def _toggle_time_playback(self) -> None:
+        """Real ▶/❚❚ - see `_build_map_transport_row()`'s own docstring."""
+        if self._time_playback_timer.isActive():
+            self._time_playback_timer.stop()
+            self.transport_play_button.setText("▶")
+        else:
+            self._time_playback_timer.start()
+            self.transport_play_button.setText("❚❚")
+
+    def _advance_time_playback(self) -> None:
+        """One real playback step - moves the SAME real Valid Time slider
+        and runs the SAME real handler a manual drag runs."""
+        next_value = self.time_slider.value() + 1
+        if next_value > self.time_slider.maximum():
+            next_value = self.time_slider.minimum()
+        self.time_slider.setValue(next_value)
+        self._on_time_changed()
+
+    def _toggle_map_layers_panel(self) -> None:
+        """Real filter-row "Layers" button - shows/hides the global map's
+        OWN real floating Map Layers panel (AWCIMapPanel), never a second
+        layer-visibility mechanism."""
+        panel = getattr(self.global_map, "layers_panel", None)
+        if panel is None:
+            return
+        # isHidden(), not isVisible(): the latter is also False whenever an
+        # ancestor happens to be hidden (an embedded/offscreen dashboard),
+        # which would make this toggle a no-op there. isHidden() tracks the
+        # panel's OWN explicit show/hide state, which is what this button
+        # actually controls.
+        panel.setVisible(panel.isHidden())
+        if not panel.isHidden():
+            panel.raise_()
 
     def _build_header_menu(self) -> QToolButton:
         """Real "☰" substitute for the 9 real buttons + clock hidden
@@ -1711,7 +2087,7 @@ class AWCIDashboard(QWidget):
 
     def _refresh_situation_row(self, module_scores: dict[str, float], overall_awci: float,
                                 physical_score: float | None, forecast_score: float | None,
-                                confidence_pct: float) -> None:
+                                confidence_pct: float | None) -> None:
         """Real refresh for the Phase 4 situation row - see
         awci_situation_panel.py's own module docstring for each card's
         exact real source. Called from every real point-refresh path
@@ -1724,7 +2100,12 @@ class AWCIDashboard(QWidget):
         equivalent) - passed in directly since 2026-09-13 rather than
         read back through the now-retired self.stats_bar's own
         confidence gauge, a redundant round-trip for a value already
-        known at every real call site."""
+        known at every real call site. `None` is this row's own
+        honest-uncomputed signal (see AWCICurrentSituationCard.
+        update_data()'s own docstring) - the Real Physics call site
+        passes it instead of AWCICalculator's bare `confidence=100.0`
+        default, which means "no confidence signal was computed", not
+        "maximum confidence"."""
         self.current_situation_card.update_data(
             module_scores,
             overall_awci,
@@ -1737,7 +2118,17 @@ class AWCIDashboard(QWidget):
             decomposition=self._last_awci_result.decomposition if self._last_awci_result is not None else None,
         )
         self.model_agreement_card.update_data(module_scores)
-        self.airport_table.update_data(self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES))
+        # is_demo_tier: same real 3-way tier check _update_clock() already
+        # uses for the topbar's own DEMO MODE/REAL PHYSICS/IMPORTED MODEL
+        # badge (Task 7, 2026-09-14 AWCI dashboard fixes pass) - drives
+        # this table's own "DEMO GRID" tag, since the table always runs
+        # the real demo pipeline regardless of which tier is active
+        # elsewhere (see _compute_airport_complexity_rows()'s own
+        # docstring).
+        is_demo_tier = not self._real_physics_active and self._imported_dataset is None
+        self.airport_table.update_data(
+            self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES), is_demo_tier=is_demo_tier
+        )
 
     def _refresh_footer_summary(self, module_scores: dict[str, float], overall_awci: float,
                                  physical_score: float | None, forecast_score: float | None) -> None:
@@ -1861,10 +2252,20 @@ class AWCIDashboard(QWidget):
         same method via _step_time_slider()) had NO visible effect at
         all any more. Now runs the exact same real dispatch every other
         time-affecting change (a map click, a flight-level change) already
-        uses - _refresh_current_point() - so every real per-point panel
-        (hazard row, Current Situation, airport table, map, cross-
-        section, route chart, vertical profile, alerts) genuinely
-        updates for the newly-selected time."""
+        uses - _refresh_current_point() - so the Airport Complexity table
+        and the Time Evolution chart genuinely update for the newly-
+        selected time.
+
+        Honest correction (final review, 2026-09-20): _refresh_current_point()
+        does NOT actually thread the new time through the hazard row,
+        Current Situation card, hero map field, cross-section, route
+        chart or vertical profile - those per-point panels are computed
+        from self._point_of_interest/self._current_flight_level_hpa only
+        and stay bit-identical across a Valid Time change in demo tier
+        (live-verified during the final review). Threading the slider
+        hour through refresh()'s point/route/cross-section/map calls is
+        a legitimate, larger, separately-tracked follow-up (Task 10's
+        own finding F2) - deliberately out of scope here."""
         self._refresh_current_point()
 
     def _update_clock(self) -> None:
@@ -1889,6 +2290,11 @@ class AWCIDashboard(QWidget):
             else:
                 status_label = "DEMO MODE"
             self.topbar.set_status(is_real=self._real_physics_active, label=status_label)
+        # Same real 3-way tier on the hero map's own transport row (added
+        # 2026-09-20, Task 8) - refreshed from this one real tick rather
+        # than a second timer, exactly as the topbar status above is.
+        if hasattr(self, "transport_tier_label"):
+            self._sync_map_transport_row(self.time_slider.value())
 
     def _sync_topbar_time(self, hour: int) -> None:
         """Real Date & Time / Forecast readouts, derived from the SAME
@@ -1913,7 +2319,22 @@ class AWCIDashboard(QWidget):
         self.topbar.now_button.clicked.connect(lambda: self._step_time_slider(0, reset_to=12))
         self.topbar.bell_button.clicked.connect(self._open_alerts)
         self.topbar.hpc_button.clicked.connect(self._toggle_hpc_connection)
-        self.topbar.settings_button.clicked.connect(self._open_settings_menu)
+        # Real fix (2026-09-20, Task 8 review round 1): PySide6's
+        # `clicked` signal delivers `clicked(bool checked=False)` to any
+        # slot that accepts a positional argument, so a direct
+        # `.connect(self._open_settings_menu)` here silently passed
+        # `False` as `anchor` - `anchor is not None` then held, so
+        # `anchor_widget` became the bool `False`, and
+        # `anchor_widget.mapToGlobal(...)` raised AttributeError inside
+        # the slot (Qt swallows exceptions raised in slots, so the gear
+        # button just did nothing, with no crash or visible error). The
+        # lambda swallows that unwanted `checked` argument so
+        # `_open_settings_menu()` always runs with no positional
+        # argument, falling through to its own real
+        # `self.topbar.settings_button` default anchor - unlike the
+        # filter row's OWN "Settings" button just below, which correctly
+        # passes ITS OWN anchor explicitly and must keep doing so.
+        self.topbar.settings_button.clicked.connect(lambda _checked=False: self._open_settings_menu())
         self._sync_topbar_time(self.time_slider.value())
         self._update_clock()
 
@@ -1937,13 +2358,16 @@ class AWCIDashboard(QWidget):
         self.time_slider.setValue(max(self.time_slider.minimum(), min(self.time_slider.maximum(), new_value)))
         self._on_time_changed()
 
-    def _open_settings_menu(self) -> None:
+    def _open_settings_menu(self, anchor: QWidget | None = None) -> None:
         """Real settings gear - opens the SAME real "☰" menu
         (_build_header_menu()/_sync_header_menu()) this dashboard
         already built for its 9 real header features, never a second,
-        duplicated menu."""
+        duplicated menu. `anchor` (2026-09-20, Task 8) only chooses which
+        real button the popup is positioned under - the filter row's own
+        "Settings" button opens this exact same single menu."""
         self._sync_header_menu()
-        self._header_menu.popup(self.topbar.settings_button.mapToGlobal(self.topbar.settings_button.rect().bottomLeft()))
+        anchor_widget = anchor if anchor is not None else self.topbar.settings_button
+        self._header_menu.popup(anchor_widget.mapToGlobal(anchor_widget.rect().bottomLeft()))
 
     def _on_apply_route(self) -> None:
         """Real route change - explicit user request "un bouton pour
@@ -2112,7 +2536,7 @@ class AWCIDashboard(QWidget):
             for offset in offsets:
                 _distances, scores = route_profile(
                     self._regional_route[0][:2], self._regional_route[1][:2],
-                    n_points=40, flight_level_hpa=850.0, time_offset_hours=float(offset),
+                    n_points=40, flight_level_hpa=850.0, time_offset_hours=float(current_hour + offset),
                 )
                 means.append(float(np.mean(scores)))
                 maxes.append(float(np.max(scores)))
@@ -2123,7 +2547,7 @@ class AWCIDashboard(QWidget):
             else:
                 lat, lon = self._point_of_interest
             for offset in offsets:
-                raw = _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(offset))
+                raw = _synthetic_inputs(lat, lon, flight_level_hpa=self._current_flight_level_hpa, time_offset_hours=float(current_hour + offset))
                 value = AWCICalculator().calculate(raw)["awci"]
                 means.append(value)
                 maxes.append(value)
@@ -2316,9 +2740,19 @@ class AWCIDashboard(QWidget):
         self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
         self._current_model_label = f"{dataset.name}"
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
+        # No real confidence input is ever extracted from an imported
+        # model file (model_import.py's compute_awci_from_imported_dataset()
+        # never supplies a "confidence" key), so point_result["confidence"]
+        # here is always AWCICalculator.calculate()'s own
+        # data.get("confidence", 100.0) fake default, not a real signal -
+        # same fabricated-100%-confidence trap Real Physics mode was fixed
+        # for above (see this method's own honest confidence_pct=None a
+        # few lines up in _apply_volume_at_level()). Pass None so
+        # AWCICurrentSituationCard renders NOT_COMPUTED instead of a
+        # fabricated full green confidence bar.
         self._refresh_situation_row(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
-            confidence_pct=point_result["confidence"],
+            confidence_pct=None,
         )
         self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
@@ -2568,12 +3002,29 @@ class AWCIDashboard(QWidget):
         # self._point_of_interest, a real (not fabricated) per-point result.
         lat_idx = int(np.argmin(np.abs(np.asarray(lats) - self._point_of_interest[0])))
         lon_idx = int(np.argmin(np.abs(np.asarray(lons) - self._point_of_interest[1])))
+        point_temperature_k = float(volume["temperature_volume"][level_idx, lat_idx, lon_idx])
+        point_specific_humidity = float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx])
+        point_pressure_hpa = float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx])
         point_raw_data = {
-            "temperature": float(volume["temperature_volume"][level_idx, lat_idx, lon_idx]),
+            "temperature": point_temperature_k,
             "wind_speed": float(volume["wind_speed_volume"][level_idx, lat_idx, lon_idx]),
-            "specific_humidity": float(volume["specific_humidity_volume"][level_idx, lat_idx, lon_idx]),
-            "pressure": float(volume["pressure_volume_hpa"][level_idx, lat_idx, lon_idx]),
+            "specific_humidity": point_specific_humidity,
+            "pressure": point_pressure_hpa,
         }
+        # Same real ceiling/visibility computations _synthetic_inputs()
+        # feeds AWCICalculator with (acf.awci.ceiling/visibility) - not a
+        # second computation path - sourced from this SAME real volume's
+        # temperature/humidity/pressure already in scope above, so the
+        # Real Physics tier's Ceiling/Visibility hazards stop being a
+        # fabricated constant "0 / Very Low" the way the demo tier used to.
+        real_ceiling = compute_real_ceiling_at_point(point_temperature_k, point_specific_humidity, point_pressure_hpa)
+        if real_ceiling["is_real_data"]:
+            point_raw_data["ceiling_height_m"] = real_ceiling["ceiling_height_m"]
+        real_visibility = compute_real_visibility_risk_at_point(
+            point_temperature_k, point_specific_humidity, point_pressure_hpa
+        )
+        if real_visibility["is_real_data"]:
+            point_raw_data["visibility_risk"] = real_visibility["visibility_risk_score"]
         point_result = AWCICalculator().calculate(point_raw_data)
         # Real "Atmospheric Profile" analysis panel (Phase 5/6, added
         # 2026-09-13) - a real T/wind vertical re-slice of this SAME
@@ -2601,12 +3052,18 @@ class AWCIDashboard(QWidget):
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
         # No per-point forecast-side data is fed into
         # compute_real_complexity_volume() (see its own docstring) - the
-        # solver's real fields don't carry a "confidence" input, so this
-        # honestly passes AWCICalculator's own default (100.0) rather
-        # than an invented aggregate forecast confidence.
+        # solver's real fields don't carry a "confidence" input, so
+        # AWCICalculator.calculate() falls back to its own
+        # data.get("confidence", 100.0) default. That 100.0 means "no
+        # confidence signal was computed", not "maximum confidence" (see
+        # calculator.py's own calculate() docstring) - passing it
+        # through as a literal would render a fabricated-looking, full
+        # green confidence bar. This honestly signals "not computed"
+        # instead via confidence_pct=None (see AWCICurrentSituationCard.
+        # update_data()'s own docstring).
         self._refresh_situation_row(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
-            confidence_pct=100.0,
+            confidence_pct=None,
         )
         self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
@@ -3176,7 +3633,7 @@ class AWCIDashboard(QWidget):
         self.recommendation_banner.setText(" ".join(lines))
         self.recommendation_banner.setVisible(True)
 
-    def _on_component_clicked(self, key: str, score: float, raw_data: dict[str, Any], mode: str) -> None:
+    def _on_component_clicked(self, key: str, score: float | None, raw_data: dict[str, Any], mode: str) -> None:
         """Open (or reuse) the real per-component detail dialog -
         explicit user request "rend les bouton des différents
         complexité utilisable pour rendre tout le details de la
@@ -3213,7 +3670,7 @@ class AWCIDashboard(QWidget):
         a second, parallel detail view for the same real number."""
         module_scores, _overall_awci, _physical_score, _forecast_score = self._last_risk_inputs
         self._on_component_clicked(
-            module_key, module_scores.get(module_key, 0.0), self._last_point_raw_data, self._last_point_mode
+            module_key, module_scores.get(module_key), self._last_point_raw_data, self._last_point_mode
         )
 
     def _revert_to_demo(self) -> None:

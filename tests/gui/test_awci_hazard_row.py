@@ -38,6 +38,16 @@ def test_gauge_shows_the_real_overall_awci_score(qapp):
     assert row.gauge._score == 72.0
 
 
+def test_gauge_card_discloses_the_route_vs_point_mismatch(qapp):
+    """Task 7 (2026-09-14 AWCI dashboard fixes): the gauge is the
+    route's max AWCI while the 6 hazard cards are the point of
+    interest - a visible tooltip on the gauge card must say so."""
+    row = AWCIHazardRow()
+    tooltip = row.gauge.parentWidget().toolTip()
+    assert "route" in tooltip.lower()
+    assert "point of interest" in tooltip.lower()
+
+
 def test_cards_show_the_real_module_scores_without_a_second_scaling(qapp):
     """Real regression guard: module_scores arrives already on the
     real 0-100 scale (AWCICalculator.calculate_module_scores() itself
@@ -73,8 +83,12 @@ def test_severity_labels_match_the_real_shared_awci_scale(qapp):
     assert row._cards["Icing"].severity_label.text() == level_for(52.0)
 
 
-def test_missing_module_score_keys_default_honestly_to_zero(qapp):
+def test_missing_module_score_keys_render_honestly_as_unknown(qapp):
+    """A missing module_scores key must never fabricate a real-looking
+    0 - it must render the same honest "—" (set_value(None)) already
+    used for Wind Shear's permanent gap, matching the fix in
+    awci_hazard_row.py's own update_data()."""
     row = AWCIHazardRow()
     row.update_data({}, overall_awci=0.0)
-    assert row._cards["Turbulence"].value_label.text() == "0"
+    assert row._cards["Turbulence"].value_label.text() == "—"
     assert row._cards["Wind Shear"].value_label.text() == "—"

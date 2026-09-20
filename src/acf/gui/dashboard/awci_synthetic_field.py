@@ -107,7 +107,14 @@ def _synthetic_inputs(
     # independent of flight_level_hpa.
     terrain_elevation_m = 2600.0 * max(0.0, math.sin(2.3 * lon_r + 0.4) * math.cos(1.7 * lat_r)) ** 2
 
-    return {
+    # Local imports to avoid a module-level circular-import risk, matching
+    # this file's own existing convention (see awci_layer_grids() above).
+    # Same real computations/keys as those used 200 lines above for the
+    # map's Ceiling/Visibility layers - not a second computation path.
+    from acf.awci.ceiling import compute_real_ceiling_at_point
+    from acf.awci.visibility import compute_real_visibility_risk_at_point
+
+    result = {
         "temperature": temperature_k,
         "specific_humidity": specific_humidity,
         "wind_speed": wind_speed,
@@ -119,6 +126,13 @@ def _synthetic_inputs(
         "confidence": confidence,
         "temporal_change": temporal_change,
     }
+    ceil = compute_real_ceiling_at_point(temperature_k, specific_humidity, flight_level_hpa)
+    if ceil["is_real_data"]:
+        result["ceiling_height_m"] = ceil["ceiling_height_m"]
+    vis = compute_real_visibility_risk_at_point(temperature_k, specific_humidity, flight_level_hpa)
+    if vis["is_real_data"]:
+        result["visibility_risk"] = vis["visibility_risk_score"]
+    return result
 
 
 def awci_at(lat: float, lon: float, flight_level_hpa: float = 300.0, time_offset_hours: float = 0.0) -> dict:

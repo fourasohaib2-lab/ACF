@@ -144,6 +144,37 @@ class AWCICrossSection(QWidget):
         self.axis = self.figure.add_subplot(1, 1, 1)
         self._colorbar: Any = None
 
+    def set_preferred_canvas_height(self, height_px: int) -> None:
+        """
+        Set this chart's real preferred (Qt sizeHint) height, in pixels.
+
+        A FigureCanvasQTAgg reports its Figure's own inch size x dpi
+        verbatim as its Qt sizeHint, so a Figure keeps asking a layout
+        for that many pixels of vertical space regardless of any
+        setMinimumHeight() the embedding layout applies - and a
+        QHBoxLayout takes its own height hint from its tallest child.
+        That, not any minimum-height floor, was the real constraint
+        behind the AWCI dashboard's 5-card analysis row rendering 572px
+        tall against the reference image's own ~250px card (measured
+        2026-09-20, Task 2 of the AWCI final-polish plan; the two worst
+        offenders were the panels left at matplotlib's 6.4x4.8in
+        default, i.e. a 480px ask each).
+
+        Only the PREFERRED size changes: the canvas still stretches to
+        whatever real height its layout actually grants it, and every
+        font size in this widget is in points against the real rendered
+        canvas, so this call does not shrink any label or title.
+
+        The same method exists on this dashboard's other analysis-row
+        chart widgets (AWCIRouteChart, AWCIEvolutionChart,
+        ACFVerticalSoundingWidget) so one caller can size the whole row
+        from one real measured target.
+        """
+        dpi = self.figure.get_dpi()
+        width_in, _ = self.figure.get_size_inches()
+        self.figure.set_size_inches(width_in, max(60, int(height_px)) / dpi)
+        self.canvas.updateGeometry()
+
     def set_external_cross_section(
         self,
         distances_km: Any,
@@ -167,7 +198,12 @@ class AWCICrossSection(QWidget):
         identical to before - the existing overlay (if any) is kept,
         same as this method already did."""
         self._external_cross_section = (distances_km, levels_hpa, grid)
-        self._title = f"{self._base_title} — {label}"
+        # Second LINE rather than " — " on the same line (2026-09-20, Task
+        # 9): this panel renders ~250px wide in the AWCI dashboard's own
+        # 5-card analysis row, where a one-line "<title> — <label>" clips
+        # mid-word. Same real text, same real label, two lines - matching
+        # the reference image's own title/subtitle card header.
+        self._title = f"{self._base_title}\n{label}"
         self._last_grid_context = (distances_km, levels_hpa)
         if hazard_overlay is not None:
             self._hazard_overlay = hazard_overlay
@@ -268,7 +304,7 @@ class AWCICrossSection(QWidget):
         self.axis.tick_params(colors="#9fb0c9", labelsize=7)
         for spine in self.axis.spines.values():
             spine.set_color("#34445f")
-        self.axis.set_title(self._title, color="#e8edf5", fontsize=10, fontweight="bold", loc="left")
+        self.axis.set_title(self._title, color="#e8edf5", fontsize=8, fontweight="bold", loc="left", x=-0.09)
 
         # Real AWCI 0-100 colorbar, matching the reference mockup's
         # colorbar under this exact panel.
@@ -277,7 +313,11 @@ class AWCICrossSection(QWidget):
         self._colorbar.ax.tick_params(colors="#9fb0c9", labelsize=6)
         self._colorbar.outline.set_edgecolor("#34445f")
 
-        self.figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.22)
+        # A two-line title (see set_external_cross_section()) needs its own
+        # real headroom, or matplotlib draws it over the top of the axes.
+        self.figure.subplots_adjust(
+            left=0.09, right=0.98, top=0.80 if "\n" in self._title else 0.88, bottom=0.22
+        )
         self.canvas.draw_idle()
 
     def _draw_hazard_icons(self) -> None:

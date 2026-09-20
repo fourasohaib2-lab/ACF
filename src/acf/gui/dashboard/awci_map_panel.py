@@ -353,6 +353,13 @@ class AWCIMapPanel(EventMixin, QWidget):
         # widget, not to the AWCIMapPanel wrapper EventMixin lives on.
         self.canvas.installEventFilter(self)
         self.canvas.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        # Real post-draw overlay anchoring (2026-09-20, Task 8): the
+        # letterboxed map's own rectangle inside this canvas is only
+        # genuinely known AFTER matplotlib has applied the axes aspect in
+        # a real draw, so the floating Map Layers panel / view toggle are
+        # re-anchored on every real draw_event as well as on resize. Pure
+        # widget geometry - it never triggers another draw, so no loop.
+        self.canvas.mpl_connect("draw_event", lambda _event: self._reposition_map_overlays())
         outer_layout.addWidget(self.canvas, stretch=1)
 
         self.axis = self.figure.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
@@ -509,15 +516,65 @@ class AWCIMapPanel(EventMixin, QWidget):
         lon, lat = self.axis.transData.inverted().transform((canvas_x, mpl_y))
         return float(lon), float(lat)
 
+    def _drawn_map_rect(self) -> tuple[int, int, int, int]:
+        """Real (left, top, width, height) of the DRAWN map inside
+        self.canvas, in the canvas widget's own logical pixels.
+
+        Cartopy holds a fixed aspect, so on a wide-and-short (or tall-and-
+        narrow) canvas the real map is letterboxed inside it - the canvas
+        rectangle and the map rectangle are genuinely different. Overlays
+        anchored "to the map's corner" (the floating Map Layers panel, the
+        2D/3D/4D view toggle) must follow the MAP, not the canvas, or they
+        float over empty background beside it (confirmed in a real
+        offscreen screenshot, 2026-09-20). Falls back to the whole canvas
+        before the first real draw, when no axes extent exists yet.
+        """
+        fallback = (0, 0, self.canvas.width(), self.canvas.height())
+        try:
+            bbox = self.axis.get_window_extent()
+            ratio = float(self.canvas.devicePixelRatioF()) or 1.0
+            left = int(bbox.x0 / ratio)
+            top = int(self.canvas.height() - bbox.y1 / ratio)
+            width = int((bbox.x1 - bbox.x0) / ratio)
+            height = int((bbox.y1 - bbox.y0) / ratio)
+        except Exception:  # pragma: no cover - only before a first real draw
+            return fallback
+        if width <= 0 or height <= 0:
+            return fallback
+        return left, top, width, height
+
     def resizeEvent(self, event: Any) -> None:
         super().resizeEvent(event)
+        self._reposition_map_overlays()
+
+    def _reposition_map_overlays(self) -> None:
+        """Re-anchor the floating overlays to the DRAWN map - called both
+        on a real resize and at the end of every real redraw, since the
+        letterbox (and therefore the map's own corners) moves with both."""
         margin = 8
-        layers_panel_top = margin
+        map_left, map_top, map_width, _map_height = self._drawn_map_rect()
+        layers_panel_top = map_top + margin
         if self._show_view_toggle and hasattr(self, "view_toggle_widget"):
-            self.view_toggle_widget.move(max(0, self.canvas.width() - self.view_toggle_widget.width() - margin), margin)
-            layers_panel_top = margin + self.view_toggle_widget.height() + margin
+            self.view_toggle_widget.move(
+                max(0, map_left + map_width - self.view_toggle_widget.width() - margin), map_top + margin
+            )
         if self._show_layers_panel and hasattr(self, "layers_panel"):
-            self.layers_panel.move(max(0, self.canvas.width() - self.layers_panel.width() - margin), layers_panel_top)
+            # Anchored to the map's own TOP-LEFT corner (2026-09-20, Task 8
+            # of the AWCI dashboard-fixes plan, docs/reference/
+            # awci_dashboard_reference.png). It used to be pinned to the
+            # top-RIGHT, directly under the 2D/3D/4D view toggle, where on
+            # a short map it was clipped by the canvas's own bottom edge -
+            # taking the real opacity slider (the panel's last row) out of
+            # reach entirely. Top-left has the full canvas height available
+            # and matches the reference image. Height-capped to the canvas
+            # so a very short map still scrolls/clips gracefully rather
+            # than spilling outside the widget.
+            self.layers_panel.move(map_left + margin, layers_panel_top)
+            hint = self.layers_panel.sizeHint()
+            self.layers_panel.resize(
+                hint.width(),  # never the stale construction-time width - the header row can widen it
+                min(hint.height(), max(0, self.canvas.height() - layers_panel_top - margin)),
+            )
 
     # -------------------------------------------------- zoom / pan / reset
 
@@ -799,9 +856,27 @@ class AWCIMapPanel(EventMixin, QWidget):
         panel_layout = QVBoxLayout(self.layers_panel)
         panel_layout.setContentsMargins(8, 6, 8, 6)
         panel_layout.setSpacing(2)
-        header = QLabel("LAYERS")
-        header.setStyleSheet(label_style("text_secondary", "xs", "bold"))
-        panel_layout.addWidget(header)
+        # Header row with a real close control (2026-09-20, Task 8) - the
+        # reference image titles this floating panel "Map Layers" and
+        # gives it an × that dismisses it; the dashboard's own filter-row
+        # "Layers" button brings the same real panel back.
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(4)
+        header = QLabel("Map Layers")
+        header.setStyleSheet(label_style("text_primary", "sm", "bold"))
+        header_row.addWidget(header)
+        header_row.addStretch()
+        self.layers_panel_close_button = QToolButton()
+        self.layers_panel_close_button.setText("×")
+        self.layers_panel_close_button.setToolTip("Hide this panel (re-open it from the dashboard's Layers button)")
+        self.layers_panel_close_button.setStyleSheet(
+            f"QToolButton {{ border: none; color: {TOKENS.text_secondary}; font-size: 13px; }}"
+            f"QToolButton:hover {{ color: {TOKENS.text_primary}; }}"
+        )
+        self.layers_panel_close_button.clicked.connect(self.layers_panel.hide)
+        header_row.addWidget(self.layers_panel_close_button)
+        panel_layout.addLayout(header_row)
 
         self.awci_layer_checkbox = QCheckBox("AWCI")
         self.awci_layer_checkbox.setChecked(True)
@@ -927,9 +1002,40 @@ class AWCIMapPanel(EventMixin, QWidget):
         the photo's numbers here would misrepresent the real scoring
         engine, so only the row ORDER is matched, never the values.
         """
-        x0 = 0.012
-        box_h = 0.032
-        y0 = 0.02
+        # Right-edge placement (moved 2026-09-20, Task 8): this legend used
+        # to sit at the axes' bottom-LEFT, which is now underneath the
+        # floating Map Layers panel (a real Qt child widget drawn on top of
+        # the canvas - it simply hid the legend's lower rows, confirmed in
+        # a real offscreen screenshot). The reference image also puts its
+        # own AWCI scale against the map's right edge, clear of the panel.
+        x0 = 0.872
+        # Real anti-clipping fix (2026-09-20, Task 8): box_h used to be a
+        # flat 0.032 of the axes height, so on a short map the six real
+        # LEVELS rows collapsed into ~7px each and the swatches/labels
+        # overlapped into an unreadable, visually cut-off block (confirmed
+        # in a real offscreen screenshot of this dashboard). Each row now
+        # gets at least ~11 device px, whatever the axes height is - and
+        # the whole legend is still capped at half the axes so it can
+        # never grow to cover the map on a very short one.
+        try:
+            axes_height_px = float(self.axis.get_window_extent().height)
+        except Exception:  # pragma: no cover - only before a first real draw
+            axes_height_px = 0.0
+        min_row_fraction = 13.0 / axes_height_px if axes_height_px > 0 else 0.032
+        box_h = min(max(0.032, min_row_fraction), 0.5 / max(len(LEVELS), 1))
+        # Lifted clear of the RENDERED/FLIGHT LEVEL info boxes, which own
+        # the bottom-right corner (see _draw_info_boxes()).
+        y0 = 0.30
+        # Real readability backdrop (2026-09-20, Task 8) - the same
+        # dark-card treatment the info boxes already use; without it these
+        # small labels sit directly on a bright yellow/green heatmap.
+        self.axis.add_patch(
+            Rectangle(
+                (x0 - 0.012, y0 - 0.012), 0.135, len(LEVELS) * box_h + 0.055,
+                transform=self.axis.transAxes, facecolor="#0d1526", edgecolor=TOKENS.border,
+                alpha=0.85, zorder=19,
+            )
+        )
         self.axis.text(
             x0, y0 + len(LEVELS) * box_h + 0.012, "AWCI SCALE",
             transform=self.axis.transAxes, color="#e8edf5", fontsize=7, fontweight="bold", va="bottom", zorder=20,
@@ -955,14 +1061,21 @@ class AWCIMapPanel(EventMixin, QWidget):
         rendered_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + "Z"
         fl = pressure_to_flight_level_ft(self._flight_level_hpa) // 100
         box_style = {"boxstyle": "round,pad=0.4", "facecolor": "#0d1526", "edgecolor": TOKENS.border, "alpha": 0.9}
+        # Bottom-LEFT-of-top-right placement (moved 2026-09-20, Task 8):
+        # these used to be drawn at the axes' top-left (0.012, 0.98), which
+        # is exactly where the floating Map Layers panel is now anchored -
+        # the panel is a real Qt child widget drawn ON TOP of the canvas,
+        # so it would simply hide them. The map's lower-right quadrant is
+        # the one corner the reference image leaves free (the AWCI SCALE
+        # legend owns the lower-left, the view toggle the upper-right).
         self.axis.text(
-            0.012, 0.98, f"RENDERED\n{rendered_at}",
-            transform=self.axis.transAxes, color="#9fb0c9", fontsize=6.5, va="top", ha="left", bbox=box_style, zorder=20,
+            0.988, 0.13, f"RENDERED\n{rendered_at}",
+            transform=self.axis.transAxes, color="#9fb0c9", fontsize=6.5, va="bottom", ha="right", bbox=box_style, zorder=20,
         )
         self.axis.text(
-            0.012, 0.87, f"FLIGHT LEVEL\nFL{fl} (~{self._flight_level_hpa:.0f} hPa)",
+            0.988, 0.02, f"FLIGHT LEVEL\nFL{fl} (~{self._flight_level_hpa:.0f} hPa)",
             transform=self.axis.transAxes, color="#e8edf5", fontsize=6.5, fontweight="bold",
-            va="top", ha="left", bbox=box_style, zorder=20,
+            va="bottom", ha="right", bbox=box_style, zorder=20,
         )
 
     def set_flight_path(self, points: list[tuple[float, float, str]]) -> None:
@@ -1400,6 +1513,10 @@ class AWCIMapPanel(EventMixin, QWidget):
         # fixed set_extent()/set_global() call, so this full redraw
         # (axis.clear() above) doesn't discard the user's navigation.
         self._apply_camera_extent()
+        # The redraw above can move the letterboxed map inside the canvas
+        # (a new extent means a new aspect), so the floating overlays are
+        # re-anchored to it here as well as on a real resize.
+        self._reposition_map_overlays()
 
     def status(self) -> dict[str, Any]:
         return {"figure": self.figure is not None, "axis": self.axis is not None, "has_contour": self._contour is not None}
