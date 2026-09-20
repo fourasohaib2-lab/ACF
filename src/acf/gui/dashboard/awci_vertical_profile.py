@@ -56,7 +56,21 @@ class AWCIVerticalProfile(QWidget):
 
     levelClicked = Signal(str)
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None, preferred_height: int | None = None):
+        """
+        `preferred_height` (added 2026-09-20, Task 2 of the AWCI
+        final-polish plan): overrides this widget's own fixed 300px
+        sizeHint height (and its 250px minimum, kept at the same 5:6
+        ratio). Both were real, binding height constraints: a
+        QHBoxLayout takes its height hint from its tallest child, so
+        inside the AWCI dashboard's 5-card analysis row this widget's
+        300px alone kept the whole row from shrinking to the reference
+        image's own ~250px card even after the two matplotlib panels
+        beside it were sized down. The bars are drawn from the real
+        widget height, so a smaller value simply draws shorter bars;
+        120px stays an absolute floor so the title and the level labels
+        remain legible. None = unchanged for every other caller.
+        """
         super().__init__(parent)
 
         self._profile: dict[str, float] = {}
@@ -68,7 +82,8 @@ class AWCIVerticalProfile(QWidget):
         #: (one real layout computation, not two).
         self._bar_geometry: list[tuple[str, float, float]] = []
 
-        self.setMinimumSize(200, 250)
+        self._preferred_height = max(120, int(preferred_height)) if preferred_height else 300
+        self.setMinimumSize(200, max(120, int(self._preferred_height * 250 / 300)))
         self.setStyleSheet("background: transparent;")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip("Click a bar for the real per-module breakdown at that level.")
@@ -257,7 +272,12 @@ class AWCIVerticalProfile(QWidget):
         super().mousePressEvent(event)
 
     def sizeHint(self):
-        return QSize(250, 300)
+        # See __init__'s `preferred_height` docstring (2026-09-20, Task
+        # 2): a hard-coded 300 here re-inflated the AWCI dashboard's
+        # analysis row right back after the matplotlib panels beside it
+        # were sized down, because a QHBoxLayout takes its own height
+        # hint from its tallest child's.
+        return QSize(250, self._preferred_height)
 
 
 #: Real §51 label per real AWCICalculator module_scores key - the

@@ -61,6 +61,22 @@ class ACFVerticalSoundingWidget(QWidget):
         self._point: tuple[float, float] | None = None
         self._draw_empty()
 
+    def set_preferred_canvas_height(self, height_px: int) -> None:
+        """Real preferred (Qt sizeHint) canvas height in pixels - see
+        AWCICrossSection.set_preferred_canvas_height()'s own docstring
+        for the real measurement behind this (2026-09-20, Task 2 of the
+        AWCI final-polish plan). This widget's figure is left at
+        matplotlib's 6.4x4.8in default, i.e. a 480px vertical ask, which
+        was one of the two real drivers of the AWCI dashboard's
+        oversized analysis row (the ACF Scientific Workstation's own
+        sounding panel, which never calls this, is unchanged). Preferred
+        size only: the canvas still stretches to whatever height its
+        layout grants, and the point-sized fonts here are unaffected."""
+        dpi = self.figure.get_dpi()
+        width_in, _ = self.figure.get_size_inches()
+        self.figure.set_size_inches(width_in, max(60, int(height_px)) / dpi)
+        self.canvas.updateGeometry()
+
     def _draw_empty(self) -> None:
         self.axis.clear()
         self.axis.set_facecolor(TOKENS.bg_card)

@@ -144,6 +144,37 @@ class AWCICrossSection(QWidget):
         self.axis = self.figure.add_subplot(1, 1, 1)
         self._colorbar: Any = None
 
+    def set_preferred_canvas_height(self, height_px: int) -> None:
+        """
+        Set this chart's real preferred (Qt sizeHint) height, in pixels.
+
+        A FigureCanvasQTAgg reports its Figure's own inch size x dpi
+        verbatim as its Qt sizeHint, so a Figure keeps asking a layout
+        for that many pixels of vertical space regardless of any
+        setMinimumHeight() the embedding layout applies - and a
+        QHBoxLayout takes its own height hint from its tallest child.
+        That, not any minimum-height floor, was the real constraint
+        behind the AWCI dashboard's 5-card analysis row rendering 572px
+        tall against the reference image's own ~250px card (measured
+        2026-09-20, Task 2 of the AWCI final-polish plan; the two worst
+        offenders were the panels left at matplotlib's 6.4x4.8in
+        default, i.e. a 480px ask each).
+
+        Only the PREFERRED size changes: the canvas still stretches to
+        whatever real height its layout actually grants it, and every
+        font size in this widget is in points against the real rendered
+        canvas, so this call does not shrink any label or title.
+
+        The same method exists on this dashboard's other analysis-row
+        chart widgets (AWCIRouteChart, AWCIEvolutionChart,
+        ACFVerticalSoundingWidget) so one caller can size the whole row
+        from one real measured target.
+        """
+        dpi = self.figure.get_dpi()
+        width_in, _ = self.figure.get_size_inches()
+        self.figure.set_size_inches(width_in, max(60, int(height_px)) / dpi)
+        self.canvas.updateGeometry()
+
     def set_external_cross_section(
         self,
         distances_km: Any,

@@ -1347,7 +1347,9 @@ class AWCIDashboard(QWidget):
         # by the Route selector two panels over. Other callers of
         # AWCICrossSection (acf_general_dashboard) keep their own titles.
         self.cross_section = AWCICrossSection("VERTICAL CROSS SECTION", figsize_scale=self._screen_scale)
-        self.cross_section.setMinimumHeight(max(90, int(150 * self._screen_scale)))
+        # Same floor the analysis row's own `min_panel_height` uses
+        # (lowered 2026-09-20, Task 2 - see its comment there).
+        self.cross_section.setMinimumHeight(max(60, int(100 * self._screen_scale)))
 
         self.global_map.set_city_labels(_REGIONAL_CITY_LABELS)
 
@@ -1535,7 +1537,39 @@ class AWCIDashboard(QWidget):
                 panel_layout.addWidget(widget)
             return frame
 
-        min_panel_height = max(90, int(150 * self._screen_scale))
+        # Lowered 2026-09-20 (Task 2) from max(90, 150*scale): at
+        # scale 1.0 that 150px floor was itself binding on the tallest
+        # card of this row (route selector 47 + chart 150 + segment
+        # table 80 + spacing = 301px minimum), so the row could not
+        # reach the reference image's own ~250px card however small the
+        # canvases' preferred sizes were made. 100*scale still leaves
+        # every canvas taller than the reference's own smallest
+        # analysis plot (the Flight Route mini-map, ~75px of its 250px
+        # card, measured on the reference image), and 60 is an absolute
+        # legibility floor for a plot with axis ticks and a title.
+        min_panel_height = max(60, int(100 * self._screen_scale))
+
+        # Real reference-derived target for this row's card height
+        # (2026-09-20, Task 2 of the AWCI final-polish plan). Measured
+        # directly off docs/reference/awci_dashboard_reference.png
+        # (1536x1024): the 5 analysis cards span y~650..900, i.e. ~250px
+        # = ~24% of that image's own height. Against a 1080p screen's
+        # ~1078px of real viewport that is ~260px, so 250 * the real
+        # screen scale is the honest per-screen equivalent (NOT a fixed
+        # pixel value - it shrinks with self._screen_scale exactly like
+        # every other size in this dashboard). Minus this row's own 8+8
+        # card padding, that leaves the content target below.
+        #
+        # This row previously rendered 572px tall (measured, Task 9 of
+        # the prior plan) - more than twice the reference - and the
+        # cause was NOT the min_panel_height floor above: it was the
+        # DEFAULT matplotlib figure size (6.4x4.8in = 480px) inside
+        # ACFVerticalSoundingWidget and AWCIEvolutionChart, which a
+        # FigureCanvasQTAgg reports verbatim as its sizeHint, plus
+        # AWCIVerticalProfile's own hard-coded 300px sizeHint. All
+        # three are now sized from the real target below.
+        reference_card_height = max(120, int(250 * self._screen_scale))
+        analysis_content_height = reference_card_height - 16
 
         # Panel 2/5: "Atmospheric Profile" - real T/wind vertical column
         # at the point of interest (acf.awci.vertical_field.
@@ -1594,13 +1628,21 @@ class AWCIDashboard(QWidget):
         # live via the shared _compute_vertical_profile()/
         # _sync_vertical_profile_panel() helpers above so both read the
         # exact same real computation.
-        self.vertical_profile_panel = AWCIVerticalProfile()
-        self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
-        self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
-        self.vertical_profile_panel.setMinimumHeight(min_panel_height)
+        # The suggestion label is built first so the profile below can be
+        # given the real remaining height inside its own card, measured
+        # from the label's real sizeHint rather than a second guess.
         self._vertical_profile_panel_suggestion_label = QLabel("")
         self._vertical_profile_panel_suggestion_label.setWordWrap(True)
         self._vertical_profile_panel_suggestion_label.setStyleSheet(label_style("text_muted", "xs"))
+
+        self.vertical_profile_panel = AWCIVerticalProfile(
+            preferred_height=analysis_content_height
+            - self._vertical_profile_panel_suggestion_label.sizeHint().height()
+            - 4,  # _analysis_panel()'s own inter-widget spacing
+        )
+        self.vertical_profile_panel.set_title("AWCI VERTICAL PROFILE")
+        self.vertical_profile_panel.levelClicked.connect(self._on_vertical_profile_level_clicked)
+        self.vertical_profile_panel.setMinimumHeight(min_panel_height)
 
         self.route_chart.setMinimumHeight(min_panel_height)
 
@@ -1611,6 +1653,25 @@ class AWCIDashboard(QWidget):
         # a single real 2-point great-circle path, not yet a named
         # multi-waypoint itinerary).
         self.route_segment_table = AWCIRouteSegmentTable()
+
+        # Real canvas sizing for this row (2026-09-20, Task 2): each
+        # matplotlib panel is told the real height left over inside its
+        # own card once that card's other real widgets (route selector,
+        # segment table, time control, Global/Route/Airport toggle) have
+        # asked for their own real sizeHint heights - so the 5 cards land
+        # at `reference_card_height` instead of each canvas independently
+        # demanding 160-480px and the tallest card dictating the row.
+        # Measured from real sizeHints, never from guessed constants, so
+        # it stays correct if any of those sibling widgets changes.
+        def _size_analysis_canvas(chart: Any, *siblings: QWidget) -> None:
+            used = sum(max(0, widget.sizeHint().height()) for widget in siblings)
+            used += 4 * len(siblings)  # _analysis_panel()'s own spacing
+            chart.set_preferred_canvas_height(max(60, analysis_content_height - used))
+
+        _size_analysis_canvas(self.cross_section)
+        _size_analysis_canvas(self.atmospheric_profile)
+        _size_analysis_canvas(self.route_chart, self.route_selector_widget, self.route_segment_table)
+        _size_analysis_canvas(self.evolution_chart, self.time_control_widget, self.evolution_toggle_widget)
 
         analysis_row = QHBoxLayout()
         analysis_row.setSpacing(8)
