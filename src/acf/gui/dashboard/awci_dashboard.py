@@ -1744,7 +1744,17 @@ class AWCIDashboard(QWidget):
             decomposition=self._last_awci_result.decomposition if self._last_awci_result is not None else None,
         )
         self.model_agreement_card.update_data(module_scores)
-        self.airport_table.update_data(self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES))
+        # is_demo_tier: same real 3-way tier check _update_clock() already
+        # uses for the topbar's own DEMO MODE/REAL PHYSICS/IMPORTED MODEL
+        # badge (Task 7, 2026-09-14 AWCI dashboard fixes pass) - drives
+        # this table's own "DEMO GRID" tag, since the table always runs
+        # the real demo pipeline regardless of which tier is active
+        # elsewhere (see _compute_airport_complexity_rows()'s own
+        # docstring).
+        is_demo_tier = not self._real_physics_active and self._imported_dataset is None
+        self.airport_table.update_data(
+            self._compute_airport_complexity_rows(DEFAULT_AIRPORT_ICAO_CODES), is_demo_tier=is_demo_tier
+        )
 
     def _refresh_footer_summary(self, module_scores: dict[str, float], overall_awci: float,
                                  physical_score: float | None, forecast_score: float | None) -> None:

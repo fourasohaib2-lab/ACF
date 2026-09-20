@@ -206,3 +206,23 @@ def test_view_all_callback_is_invoked_on_click(qapp):
     table = AWCIAirportTable(on_view_all=lambda: calls.append(True))
     table.view_all_button.click()
     assert calls == [True]
+
+
+def test_demo_tier_tag_hidden_when_demo_is_the_active_tier(qapp):
+    """Task 7 (2026-09-14 AWCI dashboard fixes): default/demo tier is
+    this table's own real tier too, so the "DEMO GRID" mismatch tag
+    must stay hidden - showing it would be a false disclosure."""
+    table = AWCIAirportTable()
+    table.update_data([{"icao": "DAAG", "awci": 33.0, "trend": "→", "level": "Low"}], is_demo_tier=True)
+    assert table.tier_mismatch_tag.isHidden()
+
+
+def test_demo_tier_tag_visible_when_another_real_tier_is_active(qapp):
+    """When Real Physics/Real Archive/an imported model is active
+    elsewhere, this table is still demo-tier under the hood - the
+    mismatch must become visibly disclosed, matching the topbar's own
+    tier-badge visual language."""
+    table = AWCIAirportTable()
+    table.update_data([{"icao": "DAAG", "awci": 33.0, "trend": "→", "level": "Low"}], is_demo_tier=False)
+    assert not table.tier_mismatch_tag.isHidden()
+    assert table.tier_mismatch_tag.text() == "DEMO GRID"

@@ -340,9 +340,36 @@ class AWCIAirportTable(QFrame):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(4)
 
+        title_row = QHBoxLayout()
         title = QLabel("AIRPORT COMPLEXITY")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
-        layout.addWidget(title)
+        title_row.addWidget(title)
+        # Real, visible tier disclosure (Task 7, 2026-09-14 AWCI
+        # dashboard fixes pass) - this table always runs the same real
+        # demo-pattern pipeline (see AWCIDashboard._compute_airport_
+        # complexity_rows()'s own docstring) even while Real Physics/
+        # Real Archive/an imported model is the active tier elsewhere
+        # on screen; real per-airport sampling for those tiers has not
+        # been wired. Matches the topbar's own DEMO MODE/REAL PHYSICS/
+        # IMPORTED MODEL badge language and amber "demo" color
+        # (awci_topbar.py's set_status()) rather than a new visual
+        # pattern - shown only when that mismatch is actually live, so
+        # it never claims anything false while demo tier IS the active
+        # tier everywhere.
+        self.tier_mismatch_tag = QLabel("DEMO GRID")
+        self.tier_mismatch_tag.setStyleSheet(
+            "color: #f59e0b; font-size: 8px; font-weight: bold; border: 1px solid #f59e0b; "
+            "border-radius: 4px; padding: 1px 4px;"
+        )
+        self.tier_mismatch_tag.setToolTip(
+            "The active data tier elsewhere on this dashboard is not Demo, but this table\n"
+            "still shows demo-pattern values - real per-airport sampling has not been wired\n"
+            "for Real Physics/Real Archive/an imported model yet."
+        )
+        self.tier_mismatch_tag.hide()
+        title_row.addWidget(self.tier_mismatch_tag)
+        title_row.addStretch()
+        layout.addLayout(title_row)
 
         header_row = QHBoxLayout()
         for text, stretch in (("Airport", 3), ("AWCI", 1), ("Trend", 1), ("Status", 2)):
@@ -365,10 +392,16 @@ class AWCIAirportTable(QFrame):
             self.view_all_button.clicked.connect(on_view_all)
         layout.addWidget(self.view_all_button)
 
-    def update_data(self, rows: list[dict[str, Any]]) -> None:
+    def update_data(self, rows: list[dict[str, Any]], is_demo_tier: bool = True) -> None:
         """rows: list of {icao, awci, trend, level} - see
         AWCIDashboard._compute_airport_complexity_rows()'s own
-        docstring for how each is really computed."""
+        docstring for how each is really computed. `is_demo_tier`:
+        whether the dashboard's OTHER real panels are currently also on
+        demo tier - this table itself always runs the same real demo
+        pipeline (see that docstring), so the "DEMO GRID" tag is only
+        shown when `is_demo_tier` is False, i.e. when that is actually
+        a mismatch worth disclosing."""
+        self.tier_mismatch_tag.setVisible(not is_demo_tier)
         while self._rows_layout.count():
             item = self._rows_layout.takeAt(0)
             if item.widget():

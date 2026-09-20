@@ -38,6 +38,16 @@ def test_gauge_shows_the_real_overall_awci_score(qapp):
     assert row.gauge._score == 72.0
 
 
+def test_gauge_card_discloses_the_route_vs_point_mismatch(qapp):
+    """Task 7 (2026-09-14 AWCI dashboard fixes): the gauge is the
+    route's max AWCI while the 6 hazard cards are the point of
+    interest - a visible tooltip on the gauge card must say so."""
+    row = AWCIHazardRow()
+    tooltip = row.gauge.parentWidget().toolTip()
+    assert "route" in tooltip.lower()
+    assert "point of interest" in tooltip.lower()
+
+
 def test_cards_show_the_real_module_scores_without_a_second_scaling(qapp):
     """Real regression guard: module_scores arrives already on the
     real 0-100 scale (AWCICalculator.calculate_module_scores() itself
