@@ -40,6 +40,15 @@ class AWCITopBar(QWidget):
     _BORDER = "#e2e5ea"
     _TEXT = "#2a3142"
     _TEXT_MUTED = "#8a91a3"
+    # Real filter-row palette (2026-09-20, Task 8) - the reference image
+    # places this row over the dark page background, not inside the white
+    # top bar, so its pills need the dark-surface treatment rather than
+    # the white-on-white _pill_style() used by the bar itself.
+    _FILTER_BG = "#101a2e"
+    _FILTER_BORDER = "#25365a"
+    _FILTER_TEXT = "#e8edf5"
+    _FILTER_TEXT_MUTED = "#8fa0bd"
+    _FILTER_HOVER = "#1b2a47"
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -61,12 +70,38 @@ class AWCITopBar(QWidget):
         row.addLayout(title_col)
         row.addStretch()
 
+        # --- Real filter bar (relocated 2026-09-20, Task 8 of the AWCI
+        # dashboard-fixes plan) -------------------------------------------
+        # The reference image (docs/reference/awci_dashboard_reference.png)
+        # does NOT merge the Area/Date & Time/Forecast/Model selectors into
+        # the white top bar - they sit in their OWN row directly below it,
+        # over the dark page background. Every control below is therefore
+        # still constructed here (this widget owns the real Qt objects
+        # `AWCIDashboard._wire_topbar()` connects to - `area_combo`,
+        # `prev_time_button`, ... - unchanged), but assembled into
+        # `self.filter_bar` instead of being added to this bar's own `row`.
+        # `AWCIDashboard._build_ui()` reparents `filter_bar` into its own
+        # real filter row, so these selectors are genuinely no longer
+        # children of the top bar widget.
+        self.filter_bar = QWidget()
+        filter_row = QHBoxLayout(self.filter_bar)
+        filter_row.setContentsMargins(12, 6, 12, 6)
+        filter_row.setSpacing(14)
+        self.filter_bar.setObjectName("awciFilterBar")
+        # Object-name-scoped so the card background/border applies to the
+        # bar itself only - a bare `QWidget { ... }` rule here would cascade
+        # a border onto every child pill inside it.
+        self.filter_bar.setStyleSheet(
+            f"QWidget#awciFilterBar {{ background-color: {self._FILTER_BG}; "
+            f"border: 1px solid {self._FILTER_BORDER}; border-radius: 8px; }}"
+        )
+
         # --- Real Area selector (wired to the existing VIEW MODE radios) ---
         self.area_combo = QComboBox()
         self.area_combo.addItems(["Global", "North Africa"])
-        self.area_combo.setStyleSheet(self._pill_style())
+        self.area_combo.setStyleSheet(self._dark_pill_style())
         self.area_combo.currentTextChanged.connect(self.areaChanged.emit)
-        row.addWidget(self._labeled("Area", self.area_combo))
+        filter_row.addWidget(self._labeled("Area", self.area_combo, dark=True))
 
         # --- Real Date & Time (wired to the existing real time_slider) ---
         time_group = QWidget()
@@ -78,31 +113,33 @@ class AWCITopBar(QWidget):
         self.next_time_button = QToolButton()
         self.next_time_button.setText("›")
         self.now_button = QPushButton("Now")
-        self.now_button.setStyleSheet(self._pill_style())
+        self.now_button.setStyleSheet(self._dark_pill_style())
         self.time_readout_label = QLabel("--:-- UTC")
-        self.time_readout_label.setStyleSheet(f"color: {self._TEXT}; font-size: 11px; font-weight: bold; border: none; padding: 0 6px;")
+        self.time_readout_label.setStyleSheet(
+            f"color: {self._FILTER_TEXT}; font-size: 11px; font-weight: bold; border: none; padding: 0 6px;"
+        )
         for btn in (self.prev_time_button, self.next_time_button):
             btn.setStyleSheet(
-                f"QToolButton {{ border: 1px solid {self._BORDER}; border-radius: 4px; padding: 2px 6px; color: {self._TEXT}; }}"
-                "QToolButton:hover { background-color: #f0f2f5; }"
+                f"QToolButton {{ border: 1px solid {self._FILTER_BORDER}; border-radius: 4px; padding: 2px 6px; "
+                f"color: {self._FILTER_TEXT}; }}"
+                f"QToolButton:hover {{ background-color: {self._FILTER_HOVER}; }}"
             )
         time_row.addWidget(self.prev_time_button)
         time_row.addWidget(self.time_readout_label)
         time_row.addWidget(self.next_time_button)
         time_row.addWidget(self.now_button)
-        row.addWidget(self._labeled("Date & Time", time_group))
+        filter_row.addWidget(self._labeled("Date & Time", time_group, dark=True))
 
         # --- Real Forecast lead-time readout (derived from time_slider) ---
         self.forecast_label = QLabel("+0h")
-        self.forecast_label.setStyleSheet(self._pill_style())
-        row.addWidget(self._labeled("Forecast", self.forecast_label))
+        self.forecast_label.setStyleSheet(self._dark_pill_style())
+        filter_row.addWidget(self._labeled("Forecast", self.forecast_label, dark=True))
 
         # --- Real current model name (already computed elsewhere) ------
         self.model_label = QLabel("—")
-        self.model_label.setStyleSheet(self._pill_style())
-        row.addWidget(self._labeled("Model", self.model_label))
-
-        row.addStretch()
+        self.model_label.setStyleSheet(self._dark_pill_style())
+        filter_row.addWidget(self._labeled("Model", self.model_label, dark=True), stretch=1)
+        filter_row.addStretch()
 
         # --- Real system status -----------------------------------------
         status_col = QVBoxLayout()
@@ -134,13 +171,14 @@ class AWCITopBar(QWidget):
         self.user_button.setEnabled(False)
         row.addWidget(self.user_button)
 
-    def _labeled(self, label_text: str, control: QWidget) -> QWidget:
+    def _labeled(self, label_text: str, control: QWidget, *, dark: bool = False) -> QWidget:
         wrapper = QWidget()
         col = QVBoxLayout(wrapper)
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(2)
         label = QLabel(label_text)
-        label.setStyleSheet(f"color: {self._TEXT_MUTED}; font-size: 9px; border: none;")
+        muted = self._FILTER_TEXT_MUTED if dark else self._TEXT_MUTED
+        label.setStyleSheet(f"color: {muted}; font-size: 9px; border: none;")
         col.addWidget(label)
         col.addWidget(control)
         return wrapper
@@ -149,6 +187,15 @@ class AWCITopBar(QWidget):
         return (
             f"border: 1px solid {self._BORDER}; border-radius: 5px; padding: 3px 8px; "
             f"color: {self._TEXT}; font-size: 11px; background-color: #ffffff;"
+        )
+
+    def _dark_pill_style(self) -> str:
+        """Same real pill geometry as `_pill_style()`, on the dark page
+        surface the relocated filter row now sits on - see `filter_bar`'s
+        own construction comment."""
+        return (
+            f"border: 1px solid {self._FILTER_BORDER}; border-radius: 5px; padding: 3px 8px; "
+            f"color: {self._FILTER_TEXT}; font-size: 11px; background-color: #16233c;"
         )
 
     def _icon_button(self, glyph: str) -> QToolButton:

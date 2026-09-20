@@ -98,6 +98,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QSlider,
     QToolButton,
     QVBoxLayout,
@@ -163,6 +164,28 @@ from acf.gui.dashboard.awci_timeline import AWCITimeline
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, apply_elevation, dashboard_stylesheet, label_style
+
+
+def _filter_row_button_style() -> str:
+    """Styling for the real filter row's own "Layers"/"Settings" buttons
+    (added 2026-09-20, Task 8) - the reference image shows them as two
+    light card-style buttons at the filter row's right end, visually part
+    of that row rather than of the white top bar above it."""
+    t = TOKENS
+    return f"""
+        QPushButton {{
+            background-color: #16233c;
+            color: {t.text_primary};
+            border: 1px solid #25365a;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 12px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: #1b2a47;
+        }}
+    """
 
 
 def _real_data_button_style() -> str:
@@ -722,6 +745,53 @@ class AWCIDashboard(QWidget):
         self.topbar = AWCITopBar()
         outer.addWidget(self.topbar)
 
+        # --- Real filter row (added 2026-09-20, Task 8 of the AWCI
+        # dashboard-fixes plan, docs/reference/awci_dashboard_reference.png)
+        # The reference image keeps the Area/Date & Time/Forecast/Model
+        # selectors OUT of the white top bar, in their own row directly
+        # below it, with "Layers" and "Settings" buttons at its right end.
+        # self.topbar.filter_bar carries the SAME real Qt controls
+        # _wire_topbar() already connects (area_combo, prev/next/now,
+        # forecast_label, model_label) - reparented here, never rebuilt as
+        # a second set of selectors.
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(8)
+        filter_row.setContentsMargins(0, 0, 0, 0)
+        filter_row.addWidget(self.topbar.filter_bar, stretch=1)
+
+        # Real Layers button - toggles the global map's OWN real floating
+        # Map Layers panel (AWCIMapPanel._build_layers_panel()), never a
+        # second, parallel layer-visibility mechanism. self.global_map does
+        # not exist yet at this point in _build_ui(); the slot below only
+        # ever runs on a real click, long after it does.
+        self.layers_button = QPushButton("▤  Layers")
+        self.layers_button.setToolTip(
+            "Show/hide the real Map Layers panel floating over the map's top-left corner\n"
+            "(the same real checkboxes + opacity slider the map itself owns)."
+        )
+        self.layers_button.setStyleSheet(_filter_row_button_style())
+        self.layers_button.clicked.connect(lambda _checked=False: self._toggle_map_layers_panel())
+        filter_row.addWidget(self.layers_button)
+
+        # Real Settings button - opens the EXACT same real QMenu the
+        # topbar's own ⚙ already opens (_open_settings_menu() ->
+        # _build_header_menu()/_sync_header_menu()), per this file's own
+        # established "one real settings menu" convention; only the popup
+        # anchor differs.
+        self.settings_button = QPushButton("⚙  Settings")
+        self.settings_button.setToolTip(
+            "Open the real settings menu (Real Physics, 4D Evolution, 3D View, Connect HPC,\n"
+            "Import Model File, Message, Alerts, Report, Real Archive, FL comparison) - the\n"
+            "same single real menu the top bar's own ⚙ opens."
+        )
+        self.settings_button.setStyleSheet(_filter_row_button_style())
+        self.settings_button.clicked.connect(lambda _checked=False: self._open_settings_menu(self.settings_button))
+        filter_row.addWidget(self.settings_button)
+
+        self.filter_row_widget = QWidget()
+        self.filter_row_widget.setLayout(filter_row)
+        outer.addWidget(self.filter_row_widget)
+
         # NOTE (2026-09-12, docs/reference/awci_dashboard_reference.png):
         # this whole header_row is no longer the visible page header -
         # self.topbar above now owns that real estate and shows the SAME
@@ -1199,11 +1269,31 @@ class AWCIDashboard(QWidget):
         # that attribute's own comment) with a 140px floor so a small
         # real screen still gets a genuinely usable map, not just a
         # smaller sizeHint.
-        self.global_map.setMinimumHeight(max(140, int(240 * self._screen_scale)))
+        # Real hero-map resize (2026-09-20, Task 8): the reference image
+        # gives this map roughly 40% of the page height, far more than the
+        # ~19% it had here. Raised from 240 to 460 logical px (same
+        # _screen_scale factor as before) and paired with row1's own
+        # raised stretch factor below - a minimum height alone would not
+        # grow the map when space is plentiful, and a stretch factor alone
+        # would not defend it here, since AWCIDashboardWindow wraps this
+        # whole dashboard in a QScrollArea whose content already exceeds
+        # the viewport (so every row currently sits at its own minimum and
+        # stretch never gets to arbitrate). The small-screen floor is
+        # raised 140 -> 300 for the same reason: below that this hero map
+        # stops being readable at all, and that window scrolls anyway.
+        self.global_map.setMinimumHeight(max(300, int(460 * self._screen_scale)))
+        self.global_map.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         apply_elevation(self.global_map)
-        row1.addWidget(self.global_map, stretch=1)
-        outer.addLayout(row1, stretch=3)
+
+        # Real map column: the hero map with its own transport row beneath
+        # it (reference image), rather than the map alone.
+        map_column = QVBoxLayout()
+        map_column.setSpacing(6)
+        map_column.addWidget(self.global_map, stretch=1)
+        map_column.addWidget(self._build_map_transport_row())
+        row1.addLayout(map_column, stretch=1)
+        outer.addLayout(row1, stretch=6)
 
         # NOTE (2026-09-13, docs/reference/awci_dashboard_reference.png,
         # explicit user request "reconstruis le dashboard à partir d'une
@@ -1514,8 +1604,171 @@ class AWCIDashboard(QWidget):
         # self._toggle_fl_comparison, self.view_mode_regional_radio, ...)
         # already exists by the time _build_sidebar() runs.
         self._wire_topbar()
+        # Same deferred-wiring pattern as _wire_topbar() right above: the
+        # map transport row is BUILT early (it lives directly under the
+        # hero map) but only connected to self.time_slider here, once that
+        # real slider exists.
+        self._wire_map_transport()
         root.addWidget(self._build_sidebar())
         root.addWidget(content_widget, stretch=1)
+
+    # ------------------------------------------- hero-map transport row
+
+    def _build_map_transport_row(self) -> QWidget:
+        """Real play/timeline transport row beneath the hero map (added
+        2026-09-20, Task 8, docs/reference/awci_dashboard_reference.png).
+
+        Every control here drives the dashboard's ONE real Valid Time
+        value (`self.time_slider`) - there is deliberately no second time
+        model: `transport_slider` is kept bidirectionally in step with
+        `time_slider` (see `_wire_map_transport()`), and ▶ simply advances
+        that same real slider on a timer, running the exact same real
+        `_on_time_changed()` dispatch a manual drag already runs. The
+        freshness pill is NOT a fabricated "Live Data" claim: it reports
+        this dashboard's own real data tier (demo / imported model / real
+        physics), using the same 3-way rule `_update_clock()` already
+        applies to the top bar's status badge.
+        """
+        row = QHBoxLayout()
+        row.setContentsMargins(10, 6, 10, 6)
+        row.setSpacing(10)
+
+        self.transport_play_button = QPushButton("▶")
+        self.transport_play_button.setFixedWidth(34)
+        self.transport_play_button.setToolTip(
+            "Step the real Valid Time forward once per second, recomputing every real\n"
+            "per-point panel at each hour (the same real _on_time_changed() dispatch a\n"
+            "manual drag of the Valid Time slider runs). Click again to pause."
+        )
+        self.transport_play_button.setStyleSheet(
+            f"QPushButton {{ background-color: {TOKENS.accent_primary}; color: {TOKENS.bg_root}; "
+            f"border: none; border-radius: {TOKENS.radius_sm}px; padding: 4px 8px; font-weight: bold; }}"
+        )
+        self.transport_play_button.clicked.connect(lambda _checked=False: self._toggle_time_playback())
+        row.addWidget(self.transport_play_button)
+
+        #: Real point-of-interest label (the reference image's own "ALG"
+        #: pill) - the nearest real airport to self._point_of_interest,
+        #: refreshed by _sync_map_transport_row(); never a hardcoded code.
+        self.transport_point_label = QLabel("—")
+        self.transport_point_label.setStyleSheet(
+            f"color: {TOKENS.text_primary}; font-size: 10px; font-weight: bold; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        row.addWidget(self.transport_point_label)
+
+        #: Real forecast lead readout - the SAME arithmetic on the SAME
+        #: real time_slider value _sync_topbar_time() already publishes to
+        #: the filter row's Forecast pill, not a second lead-time field.
+        self.transport_lead_label = QLabel("+0h")
+        self.transport_lead_label.setStyleSheet(
+            f"color: {TOKENS.text_secondary}; font-size: 10px; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        row.addWidget(self.transport_lead_label)
+
+        self.transport_slider = QSlider(Qt.Orientation.Horizontal)
+        self.transport_slider.setToolTip(
+            "The same real Valid Time this dashboard computes everything at - moving this\n"
+            "scrubber moves the Valid Time slider itself (one real time value, not two)."
+        )
+        row.addWidget(self.transport_slider, stretch=1)
+
+        self.transport_time_label = QLabel("--:-- UTC")
+        self.transport_time_label.setStyleSheet(label_style("text_secondary", "xs"))
+        row.addWidget(self.transport_time_label)
+
+        self.transport_tier_label = QLabel("● Demo Data")
+        self.transport_tier_label.setToolTip(
+            "Real current data tier - Demo Data (this dashboard's synthetic pattern),\n"
+            "Imported Model Data, or Real Physics Data. Deliberately NOT labeled\n"
+            "'Live Data' while the active tier is not a live source."
+        )
+        row.addWidget(self.transport_tier_label)
+
+        self.map_transport_widget = QWidget()
+        self.map_transport_widget.setLayout(row)
+        self.map_transport_widget.setStyleSheet(
+            f"QWidget {{ background-color: {TOKENS.bg_card}; border-radius: {TOKENS.radius_md}px; }}"
+        )
+        return self.map_transport_widget
+
+    def _wire_map_transport(self) -> None:
+        """Connect the transport row to the ONE real Valid Time slider -
+        see `_build_map_transport_row()`'s own docstring. Called from
+        `_build_ui()` once `self.time_slider` exists."""
+        self.transport_slider.setMinimum(self.time_slider.minimum())
+        self.transport_slider.setMaximum(self.time_slider.maximum())
+        self.transport_slider.setValue(self.time_slider.value())
+        # Bidirectional, loop-safe: Qt's own setValue() does not re-emit
+        # valueChanged when the value is unchanged, so each edge fires at
+        # most once per real change.
+        self.transport_slider.valueChanged.connect(self.time_slider.setValue)
+        self.time_slider.valueChanged.connect(self.transport_slider.setValue)
+        self.transport_slider.sliderReleased.connect(self._on_time_changed)
+        self.time_slider.valueChanged.connect(self._sync_map_transport_row)
+        #: Real playback timer for the ▶ button - advances the SAME real
+        #: time_slider, never a second animation clock.
+        self._time_playback_timer = QTimer(self)
+        self._time_playback_timer.setInterval(1000)
+        self._time_playback_timer.timeout.connect(self._advance_time_playback)
+        self._sync_map_transport_row(self.time_slider.value())
+
+    def _sync_map_transport_row(self, hour: int) -> None:
+        """Real readouts for the transport row, derived from the same
+        real values the rest of the dashboard already publishes."""
+        if not hasattr(self, "transport_time_label"):
+            return
+        self.transport_time_label.setText(f"{hour:02d}:00 UTC")
+        self.transport_lead_label.setText(f"+{hour - 6}h")
+        if self._real_physics_active:
+            tier_text, tier_color = "Real Physics Data", TOKENS.accent_real
+        elif self._imported_dataset is not None:
+            tier_text, tier_color = "Imported Model Data", TOKENS.accent_real
+        else:
+            tier_text, tier_color = "Demo Data", TOKENS.warning
+        self.transport_tier_label.setText(f"● {tier_text}")
+        self.transport_tier_label.setStyleSheet(
+            f"color: {tier_color}; font-size: 10px; font-weight: bold; "
+            f"background-color: {TOKENS.bg_surface_alt}; border-radius: {TOKENS.radius_sm}px; padding: 3px 8px;"
+        )
+        lat, lon = self._point_of_interest
+        nearest = min(_AIRPORTS.items(), key=lambda kv: (kv[1][0] - lat) ** 2 + (kv[1][1] - lon) ** 2)
+        self.transport_point_label.setText(nearest[0])
+
+    def _toggle_time_playback(self) -> None:
+        """Real ▶/❚❚ - see `_build_map_transport_row()`'s own docstring."""
+        if self._time_playback_timer.isActive():
+            self._time_playback_timer.stop()
+            self.transport_play_button.setText("▶")
+        else:
+            self._time_playback_timer.start()
+            self.transport_play_button.setText("❚❚")
+
+    def _advance_time_playback(self) -> None:
+        """One real playback step - moves the SAME real Valid Time slider
+        and runs the SAME real handler a manual drag runs."""
+        next_value = self.time_slider.value() + 1
+        if next_value > self.time_slider.maximum():
+            next_value = self.time_slider.minimum()
+        self.time_slider.setValue(next_value)
+        self._on_time_changed()
+
+    def _toggle_map_layers_panel(self) -> None:
+        """Real filter-row "Layers" button - shows/hides the global map's
+        OWN real floating Map Layers panel (AWCIMapPanel), never a second
+        layer-visibility mechanism."""
+        panel = getattr(self.global_map, "layers_panel", None)
+        if panel is None:
+            return
+        # isHidden(), not isVisible(): the latter is also False whenever an
+        # ancestor happens to be hidden (an embedded/offscreen dashboard),
+        # which would make this toggle a no-op there. isHidden() tracks the
+        # panel's OWN explicit show/hide state, which is what this button
+        # actually controls.
+        panel.setVisible(panel.isHidden())
+        if not panel.isHidden():
+            panel.raise_()
 
     def _build_header_menu(self) -> QToolButton:
         """Real "☰" substitute for the 9 real buttons + clock hidden
@@ -1906,6 +2159,11 @@ class AWCIDashboard(QWidget):
             else:
                 status_label = "DEMO MODE"
             self.topbar.set_status(is_real=self._real_physics_active, label=status_label)
+        # Same real 3-way tier on the hero map's own transport row (added
+        # 2026-09-20, Task 8) - refreshed from this one real tick rather
+        # than a second timer, exactly as the topbar status above is.
+        if hasattr(self, "transport_tier_label"):
+            self._sync_map_transport_row(self.time_slider.value())
 
     def _sync_topbar_time(self, hour: int) -> None:
         """Real Date & Time / Forecast readouts, derived from the SAME
@@ -1954,13 +2212,16 @@ class AWCIDashboard(QWidget):
         self.time_slider.setValue(max(self.time_slider.minimum(), min(self.time_slider.maximum(), new_value)))
         self._on_time_changed()
 
-    def _open_settings_menu(self) -> None:
+    def _open_settings_menu(self, anchor: QWidget | None = None) -> None:
         """Real settings gear - opens the SAME real "☰" menu
         (_build_header_menu()/_sync_header_menu()) this dashboard
         already built for its 9 real header features, never a second,
-        duplicated menu."""
+        duplicated menu. `anchor` (2026-09-20, Task 8) only chooses which
+        real button the popup is positioned under - the filter row's own
+        "Settings" button opens this exact same single menu."""
         self._sync_header_menu()
-        self._header_menu.popup(self.topbar.settings_button.mapToGlobal(self.topbar.settings_button.rect().bottomLeft()))
+        anchor_widget = anchor if anchor is not None else self.topbar.settings_button
+        self._header_menu.popup(anchor_widget.mapToGlobal(anchor_widget.rect().bottomLeft()))
 
     def _on_apply_route(self) -> None:
         """Real route change - explicit user request "un bouton pour
