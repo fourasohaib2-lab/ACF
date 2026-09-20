@@ -12,6 +12,7 @@ from acf.awci.volcanic_ash import (
     DOWNWIND_HALF_WIDTH_DEG,
     TRANSPORT_BUFFER_KM,
     compute_real_ash_exposure_risk_at_point,
+    compute_real_ash_exposure_risk_field,
     compute_real_ash_plume_height_km,
 )
 
@@ -109,3 +110,56 @@ def test_transport_distance_is_real_speed_times_time_kinematics():
         **_ERUPTION, wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=2.0,
     )
     assert result["transport_distance_km"] == pytest.approx(10.0 * 2.0 * 3.6)
+
+
+# --------------------------------------------- compute_real_ash_exposure_risk_field (§28-29)
+
+
+def test_field_matches_the_real_per_point_function_exactly():
+    """Real regression guard: the grid orchestrator must be a thin
+    wrapper, never a second/independent computation - every real cell
+    must match a direct call to compute_real_ash_exposure_risk_at_point()."""
+    import numpy as np
+
+    lats = np.array([36.7, 37.0, 38.0])
+    lons = np.array([3.0, 5.0, 20.0])
+    result = compute_real_ash_exposure_risk_field(
+        lats=lats, lons=lons, point_altitude_m=8000.0,
+        **_ERUPTION, wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+    )
+
+    for i, lat in enumerate(lats):
+        for j, lon in enumerate(lons):
+            direct = compute_real_ash_exposure_risk_at_point(
+                point_lat=float(lat), point_lon=float(lon), point_altitude_m=8000.0,
+                **_ERUPTION, wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+            )
+            assert result["ash_risk_field"][i, j] == pytest.approx(direct["ash_risk_score"])
+
+
+def test_field_is_genuinely_non_uniform_across_a_real_downwind_gradient():
+    import numpy as np
+
+    lats = np.linspace(36.5, 37.5, 5)
+    lons = np.linspace(2.5, 6.0, 8)  # spans across and beyond the real downwind transport distance
+    result = compute_real_ash_exposure_risk_field(
+        lats=lats, lons=lons, point_altitude_m=8000.0,
+        **_ERUPTION, wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+    )
+    field = result["ash_risk_field"]
+    assert not np.isnan(field).any()
+    assert len(set(np.round(field, 6).ravel())) > 1
+    assert result["is_real_data"] is True
+
+
+def test_field_is_all_nan_when_no_real_eruption_rate_is_supplied():
+    import numpy as np
+
+    lats = np.array([36.7, 37.0])
+    lons = np.array([3.0, 5.0])
+    result = compute_real_ash_exposure_risk_field(
+        lats=lats, lons=lons, point_altitude_m=8000.0,
+        eruption_lat=36.7, eruption_lon=3.0, volumetric_eruption_rate_m3_s=0.0,
+        wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+    )
+    assert np.isnan(result["ash_risk_field"]).all()

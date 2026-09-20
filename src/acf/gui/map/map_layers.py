@@ -415,6 +415,48 @@ class UncertaintyLayer(BaseMapLayer):
         )
 
 
+class VolcanicAshLayer(BaseMapLayer):
+    """
+    Real volcanic-ash exposure-risk map layer (Master Prompt V3
+    §28-29's "ash" layer, closed 2026-09-20) - deliberately NOT a
+    `ModuleComplexityLayer`/`MODULE_COMPLEXITY_LAYERS` entry (see that
+    dict's own NOTE): every other module layer is auto-populated from
+    ACF's ordinary per-point meteorological sweep
+    (`acf.awci.spatial_field.compute_real_complexity_field()`), which
+    has no real eruption source to supply "ash" from and would
+    otherwise show a misleading flat-zero field. This layer is instead
+    fed ONLY by `acf.awci.volcanic_ash.
+    compute_real_ash_exposure_risk_field()`, itself only ever called
+    from a real, explicit "Volcanic Ash Exercise" action (a real VAAC
+    bulletin or a deliberately-entered exercise scenario - see that
+    module's own docstring) - `set_volcanic_ash_field()`/
+    `clear_volcanic_ash_field()` on `MapCanvas`, mirroring
+    `UncertaintyLayer`'s own dedicated (not generic-sweep) wiring.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Volcanic Ash", zorder=18)
+
+    def render(self, axes: Any, transform: ccrs.CRS) -> None:
+        if self.custom_data is None:
+            return
+        lon_grid = self.custom_data["lons"]
+        lat_grid = self.custom_data["lats"]
+        values = self.custom_data["values"]
+        axes.contourf(
+            lon_grid,
+            lat_grid,
+            values,
+            levels=20,
+            cmap="YlOrBr",
+            vmin=0,
+            vmax=1,
+            alpha=0.7,
+            zorder=self.zorder,
+            transform=transform,
+        )
+
+
 class LayerManager:
     """Manages active scientific layers and orchestrates rendering with real NWP data binding."""
 
@@ -436,6 +478,7 @@ class LayerManager:
                 for i, (layer_name, module_key) in enumerate(MODULE_COMPLEXITY_LAYERS.items(), start=1)
             },
             "Uncertainty": UncertaintyLayer(),
+            "Volcanic Ash": VolcanicAshLayer(),
         }
         self.active_layer_names: list[str] = [
             "Satellite RGB",

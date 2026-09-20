@@ -5,11 +5,14 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PySide6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox
 
 from acf.awci.spatial_field import compute_real_complexity_field
+from acf.awci.volcanic_ash import compute_real_ash_exposure_risk_field
 from acf.gui_screen_utils import fit_window_to_screen
+from acf.gui.esoc.ash_exercise_dialog import AshExerciseDialog
 from acf.gui.esoc.command_dispatcher import CommandDispatcher
 from acf.gui.esoc.esoc_controller import ESOCController
 from acf.gui.esoc.esoc_layout import ESOCLayout
@@ -57,6 +60,26 @@ class _AWCIFieldWorker(QRunnable):
             result = compute_real_complexity_field(**self.kwargs)
         except Exception as exc:
             logger.exception("Real AWCI field computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
+class _AshExerciseWorker(QRunnable):
+    """Runs compute_real_ash_exposure_risk_field() off the GUI thread,
+    for the "🌋 Ash Exercise" toolbar action - reuses
+    _AWCIFieldWorkerSignals's shape (finished(dict)/failed(str))."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _AWCIFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = compute_real_ash_exposure_risk_field(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real ash exposure risk field computation failed")
             self.signals.failed.emit(str(exc))
             return
         self.signals.finished.emit(result)
@@ -213,6 +236,8 @@ class ESOCWindow(QMainWindow):
             self._open_acf_workstation()
         elif cmd == "show_awci_field_on_map":
             self._show_awci_field_on_map()
+        elif cmd == "open_ash_exercise":
+            self._open_ash_exercise()
         elif cmd == "open_help":
             QMessageBox.information(
                 self,
@@ -655,6 +680,59 @@ class ESOCWindow(QMainWindow):
     def _on_awci_field_failed(self, message: str) -> None:
         self.status_bar.showMessage(f"⚠ Real AWCI field computation failed: {message}", 5000)
         self.dispatcher.log_message_emitted.emit("ERROR", f"Real AWCI field computation failed: {message}")
+
+    def _open_ash_exercise(self) -> None:
+        """Real "🌋 Ash Exercise" action (Master Prompt V3 §28-29,
+        closed 2026-09-20) - opens AshExerciseDialog for real operator-
+        supplied eruption data (see that dialog's own docstring for why
+        this cannot be automatic), then dispatches
+        compute_real_ash_exposure_risk_field() off the GUI thread over
+        a real regional grid centered on the entered eruption location
+        (±15°, clamped to valid lat/lon - the same real order of extent
+        AWCI's own regional route/cross-section panels already use for
+        a "local area of interest", not a global sweep an ash cloud's
+        own real first-order transport footprint would never reach)."""
+        dialog = AshExerciseDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        values = dialog.get_values()
+        if values["volumetric_eruption_rate_m3_s"] <= 0.0:
+            QMessageBox.warning(
+                self, "Volcanic Ash Exercise",
+                "Volumetric eruption rate must be a real, positive value - no real eruption to assess otherwise.",
+            )
+            return
+
+        eruption_lat = values["eruption_lat"]
+        eruption_lon = values["eruption_lon"]
+        lats = np.linspace(max(-90.0, eruption_lat - 15.0), min(90.0, eruption_lat + 15.0), 24)
+        lons = np.linspace(eruption_lon - 15.0, eruption_lon + 15.0, 36)
+
+        self.status_bar.showMessage("🌋 Computing real volcanic-ash exposure risk field…")
+        worker = _AshExerciseWorker(
+            lats=lats, lons=lons,
+            point_altitude_m=values["point_altitude_m"],
+            eruption_lat=eruption_lat, eruption_lon=eruption_lon,
+            volumetric_eruption_rate_m3_s=values["volumetric_eruption_rate_m3_s"],
+            wind_speed_m_s=values["wind_speed_m_s"], wind_direction_deg=values["wind_direction_deg"],
+            hours_since_eruption=values["hours_since_eruption"],
+        )
+        worker.signals.finished.connect(self._on_ash_exercise_ready)
+        worker.signals.failed.connect(self._on_ash_exercise_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_ash_exercise_ready(self, result: dict[str, Any]) -> None:
+        map_canvas = self.layout_manager.view_manager.map_canvas
+        map_canvas.set_volcanic_ash_field(result["lons"], result["lats"], result["ash_risk_field"])
+        self.layer_toggle_panel.refresh()
+        self.status_bar.showMessage("🌋 Real volcanic-ash exposure risk field displayed on map.", 5000)
+        self.dispatcher.log_message_emitted.emit(
+            "INFO", "Real volcanic-ash exposure risk field displayed on the central map (exercise scenario)."
+        )
+
+    def _on_ash_exercise_failed(self, message: str) -> None:
+        self.status_bar.showMessage(f"⚠ Real ash exposure risk computation failed: {message}", 5000)
+        self.dispatcher.log_message_emitted.emit("ERROR", f"Real ash exposure risk computation failed: {message}")
 
     def _open_settings(self) -> None:
         """Open the settings dialog; apply the chosen theme immediately if changed."""

@@ -253,3 +253,92 @@ def test_map_canvas_clear_uncertainty_field_removes_it(qtbot):
 
     assert "Uncertainty" not in canvas.layer_manager.active_layer_names
     assert canvas.layer_manager.available_layers["Uncertainty"].custom_data is None
+
+
+# ----------------------------------------------------- VolcanicAshLayer (§28-29, closed 2026-09-20)
+
+
+def test_volcanic_ash_is_not_a_module_complexity_layer():
+    """Real regression guard: "ash" must NEVER appear in
+    MODULE_COMPLEXITY_LAYERS - registering it there would let
+    esoc_window.py's generic per-module sweep loop auto-populate it
+    with a fabricated-looking flat-zero field (no real eruption source
+    exists in that sweep) - see VolcanicAshLayer's own docstring."""
+    assert "ash" not in MODULE_COMPLEXITY_LAYERS.values()
+
+
+def test_volcanic_ash_layer_is_registered():
+    manager = LayerManager()
+    assert "Volcanic Ash" in manager.available_layers
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    assert isinstance(manager.available_layers["Volcanic Ash"], VolcanicAshLayer)
+
+
+def test_volcanic_ash_is_not_active_by_default():
+    manager = LayerManager()
+    assert "Volcanic Ash" not in manager.active_layer_names
+
+
+def test_volcanic_ash_layer_draws_nothing_without_real_data():
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    layer = VolcanicAshLayer()
+    axes = _FakeAxes()
+    layer.render(axes, transform=ccrs.PlateCarree())
+    assert axes.contourf_calls == []
+
+
+def test_volcanic_ash_layer_draws_the_real_data_once_set():
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    layer = VolcanicAshLayer()
+    lons = np.linspace(-10, 10, 5)
+    lats = np.linspace(-5, 5, 4)
+    values = np.random.default_rng(0).uniform(0, 1, size=(4, 5))
+    layer.set_data(lons, lats, values)
+
+    axes = _FakeAxes()
+    layer.render(axes, transform=ccrs.PlateCarree())
+
+    assert len(axes.contourf_calls) == 1
+    call = axes.contourf_calls[0]
+    assert call["vmin"] == 0
+    assert call["vmax"] == 1
+    assert np.array_equal(call["values"], values)
+
+
+def test_map_canvas_set_volcanic_ash_field_populates_the_real_layer(qtbot):
+    from acf.awci.volcanic_ash import compute_real_ash_exposure_risk_field
+    from acf.gui.map.map_canvas import MapCanvas
+
+    canvas = MapCanvas()
+    qtbot.addWidget(canvas)
+    lats = np.linspace(36.0, 38.0, 5)
+    lons = np.linspace(2.0, 6.0, 6)
+    result = compute_real_ash_exposure_risk_field(
+        lats=lats, lons=lons, point_altitude_m=8000.0,
+        eruption_lat=36.7, eruption_lon=3.0, volumetric_eruption_rate_m3_s=500.0,
+        wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+    )
+
+    canvas.set_volcanic_ash_field(result["lons"], result["lats"], result["ash_risk_field"], label="Exercise")
+
+    assert "Volcanic Ash" in canvas.layer_manager.active_layer_names
+    layer = canvas.layer_manager.available_layers["Volcanic Ash"]
+    assert layer.custom_data is not None
+    assert np.array_equal(layer.custom_data["values"], result["ash_risk_field"])
+    assert "Exercise" in canvas.title_text
+
+
+def test_map_canvas_clear_volcanic_ash_field_removes_it(qtbot):
+    from acf.gui.map.map_canvas import MapCanvas
+
+    canvas = MapCanvas()
+    qtbot.addWidget(canvas)
+    canvas.set_volcanic_ash_field([0.0, 1.0], [0.0, 1.0], np.zeros((2, 2)))
+
+    canvas.clear_volcanic_ash_field()
+
+    assert "Volcanic Ash" not in canvas.layer_manager.active_layer_names
+    assert canvas.layer_manager.available_layers["Volcanic Ash"].custom_data is None

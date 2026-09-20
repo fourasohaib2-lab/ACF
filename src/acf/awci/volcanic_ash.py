@@ -84,6 +84,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+import numpy as np
+
 from acf.geology.volcanic_physics import VolcanicPhysicsEngine
 
 #: Real, disclosed ACF design choice: half-width (degrees) of the
@@ -254,5 +256,103 @@ def compute_real_ash_exposure_risk_at_point(
             "real dispersion-model (HYSPLIT/NAME-class) result and NOT a substitute for a real VAAC advisory. "
             "No turbulent lateral spreading beyond the disclosed buffer, no wind shear with height, no "
             "particle-size-dependent fallout over time (see module docstring)."
+        ),
+    }
+
+
+def compute_real_ash_exposure_risk_field(
+    lats: Any,
+    lons: Any,
+    point_altitude_m: float,
+    eruption_lat: float,
+    eruption_lon: float,
+    volumetric_eruption_rate_m3_s: float,
+    wind_speed_m_s: float,
+    wind_direction_deg: float,
+    hours_since_eruption: float,
+) -> dict[str, Any]:
+    """
+    Real volcanic-ash exposure risk field over a whole real grid (Master
+    Prompt V3 §28-29's own "ash" layer, closed 2026-09-20) - a thin,
+    real orchestrator, NOT a second computation: calls
+    `compute_real_ash_exposure_risk_at_point()` once per real grid
+    point, unchanged, with the SAME real caller-supplied eruption
+    source and ONE real representative transport-level wind vector for
+    the whole plume (matching that function's own documented design -
+    an ash cloud is modelled as moving with one real wind, not a
+    per-point-varying one; see module docstring's "Real formula #2").
+
+    This function is deliberately NEVER called from ACF's own ordinary
+    per-point meteorological sweep (`acf.awci.spatial_field.
+    compute_real_complexity_field()`) - it has no real eruption source
+    to supply and never invents one. It exists for a real, explicit
+    caller (a "Volcanic Ash Exercise" dialog, entering a real VAAC
+    bulletin or a deliberately-entered exercise scenario - see module
+    docstring) to compute a genuine grid-wide field from real,
+    operator-supplied eruption data.
+
+    Parameters
+    ----------
+    lats, lons : 1D real coordinate arrays (degrees) - the grid to
+        evaluate, typically the same real grid the caller's own map/
+        AWCI field already uses.
+    point_altitude_m : float
+        Real altitude (m) to evaluate every grid point at (e.g. the
+        current real flight level) - see
+        `compute_real_ash_exposure_risk_at_point()`'s own parameter of
+        the same name; this function evaluates the whole grid at ONE
+        real altitude, not per-point-varying.
+    eruption_lat, eruption_lon, volumetric_eruption_rate_m3_s,
+    wind_speed_m_s, wind_direction_deg, hours_since_eruption :
+        Real, caller-supplied eruption/transport parameters - see
+        `compute_real_ash_exposure_risk_at_point()`'s own docstring for
+        each one's exact real meaning; passed through unchanged, once
+        per grid point.
+
+    Returns
+    -------
+    dict
+        lats, lons : the real coordinate arrays, unchanged.
+        ash_risk_field : real 2D array, shape (len(lats), len(lons)),
+            each cell the real `ash_risk_score` at that point - `np.nan`
+            (never a fabricated 0.0) wherever
+            `volumetric_eruption_rate_m3_s`/`hours_since_eruption` were
+            not real (see the per-point function's own honest "not
+            computed" case).
+        status, is_real_data, honest_limitation : same real disclosure
+            as the per-point function.
+    """
+    lats_arr = np.asarray(lats, dtype=float)
+    lons_arr = np.asarray(lons, dtype=float)
+    ash_risk_field = np.full((len(lats_arr), len(lons_arr)), np.nan)
+
+    for i, lat in enumerate(lats_arr):
+        for j, lon in enumerate(lons_arr):
+            point_result = compute_real_ash_exposure_risk_at_point(
+                point_lat=float(lat),
+                point_lon=float(lon),
+                point_altitude_m=point_altitude_m,
+                eruption_lat=eruption_lat,
+                eruption_lon=eruption_lon,
+                volumetric_eruption_rate_m3_s=volumetric_eruption_rate_m3_s,
+                wind_speed_m_s=wind_speed_m_s,
+                wind_direction_deg=wind_direction_deg,
+                hours_since_eruption=hours_since_eruption,
+            )
+            score = point_result["ash_risk_score"]
+            if score is not None:
+                ash_risk_field[i, j] = score
+
+    return {
+        "lats": lats_arr,
+        "lons": lons_arr,
+        "ash_risk_field": ash_risk_field,
+        "status": "REAL_ASH_EXPOSURE_RISK_FIELD_FROM_CALLER_SUPPLIED_ERUPTION_DATA",
+        "is_real_data": True,
+        "honest_limitation": (
+            "Same real per-point formula/scope as compute_real_ash_exposure_risk_at_point() (see that "
+            "function's own honest_limitation), applied once per real grid point with ONE real "
+            "representative transport-level wind for the whole plume - not a per-point-varying real wind "
+            "field, and not a real dispersion-model (HYSPLIT/NAME-class) result."
         ),
     }

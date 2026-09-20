@@ -71,6 +71,14 @@ class ESOCToolbar(QToolBar):
             # des cartes") - previously only the separate AWCI dashboard
             # window ever showed real AWCI data.
             ("🌪️ AWCI Field", "show_awci_field_on_map"),
+            # Real acf.awci.volcanic_ash.compute_real_ash_exposure_risk_field()
+            # overlay (Master Prompt V3 §28-29's "ash" layer, closed
+            # 2026-09-20) - opens a real input dialog for a real VAAC
+            # bulletin or a deliberately-entered exercise scenario; this
+            # module never invents an eruption on its own (see that
+            # module's own docstring for why "ash" cannot come from the
+            # ordinary AWCI Field sweep above).
+            ("🌋 Ash Exercise", "open_ash_exercise"),
             ("❓ Help", "open_help"),
         ]
 
