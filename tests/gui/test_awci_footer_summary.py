@@ -102,6 +102,44 @@ def test_dashboard_footer_cards_are_populated_after_a_real_refresh(qapp):
     assert dashboard.recent_alerts_card.rows_layout.count() >= 1
 
 
+def test_dashboard_alert_history_is_populated_after_a_real_refresh(qapp):
+    """Master Prompt §23 ("historical alerts... acknowledgement/read
+    state") - AWCIDashboard.alert_history must record the same real
+    elevated hazard the footer's own Recent Alerts card just showed,
+    not stay empty."""
+    dashboard = AWCIDashboard()
+    active = dashboard.alert_history.active_entries()
+    assert len(active) >= 1
+    assert active[0].label  # a real, non-empty hazard label
+    assert active[0].first_seen is not None
+
+
+def test_dashboard_alert_history_survives_a_second_refresh_without_duplicating(qapp):
+    dashboard = AWCIDashboard()
+    first_count = len(dashboard.alert_history.all_entries())
+    dashboard.refresh()
+    assert len(dashboard.alert_history.all_entries()) == first_count
+
+
+def test_dashboard_open_alerts_dialog_shows_the_real_history_log(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_alerts()
+    assert dashboard._alerts_window is not None
+    assert dashboard._alerts_window.history_rows_container.count() >= 1
+
+
+def test_dashboard_acknowledging_an_alert_from_the_dialog_updates_the_real_log(qapp):
+    dashboard = AWCIDashboard()
+    dashboard._open_alerts()
+    entry = dashboard.alert_history.all_entries()[0]
+    assert entry.acknowledged is False
+
+    dashboard._on_alert_acknowledged(entry.entry_id)
+
+    assert entry.acknowledged is True
+    assert entry.acknowledged_at is not None
+
+
 def test_dashboard_quick_action_route_analysis_zooms_the_real_map(qapp):
     dashboard = AWCIDashboard()
     default_extent = dashboard.global_map.camera.current_extent()

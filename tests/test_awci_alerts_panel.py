@@ -8,8 +8,11 @@ second, independent guess.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from acf.aviation.icao.live_source import LiveStationBundle
 from acf.aviation.icao.metar_decoder import METARDecoder
+from acf.gui.dashboard.awci_alert_history import AlertHistoryLog
 from acf.gui.dashboard.awci_alerts_panel import (
     AWCIAlertsDialog,
     compute_elevated_risks,
@@ -138,3 +141,60 @@ def test_dialog_refresh_is_idempotent_not_appending_stale_rows(qtbot):
     first_count = dialog.risk_rows_container.count()
     dialog.refresh({"dynamic": 90.0}, overall_awci=90.0, physical_score=None, forecast_score=None, live_bundles=None)
     assert dialog.risk_rows_container.count() == first_count
+
+
+def test_dialog_history_section_shows_honest_empty_state_with_no_log(qtbot):
+    dialog = AWCIAlertsDialog()
+    qtbot.addWidget(dialog)
+    dialog.refresh({}, overall_awci=0.0, physical_score=None, forecast_score=None, live_bundles=None, history=None)
+    assert dialog.history_rows_container.count() == 1
+    text = dialog.history_rows_container.itemAt(0).widget().text()
+    assert "No alert history logged yet" in text
+
+
+def test_dialog_history_section_renders_one_row_per_real_log_entry(qtbot):
+    log = AlertHistoryLog()
+    now = datetime(2026, 9, 20, 12, 0, 0, tzinfo=timezone.utc)
+    log.record([("🌪️", "Turbulence", "High", 72.0)], area="Global", valid_time="12:00 UTC", now=now)
+
+    dialog = AWCIAlertsDialog()
+    qtbot.addWidget(dialog)
+    dialog.refresh({}, overall_awci=0.0, physical_score=None, forecast_score=None, live_bundles=None, history=log.all_entries())
+    assert dialog.history_rows_container.count() == 1
+
+
+def test_clicking_acknowledge_emits_the_real_entry_id(qtbot):
+    log = AlertHistoryLog()
+    now = datetime(2026, 9, 20, 12, 0, 0, tzinfo=timezone.utc)
+    [entry] = log.record([("🌪️", "Turbulence", "High", 72.0)], area="Global", valid_time="12:00 UTC", now=now)
+
+    dialog = AWCIAlertsDialog()
+    qtbot.addWidget(dialog)
+    dialog.refresh({}, overall_awci=0.0, physical_score=None, forecast_score=None, live_bundles=None, history=log.all_entries())
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QPushButton
+
+    row_widget = dialog.history_rows_container.itemAt(0).widget()
+    buttons = row_widget.findChildren(QPushButton)
+    assert len(buttons) == 1
+
+    with qtbot.waitSignal(dialog.acknowledgeRequested, timeout=1000) as blocker:
+        qtbot.mouseClick(buttons[0], Qt.MouseButton.LeftButton)
+    assert blocker.args == [entry.entry_id]
+
+
+def test_acknowledged_entry_shows_ack_state_not_a_button(qtbot):
+    log = AlertHistoryLog()
+    now = datetime(2026, 9, 20, 12, 0, 0, tzinfo=timezone.utc)
+    [entry] = log.record([("🌪️", "Turbulence", "High", 72.0)], area="Global", valid_time="12:00 UTC", now=now)
+    log.acknowledge(entry.entry_id, now=now)
+
+    dialog = AWCIAlertsDialog()
+    qtbot.addWidget(dialog)
+    dialog.refresh({}, overall_awci=0.0, physical_score=None, forecast_score=None, live_bundles=None, history=log.all_entries())
+
+    from PySide6.QtWidgets import QPushButton
+
+    row_widget = dialog.history_rows_container.itemAt(0).widget()
+    assert row_widget.findChildren(QPushButton) == []

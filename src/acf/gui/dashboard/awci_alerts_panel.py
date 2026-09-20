@@ -27,10 +27,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.aviation.icao.live_source import LiveStationBundle
 from acf.aviation.icao.metar_decoder import METARReport
+from acf.gui.dashboard.awci_alert_history import AlertLogEntry
 from acf.gui.dashboard.awci_colors import risk_qcolor
 from acf.gui.dashboard.awci_risk_summary import _ROWS, _band
 from acf.gui.theme_tokens import TOKENS, dashboard_stylesheet, label_style
@@ -104,7 +106,18 @@ def compute_live_condition_flags(bundles: dict[str, LiveStationBundle] | None) -
 
 class AWCIAlertsDialog(QDialog):
     """Real active-alerts viewer - see module docstring for the real
-    (non-fabricated) source of every row shown here."""
+    (non-fabricated) source of every row shown here.
+
+    History section (Master Prompt §23) added 2026-09-20 - real,
+    timestamped entries from `AlertHistoryLog` (see that module's own
+    docstring), each with a real "Acknowledge" button that emits
+    `acknowledgeRequested(entry_id)` - the caller (AWCIDashboard) is
+    the one real source of truth for the log itself, this dialog only
+    displays it and relays real user clicks."""
+
+    #: Emitted with a real AlertLogEntry.entry_id when the user clicks
+    #: that entry's "Acknowledge" button - never auto-emitted.
+    acknowledgeRequested = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -134,6 +147,13 @@ class AWCIAlertsDialog(QDialog):
         self.live_rows_container = QVBoxLayout()
         outer.addLayout(self.live_rows_container)
 
+        self.history_section_label = QLabel("Alert history")
+        self.history_section_label.setStyleSheet(label_style("text_secondary", "sm", "bold"))
+        outer.addWidget(self.history_section_label)
+
+        self.history_rows_container = QVBoxLayout()
+        outer.addLayout(self.history_rows_container)
+
         outer.addStretch()
 
     def refresh(
@@ -143,11 +163,13 @@ class AWCIAlertsDialog(QDialog):
         physical_score: float | None = None,
         forecast_score: float | None = None,
         live_bundles: dict[str, LiveStationBundle] | None = None,
+        history: list[AlertLogEntry] | None = None,
     ) -> None:
         """Rebuild every row from real, freshly-computed inputs -
         never left showing a stale prior state."""
         self._clear_layout(self.risk_rows_container)
         self._clear_layout(self.live_rows_container)
+        self._clear_layout(self.history_rows_container)
 
         elevated = compute_elevated_risks(module_scores, overall_awci, physical_score, forecast_score)
         if elevated:
@@ -164,6 +186,44 @@ class AWCIAlertsDialog(QDialog):
             self.live_rows_container.addWidget(self._info_row("No elevated conditions in the last live fetch."))
         else:
             self.live_rows_container.addWidget(self._info_row("No live station data fetched yet (open 📨 Message first)."))
+
+        if history:
+            for entry in history:
+                self.history_rows_container.addWidget(self._history_row(entry))
+        else:
+            self.history_rows_container.addWidget(self._info_row("No alert history logged yet this session."))
+
+    def _history_row(self, entry: AlertLogEntry) -> QWidget:
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 2, 0, 2)
+
+        status = "resolved" if not entry.is_active else "active"
+        first_seen = entry.first_seen.strftime("%H:%M:%S UTC")
+        text = f"{entry.icon} {entry.label}: {entry.level} ({entry.score:.0f}) — {first_seen} — {status}"
+        color = risk_qcolor(entry.level)
+        label = QLabel(text)
+        label.setWordWrap(True)
+        label.setStyleSheet(
+            f"color: rgb({color.red()},{color.green()},{color.blue()}); font-size: 10px; padding: 2px 0;"
+        )
+        row_layout.addWidget(label, 1)
+
+        if entry.acknowledged:
+            ack_label = QLabel(f"✓ Ack {entry.acknowledged_at.strftime('%H:%M:%S UTC')}" if entry.acknowledged_at else "✓ Ack")
+            ack_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px;")
+            row_layout.addWidget(ack_label)
+        else:
+            ack_button = QPushButton("Acknowledge")
+            ack_button.setStyleSheet(
+                f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
+                f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 9px; padding: 2px 8px; }}"
+                f"QPushButton:hover {{ border-color: {TOKENS.accent_primary}; color: {TOKENS.text_primary}; }}"
+            )
+            ack_button.clicked.connect(lambda _checked=False, eid=entry.entry_id: self.acknowledgeRequested.emit(eid))
+            row_layout.addWidget(ack_button)
+
+        return row
 
     @staticmethod
     def _clear_layout(layout: Any) -> None:

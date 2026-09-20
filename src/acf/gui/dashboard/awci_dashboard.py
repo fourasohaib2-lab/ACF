@@ -127,6 +127,7 @@ from acf.awci.vertical_field import (
     vertical_profile_at_standard_levels,
 )
 from acf.gui.dashboard.acf_workstation_sounding_panel import ACFVerticalSoundingWidget
+from acf.gui.dashboard.awci_alert_history import AlertHistoryLog
 from acf.gui.dashboard.awci_alerts_panel import AWCIAlertsDialog, compute_elevated_risks, count_active_alerts
 from acf.gui.dashboard.awci_execution_report_dialog import AWCIExecutionReportDialog
 from acf.gui.dashboard.awci_component_detail import AWCIComponentDetailDialog
@@ -1017,6 +1018,14 @@ class AWCIDashboard(QWidget):
         self._volume_3d_window: AWCIVolume3DView | None = None
         self._messages_window: AWCIMessagesDialog | None = None
         self._alerts_window: AWCIAlertsDialog | None = None
+        # Real, timestamped alert history + acknowledgement state
+        # (Master Prompt §23 - "historical alerts... acknowledgement/
+        # read state") - see awci_alert_history.py's own module
+        # docstring for the real state-transition rules. Recorded from
+        # the exact same real compute_elevated_risks() rows every other
+        # alert surface already uses (_refresh_footer_summary()), never
+        # a second/independent hazard computation.
+        self.alert_history = AlertHistoryLog()
         self._execution_report_window: AWCIExecutionReportDialog | None = None
         self._component_detail_window: AWCIComponentDetailDialog | None = None
         # Real Archive mode state (added 2026-09-04, extended same day
@@ -1772,6 +1781,8 @@ class AWCIDashboard(QWidget):
         self.recent_alerts_card.update_data(
             module_scores, overall_awci, physical_score, forecast_score, area=area, valid_time=valid_time
         )
+        elevated = compute_elevated_risks(module_scores, overall_awci, physical_score, forecast_score)
+        self.alert_history.record(elevated, area=area, valid_time=valid_time)
         self._last_computation_at = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
         self.latest_updates_card.update_data(
             [
@@ -3125,12 +3136,30 @@ class AWCIDashboard(QWidget):
         plus any live METAR data already fetched via 📨 Message."""
         if self._alerts_window is None:
             self._alerts_window = AWCIAlertsDialog(parent=self)
+            self._alerts_window.acknowledgeRequested.connect(self._on_alert_acknowledged)
         module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
         live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
-        self._alerts_window.refresh(module_scores, overall_awci, physical_score, forecast_score, live_bundles)
+        self._alerts_window.refresh(
+            module_scores, overall_awci, physical_score, forecast_score, live_bundles,
+            history=self.alert_history.all_entries(),
+        )
         self._alerts_window.show()
         self._alerts_window.raise_()
         self._alerts_window.activateWindow()
+
+    def _on_alert_acknowledged(self, entry_id: str) -> None:
+        """Real user acknowledgement of one alert-history entry (Master
+        Prompt §23) - re-renders the dialog immediately so the
+        "Acknowledge" button's own real effect is visible without
+        closing/reopening it."""
+        self.alert_history.acknowledge(entry_id)
+        if self._alerts_window is not None:
+            module_scores, overall_awci, physical_score, forecast_score = self._last_risk_inputs
+            live_bundles = self._messages_window.last_bundles if self._messages_window is not None else None
+            self._alerts_window.refresh(
+                module_scores, overall_awci, physical_score, forecast_score, live_bundles,
+                history=self.alert_history.all_entries(),
+            )
 
     def _open_execution_report(self) -> None:
         """Open (or raise) the real §75 execution-report dialog -
