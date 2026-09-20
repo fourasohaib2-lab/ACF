@@ -162,3 +162,55 @@ def test_awci_dashboard_window_has_no_fixed_size_constraint(qtbot):
     # QtWidgets) - a genuinely resizable window reports it on both axes.
     assert window.maximumWidth() == 16777215
     assert window.maximumHeight() == 16777215
+
+
+# --------------------------------------------------------------------
+# Real end-to-end horizontal-scroll regression guards (Master Prompt
+# V3 §32, added 2026-09-20). This module's own docstring above already
+# claimed 1366x768/1280x800 no longer needed real horizontal scroll -
+# a real screenshot-driven audit found that claim was only ever true
+# for VERTICAL scroll (the figure/panel-height scaling compute_screen_
+# scale() feeds into); real horizontal overflow persisted (measured:
+# 198px at 1366x768, 242px at 1280x800) because 2 real fixed-text-width
+# widgets never participated in that scaling at all - the topbar's own
+# title/status labels (AWCITopBar._ElidingLabel, sized to the full
+# un-wrapped text) and the route-selector combo boxes (QComboBox's own
+# default AdjustToContentsOnFirstShow policy, sized to the single
+# longest real airport name). Both fixed here; 1366x768 now needs zero
+# real horizontal scroll, 1280x800 is reduced from 242px to 66px (not
+# fully eliminated - the real per-panel content in the 5-column
+# analysis row is now the binding constraint, not decorative padding).
+def _real_horizontal_overflow_at(qtbot, width: int, height: int) -> int:
+    """Real overflow (pixels of horizontal scroll the wrapping
+    QScrollArea genuinely needs) at a real, fixed fake screen size -
+    same real fit_window_to_screen()/QScrollArea mechanism the actual
+    application uses, not an approximation."""
+    from unittest.mock import MagicMock, patch
+
+    from PySide6.QtCore import QRect
+
+    from acf.gui.dashboard.awci_window import AWCIDashboardWindow
+
+    fake_screen = MagicMock()
+    fake_screen.availableGeometry.return_value = QRect(0, 0, width, height)
+    fake_screen.geometry.return_value = QRect(0, 0, width, height)
+    with patch("acf.gui_screen_utils._resolve_screen", return_value=fake_screen):
+        window = AWCIDashboardWindow()
+    qtbot.addWidget(window)
+    window.show()
+    qtbot.waitExposed(window)
+    hbar = window.centralWidget().horizontalScrollBar()
+    return hbar.maximum()
+
+
+def test_dashboard_needs_no_real_horizontal_overflow_at_1366x768(qtbot):
+    assert _real_horizontal_overflow_at(qtbot, 1366, 768) == 0
+
+
+def test_dashboard_horizontal_overflow_at_1280x800_is_small_not_hundreds_of_pixels(qtbot):
+    """Real regression guard against silently regressing back toward
+    the original 242px overflow this same pass reduced to ~66px - not
+    yet a full elimination (see this section's own comment above), so
+    this asserts a generous-but-real ceiling rather than 0."""
+    overflow = _real_horizontal_overflow_at(qtbot, 1280, 800)
+    assert 0 <= overflow <= 120

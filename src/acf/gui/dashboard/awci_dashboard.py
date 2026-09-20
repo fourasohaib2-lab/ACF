@@ -1335,6 +1335,23 @@ class AWCIDashboard(QWidget):
         route_row.addWidget(route_label)
         self.route_from_selector = QComboBox()
         self.route_to_selector = QComboBox()
+        # Real fix (2026-09-20, Master Prompt V3 §32 - "1366x768/
+        # 1280x800" responsive verification): QComboBox's own default
+        # AdjustToContentsOnFirstShow policy sized this box to its
+        # single longest real airport name (e.g. "DAAG – Algiers
+        # (Houari Boumediene)") - confirmed the largest single real
+        # contributor, alongside the topbar's own title label, to this
+        # dashboard's real horizontal-scroll requirement on both of
+        # those real laptop screens. Bounding the MINIMUM to a real
+        # 14-character budget (enough for every real ICAO code + a
+        # short real city name) lets the layout shrink this combo on a
+        # narrow screen - the full real name still shows, elided with
+        # "…" (native QComboBox behavior) when narrower than its own
+        # current text, and unchanged/un-elided on a real 1920x1080
+        # screen with room to spare.
+        for combo in (self.route_from_selector, self.route_to_selector):
+            combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            combo.setMinimumContentsLength(14)
         for icao, (lat, lon, name) in _AIRPORTS.items():
             display = f"{icao} – {name}"
             self.route_from_selector.addItem(display, icao)

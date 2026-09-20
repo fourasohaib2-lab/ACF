@@ -22,7 +22,50 @@ generic icon with a disclosing tooltip rather than a fabricated name.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFontMetrics, QResizeEvent
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QToolButton, QVBoxLayout, QWidget
+
+
+class _ElidingLabel(QLabel):
+    """Real `QLabel` that elides its own text with a real "…" instead
+    of forcing its parent layout's minimum width up to the full,
+    un-wrapped text width (added 2026-09-20, Master Prompt V3 §32 -
+    "implement sensible behavior for... 1366x768/1280x800" - a real
+    regression found and fixed while verifying that: this bar's own
+    title label alone (~299px un-elided) was the single largest
+    contributor to this dashboard's real minimum width (1438px),
+    forcing genuine horizontal scroll on both of those real laptop
+    resolutions even after `compute_screen_scale()`'s own figure/panel-
+    height scaling - that mechanism never touched fixed-text-width
+    labels like this one). `setMinimumWidth(1)` (real, not a Qt quirk)
+    lets the LAYOUT shrink this label's column below its natural text
+    width; `resizeEvent()` then re-elides the REAL, full text (kept in
+    `self._full_text`, never mutated) to fit whatever width the layout
+    actually gave it - full text still shown via the real tooltip. On
+    a real 1920x1080 screen, where the natural width already fits,
+    this is a no-op: the text renders exactly as before, unelided."""
+
+    def __init__(self, text: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(text, parent)
+        self._full_text = text
+        self.setMinimumWidth(1)
+        self.setToolTip(text)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - Qt override signature
+        self._full_text = text
+        self.setToolTip(text)
+        super().setText(text)
+        self._reelide()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override signature
+        super().resizeEvent(event)
+        self._reelide()
+
+    def _reelide(self) -> None:
+        metrics = QFontMetrics(self.font())
+        elided = metrics.elidedText(self._full_text, Qt.TextElideMode.ElideRight, self.width())
+        if elided != super().text():
+            super().setText(elided)
 
 
 class AWCITopBar(QWidget):
@@ -52,9 +95,9 @@ class AWCITopBar(QWidget):
 
         title_col = QVBoxLayout()
         title_col.setSpacing(0)
-        title = QLabel("Aviation Weather Complexity Index")
+        title = _ElidingLabel("Aviation Weather Complexity Index")
         title.setStyleSheet(f"color: {self._TEXT}; font-size: 15px; font-weight: bold; border: none;")
-        subtitle = QLabel("From ACF data  •  For safer skies")
+        subtitle = _ElidingLabel("From ACF data  •  For safer skies")
         subtitle.setStyleSheet(f"color: {self._TEXT_MUTED}; font-size: 10px; border: none;")
         title_col.addWidget(title)
         title_col.addWidget(subtitle)
@@ -98,7 +141,7 @@ class AWCITopBar(QWidget):
         row.addWidget(self._labeled("Forecast", self.forecast_label))
 
         # --- Real current model name (already computed elsewhere) ------
-        self.model_label = QLabel("—")
+        self.model_label = _ElidingLabel("—")
         self.model_label.setStyleSheet(self._pill_style())
         row.addWidget(self._labeled("Model", self.model_label))
 
@@ -115,7 +158,7 @@ class AWCITopBar(QWidget):
         status_row.addWidget(self.status_dot)
         status_row.addWidget(self.status_label)
         status_col.addLayout(status_row)
-        self.last_update_label = QLabel("Last Update: —")
+        self.last_update_label = _ElidingLabel("Last Update: —")
         self.last_update_label.setStyleSheet(f"color: {self._TEXT_MUTED}; font-size: 9px; border: none;")
         status_col.addWidget(self.last_update_label)
         row.addLayout(status_col)
@@ -155,7 +198,7 @@ class AWCITopBar(QWidget):
         button = QToolButton()
         button.setText(glyph)
         button.setStyleSheet(
-            f"QToolButton {{ border: none; border-radius: 6px; padding: 6px; font-size: 14px; }}"
+            "QToolButton { border: none; border-radius: 6px; padding: 6px; font-size: 14px; }"
             "QToolButton:hover { background-color: #f0f2f5; }"
         )
         button.setCursor(Qt.CursorShape.PointingHandCursor)
