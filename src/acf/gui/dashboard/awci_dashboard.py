@@ -614,6 +614,28 @@ class _ModelDisagreementFieldWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _ModelVerticalProfilesWorker(QRunnable):
+    """Runs ModelConsensusEngine.
+    compute_real_multi_model_vertical_profiles() off the GUI thread
+    (Master Prompt V3 §19 "Compare Models" action, added 2026-09-20) -
+    N real CoupledEarthSolver runs, same cost class as _RealFieldWorker/
+    _ModelConsensusWorker above."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = ModelConsensusEngine.compute_real_multi_model_vertical_profiles(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real model vertical profile comparison failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
@@ -1517,6 +1539,23 @@ class AWCIDashboard(QWidget):
         # mode rather than a fabricated sounding.
         self.atmospheric_profile = ACFVerticalSoundingWidget(figsize_scale=self._screen_scale)
         self.atmospheric_profile.setMinimumHeight(min_panel_height)
+        # Real per-model comparison (Master Prompt V3 §19 - "Allow
+        # comparison between: AROME, ALADIN, ARPEGE, WRF, observation")
+        # - opt-in (3 real solver runs, same cost class as "Real
+        # Physics"/"Run Real Consensus"), dispatched off the GUI thread.
+        self.compare_models_button = QPushButton("Compare Models")
+        self.compare_models_button.setToolTip(
+            "Run ACF's own CoupledEarthSolver once per real model (AROME/ALADIN/ARPEGE, "
+            "acf.forecast.engine.MODEL_CONFIGS) at this point and overlay their real "
+            "temperature-vs-pressure profiles - genuinely expensive, so opt-in rather than automatic."
+        )
+        self.compare_models_button.setStyleSheet(
+            f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
+            f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 8px; padding: 2px 6px; }}"
+            f"QPushButton:hover {{ border-color: {TOKENS.accent_primary}; color: {TOKENS.text_primary}; }}"
+            f"QPushButton:disabled {{ color: {TOKENS.text_muted}; border-color: {TOKENS.border}; }}"
+        )
+        self.compare_models_button.clicked.connect(self._run_real_model_comparison)
 
         # Panel 4/5: "Time Evolution (AWCI)" - real AWCI(t) series, fed
         # by the exact same real per-point +/-6h sampling refresh()
@@ -1586,7 +1625,7 @@ class AWCIDashboard(QWidget):
         analysis_row = QHBoxLayout()
         analysis_row.setSpacing(8)
         analysis_row.addWidget(_analysis_panel(self.cross_section), stretch=1)
-        analysis_row.addWidget(_analysis_panel(self.atmospheric_profile), stretch=1)
+        analysis_row.addWidget(_analysis_panel(self.compare_models_button, self.atmospheric_profile), stretch=1)
         analysis_row.addWidget(
             _analysis_panel(self.route_selector_widget, self.route_chart, self.route_segment_table), stretch=1
         )
@@ -3256,6 +3295,28 @@ class AWCIDashboard(QWidget):
 
     def _on_model_consensus_failed(self, message: str) -> None:
         self.model_agreement_card.show_consensus_error(message)
+
+    def _run_real_model_comparison(self) -> None:
+        """Real "Compare Models" action (Master Prompt V3 §19) -
+        dispatches _ModelVerticalProfilesWorker off the GUI thread at
+        the current real point of interest."""
+        self.compare_models_button.setEnabled(False)
+        self.compare_models_button.setText("Computing…")
+        lat, lon = self._point_of_interest
+        worker = _ModelVerticalProfilesWorker(lat=lat, lon=lon, steps=8, dt_seconds=90.0, perturbation_scale=3.0)
+        worker.signals.finished.connect(self._on_model_comparison_ready)
+        worker.signals.failed.connect(self._on_model_comparison_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_model_comparison_ready(self, profiles: dict[str, Any]) -> None:
+        self.compare_models_button.setEnabled(True)
+        self.compare_models_button.setText("Re-run Comparison")
+        self.atmospheric_profile.show_model_comparison(profiles)
+
+    def _on_model_comparison_failed(self, message: str) -> None:
+        self.compare_models_button.setEnabled(True)
+        self.compare_models_button.setText("Compare Models")
+        self._toasts.show(f"Model comparison failed: {message}", kind="error")
 
     def _run_real_model_disagreement_field(self) -> None:
         """Real "Model Disagreement" map layer (Master Prompt V3

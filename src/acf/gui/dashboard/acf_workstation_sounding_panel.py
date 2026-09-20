@@ -132,5 +132,50 @@ class ACFVerticalSoundingWidget(QWidget):
         self.figure.subplots_adjust(left=0.2, right=0.95, top=0.8, bottom=0.16)
         self.canvas.draw_idle()
 
+    #: Real, distinct colors per real model - never more entries than
+    #: acf.forecast.engine.MODEL_CONFIGS actually has (today: 3).
+    _MODEL_COLORS: dict[str, str] = {"AROME": "#4fc3f7", "ALADIN": "#ffb74d", "ARPEGE": "#22d3a8"}
+
+    def show_model_comparison(self, profiles: dict[str, dict[str, Any]]) -> None:
+        """Real per-model temperature-vs-pressure overlay (Master
+        Prompt V3 §19 - "Allow comparison between: AROME, ALADIN,
+        ARPEGE, WRF, observation") - `profiles` is the real result of
+        `acf.visualization.ai_forecast_center.model_consensus_engine.
+        ModelConsensusEngine.compute_real_multi_model_vertical_profiles()`
+        (one real `CoupledEarthSolver` run per real model already
+        completed by the caller, off the GUI thread). Draws exactly the
+        real models present in `profiles` - never a placeholder line
+        for a model with no real config in this codebase (§19's own
+        WRF/observation examples)."""
+        self.axis.clear()
+        self.axis.set_facecolor(TOKENS.bg_card)
+        last_lat: float | None = None
+        last_lon: float | None = None
+        for model, profile in profiles.items():
+            pressure = np.asarray(profile["pressure_profile_hpa"])
+            temperature_c = np.asarray(profile["temperature_profile"]) - 273.15
+            color = self._MODEL_COLORS.get(model, TOKENS.text_secondary)
+            self.axis.plot(
+                temperature_c, pressure, color=color, linewidth=1.6, marker="o", markersize=3, label=model
+            )
+            last_lat, last_lon = float(profile["lat"]), float(profile["lon"])
+        self._point = (last_lat, last_lon) if last_lat is not None and last_lon is not None else None
+
+        self.axis.set_xlabel("Temperature (°C)", color=TOKENS.text_secondary, fontsize=7)
+        self.axis.set_ylabel("Pressure (hPa)", color=TOKENS.text_secondary, fontsize=7)
+        self.axis.tick_params(axis="x", colors=TOKENS.text_secondary, labelsize=7)
+        self.axis.tick_params(axis="y", colors=TOKENS.text_secondary, labelsize=7)
+        self.axis.invert_yaxis()  # surface at the bottom, meteorological convention
+        self.axis.legend(fontsize=6, facecolor=TOKENS.bg_card, edgecolor=TOKENS.border, labelcolor=TOKENS.text_primary)
+        for spine in self.axis.spines.values():
+            spine.set_color(TOKENS.border)
+
+        title = "VERTICAL COMPLEXITY SOUNDING — Model Comparison"
+        if last_lat is not None:
+            title += f" — {last_lat:.2f}°, {last_lon:.2f}°"
+        self.axis.set_title(title, color=TOKENS.text_primary, fontsize=7.5, fontweight="bold", loc="left")
+        self.figure.subplots_adjust(left=0.2, right=0.95, top=0.8, bottom=0.16)
+        self.canvas.draw_idle()
+
     def status(self) -> dict[str, Any]:
         return {"has_point": self._point is not None, "point": self._point}
