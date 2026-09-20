@@ -309,12 +309,15 @@ class AWCILayer(BaseMapLayer):
 #: regardless, so this is genuinely free (no extra MetPy parcel-ascent
 #: call, unlike `compute_convective_energy` already enabled there) and
 #: produces a genuinely non-uniform per-point field, unlike leaving
-#: them un-opted-in would. (2) ash/microburst remain deliberately
-#: EXCLUDED from this dict (see test_map_layers_module_complexity.py's
-#: own NOTE for why neither can be honestly enabled by default today) -
-#: esoc_window.py._on_awci_field_ready() now skips any module_key not
-#: registered here instead of calling into a warning-logging dead end,
-#: so their continued exclusion is silent-by-design, not silent-by-bug.
+#: them un-opted-in would. (2) ash/microburst remained deliberately
+#: EXCLUDED from this dict at the time (see
+#: test_map_layers_module_complexity.py's own NOTE for why neither
+#: could be honestly enabled by default then) - esoc_window.py._on_
+#: awci_field_ready() skips any module_key not registered here instead
+#: of calling into a warning-logging dead end, so an exclusion here is
+#: silent-by-design, not silent-by-bug. "microburst" closed 2026-09-20
+#: (see this dict's own entry below); "ash" remains the one real,
+#: still-open exclusion.
 MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Dynamic Complexity": "dynamic",
     "Thermodynamic Complexity": "thermodynamic",
@@ -328,6 +331,18 @@ MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Ceiling": "ceiling",
     "Visibility": "visibility",
     "Dust/Sand": "dust",
+    # NOTE (correction, 2026-09-20): closes the 2nd of the 2 disclosed
+    # exclusions this dict's own NOTE above named ("ash and microburst
+    # remain excluded, for two DIFFERENT real reasons") - esoc_window.py's
+    # real GUI call now passes compute_wind_shear=True AND
+    # compute_microburst=True (both genuinely cheap real per-point
+    # slices of the already-computed solver state, not a second solver
+    # run - see that call site's own updated docstring), so
+    # module_fields["microburst"] is now a real, non-uniform field
+    # instead of the all-NaN it would have been before. "ash" remains
+    # the one real, still-open exclusion - no real eruption source
+    # exists anywhere in CoupledEarthSolver's state to derive it from.
+    "Microburst": "microburst",
 }
 
 

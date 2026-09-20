@@ -123,9 +123,11 @@ def test_show_awci_field_on_map_no_longer_logs_unknown_module_key_warnings(qtbot
     """Regression guard for the 2026-09-12 fix: this real call used to
     silently log 5 "unknown module_key" WARNINGs every single time
     (ceiling/visibility/dust/ash/microburst) - confirmed empirically
-    before the fix, not assumed. 3 of them are now genuinely real
-    layers; ash/microburst are now explicitly skipped rather than
-    warned about."""
+    before the fix, not assumed. 4 of them (ceiling/visibility/dust,
+    2026-09-12, then microburst, 2026-09-20) are now genuinely real
+    layers; "ash" is now the one still explicitly skipped rather than
+    warned about (see acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS's
+    own NOTE for why)."""
     import logging
 
     win = ESOCWindow()
@@ -162,3 +164,32 @@ def test_show_awci_field_on_map_ceiling_visibility_dust_are_now_genuinely_real(q
         layer = map_canvas.layer_manager.available_layers[layer_name]
         assert layer.custom_data is not None
         assert layer_name not in map_canvas.layer_manager.active_layer_names  # populated, not auto-shown
+
+
+def test_show_awci_field_on_map_microburst_is_now_genuinely_real(qtbot):
+    """2026-09-20 (Master Prompt V3 §28-29): "microburst" used to be
+    excluded from MODULE_COMPLEXITY_LAYERS because this real GUI call
+    never opted into compute_wind_shear/compute_microburst - now it
+    does. Unlike ceiling/visibility/dust, this real per-point field can
+    legitimately be all-zero on a genuinely small/short-lived test grid
+    (real microburst risk requires real CAPE and real shear to
+    co-occur, which is a real, rarer combination) - so this only
+    asserts the real layer is populated (custom_data set), not that
+    its values are non-uniform (that is verified directly, at the same
+    real production grid size this call itself uses, by a targeted
+    compute_real_complexity_field() call - see
+    test_map_layers_module_complexity.py)."""
+    win = ESOCWindow()
+    qtbot.addWidget(win)
+    map_canvas = win.layout_manager.view_manager.map_canvas
+
+    win._show_awci_field_on_map()
+
+    qtbot.waitUntil(
+        lambda: "AWCI Complexity" in map_canvas.layer_manager.active_layer_names,
+        timeout=60000,
+    )
+
+    layer = map_canvas.layer_manager.available_layers["Microburst"]
+    assert layer.custom_data is not None
+    assert "Microburst" not in map_canvas.layer_manager.active_layer_names  # populated, not auto-shown

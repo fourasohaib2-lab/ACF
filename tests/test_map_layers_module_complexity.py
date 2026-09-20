@@ -44,26 +44,29 @@ def test_module_complexity_layers_covers_every_real_awci_module():
     real and non-uniform. Registered as real layers below; no longer
     excluded.
 
-    "ash" and "microburst" remain excluded, for two DIFFERENT real
-    reasons, not one shared one: `ash` needs a real eruption source
+    "ash" remains excluded: it needs a real eruption source
     (lat/lon/rate/wind) that simply does not exist anywhere in
     `CoupledEarthSolver`'s state - there is no cheap way to opt it in.
-    `microburst` needs `compute_wind_shear=True` AND
-    `compute_convective_energy=True` together (see
-    `acf.awci.spatial_field.compute_real_complexity_field`'s own
-    `compute_microburst` docstring) - `compute_wind_shear` is real but
-    NOT free (a second real column extraction per point,
-    `esoc_window.py`'s default call does not currently pay for it) -
-    registering either today would show a uniform blank heatmap in
-    real GUI use, implying real data where there is none yet.
-    `esoc_window.py._on_awci_field_ready()` now explicitly skips any
+    `esoc_window.py`'s own `_on_awci_field_ready()` skips any
     module_key not registered here, so this exclusion is silent-by-
     design (no more `set_module_complexity_field()` warning noise for
-    them), not silent-by-bug. Revisit either exclusion if/when a real,
-    cheap per-point source is wired for it (a separate, larger closure,
-    not attempted here)."""
+    it), not silent-by-bug. Revisit if/when a real, cheap per-point
+    eruption-source signal is wired in (a separate, larger closure, not
+    attempted here).
+
+    "microburst" (closed 2026-09-20, Master Prompt V3 §28-29): used to
+    be excluded for the same "not free" reason - it needs
+    `compute_wind_shear=True` AND `compute_convective_energy=True`
+    together (see `acf.awci.spatial_field.compute_real_complexity_field`'s
+    own `compute_microburst` docstring). `compute_wind_shear` turned
+    out to be a genuinely cheap per-point slice of the already-computed
+    real solver U/V column (same real cost class as
+    `compute_convective_energy`'s own already-accepted per-point cost,
+    not a second solver run) - `esoc_window.py`'s real GUI call now
+    passes both flags, so `module_fields["microburst"]` is a real,
+    non-uniform field."""
     all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
-    deliberately_unregistered_pending_real_field_data = {"ash", "microburst"}
+    deliberately_unregistered_pending_real_field_data = {"ash"}
     assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules - deliberately_unregistered_pending_real_field_data
 
 
@@ -75,6 +78,23 @@ class _FakeAxes:
 
     def contourf(self, lon_grid, lat_grid, values, **kwargs):
         self.contourf_calls.append({"lon_grid": lon_grid, "lat_grid": lat_grid, "values": values, **kwargs})
+
+
+def test_microburst_field_is_genuinely_non_uniform_at_a_real_production_scale_grid():
+    """Real regression guard for the 2026-09-20 closure (Master Prompt
+    V3 §28-29): a genuinely small/short test grid can legitimately
+    show an all-zero real microburst field (real CAPE and real shear
+    co-occurring is a real, rarer combination) - this uses the SAME
+    real grid size/step count esoc_window.py's own real GUI call uses
+    (n_lat=24, n_lon=36, n_levels=6, steps=6), confirmed empirically
+    (not assumed) to produce a real, non-uniform field."""
+    result = compute_real_complexity_field(
+        model="ARPEGE", n_lat=24, n_lon=36, n_levels=6, steps=6,
+        compute_convective_energy=True, compute_wind_shear=True, compute_microburst=True,
+    )
+    microburst = result["module_fields"]["microburst"]
+    assert not np.isnan(microburst).any()
+    assert len(set(np.round(microburst, 6).ravel())) > 1
 
 
 def test_every_module_complexity_layer_is_registered():

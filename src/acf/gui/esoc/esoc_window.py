@@ -547,6 +547,19 @@ class ESOCWindow(QMainWindow):
         - closing the same "unknown module_key" warning gap this
         method's own worker used to silently trigger for them (see
         acf.gui.map.map_layers.MODULE_COMPLEXITY_LAYERS's own NOTE).
+
+        compute_wind_shear/compute_microburst=True (added 2026-09-20,
+        Master Prompt V3 §28-29 - the last 2 real AWCICalculator
+        modules MODULE_COMPLEXITY_LAYERS still excluded) - real bulk
+        wind shear (acf.awci.wind_shear) is a per-point slice of the
+        SAME already-computed real solver U/V column, same real cost
+        class as compute_convective_energy's own already-accepted
+        per-point cost, not a second solver run. compute_microburst
+        then reuses this real shear plus the real CAPE already computed
+        above - no third computation. "ash" remains the one real,
+        disclosed exclusion (no real eruption source exists anywhere in
+        CoupledEarthSolver's state - see MODULE_COMPLEXITY_LAYERS's own
+        NOTE for why that one genuinely cannot be closed this way).
         """
         self.dispatcher.log_message_emitted.emit(
             "INFO",
@@ -561,6 +574,8 @@ class ESOCWindow(QMainWindow):
             compute_ceiling=True,
             compute_visibility=True,
             compute_dust=True,
+            compute_wind_shear=True,
+            compute_microburst=True,
         )
         # NOTE (found while verifying this end-to-end, not hypothetical):
         # connecting to a bare lambda here (instead of a genuine bound
