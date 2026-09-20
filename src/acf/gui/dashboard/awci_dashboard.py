@@ -591,6 +591,29 @@ class _ModelConsensusWorker(QRunnable):
         self.signals.finished.emit(result)
 
 
+class _ModelDisagreementFieldWorker(QRunnable):
+    """Runs ModelConsensusEngine.
+    compute_real_multi_model_disagreement_field() off the GUI thread
+    (Master Prompt V3 §9/§32 "Model Disagreement" map layer, added
+    2026-09-20) - N real CoupledEarthSolver runs across a whole grid,
+    genuinely heavier than the single-point _ModelConsensusWorker
+    above, so kept off-thread for the same reason."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = ModelConsensusEngine.compute_real_multi_model_disagreement_field(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real model disagreement field computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class AWCIDashboard(QWidget):
     """Complete AWCI operational dashboard."""
 
@@ -1235,6 +1258,7 @@ class AWCIDashboard(QWidget):
         # above, applied to the map row.
         self.global_map.setMinimumHeight(max(140, int(210 * self._screen_scale)))
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
+        self.global_map.modelDisagreementLayerRequested.connect(self._run_real_model_disagreement_field)
         apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=1)
         outer.addLayout(row1, stretch=3)
@@ -3190,6 +3214,25 @@ class AWCIDashboard(QWidget):
 
     def _on_model_consensus_failed(self, message: str) -> None:
         self.model_agreement_card.show_consensus_error(message)
+
+    def _run_real_model_disagreement_field(self) -> None:
+        """Real "Model Disagreement" map layer (Master Prompt V3
+        §9/§32) - dispatches _ModelDisagreementFieldWorker off the GUI
+        thread. target_model="ARPEGE" (the smallest of the 3 real
+        MODEL_CONFIGS grids, fastest to render) - same default choice
+        ModelConsensusEngine.compute_real_multi_model_disagreement_field()
+        itself already documents."""
+        worker = _ModelDisagreementFieldWorker(steps=3, dt_seconds=90.0, perturbation_scale=3.0, target_model="ARPEGE")
+        worker.signals.finished.connect(self._on_model_disagreement_field_ready)
+        worker.signals.failed.connect(self._on_model_disagreement_field_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_model_disagreement_field_ready(self, result: dict[str, Any]) -> None:
+        self.global_map.set_model_disagreement_grid(result["lons"], result["lats"], result["disagreement_spread_field"])
+
+    def _on_model_disagreement_field_failed(self, message: str) -> None:
+        logger.warning("Real model disagreement field computation failed: %s", message)
+        self._toasts.show(f"Model Disagreement layer failed: {message}", kind="error")
 
     def _on_alert_acknowledged(self, entry_id: str) -> None:
         """Real user acknowledgement of one alert-history entry (Master

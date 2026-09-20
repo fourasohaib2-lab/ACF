@@ -210,6 +210,21 @@ class AWCIMapPanel(EventMixin, QWidget):
     view3dRequested = Signal()
     view4dRequested = Signal()
 
+    #: Real "Model Disagreement" map layer request (Master Prompt V3
+    #: §9/§32 - "Model disagreement" among the map's own listed layers,
+    #: added 2026-09-20). Emitted when the user checks the "Model
+    #: Disagreement" LAYERS checkbox and no real field has been
+    #: computed for it yet - the embedding dashboard is the one real
+    #: place with a QThreadPool to dispatch the genuinely expensive
+    #: computation (acf.visualization.ai_forecast_center.
+    #: model_consensus_engine.ModelConsensusEngine.
+    #: compute_real_multi_model_disagreement_field() - N real solver
+    #: runs across a whole grid) - this panel stays generic/reusable,
+    #: never running that computation itself. See
+    #: set_model_disagreement_grid()'s own docstring for how the real
+    #: result comes back.
+    modelDisagreementLayerRequested = Signal()
+
     def __init__(
         self,
         title: str = "AWCI GLOBAL MAP",
@@ -398,6 +413,13 @@ class AWCIMapPanel(EventMixin, QWidget):
         #: docstring for why "CAPE"/"Convection"/"Clouds" have no real
         #: counterpart there).
         self._external_layer_grids: dict[str, Any] | None = None
+        #: Real "Model Disagreement" grid (Master Prompt V3 §9/§32) -
+        #: set via set_model_disagreement_grid(), independent of
+        #: demo/Real Physics mode (see that method's own docstring for
+        #: why it is not folded into _external_layer_grids/
+        #: awci_layer_grids()). None until the dashboard's own async
+        #: computation completes at least once.
+        self._model_disagreement_grid: dict[str, Any] | None = None
         self._base_title = title
         #: Real, optional non-AWCI rendering overrides for
         #: set_external_field() (added 2026-09-04 for the AWCI-free ACF
@@ -729,6 +751,23 @@ class AWCIMapPanel(EventMixin, QWidget):
             "Real dust/sand-storm emission-favorable-conditions risk proxy [0, 1] (acf.awci.dust - wind "
             "erosion x dry surface). Real in both demo and Real Physics mode.",
         ),
+        # NOTE: "Model Disagreement" is deliberately NOT wired through
+        # the same key/awci_layer_grids()/external_layer_grids path as
+        # every layer above - see modelDisagreementLayerRequested's own
+        # docstring and _on_model_disagreement_toggled() below. Its
+        # real "key" is unused (never looked up in either grids dict -
+        # the generic "if key not in grids: continue" guard in
+        # update_data() already skips it safely), kept here only so it
+        # gets a real checkbox/tooltip from the same loop as every
+        # other layer.
+        "Model Disagreement": (
+            "model_disagreement", "RdPu",
+            "Real per-point spread across ACF's own CoupledEarthSolver run once per real model "
+            "(AROME/ALADIN/ARPEGE, acf.forecast.engine.MODEL_CONFIGS) - genuinely expensive (N solver "
+            "runs across the whole grid), computed on demand the first time this layer is checked, not "
+            "on every redraw. See AWCIModelAgreementCard's own 'Run Real Consensus' button for the "
+            "single-point version of the same real engine.",
+        ),
     }
 
     def _build_view_toggle(self) -> None:
@@ -879,6 +918,9 @@ class AWCIMapPanel(EventMixin, QWidget):
         own comment on why). Every later toggle of an already-built
         layer is a real, cheap set_visible() - no new artist, no
         recomputation."""
+        if name == "Model Disagreement":
+            self._on_model_disagreement_toggled(checked)
+            return
         contour = self._extra_layer_contours.get(name)
         if contour is not None:
             contour.set_visible(checked)
@@ -904,6 +946,63 @@ class AWCIMapPanel(EventMixin, QWidget):
         )
         self._extra_layer_contours[name] = artist
         self.canvas.draw_idle()
+
+    def _on_model_disagreement_toggled(self, checked: bool) -> None:
+        """Real handler for the "Model Disagreement" checkbox - see
+        modelDisagreementLayerRequested's own docstring. Unlike every
+        other extra layer, this one's real grid is NOT already computed
+        (that would mean N real solver runs on every single redraw) -
+        the first check with no cached real result yet emits a real
+        request for the embedding dashboard to compute one off the GUI
+        thread; every later toggle (or a check once the real result has
+        already arrived) is a cheap, real set_visible()/rebuild."""
+        contour = self._extra_layer_contours.get("Model Disagreement")
+        if contour is not None:
+            contour.set_visible(checked)
+            self.canvas.draw_idle()
+            return
+        if not checked:
+            return  # already invisible (never built) - nothing real to do
+        if self._model_disagreement_grid is not None:
+            self._rebuild_model_disagreement_contour()
+        else:
+            self.modelDisagreementLayerRequested.emit()
+
+    def _rebuild_model_disagreement_contour(self) -> None:
+        """Real (re)build of the "Model Disagreement" contour from
+        whatever real grid set_model_disagreement_grid() last stored -
+        a genuine no-op when the layer isn't checked or no real grid
+        exists yet, never a fabricated placeholder contour."""
+        checkbox = self.extra_layer_checkboxes.get("Model Disagreement") if hasattr(self, "extra_layer_checkboxes") else None
+        if checkbox is None or not checkbox.isChecked() or self._model_disagreement_grid is None:
+            return
+        grid = self._model_disagreement_grid
+        _key, cmap, _tooltip = self._EXTRA_LAYER_SPECS["Model Disagreement"]
+        artist = self.axis.contourf(
+            grid["lons"],
+            grid["lats"],
+            grid["values"],
+            levels=12,
+            cmap=cmap,
+            alpha=self._current_extra_layer_alpha(),
+            transform=ccrs.PlateCarree(),
+        )
+        artist.set_visible(True)
+        self._extra_layer_contours["Model Disagreement"] = artist
+        self.canvas.draw_idle()
+
+    def set_model_disagreement_grid(self, lons: Any, lats: Any, values: Any) -> None:
+        """Real result handoff from the embedding dashboard's own
+        async computation (ModelConsensusEngine.
+        compute_real_multi_model_disagreement_field() - see
+        modelDisagreementLayerRequested's own docstring) - stores the
+        real grid and immediately rebuilds the contour if the "Model
+        Disagreement" checkbox is still checked (the user may have
+        unchecked it while the real computation was running; the
+        result is still cached for the next time they check it, never
+        discarded)."""
+        self._model_disagreement_grid = {"lons": lons, "lats": lats, "values": values}
+        self._rebuild_model_disagreement_contour()
 
     # --------------------------------------------------- legend / info boxes
 
@@ -1257,6 +1356,8 @@ class AWCIMapPanel(EventMixin, QWidget):
                 )
                 self._last_layer_grids = layer_grids
                 for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
+                    if name == "Model Disagreement":
+                        continue  # handled separately below - see _rebuild_model_disagreement_contour()
                     if not self.extra_layer_checkboxes[name].isChecked():
                         continue
                     artist = self.axis.contourf(
@@ -1287,6 +1388,8 @@ class AWCIMapPanel(EventMixin, QWidget):
                 # is the real, generic fix - never needs updating again
                 # for a future real-Physics-capable layer.
                 for name, (key, cmap, _tooltip) in self._EXTRA_LAYER_SPECS.items():
+                    if name == "Model Disagreement":
+                        continue  # handled separately below - see _rebuild_model_disagreement_contour()
                     if not self.extra_layer_checkboxes[name].isChecked():
                         continue
                     if key not in self._external_layer_grids:
@@ -1302,6 +1405,15 @@ class AWCIMapPanel(EventMixin, QWidget):
                     )
                     artist.set_visible(True)
                     self._extra_layer_contours[name] = artist
+
+            # Real "Model Disagreement" layer (see
+            # modelDisagreementLayerRequested's own docstring) - reuses
+            # whatever real grid the dashboard has already computed
+            # (self._model_disagreement_grid), independent of demo/Real
+            # Physics mode, so it survives every real redraw the same
+            # way every other checked layer does instead of being wiped
+            # out by self._extra_layer_contours being reset above.
+            self._rebuild_model_disagreement_contour()
 
         # Real dark outline (added 2026-09-12, docs/reference/
         # awci_dashboard_reference.jpg pixel-parity pass, found while
