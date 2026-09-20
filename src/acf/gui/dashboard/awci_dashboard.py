@@ -162,6 +162,7 @@ from acf.gui.dashboard.awci_timeline import AWCITimeline
 from acf.gui.dashboard.awci_vertical_profile import AWCIVerticalProfile, AWCIVerticalProfileLevelDialog
 from acf.gui.dashboard.awci_volume_3d import AWCIVolume3DView
 from acf.gui.theme_tokens import TOKENS, apply_elevation, dashboard_stylesheet, label_style
+from acf.visualization.ai_forecast_center.model_consensus_engine import ModelConsensusEngine
 
 
 def _real_data_button_style() -> str:
@@ -566,6 +567,28 @@ class _RealArchiveTrendWorker(QRunnable):
             self.signals.failed.emit(str(exc))
             return
         self.signals.finished.emit({"trend": trend, "newly_loaded": newly_loaded})
+
+
+class _ModelConsensusWorker(QRunnable):
+    """Runs ModelConsensusEngine.compute_real_multi_model_disagreement()
+    off the GUI thread (Master Prompt V3 §13, added 2026-09-20) - 3
+    real CoupledEarthSolver runs (AROME/ALADIN/ARPEGE), same cost
+    class as `_RealFieldWorker`'s own "🔬 Real Physics" run, so kept
+    off-thread for the same reason."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
+        self.kwargs = kwargs
+        self.signals = _RealFieldWorkerSignals()
+
+    def run(self) -> None:
+        try:
+            result = ModelConsensusEngine.compute_real_multi_model_disagreement(**self.kwargs)
+        except Exception as exc:
+            logger.exception("Real model consensus computation failed")
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
 
 
 class AWCIDashboard(QWidget):
@@ -1162,6 +1185,7 @@ class AWCIDashboard(QWidget):
         situation_row.setSpacing(8)
         self.current_situation_card = AWCICurrentSituationCard()
         self.model_agreement_card = AWCIModelAgreementCard()
+        self.model_agreement_card.runConsensusRequested.connect(self._run_real_model_consensus)
         self.airport_table = AWCIAirportTable(on_view_all=self._open_all_airports_dialog)
         situation_row.addWidget(self.current_situation_card, stretch=1)
         situation_row.addWidget(self.model_agreement_card, stretch=1)
@@ -3146,6 +3170,26 @@ class AWCIDashboard(QWidget):
         self._alerts_window.show()
         self._alerts_window.raise_()
         self._alerts_window.activateWindow()
+
+    def _run_real_model_consensus(self) -> None:
+        """Real N-model consensus (Master Prompt V3 §13) - dispatches
+        `_ModelConsensusWorker` off the GUI thread at the current real
+        point of interest, for the 3 real models this codebase
+        actually has field-producing configs for (AROME/ALADIN/ARPEGE -
+        see ModelConsensusEngine.compute_real_multi_model_disagreement()'s
+        own docstring)."""
+        self.model_agreement_card.set_consensus_loading()
+        lat, lon = self._point_of_interest
+        worker = _ModelConsensusWorker(lat=lat, lon=lon, steps=8, dt_seconds=90.0, perturbation_scale=3.0)
+        worker.signals.finished.connect(self._on_model_consensus_ready)
+        worker.signals.failed.connect(self._on_model_consensus_failed)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_model_consensus_ready(self, result: dict[str, Any]) -> None:
+        self.model_agreement_card.show_real_consensus(result)
+
+    def _on_model_consensus_failed(self, message: str) -> None:
+        self.model_agreement_card.show_consensus_error(message)
 
     def _on_alert_acknowledged(self, entry_id: str) -> None:
         """Real user acknowledgement of one alert-history entry (Master

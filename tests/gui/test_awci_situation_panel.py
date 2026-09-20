@@ -152,6 +152,58 @@ def test_high_disagreement_shows_low_agreement(qapp):
     assert "90" in card.detail_label.text()
 
 
+def test_run_consensus_button_click_emits_the_real_signal(qapp, qtbot):
+    card = AWCIModelAgreementCard()
+    qtbot.addWidget(card)
+    with qtbot.waitSignal(card.runConsensusRequested, timeout=1000):
+        card.run_consensus_button.click()
+
+
+def test_set_consensus_loading_disables_the_button_and_clears_prior_rows(qapp):
+    card = AWCIModelAgreementCard()
+    card.show_real_consensus(
+        {"per_model_value": {"AROME": 288.1}, "disagreement_spread": 0.4, "field": "T", "level": 0}
+    )
+    assert card.per_model_layout.count() > 0
+
+    card.set_consensus_loading()
+    assert card.run_consensus_button.isEnabled() is False
+    assert card.per_model_layout.count() == 0
+
+
+def test_show_real_consensus_renders_every_real_per_model_row(qapp):
+    card = AWCIModelAgreementCard()
+    result = {
+        "per_model_value": {"AROME": 288.12, "ALADIN": 287.90, "ARPEGE": 288.55},
+        "disagreement_spread": 0.27,
+        "field": "T",
+        "level": 0,
+        "honest_limitation": "Real solver-based stand-in, not operational NWP archives.",
+    }
+    card.show_real_consensus(result)
+
+    rendered_text = " ".join(
+        card.per_model_layout.itemAt(i).widget().text() for i in range(card.per_model_layout.count())
+    )
+    assert "AROME" in rendered_text
+    assert "ALADIN" in rendered_text
+    assert "ARPEGE" in rendered_text
+    assert "288.12" in rendered_text
+    assert "0.27" in rendered_text
+    assert "Real solver-based stand-in" in rendered_text
+    assert card.run_consensus_button.isEnabled() is True
+
+
+def test_show_consensus_error_displays_the_real_message_and_re_enables_button(qapp):
+    card = AWCIModelAgreementCard()
+    card.set_consensus_loading()
+    card.show_consensus_error("solver diverged")
+
+    assert card.run_consensus_button.isEnabled() is True
+    error_text = card.per_model_layout.itemAt(0).widget().text()
+    assert "solver diverged" in error_text
+
+
 # ------------------------------------------------------------ AWCIAirportTable
 
 

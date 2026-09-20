@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from acf.gui.dashboard.awci_alerts_panel import compute_elevated_risks
@@ -241,7 +242,30 @@ class AWCIModelAgreementCard(QFrame):
     `model_disagreement` module score (100 - disagreement = agreement),
     honestly ~100% ("high agreement") by default since ACF has no real
     multi-model ensemble wired in here yet - never a fabricated
-    non-trivial disagreement."""
+    non-trivial disagreement.
+
+    Real N-model consensus (Master Prompt V3 §13, added 2026-09-20) -
+    the "Run Real Consensus" button dispatches
+    `acf.visualization.ai_forecast_center.model_consensus_engine.
+    ModelConsensusEngine.compute_real_multi_model_disagreement()`,
+    which genuinely runs ACF's own CoupledEarthSolver once per real
+    model (AROME/ALADIN/ARPEGE - `acf.forecast.engine.MODEL_CONFIGS`,
+    the only 3 real field-producing model configurations in this
+    codebase; the prompt's own example table names WRF too, but no
+    real WRF adapter exists here - honestly not shown, never
+    fabricated) at that model's own real grid resolution, with an
+    independently-seeded perturbation per model, and computes a real
+    spread across the 3 real resulting values. This is opt-in (not run
+    on every refresh) because it is genuinely expensive - 3 real
+    solver runs, same cost class as "🔬 Real Physics" - dispatched on a
+    background `QRunnable` by the caller (`AWCIDashboard`), never
+    blocking the GUI thread."""
+
+    #: Emitted when the user clicks "Run Real Consensus" - the caller
+    #: (AWCIDashboard) owns dispatching the real, potentially slow
+    #: computation off the GUI thread; this card only ever displays
+    #: results handed back to it.
+    runConsensusRequested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -250,9 +274,27 @@ class AWCIModelAgreementCard(QFrame):
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(3)
 
+        header_row = QHBoxLayout()
         title = QLabel("MODEL AGREEMENT")
         title.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 10px; font-weight: bold; border: none;")
-        layout.addWidget(title)
+        header_row.addWidget(title)
+        header_row.addStretch()
+        self.run_consensus_button = QPushButton("Run Real Consensus")
+        self.run_consensus_button.setToolTip(
+            "Run ACF's own CoupledEarthSolver once per real model (AROME/ALADIN/ARPEGE, "
+            "acf.forecast.engine.MODEL_CONFIGS) at this point and compute a real per-model "
+            "spread - genuinely expensive (3 real solver runs), so opt-in rather than automatic."
+        )
+        self.run_consensus_button.setStyleSheet(
+            f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
+            f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 8px; padding: 2px 6px; }}"
+            f"QPushButton:hover {{ border-color: {TOKENS.accent_primary}; color: {TOKENS.text_primary}; }}"
+            f"QPushButton:disabled {{ color: {TOKENS.text_muted}; border-color: {TOKENS.border}; }}"
+        )
+        self.run_consensus_button.clicked.connect(self.runConsensusRequested.emit)
+        header_row.addWidget(self.run_consensus_button)
+        layout.addLayout(header_row)
+
         self.level_label = QLabel("—")
         self.level_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 14px; font-weight: bold; border: none;")
         layout.addWidget(self.level_label)
@@ -260,7 +302,67 @@ class AWCIModelAgreementCard(QFrame):
         self.detail_label.setWordWrap(True)
         self.detail_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 9px; border: none; margin-top: 4px;")
         layout.addWidget(self.detail_label)
+
+        self.per_model_layout = QVBoxLayout()
+        self.per_model_layout.setSpacing(1)
+        layout.addLayout(self.per_model_layout)
         layout.addStretch()
+
+    def set_consensus_loading(self) -> None:
+        """Real loading state while the worker runs - not left showing
+        a stale prior result during the several real seconds 3 solver
+        runs genuinely take."""
+        self.run_consensus_button.setEnabled(False)
+        self.run_consensus_button.setText("Computing…")
+        self._clear_per_model_rows()
+
+    def show_consensus_error(self, message: str) -> None:
+        self.run_consensus_button.setEnabled(True)
+        self.run_consensus_button.setText("Run Real Consensus")
+        self._clear_per_model_rows()
+        error_label = QLabel(f"Real consensus computation failed: {message}")
+        error_label.setWordWrap(True)
+        error_label.setStyleSheet(f"color: {TOKENS.danger}; font-size: 8px; border: none;")
+        self.per_model_layout.addWidget(error_label)
+
+    def show_real_consensus(self, result: dict[str, Any]) -> None:
+        """Render a real `ModelConsensusEngine.
+        compute_real_multi_model_disagreement()` result - one row per
+        real model (`per_model_value`), plus the real computed spread.
+        Never invents a model not present in `result["per_model_value"]`."""
+        self.run_consensus_button.setEnabled(True)
+        self.run_consensus_button.setText("Re-run Real Consensus")
+        self._clear_per_model_rows()
+
+        header = QLabel(f"Real per-model value ({result.get('field', '?')}, level {result.get('level', '?')}):")
+        header.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 8px; border: none; margin-top: 4px;")
+        self.per_model_layout.addWidget(header)
+
+        per_model_value: dict[str, float] = result.get("per_model_value", {})
+        for model, value in per_model_value.items():
+            row = QLabel(f"{model}  →  {value:.2f}")
+            row.setStyleSheet(f"color: {TOKENS.text_secondary}; font-size: 9px; border: none;")
+            self.per_model_layout.addWidget(row)
+
+        spread = result.get("disagreement_spread")
+        if spread is not None:
+            spread_label = QLabel(f"Real spread across models: {spread:.3f}")
+            spread_label.setStyleSheet(f"color: {TOKENS.text_primary}; font-size: 9px; font-weight: bold; border: none; margin-top: 2px;")
+            self.per_model_layout.addWidget(spread_label)
+
+        limitation = result.get("honest_limitation")
+        if limitation:
+            limitation_label = QLabel(limitation)
+            limitation_label.setWordWrap(True)
+            limitation_label.setStyleSheet(f"color: {TOKENS.text_muted}; font-size: 8px; border: none; margin-top: 2px;")
+            self.per_model_layout.addWidget(limitation_label)
+
+    def _clear_per_model_rows(self) -> None:
+        while self.per_model_layout.count():
+            item = self.per_model_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
 
     #: level_for() is a hazard-severity scale (higher score = worse,
     #: "Extreme" = worst) - real, correct when applied to the real
