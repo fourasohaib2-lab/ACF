@@ -75,6 +75,23 @@ def test_imported_dataset_computes_real_awci_into_the_point_panels(dashboard: AW
     assert "cape" in status  # the genuinely absent variable is named
 
 
+def test_imported_model_confidence_is_honestly_not_computed_never_a_fabricated_100_pct(
+    dashboard: AWCIDashboard,
+) -> None:
+    """Final-review finding: model_import.py's compute_awci_from_imported_dataset()
+    never extracts a real "confidence" input from an imported file, so
+    AWCICalculator.calculate() falls back to its own data.get("confidence",
+    100.0) fake default. _refresh_imported_model() used to pass that fake
+    default straight through as confidence_pct, painting a fabricated full
+    green 100% confidence bar - the exact same trap Real Physics mode's
+    _apply_volume_at_level() was already fixed for via confidence_pct=None.
+    This mirrors that fix at the imported-model tier's own call site."""
+    dashboard._imported_dataset = _realistic_surface_dataset()
+    dashboard._refresh_imported_model()
+
+    assert dashboard.current_situation_card.confidence_value_label.text() == "NOT_COMPUTED"
+
+
 def test_map_click_resamples_the_imported_model_at_the_new_point(
     dashboard: AWCIDashboard, qtbot
 ) -> None:

@@ -1691,9 +1691,14 @@ class AWCIDashboard(QWidget):
         self.transport_play_button = QPushButton("▶")
         self.transport_play_button.setFixedWidth(34)
         self.transport_play_button.setToolTip(
-            "Step the real Valid Time forward once per second, recomputing every real\n"
-            "per-point panel at each hour (the same real _on_time_changed() dispatch a\n"
-            "manual drag of the Valid Time slider runs). Click again to pause."
+            "Step the real Valid Time forward once per second (the same real\n"
+            "_on_time_changed() dispatch a manual drag of the Valid Time slider\n"
+            "runs). Honest disclosure (final review, 2026-09-20): in demo tier this\n"
+            "currently updates the Airport Complexity table and the Time Evolution\n"
+            "chart only - the AWCI Global gauge, hazard cards, Current Situation,\n"
+            "hero map, cross-section, route chart and vertical profile are not yet\n"
+            "re-sampled at the new time (tracked follow-up, Task 10 finding F2).\n"
+            "Click again to pause."
         )
         self.transport_play_button.setStyleSheet(
             f"QPushButton {{ background-color: {TOKENS.accent_primary}; color: {TOKENS.bg_root}; "
@@ -2186,10 +2191,20 @@ class AWCIDashboard(QWidget):
         same method via _step_time_slider()) had NO visible effect at
         all any more. Now runs the exact same real dispatch every other
         time-affecting change (a map click, a flight-level change) already
-        uses - _refresh_current_point() - so every real per-point panel
-        (hazard row, Current Situation, airport table, map, cross-
-        section, route chart, vertical profile, alerts) genuinely
-        updates for the newly-selected time."""
+        uses - _refresh_current_point() - so the Airport Complexity table
+        and the Time Evolution chart genuinely update for the newly-
+        selected time.
+
+        Honest correction (final review, 2026-09-20): _refresh_current_point()
+        does NOT actually thread the new time through the hazard row,
+        Current Situation card, hero map field, cross-section, route
+        chart or vertical profile - those per-point panels are computed
+        from self._point_of_interest/self._current_flight_level_hpa only
+        and stay bit-identical across a Valid Time change in demo tier
+        (live-verified during the final review). Threading the slider
+        hour through refresh()'s point/route/cross-section/map calls is
+        a legitimate, larger, separately-tracked follow-up (Task 10's
+        own finding F2) - deliberately out of scope here."""
         self._refresh_current_point()
 
     def _update_clock(self) -> None:
@@ -2664,9 +2679,19 @@ class AWCIDashboard(QWidget):
         self.global_map.set_point_marker(*self._point_of_interest, awci_score=point_result["awci"])
         self._current_model_label = f"{dataset.name}"
         self.hazard_row.update_data(point_result["module_scores"], point_result["awci"])
+        # No real confidence input is ever extracted from an imported
+        # model file (model_import.py's compute_awci_from_imported_dataset()
+        # never supplies a "confidence" key), so point_result["confidence"]
+        # here is always AWCICalculator.calculate()'s own
+        # data.get("confidence", 100.0) fake default, not a real signal -
+        # same fabricated-100%-confidence trap Real Physics mode was fixed
+        # for above (see this method's own honest confidence_pct=None a
+        # few lines up in _apply_volume_at_level()). Pass None so
+        # AWCICurrentSituationCard renders NOT_COMPUTED instead of a
+        # fabricated full green confidence bar.
         self._refresh_situation_row(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"],
-            confidence_pct=point_result["confidence"],
+            confidence_pct=None,
         )
         self._refresh_footer_summary(
             point_result["module_scores"], point_result["awci"], point_result["physical_score"], point_result["forecast_score"]
