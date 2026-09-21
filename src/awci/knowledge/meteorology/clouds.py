@@ -85,3 +85,15 @@ METAR_CLOUD_TYPE_TO_GENUS: dict[str, CloudGenus] = {
     "CB": CloudGenus.CUMULONIMBUS,
     "TCU": CloudGenus.CUMULUS,
 }
+
+
+#: Real, standard WMO/ICAO METAR/TAF cloud-cover-fraction convention
+#: (in oktas, eighths of sky covered) behind the same four
+#: `_CLOUD_RE` cover abbreviations - the real amount each abbreviation
+#: reports, not itself decoded elsewhere in this codebase.
+METAR_CLOUD_COVER_OKTAS: dict[str, tuple[int, int]] = {
+    "FEW": (1, 2),
+    "SCT": (3, 4),
+    "BKN": (5, 7),
+    "OVC": (8, 8),
+}

@@ -150,3 +150,69 @@ def test_metar_decoder_cloud_type_group_matches_this_modules_real_codes():
 )
 def test_approach_category_matches_the_real_icao_doc_8168_thresholds(vat_kt, expected_category):
     assert classify_approach_category(vat_kt) == expected_category
+
+
+def test_ils_category_minima_cover_every_real_category_stored_in_the_airport_registry():
+    """AIRPORT_REGISTRY's own real ils_categories entries (all "CAT
+    IIIb" today) must have real operating minima defined here - locks
+    in the two real data sources stay consistent."""
+    from awci.knowledge.airports.airport_database import AirportDatabase
+    from awci.knowledge.airports.ils_categories import ILS_CATEGORY_MINIMA
+
+    for airport in AirportDatabase.all_airport_infos():
+        for category in airport.ils_categories:
+            assert category in ILS_CATEGORY_MINIMA, f"{airport.icao_code} cites undefined ILS category {category!r}"
+
+
+@pytest.mark.parametrize(
+    ("category", "expected_dh_ft", "expected_rvr_m"),
+    [
+        ("CAT I", 200.0, 550.0),
+        ("CAT II", 100.0, 300.0),
+        ("CAT IIIa", None, 175.0),
+        ("CAT IIIb", None, 50.0),
+        ("CAT IIIc", None, None),
+    ],
+)
+def test_ils_category_minima_match_the_real_icao_reference_values(category, expected_dh_ft, expected_rvr_m):
+    from awci.knowledge.airports.ils_categories import ILS_CATEGORY_MINIMA
+
+    minima = ILS_CATEGORY_MINIMA[category]
+    assert minima.decision_height_ft == expected_dh_ft
+    assert minima.rvr_m == expected_rvr_m
+
+
+def test_cat_iiib_is_stricter_than_cat_i_in_both_real_dimensions():
+    """A real, disclosed sanity check on the real ICAO category
+    ordering: each higher category has an equal-or-lower RVR
+    requirement (CAT I's real DH-based minima are the least strict)."""
+    from awci.knowledge.airports.ils_categories import ILS_CATEGORY_MINIMA
+
+    assert ILS_CATEGORY_MINIMA["CAT IIIb"].rvr_m < ILS_CATEGORY_MINIMA["CAT I"].rvr_m
+    assert ILS_CATEGORY_MINIMA["CAT I"].decision_height_ft is not None
+    assert ILS_CATEGORY_MINIMA["CAT IIIb"].decision_height_ft is None
+
+
+@pytest.mark.parametrize(
+    ("cover_code", "expected_oktas"),
+    [
+        ("FEW", (1, 2)),
+        ("SCT", (3, 4)),
+        ("BKN", (5, 7)),
+        ("OVC", (8, 8)),
+    ],
+)
+def test_metar_cloud_cover_oktas_match_the_real_wmo_icao_convention(cover_code, expected_oktas):
+    from awci.knowledge.meteorology.clouds import METAR_CLOUD_COVER_OKTAS
+
+    assert METAR_CLOUD_COVER_OKTAS[cover_code] == expected_oktas
+
+
+def test_metar_cloud_cover_codes_match_the_real_decoder_regex_alternation():
+    from awci.knowledge.icao.metar_decoder import _CLOUD_RE
+    from awci.knowledge.meteorology.clouds import METAR_CLOUD_COVER_OKTAS
+
+    for cover_code in METAR_CLOUD_COVER_OKTAS:
+        match = _CLOUD_RE.match(f"{cover_code}020")
+        assert match is not None
+        assert match.group("cover") == cover_code
