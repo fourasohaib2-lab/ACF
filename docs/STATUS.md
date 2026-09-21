@@ -1084,3 +1084,76 @@ sous-processus `acf-awci --version` (le script affiche la bonne
 version avant de planter au nettoyage - confirmé indépendant du code
 Python en le reproduisant hors pytest). ruff et mypy propres sur tous
 les fichiers touchés.
+
+## Mise à jour (2026-09-21, suite) : migration AWCI en package séparé, réorganisation science/, découplage ACF↔AWCI, base de connaissances aéronautique
+
+Session longue, plusieurs chantiers enchaînés à la demande de
+l'utilisateur ("on continue" répété). Détail complet dans
+`docs/architecture/acf_awci_architecture_gap_analysis.md` (§2a-§2l,
+§4a-§4h) ; résumé ici pour que ce fichier reste la source de vérité
+unique.
+
+**Migration AWCI séparé (Phases 1-10, §2a-§2k) - COMPLET** : tout le
+code sous `src/acf/awci/`, `src/acf/aviation/`, et la portion AWCI de
+`src/acf/gui/dashboard/` (29 fichiers `awci_*.py`) a été physiquement
+déplacé vers un nouveau package top-level `src/awci/`
+(`awci.hazards`/`complexity`/`data`/`comparison`/`airport`/
+`knowledge.{airports,graphics,hazards,icao,performance,routing}`/
+`dashboard`). 61 modules déplacés au total. Chaque ancien emplacement
+garde un shim de compatibilité (`from awci.X import *`) - aucun
+appelant existant cassé. Un vrai bug trouvé et corrigé en cours de
+route : 7 `mock.patch()` dans les tests visaient l'espace de noms du
+shim au lieu du module réel après déplacement (corrigé).
+
+**Découplage ACF↔AWCI (§2l) - décision documentée, pas de code
+changé** : `acf_workstation_*.py` (13 fichiers) réutilise
+`AWCIMapPanel` comme widget de carte générique, chrome spécifique AWCI
+désactivé via les flags déjà existants (`show_legend=False`, etc.).
+Investigation complète du fichier (1518 lignes, `update_data()` de
+~350 lignes enchevêtrant rendu générique et logique métier AWCI sans
+frontière naturelle) : extraction complète jugée trop risquée pour
+aucun bénéfice fonctionnel (couplage déjà neutralisé). Gardé tel quel,
+compromis assumé et documenté.
+
+**Réorganisation `science/`/`parameters/` (Phases 1-7, §4a-§4g) -
+fonctionnellement complète** : `science/thermodynamics/`,
+`stability/`, `convection/`, `dynamics/`, `constants/`, `radiation/`,
+`turbulence/`, `boundary_layer/`, `precipitation/`, `diagnostics/`,
+`climate/` créés à partir des modules flat existants (déplacements
+`git mv` + shims, même discipline que la migration AWCI). §4h a
+investigué et tranché les 3 questions restantes : `science/clouds/`
+est déjà le sous-domaine du blueprint (rien à faire) ;
+`acf.ocean`/`hydrology`/`climate`/`earth_physics` restent des packages
+top-level séparés (déplacement jugé pure churn sans bénéfice) ;
+`acf.catalog`/`catalogs` et `PhysicalParameter`/`Parameter` sont des
+homonymes réels intentionnels, déjà documentés, verrouillés par un
+nouveau test dans `test_collisions_consolidation.py`. **Seul vrai
+vide restant** : les modules de paramétrisation NWP du blueprint
+(inventaire historique ~152) n'existent nulle part dans le code -
+construction neuve hors périmètre, pas une réorganisation, non
+inventée (règle "never invent placeholders").
+
+**Base de connaissances aéronautique ICAO/OMM/lavionnaire.fr** :
+~30 nouveaux modules réels sous `src/awci/knowledge/` (classification
+aérodrome/aéronef OACI, espaces aériens, altimétrie, catégories
+d'approche/ILS, codes état de piste, codes météo présents, nuages OMM,
+givrage, indicateurs de changement TAF, validité SIGMET, GAMET/AIRMET,
+orages, turbulence orographique/CAT, brouillard, cisaillement basse
+altitude, microrafales, lignes de grains, intensité/source de
+turbulence, courant-jet, fronts, circulation générale, composition
+atmosphérique, émagramme/radiosondage, vents locaux, température,
+caractéristiques nuageuses). Chaque module cite sa source réelle
+(ICAO Annexes/Doc, OMM, ou https://www.lavionnaire.fr/), et 3
+désaccords réels entre sources ont été explicitement divulgués plutôt
+que fusionnés silencieusement (givrage -35°C vs -40°C, hydroplanage
+coefficient 8.73 vs 9, lapse rate observé 6.4°C/1000m vs standard ISA
+6.5°C/1000m, température min. mésosphère -100°C vs -73/-80°C).
+`tests/test_awci_icao_wmo_classifications.py` : 0 → 148 tests.
+
+**Vérification** : collection complète sous xvfb à 5203+ tests (dernier
+comptage avant cette entrée), 0 erreur ; suite non-GUI complète (hors
+`tests/gui`) : 4693+ passed, 0 failed (hors le crash natif
+pré-existant déjà documenté ci-dessus) ; ruff/mypy propres sur tout
+`src/`+`tests/` (16 erreurs mypy résiduelles, toutes confirmées
+pré-existantes via `git log`, aucune liée à ces travaux). Sweep complet
+`tests/gui` en cours au moment de la rédaction de cette entrée.
