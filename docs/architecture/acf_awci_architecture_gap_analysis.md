@@ -80,7 +80,7 @@ this is new construction, not a rename of an equivalent existing tree.
 |---|---|
 | `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
 | `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | 🟡 `src/acf/aviation/` covers part of this: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`. No `knowledge_graph/` (entities/relations/ontology) for aviation exists. |
-| `awci/data/` + `data/connectors/` | 🟡 `src/acf/connectors/` is real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, just not grouped under an AWCI-specific data hub; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `acf.aviation.icao`, not separate `connectors/` modules. |
+| `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e below) with its first real module, `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM). `src/acf/connectors/` is also real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, still under `acf.connectors` rather than `awci.data.connectors`, not yet migrated; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `acf.aviation.icao`, not separate `connectors/` modules. |
 | `awci/observations/` | 🟡 Overlaps with `acf.connectors` + `acf.aviation.icao` above; no single `observations/hub.py` aggregation point. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
 | `awci/vertical/` | ✅ Real and substantial — `awci.complexity.vertical_field` (**migrated 2026-09-21**, see §2d below), `acf.gui.dashboard.acf_workstation_sounding_panel`, and the AWCI dashboard's own `AWCIVerticalSoundingWidget`/`ACFVerticalSoundingWidget` cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). **Deliberately not placed under a new `awci/vertical/` package**: despite its name, `vertical_field.py` is not the blueprint's general-purpose sounding/diagram engine — it is `AWCICalculator` applied along a vertical profile (its own docstring: "same real complexity computation as spatial_field.py exactly"), so it was migrated alongside `calculator.py`/`spatial_field.py` into `awci/complexity/` instead, as one coherent field-computation unit. |
@@ -182,10 +182,11 @@ Python code). A dedicated new test file,
 re-export identity and the new package's real top-level existence going
 forward.
 
-**What is intentionally not done yet**: `src/acf/awci/` still holds 29
-other modules (`archive_field.py`, `temporal_field.py`,
-`scale_classification.py`, `wind_classification.py`, etc. —
-`spatial_field.py`/`vertical_field.py` migrated in Phase 3, §2d below) and
+**What is intentionally not done yet**: `src/acf/awci/` still holds 26
+other real modules (`scale_classification.py`, `wind_classification.py`,
+`convective_energy.py`, `theta_e.py`, `updraft.py`, etc. —
+`spatial_field.py`/`vertical_field.py` migrated in Phase 3 (§2d),
+`archive_field.py`/`temporal_field.py` migrated in Phase 4 (§2e)) and
 `src/acf/aviation/` (17 files) have not moved. Those are real next
 candidates for further phases, each needing the same investigate-first
 treatment this phase used.
@@ -296,6 +297,57 @@ native subprocess-shutdown crash; full test collection under xvfb — 4883
 tests, 0 errors. A new `tests/test_awci_package_migration_fields.py`
 (4 tests) locks in the re-export identity and that both modules reach the
 migrated calculator/hazards as real siblings, not stale copies.
+
+## 2e. AWCI separate-package migration, Phase 4: `archive_field.py` + `temporal_field.py` (2026-09-21)
+
+Continuing directly from Phase 3 ("continue avec archive_field.py et
+temporal_field.py"). Scoped before touching anything: 9 files reference
+`acf.awci.archive_field`, 17 reference `acf.awci.temporal_field`.
+
+**Placement decision, and the first real split of this migration**:
+inspection showed these two modules, despite sharing this session's request,
+do not belong in the same place. `archive_field.py` has **zero** dependency
+on `AWCICalculator` or any other `awci.complexity` module — it only imports
+`acf.data.readers.epygram_reader.EPyGrAMReader` and
+`acf.science.moisture.Moisture`, and its own docstring identifies it as a
+real archived-data ingestion tier (real ALADIN RESTOR FULLPOS output,
+decoded via EPyGrAM), not a complexity computation. This is the blueprint's
+`awci/data/` Data Hub layer by function, not `awci/complexity/` by
+proximity. `temporal_field.py`, by contrast, directly imports both
+`AWCICalculator` and `vertical_field.score_volume` (Phases 2-3) — it applies
+the same real complexity computation along a time series, exactly the
+`spatial_field.py`/`vertical_field.py` pattern, so it joined them.
+
+1. Created `src/awci/data/` (the blueprint's Data Hub layer, started with
+   its first real module) and moved `archive_field.py` there unchanged — no
+   internal imports needed fixing, since it has no `acf.awci` sibling
+   dependencies at all.
+2. Moved `temporal_field.py` into `src/awci/complexity/`, repointing its
+   `AWCICalculator`/`score_volume` imports from the `acf.awci.*` shims to
+   direct relative imports (`.calculator`, `.vertical_field`), since all
+   three now live in the same package.
+3. Left a real backward-compatible re-export at both old locations,
+   verified identical to the new objects.
+
+**Verified, not assumed**: `ruff`/`mypy` clean (67 files); direct import
+identity confirmed for `load_real_aladin_restor_run`/
+`sample_archive_at_point`/`restor_fullpos_path` (archive_field) and
+`compute_real_complexity_evolution`/`profile_over_time` (temporal_field);
+23 tests passed across `test_awci_archive_field.py` (16 skipped for the
+same pre-existing, disclosed reason as before this migration — the real
+RESTOR ALADIN archive file is machine-local, not in git, and genuinely
+absent from this sandbox), `test_awci_temporal_field.py`, and
+`test_moisture.py`; 87 GUI tests passed across the real consumers
+(`test_acf_general_dashboard.py`, `test_acf_workstation_global_timeline.py`,
+`test_acf_workstation_temporal.py`, `test_awci_dashboard_evolution.py`,
+`test_awci_dashboard_level_slider.py`,
+`test_awci_dashboard_reference_parity.py`); full test collection under
+xvfb — 4887 tests, 0 errors. A new
+`tests/test_awci_package_migration_data_and_temporal.py` (4 tests) locks
+in the re-export identity for both modules and the placement rationale
+itself (asserts `archive_field` genuinely has no `AWCICalculator`
+dependency, so a future edit can't silently re-couple it to the
+complexity engine without the test noticing).
 
 ## 3. What this means for a real migration
 
