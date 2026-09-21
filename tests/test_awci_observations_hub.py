@@ -7,7 +7,7 @@ point").
 
 ObservationsHub is a pure delegation/aggregation class - it computes
 nothing of its own, only calls each already-real, already-tested
-connector (awci.knowledge.icao.live_source, acf.connectors.
+connector (awci.knowledge.icao.live_source, awci.data.connectors.
 pirep_reports/nexrad_stations/eumetsat_mtg) and assembles their real
 results. These tests verify the DELEGATION/WIRING this module actually
 adds (correct arguments passed through, correct field assembly), using
@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import time
 
-from acf.connectors.eumetsat_mtg import MTGFetchResult
-from acf.connectors.nexrad_stations import NexradFetchResult
-from acf.connectors.pirep_reports import PIREPFetchResult
+from awci.data.connectors.eumetsat_mtg import MTGFetchResult
+from awci.data.connectors.nexrad_stations import NexradFetchResult
+from awci.data.connectors.pirep_reports import PIREPFetchResult
 from awci.knowledge.icao.live_source import LiveReport, LiveStationBundle
 from awci.observations import ObservationsHub, ObservationsSnapshot
 
@@ -94,9 +94,9 @@ def _build_hub(pirep=None, radar=None, satellite=None) -> tuple[ObservationsHub,
 
 
 def test_hub_constructs_real_default_connectors_when_none_supplied():
-    from acf.connectors.eumetsat_mtg import EUMETSATMTGConnector
-    from acf.connectors.nexrad_stations import NEXRADRadarConnector
-    from acf.connectors.pirep_reports import PIREPConnector
+    from awci.data.connectors.eumetsat_mtg import EUMETSATMTGConnector
+    from awci.data.connectors.nexrad_stations import NEXRADRadarConnector
+    from awci.data.connectors.pirep_reports import PIREPConnector
 
     hub = ObservationsHub()
     assert isinstance(hub.pirep_connector, PIREPConnector)
@@ -124,7 +124,7 @@ def test_fetch_pireps_delegates_with_the_real_bbox_and_returns_the_real_result()
 
 
 def test_fetch_pireps_uses_the_real_default_bbox_when_not_supplied():
-    from acf.connectors.pirep_reports import DEFAULT_BBOX
+    from awci.data.connectors.pirep_reports import DEFAULT_BBOX
 
     fake_pirep = _FakePirepConnector(_real_pirep_result())
     hub, _ = _build_hub(pirep=fake_pirep)

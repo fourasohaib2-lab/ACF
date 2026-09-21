@@ -1,5 +1,5 @@
 """
-Tests for acf.connectors.pirep_reports.PIREPConnector - the real public
+Tests for awci.data.connectors.pirep_reports.PIREPConnector - the real public
 NOAA aviationweather.gov PIREP client backing the ESOC Earth Monitoring
 panel's "Aircraft Reports (PIREP)" feed (2026-09-06, Phase 64).
 
@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from acf.connectors.pirep_reports import PIREPConnector
+from awci.data.connectors.pirep_reports import PIREPConnector
 
 
 @pytest.fixture()

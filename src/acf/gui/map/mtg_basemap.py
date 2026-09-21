@@ -30,7 +30,7 @@ import pyproj
 import yaml
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal
 
-from acf.connectors.eumetsat_mtg import (
+from awci.data.connectors.eumetsat_mtg import (
     MTG_SATELLITE_HEIGHT_M,
     MTG_SUBSATELLITE_LONGITUDE_DEG,
     EUMETSATMTGConnector,

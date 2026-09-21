@@ -1667,9 +1667,9 @@ class ACFWorkstation(QWidget):
         behavior change, same real workers.
         """
         from acf.connectors.argo_floats import ArgoFloatsConnector
-        from acf.connectors.nexrad_stations import NEXRADRadarConnector
-        from acf.connectors.pirep_reports import PIREPConnector
         from acf.gui.map.mtg_basemap import MTGBasemapProvider
+        from awci.data.connectors.nexrad_stations import NEXRADRadarConnector
+        from awci.data.connectors.pirep_reports import PIREPConnector
         from acf.gui.workers.observation_fetch_workers import (
             _ArgoFetchWorker,
             _METARFetchWorker,

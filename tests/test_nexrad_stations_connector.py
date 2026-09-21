@@ -1,5 +1,5 @@
 """
-Tests for acf.connectors.nexrad_stations.NEXRADRadarConnector - the
+Tests for awci.data.connectors.nexrad_stations.NEXRADRadarConnector - the
 real public NOAA api.weather.gov radar station status client backing
 the ESOC Earth Monitoring panel's "Doppler Radar (NEXRAD)" feed
 (2026-09-06, Phase 60).
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from acf.connectors.nexrad_stations import NEXRADRadarConnector
+from awci.data.connectors.nexrad_stations import NEXRADRadarConnector
 
 
 @pytest.fixture()

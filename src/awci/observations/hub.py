@@ -31,12 +31,17 @@ calling connector, not built here:
 
 - ``awci.knowledge.icao.live_source`` - real METAR/TAF (per station)
   and SIGMET (FIR-wide) fetch + decode, NOAA Aviation Weather Center.
-- ``acf.connectors.pirep_reports.PIREPConnector`` - real Pilot Report
-  fetch, NOAA aviationweather.gov.
-- ``acf.connectors.nexrad_stations.NEXRADRadarConnector`` - real NEXRAD
-  (WSR-88D) station operational-status fetch, api.weather.gov.
-- ``acf.connectors.eumetsat_mtg.EUMETSATMTGConnector`` - real MTG FCI
-  full-disk satellite quicklook fetch, EUMETSAT Data Store.
+- ``awci.data.connectors.pirep_reports.PIREPConnector`` - real Pilot
+  Report fetch, NOAA aviationweather.gov.
+- ``awci.data.connectors.nexrad_stations.NEXRADRadarConnector`` - real
+  NEXRAD (WSR-88D) station operational-status fetch, api.weather.gov.
+- ``awci.data.connectors.eumetsat_mtg.EUMETSATMTGConnector`` - real MTG
+  FCI full-disk satellite quicklook fetch, EUMETSAT Data Store.
+
+(These 3 connectors were physically moved from ``acf.connectors`` to
+``awci.data.connectors`` on 2026-09-21, item 10 of "on les attaque
+toutes un par un" - ``acf.connectors.<x>`` is kept as a real
+backward-compatible re-export.)
 
 Deliberately NOT aggregated: ``acf.connectors.argo_floats`` (real, but
 ocean buoys - not an aviation observation source);
@@ -64,9 +69,9 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-from acf.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
-from acf.connectors.nexrad_stations import DEFAULT_STATIONS, NexradFetchResult, NEXRADRadarConnector
-from acf.connectors.pirep_reports import DEFAULT_BBOX, PIREPConnector, PIREPFetchResult
+from awci.data.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
+from awci.data.connectors.nexrad_stations import DEFAULT_STATIONS, NexradFetchResult, NEXRADRadarConnector
+from awci.data.connectors.pirep_reports import DEFAULT_BBOX, PIREPConnector, PIREPFetchResult
 from awci.knowledge.icao.live_source import LiveReport, LiveStationBundle, fetch_active_sigmets, fetch_and_decode_station
 
 
