@@ -108,7 +108,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/reports/` | 🟡 `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) exist in the GUI; no standalone `reports/aviation_report.py` generator. |
 | `awci/api/` | ❌ No dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are ACF-general, not AWCI-specific. |
 | `awci/alerts/` | 🟡 `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) exists; no standalone alerts engine. |
-| `awci/plugins/` | ❌ Not found. |
+| `awci/plugins/` | ✅ **Built 2026-09-21** (see §2p below) — all 5 files named in `awci_reference_architecture.md` §20 (`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`), real, tested, working extensibility infrastructure (register/get, on-disk discovery, lifecycle hooks). Zero real AWCI module has been adapted to implement the new `AWCIPlugin` interface yet — honestly disclosed, not fabricated. |
 | `awci/workspace/` | ❌ No AWCI-specific project/session format; ACF's own `acf.workspace` is general-purpose. |
 | `awci/provenance/` | 🟡 **Built 2026-09-21** (see §2o below) — all 7 files named in `awci_reference_architecture.md` §22 (`lineage.py`/`source.py`/`calculation.py`/`version.py`/`audit.py`/`reproducibility.py`), a real assembler over `AWCIResult`/`Provenance`/`scientific_status`/`WeightsManager` — never a new computation, never a persisted audit log/database (a disclosed scope limit, not a fabricated one). Provenance discipline was already a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length); this closes the gap of it never having a dedicated, queryable module. |
 
@@ -1127,6 +1127,60 @@ reused by identity, not copied). Full non-GUI suite collection: 4829
 tests (up from 4804, +25); a targeted sweep (`-k "provenance or
 awci_result or scientific_status or calibration or weights_manager"`,
 excluding `tests/gui`) shows 88 passed, 0 failed.
+
+## 2p. The AWCI plugin extension mechanism (2026-09-21)
+
+The user asked to work through the entire remaining-gaps list one item
+at a time ("on les attaque toutes un par un sans lancé plusieurs à la
+fois"). Started with `awci/plugins/` - the one gap-table row marked
+flatly ❌ "Not found" with no partial credit at all (unlike every other
+AWCI gap tackled this session), and, unlike `decision/`/`provenance/`/
+`ai/rag/`, a pure software-engineering package with zero real
+scientific-fabrication risk - so all 5 blueprint-named files
+(`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`) were
+built in one pass, matching §20's own text: "AWCI must be extensible...
+a new data source, a new model, a new hazard, a new visualization, a
+new aviation product, a new AI agent."
+
+**Investigated existing precedent first**: `acf.ai.plugins.
+base_plugin.AIPlugin`/`acf.ai.plugins.plugin_manager.PluginManager` is
+a real, working ABC + register/get pattern already used elsewhere in
+this codebase - this package follows that same convention rather than
+inventing a new one. `acf.core.plugin_manager.PluginManager` (a
+different, much thinner directory-lister, real caller: `acf.core.
+bootstrap`) and `acf.plugins` (a confirmed, already-disclosed empty
+stub with zero importers) were also checked and are unrelated/not
+reused.
+
+**Built**: `interface.py` (`AWCIPlugin` ABC with an abstract
+`describe()`; `PluginCategory` - the 6 real categories transcribed
+directly from §20's own text, not invented); `registry.py`
+(`PluginRegistry` - real register/get/list_by_category/all,
+`DuplicatePluginError` on a name collision, matching `calibration.py`'s
+own `ValidationOverlapError` precedent for "never a silent overwrite");
+`loader.py` (`discover_plugins()` - real `importlib`-based directory
+scan; a broken/misbehaving plugin file is recorded as a real, disclosed
+`PluginLoadError`, never silently skipped and never crashing discovery
+of the other real files - only classes truly DEFINED in each loaded
+file are indexed, same discipline as `awci.ai.rag.documents`);
+`hooks.py` (`HookRegistry` - real named-hook register/dispatch with the
+same real per-callback error isolation); `manager.py` (`PluginManager`
+- thin orchestrator owning one `PluginRegistry` and one `HookRegistry`).
+
+**Honest, disclosed scope**: no existing AWCI module (a hazard, a data
+source, a visualization layer) has been adapted to implement
+`AWCIPlugin` yet, and no fake "example" plugin ships in `src/` - real,
+working, tested infrastructure with zero plugins registered by default.
+
+**Verified, not assumed**: a manual end-to-end smoke test (real plugin
+files written to a temp directory, discovered, one intentionally broken
+file correctly isolated from a good one, hooks dispatched with one
+failing callback correctly isolated from the others); `ruff check`/
+`mypy` clean; 26 new tests (`tests/test_awci_plugins.py`), including
+real on-disk plugin loading via `tmp_path`. Full non-GUI suite
+collection: 4855 tests (up from 4829, +26); a targeted sweep (`-k
+"plugin"`, excluding `tests/gui`) shows 33 passed (including the
+pre-existing `acf.ai.plugins` tests), 0 failed.
 
 ## 3. What this means for a real migration
 
