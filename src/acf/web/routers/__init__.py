@@ -31,6 +31,22 @@ here, only real endpoints exposing it:
   vorticity/divergence, bulk wind shear) - the exact same real,
   Qt-free functions the Workstation's own GUI panels call, extracted
   there specifically so this router never needs to import PySide6.
+  Also the real content behind this project's own blueprint
+  `routes/diagnostics.py` (see
+  `docs/architecture/acf_awci_architecture_gap_analysis.md`'s `api/`
+  row) - a naming difference, not a missing gap.
+- `system_router` (added 2026-09-21) -> real `/health`/`/version` -
+  closes the blueprint's own named `routes/system.py` gap.
+
+Reconciling the rest of the blueprint's `routes/{data,models,
+diagnostics,maps,visualization,ai,reports,system}.py` list against
+what is real here: `data` -> `datasets_router`, `models` ->
+`models_router`, `diagnostics` -> `workstation_router` (see above),
+`system` -> `system_router`. `maps`/`visualization`/`ai`/`reports`
+have no real router anywhere in this codebase - no real map-tile-
+serving, server-side-rendering, AI-HTTP, or report-serving endpoint
+exists yet to expose; not fabricated ahead of that real content
+existing.
 
 `hpc_router`/`fno_router` complete the migration reports/
 ACF_MASTER_AUDIT_v2.md's earlier update for this section had
@@ -46,6 +62,7 @@ from acf.web.routers.events_router import router as events_router
 from acf.web.routers.fno_router import router as fno_router
 from acf.web.routers.hpc_router import router as hpc_router
 from acf.web.routers.models_router import router as models_router
+from acf.web.routers.system_router import router as system_router
 from acf.web.routers.workstation_router import router as workstation_router
 
 __all__ = [
@@ -55,5 +72,6 @@ __all__ = [
     "fno_router",
     "hpc_router",
     "models_router",
+    "system_router",
     "workstation_router",
 ]

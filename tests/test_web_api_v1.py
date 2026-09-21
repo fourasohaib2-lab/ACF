@@ -305,3 +305,23 @@ def test_events_and_datasets_survive_a_real_app_restart(tmp_path):
 
         assert len(c2.get("/api/v1/events").json()) >= 1
         assert len(c2.get("/api/v1/datasets").json()) >= 1
+
+
+# ------------------------------------------------------------------ /api/v1/system
+
+
+def test_system_health_reports_ok(client):
+    response = client.get("/api/v1/system/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_system_version_reports_the_real_acf_version(client):
+    from acf import __version__
+
+    response = client.get("/api/v1/system/version")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["acf_version"] == __version__
+    assert body["python_version"]
+    assert body["operating_system"]
