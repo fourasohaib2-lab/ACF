@@ -33,9 +33,12 @@ weather-front reference (awci.knowledge.meteorology.weather_front), the real gen
 composition/layer-structure reference
 (awci.knowledge.meteorology.atmosphere_composition), the real
 emagram/skew-T diagram and radiosonde reference
-(awci.knowledge.meteorology.skew_t_diagram), and the real wind-unit/
+(awci.knowledge.meteorology.skew_t_diagram), the real wind-unit/
 gust-criterion/named-local-wind reference
-(awci.knowledge.meteorology.local_winds).
+(awci.knowledge.meteorology.local_winds), the real temperature
+reference (awci.knowledge.meteorology.temperature_reference), and the
+real cloud-characteristics element-size reference
+(awci.knowledge.meteorology.cloud_characteristics).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -60,9 +63,19 @@ https://www.lavionnaire.fr/MeteoFronts.php, and
 https://www.lavionnaire.fr/MeteoCirculation.php,
 https://www.lavionnaire.fr/MeteoAtmosphere.php,
 https://www.lavionnaire.fr/MeteoEmagram.php, and
-https://www.lavionnaire.fr/MeteoVent.php, at the user's own
+https://www.lavionnaire.fr/MeteoVent.php,
+https://www.lavionnaire.fr/MeteoTemperature.php, and
+https://www.lavionnaire.fr/MeteoNuagesCaract.php, at the user's own
 request, rather than relying on recalled tables alone for this level of
-numeric/letter-code detail.
+numeric/letter-code detail. https://www.lavionnaire.fr/MeteoHumidite.php
+and https://www.lavionnaire.fr/MeteoImagerie.php were also checked -
+the former's real numeric content is Earth hydrosphere/geography
+statistics outside the agreed meteo/aero/aircraft scope (relative
+humidity mechanics are already covered by
+acf.science.thermodynamics.relative_humidity), the latter gives no
+real numeric thresholds at all (a qualitative image-reading guide) -
+so neither yielded new content, a disclosed finding rather than a
+silent omission.
 """
 
 from __future__ import annotations
@@ -1441,3 +1454,131 @@ def test_coriolis_and_geostrophic_equator_facts_are_real():
     assert CORIOLIS_FORCE_ZERO_AT_EQUATOR is True
     assert CORIOLIS_FORCE_MAXIMUM_AT_POLES is True
     assert GEOSTROPHIC_WIND_UNDEFINED_AT_EQUATOR is True
+
+
+def test_kelvin_celsius_anchor_and_absolute_zero_are_real():
+    from awci.knowledge.meteorology.temperature_reference import (
+        ABSOLUTE_ZERO_C,
+        KELVIN_ZERO_CELSIUS_OFFSET,
+    )
+
+    assert KELVIN_ZERO_CELSIUS_OFFSET == 273.15
+    assert ABSOLUTE_ZERO_C == -273.15
+    assert ABSOLUTE_ZERO_C == -KELVIN_ZERO_CELSIUS_OFFSET
+
+
+def test_tropopause_and_stratopause_temperature_ranges_are_real_and_ordered():
+    from awci.knowledge.meteorology.temperature_reference import (
+        STRATOPAUSE_TEMPERATURE_RANGE_C,
+        TROPOPAUSE_TEMPERATURE_RANGE_C_TEMPERATE,
+    )
+
+    trop_low, trop_high = TROPOPAUSE_TEMPERATURE_RANGE_C_TEMPERATE
+    assert trop_low == -56.0
+    assert trop_high == -55.0
+    assert trop_low < trop_high
+
+    strato_low, strato_high = STRATOPAUSE_TEMPERATURE_RANGE_C
+    assert strato_low == -3.0
+    assert strato_high == 0.0
+    # Real consistency check against the existing atmosphere_composition
+    # value (270 K = -3.15 degC), within this real observed range.
+    from awci.knowledge.meteorology.atmosphere_composition import STRATOPAUSE_TEMPERATURE_K_APPROX
+
+    stratopause_c = STRATOPAUSE_TEMPERATURE_K_APPROX - 273.15
+    assert strato_low - 0.2 <= stratopause_c <= strato_high
+
+
+def test_mesosphere_minimum_temperature_discrepancy_is_disclosed_not_silently_merged():
+    """A real, disclosed discrepancy between two lavionnaire.fr pages -
+    NOT merged into the existing
+    atmosphere_composition.MESOSPHERE_MINIMUM_TEMPERATURE_C_APPROX."""
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        MESOSPHERE_MINIMUM_TEMPERATURE_C_APPROX,
+    )
+    from awci.knowledge.meteorology.temperature_reference import (
+        MESOSPHERE_MINIMUM_TEMPERATURE_RANGE_C_ALTERNATE_SOURCE,
+    )
+
+    assert MESOSPHERE_MINIMUM_TEMPERATURE_C_APPROX == -100.0
+    alt_low, alt_high = MESOSPHERE_MINIMUM_TEMPERATURE_RANGE_C_ALTERNATE_SOURCE
+    assert alt_low == -80.0
+    assert alt_high == -73.0
+    assert MESOSPHERE_MINIMUM_TEMPERATURE_C_APPROX not in (alt_low, alt_high)
+    assert MESOSPHERE_MINIMUM_TEMPERATURE_C_APPROX < alt_low
+
+
+def test_subsidence_inversion_altitude_ranges_are_real_and_nested():
+    from awci.knowledge.meteorology.temperature_reference import (
+        SUBSIDENCE_INVERSION_POSSIBLE_ALTITUDE_RANGE_FT,
+        SUBSIDENCE_INVERSION_TYPICAL_ALTITUDE_RANGE_FT,
+    )
+
+    typical_low, typical_high = SUBSIDENCE_INVERSION_TYPICAL_ALTITUDE_RANGE_FT
+    possible_low, possible_high = SUBSIDENCE_INVERSION_POSSIBLE_ALTITUDE_RANGE_FT
+    assert typical_low == 8_000.0
+    assert typical_high == 12_000.0
+    assert possible_low == 5_000.0
+    assert possible_high == 18_000.0
+    assert possible_low <= typical_low and typical_high <= possible_high
+
+
+def test_wind_chill_example_values_are_real():
+    from awci.knowledge.meteorology.temperature_reference import (
+        WIND_CHILL_EXAMPLE_AIR_TEMPERATURE_C,
+        WIND_CHILL_EXAMPLE_PERCEIVED_TEMPERATURE_C,
+        WIND_CHILL_EXAMPLE_WIND_SPEED_KMH,
+    )
+
+    assert WIND_CHILL_EXAMPLE_AIR_TEMPERATURE_C == -10.0
+    assert WIND_CHILL_EXAMPLE_WIND_SPEED_KMH == 30.0
+    assert WIND_CHILL_EXAMPLE_PERCEIVED_TEMPERATURE_C == -20.0
+    assert WIND_CHILL_EXAMPLE_PERCEIVED_TEMPERATURE_C < WIND_CHILL_EXAMPLE_AIR_TEMPERATURE_C
+
+
+def test_earth_axial_tilt_is_real():
+    from awci.knowledge.meteorology.temperature_reference import EARTH_AXIAL_TILT_DEG
+
+    assert EARTH_AXIAL_TILT_DEG == 23.27
+
+
+def test_cloud_element_apparent_width_criterion_is_real_and_ordered():
+    from awci.knowledge.meteorology.cloud_characteristics import (
+        ALTOCUMULUS_ELEMENT_APPARENT_WIDTH_RANGE_DEG,
+        CIRROCUMULUS_ELEMENT_APPARENT_WIDTH_MAXIMUM_DEG,
+        STRATOCUMULUS_ELEMENT_APPARENT_WIDTH_MINIMUM_DEG,
+    )
+
+    assert CIRROCUMULUS_ELEMENT_APPARENT_WIDTH_MAXIMUM_DEG == 1.0
+    ac_low, ac_high = ALTOCUMULUS_ELEMENT_APPARENT_WIDTH_RANGE_DEG
+    assert ac_low == 1.0
+    assert ac_high == 5.0
+    assert STRATOCUMULUS_ELEMENT_APPARENT_WIDTH_MINIMUM_DEG == 5.0
+    assert CIRROCUMULUS_ELEMENT_APPARENT_WIDTH_MAXIMUM_DEG == ac_low
+    assert ac_high == STRATOCUMULUS_ELEMENT_APPARENT_WIDTH_MINIMUM_DEG
+
+
+def test_apparent_width_criterion_genera_are_real_wmo_cloud_genus_members():
+    from awci.knowledge.meteorology.clouds import CloudGenus
+    from awci.knowledge.meteorology.cloud_characteristics import _APPARENT_WIDTH_CRITERION_GENERA
+
+    assert len(_APPARENT_WIDTH_CRITERION_GENERA) == 3
+    for genus in _APPARENT_WIDTH_CRITERION_GENERA:
+        assert isinstance(genus, CloudGenus)
+    assert CloudGenus.CIRROCUMULUS in _APPARENT_WIDTH_CRITERION_GENERA
+    assert CloudGenus.ALTOCUMULUS in _APPARENT_WIDTH_CRITERION_GENERA
+    assert CloudGenus.STRATOCUMULUS in _APPARENT_WIDTH_CRITERION_GENERA
+
+
+def test_convective_bubble_and_pileus_and_psc_facts_are_real():
+    from awci.knowledge.meteorology.cloud_characteristics import (
+        CONVECTIVE_BUBBLE_TYPICAL_DIAMETER_DESCRIPTION,
+        PILEUS_FORMATION_VERTICAL_SPEED_RANGE_KMH,
+        POLAR_STRATOSPHERIC_CLOUD_TYPICAL_EXTENT_KM_APPROX,
+    )
+
+    assert "several hundred metres" in CONVECTIVE_BUBBLE_TYPICAL_DIAMETER_DESCRIPTION
+    low, high = PILEUS_FORMATION_VERTICAL_SPEED_RANGE_KMH
+    assert low == 20.0
+    assert high == 50.0
+    assert POLAR_STRATOSPHERIC_CLOUD_TYPICAL_EXTENT_KM_APPROX == 100.0
