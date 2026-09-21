@@ -16,9 +16,14 @@ GAMET/AIRMET reference facts (awci.knowledge.icao.gamet_airmet), the
 real thunderstorm life-cycle/hazard reference
 (awci.knowledge.meteorology.thunderstorm), the real orographic
 (mountain-wave) turbulence formation-condition reference
-(awci.knowledge.meteorology.orographic_turbulence), and the real
+(awci.knowledge.meteorology.orographic_turbulence), the real
 Clear Air Turbulence (CAT) altitude-band/jet-stream reference
-(awci.knowledge.meteorology.clear_air_turbulence).
+(awci.knowledge.meteorology.clear_air_turbulence), the real mist/fog
+classification reference (awci.knowledge.meteorology.fog), the real
+low-altitude wind-gradient reference
+(awci.knowledge.meteorology.low_level_wind_gradient), and the real
+microburst physical-scale/detection-system reference
+(awci.knowledge.meteorology.microburst_reference).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -31,9 +36,12 @@ runway-state tables were cross-checked against
 https://www.lavionnaire.fr/CodesMetar.php, and the thunderstorm/
 orographic-turbulence/CAT reference facts against
 https://www.lavionnaire.fr/PhenomOrages.php,
-https://www.lavionnaire.fr/PhenomOrographe.php, and
-https://www.lavionnaire.fr/PhenomTAC.php, at the user's own request,
-rather than relying on recalled tables alone for this level of
+https://www.lavionnaire.fr/PhenomOrographe.php,
+https://www.lavionnaire.fr/PhenomTAC.php,
+https://www.lavionnaire.fr/MeteoBrouillard.php,
+https://www.lavionnaire.fr/PhenomGradient.php, and
+https://www.lavionnaire.fr/PhenomCisaille.php, at the user's own
+request, rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
 
@@ -666,3 +674,210 @@ def test_cat_reference_is_complementary_to_the_ellrod_knapp_index():
         name for name in dir(reference_module) if name.isupper()
     }
     assert index_names.isdisjoint(reference_names)
+
+
+def test_fog_types_cover_the_five_real_formation_mechanisms():
+    from awci.knowledge.meteorology.fog import FogType
+
+    assert {fog_type.value for fog_type in FogType} == {
+        "radiation",
+        "advection",
+        "evaporation",
+        "slope",
+        "freezing",
+    }
+
+
+def test_mist_and_fog_visibility_definitions_are_ordered_and_real():
+    from awci.knowledge.meteorology.fog import (
+        FOG_VISIBILITY_MAX_KM,
+        MIST_VISIBILITY_RANGE_KM,
+    )
+
+    assert FOG_VISIBILITY_MAX_KM == 1.0
+    low, high = MIST_VISIBILITY_RANGE_KM
+    assert low == 1.0
+    assert high == 5.0
+    assert FOG_VISIBILITY_MAX_KM <= low
+
+
+def test_fog_droplet_size_is_smaller_than_mist_droplet_diameter_upper_bound():
+    from awci.knowledge.meteorology.fog import (
+        FOG_DROPLET_DIAMETER_RANGE_MICRONS,
+        MIST_DROPLET_DIAMETER_MICRONS_APPROX,
+    )
+
+    low, high = FOG_DROPLET_DIAMETER_RANGE_MICRONS
+    assert low == 1.0
+    assert high == 10.0
+    assert MIST_DROPLET_DIAMETER_MICRONS_APPROX == 1.0
+    assert MIST_DROPLET_DIAMETER_MICRONS_APPROX <= low
+
+
+def test_radiation_fog_wind_speed_window_is_light_and_ordered():
+    from awci.knowledge.meteorology.fog import RADIATION_FOG_WIND_SPEED_RANGE_KT
+
+    low, high = RADIATION_FOG_WIND_SPEED_RANGE_KT
+    assert low == 1.0
+    assert high == 3.0
+    assert low < high
+
+
+def test_advection_fog_formation_conditions_are_real_and_positive():
+    from awci.knowledge.meteorology.fog import (
+        ADVECTION_FOG_TEMPERATURE_DIFFERENCE_MAX_C,
+        ADVECTION_FOG_WIND_SPEED_MIN_MS,
+        ADVECTION_FOG_WIND_SPEED_OFFSHORE_RANGE_MS,
+    )
+
+    assert ADVECTION_FOG_TEMPERATURE_DIFFERENCE_MAX_C == 10.0
+    assert ADVECTION_FOG_WIND_SPEED_MIN_MS == 2.0
+    offshore_low, offshore_high = ADVECTION_FOG_WIND_SPEED_OFFSHORE_RANGE_MS
+    assert offshore_low == 20.0
+    assert offshore_high == 30.0
+    assert ADVECTION_FOG_WIND_SPEED_MIN_MS < offshore_low
+
+
+def test_evaporation_fog_spatial_limits_are_real_and_positive():
+    from awci.knowledge.meteorology.fog import (
+        EVAPORATION_FOG_MAXIMUM_DISTANCE_FROM_COAST_NM,
+        EVAPORATION_FOG_MAXIMUM_THICKNESS_M,
+    )
+
+    assert EVAPORATION_FOG_MAXIMUM_DISTANCE_FROM_COAST_NM == 5.0
+    assert EVAPORATION_FOG_MAXIMUM_THICKNESS_M == 50.0
+
+
+def test_fog_reference_is_complementary_to_the_visibility_risk_proxy():
+    """The real classification facts here (droplet size, formation
+    wind-speed windows, coastal/thickness limits) are independent of
+    and do not duplicate the real per-point visibility_risk_score
+    already computed in awci.hazards.visibility - both modules can
+    coexist without overlap."""
+    import awci.hazards.visibility as risk_module
+    import awci.knowledge.meteorology.fog as reference_module
+
+    risk_names = set(dir(risk_module))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert risk_names.isdisjoint(reference_names)
+
+
+def test_wind_gradient_exceptional_magnitude_and_rate_are_real_and_positive():
+    from awci.knowledge.meteorology.low_level_wind_gradient import (
+        WIND_GRADIENT_EXCEPTIONAL_AMPLITUDE_KT,
+        WIND_GRADIENT_EXCEPTIONAL_RATE_KT_PER_S,
+    )
+
+    assert WIND_GRADIENT_EXCEPTIONAL_AMPLITUDE_KT == 70.0
+    assert WIND_GRADIENT_EXCEPTIONAL_RATE_KT_PER_S == 25.0
+
+
+def test_wind_gradient_critical_altitude_and_recovery_rate_are_real():
+    from awci.knowledge.meteorology.low_level_wind_gradient import (
+        AIRCRAFT_GO_AROUND_ACCELERATION_KT_PER_S,
+        WIND_GRADIENT_CRITICAL_ALTITUDE_FT,
+    )
+
+    assert WIND_GRADIENT_CRITICAL_ALTITUDE_FT == 500.0
+    assert AIRCRAFT_GO_AROUND_ACCELERATION_KT_PER_S == 2.0
+
+
+def test_wind_gradient_reference_is_complementary_to_the_bulk_shear_diagnostic():
+    """The real approach-phase operational facts here are independent
+    of and do not duplicate the real per-point bulk wind shear already
+    computed in awci.hazards.wind_shear - both modules can coexist
+    without overlap."""
+    import awci.hazards.wind_shear as shear_module
+    import awci.knowledge.meteorology.low_level_wind_gradient as reference_module
+
+    shear_names = set(dir(shear_module))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert shear_names.isdisjoint(reference_names)
+
+
+def test_microburst_peak_wind_speed_units_are_mutually_consistent():
+    from awci.knowledge.meteorology.microburst_reference import (
+        MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_KMH,
+        MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_MS,
+    )
+
+    assert MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_MS == 75.0
+    assert MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_KMH == 270.0
+    # Real unit-conversion sanity check (1 m/s = 3.6 km/h), not a fabricated relation.
+    assert MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_KMH == pytest.approx(
+        MICROBURST_PEAK_HORIZONTAL_WIND_SPEED_MS * 3.6, rel=0.01
+    )
+
+
+def test_microburst_vertical_speed_and_duration_and_diameter_ranges_are_ordered():
+    from awci.knowledge.meteorology.microburst_reference import (
+        MICROBURST_PEAK_VERTICAL_SPEED_RANGE_FT_MIN,
+        MICROBURST_TYPICAL_DIAMETER_RANGE_KM,
+        MICROBURST_TYPICAL_DURATION_RANGE_MINUTES,
+    )
+
+    v_low, v_high = MICROBURST_PEAK_VERTICAL_SPEED_RANGE_FT_MIN
+    assert v_low == 720.0
+    assert v_high == 1200.0
+    assert v_low < v_high
+
+    d_low, d_high = MICROBURST_TYPICAL_DURATION_RANGE_MINUTES
+    assert d_low == 5.0
+    assert d_high == 15.0
+    assert d_low < d_high
+
+    km_low, km_high = MICROBURST_TYPICAL_DIAMETER_RANGE_KM
+    assert km_low == 1.0
+    assert km_high == 4.0
+    assert km_low < km_high
+
+
+def test_microburst_significant_shear_altitude_band_and_magnitude_are_real():
+    from awci.knowledge.meteorology.microburst_reference import (
+        MICROBURST_SIGNIFICANT_SHEAR_ALTITUDE_BAND_FT,
+        MICROBURST_SIGNIFICANT_SHEAR_MAGNITUDE_KT,
+    )
+
+    assert MICROBURST_SIGNIFICANT_SHEAR_ALTITUDE_BAND_FT == 3_000.0
+    assert MICROBURST_SIGNIFICANT_SHEAR_MAGNITUDE_KT == 60.0
+
+
+def test_llwas_and_pws_detection_system_parameters_are_real_and_positive():
+    from awci.knowledge.meteorology.microburst_reference import (
+        LLWAS_MAXIMUM_ANEMOMETER_COUNT,
+        LLWAS_MAXIMUM_TRAJECTORY_DISTANCE_NM,
+        PWS_ACTIVE_ALTITUDE_MAX_FT_AGL,
+        PWS_DETECTION_RANGE_NM,
+        PWS_MINIMUM_WARNING_TIME_S,
+        PWS_TYPICAL_WARNING_TIME_S,
+    )
+
+    assert LLWAS_MAXIMUM_ANEMOMETER_COUNT == 30
+    assert LLWAS_MAXIMUM_TRAJECTORY_DISTANCE_NM == 3.0
+    assert PWS_MINIMUM_WARNING_TIME_S == 10.0
+    assert PWS_TYPICAL_WARNING_TIME_S == 60.0
+    assert PWS_MINIMUM_WARNING_TIME_S < PWS_TYPICAL_WARNING_TIME_S
+    range_low, range_high = PWS_DETECTION_RANGE_NM
+    assert range_low == 0.5
+    assert range_high == 5.0
+    assert PWS_ACTIVE_ALTITUDE_MAX_FT_AGL == 1_500.0
+
+
+def test_microburst_reference_is_complementary_to_the_alert_proximity_diagnostic():
+    """The real physical-scale/detection-system facts here are
+    independent of and do not duplicate the real, cited ICAO 30 kt /
+    1500 ft alert-proximity threshold already computed in
+    awci.hazards.microburst - both modules can coexist without
+    overlap."""
+    import awci.hazards.microburst as alert_module
+    import awci.knowledge.meteorology.microburst_reference as reference_module
+
+    alert_names = set(dir(alert_module))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert alert_names.isdisjoint(reference_names)
