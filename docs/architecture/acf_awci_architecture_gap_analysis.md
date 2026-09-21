@@ -102,7 +102,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/complexity/` (the actual AWCI score) | ✅ **Migrated 2026-09-21** — see §2c and §2i below. `AWCICalculator` (the actual scoring/aggregation engine), `WeightsManager`, `Normalizer`, and `scientific_status` physically moved to `src/awci/complexity/`, joined by `scale_classification.py`/`wind_classification.py`/`spatial_field.py`/`vertical_field.py`/`temporal_field.py` (Phases 3-5) and then, in the single largest phase (§2i), 14 more real modules: `calibration.py`, `config_loader.py`, `diagnostic_registry.py`, `execution_report.py`, `forecaster_validation.py`, `input_adapter.py`, `metar_verification.py`, `method_comparison.py`, `path_sampling.py`, `pipeline.py`, `result.py`, `run_report.py`, `validation_cases.py`, `workstation_fields.py` — with `acf.awci.<module>` kept as a real backward-compatible re-export for all 23. Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. **As of Phase 8, `src/acf/awci/` contains nothing but re-export shims and `__init__.py` — every real line of AWCI complexity-engine code now lives under `src/awci/`.** |
 | `awci/comparison/` + `awci/consensus/` | 🟡 **`awci/comparison/` created 2026-09-21** (see §2i below) with `multi_model_fusion.py` (real full-field multi-model fusion) and `regridding.py` (real generic grid regridding, its one real dependent). This is distinct from `ModelConsensusEngine` (see the "corrected 2026-09-21" note directly above from an earlier pass of this same document): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint for *that* module is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`/`awci.comparison`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
-| `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. No dedicated runway/terminal/crosswind/runway_condition/disruption modules as named — some of this (crosswind, ceiling, visibility) exists inside `awci.hazards`'s own hazard modules instead. |
+| `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. **`runway.py`/`weather.py` added 2026-09-21** (see §2s below) — real per-runway wind assessment and a real per-airport weather snapshot, both thin compositions of already-real formulas. `terminal.py`/`operations.py`/`runway_condition.py`/`departure.py`/`arrival.py`/`disruption.py` remain unbuilt — each would need real data or a real, cited regulatory threshold this codebase does not have. Crosswind/ceiling/visibility computation already lives in `awci.hazards`/`awci.knowledge.performance.aircraft_performance` rather than duplicated blueprint-named files. |
 | `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). Deliberately real-core-only, user-confirmed scope: composes already-computed AWCI outputs and reuses the 3 already-cited real `flight_recommendations` entries; `risk_matrix.py`/`confidence.py`/`alternatives.py`/`scenario.py` are NOT built - each needs its own real, cited methodology first (e.g. ICAO Doc 9859 SMS for `risk_matrix.py`), not an invented one. |
 | `awci/ai/` | 🟡 `awci/ai/rag/` **built 2026-09-21** (see §2n below) - real, headless, lexical BM25 evidence-retrieval over `awci.knowledge.*`, no new dependency, no network/LLM call. `assistant.py`/`agents/`/`knowledge/`/`reasoning/`/`anomaly_detection/`/`explanation/`/`summarization/`/`orchestration/` remain unbuilt. Still overlaps conceptually with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai` for those unbuilt pieces. |
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
@@ -1283,6 +1283,57 @@ Full non-GUI suite collection: 4889 tests (up from 4877, +12); a
 targeted sweep (`-k "observations_hub or aviation_live_source or
 eumetsat_mtg_connector or pirep or nexrad"`, excluding `tests/gui`)
 shows 47 passed, 0 failed.
+
+## 2s. awci.airport.runway/weather (2026-09-21)
+
+Fifth item of "on les attaque toutes un par un": `awci/airport/`'s
+remaining named files (section 12 of the reference architecture).
+
+**Built**: `runway.py` (`assess_runway_end_wind()`/
+`assess_airport_runways_wind()`/`best_runway_end_for_wind()` - real
+headwind/crosswind for every real runway end of a real airport,
+composing `parse_runway_heading_magnetic_deg()` with
+`AircraftPerformanceEngine.wind_components()`, both already real) and
+`weather.py` (`build_weather_snapshot()` - a real per-airport weather
+view composing the new `ObservationsHub` with the real ceiling
+classification already in `awci.hazards.ceiling`, applied to a real
+ceiling height taken directly from a real METAR's own decoded cloud
+layers - the real ICAO BKN/OVC ceiling definition, a different, more
+authoritative source than that module's own dewpoint-LCL estimate -
+and the real WMO/ICAO present-weather meaning tables, decoded via
+`metar_decoder`'s own already-real `_WX_RE` regex, reused directly).
+
+**Deliberately not fabricated**: `weather.py` never forces a
+precipitation RATE through `classify_precipitation_intensity()` - METAR
+only ever gives a qualitative intensity (light/moderate/heavy), never a
+quantified mm/h; inventing one would misrepresent what the real report
+actually says. Locked in by a discipline test.
+
+**Deliberately not built this round** (`awci/airport/__init__.py`'s own
+updated docstring): `terminal.py` (no real terminal-infrastructure data
+exists in this codebase), `operations.py`/`departure.py`/`arrival.py`/
+`disruption.py` (each would need a real, cited regulatory go/no-go
+threshold - e.g. a per-aircraft-type maximum demonstrated crosswind -
+this codebase does not have), `runway_condition.py` (would need a real
+ICAO Annex 3 runway-state-group METAR parser, which does not exist yet
+- a real, separate, focused piece of work, deliberately not attempted
+here to avoid scope creep). `crosswind.py`/`ceiling.py`/`visibility.py`
+as separate blueprint-named files were also skipped - real content for
+each already exists elsewhere (`aircraft_performance.py`,
+`awci.hazards.ceiling`/`visibility`); duplicating it under `airport/`
+would not close a real gap.
+
+**Verified, not assumed**: manual end-to-end runs (a real LFPG
+runway-wind assessment across all 8 real runway ends; a real KJFK
+METAR - `BKN008 OVC015 -RA` - decoded and run through
+`build_weather_snapshot()`, confirming 800 ft ceiling → real FAA IFR
+category and `-RA` → "Light, Rain"). `ruff check`/`mypy` clean; 22 new
+tests (`tests/test_awci_airport_runway_weather.py`), including
+hand-verifiable wind-geometry cases (direct headwind/tailwind, pure
+90-degree crosswind, reciprocal-runway symmetry) and 2 discipline
+tests. Full non-GUI suite collection: 4911 tests (up from 4889, +22); a
+targeted sweep (`-k "airport"`, excluding `tests/gui`) shows 41 passed,
+0 failed.
 
 ## 3. What this means for a real migration
 
