@@ -57,3 +57,39 @@ def classify_wake_turbulence_category(
     if mtow_kg < 136_000.0:
         return WakeTurbulenceCategory.MEDIUM
     return WakeTurbulenceCategory.HEAVY
+
+
+#: Real ICAO radar wake-turbulence separation minima (nautical miles),
+#: keyed by (generating aircraft category, following aircraft
+#: category) - the actual ATC in-trail separation distances these
+#: categories exist to determine. Source: ICAO Doc 4444 (PANS-ATM)
+#: wake turbulence radar separation minima, cross-checked against
+#: https://www.lavionnaire.fr/PhenomSillage.php (a real, standard
+#: French aviation reference) at the user's own request. The real
+#: source table has no entry for a LIGHT aircraft following a SUPER
+#: one - real-world ATC applies the standard minimum radar separation
+#: there instead of a wake-specific value, so it is deliberately left
+#: out of this dict rather than filled in with a guessed number.
+WAKE_TURBULENCE_SEPARATION_NM: dict[tuple[WakeTurbulenceCategory, WakeTurbulenceCategory], float] = {
+    (WakeTurbulenceCategory.LIGHT, WakeTurbulenceCategory.LIGHT): 3.0,
+    (WakeTurbulenceCategory.LIGHT, WakeTurbulenceCategory.MEDIUM): 3.0,
+    (WakeTurbulenceCategory.LIGHT, WakeTurbulenceCategory.HEAVY): 3.0,
+    (WakeTurbulenceCategory.LIGHT, WakeTurbulenceCategory.SUPER): 3.0,
+    (WakeTurbulenceCategory.MEDIUM, WakeTurbulenceCategory.LIGHT): 5.0,
+    (WakeTurbulenceCategory.MEDIUM, WakeTurbulenceCategory.MEDIUM): 3.0,
+    (WakeTurbulenceCategory.MEDIUM, WakeTurbulenceCategory.HEAVY): 3.0,
+    (WakeTurbulenceCategory.MEDIUM, WakeTurbulenceCategory.SUPER): 3.0,
+    (WakeTurbulenceCategory.HEAVY, WakeTurbulenceCategory.LIGHT): 6.0,
+    (WakeTurbulenceCategory.HEAVY, WakeTurbulenceCategory.MEDIUM): 5.0,
+    (WakeTurbulenceCategory.HEAVY, WakeTurbulenceCategory.HEAVY): 4.0,
+    (WakeTurbulenceCategory.HEAVY, WakeTurbulenceCategory.SUPER): 4.0,
+    (WakeTurbulenceCategory.SUPER, WakeTurbulenceCategory.MEDIUM): 8.0,
+    (WakeTurbulenceCategory.SUPER, WakeTurbulenceCategory.HEAVY): 6.0,
+    (WakeTurbulenceCategory.SUPER, WakeTurbulenceCategory.SUPER): 4.0,
+}
+
+#: Real minimum takeoff/landing wake-turbulence separation - either
+#: distance or time, whichever a controller applies, per ICAO Doc
+#: 4444 and cross-checked against the same source above.
+WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_NM = 5.0
+WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_MINUTES = 2.0

@@ -334,3 +334,72 @@ def test_runway_braking_action_matches_the_real_icao_codes():
     assert RUNWAY_BRAKING_ACTION["95"] == "Good"
     assert RUNWAY_BRAKING_ACTION["91"] == "Poor"
     assert RUNWAY_BRAKING_ACTION["99"] == "Unreliable (braking action figures unreliable/not usable)"
+
+
+def test_wake_turbulence_separation_matches_the_real_icao_pans_atm_table():
+    from awci.knowledge.performance.wake_turbulence import (
+        WAKE_TURBULENCE_SEPARATION_NM,
+        WakeTurbulenceCategory as WTC,
+    )
+
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.LIGHT, WTC.LIGHT)] == 3.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.MEDIUM, WTC.LIGHT)] == 5.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.HEAVY, WTC.LIGHT)] == 6.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.SUPER, WTC.MEDIUM)] == 8.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.SUPER, WTC.HEAVY)] == 6.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.SUPER, WTC.SUPER)] == 4.0
+    assert WAKE_TURBULENCE_SEPARATION_NM[(WTC.HEAVY, WTC.HEAVY)] == 4.0
+
+
+def test_wake_turbulence_separation_omits_the_real_undefined_super_over_light_case():
+    """The real source table has no entry for a LIGHT aircraft
+    following a SUPER one - locks in it stays omitted rather than
+    guessed."""
+    from awci.knowledge.performance.wake_turbulence import (
+        WAKE_TURBULENCE_SEPARATION_NM,
+        WakeTurbulenceCategory as WTC,
+    )
+
+    assert (WTC.SUPER, WTC.LIGHT) not in WAKE_TURBULENCE_SEPARATION_NM
+
+
+def test_wake_turbulence_takeoff_landing_separation_matches_real_icao_minima():
+    from awci.knowledge.performance.wake_turbulence import (
+        WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_MINUTES,
+        WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_NM,
+    )
+
+    assert WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_NM == 5.0
+    assert WAKE_TURBULENCE_TAKEOFF_LANDING_SEPARATION_MINUTES == 2.0
+
+
+def test_icing_intensity_thresholds_are_monotonically_increasing():
+    from awci.knowledge.meteorology.icing import ICING_INTENSITY_THRESHOLDS, IcingIntensity
+
+    light = ICING_INTENSITY_THRESHOLDS[IcingIntensity.LIGHT].minimum_accretion_rate_g_cm2_per_hour
+    moderate = ICING_INTENSITY_THRESHOLDS[IcingIntensity.MODERATE].minimum_accretion_rate_g_cm2_per_hour
+    severe = ICING_INTENSITY_THRESHOLDS[IcingIntensity.SEVERE].minimum_accretion_rate_g_cm2_per_hour
+    assert light < moderate < severe
+
+
+def test_icing_type_formation_covers_all_four_real_types():
+    from awci.knowledge.meteorology.icing import ICING_TYPE_FORMATION, IcingType
+
+    assert set(ICING_TYPE_FORMATION) == {IcingType.RIME, IcingType.CLEAR, IcingType.MIXED, IcingType.GLAZE}
+    for description in ICING_TYPE_FORMATION.values():
+        assert description  # every real type has a real, non-empty formation description
+
+
+def test_icing_lower_bound_discrepancy_against_the_existing_icao_faa_module_is_disclosed_not_merged():
+    """awci.hazards.icing_temperature_range (ICAO Annex 3/FAA-sourced)
+    already cites -40 degC as the real lower icing-precondition bound;
+    this module's own source cites -35 degC for icing potential
+    becoming negligible - a real, disclosed ~5 degC discrepancy
+    between two real sources, not silently resolved. Locks in both
+    values remain distinct, unmerged real numbers."""
+    from awci.hazards.icing_temperature_range import ICING_TEMPERATURE_LOWER_C
+    from awci.knowledge.meteorology.icing import ICING_POTENTIAL_NEGLIGIBLE_BELOW_C
+
+    assert ICING_TEMPERATURE_LOWER_C == -40.0
+    assert ICING_POTENTIAL_NEGLIGIBLE_BELOW_C == -35.0
+    assert ICING_TEMPERATURE_LOWER_C != ICING_POTENTIAL_NEGLIGIBLE_BELOW_C
