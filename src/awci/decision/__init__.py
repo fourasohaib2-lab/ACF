@@ -15,11 +15,17 @@ what composes real, already-computed AWCI outputs into an operational
 view, or reuses real, ICAO/FAA-cited operational recommendations
 already in this codebase - never a fabricated risk-matrix scheme,
 confidence model, alternatives search, or scenario projection. The
-reference architecture's own remaining modules (``risk_matrix.py``,
-``confidence.py``, ``alternatives.py``, ``scenario.py``) are
-deliberately NOT built here - each would need a real, cited
-methodology (e.g. the real ICAO Doc 9859 SMS 5x5 risk matrix) before
-being added, not an ACF-invented scheme.
+reference architecture's own remaining modules
+(``confidence.py``, ``alternatives.py``, ``scenario.py``) remain NOT
+built - each would need its own real, cited methodology before being
+added, not an ACF-invented scheme.
+
+``risk_matrix.py`` (added 2026-09-21, explicit user confirmation) - the
+real ICAO Doc 9859 Safety Management Manual 5x5 risk-assessment
+matrix (5 severity categories x 5 likelihood categories, the same
+standard structure reproduced across ICAO/FAA/EASA SMS guidance
+material) - see that module's own docstring for why it is not
+auto-derived from a continuous AWCI score.
 
 Deliberately headless: no PySide6/matplotlib/cartopy import anywhere in
 this package, unlike ``awci.dashboard``'s own GUI-side risk display
@@ -34,6 +40,13 @@ from __future__ import annotations
 from awci.decision.context import DecisionContext
 from awci.decision.engine import DecisionSupportView, assess
 from awci.decision.recommendation import get_flight_recommendations
+from awci.decision.risk_matrix import (
+    LikelihoodCategory,
+    RiskAssessment,
+    RiskTolerability,
+    SeverityCategory,
+    assess_risk,
+)
 from awci.decision.situation import (
     AWCI_SCORE_BANDS,
     HazardAssessment,
@@ -46,8 +59,13 @@ __all__ = [
     "DecisionContext",
     "DecisionSupportView",
     "HazardAssessment",
+    "LikelihoodCategory",
+    "RiskAssessment",
+    "RiskTolerability",
+    "SeverityCategory",
     "SituationSnapshot",
     "assess",
+    "assess_risk",
     "classify_awci_score",
     "get_flight_recommendations",
 ]
