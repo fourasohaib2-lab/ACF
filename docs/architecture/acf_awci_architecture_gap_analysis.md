@@ -111,7 +111,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/api/` | ❌ No dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are ACF-general, not AWCI-specific. |
 | `awci/alerts/` | 🟡 **`src/awci/alerts/` created 2026-09-21** (see §2v below) with `engine.py` (real, headless `AlertEngine` over `awci.decision.situation.SituationSnapshot`) and `notifications.py` (real in-process `AlertNotifier`, same pattern as `awci.plugins.hooks.HookRegistry`). `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) still exists separately. `rules.py`/`thresholds.py`/`severity.py`/`hazard_alerts.py`/`airport_alerts.py`/`route_alerts.py`/`complexity_alerts.py` deliberately not built — real content already exists (`awci.decision.situation`) or no real per-scope taxonomy exists to split on. |
 | `awci/plugins/` | ✅ **Built 2026-09-21** (see §2p below) — all 5 files named in `awci_reference_architecture.md` §20 (`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`), real, tested, working extensibility infrastructure (register/get, on-disk discovery, lifecycle hooks). Zero real AWCI module has been adapted to implement the new `AWCIPlugin` interface yet — honestly disclosed, not fabricated. |
-| `awci/workspace/` | ❌ No AWCI-specific project/session format; ACF's own `acf.workspace` is general-purpose. |
+| `awci/workspace/` | ✅ **Built 2026-09-21** — see §2y: `AWCIProject`/`AWCI_PROJECT_FOLDERS` (subclasses `acf.workspace.project.Project`, real `.awciproj` extension + the blueprint's own folder layout: data/forecasts/flights/airports/hazards/maps/reports/analysis/exports/logs), `AWCIProjectSerializer` (reuses `ProjectSerializer.save()` unchanged, overrides `load()`), `AWCIWorkspaceManager` (subclasses `WorkspaceManager`, own `~/.awci/recent_projects.json`). `session.py`/`state.py` deliberately not built — no real, coherent AWCI session/state concept exists beyond what an open project + `awci.decision`/`awci.alerts` already provide. |
 | `awci/provenance/` | 🟡 **Built 2026-09-21** (see §2o below) — all 7 files named in `awci_reference_architecture.md` §22 (`lineage.py`/`source.py`/`calculation.py`/`version.py`/`audit.py`/`reproducibility.py`), a real assembler over `AWCIResult`/`Provenance`/`scientific_status`/`WeightsManager` — never a new computation, never a persisted audit log/database (a disclosed scope limit, not a fabricated one). Provenance discipline was already a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length); this closes the gap of it never having a dedicated, queryable module. |
 
 ## 2a. `model4d`/`models` migration (started 2026-09-21)
@@ -1612,6 +1612,79 @@ tests run separately under `xvfb-run`) shows 49 passed, 0 failed. Full
 non-GUI collection: 4602 tests (up from 4595, +7 for the new migration
 lock-in file), same pre-existing 45 collection errors (§2w's already-
 tracked `task_468ac835` circular import) confirmed unrelated.
+
+## 2y. The AWCI-specific workspace/project format (2026-09-21)
+
+Eleventh item of "on les attaque toutes un par un": `awci/workspace/`
+- the specific gap named in
+`docs/architecture/acf_awci_architecture_gap_analysis.md` ("No
+AWCI-specific project/session format; ACF's own `acf.workspace` is
+general-purpose").
+
+**Investigation**: `acf.workspace` is a real, working, general-purpose
+project system - `Project` (a dataclass with a real, previously-
+corrected JSON `to_dict()`/`from_dict()` round-trip), `WorkspaceManager`
+(create/open/save/close, plus `RecentProjectsManager` tracking), and
+`ProjectSerializer` (`save()`/`load()`, with a real previously-
+corrected rename-cleanup fix removing a stale old `.acfproj` file on a
+genuine project rename). `docs/architecture/awci_reference_architecture.md`
+section 21 says an AWCI project keeps a different real folder set:
+`data/ forecasts/ flights/ airports/ hazards/ maps/ reports/ analysis/
+exports/ logs/` - distinct from ACF's own `data/maps/models/reports/
+scripts/exports/logs/cache/plugins`.
+
+**Placement decision (disclosed)**: subclass `Project`/
+`WorkspaceManager` rather than build a second, independently invented
+project system. `AWCIProject` overrides only `project_file` (real
+`.awciproj` extension, so an AWCI project and an ACF project never
+collide in the same directory) and `from_dict()` (to construct the
+subclass); every other field/method (`to_dict()`, `touch()`,
+`summary()`) is inherited unchanged. `AWCIProjectSerializer.save()`
+reuses the base `ProjectSerializer.save()` completely unchanged - it
+was already written polymorphically (`project.to_dict()`/
+`project.project_file`/`project.touch()`, never hardcoding the
+`Project` class itself), so it writes an `AWCIProject` correctly with
+zero duplicated logic, including the base's own rename-cleanup fix.
+Only `load()` needed a real override, since the base hardcodes
+`Project.from_dict(data)` rather than the caller's subclass.
+`AWCIWorkspaceManager` reuses `save_project()`/`close_project()`/
+`recent_projects()`/`has_project()`/`project()`/`project_name()`/
+`project_path()` unchanged (locked in by identity in the new test
+file) and overrides only `create_project()`/`open_project()` for the
+AWCI folder layout and file format; its own recent-projects file
+defaults to `~/.awci/recent_projects.json` rather than ACF's
+`~/.acf/recent_projects.json`, since listing an `.awciproj` file in
+ACF's own recent-projects file would let a caller try to open it with
+the wrong serializer.
+
+**Deliberately not built this round**: `session.py`/`state.py` (the
+blueprint's remaining named files) - no real, coherent "AWCI session"
+or "AWCI state" concept exists anywhere in this codebase distinct from
+what already exists: an open `AWCIProject` (this package),
+`SituationSnapshot`/`DecisionContext` (`awci.decision`), and
+`AlertEngine` (`awci.alerts`) already cover the real state a caller
+would track. Wrapping them in a new session/state class with no real
+added behavior would be padding, not a real gap - a future real GUI
+session-state concept would be a real, disclosed addition when the GUI
+actually needs one.
+
+**Verified, not assumed**: manual end-to-end run - a real `AWCIProject`
+created on disk with all 10 real `AWCI_PROJECT_FOLDERS` subdirectories,
+a real `.awciproj` JSON file, closed and reopened with `datasets`/
+`metadata`/`settings`/`created` all round-tripping correctly; a real
+rename (`Orig` → `Renamed`) correctly removed the stale
+`Orig.awciproj` and left only `Renamed.awciproj`, confirming the reused
+base serializer's rename-cleanup fix applies polymorphically.
+`ruff check`/`mypy` clean on the new package and its test file. 9 new
+tests (`tests/test_awci_workspace.py`), including 2 discipline tests
+asserting `AWCIWorkspaceManager`'s 7 reused lifecycle methods and
+`AWCIProjectSerializer.save` are the literal same real function objects
+as the base class's, not copies. Full non-GUI collection: 4611 tests
+(up from 4602, +9), same pre-existing 45 collection errors
+(`task_468ac835`, already tracked in §2w/§2x) confirmed unrelated. A
+targeted sweep (`-k "workspace" --continue-on-collection-errors`)
+shows 12 passed (9 new + 3 pre-existing ACF workspace tests), 0
+failed.
 
 ## 3. What this means for a real migration
 
