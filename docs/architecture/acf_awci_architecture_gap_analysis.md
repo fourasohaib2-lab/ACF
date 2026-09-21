@@ -1279,6 +1279,141 @@ shim-vs-no-shim treatment, the 2 cross-package fixes into already-migrated
 `awci.*` code, and that the 2 still-flat `acf.science.*` siblings still
 resolve correctly.
 
+### 4g. Phase 7: `precipitation/`, `diagnostics/`, `climate/`, and extending `dynamics/`/`convection/`/`thermodynamics/` (2026-09-21)
+
+The user asked to continue "pour tout" (for everything remaining). This
+phase covers every still-flat `science/` module that maps cleanly to one
+of the blueprint's 19 subdomains; what does *not* map cleanly is
+inventoried below rather than force-fit, per AGENTS.md's "never invent
+placeholders" rule.
+
+**Placement, 8 files across 6 packages**:
+- **`science/precipitation/`** (new): `precipitation.py` (`VIL`,
+  `EchoTop`, `PrecipitationIntensity`, `HydrometeorType`,
+  `ECHO_TOP_THRESHOLD_DBZ`) - direct blueprint match, self-named
+  collision (no flat shim).
+- **`science/diagnostics/`** (new): `diagnostics.py`
+  (`DiagnosticAlert`, `SituationDiagnosis`) - direct blueprint match,
+  self-named collision (no flat shim).
+- **`science/climate/`** (new): `climatology.py`
+  (`ClimatologicalRecord`, `Climatology`, `HeatColdWave`) - real content
+  is climate records/heatwave diagnostics, a clean fit for the
+  blueprint's `climate/` (not `climatology/`) - no name collision, real
+  flat shim kept.
+- **`science/dynamics/`** (extending §4c): `synoptic.py` (`Coriolis`,
+  `GeostrophicWind`, `ThermalWind`, `ErtelPotentialVorticity`,
+  `EARTH_RADIUS_M`) - already depended on `potential_vorticity.py`,
+  moved there in §4c, confirming the scoping note left at the end of
+  that section. `cyclones.py` (`GradientWind`, `BruntVaisalaFrequency`,
+  `RossbyRadius`, `Bombogenesis`, `SaffirSimpson`,
+  `BOMB_REFERENCE_LATITUDE_DEG`) - a real but mixed-role module (gradient
+  wind balance and Rossby radius are dynamics; Brunt-Väisälä frequency is
+  arguably a stability concept too; Saffir-Simpson is a classification
+  scale, not a formula) - kept together as the one coherent file it
+  already was, a disclosed placement decision, rather than fragmented
+  across `dynamics/`/`stability/`/`diagnostics/` for marginal naming
+  purity (same reasoning as the AWCI `knowledge/` whole-package decision).
+  `wind.py` (`Wind`) - basic wind-vector speed/direction kinematics.
+- **`science/convection/`** (extending §4b): `severe_weather.py`
+  (`SevereWeather`) - a composite severe-convection index combining
+  CAPE/CIN, vertical wind shear and storm-relative helicity, verified
+  against NOAA SPC's own mesoanalysis definitions - the same real role
+  as `storm_relative_helicity.py`/`storm_motion.py`/`bulk_wind_shear.py`
+  already placed there in §4b.
+- **`science/thermodynamics/`** (extending §4a): `moisture.py`
+  (`Moisture`) - a real composite aggregator reusing 7 already-migrated
+  same-package siblings directly (dewpoint, mixing ratio, relative/
+  specific humidity, saturation mixing ratio and vapor pressure),
+  mirroring `stability.py`'s own aggregator role from §4b.
+
+**Investigated and deliberately left flat - no clean blueprint domain
+exists for these**:
+- `ensemble_uncertainty.py` (`EnsembleMember`, `EnsembleRun`,
+  `UncertaintyEstimate`, `ConsensusResult`) - model-ensemble/consensus
+  statistics, not atmospheric physics; depends on `climatology.py`
+  (moved this phase) and continues to resolve correctly through its real
+  flat shim, needing no code change.
+- `radiosonde.py` (`SoundingLevel`, `SoundingProfile`) - a shared data
+  structure used across many domains (already consumed by
+  `parcel_ascent.py`, `stability.py`, `moisture.py`), not itself a
+  domain-specific formula module.
+- `surface_fire.py` (`SaturationVaporPressureFAO56`,
+  `PenmanMonteithFAO56`) - FAO-56 reference evapotranspiration, real
+  agriculture/fire-weather science outside the blueprint's 19 named
+  atmospheric subdomains.
+- `visibility.py` (`Koschmieder`, `ICAOCategory`, `FogRisk`) -
+  atmospheric-optics visibility physics; no blueprint subdomain names
+  this concern directly (closest candidates - `boundary_layer/`,
+  `diagnostics/` - would both be a stretch, not a clean fit).
+- `engine.py` (`ScienceEngine`), `query_engine.py`
+  (`ScientificQueryEngine`), `registry.py` (`ScientificRegistry`) - real
+  cross-cutting infrastructure that orchestrates/queries all the domain
+  packages from above; correctly stays flat at the `acf.science` top
+  level, exactly where a facade/registry belongs, not domain-specific.
+
+**Confirmed still genuinely absent, not fabricated**: `atmospheric_composition/`,
+`ocean/`, `hydrology/`, `cryosphere/`, `land_surface/`, `carbon_cycle/` have
+no real content anywhere inside `src/acf/science/` - the closest real code
+lives in entirely separate top-level packages (`acf.ocean`, `acf.hydrology`,
+`acf.climate` for carbon-cycle-adjacent content, `acf.earth_physics` for
+land-surface-adjacent content), already noted in §1's own gap table. Moving
+those separate top-level packages *into* `science/` as its own subdomains
+would be a real, disclosed architecture decision on its own (not attempted
+this phase) - distinct from every reorganization phase so far, which has
+only ever relocated code that was already inside `science/`.
+
+**Execution**: all 8 files physically moved via `git mv`. Internal cross-
+references repointed: `synoptic.py`'s `potential_vorticity` import,
+`moisture.py`'s 7 thermodynamics imports. Three `__init__.py` files
+written for the new packages; three existing `__init__.py` files
+(`dynamics/`, `convection/`, `thermodynamics/`) extended with the new
+real names and a docstring note on what Phase 7 added. Real flat shims
+written for `climatology.py`/`synoptic.py`/`cyclones.py`/`wind.py`/
+`severe_weather.py`/`moisture.py`; no shims for the two self-collision
+cases (`precipitation.py`/`diagnostics.py`). The mandatory sweep found 6
+real import statements across 5 already-migrated `awci.*` modules -
+repointed to their new direct locations:
+`awci/hazards/hydrometeor_phase.py` (`HydrometeorType`),
+`awci/complexity/workstation_fields.py` (`BruntVaisalaFrequency`,
+`SevereWeather`), `awci/data/model_import_cross_section.py`,
+`awci/data/model_import.py` (both deferred, inside-function imports of
+`Moisture` - a reminder that the deferred-import sweep from the AWCI
+migration still applies here), `awci/data/archive_field.py` (`Moisture`).
+Comment-only references in `scientific_status.py`, `diagnostic_registry.py`,
+`orographic_froude.py`, and `path_sampling.py`'s own comment-only
+`wind_turbulence` reference from §4f, left untouched.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (49 source files
+across the 6 touched packages); identity confirmed programmatically for
+all 8 modules (2 self-collision packages checked against their own
+`__all__`, 6 real shims checked against their real module, all 3 extended
+packages' `__all__` checked for completeness); full test collection under
+xvfb - 5050 tests, 0 errors; a broad targeted sweep across every
+Phase-7-adjacent keyword (precipitation/diagnostics/climatology/synoptic/
+cyclones/wind/severe_weather/moisture/hydrometeor_phase/
+orographic_froude/terrain/archive_field/model_import, non-GUI) passed
+519/519 (16 skipped). A new
+`tests/test_science_precipitation_diagnostics_climate_dynamics_convection_thermodynamics_phase7.py`
+(6 tests) locks in the re-export identities for all 8 modules, the
+self-collision-vs-real-shim contrast, the 3 extended packages' `__all__`
+completeness, the 2 internal cross-references, and the 6 cross-package
+fixes into already-migrated `awci.*` code.
+
+With this phase, every real, blueprint-mappable `science/` module has
+been reorganized into its per-domain subpackage. What remains for item 2
+is: reconciling the 6 already-existing, non-blueprint-named subpackages
+(`clouds/`, `encyclopedia/`, `knowledge_graph/`, `laws/`, `observations/`,
+`physics_ai/`) with the blueprint's own subdomain names (a real
+architecture decision, not a mechanical move - `clouds/` alone holds real
+`microphysics.py`/`thermodynamics.py`/`radiation.py`/`dynamics.py`
+content that already, coincidentally, shares names with the new
+`science/{microphysics,thermodynamics,radiation,dynamics}` concepts,
+raising real merge-vs-keep-separate questions for each), the entire
+`parameters/` reorganization (including the `acf.science.parameters` vs
+`acf.parameters` duplicate-naming question), and the decision on whether
+to bring `acf.ocean`/`acf.hydrology`/etc. into `science/` as the
+blueprint's own subdomains or leave them as separate top-level packages.
+
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven
 method: real investigation before any move, `git mv` + backward-

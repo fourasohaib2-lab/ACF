@@ -76,7 +76,7 @@ from __future__ import annotations
 from typing import Any
 
 from acf.physics_guard import PhysicsGuard
-from acf.science.precipitation import HydrometeorType
+from acf.science.precipitation.precipitation import HydrometeorType
 from acf.science.thermodynamics.thermodynamics import Thermodynamics
 
 from awci.hazards.icing_temperature_range import is_within_icing_temperature_range

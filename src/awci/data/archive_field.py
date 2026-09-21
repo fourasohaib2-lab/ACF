@@ -90,7 +90,7 @@ from typing import Any
 import numpy as np
 
 from acf.data.readers.epygram_reader import EPyGrAMReader
-from acf.science.moisture import Moisture
+from acf.science.thermodynamics.moisture import Moisture
 
 #: Real FA field-name pressure codes (Météo-France convention:
 #: "P<5-digit-Pa-value>...") -> the real hPa each one is - see module

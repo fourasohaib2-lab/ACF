@@ -19,6 +19,12 @@ kinematic diagnostics (SRH, storm motion, bulk shear) computed
 alongside CAPE/CIN in operational forecasting - placed here by real
 role, a disclosed decision following the same precedent established
 throughout the AWCI migration.
+
+Phase 7 added ``severe_weather.py`` (``SevereWeather``, composite
+severe-convection indices combining CAPE/CIN, vertical wind shear and
+storm-relative helicity - the same real role as the three modules
+above, verified against NOAA SPC's own mesoanalysis parameter
+definitions).
 """
 
 from acf.science.convection.bulk_wind_shear import BulkWindShear
@@ -27,6 +33,7 @@ from acf.science.convection.cin import CIN
 from acf.science.convection.lcl import LCL
 from acf.science.convection.lfc import LFC
 from acf.science.convection.parcel_ascent import ParcelAscentEngine
+from acf.science.convection.severe_weather import SevereWeather
 from acf.science.convection.storm_motion import StormMotion
 from acf.science.convection.storm_relative_helicity import StormRelativeHelicity
 
@@ -37,6 +44,7 @@ __all__ = [
     "LCL",
     "LFC",
     "ParcelAscentEngine",
+    "SevereWeather",
     "StormMotion",
     "StormRelativeHelicity",
 ]

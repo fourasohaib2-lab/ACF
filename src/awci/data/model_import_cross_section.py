@@ -213,7 +213,7 @@ def _volume_inputs_at(dataset: Dataset) -> dict[str, Any]:
         if rh_var is not None:
             rh_vol = _converted_volume(dataset, rh_var, "%", skipped, "relative_humidity")
             if rh_vol is not None:
-                from acf.science.moisture import Moisture
+                from acf.science.thermodynamics.moisture import Moisture
 
                 temperature = volumes["temperature"]
                 pressure = volumes["pressure"]

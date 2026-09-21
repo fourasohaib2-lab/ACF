@@ -450,7 +450,7 @@ def extract_awci_point_inputs(
                     rh_fraction = rh_raw
                 else:
                     rh_fraction = rh_raw / 100.0
-                from acf.science.moisture import Moisture
+                from acf.science.thermodynamics.moisture import Moisture
 
                 try:
                     q = Moisture.specific_humidity_from_relative_humidity(

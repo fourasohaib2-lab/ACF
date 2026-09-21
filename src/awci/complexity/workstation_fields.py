@@ -127,7 +127,7 @@ import numpy as np
 
 from acf.earth_physics.atmospheric_dynamics.vorticity import VorticityCalculator
 from acf.science.constants import G, RD
-from acf.science.cyclones import BruntVaisalaFrequency
+from acf.science.dynamics.cyclones import BruntVaisalaFrequency
 
 from awci.hazards.convective_energy import compute_real_cape_cin_at_point
 from awci.hazards.orographic_froude import compute_real_mountain_wave_froude_number_at_point
@@ -137,7 +137,7 @@ from awci.hazards.wind_shear import compute_real_wind_shear_at_point
 from acf.science.dynamics.divergence import Divergence
 from acf.science.convection.lcl import LCL
 from acf.science.thermodynamics.potential_temperature import PotentialTemperature
-from acf.science.severe_weather import SevereWeather
+from acf.science.convection.severe_weather import SevereWeather
 from acf.science.convection.storm_motion import StormMotion
 from acf.science.convection.storm_relative_helicity import StormRelativeHelicity
 
