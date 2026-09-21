@@ -101,7 +101,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/comparison/` + `awci/consensus/` | 🟡 **`awci/comparison/` created 2026-09-21** (see §2i below) with `multi_model_fusion.py` (real full-field multi-model fusion) and `regridding.py` (real generic grid regridding, its one real dependent). This is distinct from `ModelConsensusEngine` (see the "corrected 2026-09-21" note directly above from an earlier pass of this same document): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint for *that* module is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`/`awci.comparison`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
 | `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. No dedicated runway/terminal/crosswind/runway_condition/disruption modules as named — some of this (crosswind, ceiling, visibility) exists inside `awci.hazards`'s own hazard modules instead. |
-| `awci/decision/` | ❌ No dedicated decision-support engine (risk_matrix/scenario/recommendation) exists as a standalone module; the AWCI dashboard's "Current Situation"/risk cards present some of this information in the UI layer directly. |
+| `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). Deliberately real-core-only, user-confirmed scope: composes already-computed AWCI outputs and reuses the 3 already-cited real `flight_recommendations` entries; `risk_matrix.py`/`confidence.py`/`alternatives.py`/`scenario.py` are NOT built - each needs its own real, cited methodology first (e.g. ICAO Doc 9859 SMS for `risk_matrix.py`), not an invented one. |
 | `awci/ai/` | 🟡 Overlaps with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai`, not AWCI-specific. |
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
@@ -924,6 +924,80 @@ and `_export_png`/`_export_svg`/`_export_csv`/`_export_json`
 `awci_grid()`, or any other AWCI-specific data source. `update_data()`
 itself is the one real blocker to a *complete* extraction and would need
 to be split first were this revisited.
+
+## 2m. The AWCI decision-support engine, Phase 1 (2026-09-21)
+
+The user asked to build "le moteur d'aide à la décision AWCI" - the
+`awci/decision/` gap named in the table above and in §3 point 3.
+Given the real risk of fabricating decision logic or operational
+recommendations in a safety-critical domain, the user was offered a
+scoped choice (full 9-module blueprint suite, real-core-only, or
+real-core plus a real ICAO SMS risk matrix) and confirmed
+**"Noyau réel uniquement"** (real core only).
+
+**Built**, all under a new, deliberately headless `src/awci/decision/`
+package (no PySide6/matplotlib/cartopy import anywhere in it, verified
+by test - a real requirement so this package is usable from a future
+CLI/API layer too, per the reference architecture's own placement of
+`decision/` as a peer to `dashboard/`, not a GUI submodule):
+
+- `context.py` - `DecisionContext` (lat/lon/pressure_hpa/generated_at),
+  with a real ICAO flight level derived via the already-implemented
+  `calculate_isa_pressure_altitude()`.
+- `situation.py` - `AWCI_SCORE_BANDS`/`classify_awci_score()` mirror
+  `awci.dashboard.awci_colors.LEVELS`/`level_for()` exactly (locked by
+  a parity test); `SITUATION_ROWS` mirrors `awci_risk_summary._ROWS`'s
+  key/label/module fields (also parity-tested);
+  `build_situation_snapshot()` composes a real situation from the same
+  real inputs `awci_alerts_panel.compute_elevated_risks()` already
+  takes - one deliberate, disclosed divergence: a row is omitted,
+  never fabricated as a 0.0 "Very Low", when its real score is
+  genuinely unavailable.
+- `recommendation.py` - `get_flight_recommendations()`, a thin, real
+  lookup into the 3 `AVIATION_HAZARDS_REGISTRY` entries that already
+  carry real, ICAO/FAA-cited `flight_recommendations` text
+  (`cat_turbulence`, `airframe_icing`, `microburst_windshear`).
+  Returns `None` for any other hazard key - never a fabricated
+  recommendation, and deliberately never infers one from a coarse AWCI
+  module score (conflating a broad composite index with one specific
+  named hazard would be a real, dangerous misattribution).
+- `engine.py` - `assess()`, a thin orchestrator composing the two into
+  a `DecisionSupportView`.
+
+**A real, pre-existing bug found along the way, not fixed here**:
+importing `awci.dashboard.awci_map_panel` as the very first
+AWCI-dashboard-related module in a fresh process raises a real
+circular-import `ImportError` (`acf.gui.map.map_layers`'s own import
+of the OLD `acf.gui.dashboard.awci_colors` shim cascades into
+`acf.gui.dashboard.__init__` eagerly importing `awci_dashboard`, which
+re-enters the still-initializing `awci_map_panel` module). Every
+existing test avoids it only by accident of import order. Worked
+around in this phase's own new test (a literal formula cross-check
+instead of importing that module) and queued as a separate follow-up
+task rather than fixed inline, since it is unrelated to the decision
+engine itself and touches shared GUI-import plumbing outside this
+task's own scope.
+
+**Verified**: `ruff check`/`mypy` clean on the new package; 27 new
+tests in `tests/test_awci_decision_support.py`, including 4
+parity-lock tests against the real GUI classification scales this
+headless package mirrors; full non-GUI suite collection 4780 tests
+(up from 4753, +27);
+a targeted sweep (`-k "decision or risk_summary or alerts_panel or
+awci_colors or map_panel"`, excluding `tests/gui`) shows 141 passed, 0
+failed.
+
+**Deliberately not built this phase** (real, cited methodology needed
+first, not an ACF-invented one): `risk_matrix.py` (would need the real
+ICAO Doc 9859 SMS 5x5 likelihood x severity matrix), `confidence.py`
+(would need a real, defensible uncertainty/data-quality model - e.g.
+wired to the real `ModelConsensusEngine` spread, not invented),
+`alternatives.py` (would need real multi-point/multi-level AWCI
+sampling to search over - computable from already-real
+`vertical_field.py`/`spatial_field.py` outputs, but not attempted this
+phase), `scenario.py` (would need real temporal-evolution wiring to
+`temporal_field.py`). Each remains a real, honestly-reported gap, not
+a fabricated stub.
 
 ## 3. What this means for a real migration
 
