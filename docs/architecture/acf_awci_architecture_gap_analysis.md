@@ -1126,6 +1126,46 @@ re-export identities, the `Dynamics`-via-package special case, the
 cross-package dependency into `science/thermodynamics/`, and the 1
 cross-package fix into already-migrated `awci.*` code.
 
+### 4d. Phase 4: `science/constants/` (2026-09-21)
+
+**Placement**: the single flat `constants.py` (23 real physical/numerical
+constants: gas constants, latent heats, Earth/reference-atmosphere
+values, a disclosed floating-point tolerance - no classes, a true leaf)
+maps directly to the blueprint's own `science/constants/` layer.
+
+**A notably simpler phase than §4a-§4c**: `constants.py` has zero
+internal `acf.science.*` imports (nothing to repoint) and, being purely
+data (constants, not classes), its real callers already spell the import
+exactly as `from acf.science.constants import G` - the *package's* own
+future canonical path, not a deeper submodule path. Since `constants.py`
+shares its own name with its new package (the same self-naming collision
+already found and fixed in §4a/§4b/§4c), there is no flat shim - the
+package's own `__init__.py` re-exports all 23 constants directly. Because
+the import path `acf.science.constants` itself never changes (only *what*
+resolves it - a package instead of a flat module - changes, transparently
+to every caller), **zero external files needed any edit** for this
+phase - the only phase so far where that is true. Confirmed by grepping
+every real caller (21 files: 16 across `science/` including 6
+already-migrated `thermodynamics/`/`convection/` modules, 1 already-
+migrated `awci/complexity/workstation_fields.py`, and 4 test files) and
+verifying none needs a code change.
+
+**Execution**: `constants.py` physically moved via `git mv` into
+`src/acf/science/constants/constants.py`. `__init__.py` written
+re-exporting all 23 real constants with a real `__all__`.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (2 source files);
+identity confirmed programmatically for all 23 constants (both by name
+and by `__all__` completeness against the real module's own public
+names); full test collection under xvfb - 5033 tests, 0 errors; a broad
+targeted sweep across every constants-adjacent domain (`-k "constant or
+visibility or cin or lcl or cape or hypsometric or ... or terrain"`,
+non-GUI) passed 443/443 (6 skipped). A new
+`tests/test_science_constants_reorganization.py` (5 tests) locks in the
+package-level re-export, the `__all__` completeness, the absence of a
+dead flat shim, and that real callers across `science/` and `awci/`
+still resolve to the exact same objects.
+
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven
 method: real investigation before any move, `git mv` + backward-
