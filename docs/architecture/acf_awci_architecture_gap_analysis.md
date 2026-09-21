@@ -18,7 +18,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 | Blueprint | Current reality |
 |---|---|
 | `core/{application,configuration,context,exceptions,logging,lifecycle,registry,events,plugins,dependencies,environment,version}.py` | 🟡 `src/acf/core/` exists with `application.py`, `bootstrap.py`, `config.py`, `constants.py`, `environment.py`, `exceptions.py`, `logger.py`, `metadata.py`, `parameter.py`, `parameter_registry.py`, `plugin_manager.py`, `service_manager.py`, `version.py`, `default_parameters.py`, plus a `contracts/` subpackage. Real overlap on config/exceptions/logging/environment/version/plugins. **`lifecycle.py`/`registry.py`/`events.py`/`context.py` added 2026-09-21** — see §2ab: `Registry`/`Lifecycle` are real aliases for `ServiceManager`/`Bootstrap`; `EventBus`/`ApplicationContext` are genuinely new, generic content. `application.py` exists but is confirmed dead code (`docs/STATUS.md`'s own NOTE: nothing constructs it; `acf-gui` boots `ACFWorkstationWindow` directly). |
-| `utils/{filesystem,paths,datetime,units,validation,serialization,hashing,caching,profiling,concurrency,numerical,decorators}.py` | 🟡 `src/acf/utils/` exists with `time.py`, `paths.py`, `system.py`, `validators.py`, `files.py`. Real overlap on paths/validation/time; no dedicated `units.py` (units live in `standards/`), `serialization.py`, `hashing.py`, `caching.py`, `profiling.py`, `concurrency.py`, `numerical.py`, `decorators.py` as standalone modules. |
+| `utils/{filesystem,paths,datetime,units,validation,serialization,hashing,caching,profiling,concurrency,numerical,decorators}.py` | 🟡 `src/acf/utils/` exists with `time.py`, `paths.py`, `system.py`, `validators.py`, `files.py`. Real overlap on paths/validation/time. **`serialization.py`/`hashing.py`/`decorators.py` added 2026-09-21** — see §2ac. `units.py` deliberately not duplicated (units live in `acf.normalization`); `caching.py`/`profiling.py`/`concurrency.py`/`numerical.py` deliberately not built — no real, disclosed caller need exists for any of them yet. |
 
 ### L1 — Scientific formulations & standards
 
@@ -1874,6 +1874,41 @@ identity checks for the 2 real aliases and a real isolation check
 that two `ApplicationContext()` instances never share state. Full
 non-GUI collection: 4651 tests (up from 4644, +7), same pre-existing
 45 collection errors (`task_468ac835`) confirmed unrelated.
+
+## 2ac. Closing acf.utils's own remaining gap (2026-09-21)
+
+Fifteenth item of "on les attaque toutes un par un" - second of the
+5-part ACF-general batch: the `utils/{...}` row's own named-but-
+missing standalone modules.
+
+**Built**: `serialization.py` (`to_json_safe()` - promoted from
+`awci.api.routes._serialization`, built earlier this session for the
+AWCI HTTP API, once the same real, generic need was recognized beyond
+that one caller; that module now re-exports this one, locked in by an
+identity test rather than keeping a duplicate), `hashing.py`
+(`sha256_of_bytes`/`sha256_of_text`/`sha256_of_file` - real, stdlib-
+only), `decorators.py` (`retry` - real, stdlib-only retry decorator,
+not yet wired into any existing connector).
+
+**Deliberately not built**: `units.py` (real unit handling already
+lives in `acf.normalization` - duplicating it here would contradict
+this project's own reuse discipline); `caching.py`/`profiling.py`/
+`concurrency.py`/`numerical.py` (no real, disclosed caller need
+exists for any of them yet - building them speculatively would be
+premature abstraction, which `AGENTS.md` explicitly warns against,
+not a real gap).
+
+**Verified, not assumed**: manual end-to-end run (dataclass/datetime/
+nested-structure conversion; real SHA-256 digests matched directly
+against stdlib `hashlib` output, including a chunked-read path over a
+2 MiB file; real retry success-after-failure and exhausted-attempts
+behavior). `ruff check`/`mypy` clean. 13 new tests
+(`tests/test_acf_utils_serialization_hashing_decorators.py`); the
+pre-existing 14 `tests/test_awci_api.py` tests re-run clean after the
+`_serialization.py` re-export change (no behavior change, only where
+the implementation lives). Full non-GUI collection: 4664 tests (up
+from 4651, +13), same pre-existing 45 collection errors
+(`task_468ac835`) confirmed unrelated.
 
 ## 3. What this means for a real migration
 
