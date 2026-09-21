@@ -1484,52 +1484,76 @@ relocating an already-coherent subsystem for naming purity alone. Not
 executed as a move; flagged here as the considered, disclosed
 conclusion rather than left silently undone.
 
-**3. The `parameters/` reorganization - investigated, a real design
-decision, put to the user rather than executed.** This is qualitatively
-different from every phase in §4a-§4g: those all moved *the same code* to
-a new location with zero behavior change, verified by identity checks.
-`parameters/` is not that - there are **four genuinely separate, real,
-independently-used subsystems** that all touch the same vocabulary
-("parameters"/"catalog") and were investigated to see whether any is
-already a thin layer over another (it is not):
-  - `acf.parameters` (top-level, 11 modules: `aliases.py`, `catalog.py`,
-    `categories.py`, `converter.py`, `hub.py`, `index.py`, `parameter.py`,
-    `registry.py`, `search.py`, `units.py`, `validator.py`) - a real
-    parameter *metadata* catalog/registry/search/unit-conversion system
-    (name, units, aliases, categories for variables like T/P/U/V/RH) -
-    functionally, this is what the blueprint's own `catalog/` layer
-    describes ("lets ACF know what it is manipulating"), not what the
-    blueprint's own `parameters/` layer describes.
-  - `acf.science.parameters` (3 modules: `definitions.py`, `engine.py`,
-    `physical_parameter.py`) - a real, distinct `PhysicalParameter` data
-    model, already flagged as a duplicate-naming instance in §4a.
-  - `acf.catalog` (top-level, 14 modules, including its own
-    `ocean_parameters.py`/`climate_parameters.py`/
-    `satellite_parameters.py`/`surface_parameters.py`/
-    `atmospheric_parameters.py`/`parameter_mapper.py`) - a real dataset/
-    variable catalog with its own per-domain parameter files, already
-    documented as a known duplicate against `acf.catalogs`.
-  - `acf.catalogs` (top-level, plural, 3 modules: `catalog_manager.py`,
-    `base_catalog.py`, `hub.py`).
+**3. The `parameters/`/`catalog/` question - re-investigated 2026-09-21,
+§4h's own original assessment corrected: already resolved, no action
+needed.** §4h's first pass concluded this needed a real design decision
+("four genuinely separate, real, independently-used subsystems... zero
+cross-imports... a real product/architecture decision... put to the
+user"). That conclusion was itself based on insufficient investigation -
+it never read the packages' own `__init__.py` docstrings or the
+already-existing compatibility shims, which turn out to already answer
+the question. Corrected here rather than left standing:
 
-  Confirmed via grep: **zero cross-imports between any of these four** -
-  none is a thin wrapper or a WIP replacement for another; each has real,
-  independent fan-in (8-16 real dependents apiece, 47 callers total
-  across the four). The blueprint's own `parameters/` sketch describes a
-  fifth thing entirely - real NWP *parameterization schemes* organized by
-  physical domain ("the historical inventory reached 152 parametrization
-  modules") - which does not exist anywhere in this codebase and would be
-  genuine new construction, not a reorganization, explicitly out of scope
-  per AGENTS.md's "never invent placeholders" rule.
+  - `acf.core.parameter`/`acf.core.parameter_registry` - **already real,
+    explicit compatibility shims** ("CORE - Parameter (Compatibility
+    Layer forwarding to acf.parameters.parameter)"), each a one-line
+    `from acf.parameters.<x> import <X>`. Not an independent duplicate at
+    all; `acf.parameters` is already canonical here. Nothing to do.
+  - `acf.science.parameters` (`PhysicalParameter`) - a genuinely distinct,
+    much richer scientific-documentation data model (governing equation,
+    LaTeX form, CF/GRIB2/BUFR/NetCDF cross-references, references,
+    limitations, applicability) than `acf.parameters.Parameter`'s simple
+    code/name/unit record - a real, intentional homonym, not a duplicate,
+    the same class of finding as `PluginManager`/`DataManager`/
+    `Divergence`/`Dynamics` already locked in as "different on purpose" in
+    `tests/test_collisions_consolidation.py`. Should stay separate; now
+    locked in by a new test added to that same file today (see the
+    "Verified" note at the end of this section), closing the gap this
+    document itself left open in §4a.
+  - `acf.catalog` (singular) vs `acf.catalogs` (plural) - **already
+    investigated and explicitly documented as intentionally separate**,
+    dated 2026-09-06 (before this whole migration session began), in both
+    packages' own `__init__.py` docstrings: `acf.catalog` is "the real,
+    load-bearing parameter/dataset catalog... verified by grep: this is
+    the version actually imported by real application code"; `acf.catalogs`
+    is "a small CF/ECMWF-standards-specific extension, NOT a competing
+    duplicate" - its own `catalog_manager.py` is already an explicit
+    compatibility shim to `acf.catalog.manager`, while its real, distinct
+    content (`base_catalog.py`, `cf/catalog.py`, `ecmwf/catalog.py`,
+    `hub.py`) is a real, separate concern - a thin `BaseCatalog`-ABC loader
+    exposing ACF's own already-real `acf.standards.cf_standard_names`/
+    `acf.standards.ecmwf.manager` content through the catalog interface,
+    with its own real, distinct caller (`acf.search.scientific_search`).
+    Nothing to consolidate; already correctly organized.
 
-  **Not executed.** Deciding which of the four becomes canonical, how the
-  others defer to it (thin re-export, deprecation, or genuine merge), and
-  whether the blueprint's own `parameters/` (real parameterization
-  schemes) is even a goal worth pursuing given it doesn't exist today, is
-  a real product/architecture decision with genuine behavior-change risk
-  across 47 real callers - not a mechanical, zero-risk move like every
-  other phase in this document. Put to the user rather than decided
-  unilaterally.
+  The blueprint's own `parameters/` sketch describes a fifth thing
+  entirely - real NWP *parameterization schemes* organized by physical
+  domain ("the historical inventory reached 152 parametrization modules")
+  - which genuinely does not exist anywhere in this codebase and would be
+  new construction, not a reorganization, explicitly out of scope per
+  AGENTS.md's "never invent placeholders" rule. This remains the one real,
+  honest gap versus the blueprint - not a design decision, a content gap.
+
+  **Lesson for future investigation, stated plainly since this document
+  itself got it wrong on the first pass**: before concluding two same-
+  vocabulary packages are an unresolved duplicate needing a design
+  decision, read their own `__init__.py`/module docstrings and grep for
+  existing "Compatibility Layer"/"forwarding to" shims first - this
+  codebase has a real, established, already-applied convention
+  (`tests/test_collisions_consolidation.py`, "ACF-017 Class Collision
+  Resolution") for exactly this situation, and several pairs that look
+  unresolved from the file tree alone turn out to already be handled.
+
+  **Verified**: added
+  `test_physical_parameter_vs_parameter_is_a_real_homonym_not_a_duplicate`
+  to `tests/test_collisions_consolidation.py`, following the file's own
+  established `PluginManager`/`DataManager`/`MapCanvas` pattern - real,
+  passing, confirms `PhysicalParameter` and `Parameter` are both
+  independently constructible and carry genuinely different real fields
+  (`governing_equation`/`cf_standard_name`/... vs `code`/`unit`), not
+  interchangeable. No source code outside the tests file changed for
+  this item - `parameters/`/`catalog/` needed no move, only this
+  documentation correction and one new lock-in test.
 
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven
