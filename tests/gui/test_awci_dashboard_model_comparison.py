@@ -30,7 +30,7 @@ def test_run_real_model_comparison_puts_the_button_in_loading_state(qapp):
     dashboard._run_real_model_comparison()
 
     assert dashboard.compare_models_button.isEnabled() is False
-    assert dashboard.compare_models_button.text() == "Computing…"
+    assert dashboard.compare_models_button.text() == "Comparing…"
 
 
 def test_worker_run_produces_real_per_model_profiles_synchronously(qtbot):
@@ -85,7 +85,7 @@ def test_on_model_comparison_failed_shows_a_real_toast_and_re_enables_button(qap
     dashboard._on_model_comparison_failed("solver diverged")
 
     assert dashboard.compare_models_button.isEnabled() is True
-    assert dashboard.compare_models_button.text() == "Compare Models"
+    assert dashboard.compare_models_button.text() == "Compare"
 
 
 def test_clicking_the_button_triggers_the_real_handler(qapp, qtbot, monkeypatch):

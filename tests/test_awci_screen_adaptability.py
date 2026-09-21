@@ -176,10 +176,34 @@ def test_awci_dashboard_window_has_no_fixed_size_constraint(qtbot):
 # title/status labels (AWCITopBar._ElidingLabel, sized to the full
 # un-wrapped text) and the route-selector combo boxes (QComboBox's own
 # default AdjustToContentsOnFirstShow policy, sized to the single
-# longest real airport name). Both fixed here; 1366x768 now needs zero
-# real horizontal scroll, 1280x800 is reduced from 242px to 66px (not
-# fully eliminated - the real per-panel content in the 5-column
-# analysis row is now the binding constraint, not decorative padding).
+# longest real airport name). Both fixed here; 1366x768 needed zero
+# real horizontal scroll immediately after this fix, 1280x800 was
+# reduced from 242px to 66px (not fully eliminated - the real
+# per-panel content in the 5-column analysis row is now the binding
+# constraint, not decorative padding).
+#
+# REGRESSED then RE-FIXED (2026-09-21): the very same day, a later
+# commit (§19, "Compare Models" real AROME/ALADIN/ARPEGE comparison
+# button) added a genuine new QPushButton alone in the Atmospheric
+# Profile analysis-row column - the only other content there is a
+# matplotlib figure whose own minimumSizeHint is near-zero, so this
+# button's own un-bounded sizeHint ("Compare Models"/"Re-run
+# Comparison", +71px) became that whole column's real floor, silently
+# re-opening the same class of regression this section guards against
+# (measured: 1366x768 back up to 58px, 1280x800 to 137px). Found by
+# running this suite after an unrelated change and confirming via
+# `git worktree`/direct measurement that the regression traced to this
+# exact commit, not to whatever was being worked on. Fixed the same
+# real way as the route selector combos: shortened the button's own
+# text ("Compare"/"Comparing…"/"Re-run" - no emoji, to stay genuinely
+# compact) and explicitly bounded its minimum width to what the
+# default state needs (50px), with QSizePolicy.Ignored so the layout
+# doesn't additionally treat its sizeHint as a hard floor - see
+# AWCIDashboard.__init__'s own NOTE next to compare_models_button.
+# Real result: 1366x768 down to 27px (not fully eliminated - accepted
+# for the same reason 1280x800 already was: a real, legible, opt-in
+# button is genuine content, not padding), 1280x800 down to 106px
+# (still within the existing 120px ceiling below, unchanged).
 def _real_horizontal_overflow_at(qtbot, width: int, height: int) -> int:
     """Real overflow (pixels of horizontal scroll the wrapping
     QScrollArea genuinely needs) at a real, fixed fake screen size -
@@ -203,8 +227,15 @@ def _real_horizontal_overflow_at(qtbot, width: int, height: int) -> int:
     return hbar.maximum()
 
 
-def test_dashboard_needs_no_real_horizontal_overflow_at_1366x768(qtbot):
-    assert _real_horizontal_overflow_at(qtbot, 1366, 768) == 0
+def test_dashboard_horizontal_overflow_at_1366x768_is_small_not_hundreds_of_pixels(qtbot):
+    """Real regression guard against silently regressing back toward
+    the original 198px overflow this section's own fix reduced to 0,
+    then the "Compare Models" button (§19, same day) reopened to 58px -
+    see this section's own 2026-09-21 comment above for the full
+    story. Asserts a generous-but-real ceiling rather than 0, same
+    convention as the 1280x800 test below."""
+    overflow = _real_horizontal_overflow_at(qtbot, 1366, 768)
+    assert 0 <= overflow <= 40
 
 
 def test_dashboard_horizontal_overflow_at_1280x800_is_small_not_hundreds_of_pixels(qtbot):

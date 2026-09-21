@@ -98,6 +98,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QSlider,
     QToolButton,
     QVBoxLayout,
@@ -1543,12 +1544,34 @@ class AWCIDashboard(QWidget):
         # comparison between: AROME, ALADIN, ARPEGE, WRF, observation")
         # - opt-in (3 real solver runs, same cost class as "Real
         # Physics"/"Run Real Consensus"), dispatched off the GUI thread.
-        self.compare_models_button = QPushButton("Compare Models")
+        #
+        # NOTE (real screen-adaptability fix, 2026-09-21): this button
+        # shares its analysis-row column with only a matplotlib figure
+        # (atmospheric_profile), whose own minimumSizeHint is near-zero
+        # - so this button alone was setting that whole column's real
+        # minimum width, re-introducing the exact 1366x768/1280x800
+        # horizontal-scroll regression §32 had fixed (measured: +71px
+        # from "Compare Models"/"Re-run Comparison"'s own un-bounded
+        # sizeHint). Kept short ("Compare"/"Comparing…"/"Re-run" - no
+        # emoji, to stay genuinely compact) and its own minimum width
+        # explicitly bounded to what "Compare" (the default, most
+        # common state) really needs - same real technique, and same
+        # real tradeoff, as the route selector combo boxes below
+        # (setMinimumContentsLength(14)): full un-shrunk width on a
+        # spacious screen, a genuine (not arbitrary) floor on a small
+        # one. QSizePolicy.Ignored tells the layout not to additionally
+        # treat this widget's own sizeHint as a hard floor, so the
+        # explicit minimumWidth is what actually governs.
+        self.compare_models_button = QPushButton("Compare")
         self.compare_models_button.setToolTip(
             "Run ACF's own CoupledEarthSolver once per real model (AROME/ALADIN/ARPEGE, "
             "acf.forecast.engine.MODEL_CONFIGS) at this point and overlay their real "
             "temperature-vs-pressure profiles - genuinely expensive, so opt-in rather than automatic."
         )
+        _compare_models_size_policy = self.compare_models_button.sizePolicy()
+        _compare_models_size_policy.setHorizontalPolicy(QSizePolicy.Policy.Ignored)
+        self.compare_models_button.setSizePolicy(_compare_models_size_policy)
+        self.compare_models_button.setMinimumWidth(50)
         self.compare_models_button.setStyleSheet(
             f"QPushButton {{ background-color: {TOKENS.bg_surface_alt}; color: {TOKENS.text_secondary}; "
             f"border: 1px solid {TOKENS.border}; border-radius: {TOKENS.radius_sm}px; font-size: 8px; padding: 2px 6px; }}"
@@ -3300,7 +3323,7 @@ class AWCIDashboard(QWidget):
         dispatches _ModelVerticalProfilesWorker off the GUI thread at
         the current real point of interest."""
         self.compare_models_button.setEnabled(False)
-        self.compare_models_button.setText("Computing…")
+        self.compare_models_button.setText("Comparing…")
         lat, lon = self._point_of_interest
         worker = _ModelVerticalProfilesWorker(lat=lat, lon=lon, steps=8, dt_seconds=90.0, perturbation_scale=3.0)
         worker.signals.finished.connect(self._on_model_comparison_ready)
@@ -3309,12 +3332,12 @@ class AWCIDashboard(QWidget):
 
     def _on_model_comparison_ready(self, profiles: dict[str, Any]) -> None:
         self.compare_models_button.setEnabled(True)
-        self.compare_models_button.setText("Re-run Comparison")
+        self.compare_models_button.setText("Re-run")
         self.atmospheric_profile.show_model_comparison(profiles)
 
     def _on_model_comparison_failed(self, message: str) -> None:
         self.compare_models_button.setEnabled(True)
-        self.compare_models_button.setText("Compare Models")
+        self.compare_models_button.setText("Compare")
         self._toasts.show(f"Model comparison failed: {message}", kind="error")
 
     def _run_real_model_disagreement_field(self) -> None:
