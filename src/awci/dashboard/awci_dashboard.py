@@ -1241,28 +1241,36 @@ class AWCIDashboard(QWidget):
         outer.addWidget(self.hazard_row)
 
         # Real "Current Situation" / "Model Agreement" / "Airport
-        # Complexity" row (added 2026-09-12, docs/reference/
+        # Complexity" column (added 2026-09-12, docs/reference/
         # awci_dashboard_reference.png, Phase 4/6) - see
         # awci_situation_panel.py's own module docstring for the exact
-        # real source of every value. Added as its own new row rather
-        # than replacing the existing cross-section/radar/risk-summary
-        # columns below (a deliberate, disclosed scope decision - see
-        # reports/ACF_MASTER_AUDIT_v2.md's Phase 4 entry - preserving
-        # those already-real, already-tested panels rather than a
-        # riskier full row1/row2 teardown to match the photo's exact
-        # column arrangement).
-        situation_row = QHBoxLayout()
-        situation_row.setSpacing(8)
+        # real source of every value.
+        #
+        # NOTE (correction, 2026-09-21 - found while comparing a fresh
+        # screenshot against docs/reference/awci_dashboard_reference.png
+        # at the explicit user's request): this used to be its own
+        # full-width row ABOVE row1 (the map), a deliberate scope
+        # decision at the time to avoid a riskier row1 teardown (see
+        # reports/ACF_MASTER_AUDIT_v2.md's Phase 4 entry) - but the real
+        # measured consequence was a genuine layout-collapse
+        # regression: on a real 1920x1080 screen (the common case,
+        # confirmed by a real screenshot), this row's own real
+        # sizeHint (~230px) competed with row1's stretch=3 for the
+        # outer QVBoxLayout's limited leftover height, squeezing
+        # global_map down to its bare ~175px minimumHeight floor -
+        # nowhere near the reference photo's own map, which spans
+        # roughly the same vertical extent as this right-side column.
+        # Moved into row1 as its own real right-side column (matching
+        # the reference photo's actual arrangement: the map on the
+        # left, this column on the right, both sharing the same real
+        # vertical space) - no widget was rebuilt, only where it is
+        # placed in the layout tree.
         self.current_situation_card = AWCICurrentSituationCard()
         self.model_agreement_card = AWCIModelAgreementCard()
         self.model_agreement_card.runConsensusRequested.connect(self._run_real_model_consensus)
         self.airport_table = AWCIAirportTable(on_view_all=self._open_all_airports_dialog)
-        situation_row.addWidget(self.current_situation_card, stretch=1)
-        situation_row.addWidget(self.model_agreement_card, stretch=1)
-        situation_row.addWidget(self.airport_table, stretch=1)
-        outer.addLayout(situation_row)
 
-        # --- Row 1: global map (left) + cross-section & radar (right) -----
+        # --- Row 1: global map (left) + situation column (right) ----------
         row1 = QHBoxLayout()
         row1.setSpacing(8)
 
@@ -1307,7 +1315,15 @@ class AWCIDashboard(QWidget):
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         self.global_map.modelDisagreementLayerRequested.connect(self._run_real_model_disagreement_field)
         apply_elevation(self.global_map)
-        row1.addWidget(self.global_map, stretch=1)
+        row1.addWidget(self.global_map, stretch=3)
+
+        situation_col = QVBoxLayout()
+        situation_col.setSpacing(8)
+        situation_col.addWidget(self.current_situation_card)
+        situation_col.addWidget(self.model_agreement_card)
+        situation_col.addWidget(self.airport_table, stretch=1)
+        row1.addLayout(situation_col, stretch=1)
+
         outer.addLayout(row1, stretch=3)
 
         # NOTE (2026-09-13, docs/reference/awci_dashboard_reference.png,
@@ -1352,6 +1368,26 @@ class AWCIDashboard(QWidget):
         # picks up a change here with no further wiring, since they
         # already read the instance attribute, not the old fixed
         # module constant.
+        # NOTE (correction, 2026-09-21 - found while comparing a fresh
+        # screenshot against docs/reference/awci_dashboard_reference.png
+        # at the explicit user's request): route_row used to be one
+        # single QHBoxLayout with both combos AND "Apply Route" side by
+        # side - its own real minimum width (~496px, measured) was
+        # nearly 3x any of the other 4 analysis_row panels' real
+        # minimums, so - even though all 5 analysis_row panels share
+        # stretch=1 equally - Qt had to give this one panel its full
+        # ~512px floor first, squeezing the other 4 down to ~184px
+        # each on a real 1920x1080 screen: cross_section/
+        # atmospheric_profile/evolution_chart all have a genuinely
+        # larger real sizeHint (450-500px) than that, so their own
+        # matplotlib titles/labels visibly clipped/overlapped their
+        # panel borders. Splitting the button onto its own second real
+        # row (never changing the 14-character combo-length floor
+        # itself, which Master Prompt V3 §32 already fixed for a real
+        # reason - see below) removes ~110px from this row's own real
+        # minimum width, letting analysis_row's 5 panels share space
+        # far more evenly - closer to the reference photo's own
+        # roughly-equal-width 5-panel bottom row.
         route_row = QHBoxLayout()
         route_label = QLabel("Route:")
         route_label.setStyleSheet(label_style("text_secondary", "xs"))
@@ -1386,6 +1422,8 @@ class AWCIDashboard(QWidget):
         arrow_label.setStyleSheet(label_style("text_secondary", "xs"))
         route_row.addWidget(arrow_label)
         route_row.addWidget(self.route_to_selector, stretch=1)
+
+        apply_route_row = QHBoxLayout()
         self.apply_route_button = QPushButton("✈️ Apply Route")
         self.apply_route_button.setToolTip(
             "Recompute every real regional panel (route chart, cross-section-style\n"
@@ -1395,13 +1433,19 @@ class AWCIDashboard(QWidget):
             "extent - an honest map-crop limit, not a bug, for a pair further apart."
         )
         self.apply_route_button.clicked.connect(self._on_apply_route)
-        route_row.addWidget(self.apply_route_button)
+        apply_route_row.addStretch()
+        apply_route_row.addWidget(self.apply_route_button)
+
         # Real container widget (2026-09-12) so this whole real route-
         # selector row can be relocated wholesale into Phase 5's real
         # "Flight Route Analysis" panel below, rather than staying in
         # the now-hidden left_col2/row2 this section used to build.
         self.route_selector_widget = QWidget()
-        self.route_selector_widget.setLayout(route_row)
+        route_selector_layout = QVBoxLayout(self.route_selector_widget)
+        route_selector_layout.setContentsMargins(0, 0, 0, 0)
+        route_selector_layout.setSpacing(4)
+        route_selector_layout.addLayout(route_row)
+        route_selector_layout.addLayout(apply_route_row)
 
         # Real per-level module_scores/physical/forecast breakdown -
         # see _compute_vertical_profile()'s own docstring. The old
