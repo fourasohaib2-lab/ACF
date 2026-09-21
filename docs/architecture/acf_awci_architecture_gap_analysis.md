@@ -108,7 +108,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
 | `awci/reports/` | 🟡 **`src/awci/reports/` created 2026-09-21** (see §2u below) with `generator.py` and `aviation_report.py` — a real, composed report over `awci.airport.weather`+`awci.decision`+`awci.provenance`, no new computation. `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) still exist separately in the GUI. `flight_report.py`/`airport_report.py`/`hazard_report.py`/`complexity_report.py`/`model_report.py`/`verification_report.py`/`templates/` deliberately not built — `aviation_report.py` already covers the same real composed content. |
-| `awci/api/` | ❌ No dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are ACF-general, not AWCI-specific. |
+| `awci/api/` | ✅ **Built 2026-09-21** — see §3a: real FastAPI app (`create_app()`) with 6 of 11 named `routes/` modules, each wired to a real, already-working AWCI engine (`observations`, `airports`, `flights`, `hazards`, `complexity`, `reports`). `forecasts.py`/`models.py`/`profiles.py`/`maps.py`/`ai.py` deliberately not built — no real backing engine to expose for each, disclosed in `awci/api/__init__.py`. `schemas/`/`services/`/`middleware/` not separate subpackages — real dataclasses/domain packages/no real middleware need. |
 | `awci/alerts/` | 🟡 **`src/awci/alerts/` created 2026-09-21** (see §2v below) with `engine.py` (real, headless `AlertEngine` over `awci.decision.situation.SituationSnapshot`) and `notifications.py` (real in-process `AlertNotifier`, same pattern as `awci.plugins.hooks.HookRegistry`). `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) still exists separately. `rules.py`/`thresholds.py`/`severity.py`/`hazard_alerts.py`/`airport_alerts.py`/`route_alerts.py`/`complexity_alerts.py` deliberately not built — real content already exists (`awci.decision.situation`) or no real per-scope taxonomy exists to split on. |
 | `awci/plugins/` | ✅ **Built 2026-09-21** (see §2p below) — all 5 files named in `awci_reference_architecture.md` §20 (`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`), real, tested, working extensibility infrastructure (register/get, on-disk discovery, lifecycle hooks). Zero real AWCI module has been adapted to implement the new `AWCIPlugin` interface yet — honestly disclosed, not fabricated. |
 | `awci/workspace/` | ✅ **Built 2026-09-21** — see §2y: `AWCIProject`/`AWCI_PROJECT_FOLDERS` (subclasses `acf.workspace.project.Project`, real `.awciproj` extension + the blueprint's own folder layout: data/forecasts/flights/airports/hazards/maps/reports/analysis/exports/logs), `AWCIProjectSerializer` (reuses `ProjectSerializer.save()` unchanged, overrides `load()`), `AWCIWorkspaceManager` (subclasses `WorkspaceManager`, own `~/.awci/recent_projects.json`). `session.py`/`state.py` deliberately not built — no real, coherent AWCI session/state concept exists beyond what an open project + `awci.decision`/`awci.alerts` already provide. |
@@ -1766,6 +1766,82 @@ by this test run. Full non-GUI collection: 4630 tests (up from 4611,
 tracked in §2w/§2x/§2y) confirmed unrelated. A targeted sweep
 (`-k "awci_core or service_manager" --continue-on-collection-errors`)
 shows 21 passed, 0 failed.
+
+## 2aa. The AWCI HTTP API (2026-09-21)
+
+Thirteenth item of "on les attaque toutes un par un": `awci/api/` -
+the specific gap named in
+`docs/architecture/acf_awci_architecture_gap_analysis.md` ("No
+dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are
+ACF-general, not AWCI-specific").
+
+**Investigation**: `fastapi` is already a real, declared optional
+dependency (`pyproject.toml`'s `web` extra). `acf.web.
+hpc_dashboard_server.create_app()` already establishes a real,
+working app-assembly pattern (construct `FastAPI`, stash injectable
+real dependencies on `app.state` for tests, `include_router()` per
+real domain) with real routers already covering ACF-general concerns
+(`acf.web.routers.complexity_router` already serves the same real
+`AWCICalculator` engine AWCI's own `awci.complexity` package now
+owns, round-tripped through the `acf.awci` shim). No real HTTP
+surface exists anywhere for AWCI's own domain packages built earlier
+in this same "on les attaque" sequence
+(`awci.observations`/`awci.airport`/`awci.flight`/`awci.reports`).
+
+**Placement decision (disclosed)**: build a genuinely separate AWCI
+FastAPI app (not add routers to ACF's existing one), matching the
+reference architecture's own framing of AWCI as a separate product.
+Build only the `routes/` modules with a real, already-working backing
+engine to expose - 6 of the blueprint's 11 named files
+(`observations.py`, `airports.py`, `flights.py`, `hazards.py`,
+`complexity.py`, `reports.py`) - never a fabricated endpoint over data
+this codebase cannot actually produce. `complexity.py` imports
+`awci.complexity.calculator.AWCICalculator` directly rather than via
+the `acf.awci` shim, matching this session's own "repoint real
+dependents to the new location directly" discipline already applied
+throughout the AWCI package migration (§2j, §2x). One shared, generic
+`routes/_serialization.py` helper (`to_json_safe()`) converts any real
+dataclass response (`datetime` → ISO string, nested
+dataclasses/tuples/dicts walked recursively) - no parallel Pydantic
+schema layer duplicating fields these dataclasses already declare.
+
+**Deliberately not built this round**, disclosed in
+`awci/api/__init__.py`: `forecasts.py` (no real AWCI-specific NWP
+forecast-retrieval engine to expose - ACF's own solver-based forecast
+pipeline is not a per-request HTTP concern); `models.py` (would
+duplicate `acf.web.routers.models_router`'s already-real ACF-general
+model listing); `profiles.py`
+(`awci.knowledge.graphics.cross_section.FlightCrossSectionEngine`
+only produces real waypoint geometry - already exposed via
+`routes/flights.py` - every atmospheric field it would report is
+honestly `None`, no real data source wired to it); `maps.py` (no real
+AWCI-specific tile-serving concept exists anywhere in this codebase);
+`ai.py` (`awci.ai` exists as a headless Python API but has no HTTP
+surface wired yet, and several of its named subsystems remain unbuilt
+per the broader remaining-gaps list - a real, disclosed future
+addition, not fabricated ahead of it). `schemas/`/`services/`/
+`middleware/` are not separate subpackages - real dataclasses/the
+`awci.*` domain packages themselves/no real middleware need (auth,
+rate limiting) exists anywhere in this codebase today.
+
+**Verified, not assumed**: manual end-to-end run via FastAPI's
+`TestClient` against a real running app instance - `/health`,
+`/hazards`, `/hazards/{key}` (both a real hit and a real 404),
+`/airports/{icao}/runways` (both a real hit and a real 404 for an
+unknown airport), `/complexity/score` (a real `AWCICalculator`
+computation, not a canned response) all exercised directly before any
+test file was written. `ruff check`/`mypy` clean (the 3 mypy findings
+in the new test file are the exact same accepted duck-typed-fake-vs-
+nominal-type pattern already present in
+`tests/test_awci_observations_hub.py`, not a new issue class). 14 new
+tests (`tests/test_awci_api.py`), every network-calling connector
+faked/monkeypatched using the exact same real isolation discipline
+`tests/test_awci_observations_hub.py` already established - no real
+network call made by this test run. Full non-GUI collection: 4644
+tests (up from 4630, +14), same pre-existing 45 collection errors
+(`task_468ac835`, already tracked in §2w/§2x/§2y/§2z) confirmed
+unrelated. A targeted sweep (`-k "awci_api"
+--continue-on-collection-errors`) shows 14 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
