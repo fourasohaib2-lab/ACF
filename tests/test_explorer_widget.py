@@ -19,7 +19,6 @@ branch before adding the new one.
 from __future__ import annotations
 
 import tempfile
-from pathlib import Path
 
 from acf.gui.widgets.explorer import ExplorerWidget
 

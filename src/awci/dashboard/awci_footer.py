@@ -32,7 +32,7 @@ never a new/fabricated action:
 """
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
 
 _ITEMS = [
     ("synthetic_view", "🌐", "SYNTHETIC VIEW", "One map to understand\nthe complexity"),

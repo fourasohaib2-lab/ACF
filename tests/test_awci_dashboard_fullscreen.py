@@ -63,8 +63,6 @@ def test_awci_dashboard_fits_a_real_1920x1080_screen_maximized_without_scrolling
     matches the scroll area's viewport exactly, both scrollbars at
     their maximum() == 0 (nothing to scroll).
     """
-    from PySide6.QtWidgets import QApplication
-
     app = _qapp()
     window = AWCIDashboardWindow()
     qtbot.addWidget(window)
