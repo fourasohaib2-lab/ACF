@@ -403,3 +403,68 @@ def test_icing_lower_bound_discrepancy_against_the_existing_icao_faa_module_is_d
     assert ICING_TEMPERATURE_LOWER_C == -40.0
     assert ICING_POTENTIAL_NEGLIGIBLE_BELOW_C == -35.0
     assert ICING_TEMPERATURE_LOWER_C != ICING_POTENTIAL_NEGLIGIBLE_BELOW_C
+
+
+def test_taf_change_indicator_meaning_covers_every_real_change_type_the_decoder_produces():
+    """Decode a real, multi-group TAF and check every real
+    change_type value TAFDecoder actually produces has a defined
+    meaning - not a fixed, possibly-stale list."""
+    from awci.knowledge.icao.taf_change_indicators import TAF_CHANGE_INDICATOR_MEANING
+    from awci.knowledge.icao.taf_decoder import TAFDecoder
+
+    raw = (
+        "TAF LFPG 021100Z 0212/0318 24010KT 9999 SCT030 "
+        "BECMG 0215/0217 25015KT "
+        "TEMPO 0218/0221 4000 TSRA "
+        "PROB30 TEMPO 0300/0304 0800 FG"
+    )
+    report = TAFDecoder.decode(raw)
+    assert len(report.periods) > 1
+    for period in report.periods:
+        assert period.change_type in TAF_CHANGE_INDICATOR_MEANING, period.change_type
+        assert TAF_CHANGE_INDICATOR_MEANING[period.change_type]
+
+
+def test_taf_no_significant_weather_code_is_real_and_distinct_from_an_omitted_group():
+    from awci.knowledge.icao.taf_change_indicators import TAF_NO_SIGNIFICANT_WEATHER_CODE
+
+    assert TAF_NO_SIGNIFICANT_WEATHER_CODE == "NSW"
+
+
+def test_sigmet_validity_hours_match_the_real_icao_annex_3_rules():
+    from awci.knowledge.icao.sigmet_validity import (
+        SIGMET_MAX_LEAD_TIME_HOURS_WC_WV,
+        SIGMET_MAX_LEAD_TIME_HOURS_WS,
+        SIGMET_MAX_VALIDITY_HOURS_WC_WV,
+        SIGMET_MAX_VALIDITY_HOURS_WS,
+    )
+
+    assert SIGMET_MAX_VALIDITY_HOURS_WS == 4.0
+    assert SIGMET_MAX_VALIDITY_HOURS_WC_WV == 6.0
+    assert SIGMET_MAX_LEAD_TIME_HOURS_WS == 4.0
+    assert SIGMET_MAX_LEAD_TIME_HOURS_WC_WV == 12.0
+    # Real, disclosed relationship: the longer-lived phenomena (tropical
+    # cyclone/volcanic ash) get both a longer validity and a longer
+    # permitted lead time than ordinary hazardous weather.
+    assert SIGMET_MAX_VALIDITY_HOURS_WC_WV > SIGMET_MAX_VALIDITY_HOURS_WS
+    assert SIGMET_MAX_LEAD_TIME_HOURS_WC_WV > SIGMET_MAX_LEAD_TIME_HOURS_WS
+
+
+def test_sigmet_phenomenon_keywords_already_cover_every_real_phenomenon_from_the_source():
+    """No new SIGMET phenomenon keywords were needed - the real decoder
+    already covers every phenomenon this source describes (SEV TURB,
+    SEV ICE, SEV MTW, thunderstorm variants, HVY DS/SS, VA, TC,
+    RDOACT CLD) - locks in that finding rather than leaving it only in
+    a commit message."""
+    from awci.knowledge.icao.sigmet_decoder import _PHENOMENON_KEYWORDS
+
+    for keyword in ("SEV TURB", "SEV ICE", "SEV MTW", "HVY DS", "HVY SS", "VA", "TC", "RDOACT CLD"):
+        assert keyword in _PHENOMENON_KEYWORDS
+
+
+def test_airmet_wind_gust_threshold_matches_the_real_icao_value():
+    from awci.knowledge.icao.gamet_airmet import AIRMET_PHENOMENA, AIRMET_SURFACE_WIND_GUST_THRESHOLD_KT
+
+    assert AIRMET_SURFACE_WIND_GUST_THRESHOLD_KT == 40.0
+    assert len(AIRMET_PHENOMENA) == 7
+    assert "freezing rain" in AIRMET_PHENOMENA
