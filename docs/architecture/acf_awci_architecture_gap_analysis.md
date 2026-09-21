@@ -1166,6 +1166,64 @@ package-level re-export, the `__all__` completeness, the absence of a
 dead flat shim, and that real callers across `science/` and `awci/`
 still resolve to the exact same objects.
 
+### 4e. Phase 5: `science/radiation/` (2026-09-21) - and why there is no `microphysics/` counterpart
+
+**Placement**: the single flat `radiation.py` (4 real classes -
+`StefanBoltzmann`, `PlanckLaw`, `BeerLambert`, `SolarPosition` - plus 5
+real physical constants: `BOLTZMANN_K`, `PLANCK_H`, `SOLAR_CONSTANT_S0`,
+`SPEED_OF_LIGHT_C`, `STEFAN_BOLTZMANN_SIGMA`) maps directly to the
+blueprint's own `science/radiation/` layer. No internal
+`acf.science.*` imports, a true leaf.
+
+**Investigated and deliberately not done: `microphysics/`.** The user
+asked to continue with both `radiation/` and `microphysics/`. No flat
+top-level `microphysics.py` module exists anywhere under `acf.science` -
+confirmed by grep, not assumed. The only real microphysics content in the
+codebase is `CloudMicrophysicsEngine`, already living in
+`science/clouds/microphysics.py`, inside the already-existing `clouds/`
+subpackage (one of the 6 non-blueprint-named subpackages named at the end
+of every phase's "what remains" note). Moving or splitting that single
+file out of `clouds/` into a new, separate `microphysics/` package would
+be a real architecture decision about whether `clouds/` and
+`microphysics/` should be reconciled as the blueprint's own two distinct
+top-level subdomains, or whether cloud microphysics stays inside the
+already-coherent `clouds/` package (mirroring, e.g., how AWCI's
+`convective_energy.py`/`theta_e.py`/`updraft.py` were deliberately kept
+together in `awci/hazards/` in Phases 6-7 rather than split out) - not a
+mechanical single-file move like every other phase so far. Left
+untouched and flagged here rather than unilaterally restructured.
+
+**Applying the established self-naming-collision check**: `radiation.py`
+shares its own name with the new `acf.science.radiation` package, so - per
+the rule from §4a-§4d - no flat shim was written; the package's own
+`__init__.py` re-exports all 9 real names (4 classes + 5 constants)
+directly. The one real caller of the bare path
+(`science/laws/radiation.py` - a distinct, coincidentally same-named
+sibling module in the `laws/` subpackage, importing `PlanckLaw` and
+`SolarPosition`) needed no code change, exactly like `constants.py` in
+§4d: the import path itself never changed.
+
+**Execution**: `radiation.py` physically moved via `git mv` into
+`src/acf/science/radiation/radiation.py`. `__init__.py` written
+re-exporting all 9 real names (the initial pass caught only the 4
+classes; a second, more careful pass over `vars()` found the 5 module-
+level physical constants and the stdlib `math` import that needed
+excluding from `__all__` - the same "check every public name against the
+real module, not an assumed subset" discipline applied throughout this
+whole reorganization effort).
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (2 source files);
+identity confirmed programmatically for all 9 real names and `__all__`
+completeness against the real module's own public API (excluding the
+stdlib `math` import); full test collection under xvfb - 5038 tests, 0
+errors; a targeted radiation/Planck/Stefan-Boltzmann/Beer-Lambert/solar-
+position sweep (non-GUI) passed 90/90. A new
+`tests/test_science_radiation_reorganization.py` (5 tests) locks in the
+package-level re-export, `__all__` completeness, the absence of a dead
+flat shim, and that the real `laws/radiation.py` caller still resolves
+correctly - plus a documented note explaining why `microphysics/` was
+not done this phase.
+
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven
 method: real investigation before any move, `git mv` + backward-
