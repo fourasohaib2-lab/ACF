@@ -56,7 +56,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 | `dashboard/` | ✅ Two real dashboard trees exist: `src/acf/dashboard/` (blueprint-shaped: `manager.py`, `window.py`, `dashboard.py`, `layout.py`, `widgets.py`, `panels/` — but itself unreachable from the running app today, a pre-existing, disclosed state, see that module's own docstring) and the much larger, actually-live `src/acf/gui/dashboard/` (ACF Workstation and ~30 other panel/window modules - the AWCI dashboard itself physically moved out to `src/awci/dashboard/` on 2026-09-21, §2k; `acf.gui.dashboard.awci_*` now holds only re-export shims, `acf.dashboard.window.py` still launches `AWCIDashboardWindow` via a deferred import). |
 | `api/` | 🟡 **Reconciled 2026-09-21** — see §2ad: `data`→`datasets_router`, `models`→`models_router`, `diagnostics`→`workstation_router` (already real since 2026-09-04, a naming difference not a gap), `system`→new `system_router` (real `/health`/`/version`). `maps`/`visualization`/`ai`/`reports` have no real router anywhere — no real backing content exists yet to expose. `src/acf/api/api.py` remains a separate, minimal, non-HTTP facade (unchanged). |
 | `alerts/` | 🟡 `src/acf/alerts/` has `warning_engine.py` (`engine`). **`severity.py`/`notification.py` added 2026-09-21** — see §2ae. `rules.py`/`thresholds.py`/`events.py` deliberately not built — no real per-phenomenon threshold table exists to extract; would require fabricated values or a change to the already-tested `WarningEngine` class. |
-| `reports/` | 🟡 `src/acf/reports/` exists with a `briefings/` subpackage, but no `generator.py`/`scientific_report.py`/`model_report.py`/`diagnostic_report.py`/`export.py`/`templates/` as named. |
+| `reports/` | 🟡 `src/acf/reports/` has `briefings/` (`BriefingGenerator`). **`generator.py`/`export.py` added 2026-09-21** — see §2af: `generator.py` promoted from `awci.reports.generator` (real, generic, not aviation-specific); `export.py` real file writing. `scientific_report.py`/`model_report.py`/`diagnostic_report.py` deliberately not built — a caller already gets the same real behavior from `render_report()` directly. `templates/` deliberately not built — no templating-engine dependency declared in this project. |
 
 ### Project root
 
@@ -2000,6 +2000,55 @@ isolation against a real `OperationalWarning` from a real
 (`tests/test_acf_alerts_severity_notification.py`). Full non-GUI
 collection: 4674 tests (up from 4666, +8), same pre-existing 45
 collection errors (`task_468ac835`) confirmed unrelated.
+
+## 2af. Closing acf.reports's own remaining gap (2026-09-21)
+
+Eighteenth item of "on les attaque toutes un par un" - final item of
+the 5-part ACF-general batch (`core/`, `utils/`, `api/`, `alerts/`,
+`reports/` - now complete): the `reports/` row's own gap -
+`src/acf/reports/` has only `briefings/briefing_generator.py`
+(`BriefingGenerator`, a real operational meteorological briefing
+generator, already carrying its own fix disclosure for a previously
+fabricated model-consensus claim) versus the blueprint's `generator/
+scientific_report/model_report/diagnostic_report/export/templates`
+split.
+
+**Built**: `generator.py` (`ReportSection`/`render_report()` -
+promoted from `awci.reports.generator`, built earlier this session
+for the AWCI aviation report, once the same real, generic need -
+arrange already-real, caller-supplied text sections, honestly
+disclosing an empty one - was recognized beyond that one caller;
+`awci.reports.generator` now re-exports this module, locked in by an
+identity test rather than keeping a duplicate), `export.py`
+(`write_report()` - real file export; confirmed by reading
+`BriefingGenerator.generate_briefing()` that it accepts an
+`export_format` parameter and labels its output accordingly but never
+itself writes to disk - the one real, missing piece).
+
+**Deliberately not built**: `scientific_report.py`/`model_report.py`/
+`diagnostic_report.py` - each would only be a thin, specific naming
+convention for calling `render_report()` with a particular title; a
+caller can already build any of those with `render_report()` directly
+with no real behavioral difference. `templates/` - no templating-
+engine dependency (e.g. Jinja2) is declared anywhere in this project,
+and adding one is a real, separate dependency decision out of this
+item's scope, matching this session's own earlier precedent (the RAG
+layer) of not adding a new dependency without asking first.
+
+**Verified, not assumed**: manual end-to-end run (a real report
+rendered via `render_report()`, written to a real nested path via
+`write_report()`, read back and confirmed byte-identical; the
+`awci.reports.generator` re-export confirmed identical by object
+identity, not just by behavior). `ruff check`/`mypy` clean. 6 new
+tests (`tests/test_acf_reports_generator_export.py`); the
+pre-existing 13 `tests/test_awci_reports_aviation.py` tests re-run
+clean after the re-export change. Full non-GUI collection: 4680 tests
+(up from 4674, +6), same pre-existing 45 collection errors
+(`task_468ac835`) confirmed unrelated.
+
+With this item, the full 5-part ACF-general batch from the remaining-
+gaps list (`core/` §2ab, `utils/` §2ac, `api/` §2ad, `alerts/` §2ae,
+`reports/` §2af) is complete.
 
 ## 3. What this means for a real migration
 
