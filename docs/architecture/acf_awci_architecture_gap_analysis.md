@@ -101,7 +101,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/hazards/` (one module per hazard) | ✅ **Migrated 2026-09-21** — see §2b, §2g, §2h and §2i below. Physically moved to `src/awci/hazards/{icing_temperature_range,ceiling,visibility,dust,microburst,volcanic_ash,wind_shear,cat_turbulence,orographic_froude,hydrometeor_phase,convective_energy,theta_e,updraft,terrain_elevation}.py` (14 modules), with `acf.awci.<module>` kept as a real backward-compatible re-export. `spatial_field.py` now imports all 9 of its real hazard/thermo dependencies directly from `awci.hazards`, none through the `acf.awci` shim anymore. This is now a literal, not just conceptual, match to the blueprint's `awci/hazards/` (still flat rather than one-subpackage-per-hazard, which the blueprint itself is ambiguous about — it lists both a flat file-per-hazard example and per-hazard subdirectories). |
 | `awci/complexity/` (the actual AWCI score) | ✅ **Migrated 2026-09-21** — see §2c and §2i below. `AWCICalculator` (the actual scoring/aggregation engine), `WeightsManager`, `Normalizer`, and `scientific_status` physically moved to `src/awci/complexity/`, joined by `scale_classification.py`/`wind_classification.py`/`spatial_field.py`/`vertical_field.py`/`temporal_field.py` (Phases 3-5) and then, in the single largest phase (§2i), 14 more real modules: `calibration.py`, `config_loader.py`, `diagnostic_registry.py`, `execution_report.py`, `forecaster_validation.py`, `input_adapter.py`, `metar_verification.py`, `method_comparison.py`, `path_sampling.py`, `pipeline.py`, `result.py`, `run_report.py`, `validation_cases.py`, `workstation_fields.py` — with `acf.awci.<module>` kept as a real backward-compatible re-export for all 23. Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. **As of Phase 8, `src/acf/awci/` contains nothing but re-export shims and `__init__.py` — every real line of AWCI complexity-engine code now lives under `src/awci/`.** |
 | `awci/comparison/` + `awci/consensus/` | 🟡 **`awci/comparison/` created 2026-09-21** (see §2i below) with `multi_model_fusion.py` (real full-field multi-model fusion) and `regridding.py` (real generic grid regridding, its one real dependent). This is distinct from `ModelConsensusEngine` (see the "corrected 2026-09-21" note directly above from an earlier pass of this same document): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint for *that* module is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`/`awci.comparison`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
-| `awci/flight/` | 🟡 `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
+| `awci/flight/` | 🟡 **`src/awci/flight/` created 2026-09-21** (see §2t below) with `waypoint.py` (real great-circle intermediate-point generation) and `route_weather.py` (real per-route weather briefing composing routing + waypoints + live weather). `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing itself. `planning.py`/`corridor.py`/`altitude.py`/`flight_levels.py`/`departure.py`/`arrival.py`/`alternate.py` real content already exists elsewhere; `fuel_weather.py` would need a real aircraft-type fuel-burn model this codebase does not have. |
 | `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. **`runway.py`/`weather.py` added 2026-09-21** (see §2s below) — real per-runway wind assessment and a real per-airport weather snapshot, both thin compositions of already-real formulas. `terminal.py`/`operations.py`/`runway_condition.py`/`departure.py`/`arrival.py`/`disruption.py` remain unbuilt — each would need real data or a real, cited regulatory threshold this codebase does not have. Crosswind/ceiling/visibility computation already lives in `awci.hazards`/`awci.knowledge.performance.aircraft_performance` rather than duplicated blueprint-named files. |
 | `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). Deliberately real-core-only, user-confirmed scope: composes already-computed AWCI outputs and reuses the 3 already-cited real `flight_recommendations` entries; `risk_matrix.py`/`confidence.py`/`alternatives.py`/`scenario.py` are NOT built - each needs its own real, cited methodology first (e.g. ICAO Doc 9859 SMS for `risk_matrix.py`), not an invented one. |
 | `awci/ai/` | 🟡 `awci/ai/rag/` **built 2026-09-21** (see §2n below) - real, headless, lexical BM25 evidence-retrieval over `awci.knowledge.*`, no new dependency, no network/LLM call. `assistant.py`/`agents/`/`knowledge/`/`reasoning/`/`anomaly_detection/`/`explanation/`/`summarization/`/`orchestration/` remain unbuilt. Still overlaps conceptually with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai` for those unbuilt pieces. |
@@ -1334,6 +1334,50 @@ hand-verifiable wind-geometry cases (direct headwind/tailwind, pure
 tests. Full non-GUI suite collection: 4911 tests (up from 4889, +22); a
 targeted sweep (`-k "airport"`, excluding `tests/gui`) shows 41 passed,
 0 failed.
+
+## 2t. The AWCI Flight Planning Engine (2026-09-21)
+
+Sixth item of "on les attaque toutes un par un": `awci/flight/`.
+
+**Built**: `waypoint.py` (`great_circle_intermediate_point()`/
+`generate_route_waypoints()` - the real, standard spherical
+"intermediate point" navigation formula, Ed Williams' Aviation
+Formulary, the same real family already used by `FlightRoutingEngine.
+great_circle_distance_nm()`/`awci.airport.airport._destination_point()`
+- complements, not replaces, `path_sampling.
+sample_field_along_path()`'s own linear-interpolation approximation)
+and `route_weather.py` (`build_route_weather_briefing()` - a real,
+thin composition of `FlightRoutingEngine`'s route geometry, this
+module's own waypoints, and `build_weather_snapshot()`/
+`ObservationsHub` for real live weather at departure/arrival/every
+real alternate).
+
+**Honest, disclosed scope**: real weather is only fetched at real
+airport stations - there is no real data source anywhere in this
+codebase for weather at an arbitrary point along a route (that would
+need a full NWP solver run sampled via
+`sample_field_along_path()`); the real waypoint list stays positional
+only, never paired with a fabricated weather value, locked in by a
+discipline test.
+
+**Deliberately not built this round**: `planning.py`/`route.py`/
+`corridor.py`/`altitude.py`/`flight_levels.py`/`departure.py`/
+`arrival.py`/`alternate.py` - real content for each already exists
+elsewhere (`FlightRoutingEngine`, `awci.airport.airport`,
+`awci.knowledge.performance.altimetry`); `fuel_weather.py` would need a
+real aircraft-type fuel-burn model this codebase has no source for.
+
+**Verified, not assumed**: manual end-to-end runs (a real LFPG-KJFK
+5-waypoint route showing the real northward great-circle bow; a real
+briefing composed against a fake hub returning real decoded METARs).
+`ruff check`/`mypy` clean; 18 new tests (`tests/
+test_awci_flight_waypoint_route_weather.py`), including hand-verifiable
+spherical-geometry cases (equator quarter-point, antipodal rejection,
+endpoint fractions) and a real distance cross-check (LFPG-KJFK > 3000
+nm, matching the real ~3150 nm great-circle distance). Full non-GUI
+suite collection: 4929 tests (up from 4911, +18); a targeted sweep
+(`-k "flight or waypoint or route_weather"`, excluding `tests/gui`)
+shows 53 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
