@@ -21,9 +21,12 @@ Clear Air Turbulence (CAT) altitude-band/jet-stream reference
 (awci.knowledge.meteorology.clear_air_turbulence), the real mist/fog
 classification reference (awci.knowledge.meteorology.fog), the real
 low-altitude wind-gradient reference
-(awci.knowledge.meteorology.low_level_wind_gradient), and the real
+(awci.knowledge.meteorology.low_level_wind_gradient), the real
 microburst physical-scale/detection-system reference
-(awci.knowledge.meteorology.microburst_reference).
+(awci.knowledge.meteorology.microburst_reference), the real squall-line
+("grain") reference (awci.knowledge.meteorology.squall_line), and the
+real turbulence-intensity/source-type reference
+(awci.knowledge.meteorology.turbulence_intensity).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -39,8 +42,10 @@ https://www.lavionnaire.fr/PhenomOrages.php,
 https://www.lavionnaire.fr/PhenomOrographe.php,
 https://www.lavionnaire.fr/PhenomTAC.php,
 https://www.lavionnaire.fr/MeteoBrouillard.php,
-https://www.lavionnaire.fr/PhenomGradient.php, and
-https://www.lavionnaire.fr/PhenomCisaille.php, at the user's own
+https://www.lavionnaire.fr/PhenomGradient.php,
+https://www.lavionnaire.fr/PhenomCisaille.php,
+https://www.lavionnaire.fr/MeteoLesGrains.php, and
+https://www.lavionnaire.fr/PhenomDifTurbule.php, at the user's own
 request, rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
@@ -881,3 +886,95 @@ def test_microburst_reference_is_complementary_to_the_alert_proximity_diagnostic
         name for name in dir(reference_module) if name.isupper()
     }
     assert alert_names.isdisjoint(reference_names)
+
+
+def test_squall_line_types_cover_the_real_dry_and_wet_distinction():
+    from awci.knowledge.meteorology.squall_line import SquallLineType
+
+    assert {squall_type.value for squall_type in SquallLineType} == {"white", "black"}
+
+
+def test_squall_gust_excess_threshold_and_measurement_period_are_real():
+    from awci.knowledge.meteorology.squall_line import (
+        SQUALL_GUST_EXCESS_MEASUREMENT_PERIOD_MINUTES,
+        SQUALL_MINIMUM_GUST_EXCESS_KT,
+    )
+
+    assert SQUALL_MINIMUM_GUST_EXCESS_KT == 15.0
+    assert SQUALL_GUST_EXCESS_MEASUREMENT_PERIOD_MINUTES == 1.0
+
+
+def test_squall_wind_direction_shift_range_is_ordered_and_real():
+    from awci.knowledge.meteorology.squall_line import SQUALL_WIND_DIRECTION_SHIFT_RANGE_DEG
+
+    low, high = SQUALL_WIND_DIRECTION_SHIFT_RANGE_DEG
+    assert low == 45.0
+    assert high == 90.0
+    assert low < high
+
+
+def test_squall_macro_micro_corridor_width_threshold_is_distinct_from_microburst_diameter():
+    """The real macro-/micro-rafale corridor-width cutoff (a squall-
+    gust naming convention) is a different real quantity from the real
+    individual-microburst physical diameter range already recorded in
+    awci.knowledge.meteorology.microburst_reference - not the same
+    fact, not duplicated."""
+    from awci.knowledge.meteorology.microburst_reference import MICROBURST_TYPICAL_DIAMETER_RANGE_KM
+    from awci.knowledge.meteorology.squall_line import SQUALL_MACRO_MICRO_CORRIDOR_WIDTH_THRESHOLD_KM
+
+    assert SQUALL_MACRO_MICRO_CORRIDOR_WIDTH_THRESHOLD_KM == 2.5
+    assert SQUALL_MACRO_MICRO_CORRIDOR_WIDTH_THRESHOLD_KM != MICROBURST_TYPICAL_DIAMETER_RANGE_KM[0]
+
+
+def test_turbulence_intensity_covers_the_real_four_level_pirep_style_scale():
+    from awci.knowledge.meteorology.turbulence_intensity import TurbulenceIntensity
+
+    assert {intensity.value for intensity in TurbulenceIntensity} == {
+        "light",
+        "moderate",
+        "severe",
+        "extreme",
+    }
+
+
+def test_every_turbulence_intensity_has_a_real_qualitative_description():
+    from awci.knowledge.meteorology.turbulence_intensity import (
+        TURBULENCE_INTENSITY_DESCRIPTION,
+        TurbulenceIntensity,
+    )
+
+    for intensity in TurbulenceIntensity:
+        assert intensity in TURBULENCE_INTENSITY_DESCRIPTION
+        assert len(TURBULENCE_INTENSITY_DESCRIPTION[intensity]) > 0
+
+
+def test_turbulence_source_covers_the_real_nine_origin_categories():
+    from awci.knowledge.meteorology.turbulence_intensity import TurbulenceSource
+
+    assert {source.value for source in TurbulenceSource} == {
+        "friction",
+        "obstacle",
+        "orographic",
+        "clear_air",
+        "frontal",
+        "sea_breeze",
+        "aircraft_wake",
+        "cloud_wake",
+        "thermal_convective",
+    }
+
+
+def test_turbulence_intensity_reference_is_complementary_to_the_ellrod_knapp_category_labels():
+    """The real qualitative PIREP-style intensity scale here is
+    independent of and does not duplicate the real, numerically-derived
+    Ellrod & Knapp (1992) TI2/EI severity labels already returned by
+    acf.science.turbulence.wind_turbulence.CATIndex.category() - both
+    can coexist without overlap."""
+    from acf.science.turbulence.wind_turbulence import CATIndex
+    import awci.knowledge.meteorology.turbulence_intensity as reference_module
+
+    cat_index_names = set(dir(CATIndex))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert cat_index_names.isdisjoint(reference_names)
