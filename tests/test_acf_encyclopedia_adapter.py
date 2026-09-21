@@ -134,10 +134,21 @@ def test_run_verify_covers_all_computable_entries_with_no_skipped_array_input():
     132 -> 134: a small final pass wired green_ampt_infiltration_model
     and graupel_ice_collision_charging - see
     tests/test_encyclopedia_compute_func_gaps_batch5.py.
+
+    134 -> 135: found stale, not caused here - the same-session (2026-09-12)
+    microburst-spatial-field work registered a new "isa_pressure_altitude"
+    encyclopedia entry (calculate_isa_pressure_altitude(), the exact
+    analytic inverse of the pre-existing calculate_isa_pressure(); see
+    src/acf/science/encyclopedia/aerodynamics/isa_atmosphere.py and
+    tests/test_isa_pressure_altitude.py for its own real round-trip
+    verification) with a real compute_func, but never bumped this
+    hardcoded count. Confirmed via run_verify()'s own findings: the new
+    entry is not flagged "insensitive" or otherwise - it's cleanly
+    computable, this assertion was just stale by one.
     """
     result = adapter.run_verify()
-    assert result.total_computable == 134
-    assert result.checked == 134
+    assert result.total_computable == 135
+    assert result.checked == 135
     skipped = [f for f in result.findings if f.reason == "skipped_array_input"]
     assert skipped == [], f"unexpected skipped entries: {skipped}"
 
