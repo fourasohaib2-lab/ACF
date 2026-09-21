@@ -95,7 +95,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
 | `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | 🟡 **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. No `knowledge_graph/` (entities/relations/ontology) for aviation exists yet — the one real content gap remaining in this layer. |
 | `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `src/acf/connectors/` is also real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, still under `acf.connectors` rather than `awci.data.connectors`, not yet migrated; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `awci.knowledge.icao` (moved from `acf.aviation.icao` in §2j), not separate `connectors/` modules. |
-| `awci/observations/` | 🟡 Overlaps with `acf.connectors` + `awci.knowledge.icao` above; no single `observations/hub.py` aggregation point. |
+| `awci/observations/` | 🟡 **`hub.py` built 2026-09-21** (see §2r below) — real, single aggregation point over `awci.knowledge.icao.live_source` (METAR/TAF/SIGMET) + `acf.connectors.{pirep_reports,nexrad_stations,eumetsat_mtg}` (PIREP/radar/satellite), all already-real connectors, never re-implemented. The blueprint's full 11-file package (`stations.py`/`metar.py`/per-source `parser/decoder/validator` subpackages) deliberately not built — real METAR/TAF/SIGMET decoding already exists elsewhere; duplicating it would not close a real gap. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
 | `awci/vertical/` | ✅ Real and substantial — `awci.complexity.vertical_field` (**migrated 2026-09-21**, see §2d below), `acf.gui.dashboard.acf_workstation_sounding_panel` (ACF's own sounding panel, correctly still in `acf.gui` - real, intentional reuse by the AWCI dashboard, not something that moved), and `awci.dashboard`'s own `AWCIVerticalSoundingWidget`/`AWCIVerticalProfile` (moved from `acf.gui.dashboard` in §2k) cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). **Deliberately not placed under a new `awci/vertical/` package**: despite its name, `vertical_field.py` is not the blueprint's general-purpose sounding/diagram engine — it is `AWCICalculator` applied along a vertical profile (its own docstring: "same real complexity computation as spatial_field.py exactly"), so it was migrated alongside `calculator.py`/`spatial_field.py` into `awci/complexity/` instead, as one coherent field-computation unit. |
 | `awci/hazards/` (one module per hazard) | ✅ **Migrated 2026-09-21** — see §2b, §2g, §2h and §2i below. Physically moved to `src/awci/hazards/{icing_temperature_range,ceiling,visibility,dust,microburst,volcanic_ash,wind_shear,cat_turbulence,orographic_froude,hydrometeor_phase,convective_energy,theta_e,updraft,terrain_elevation}.py` (14 modules), with `acf.awci.<module>` kept as a real backward-compatible re-export. `spatial_field.py` now imports all 9 of its real hazard/thermo dependencies directly from `awci.hazards`, none through the `acf.awci` shim anymore. This is now a literal, not just conceptual, match to the blueprint's `awci/hazards/` (still flat rather than one-subpackage-per-hazard, which the blueprint itself is ambiguous about — it lists both a flat file-per-hazard example and per-hazard subdirectories). |
@@ -1233,6 +1233,56 @@ and a `pyproject.toml`-parsing parity test locking `KNOWN_APPS` to the
 real `[project.scripts]` table. Full non-GUI suite collection: 4877
 tests (up from 4855, +22); a targeted sweep (`-k "acfctl"`, excluding
 `tests/gui`) shows 22 passed, 0 failed.
+
+## 2r. The AWCI Observation Hub (2026-09-21)
+
+Fourth item of "on les attaque toutes un par un": `awci/observations/`
+- specifically the one, named gap ("no single `observations/hub.py`
+aggregation point").
+
+**Built**: `src/awci/observations/hub.py`'s `ObservationsHub` - a real,
+thin aggregation point over 4 already-real, already-working connectors
+scattered across 2 packages: `awci.knowledge.icao.live_source`
+(METAR/TAF per-station, SIGMET FIR-wide - NOAA Aviation Weather
+Center), `acf.connectors.pirep_reports.PIREPConnector` (Pilot Reports),
+`acf.connectors.nexrad_stations.NEXRADRadarConnector` (NEXRAD station
+status), `acf.connectors.eumetsat_mtg.EUMETSATMTGConnector` (MTG FCI
+satellite quicklook). `ObservationsSnapshot` carries every real
+per-source result unchanged - no synthesized aggregate "all good"
+verdict; a real, dishonest per-source failure survives into the
+snapshot untouched.
+
+**Investigated and deliberately excluded** (disclosed in `hub.py`'s
+own docstring): `acf.connectors.argo_floats` (real, but ocean buoys,
+not an aviation source); `acf.connectors.live_connectors.
+LiveDataConnectorEngine` (confirmed, by reading it first, to be a
+different, still-disclosed-unconnected registry of general NWP-model
+sources - ECMWF/NOAA-NOMADS/DWD/EUMETSAT-datastore/NASA/Copernicus -
+every real fetch call still honestly returns
+`NOT_SYNCED_NO_REAL_CONNECTION_ESTABLISHED`); `acf.connectors.wmo_wis.
+WMOWISEngine` (a real GTS/WIS 2.0 bulletin-header PARSER given a
+string, not a live fetcher - a different real shape, out of scope for
+a "fetch current observations" hub).
+
+**Deliberately not the blueprint's full 11-file package** (`stations.
+py`/`metar.py`/`speci.py`/`pirep.py`/`radar.py`/`satellite.py`/
+`lightning.py`/`surface.py`/`upper_air.py`/`aircraft_observations.py`,
+plus per-source `parser/decoder/validator/interpreter` subpackages) -
+real METAR/TAF/SIGMET parsing and decoding already exists
+(`awci.knowledge.icao.metar_decoder`/`taf_decoder`/`sigmet_decoder`);
+rebuilding a second, parallel `observations/metar/decoder.py` would be
+pure duplication, not a real gap closed.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean; 12 new tests
+(`tests/test_awci_observations_hub.py`), verifying the DELEGATION/
+WIRING this module actually adds (correct arguments passed through to
+each real connector, correct field assembly) via dependency injection
+and monkeypatching at the hub's own call boundary - not re-testing
+each connector's own already-covered real network/parsing behavior.
+Full non-GUI suite collection: 4889 tests (up from 4877, +12); a
+targeted sweep (`-k "observations_hub or aviation_live_source or
+eumetsat_mtg_connector or pirep or nexrad"`, excluding `tests/gui`)
+shows 47 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
