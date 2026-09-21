@@ -847,6 +847,84 @@ and `acf/awci_app.py`'s launch of `AWCIDashboardWindow`) and the
 decisions about how separate ACF and AWCI should ultimately be, not
 migration mechanics.
 
+## 2l. The ACF→AWCI reverse-coupling decision (2026-09-21)
+
+The user explicitly asked to continue with "le découplage ACF↔AWCI" - the
+one real product/architecture decision §2k's own closing note left open:
+whether `acf_workstation_*.py` (ACF's own general-purpose scientific
+workstation) should keep reusing `AWCIMapPanel` as its map widget, or get
+its own independent one.
+
+**Investigation, before any decision**: grepping `src/acf/gui/dashboard/`
+for `AWCIMapPanel`/`AWCICrossSection`/`AWCIEvolutionChart`/`AWCIGauge`/
+`AWCIModelSpreadChart`/`AWCIRadar` confirmed the coupling is real and
+load-bearing, not incidental: 13 of the 15 `acf_workstation_*.py` files
+directly instantiate `AWCIMapPanel(...)` as their real map-rendering
+widget (e.g. `acf_workstation_overview.py`, `acf_workstation_complexity.py`,
+`acf_workstation_thermodynamics.py`). Reading `ACFOverviewPanel.__init__`
+(the simplest caller) confirmed this reuse is deliberate and already
+half-mitigated: it constructs `AWCIMapPanel("ATMOSPHERIC STATE",
+show_legend=False, show_info_boxes=False, show_demo_fallback=False)`,
+explicitly disabling every AWCI-specific chrome element via constructor
+flags `AWCIMapPanel` already exposes for exactly this "AWCI-free ACF
+Scientific Workstation" use case (see that class's own
+`show_demo_fallback` docstring, added 2026-09-04 for this exact purpose).
+
+**Full read of `awci.dashboard.awci_map_panel.AWCIMapPanel`** (1518 lines)
+before proposing any extraction boundary - this was not assumed from the
+constructor-flag surface alone. Finding: `update_data()`, the panel's
+real redraw method, is itself ~350 lines that genuinely interleave generic
+Cartopy machinery (stock_img/COASTLINE/BORDERS basemap, the main
+`contourf`, colorbar add/remove with its own documented
+`figure.delaxes()` workaround for a real matplotlib cleanup bug, zoom/pan
+extent application) with AWCI-specific business logic (the synthetic
+demo-pattern fallback, the 9-entry `_EXTRA_LAYER_SPECS` table wired
+directly to `awci.hazards.*` formulas, the "Model Disagreement" async
+engine hookup, flight-path/aircraft-glyph/city-label drawing, the AWCI
+SCALE legend, the RENDERED/FLIGHT LEVEL info boxes) - with no existing
+seam between the two. Splitting them would mean rewriting this method
+into a generic-base-class redraw path plus AWCI-specific override hooks,
+carefully preserving: the exact Cartopy/matplotlib artist rebuild order
+and alpha handling, the weakref+`shiboken6.isValid()` MTG-basemap-update
+guard (a real, already-documented use-after-free fix), the real
+click-vs-drag double-delivery guard in `mouseReleaseEvent()` (a real,
+already-documented PySide6/matplotlib double-event-delivery fix), and the
+lazy-build/opacity semantics of the extra-layer contours - across 7
+dedicated test files (`tests/test_awci_map_panel_*.py`) plus every test
+touching the 13 `acf_workstation_*.py` callers plus the relevant
+`tests/gui/` suite.
+
+**Decision (user-confirmed after this investigation was reported)**:
+**documented and accepted as a disclosed trade-off, no code changed.**
+The reverse coupling is real (an architecturally "backwards" dependency -
+ACF, the general framework, importing a class named and designed for
+AWCI, one specific vertical application built on top of it) but it is
+already **functionally neutralized**: every ACF caller disables 100% of
+the AWCI-specific chrome via the constructor flags `AWCIMapPanel` already
+provides for this purpose, and reuses only the generic Cartopy render/
+zoom/pan/click-to-point/export machinery. A full extraction into a clean
+generic base class would fix the dependency *direction* but deliver no
+functional or scientific benefit to either ACF or AWCI today, at a real,
+non-trivial regression risk (rewriting a 350-line method with several
+already-fixed, subtle Qt/matplotlib bugs baked into it, re-validated
+across 7+13+ files and their test suites) - not a favorable risk/reward
+trade for a purity-only refactor on a working, already-heavily-tested,
+production GUI component. Per this project's own general rule ("minimize
+changes susceptible of breaking existing [functionality]"), the coupling
+stays as-is.
+
+**If this is revisited later**: the natural, lower-risk extraction
+boundary identified during this investigation is the truly self-contained
+generic surface already implemented as isolated methods with no AWCI-
+specific state reads - `zoom_in`/`zoom_out`/`reset_view`/`pan*`/
+`_apply_camera_extent` (camera/extent), `mousePressEvent`/
+`mouseReleaseEvent`/`_pixel_to_lonlat`/`pointClicked` (click-to-point),
+and `_export_png`/`_export_svg`/`_export_csv`/`_export_json`
+(export) - none of these three groups touch `_EXTRA_LAYER_SPECS`,
+`awci_grid()`, or any other AWCI-specific data source. `update_data()`
+itself is the one real blocker to a *complete* extraction and would need
+to be split first were this revisited.
+
 ## 3. What this means for a real migration
 
 Adopting these two blueprints literally would require, at minimum:
@@ -861,7 +939,9 @@ Adopting these two blueprints literally would require, at minimum:
    now hold only backward-compatible re-export shims. The deliberately
    untouched pieces (ACF-side widget reuse, the `acf-awci` console-script
    entry point) are real product/packaging decisions, not migration
-   mechanics - see §2k's own closing note.
+   mechanics - see §2k's own closing note. The ACF-side widget reuse was
+   investigated and explicitly decided in §2l: kept as a disclosed,
+   functionally-neutralized trade-off rather than extracted.
 2. **Reorganizing `src/acf/science/` and `src/acf/parameters/` from flat,
    topic-named modules into the blueprint's per-domain subpackages** —
    **started 2026-09-21** (Phase 1, §4a): the 21-module
