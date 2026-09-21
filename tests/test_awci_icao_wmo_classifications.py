@@ -7,7 +7,18 @@ category minima (awci.knowledge.airports.ils_categories), the real
 ICAO runway state group codes (awci.knowledge.airports.runway_state),
 the real METAR/TAF present weather code meanings
 (awci.knowledge.icao.present_weather_codes), and the real WMO cloud
-genus/étage/cover classification (awci.knowledge.meteorology.clouds).
+genus/étage/cover classification (awci.knowledge.meteorology.clouds),
+the real icing intensity/type reference
+(awci.knowledge.meteorology.icing), the real TAF change-indicator
+meanings (awci.knowledge.icao.taf_change_indicators), the real SIGMET
+validity-period rules (awci.knowledge.icao.sigmet_validity), the real
+GAMET/AIRMET reference facts (awci.knowledge.icao.gamet_airmet), the
+real thunderstorm life-cycle/hazard reference
+(awci.knowledge.meteorology.thunderstorm), the real orographic
+(mountain-wave) turbulence formation-condition reference
+(awci.knowledge.meteorology.orographic_turbulence), and the real
+Clear Air Turbulence (CAT) altitude-band/jet-stream reference
+(awci.knowledge.meteorology.clear_air_turbulence).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -17,7 +28,11 @@ present weather codes, the 10 WMO cloud genera and their étage/cover
 grouping) rather than an unbounded enumeration of every ICAO Annex /
 WMO technical regulation. The present-weather, cloud-cover, and
 runway-state tables were cross-checked against
-https://www.lavionnaire.fr/CodesMetar.php at the user's own request,
+https://www.lavionnaire.fr/CodesMetar.php, and the thunderstorm/
+orographic-turbulence/CAT reference facts against
+https://www.lavionnaire.fr/PhenomOrages.php,
+https://www.lavionnaire.fr/PhenomOrographe.php, and
+https://www.lavionnaire.fr/PhenomTAC.php, at the user's own request,
 rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
@@ -539,3 +554,115 @@ def test_thunderstorm_reference_values_are_all_real_and_positive():
     assert AIRLINER_LIGHTNING_STRIKES_PER_YEAR_APPROX == 1.0
     assert LIGHTNING_PEAK_CURRENT_AMPERES_APPROX == 200_000.0
     assert HAIL_DIAMETER_MAXIMUM_DOCUMENTED_MM == 150.0
+
+
+def test_orographic_wave_wind_and_slope_thresholds_are_real_and_positive():
+    from awci.knowledge.meteorology.orographic_turbulence import (
+        OROGRAPHIC_WAVE_MINIMUM_WIND_SPEED_KT,
+        OROGRAPHIC_WAVE_ROTOR_CRITICAL_SLOPE_DEG,
+    )
+
+    assert OROGRAPHIC_WAVE_MINIMUM_WIND_SPEED_KT == 25.0
+    assert OROGRAPHIC_WAVE_ROTOR_CRITICAL_SLOPE_DEG == 40.0
+
+
+def test_orographic_wave_rotor_descent_speed_range_is_ordered():
+    from awci.knowledge.meteorology.orographic_turbulence import (
+        OROGRAPHIC_WAVE_ROTOR_DESCENT_SPEED_KMH,
+    )
+
+    low, high = OROGRAPHIC_WAVE_ROTOR_DESCENT_SPEED_KMH
+    assert low == 20.0
+    assert high == 36.0
+    assert low < high
+
+
+def test_orographic_wave_downwind_extent_is_real_and_positive():
+    from awci.knowledge.meteorology.orographic_turbulence import (
+        OROGRAPHIC_WAVE_MINIMUM_DOWNWIND_EXTENT_KM,
+    )
+
+    assert OROGRAPHIC_WAVE_MINIMUM_DOWNWIND_EXTENT_KM == 100.0
+
+
+def test_orographic_wave_stability_outcomes_are_qualitatively_distinct():
+    from awci.knowledge.meteorology.orographic_turbulence import (
+        OROGRAPHIC_WAVE_STABLE_AIR_OUTCOME,
+        OROGRAPHIC_WAVE_UNSTABLE_AIR_OUTCOME,
+    )
+
+    assert OROGRAPHIC_WAVE_STABLE_AIR_OUTCOME != OROGRAPHIC_WAVE_UNSTABLE_AIR_OUTCOME
+    assert "descent" in OROGRAPHIC_WAVE_STABLE_AIR_OUTCOME
+    assert "lifting" in OROGRAPHIC_WAVE_UNSTABLE_AIR_OUTCOME
+
+
+def test_orographic_turbulence_reference_is_complementary_to_the_froude_diagnostic():
+    """The real formation-condition facts here (wind/slope thresholds,
+    rotor speed) are independent of and do not duplicate the real
+    per-point Fr = U/(N*H) diagnostic already implemented in
+    awci.hazards.orographic_froude - both modules can coexist without
+    overlap."""
+    import awci.hazards.orographic_froude as froude_module
+    import awci.knowledge.meteorology.orographic_turbulence as reference_module
+
+    froude_names = set(dir(froude_module))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert froude_names.isdisjoint(reference_names)
+
+
+def test_cat_typical_altitude_range_is_real_and_matches_metres_to_feet():
+    from awci.knowledge.meteorology.clear_air_turbulence import (
+        CAT_TYPICAL_ALTITUDE_RANGE_FT,
+        CAT_TYPICAL_ALTITUDE_RANGE_M,
+    )
+
+    assert CAT_TYPICAL_ALTITUDE_RANGE_M == (7_000.0, 12_000.0)
+    assert CAT_TYPICAL_ALTITUDE_RANGE_FT == (23_000.0, 39_000.0)
+    low_m, high_m = CAT_TYPICAL_ALTITUDE_RANGE_M
+    low_ft, high_ft = CAT_TYPICAL_ALTITUDE_RANGE_FT
+    # Real unit-conversion sanity check (1 m ~= 3.281 ft), not a fabricated relation.
+    assert low_ft == pytest.approx(low_m * 3.28084, rel=0.02)
+    assert high_ft == pytest.approx(high_m * 3.28084, rel=0.02)
+
+
+def test_cat_is_associated_with_jet_stream_regions():
+    from awci.knowledge.meteorology.clear_air_turbulence import CAT_ASSOCIATED_WITH_JET_STREAM
+
+    assert CAT_ASSOCIATED_WITH_JET_STREAM is True
+
+
+def test_cat_example_jet_stream_data_point_is_real_and_within_the_turbulence_band():
+    from awci.knowledge.meteorology.clear_air_turbulence import (
+        CAT_EXAMPLE_JET_STREAM_CORE_FLIGHT_LEVEL,
+        CAT_EXAMPLE_JET_STREAM_CORE_SPEED_KT,
+        CAT_EXAMPLE_TURBULENCE_FLIGHT_LEVEL_RANGE,
+    )
+
+    assert CAT_EXAMPLE_JET_STREAM_CORE_SPEED_KT == 130.0
+    assert CAT_EXAMPLE_JET_STREAM_CORE_FLIGHT_LEVEL == 340
+    low_fl, high_fl = CAT_EXAMPLE_TURBULENCE_FLIGHT_LEVEL_RANGE
+    assert low_fl < CAT_EXAMPLE_JET_STREAM_CORE_FLIGHT_LEVEL < high_fl
+
+
+def test_cat_is_more_severe_on_the_cold_air_side():
+    from awci.knowledge.meteorology.clear_air_turbulence import CAT_MORE_SEVERE_ON_COLD_AIR_SIDE
+
+    assert CAT_MORE_SEVERE_ON_COLD_AIR_SIDE is True
+
+
+def test_cat_reference_is_complementary_to_the_ellrod_knapp_index():
+    """The real altitude-band/jet-stream/asymmetry facts here are
+    independent of and do not duplicate the real per-point Ellrod &
+    Knapp (1992) TI2/EI diagnostic already implemented in
+    awci.hazards.cat_turbulence - both modules can coexist without
+    overlap."""
+    import awci.hazards.cat_turbulence as index_module
+    import awci.knowledge.meteorology.clear_air_turbulence as reference_module
+
+    index_names = set(dir(index_module))
+    reference_names = {
+        name for name in dir(reference_module) if name.isupper()
+    }
+    assert index_names.isdisjoint(reference_names)
