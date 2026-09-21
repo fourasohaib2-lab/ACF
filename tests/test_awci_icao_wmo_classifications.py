@@ -496,3 +496,46 @@ def test_hydroplaning_coefficient_discrepancy_is_disclosed_not_silently_merged()
     assert existing_speed_kt == pytest.approx(99.0)
     assert alternate_speed_kt == pytest.approx(96.03, abs=0.01)
     assert existing_speed_kt != pytest.approx(alternate_speed_kt, abs=0.5)
+
+
+def test_thunderstorm_stages_cover_the_real_three_stage_life_cycle():
+    from awci.knowledge.meteorology.thunderstorm import ThunderstormStage
+
+    assert {stage.value for stage in ThunderstormStage} == {"cumulus", "mature", "dissipating"}
+
+
+def test_thunderstorm_mature_stage_updraft_exceeds_downdraft():
+    from awci.knowledge.meteorology.thunderstorm import (
+        THUNDERSTORM_MATURE_DOWNDRAFT_M_S,
+        THUNDERSTORM_MATURE_UPDRAFT_M_S,
+    )
+
+    assert THUNDERSTORM_MATURE_UPDRAFT_M_S == 35.0
+    assert THUNDERSTORM_MATURE_DOWNDRAFT_M_S == 15.0
+    assert THUNDERSTORM_MATURE_UPDRAFT_M_S > THUNDERSTORM_MATURE_DOWNDRAFT_M_S
+
+
+def test_hail_fall_velocity_increases_monotonically_with_diameter():
+    from awci.knowledge.meteorology.thunderstorm import HAIL_DIAMETER_MM_TO_FALL_VELOCITY_KMH
+
+    diameters = sorted(HAIL_DIAMETER_MM_TO_FALL_VELOCITY_KMH)
+    velocities = [HAIL_DIAMETER_MM_TO_FALL_VELOCITY_KMH[d] for d in diameters]
+    assert velocities == sorted(velocities)
+
+
+def test_thunderstorm_reference_values_are_all_real_and_positive():
+    from awci.knowledge.meteorology.thunderstorm import (
+        AIRLINER_LIGHTNING_STRIKES_PER_YEAR_APPROX,
+        CUMULONIMBUS_ANVIL_ALTITUDE_M,
+        HAIL_DIAMETER_MAXIMUM_DOCUMENTED_MM,
+        LIGHTNING_PEAK_CURRENT_AMPERES_APPROX,
+        THUNDERSTORM_DISSIPATION_TIME_MINUTES,
+        THUNDERSTORM_TURBULENCE_LATERAL_EXTENT_NM,
+    )
+
+    assert THUNDERSTORM_DISSIPATION_TIME_MINUTES == 30.0
+    assert CUMULONIMBUS_ANVIL_ALTITUDE_M == 15_000.0
+    assert THUNDERSTORM_TURBULENCE_LATERAL_EXTENT_NM == (10.0, 20.0)
+    assert AIRLINER_LIGHTNING_STRIKES_PER_YEAR_APPROX == 1.0
+    assert LIGHTNING_PEAK_CURRENT_AMPERES_APPROX == 200_000.0
+    assert HAIL_DIAMETER_MAXIMUM_DOCUMENTED_MM == 150.0
