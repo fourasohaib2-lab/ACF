@@ -17,7 +17,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 
 | Blueprint | Current reality |
 |---|---|
-| `core/{application,configuration,context,exceptions,logging,lifecycle,registry,events,plugins,dependencies,environment,version}.py` | 🟡 `src/acf/core/` exists with `application.py`, `bootstrap.py`, `config.py`, `constants.py`, `environment.py`, `exceptions.py`, `logger.py`, `metadata.py`, `parameter.py`, `parameter_registry.py`, `plugin_manager.py`, `service_manager.py`, `version.py`, `default_parameters.py`, plus a `contracts/` subpackage. Real overlap on config/exceptions/logging/environment/version/plugins; no `lifecycle.py`, `registry.py` (a generic one — `parameter_registry.py` is science-specific), `events.py`, or `context.py`. `application.py` exists but is confirmed dead code (`docs/STATUS.md`'s own NOTE: nothing constructs it; `acf-gui` boots `ACFWorkstationWindow` directly). |
+| `core/{application,configuration,context,exceptions,logging,lifecycle,registry,events,plugins,dependencies,environment,version}.py` | 🟡 `src/acf/core/` exists with `application.py`, `bootstrap.py`, `config.py`, `constants.py`, `environment.py`, `exceptions.py`, `logger.py`, `metadata.py`, `parameter.py`, `parameter_registry.py`, `plugin_manager.py`, `service_manager.py`, `version.py`, `default_parameters.py`, plus a `contracts/` subpackage. Real overlap on config/exceptions/logging/environment/version/plugins. **`lifecycle.py`/`registry.py`/`events.py`/`context.py` added 2026-09-21** — see §2ab: `Registry`/`Lifecycle` are real aliases for `ServiceManager`/`Bootstrap`; `EventBus`/`ApplicationContext` are genuinely new, generic content. `application.py` exists but is confirmed dead code (`docs/STATUS.md`'s own NOTE: nothing constructs it; `acf-gui` boots `ACFWorkstationWindow` directly). |
 | `utils/{filesystem,paths,datetime,units,validation,serialization,hashing,caching,profiling,concurrency,numerical,decorators}.py` | 🟡 `src/acf/utils/` exists with `time.py`, `paths.py`, `system.py`, `validators.py`, `files.py`. Real overlap on paths/validation/time; no dedicated `units.py` (units live in `standards/`), `serialization.py`, `hashing.py`, `caching.py`, `profiling.py`, `concurrency.py`, `numerical.py`, `decorators.py` as standalone modules. |
 
 ### L1 — Scientific formulations & standards
@@ -1842,6 +1842,38 @@ tests (up from 4630, +14), same pre-existing 45 collection errors
 (`task_468ac835`, already tracked in §2w/§2x/§2y/§2z) confirmed
 unrelated. A targeted sweep (`-k "awci_api"
 --continue-on-collection-errors`) shows 14 passed, 0 failed.
+
+## 2ab. Closing acf.core's own remaining gap (2026-09-21)
+
+Fourteenth item of "on les attaque toutes un par un" - the first of a
+5-part ACF-general batch (`core/`, `utils/`, `api/`, `alerts/`,
+`reports/`, each tackled as its own item): the `core/{...}` row's own
+named-but-missing files, distinct from every AWCI-specific item
+before this one.
+
+**Built**: `registry.py` (`Registry` - a real alias for the already-
+generic `acf.core.service_manager.ServiceManager`), `lifecycle.py`
+(`Lifecycle` - a real alias for the already-real
+`acf.core.bootstrap.Bootstrap`), `events.py` (`EventBus`/`Event` -
+genuinely new, generic app-lifecycle pub/sub, same real dispatch/
+error-isolation discipline as `awci.core.events.EventBus` - a real,
+independent sibling rather than a shared import, since AWCI is a
+separate product per the adopted reference architecture and
+`acf.core.events` did not exist when the AWCI one was built),
+`context.py` (`ApplicationContext` - bundles `Registry`+`EventBus`,
+ACF's own general-scope counterpart to `awci.core.context.
+AWCIContext`, with no project/workspace field since
+`acf.workspace.Project` is reachable through the registry like any
+other real service).
+
+**Verified, not assumed**: manual end-to-end run (registry get/set,
+event subscribe/emit, context bundling both). `ruff check`/`mypy`
+clean. 7 new tests
+(`tests/test_acf_core_lifecycle_registry_events.py`), including
+identity checks for the 2 real aliases and a real isolation check
+that two `ApplicationContext()` instances never share state. Full
+non-GUI collection: 4651 tests (up from 4644, +7), same pre-existing
+45 collection errors (`task_468ac835`) confirmed unrelated.
 
 ## 3. What this means for a real migration
 
