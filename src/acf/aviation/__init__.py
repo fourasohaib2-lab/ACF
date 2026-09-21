@@ -1,26 +1,11 @@
+"""Backward-compatible re-export.
+
+Real package moved to ``awci.knowledge`` on 2026-09-21 (Phase 9 of the
+AWCI separate-package migration - see ``src/awci/knowledge/__init__.py``'s
+own docstring and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``). Kept here
+so every existing ``acf.aviation`` import keeps working unchanged.
 """
-Atmospheric Complexity Framework (ACF)
 
-Global Operational Flight Meteorology & Aviation Safety Package (MISSION ACF-031)
-"""
-
-from acf.aviation.airports.airport_database import AirportDatabase, AirportInfo
-from acf.aviation.graphics.cross_section import FlightCrossSectionEngine
-from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
-from acf.aviation.icao.products import ICAOMetDecoder, METARData, SIGMETData, TAFData
-from acf.aviation.performance.aircraft_performance import AircraftPerformanceEngine
-from acf.aviation.routing.flight_routing import FlightRoutingEngine
-
-__all__ = [
-    "AircraftPerformanceEngine",
-    "AirportDatabase",
-    "AirportInfo",
-    "AviationHazardEngine",
-    "AviationHazardInfo",
-    "FlightCrossSectionEngine",
-    "FlightRoutingEngine",
-    "ICAOMetDecoder",
-    "METARData",
-    "SIGMETData",
-    "TAFData",
-]
+from awci.knowledge import *  # noqa: F401,F403
+from awci.knowledge import __all__  # noqa: F401

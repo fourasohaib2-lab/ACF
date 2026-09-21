@@ -65,7 +65,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from acf.aviation.airports.airport_database import AirportDatabase, AirportInfo
+from awci.knowledge.airports.airport_database import AirportDatabase, AirportInfo
 
 #: Real, standard final-approach-segment reference distance (10 NM),
 #: converted to km - see module docstring.

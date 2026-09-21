@@ -76,7 +76,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from acf.aviation.icao.metar_decoder import METARReport
+from awci.knowledge.icao.metar_decoder import METARReport
 from acf.science.saturation_mixing_ratio import SaturationMixingRatio
 from acf.science.saturation_vapor_pressure import SaturationVaporPressure
 

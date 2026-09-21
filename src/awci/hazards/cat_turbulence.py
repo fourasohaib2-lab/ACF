@@ -96,7 +96,7 @@ from typing import Any
 
 import numpy as np
 
-from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
+from awci.knowledge.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
 from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
 from acf.science.wind_turbulence import CATIndex
 

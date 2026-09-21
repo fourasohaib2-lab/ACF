@@ -65,7 +65,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
+from awci.knowledge.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
 
 from awci.complexity.normalizer import Normalizer
 

@@ -79,7 +79,7 @@ this is new construction, not a rename of an equivalent existing tree.
 | Blueprint layer | Closest current equivalent |
 |---|---|
 | `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
-| `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | 🟡 `src/acf/aviation/` covers part of this: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`. No `knowledge_graph/` (entities/relations/ontology) for aviation exists. |
+| `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | 🟡 **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. No `knowledge_graph/` (entities/relations/ontology) for aviation exists yet — the one real content gap remaining in this layer. |
 | `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `src/acf/connectors/` is also real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, still under `acf.connectors` rather than `awci.data.connectors`, not yet migrated; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `acf.aviation.icao`, not separate `connectors/` modules. |
 | `awci/observations/` | 🟡 Overlaps with `acf.connectors` + `acf.aviation.icao` above; no single `observations/hub.py` aggregation point. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
@@ -568,19 +568,137 @@ adopted reference architecture specifies. The one remaining real gap
 before the whole AWCI subsystem is genuinely separate is
 `src/acf/aviation/` (17 files) - not yet touched.
 
+## 2j. AWCI separate-package migration, Phase 9: `src/acf/aviation/` → `awci/knowledge/` (2026-09-21)
+
+The user asked to continue with `src/acf/aviation/` - the one remaining real
+gap noted at the end of §2i. This is a structurally different package from
+`acf.awci`: 17 files across 6 already-organized subpackages
+(`airports/`, `graphics/`, `hazards/`, `icao/`, `performance/`, `routing/`),
+not a flat directory of loosely-related modules.
+
+**Investigation, before any move**:
+- `acf.aviation` is largely self-contained. Internal cross-references, all
+  within the package itself: `icao/live_source.py` and `icao/products.py`
+  both import the 3 decoders (`metar_decoder.py`, `sigmet_decoder.py`,
+  `taf_decoder.py`); `icao/taf_decoder.py` imports regex helpers
+  (`_CLOUD_RE`, `_VIS_M_RE`, `_VV_RE`, `_WIND_RE`, `_WX_RE`) from
+  `icao/metar_decoder.py`; `routing/flight_routing.py` imports
+  `airports/airport_database.py` (the one real cross-subpackage
+  dependency). One external dependency in the whole package:
+  `icao/metar_decoder.py` imports `acf.physics_guard.variable_quality`
+  (kept as-is - a genuinely different, unrelated subsystem, not part of
+  this migration).
+- 27 external dependents of `acf.aviation.*` found via
+  `grep -rl "acf\.aviation\." src/ tests/`. Critically, 11 of them are
+  **already-migrated `awci/*` modules from earlier phases** -
+  `awci/airport/airport.py` (Phase 8), `awci/hazards/{volcanic_ash,
+  cat_turbulence,microburst,icing_temperature_range}.py` (Phase 1/6),
+  `awci/complexity/{scientific_status,metar_verification,normalizer,
+  result,weights,calculator}.py` (Phases 2/8) - confirming `acf.aviation`
+  is already deeply, real load-bearing coupled to the new package, not an
+  independent island.
+- Read module docstrings rather than guessing from filenames:
+  `hazards/aviation_hazards.py` is a hazard-**definitions registry**
+  (`AviationHazardEngine`/`AviationHazardInfo`/
+  `AVIATION_HAZARDS_REGISTRY`) - conceptually distinct from
+  `awci/hazards/`'s real per-point numeric computation, despite the name
+  clash. `graphics/cross_section.py` is a flight-route vertical
+  cross-section engine. `icao/live_source.py` is real live METAR/TAF/SIGMET
+  fetching - the real caller that makes the decoders reachable outside
+  tests.
+
+**Placement decision (disclosed)**: move the *entire* `acf.aviation`
+package as one coherent unit into a new `src/awci/knowledge/` package,
+preserving its internal subpackage structure unchanged
+(`knowledge/airports/`, `knowledge/graphics/`, `knowledge/hazards/`,
+`knowledge/icao/`, `knowledge/performance/`, `knowledge/routing/`). This
+matches the blueprint's own `awci/knowledge/` "Aviation Knowledge Base"
+layer. An alternative was considered and rejected: fragmenting across
+several new top-level packages by stricter layer-name matching (e.g. a
+separate `awci/observations/` for `icao/`, `awci/flight/` for `routing/`).
+Rejected because `acf.aviation` was already a coherent, well-organized
+package - fragmenting it for marginal naming purity would cost real
+cohesion for no functional gain, consistent with the same reasoning
+applied in Phases 6-7 (keeping `convective_energy.py`/`theta_e.py`/
+`updraft.py` together in `hazards/` rather than starting a third package).
+The resulting **naming overlap is intentional and disclosed**:
+`awci.knowledge.hazards` (aviation hazard *definitions* registry) and the
+pre-existing `awci.hazards` (real per-point complexity *computation*) are
+two distinct concepts at two distinct layers that happen to share a
+directory name, exactly mirroring the real distinction already present in
+the original codebase.
+
+**Execution**: all 17 files physically moved via `git mv`
+(`airports/{__init__,airport_database}.py`,
+`graphics/{__init__,cross_section}.py`,
+`hazards/{__init__,aviation_hazards}.py`,
+`icao/{__init__,live_source,metar_decoder,products,sigmet_decoder,
+taf_decoder}.py`, `performance/{__init__,aircraft_performance}.py`,
+`routing/{__init__,flight_routing}.py`), plus the top-level
+`acf/aviation/__init__.py` reconstructed as `awci/knowledge/__init__.py`
+with its 6 real imports repointed to relative-package form. Internal
+cross-references fixed to `awci.knowledge.*` (4 real import lines:
+`icao/live_source.py`, `icao/products.py`, `icao/taf_decoder.py`,
+`routing/flight_routing.py`). A second, deeper grep pass for deferred
+(function-body) imports across the whole moved package found none this
+time - all of `acf.aviation`'s cross-references were real top-of-file
+imports.
+
+The mandatory comprehensive sweep (`grep -rn "acf\.aviation\." src/awci/`,
+across the *entire* `src/awci/` tree, not just the newly-moved files)
+confirmed the 11 already-migrated dependents found during investigation
+and repointed the 4 that had real top-of-file import statements
+(the other 7 references were docstrings/comments citing
+`acf.aviation.hazards.aviation_hazards` as a scientific source, left as
+historical citations, matching how earlier phases treated comment-only
+references): `awci/airport/airport.py`, `awci/hazards/cat_turbulence.py`,
+`awci/hazards/microburst.py`, `awci/complexity/metar_verification.py` now
+import `awci.knowledge.*` directly instead of round-tripping through the
+`acf.aviation` shim.
+
+**Verified, not assumed**: `ruff check src/awci/ src/acf/aviation/
+src/acf/awci/` clean; `mypy src/awci/knowledge/ src/acf/aviation/` clean
+(34 source files); identity confirmed programmatically for all 10 real
+modules plus the package-level `__init__.py`'s `__all__` (11 checks, all
+passed); full test collection under xvfb - 4918 tests, 0 errors (up from
+4895 at the end of §2i because this phase's own new lock-in test file adds
+tests, not because of a regression); a `-k "aviation or awci"` sweep
+(excluding the slow full GUI suite) passed 971/972, the one failure being
+the same already-confirmed pre-existing native subprocess-shutdown crash
+in `test_awci_app.py`; the one GUI file with real `acf.aviation`
+dependencies, `tests/gui/test_awci_dashboard_alerts_button.py`, passed
+4/4. A new `tests/test_awci_package_migration_phase9.py` (14 tests) locks
+in the re-export identity for all 10 modules and the package `__init__`,
+the new package's real top-level existence, the internal
+same-package cross-references, and the 4 cross-phase dependency fixes.
+
+**With this phase, `src/acf/aviation/` contains nothing but `__init__.py`
+files and 11 real re-export shims** - every real line of aviation
+knowledge-base code (airport data, aircraft performance, METAR/TAF/SIGMET
+decoding and live source, flight routing, and the aviation hazard
+definitions registry) now lives under `src/awci/knowledge/`. Combined with
+§2i, **the entire real-code half of the AWCI separate-package migration
+(both `src/acf/awci/` and `src/acf/aviation/`) is now complete** - the one
+remaining piece from the original scope (§3.1) is the AWCI-specific
+portions of `src/acf/gui/dashboard/`, deliberately left in the GUI layer as
+real consumers rather than moved (consistent with how the dashboard layer
+has been treated throughout this whole migration).
+
 ## 3. What this means for a real migration
 
 Adopting these two blueprints literally would require, at minimum:
 
 1. **Splitting `src/acf/awci/` + `src/acf/aviation/` + the AWCI portions of
    `src/acf/gui/dashboard/` into a new top-level `src/awci/` package** —
-   **the `src/acf/awci/` half is done** (Phases 1-8, §2a-§2i): 44 real
-   modules physically moved into `awci.{hazards,complexity,data,
-   comparison,airport}`, `src/acf/awci/` now holding only backward-
-   compatible re-export shims. `src/acf/aviation/` (17 files) and the AWCI
-   portions of `src/acf/gui/dashboard/` (the live dashboard UI itself, ~15
-   modules, deliberately left in the GUI layer as real consumers rather
-   than moved) remain.
+   **both `src/acf/awci/` and `src/acf/aviation/` are done** (Phases 1-9,
+   §2a-§2j): 44 real modules physically moved into
+   `awci.{hazards,complexity,data,comparison,airport}` and 17 more into
+   `awci.knowledge.{airports,graphics,hazards,icao,performance,routing}`;
+   both `src/acf/awci/` and `src/acf/aviation/` now hold only backward-
+   compatible re-export shims. Only the AWCI portions of
+   `src/acf/gui/dashboard/` (the live dashboard UI itself, ~15 modules,
+   deliberately left in the GUI layer as real consumers rather than moved)
+   remain.
 2. **Reorganizing `src/acf/science/` and `src/acf/parameters/` from flat,
    topic-named modules into the blueprint's per-domain subpackages** — a
    large but mechanically simpler rename/move, since the underlying real
