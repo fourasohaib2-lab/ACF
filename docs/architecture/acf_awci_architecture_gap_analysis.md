@@ -94,7 +94,7 @@ since-migrated path has been updated to point at its real, current
 |---|---|
 | `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
 | `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | ✅ **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. `knowledge_graph/` **built 2026-09-21** — see §2w: `entities.py` (10 real, cited aviation-hazard `KnowledgeNode`s) + `graph.py` (`build_aviation_knowledge_graph()`, seeding the already-real `acf.science.encyclopedia.knowledge_graph.KnowledgeGraphEngine` rather than a second engine); `relations.py`/`ontology.py` deliberately not separate files (see §2w). |
-| `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `src/acf/connectors/` is also real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, still under `acf.connectors` rather than `awci.data.connectors`, not yet migrated; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `awci.knowledge.icao` (moved from `acf.aviation.icao` in §2j), not separate `connectors/` modules. |
+| `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `awci/data/connectors/` **built 2026-09-21** — see §2x: `pirep_reports.py`, `nexrad_stations.py`, `eumetsat_mtg.py` migrated from `acf.connectors` (the 3 already established as aviation-relevant, reused by `awci.observations.hub`), with `acf.connectors.<x>` kept as a real backward-compatible re-export. `argo_floats.py` (ocean, not aviation), `wmo_wis.py` (generic WMO bulletin-header parser) and `live_connectors.py` (generic, disclosed-unconnected NWP-model registry) deliberately stay under `acf.connectors` — not aviation-specific. SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `awci.knowledge.icao` (moved from `acf.aviation.icao` in §2j), not separate `connectors/` modules. |
 | `awci/observations/` | 🟡 **`hub.py` built 2026-09-21** (see §2r below) — real, single aggregation point over `awci.knowledge.icao.live_source` (METAR/TAF/SIGMET) + `acf.connectors.{pirep_reports,nexrad_stations,eumetsat_mtg}` (PIREP/radar/satellite), all already-real connectors, never re-implemented. The blueprint's full 11-file package (`stations.py`/`metar.py`/per-source `parser/decoder/validator` subpackages) deliberately not built — real METAR/TAF/SIGMET decoding already exists elsewhere; duplicating it would not close a real gap. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
 | `awci/vertical/` | ✅ Real and substantial — `awci.complexity.vertical_field` (**migrated 2026-09-21**, see §2d below), `acf.gui.dashboard.acf_workstation_sounding_panel` (ACF's own sounding panel, correctly still in `acf.gui` - real, intentional reuse by the AWCI dashboard, not something that moved), and `awci.dashboard`'s own `AWCIVerticalSoundingWidget`/`AWCIVerticalProfile` (moved from `acf.gui.dashboard` in §2k) cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). **Deliberately not placed under a new `awci/vertical/` package**: despite its name, `vertical_field.py` is not the blueprint's general-purpose sounding/diagram engine — it is `AWCICalculator` applied along a vertical profile (its own docstring: "same real complexity computation as spatial_field.py exactly"), so it was migrated alongside `calculator.py`/`spatial_field.py` into `awci/complexity/` instead, as one coherent field-computation unit. |
@@ -1524,6 +1524,94 @@ the full suite); none of the 45 errors touch
 `awci/knowledge/knowledge_graph/` or this test file. A targeted
 `pytest tests/test_awci_knowledge_graph.py` run shows 15 passed, 0
 failed.
+
+## 2x. AWCI separate-package migration, Phase 11: aviation-relevant `acf.connectors/` → `awci/data/connectors/` (2026-09-21)
+
+Tenth item of "on les attaque toutes un par un": `awci/data/` +
+`data/connectors/` - `docs/architecture/awci_reference_architecture.md`
+names `src/awci/data/connectors/`, but the real network connectors
+were still under `acf.connectors`, unmigrated.
+
+**Investigation, before any move**: `acf.connectors` has 6 real
+modules, not all aviation-relevant. `awci.observations.hub` (built
+earlier in this same sequence) already established, by reading each
+module's own docstring/behavior, which 3 are genuinely aviation
+observation sources - `pirep_reports.py` (real NOAA PIREP fetch),
+`nexrad_stations.py` (real NEXRAD radar station status fetch),
+`eumetsat_mtg.py` (real MTG FCI satellite quicklook fetch) - and which
+3 are not: `argo_floats.py` (ocean buoy data), `wmo_wis.py` (a generic
+WMO GTS/WIS bulletin-header parser covering all WMO data types, not
+aviation-specific), `live_connectors.py` (`LiveDataConnectorEngine` -
+a generic, disclosed-unconnected NWP-model registry spanning
+ECMWF/NOAA/DWD/EUMETSAT/NASA/Copernicus). This phase reuses that same
+already-real distinction rather than re-deriving it.
+`grep -rl "acf\.connectors\.\(pirep_reports\|nexrad_stations\|eumetsat_mtg\)" src/ tests/`
+found 4 real dependents outside the connectors package itself:
+`acf/gui/map/mtg_basemap.py` (top-of-file import),
+`acf/gui/dashboard/acf_workstation.py` (2 deferred function-body
+imports), `awci/observations/hub.py` (top-of-file imports, built
+earlier this session), plus their own 3 dedicated test files and 2
+more test files exercising them indirectly
+(`tests/test_awci_observations_hub.py`,
+`tests/gui/test_acf_workstation_data_sources.py`).
+
+**Placement decision (disclosed)**: move only the 3 real,
+already-established aviation-relevant connectors - not the whole
+`acf.connectors` package - mirroring the same selective-scope
+reasoning `awci.observations.hub`'s own docstring already used for the
+same 3-vs-3 split. The blueprint's own `awci/data/connectors/` file
+list (`acf.py`/`grib.py`/`fa.py`/`lfa.py`/`netcdf.py`/`metar.py`/
+`speci.py`/`taf.py`/`sigmet.py`/`airmet.py`/`radar.py`/`satellite.py`/
+`lightning.py`/`pirep.py`/`notam.py`) is a file-format/product-per-file
+layout, structurally different from this codebase's real
+network-connector-per-source layout - not matched 1:1, and disclosed
+as such in the new package's `__init__.py`: METAR/TAF/SIGMET decoding
+already exists under `awci.knowledge.icao`; GRIB/FA/LFA/NetCDF model
+ingestion already exists under `awci.data.archive_field`/
+`model_import*`; AIRMET/NOTAM/lightning connectors do not exist
+anywhere in this codebase and are not fabricated here.
+
+**Execution**: 3 files physically moved via `git mv`
+(`pirep_reports.py`, `nexrad_stations.py`, `eumetsat_mtg.py`) into the
+new `src/awci/data/connectors/` package, plus a new
+`awci/data/connectors/__init__.py` disclosing the scope decision. The
+3 old `acf/connectors/<x>.py` paths rebuilt as real backward-compatible
+re-export shims. Real top-of-file/deferred imports repointed in all 3
+real dependents (`mtg_basemap.py`, `acf_workstation.py`'s 2 deferred
+imports, `observations/hub.py`); historical docstring/comment
+citations of the old path left as-is (matching the Phase 9/§2j
+precedent for comment-only references) except one in `argo_floats.py`
+that pointed at `eumetsat_mtg`'s real error-handling convention by
+name - updated to the new path since it is a live cross-reference, not
+a historical note. `eumetsat_mtg.py`'s own internal logger name
+(`logging.getLogger(...)`) updated to match its new module path.
+
+The 3 moved modules' own dedicated test files
+(`test_eumetsat_mtg_connector.py`, `test_nexrad_stations_connector.py`,
+`test_pirep_reports_connector.py`) plus `test_awci_observations_hub.py`,
+`test_mtg_basemap.py` and `tests/gui/test_acf_workstation_data_sources.py`
+repointed to import from the new location. The eumetsat_mtg test
+file's `unittest.mock.patch("...eumetsat_mtg.requests.*")` calls
+needed this too, not just the import line - the shim module no longer
+has its own `requests` import to patch, only the real module at the
+new path does.
+
+**Verified, not assumed**: manual end-to-end identity check (both old
+and new import paths resolve to the exact same real class objects for
+all 3 connectors); `ruff check` clean on every touched file; the one
+pre-existing `mypy` error in `eumetsat_mtg.py` (a `requests.get()`
+`params` typing mismatch) confirmed unchanged by diffing `mypy`
+output against the pre-migration committed state - not introduced by
+this move. New `tests/test_awci_data_connectors_migration.py` (7
+tests) locks in re-export identity, confirms the 3 non-aviation
+connectors were deliberately left unshimmed under `acf.connectors`,
+and confirms the real cross-package dependents were repointed. A
+targeted sweep (`-k "connectors or eumetsat or nexrad or pirep or
+observations_hub"`, excluding `tests/gui`, plus the GUI-dependent
+tests run separately under `xvfb-run`) shows 49 passed, 0 failed. Full
+non-GUI collection: 4602 tests (up from 4595, +7 for the new migration
+lock-in file), same pre-existing 45 collection errors (§2w's already-
+tracked `task_468ac835` circular import) confirmed unrelated.
 
 ## 3. What this means for a real migration
 
