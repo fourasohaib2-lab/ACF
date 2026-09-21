@@ -84,7 +84,7 @@ this is new construction, not a rename of an equivalent existing tree.
 | `awci/observations/` | 🟡 Overlaps with `acf.connectors` + `acf.aviation.icao` above; no single `observations/hub.py` aggregation point. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
 | `awci/vertical/` | ✅ Real and substantial — `awci.complexity.vertical_field` (**migrated 2026-09-21**, see §2d below), `acf.gui.dashboard.acf_workstation_sounding_panel`, and the AWCI dashboard's own `AWCIVerticalSoundingWidget`/`ACFVerticalSoundingWidget` cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). **Deliberately not placed under a new `awci/vertical/` package**: despite its name, `vertical_field.py` is not the blueprint's general-purpose sounding/diagram engine — it is `AWCICalculator` applied along a vertical profile (its own docstring: "same real complexity computation as spatial_field.py exactly"), so it was migrated alongside `calculator.py`/`spatial_field.py` into `awci/complexity/` instead, as one coherent field-computation unit. |
-| `awci/hazards/` (one module per hazard) | ✅ **Migrated 2026-09-21** — see §2b below. Physically moved to `src/awci/hazards/{icing_temperature_range,ceiling,visibility,dust,microburst,volcanic_ash,wind_shear,cat_turbulence,orographic_froude,hydrometeor_phase}.py`, with `acf.awci.<module>` kept as a real backward-compatible re-export. This is now a literal, not just conceptual, match to the blueprint's `awci/hazards/` (still flat rather than one-subpackage-per-hazard, which the blueprint itself is ambiguous about — it lists both a flat file-per-hazard example and per-hazard subdirectories). |
+| `awci/hazards/` (one module per hazard) | ✅ **Migrated 2026-09-21** — see §2b and §2g below. Physically moved to `src/awci/hazards/{icing_temperature_range,ceiling,visibility,dust,microburst,volcanic_ash,wind_shear,cat_turbulence,orographic_froude,hydrometeor_phase,convective_energy,theta_e}.py` (12 modules), with `acf.awci.<module>` kept as a real backward-compatible re-export. The last two (`convective_energy`/`theta_e`) are thermodynamic building blocks rather than named hazards, but follow the identical `compute_real_<x>_at_point` pattern and the same role feeding `spatial_field.py` — kept alongside the other 10 for consistency rather than starting a third package. This is now a literal, not just conceptual, match to the blueprint's `awci/hazards/` (still flat rather than one-subpackage-per-hazard, which the blueprint itself is ambiguous about — it lists both a flat file-per-hazard example and per-hazard subdirectories). |
 | `awci/complexity/` (the actual AWCI score) | ✅ **Migrated 2026-09-21** — see §2c below. `AWCICalculator` (the actual scoring/aggregation engine), `WeightsManager`, `Normalizer`, and `scientific_status` (the shared classification types both use) physically moved to `src/awci/complexity/{calculator,weights,normalizer,scientific_status}.py`, with `acf.awci.<module>` kept as a real backward-compatible re-export. `scale_classification.py`/`wind_classification.py`/`spatial_field.py`/`vertical_field.py`/`temporal_field.py` have all since joined them (Phases 3-5, §2d-§2f). Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. |
 | `awci/comparison/` + `awci/consensus/` | 🟡 **Corrected 2026-09-21** (an earlier version of this document wrongly placed this logic inside the GUI layer — verified by grep, not assumed, this time): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 `src/acf/aviation/routing/flight_routing.py` covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
@@ -182,14 +182,16 @@ Python code). A dedicated new test file,
 re-export identity and the new package's real top-level existence going
 forward.
 
-**What is intentionally not done yet**: `src/acf/awci/` still holds 24
-other real modules (`convective_energy.py`, `theta_e.py`, `updraft.py`,
-etc. — `spatial_field.py`/`vertical_field.py` migrated in Phase 3 (§2d),
-`archive_field.py`/`temporal_field.py` migrated in Phase 4 (§2e),
-`scale_classification.py`/`wind_classification.py` migrated in Phase 5
-(§2f)) and `src/acf/aviation/` (17 files) have not moved. Those are real
-next candidates for further phases, each needing the same
-investigate-first treatment this phase used.
+**What is intentionally not done yet**: `src/acf/awci/` still holds 22
+other real modules (`updraft.py`, `airport.py`, `calibration.py`,
+`config_loader.py`, etc. — `spatial_field.py`/`vertical_field.py`
+migrated in Phase 3 (§2d), `archive_field.py`/`temporal_field.py`
+migrated in Phase 4 (§2e), `scale_classification.py`/
+`wind_classification.py` migrated in Phase 5 (§2f),
+`convective_energy.py`/`theta_e.py` migrated in Phase 6 (§2g)) and
+`src/acf/aviation/` (17 files) have not moved. Those are real next
+candidates for further phases, each needing the same investigate-first
+treatment this phase used.
 
 ## 2c. AWCI separate-package migration, Phase 2: `awci/complexity/` (2026-09-21)
 
@@ -386,6 +388,50 @@ the re-export identity going forward.
 `vertical_field.py`, `temporal_field.py`, `scale_classification.py`,
 `wind_classification.py` — the blueprint's own `engine.py`/`weights.py`/
 `normalization.py`/`classification.py` core, essentially complete.
+
+## 2g. AWCI separate-package migration, Phase 6: `convective_energy.py` + `theta_e.py` (2026-09-21)
+
+Continuing directly from Phase 5 ("continue avec convective_energy.py et
+theta_e.py"). Scoped before touching anything: `convective_energy.py` has
+zero `acf.*` imports at all (pure NumPy + MetPy CAPE/CIN calculation);
+`theta_e.py` imports only external `acf.physics_guard`/`acf.science.*`
+modules. 14 and 20 real dependents respectively. Both follow the exact
+`compute_real_<x>_at_point` pattern of the 10 hazard modules from Phase 1,
+and — critically — both are consumed by `spatial_field.py`
+(`awci.complexity/`) the same way the Phase 1 hazards already are.
+
+**Placement**: joined `awci.hazards/` rather than starting a third package.
+Neither is a named "hazard" in the blueprint's own sense (they are
+thermodynamic building blocks - CAPE/CIN, equivalent potential
+temperature - that other hazard computations and `spatial_field.py` build
+on), but forcing a new home for two modules that are structurally
+identical to the other 10 already there would fragment the codebase for
+no real benefit; disclosed here rather than silently deviating from the
+blueprint's own naming.
+
+1. Moved both via `git mv` into `src/awci/hazards/`.
+2. Repointed `spatial_field.py`'s imports of both from the `acf.awci.*`
+   shim to their real `awci.hazards.*` location directly, matching Phase 3's
+   treatment of the other 6 hazard imports it already uses.
+3. Left a real backward-compatible re-export at both old locations.
+
+**Verified, not assumed**: `ruff`/`mypy` clean (71 files); direct import
+identity confirmed for `compute_real_cape_cin_at_point`/
+`compute_real_theta_e_at_point`, including that `spatial_field.py` itself
+now reaches the real migrated functions directly; 98 tests passed across
+every test file touching these two modules
+(`test_acf_workstation_convection.py`, `test_acf_workstation_map_inspector.py`,
+`test_acf_workstation_stability_indices.py`,
+`test_acf_workstation_thermodynamics.py`, `test_awci_ceiling.py`,
+`test_awci_spatial_field.py`, `test_awci_spatial_field_microburst.py`,
+`test_awci_theta_e.py`, `test_convective_energy.py`); a long-running,
+broader `tests/gui/ -k "awci or workstation"` sweep (started before this
+phase, covering everything through Phase 5) finished at **458 passed, 8
+skipped, 0 failed** in 17m41s, confirming zero GUI regressions across the
+whole migration so far; full test collection under xvfb — 4892 tests, 0
+errors. A new `tests/test_awci_package_migration_thermodynamic_hazards.py`
+(3 tests) locks in the re-export identity and that `spatial_field.py`
+reaches both as real siblings.
 
 ## 3. What this means for a real migration
 
