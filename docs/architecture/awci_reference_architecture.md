@@ -767,3 +767,199 @@ framework — consistent with the direction already taken in this codebase
 (ESOC removed 2026-09-21; ACF's own default entry point is now the AWCI-free
 `ACFWorkstationWindow`, with AWCI reachable as its own standalone
 application via `acf-awci`).
+
+## 26. The original AWCI architecture, as first defined (2026-09-21, restated by the user)
+
+The user restated the very first AWCI architecture discussion, from before
+even this document, to make sure it is not lost sight of during the ongoing
+migration. Transcribed faithfully below, verbatim in structure. **It is
+fully consistent with §1-25 above** - every block named here has a direct,
+already-documented counterpart in this document's own §1-22 per-layer
+breakdown (cross-referenced below); nothing here contradicts what is
+already written. This section exists to (a) preserve the original framing
+in the user's own words and diagram shapes, and (b) make the ACF/AWCI
+separation principle - the reason this whole `src/awci/` migration
+(`acf_awci_architecture_gap_analysis.md` §2) exists at all - impossible to
+lose sight of.
+
+**The original tree:**
+
+```
+                              AWCI
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+   DATA HUB              KNOWLEDGE BASE          CORE ENGINE
+        │                      │                      │
+        │                Aviation Knowledge      Formulas
+        │                Aviation KG            Units
+        │                Rules                  Validation
+        │                      │                      │
+        └──────────────────────┼──────────────────────┘
+                               │
+                         INPUT ADAPTERS
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+         ACF                  GRIB/FA           Observations
+          │                    │                    │
+       NetCDF                 LFA               METAR/TAF
+          │                    │                    │
+          └────────────────────┼────────────────────┘
+                               │
+                  CANONICAL METEOROLOGICAL DATA
+                               │
+                               ▼
+                    AVIATION FORECAST ENGINE
+                               │
+                               ▼
+                     AVIATION HAZARD ENGINE
+                               │
+          ┌────────────┬──────┼──────┬─────────────┐
+          │            │      │      │             │
+      Turbulence    Icing  Convection Wind      Visibility
+          │            │      │      │             │
+          ├────────────┼──────┼──────┼─────────────┤
+          │
+      Ceiling / Precipitation / Shear /
+      Microburst / Mountain Wave / ...
+                               │
+                               ▼
+                    FLIGHT PLANNING ENGINE
+                               │
+                               ▼
+                     AIRPORT OPERATIONS
+                               │
+                               ▼
+                    AVIATION DECISION SUPPORT
+                               │
+                 ┌─────────────┴─────────────┐
+                 │                           │
+            AWCI COMPLEXITY              FORECAST
+                 │                           │
+                 ▼                           ▼
+             AWCI SCORE              Verification /
+                 │                   Confidence
+                 │                   Consensus
+                 └─────────────┬─────────────┘
+                               │
+                               ▼
+                    AVIATION AI ASSISTANT
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+             MAPS          DASHBOARD         REPORTS
+              │                │                │
+              └────────────────┼────────────────┘
+                               │
+                               ▼
+                              API
+                               │
+                            Plugins
+```
+
+**The 13-14 original top-level blocks, and their §1-22 counterpart in this
+document:**
+
+1. Core → §1 AWCI Core (`awci/core/`)
+2. Aviation Knowledge Base → §2 Aviation Knowledge Base (`awci/knowledge/`)
+3. Flight Planning Engine → §11 Flight Planning Engine (`awci/flight/`)
+4. Airport Operations → §12 Airport Operations (`awci/airport/`)
+5. Aviation Observation Hub → §4 Aviation Observation Hub (`awci/observations/`)
+6. Aviation Forecast Engine → §5 Aviation Forecast Engine (`awci/forecast/`)
+7. Aviation Hazard Engine → §7 Aviation Hazard Engine (`awci/hazards/`)
+8. Aviation AI Assistant → §14 Aviation AI Assistant (`awci/ai/`)
+9. Aviation Decision Support → §13 Decision Support (`awci/decision/`)
+10. Maps & Visualization → §15 Maps & Visualization (`awci/visualization/`)
+11. Data Hub → §3 Data Hub (`awci/data/`)
+12. Reports → §17 Reports (`awci/reports/`)
+13. API → §18 API (`awci/api/`)
+14. Plugins → §20 Plugins (`awci/plugins/`)
+
+(§6 Vertical Profile Engine, §8 Aviation Complexity Engine, §9 Model
+Comparison, §10 Consensus Engine, §16 Dashboard, §19 Alerts, §21 Workspace,
+and §22 Provenance & Audit were elaborated later, as this document's own
+more detailed per-layer breakdown of blocks 6/9's implicit content - not
+new blocks contradicting the original 13-14.)
+
+**The Vertical Profile Engine** was always meant as an important native
+component (elaborated in full in §6 above):
+
+```
+Surface
+   ↓
+Boundary Layer
+   ↓
+Troposphere
+   ↓
+Tropopause
+   ↓
+Stratosphere
+```
+
+Profiles: Temperature, Dew Point, RH, Wind, Wind Shear, Stability, Clouds,
+Icing, Turbulence, Flight Levels.
+
+Visualizations: Skew-T, Tephigram, Emagram, Stüve, Vertical Cross Sections.
+
+**The compact scientific chain**, as it was formulated afterward:
+
+```
+ACF
+ │
+ ▼
+AWCI
+ │
+ ├── Aviation Hazards
+ │
+ ├── Aviation Complexity
+ │
+ ├── Forecast
+ │
+ ├── Verification
+ │
+ ├── Confidence
+ │
+ └── Consensus
+ │
+ ▼
+AWCI SCORE
+ │
+ ▼
+Aviation UI / UX
+```
+
+**The fundamental separation - the reason this entire migration exists**:
+
+```
+ACF                              AWCI
+Atmosphere                       ACF Data
+   ↓                                ↓
+Physics                          Aviation Hazards
+   ↓                                ↓
+Complexity                       Aviation Complexity
+                                     ↓
+                                  Operational Aviation Information
+```
+
+**AWCI was, from the start, meant as a specialized aviation application
+built on top of ACF - never a replacement for the ACF framework.** ACF
+supplies the general atmospheric science (physics, complexity
+computation); AWCI consumes ACF as its scientific foundation and adds the
+aviation-specific layer on top (hazards → complexity → operational
+information). This is exactly the direction the `src/awci/` migration
+(`acf_awci_architecture_gap_analysis.md` §2a-§2k) has followed throughout:
+every migrated `awci.*` module that needs general atmospheric physics
+imports it from `acf.science.*` directly (never duplicated or
+reimplemented inside `awci/`); AWCI's own real, aviation-specific code
+(hazard computation, complexity scoring, the dashboard) is what physically
+moved into `src/awci/`. The one place this principle is not yet fully
+realized is the **reverse** direction, disclosed in
+`acf_awci_architecture_gap_analysis.md` §2k: ACF's own dashboard
+(`acf_workstation_*.py`, `acf_general_dashboard.py`) still reuses several
+AWCI dashboard widgets (`AWCIMapPanel` most commonly) as generic
+components. That is a real, disclosed, not-yet-resolved decoupling
+question - AWCI should ultimately be something ACF's own dashboard does
+not need to depend on at all, matching this section's own restated
+principle - not something to unilaterally rewrite without confirming the
+replacement widget's scope first.
