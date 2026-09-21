@@ -684,6 +684,157 @@ portions of `src/acf/gui/dashboard/`, deliberately left in the GUI layer as
 real consumers rather than moved (consistent with how the dashboard layer
 has been treated throughout this whole migration).
 
+## 2k. AWCI separate-package migration, Phase 10: the dashboard (2026-09-21)
+
+The user asked to continue with "le tableau de bord GUI" - the AWCI
+dashboard itself, the one remaining piece named at the end of §2j.
+
+**Investigation, before any move**: `src/acf/gui/dashboard/` holds two
+clearly, consistently named families of modules side by side: ~30
+`acf_workstation_*.py`/`acf_general_dashboard*.py` files (ACF's own
+general-purpose scientific workstation) and 29 `awci_*.py` files (the
+real, operational AWCI dashboard - map, alerts, hazards, cross-section,
+vertical profile, situation panel, messages, execution report, and the
+top-level `AWCIDashboard`/`AWCIDashboardWindow`). Unlike every prior
+phase, this family already had a hard naming split from the ACF-side
+family, but real coupling in both directions had to be mapped before
+moving anything:
+
+- **Internal dependency graph among the 29 files** (built via grep, used
+  for the move order): 17 true leaves (`awci_colors`, `awci_gauge`,
+  `awci_synthetic_field`, etc.), 7 depending only on leaves
+  (`awci_map_panel`, `awci_cross_section`, `awci_route_chart`, etc.), then
+  `awci_alerts_panel`, then `awci_footer_summary`/`awci_situation_panel`,
+  then `awci_dashboard` (which imports ~20 of the other 28), and finally
+  `awci_window`.
+- **References to already-migrated `awci.*` code**: 19 real import
+  statements (top-of-file and deferred) across `awci_component_detail.py`,
+  `awci_dashboard.py`, `awci_execution_report_dialog.py`,
+  `awci_synthetic_field.py`, `awci_alerts_panel.py`, `awci_messages_panel.py`
+  reaching into what used to be `acf.awci.*`/`acf.aviation.icao.*` - all
+  of it already physically relocated to `awci.complexity`/`awci.hazards`/
+  `awci.data`/`awci.knowledge.icao` in Phases 1-9.
+- **Real, load-bearing reverse coupling from ACF's own dashboard**: 12
+  `acf_workstation_*.py` files import `AWCIMapPanel` as a reusable map
+  widget; `acf_general_dashboard.py` imports 6 real AWCI dashboard widgets
+  (`AWCICrossSection`, `AWCIEvolutionChart`, `AWCIGauge`, `AWCIMapPanel`,
+  `AWCIModelSpreadChart`, `AWCIRadar`); `acf/dashboard/window.py` and
+  `acf/awci_app.py` (the `acf-awci` console-script entry point) both
+  launch `AWCIDashboardWindow` directly. This is real widget reuse, not
+  incidental - confirmed by reading the actual import statements, not
+  assumed from the file layout.
+- **Reverse coupling the other way**: `awci_dashboard.py` itself imports
+  `acf.gui.dashboard.acf_workstation_sounding_panel.ACFVerticalSoundingWidget`
+  - AWCI's dashboard genuinely reuses one of ACF's own panels too.
+
+**Placement decision**: move all 29 `awci_*.py` files as one unit into a
+new `src/awci/dashboard/` package - the blueprint's own §16 "application
+layer above everything else". Real module names kept as-is (not renamed
+to the blueprint's own illustrative file names like `application.py`/
+`layout.py`/`state.py`), since this is real, functional, already-tested
+code, not a fresh build from the blueprint's sketch.
+
+**Handling the reverse coupling (disclosed)**: the blueprint's own closing
+note (§22, "remove AWCI from the ACF dashboard... AWCI can exist as a
+separate dashboard") points toward eventually decoupling ACF's own
+dashboard from AWCI's widgets entirely. That is a real product/architecture
+decision - whether `acf_workstation_*.py` keeps reusing `AWCIMapPanel`, or
+gets its own independent map widget - not a mechanical migration step, and
+was not asked for. So, consistent with how every external caller of a
+migrated module has been treated throughout this whole migration (Phases
+1-9 never touched a caller outside the package being moved - it always
+kept working through the backward-compatible shim), the 12
+`acf_workstation_*.py` files, `acf_general_dashboard.py`,
+`acf_general_dashboard_window.py`, `acf/dashboard/window.py`, and
+`acf/awci_app.py` were **deliberately left importing
+`acf.gui.dashboard.awci_*` unchanged** - they keep working exactly as
+before, through the shim. `acf/awci_app.py` itself (the registered
+`acf-awci` console-script entry point in `pyproject.toml`) was also
+deliberately left in place rather than moved - moving a package's
+entry-point module is a packaging-level decision distinct from moving its
+implementation, out of scope for this phase.
+
+**Execution**: all 29 files physically moved via `git mv` in the
+topological order above. Internal cross-references (`from
+acf.gui.dashboard.awci_X import ...`) repointed to `from
+awci.dashboard.awci_X import ...`. All 19 references to already-migrated
+`awci.*` code repointed to their real direct locations (e.g.
+`acf.awci.diagnostic_registry` → `awci.complexity.diagnostic_registry`,
+`acf.awci.archive_field` → `awci.data.archive_field`,
+`acf.aviation.icao.live_source` → `awci.knowledge.icao.live_source`) -
+the same module-name → real-package mapping established across Phases
+1-9, applied here as a mechanical lookup, not re-derived per file. Real
+ACF-infrastructure imports genuinely needed by the dashboard
+(`acf.gui.theme_tokens`, `acf.gui_screen_utils`, `acf.gui.map.*`,
+`acf.hpc_connector`, `acf.data.manager`, `acf.science.clouds.dynamics`,
+`acf.physics_guard`, `acf.visualization.ai_forecast_center.
+model_consensus_engine`) left untouched - AWCI as an application
+genuinely depends on ACF as its underlying framework for these, exactly
+as intended.
+
+**A real bug found and fixed, not just a migration artifact**: two test
+files (`tests/test_awci_messages_panel.py`, 6 tests;
+`tests/gui/test_awci_dashboard_alerts_button.py`, 1 test) use
+`unittest.mock.patch("acf.gui.dashboard.awci_messages_panel.
+fetch_and_decode_station", ...)` to stub the live METAR/TAF/SIGMET fetch
+without real network access. `mock.patch` rebinds the name on the
+*specific module object* named by the dotted path - since
+`AWCIMessagesDialog`'s real code now lives in (and reads its own global
+`fetch_and_decode_station` from) `awci.dashboard.awci_messages_panel`,
+patching the *shim's* namespace at the old `acf.gui.dashboard.
+awci_messages_panel` path no longer reaches the code that actually calls
+it; `import *` only copies the name once, at shim-import time, into the
+shim's own namespace, not a live link back to the real module's globals.
+Found via a full `-k "awci or aviation"` test sweep (not assumed clean) -
+7 failures, all with the exact same shape (a mocked live fetch silently
+not taking effect, the dialog falling back to its honest error/empty
+state instead of the fake data). Fixed by repointing all 7 patch targets
+in both files to the real `awci.dashboard.awci_messages_panel.*` path.
+This is a real, general lesson for any future phase: `mock.patch` targets
+must always follow a moved module's *real* location, never the
+backward-compatible shim's.
+
+**Verified, not assumed**: `ruff check` clean (one unrelated,
+already-existing pre-migration unused import in `awci_footer.py`,
+confirmed via `git show` against the file's own prior content -
+untouched, not this phase's concern); `mypy` clean except 15
+already-existing, pre-migration Qt-layout-nullability errors in
+`awci_route_chart.py`/`awci_situation_panel.py`/`awci_footer_summary.py`
+(confirmed identical against the pre-move file content); identity
+confirmed programmatically for all 29 modules plus the 13 private names
+6 real whitebox tests import directly (`_AIRPORTS`,
+`_ALL_VERTICAL_PROFILE_LEVELS_HPA`, `_FLIGHT_LEVEL_SELECTOR_OPTIONS_HPA`,
+`_POINT_OF_INTEREST`, `_REGIONAL_ROUTE`, `_REGIONAL_CITY_LABELS`,
+`_ModelConsensusWorker`, `_ModelDisagreementFieldWorker`,
+`_ModelVerticalProfilesWorker`, `_synthetic_inputs`, `_ElidingLabel`,
+`_hpa_to_ft`, `_AXES`); full test collection under xvfb - 4932 tests, 0
+errors (4918 + 14 for this phase's own new lock-in test file); a
+`-k "awci or aviation"` sweep (excluding the slow full GUI suite) passed
+1024/1031 after the mock-patch fix (7 real fixes applied, the remaining
+failure being the same already-confirmed pre-existing native
+subprocess-shutdown crash in `test_awci_app.py`); the whole `-k "awci"`
+subset of `tests/gui/` re-run clean after the fix. A new
+`tests/test_awci_package_migration_phase10.py` (45 tests) locks in the
+re-export identity for all 29 modules, all 13 private-name shim
+additions, the internal cross-references, and the cross-package
+references to already-migrated `awci.*` code.
+
+**With this phase, `src/acf/gui/dashboard/` holds only ACF's own real
+dashboard code plus 29 backward-compatible re-export shims** for AWCI's
+dashboard - every real line of the AWCI dashboard itself now lives under
+the new top-level `src/awci/dashboard/` package. Combined with §2i-§2j,
+the entire real-code body of the AWCI separate-package migration named in
+the original scope (§3.1) is now complete: `src/acf/awci/`,
+`src/acf/aviation/`, and the AWCI-specific dashboard modules are all real,
+physically separate `awci.*` code, each with a full backward-compatible
+shim at its old location. The remaining, deliberately-untouched pieces
+are ACF-side integration points (`acf_workstation_*.py`'s `AWCIMapPanel`
+reuse, `acf_general_dashboard.py`'s widget reuse, `acf/dashboard/window.py`'s
+and `acf/awci_app.py`'s launch of `AWCIDashboardWindow`) and the
+`acf-awci` console-script entry point itself - real product/packaging
+decisions about how separate ACF and AWCI should ultimately be, not
+migration mechanics.
+
 ## 3. What this means for a real migration
 
 Adopting these two blueprints literally would require, at minimum:

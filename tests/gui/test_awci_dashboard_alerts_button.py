@@ -83,9 +83,9 @@ def test_alerts_dialog_sees_live_data_after_a_message_fetch(qapp):
     data, 🔔 Alerts' "Live station conditions" section must reflect it
     - not stay stuck at "no live data fetched yet"."""
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dashboard = AWCIDashboard()
         dashboard._open_messages()
 
