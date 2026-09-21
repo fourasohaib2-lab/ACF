@@ -72,6 +72,7 @@ class AWCIVolume3DView(QWidget):
         layout.addWidget(self.canvas)
 
         self.axis = self.figure.add_subplot(1, 1, 1, projection="3d")
+        self._colorbar: Any = None
         self._render_empty()
 
     def _render_empty(self) -> None:
@@ -98,11 +99,16 @@ class AWCIVolume3DView(QWidget):
         pressure_volume_hpa: Any,
         label: str = "REAL PHYSICS",
         max_levels: int = 8,
+        cmap: Any = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
+        colorbar_label: str | None = None,
     ) -> None:
         """
-        Show a real AWCI complexity volume - e.g. straight from
-        `awci.complexity.vertical_field.compute_real_complexity_volume()`'s
-        own `lons`/`lats`/`awci_volume`/`pressure_volume_hpa`.
+        Show a real volume field - by default the AWCI complexity
+        volume, e.g. straight from `awci.complexity.vertical_field.
+        compute_real_complexity_volume()`'s own `lons`/`lats`/
+        `awci_volume`/`pressure_volume_hpa`.
 
         max_levels : real levels beyond this count are subsampled
             (evenly, always including the first and last real level) -
@@ -110,13 +116,31 @@ class AWCIVolume3DView(QWidget):
             unreadable well before they become a real performance
             problem, so this is a display choice, not silently
             dropping real data (every surface actually drawn is real).
+
+        cmap/vmin/vmax/colorbar_label : real, opt-in overrides for a
+        real physical field whose own range is not the fixed 0-100
+        AWCI score scale (e.g. `temperature_volume` in K, straight
+        from the same `compute_real_complexity_volume()` result) -
+        mirrors `AWCIMapPanel.set_external_field()`'s own identical
+        parameters/rationale for the 2D map. Every existing AWCI
+        caller leaves these None and keeps this view's own real
+        AWCI_CMAP/0-100 behavior unchanged; passing a real field
+        through unconverted here (e.g. raw Kelvin under a 0-100 scale)
+        would silently clip/misrender it, so a caller wanting anything
+        other than the AWCI score MUST pass its own real range.
         """
         awci_volume = np.asarray(awci_volume)
         pressure_volume_hpa = np.asarray(pressure_volume_hpa)
         n_levels = awci_volume.shape[0]
+        field_cmap = cmap if cmap is not None else AWCI_CMAP
+        field_vmin = vmin if vmin is not None else 0.0
+        field_vmax = vmax if vmax is not None else 100.0
 
         self.axis.clear()
         self.axis.set_facecolor("#0b1220")
+        if self._colorbar is not None:
+            self.figure.delaxes(self._colorbar.ax)
+            self._colorbar = None
 
         if n_levels <= max_levels:
             level_indices = list(range(n_levels))
@@ -124,19 +148,26 @@ class AWCIVolume3DView(QWidget):
             level_indices = sorted(set(np.linspace(0, n_levels - 1, max_levels).astype(int).tolist()))
 
         lon_grid, lat_grid = np.meshgrid(lons, lats)
+        contour = None
         for level_idx in level_indices:
-            self.axis.contourf(
+            contour = self.axis.contourf(
                 lon_grid,
                 lat_grid,
                 awci_volume[level_idx],
                 zdir="z",
                 offset=level_idx,
                 levels=15,
-                cmap=AWCI_CMAP,
-                vmin=0,
-                vmax=100,
+                cmap=field_cmap,
+                vmin=field_vmin,
+                vmax=field_vmax,
                 alpha=0.35,
             )
+        if colorbar_label and contour is not None:
+            cax = self.figure.add_axes((0.90, 0.15, 0.02, 0.6))
+            self._colorbar = self.figure.colorbar(contour, cax=cax)
+            self._colorbar.set_label(colorbar_label, color="#c9d6e8", fontsize=8)
+            self._colorbar.ax.yaxis.set_tick_params(color="#9fb0c9", labelsize=7)
+            plt.setp(plt.getp(self._colorbar.ax.axes, "yticklabels"), color="#c9d6e8")
 
         top = max(level_indices) if level_indices else 1
         self.axis.set_zlim(0, max(top, 1))
@@ -157,6 +188,9 @@ class AWCIVolume3DView(QWidget):
     def clear_volume(self) -> None:
         self._has_data = False
         self._title = self._base_title
+        if self._colorbar is not None:
+            self.figure.delaxes(self._colorbar.ax)
+            self._colorbar = None
         self._render_empty()
 
     def status(self) -> dict[str, Any]:
