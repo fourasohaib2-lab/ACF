@@ -2,15 +2,24 @@
 (awci.knowledge.icao.airspace_classes), the real ICAO altimetry
 conventions (awci.knowledge.performance.altimetry), the real ICAO
 aircraft approach category classification
-(awci.knowledge.performance.approach_category), and the real WMO
-cloud genus/étage classification (awci.knowledge.meteorology.clouds).
+(awci.knowledge.performance.approach_category), the real ICAO ILS
+category minima (awci.knowledge.airports.ils_categories), the real
+ICAO runway state group codes (awci.knowledge.airports.runway_state),
+the real METAR/TAF present weather code meanings
+(awci.knowledge.icao.present_weather_codes), and the real WMO cloud
+genus/étage/cover classification (awci.knowledge.meteorology.clouds).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
 altimetry standard-pressure/semi-circular-rule conventions, ICAO
-approach categories A-E, the 10 WMO cloud genera and their étage
+approach categories A-E, ILS category minima, runway state codes,
+present weather codes, the 10 WMO cloud genera and their étage/cover
 grouping) rather than an unbounded enumeration of every ICAO Annex /
-WMO technical regulation.
+WMO technical regulation. The present-weather, cloud-cover, and
+runway-state tables were cross-checked against
+https://www.lavionnaire.fr/CodesMetar.php at the user's own request,
+rather than relying on recalled tables alone for this level of
+numeric/letter-code detail.
 """
 
 from __future__ import annotations
@@ -209,10 +218,119 @@ def test_metar_cloud_cover_oktas_match_the_real_wmo_icao_convention(cover_code, 
 
 
 def test_metar_cloud_cover_codes_match_the_real_decoder_regex_alternation():
+    """SKC (sky clear, 0 oktas) is real and included in
+    METAR_CLOUD_COVER_OKTAS for completeness of the okta scale, but is
+    real-and-correctly NOT matched by _CLOUD_RE: a clear sky reports
+    no cloud LAYER group at all in a real METAR, unlike FEW/SCT/BKN/
+    OVC which always report a real layer height."""
     from awci.knowledge.icao.metar_decoder import _CLOUD_RE
     from awci.knowledge.meteorology.clouds import METAR_CLOUD_COVER_OKTAS
 
     for cover_code in METAR_CLOUD_COVER_OKTAS:
+        if cover_code == "SKC":
+            continue
         match = _CLOUD_RE.match(f"{cover_code}020")
         assert match is not None
         assert match.group("cover") == cover_code
+
+
+def test_skc_is_a_real_zero_okta_code_not_matched_by_the_cloud_layer_regex():
+    from awci.knowledge.icao.metar_decoder import _CLOUD_RE
+    from awci.knowledge.meteorology.clouds import METAR_CLOUD_COVER_OKTAS
+
+    assert METAR_CLOUD_COVER_OKTAS["SKC"] == (0, 0)
+    assert _CLOUD_RE.match("SKC020") is None
+
+
+def test_non_okta_sky_condition_codes_are_real_and_distinct():
+    from awci.knowledge.meteorology.clouds import METAR_NON_OKTA_SKY_CONDITION_CODES
+
+    assert set(METAR_NON_OKTA_SKY_CONDITION_CODES) == {"NSC", "NCD", "VV", "CAVOK"}
+    assert len({meaning for meaning in METAR_NON_OKTA_SKY_CONDITION_CODES.values()}) == 4
+
+
+def test_present_weather_intensity_matches_the_real_wx_re_group():
+    from awci.knowledge.icao.metar_decoder import _WX_RE
+    from awci.knowledge.icao.present_weather_codes import PRESENT_WEATHER_INTENSITY
+
+    assert "-" in PRESENT_WEATHER_INTENSITY
+    assert "+" in PRESENT_WEATHER_INTENSITY
+    assert "VC" in PRESENT_WEATHER_INTENSITY
+    assert "" in PRESENT_WEATHER_INTENSITY  # real moderate intensity has no prefix character
+    match = _WX_RE.match("-RA")
+    assert match is not None
+    assert match.group("intensity") == "-"
+
+
+def test_present_weather_descriptors_match_the_real_metar_decoder_regex_exactly():
+    import re
+
+    from awci.knowledge.icao.metar_decoder import _WX_RE
+    from awci.knowledge.icao.present_weather_codes import PRESENT_WEATHER_DESCRIPTORS
+
+    match = re.search(r"descriptor>([^)]+)\)", _WX_RE.pattern)
+    assert match is not None
+    regex_codes = set(match.group(1).split("|"))
+    assert set(PRESENT_WEATHER_DESCRIPTORS) == regex_codes
+
+
+def test_present_weather_phenomena_match_the_real_metar_decoder_regex_exactly():
+    import re
+
+    from awci.knowledge.icao.metar_decoder import _WX_RE
+    from awci.knowledge.icao.present_weather_codes import PRESENT_WEATHER_PHENOMENA
+
+    match = re.search(r"phenomena>\(\?:([^)]+)\)", _WX_RE.pattern)
+    assert match is not None
+    regex_codes = set(match.group(1).split("|"))
+    assert set(PRESENT_WEATHER_PHENOMENA) == regex_codes
+
+
+@pytest.mark.parametrize(
+    ("raw_group", "expected_descriptor", "expected_phenomena"),
+    [
+        ("TSRA", "TS", "RA"),
+        ("FZRA", "FZ", "RA"),
+        ("SHSN", "SH", "SN"),
+        ("MIFG", "MI", "FG"),
+    ],
+)
+def test_real_metar_weather_groups_decode_to_documented_meanings(raw_group, expected_descriptor, expected_phenomena):
+    """A handful of real, commonly-observed METAR weather groups
+    (thunderstorm rain, freezing rain, snow showers, shallow fog) -
+    locks in that the real decoder's own regex groups line up with
+    this module's own real meaning tables."""
+    from awci.knowledge.icao.metar_decoder import _WX_RE
+    from awci.knowledge.icao.present_weather_codes import (
+        PRESENT_WEATHER_DESCRIPTORS,
+        PRESENT_WEATHER_PHENOMENA,
+    )
+
+    match = _WX_RE.match(raw_group)
+    assert match is not None
+    assert match.group("descriptor") == expected_descriptor
+    assert match.group("phenomena") == expected_phenomena
+    assert PRESENT_WEATHER_DESCRIPTORS[expected_descriptor]
+    assert PRESENT_WEATHER_PHENOMENA[expected_phenomena]
+
+
+def test_runway_deposit_type_covers_all_ten_real_icao_digits_plus_not_reported():
+    from awci.knowledge.airports.runway_state import RUNWAY_DEPOSIT_TYPE
+
+    assert set(RUNWAY_DEPOSIT_TYPE) == {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "/"}
+    assert RUNWAY_DEPOSIT_TYPE["7"] == "Ice"
+
+
+def test_runway_contamination_extent_matches_the_real_icao_bands():
+    from awci.knowledge.airports.runway_state import RUNWAY_CONTAMINATION_EXTENT
+
+    assert RUNWAY_CONTAMINATION_EXTENT["1"] == "Less than 10% covered"
+    assert RUNWAY_CONTAMINATION_EXTENT["9"] == "51% to 100% covered"
+
+
+def test_runway_braking_action_matches_the_real_icao_codes():
+    from awci.knowledge.airports.runway_state import RUNWAY_BRAKING_ACTION
+
+    assert RUNWAY_BRAKING_ACTION["95"] == "Good"
+    assert RUNWAY_BRAKING_ACTION["91"] == "Poor"
+    assert RUNWAY_BRAKING_ACTION["99"] == "Unreliable (braking action figures unreliable/not usable)"

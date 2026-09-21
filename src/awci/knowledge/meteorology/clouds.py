@@ -88,12 +88,45 @@ METAR_CLOUD_TYPE_TO_GENUS: dict[str, CloudGenus] = {
 
 
 #: Real, standard WMO/ICAO METAR/TAF cloud-cover-fraction convention
-#: (in oktas, eighths of sky covered) behind the same four
-#: `_CLOUD_RE` cover abbreviations - the real amount each abbreviation
-#: reports, not itself decoded elsewhere in this codebase.
+#: (in oktas, eighths of sky covered, given as a real (min, max)
+#: range) behind the same four `_CLOUD_RE` cover abbreviations - the
+#: real amount each abbreviation reports, not itself decoded elsewhere
+#: in this codebase. "SKC" (sky clear, 0 oktas) is real and standard
+#: but not itself matched by `_CLOUD_RE` (which only ever matches a
+#: real cloud LAYER report, and a clear sky reports no layer group at
+#: all) - kept here for completeness of the real okta scale, not
+#: because the decoder's own regex needs it.
 METAR_CLOUD_COVER_OKTAS: dict[str, tuple[int, int]] = {
+    "SKC": (0, 0),
     "FEW": (1, 2),
     "SCT": (3, 4),
     "BKN": (5, 7),
     "OVC": (8, 8),
+}
+
+
+#: Real METAR/TAF sky-condition codes that do not report a cloud
+#: amount in oktas at all - each a distinct, real reporting
+#: convention (source: WMO/ICAO METAR/TAF specification, cross-checked
+#: against https://www.lavionnaire.fr/CodesMetar.php at the user's own
+#: request):
+#: - NSC: "No Significant Cloud" - no cloud below 5000 ft (or the
+#:   highest minimum sector altitude, whichever is greater) and no CB/
+#:   TCU, real TAF-only convention.
+#: - NCD: "No Cloud Detected" - an automated station's real report
+#:   that its own cloud sensor detected nothing, not a human
+#:   observation of a clear sky (contrast with SKC, above).
+#: - VV: vertical visibility reported instead of a cloud amount,
+#:   because the sky is real and totally obscured (e.g. by fog) -
+#:   already decoded by `_VV_RE` elsewhere in metar_decoder.py.
+#: - CAVOK: "Ceiling And Visibility OK" - a real, single combined code
+#:   replacing the cloud/visibility/weather groups entirely, when
+#:   visibility >= 10 km, no cloud below 5000 ft (or the highest
+#:   minimum sector altitude) with no CB/TCU, and no significant
+#:   weather.
+METAR_NON_OKTA_SKY_CONDITION_CODES: dict[str, str] = {
+    "NSC": "No significant cloud (TAF-only convention)",
+    "NCD": "No cloud detected (automated station)",
+    "VV": "Vertical visibility (sky obscured)",
+    "CAVOK": "Ceiling and Visibility OK",
 }
