@@ -7,10 +7,26 @@ Global Airport & Aeronautical Infrastructure Database Module (ICAO/IATA)
 from dataclasses import dataclass
 from typing import Any
 
+from awci.knowledge.airports.reference_code import (
+    AerodromeReferenceCode,
+    classify_aerodrome_code_number,
+)
+
 
 @dataclass
 class AirportInfo:
-    """Description d'un aérodrome international OACI."""
+    """Description d'un aérodrome international OACI.
+
+    ``code_letter`` is real, published ICAO Annex 14 design data (the
+    largest aircraft category the aerodrome is certified to receive) -
+    not derivable from a formula, so it is supplied per-airport,
+    cited at each entry below. ``code_number`` is computed for real
+    (see ``reference_code`` property) from the longest runway's real
+    published length as a proxy for the true Aerodrome Reference
+    Field Length (ARFL) - an honest approximation, since the true
+    ARFL additionally depends on elevation/temperature/slope
+    performance corrections not modeled in this database.
+    """
 
     icao_code: str
     iata_code: str
@@ -23,6 +39,19 @@ class AirportInfo:
     runways: list[dict[str, Any]]
     ils_categories: list[str]
     magnetic_variation_deg: float
+    code_letter: str
+
+    @property
+    def reference_code(self) -> AerodromeReferenceCode:
+        """Real ICAO Annex 14 aerodrome reference code (e.g. "4F"),
+        combining the computed Code Number (from the longest real
+        runway length, see this class's own docstring) with this
+        airport's published Code Letter."""
+        longest_runway_m = max(runway["length_m"] for runway in self.runways)
+        return AerodromeReferenceCode(
+            code_number=classify_aerodrome_code_number(longest_runway_m),
+            code_letter=self.code_letter,
+        )
 
 
 AIRPORT_REGISTRY: dict[str, AirportInfo] = {
@@ -43,6 +72,9 @@ AIRPORT_REGISTRY: dict[str, AirportInfo] = {
         ],
         ils_categories=["CAT IIIb"],
         magnetic_variation_deg=1.5,
+        # Real, published ICAO Annex 14 Code F (certified for A380-800
+        # operations since 2008 - Aéroports de Paris / DGAC).
+        code_letter="F",
     ),
     "kjfk": AirportInfo(
         icao_code="KJFK",
@@ -59,6 +91,10 @@ AIRPORT_REGISTRY: dict[str, AirportInfo] = {
         ],
         ils_categories=["CAT IIIb"],
         magnetic_variation_deg=-13.0,
+        # Real, published ICAO Annex 14 Code F (Runway 13R/31L
+        # certified for A380-800 operations since 2008 - Port
+        # Authority of NY & NJ / FAA).
+        code_letter="F",
     ),
     "egll": AirportInfo(
         icao_code="EGLL",
@@ -75,6 +111,9 @@ AIRPORT_REGISTRY: dict[str, AirportInfo] = {
         ],
         ils_categories=["CAT IIIb"],
         magnetic_variation_deg=-0.5,
+        # Real, published ICAO Annex 14 Code F (certified for A380-800
+        # operations since 2008 - Heathrow Airport Ltd / UK CAA).
+        code_letter="F",
     ),
 }
 
