@@ -54,7 +54,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 |---|---|
 | `gui/` | ✅ `src/acf/gui/` is real and is the actual live application (`app.py` is the real `acf-gui` entry point, launching `ACFWorkstationWindow` — see `docs/STATUS.md`'s 2026-09-21 ESOC-removal entry). Contains `theme.py`, `menu.py`, `statusbar.py`, `toolbar.py`, `earth_system_operations.py`, `bootstrap.py`, `single_instance.py`, `splash.py`, plus `layer_panel/`, `docks/`, `map/`, `dialogs/`, `resources/`, `workers/`, `dashboard/`, `widgets/` subpackages. The blueprint's flat `gui/main_window.py` central-file convention does not match reality: the live default window is `acf.gui.dashboard.acf_workstation_window.ACFWorkstationWindow`; `acf.gui.main_window` is confirmed dead legacy code (removed 2026-09-21 alongside ESOC, since it subclassed the now-deleted `ESOCWindow`). |
 | `dashboard/` | ✅ Two real dashboard trees exist: `src/acf/dashboard/` (blueprint-shaped: `manager.py`, `window.py`, `dashboard.py`, `layout.py`, `widgets.py`, `panels/` — but itself unreachable from the running app today, a pre-existing, disclosed state, see that module's own docstring) and the much larger, actually-live `src/acf/gui/dashboard/` (ACF Workstation and ~30 other panel/window modules - the AWCI dashboard itself physically moved out to `src/awci/dashboard/` on 2026-09-21, §2k; `acf.gui.dashboard.awci_*` now holds only re-export shims, `acf.dashboard.window.py` still launches `AWCIDashboardWindow` via a deferred import). |
-| `api/` | 🟡 `src/acf/api/` exists but is minimal (`api.py` only) versus the blueprint's `routes/{data,models,diagnostics,maps,visualization,ai,reports,system}.py` + `schemas/`/`services/`/`middleware/` split. A separate, more built-out `src/acf/web/` package also exists (not in the blueprint's naming) — worth reconciling in any real migration. |
+| `api/` | 🟡 **Reconciled 2026-09-21** — see §2ad: `data`→`datasets_router`, `models`→`models_router`, `diagnostics`→`workstation_router` (already real since 2026-09-04, a naming difference not a gap), `system`→new `system_router` (real `/health`/`/version`). `maps`/`visualization`/`ai`/`reports` have no real router anywhere — no real backing content exists yet to expose. `src/acf/api/api.py` remains a separate, minimal, non-HTTP facade (unchanged). |
 | `alerts/` | 🟡 `src/acf/alerts/` exists (`warning_engine.py`) — real but much thinner than the blueprint's `engine/rules/thresholds/events/notification/severity` split. |
 | `reports/` | 🟡 `src/acf/reports/` exists with a `briefings/` subpackage, but no `generator.py`/`scientific_report.py`/`model_report.py`/`diagnostic_report.py`/`export.py`/`templates/` as named. |
 
@@ -1908,6 +1908,59 @@ pre-existing 14 `tests/test_awci_api.py` tests re-run clean after the
 `_serialization.py` re-export change (no behavior change, only where
 the implementation lives). Full non-GUI collection: 4664 tests (up
 from 4651, +13), same pre-existing 45 collection errors
+(`task_468ac835`) confirmed unrelated.
+
+## 2ad. Reconciling acf.api / acf.web against the blueprint (2026-09-21)
+
+Sixteenth item of "on les attaque toutes un par un" - third of the
+5-part ACF-general batch: the `api/` row's own gap, framed as a
+reconciliation question ("a separate, more built-out `src/acf/web/`
+package also exists... worth reconciling") rather than a pure content
+gap.
+
+**Investigation**: `acf.web.routers` already has 7 real, domain-
+organized `/api/v1/*` routers. Reading each one's own docstring
+against the blueprint's named `routes/{data,models,diagnostics,maps,
+visualization,ai,reports,system}.py` list found 3 already-real
+matches under different names: `data`→`datasets_router`,
+`models`→`models_router`, and, less obviously,
+`diagnostics`→`workstation_router` (added 2026-09-04, real per-grid-
+point θ-e/relative-humidity/wind-shear/vorticity-divergence
+diagnostics - genuinely the same real concept the blueprint's
+`diagnostics.py` names, just not previously recognized as such). One
+real, genuine gap remained: `system.py` (no health/version endpoint
+existed anywhere).
+
+**Built**: `system_router.py` - real `GET /system/health` (liveness
+only, never a fabricated "all systems nominal" verdict - this
+project's own `docs/STATUS.md` explicitly names that exact
+anti-pattern from `earth_system_operations.py` as the thing to avoid)
+and `GET /system/version` (real `acf.__version__` +
+`acf.core.environment`'s real Python/OS info). Wired into
+`create_app()` alongside the other 7 routers.
+
+**Deliberately not built**: `maps.py`/`visualization.py`/`ai.py`/
+`reports.py` - no real backing content exists anywhere in this
+codebase to expose for any of the 4 (no map-tile server, no server-
+side rendering, no AI HTTP surface, no report-serving endpoint) -
+disclosed in `acf.web.routers/__init__.py` rather than fabricated.
+`src/acf/api/api.py` (the blueprint's `schemas/`/`services/`/
+`middleware/` split) is left as-is - it is a separate, minimal,
+non-HTTP facade class (`ACFAPI`), a genuinely different real shape
+from the FastAPI routers reconciled here; merging or restructuring it
+was not asked for and is out of this item's real scope.
+
+**Verified, not assumed**: manual end-to-end run via `TestClient`
+against a real running app (`/api/v1/system/health` →
+`{"status": "ok"}`, `/api/v1/system/version` → real
+`acf_version`/`python_version`/`operating_system`). `ruff check`/
+`mypy` clean. 2 new tests added to the existing
+`tests/test_web_api_v1.py` (matching its own established fixture
+convention, not a new file) - all 25 tests in that file pass (2 new +
+23 pre-existing, confirmed no regression from the router addition);
+`tests/test_web_hpc_dashboard.py`/`tests/test_web_workstation_api.py`
+(51 tests) also re-run clean. Full non-GUI collection: 4666 tests (up
+from 4664, +2), same pre-existing 45 collection errors
 (`task_468ac835`) confirmed unrelated.
 
 ## 3. What this means for a real migration
