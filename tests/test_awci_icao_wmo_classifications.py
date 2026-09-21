@@ -26,7 +26,9 @@ microburst physical-scale/detection-system reference
 (awci.knowledge.meteorology.microburst_reference), the real squall-line
 ("grain") reference (awci.knowledge.meteorology.squall_line), and the
 real turbulence-intensity/source-type reference
-(awci.knowledge.meteorology.turbulence_intensity).
+(awci.knowledge.meteorology.turbulence_intensity), the real jet-stream
+reference (awci.knowledge.meteorology.jet_stream), and the real
+weather-front reference (awci.knowledge.meteorology.weather_front).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -44,8 +46,10 @@ https://www.lavionnaire.fr/PhenomTAC.php,
 https://www.lavionnaire.fr/MeteoBrouillard.php,
 https://www.lavionnaire.fr/PhenomGradient.php,
 https://www.lavionnaire.fr/PhenomCisaille.php,
-https://www.lavionnaire.fr/MeteoLesGrains.php, and
-https://www.lavionnaire.fr/PhenomDifTurbule.php, at the user's own
+https://www.lavionnaire.fr/MeteoLesGrains.php,
+https://www.lavionnaire.fr/PhenomDifTurbule.php,
+https://www.lavionnaire.fr/MeteoJetStream.php, and
+https://www.lavionnaire.fr/MeteoFronts.php, at the user's own
 request, rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
@@ -978,3 +982,155 @@ def test_turbulence_intensity_reference_is_complementary_to_the_ellrod_knapp_cat
         name for name in dir(reference_module) if name.isupper()
     }
     assert cat_index_names.isdisjoint(reference_names)
+
+
+def test_jet_stream_types_cover_the_three_real_named_types():
+    from awci.knowledge.meteorology.jet_stream import JetStreamType
+
+    assert {jet_type.value for jet_type in JetStreamType} == {
+        "polar",
+        "subtropical",
+        "equatorial_easterly",
+    }
+
+
+def test_polar_jet_peak_speed_and_latitude_band_are_real():
+    from awci.knowledge.meteorology.jet_stream import (
+        POLAR_JET_LATITUDE_RANGE_DEG,
+        POLAR_JET_PEAK_WIND_SPEED_KT,
+    )
+
+    assert POLAR_JET_PEAK_WIND_SPEED_KT == 160.0
+    low, high = POLAR_JET_LATITUDE_RANGE_DEG
+    assert low == 35.0
+    assert high == 70.0
+    assert low < high
+
+
+def test_subtropical_jet_speed_altitude_and_latitude_are_real_and_ordered():
+    from awci.knowledge.meteorology.jet_stream import (
+        SUBTROPICAL_JET_CORE_ALTITUDE_RANGE_FT,
+        SUBTROPICAL_JET_LATITUDE_RANGE_DEG,
+        SUBTROPICAL_JET_PEAK_WIND_SPEED_KT,
+        SUBTROPICAL_JET_WIND_SPEED_RANGE_KT,
+    )
+
+    speed_low, speed_high = SUBTROPICAL_JET_WIND_SPEED_RANGE_KT
+    assert speed_low == 120.0
+    assert speed_high == 150.0
+    assert speed_high < SUBTROPICAL_JET_PEAK_WIND_SPEED_KT
+    assert SUBTROPICAL_JET_PEAK_WIND_SPEED_KT == 250.0
+
+    alt_low, alt_high = SUBTROPICAL_JET_CORE_ALTITUDE_RANGE_FT
+    assert alt_low == 35_000.0
+    assert alt_high == 40_000.0
+
+    lat_low, lat_high = SUBTROPICAL_JET_LATITUDE_RANGE_DEG
+    assert lat_low == 20.0
+    assert lat_high == 40.0
+
+
+def test_equatorial_easterly_jet_speed_and_altitude_are_real():
+    from awci.knowledge.meteorology.jet_stream import (
+        EQUATORIAL_EASTERLY_JET_ALTITUDE_KM_APPROX,
+        EQUATORIAL_EASTERLY_JET_WIND_SPEED_RANGE_KT,
+    )
+
+    low, high = EQUATORIAL_EASTERLY_JET_WIND_SPEED_RANGE_KT
+    assert low == 80.0
+    assert high == 90.0
+    assert EQUATORIAL_EASTERLY_JET_ALTITUDE_KM_APPROX == 15.0
+
+
+def test_jet_stream_shear_gradients_are_real_and_ordered():
+    from awci.knowledge.meteorology.jet_stream import (
+        JET_STREAM_ANTICYCLONIC_SIDE_SHEAR_KT_PER_100NM,
+        JET_STREAM_CYCLONIC_SIDE_SHEAR_KT_PER_100NM,
+        JET_STREAM_HORIZONTAL_SHEAR_KT_PER_100NM_RANGE,
+        JET_STREAM_VERTICAL_SHEAR_KT_PER_1000FT_RANGE,
+    )
+
+    v_low, v_high = JET_STREAM_VERTICAL_SHEAR_KT_PER_1000FT_RANGE
+    assert v_low == 5.0
+    assert v_high == 10.0
+    h_low, h_high = JET_STREAM_HORIZONTAL_SHEAR_KT_PER_100NM_RANGE
+    assert h_low == 20.0
+    assert h_high == 30.0
+    assert JET_STREAM_CYCLONIC_SIDE_SHEAR_KT_PER_100NM == 45.0
+    assert JET_STREAM_ANTICYCLONIC_SIDE_SHEAR_KT_PER_100NM == 20.0
+    assert JET_STREAM_CYCLONIC_SIDE_SHEAR_KT_PER_100NM > JET_STREAM_ANTICYCLONIC_SIDE_SHEAR_KT_PER_100NM
+
+
+def test_jet_stream_dimension_descriptions_are_present_and_non_fabricated():
+    """These are real, order-of-magnitude descriptions - the source
+    gives no precise numeric range, so none is fabricated here."""
+    from awci.knowledge.meteorology.jet_stream import (
+        JET_STREAM_TYPICAL_LENGTH_DESCRIPTION,
+        JET_STREAM_TYPICAL_THICKNESS_DESCRIPTION,
+        JET_STREAM_TYPICAL_WIDTH_DESCRIPTION,
+    )
+
+    assert "thousand" in JET_STREAM_TYPICAL_LENGTH_DESCRIPTION
+    assert "hundred" in JET_STREAM_TYPICAL_WIDTH_DESCRIPTION
+    assert "few kilometres" in JET_STREAM_TYPICAL_THICKNESS_DESCRIPTION
+
+
+def test_jet_stream_reference_is_complementary_to_the_cat_example_data_point():
+    """The real general per-type facts here are independent of and do
+    not duplicate the real single-example jet-stream data point already
+    recorded in awci.knowledge.meteorology.clear_air_turbulence (a
+    specific 130 kt/FL340 TEMSI chart observation) - both can coexist
+    without overlap."""
+    import awci.knowledge.meteorology.clear_air_turbulence as cat_module
+    import awci.knowledge.meteorology.jet_stream as jet_module
+
+    cat_names = {name for name in dir(cat_module) if name.isupper()}
+    jet_names = {name for name in dir(jet_module) if name.isupper()}
+    assert cat_names.isdisjoint(jet_names)
+
+
+def test_front_types_cover_the_four_real_classical_types():
+    from awci.knowledge.meteorology.weather_front import FrontType
+
+    assert {front_type.value for front_type in FrontType} == {
+        "warm",
+        "cold",
+        "occluded",
+        "stationary",
+    }
+
+
+def test_cold_front_is_faster_than_warm_front():
+    from awci.knowledge.meteorology.weather_front import COLD_FRONT_FASTER_THAN_WARM_FRONT
+
+    assert COLD_FRONT_FASTER_THAN_WARM_FRONT is True
+
+
+def test_warm_and_cold_front_cloud_sequences_use_real_wmo_cloud_genera():
+    from awci.knowledge.meteorology.clouds import CloudGenus
+    from awci.knowledge.meteorology.weather_front import (
+        COLD_FRONT_CLOUD_SEQUENCE,
+        WARM_FRONT_CLOUD_SEQUENCE,
+    )
+
+    assert len(WARM_FRONT_CLOUD_SEQUENCE) == 7
+    assert len(COLD_FRONT_CLOUD_SEQUENCE) == 6
+    for genus in WARM_FRONT_CLOUD_SEQUENCE + COLD_FRONT_CLOUD_SEQUENCE:
+        assert isinstance(genus, CloudGenus)
+    assert WARM_FRONT_CLOUD_SEQUENCE[0] == CloudGenus.CIRRUS
+    assert WARM_FRONT_CLOUD_SEQUENCE[-1] == CloudGenus.STRATUS
+    assert COLD_FRONT_CLOUD_SEQUENCE[0] == CloudGenus.CIRRUS
+    assert WARM_FRONT_CLOUD_SEQUENCE != COLD_FRONT_CLOUD_SEQUENCE
+
+
+def test_front_structural_and_persistence_descriptions_are_present():
+    from awci.knowledge.meteorology.weather_front import (
+        KATABATIC_COLD_FRONT_FEATURE_DESCRIPTION,
+        OCCLUDED_FRONT_FORMATION_DESCRIPTION,
+        STATIONARY_FRONT_PERSISTENCE_DESCRIPTION,
+    )
+
+    assert "several days" in STATIONARY_FRONT_PERSISTENCE_DESCRIPTION
+    assert "cold front" in OCCLUDED_FRONT_FORMATION_DESCRIPTION
+    assert "warm front" in OCCLUDED_FRONT_FORMATION_DESCRIPTION
+    assert "dry-air" in KATABATIC_COLD_FRONT_FEATURE_DESCRIPTION
