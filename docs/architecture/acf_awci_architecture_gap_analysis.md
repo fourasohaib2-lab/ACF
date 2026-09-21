@@ -110,7 +110,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/alerts/` | 🟡 `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) exists; no standalone alerts engine. |
 | `awci/plugins/` | ❌ Not found. |
 | `awci/workspace/` | ❌ No AWCI-specific project/session format; ACF's own `acf.workspace` is general-purpose. |
-| `awci/provenance/` | 🟡 Provenance discipline is a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length) but not a dedicated `provenance/lineage.py`/`audit.py` module.
+| `awci/provenance/` | 🟡 **Built 2026-09-21** (see §2o below) — all 7 files named in `awci_reference_architecture.md` §22 (`lineage.py`/`source.py`/`calculation.py`/`version.py`/`audit.py`/`reproducibility.py`), a real assembler over `AWCIResult`/`Provenance`/`scientific_status`/`WeightsManager` — never a new computation, never a persisted audit log/database (a disclosed scope limit, not a fabricated one). Provenance discipline was already a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length); this closes the gap of it never having a dedicated, queryable module. |
 
 ## 2a. `model4d`/`models` migration (started 2026-09-21)
 
@@ -1058,6 +1058,75 @@ heavy ML/network dependency import anywhere in the package). Full
 non-GUI suite collection: 4804 tests (up from 4780, +24); a targeted
 sweep (`-k "rag or awci_knowledge or awci_icao_wmo"`, excluding
 `tests/gui`) shows 203 passed, 0 failed.
+
+## 2o. The AWCI provenance/audit module (2026-09-21)
+
+The user asked to build "Le module de provenance/audit AWCI" - the
+`awci/provenance/` gap named in §22 of the reference architecture and
+§3 point 3 here. Investigation before building found real,
+already-existing building blocks to compose rather than duplicate:
+`acf.core.contracts.provenance.Provenance` (the generic reproducibility
+contract, already attached to `AWCIResult.provenance`),
+`awci.complexity.result.AWCIResult` (already carries
+`module_scores`/`interaction_scores`/`dominant_factors`/
+`raw_variables`/`lead_time_hours`/`vertical_level` and its own
+`trace_chain()` string rendering), `awci.complexity.scientific_status`
+(the real per-weight/threshold evidentiary status registry - nothing
+CONFIRMED today), and `awci.complexity.weights.WeightsManager.
+get_weight_status()` (the real, established wrapper around that
+registry).
+
+**Built**, under `src/awci/provenance/`, matching §22's own exact
+7-file list, each a real assembler (never a new computation, matching
+`build_awci_result()`'s own established discipline):
+
+- `source.py` - `DataSource`/`describe_source()`, a thin "which data"
+  view over `Provenance`'s own `input_files`/`dataset_version`/
+  `run_identifier`.
+- `version.py` - `VersionInfo`/`WeightVersionEntry`/
+  `describe_version()`, a "which code version" view enriched, when a
+  real `AWCICalculator` is supplied, with the real per-weight status of
+  every weight that calculator actually uses today.
+  `has_calibrated_or_validated_weight` is honestly `False` for every
+  weight this codebase ships.
+- `calculation.py` - `CalculationStep`/`describe_calculation()`, a
+  structured counterpart to `AWCIResult.trace_chain()`'s own string
+  rendering (module scores → interaction terms → final score).
+- `lineage.py` - `LineageRecord`/`build_lineage()`, composing the 3
+  above plus `dominant_factors`/`model`/`lead_time_hours`/
+  `vertical_level` from `AWCIResult` itself.
+- `audit.py` - `AuditRecord`/`build_audit_record()`/
+  `format_audit_report()`, the top-level entry point - explicitly names
+  which real `Provenance` fields are still at their honest "unknown"
+  default rather than hiding the gap.
+- `reproducibility.py` - `ReproducibilityCheck`/
+  `verify_reproducibility()` (a real float-tolerance comparison between
+  two already-computed `AWCIResult`s - never re-runs the calculation
+  itself) and `is_reproducible_run()` (reuses `Provenance.
+  is_fully_specified()`).
+
+**Deliberately not a persisted, append-only audit log/database** - a
+disclosed scope limit stated in the package's own `__init__.py`:
+`Provenance`/`AWCIResult` are per-object snapshots attached at
+construction time, and this package only assembles a structured view
+of one snapshot at a time; a real cross-run audit trail (a database, a
+file-based log) would be new, separate infrastructure this phase does
+not build.
+
+**Verified, not assumed**: a manual end-to-end run against a real
+`AWCICalculator` (real 14-variable input, real `calculate()` output)
+confirmed correct lineage/audit/reproducibility output, including
+honest "unknown"/"not available" disclosure for every field genuinely
+not supplied. `ruff check`/`mypy` clean; 25 new tests
+(`tests/test_awci_provenance.py`), including exact-missing-field
+disclosure checks, a real reproducibility mismatch detection (CAPE
+changed → real, different AWCI score → `matches=False`), and 2
+discipline tests (no `AWCICalculator` import/recompute inside
+`audit.py`/`calculation.py`/`lineage.py`; `scientific_status` functions
+reused by identity, not copied). Full non-GUI suite collection: 4829
+tests (up from 4804, +25); a targeted sweep (`-k "provenance or
+awci_result or scientific_status or calibration or weights_manager"`,
+excluding `tests/gui`) shows 88 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
