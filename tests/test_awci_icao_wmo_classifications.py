@@ -1,13 +1,16 @@
 """Tests for the real ICAO airspace classification
 (awci.knowledge.icao.airspace_classes), the real ICAO altimetry
-conventions (awci.knowledge.performance.altimetry), and the real WMO
+conventions (awci.knowledge.performance.altimetry), the real ICAO
+aircraft approach category classification
+(awci.knowledge.performance.approach_category), and the real WMO
 cloud genus/étage classification (awci.knowledge.meteorology.clouds).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
-altimetry standard-pressure/semi-circular-rule conventions, the 10 WMO
-cloud genera and their étage grouping) rather than an unbounded
-enumeration of every ICAO Annex / WMO technical regulation.
+altimetry standard-pressure/semi-circular-rule conventions, ICAO
+approach categories A-E, the 10 WMO cloud genera and their étage
+grouping) rather than an unbounded enumeration of every ICAO Annex /
+WMO technical regulation.
 """
 
 from __future__ import annotations
@@ -29,6 +32,10 @@ from awci.knowledge.performance.altimetry import (
     STANDARD_PRESSURE_SETTING_INHG,
     FlightLevel,
     is_valid_ifr_cruising_level,
+)
+from awci.knowledge.performance.approach_category import (
+    ApproachCategory,
+    classify_approach_category,
 )
 
 
@@ -125,3 +132,21 @@ def test_metar_decoder_cloud_type_group_matches_this_modules_real_codes():
     match = _CLOUD_RE.match("BKN020CB")
     assert match is not None
     assert match.group("type") == "CB"
+
+
+@pytest.mark.parametrize(
+    ("vat_kt", "expected_category"),
+    [
+        (90.9, ApproachCategory.A),
+        (91.0, ApproachCategory.B),
+        (120.9, ApproachCategory.B),
+        (121.0, ApproachCategory.C),
+        (140.9, ApproachCategory.C),
+        (141.0, ApproachCategory.D),
+        (165.9, ApproachCategory.D),
+        (166.0, ApproachCategory.E),
+        (210.0, ApproachCategory.E),
+    ],
+)
+def test_approach_category_matches_the_real_icao_doc_8168_thresholds(vat_kt, expected_category):
+    assert classify_approach_category(vat_kt) == expected_category
