@@ -963,3 +963,258 @@ question - AWCI should ultimately be something ACF's own dashboard does
 not need to depend on at all, matching this section's own restated
 principle - not something to unilaterally rewrite without confirming the
 replacement widget's scope first.
+
+## 27. The AWCI composite law - scientific validation status (2026-09-21)
+
+The user investigated whether the AWCI aggregation formula itself - as
+opposed to the individual physical diagnostics it consumes - is a
+validated scientific law, and restated the findings here so they are not
+lost. **This section documents a validation status, not a new
+architectural decision**: it changes no code and proposes no new weights
+or calibration. It exists so nobody - human or agent - ever presents the
+AWCI composite score as more scientifically settled than it actually is.
+
+### 27.1 The central finding
+
+**No official, published "Aviation Weather Complexity Index (AWCI)"
+formula exists in the literature.** A targeted search (ICAO, WMO, FAA,
+EUROCONTROL, and the general aviation-complexity/composite-indicator
+literature) found no standardized index matching this name with a
+canonical equation. What *does* exist and *is* real:
+
+- Published air-traffic complexity indices (e.g. relation-weighted network
+  models of traffic complexity).
+- EUROCONTROL's own Composite Risk Index methodology - a real, documented
+  precedent for combining several components with explicit, disclosed
+  weight/aggregation choices and stated limitations.
+- The OECD/JRC *Handbook on Constructing Composite Indicators*
+  methodology: variable selection → normalization → weighting →
+  aggregation → sensitivity analysis → validation - the general
+  discipline any composite indicator (AWCI included) should follow.
+- The individual physical diagnostics AWCI is built from (below).
+
+**Conclusion: the AWCI composite formula is a project-proposed
+mathematical architecture, not a scientific law that has been published
+and validated elsewhere.** The individual diagnostics it consumes mostly
+are.
+
+### 27.2 Verification status, factor by factor
+
+| Element | Status |
+|---|---|
+| CAPE / CIN / LCL / LFC / EL | ✅ Established physical diagnostics |
+| RH, q, T_v, θ, θ_e | ✅ Established meteorological quantities |
+| Wind shear / vertical profiles | ✅ Established diagnostics |
+| Turbulence / icing / convection diagnostics | ✅ Real scientific methods exist, but several competing formulations |
+| Factor normalization (raw value → [0,1]) | ✅ A recognized method for composite indicators in general |
+| Weighting | ⚠️ Must be justified/calibrated - not yet done |
+| Factor aggregation | ⚠️ Must be validated - not yet done |
+| Interaction term (F_i × F_j) | ⚠️ A real AWCI proposal, to be tested - not yet validated |
+| Model disagreement | ✅ Statistically measurable (real, standard technique) |
+| Uncertainty layer | ✅ Methodologically defensible (real, standard technique) |
+| **The global AWCI formula itself** | ❌ **Not yet validated** |
+
+A composite indicator (per the OECD/JRC handbook) needs robustness and
+sensitivity analysis across variable choice, normalization, weights, and
+aggregation method before it can be called validated. None of that has
+been done for AWCI's own aggregation law yet.
+
+### 27.3 What "not yet validated" concretely requires, before any weight is presented as settled
+
+1. The chosen factors represent genuinely distinct dimensions (no
+   redundancy - two factors should not be measuring the same underlying
+   phenomenon twice).
+2. Normalization functions are appropriate for each variable's real
+   physical range and behavior.
+3. Weights are justified (expert elicitation, statistical derivation, or
+   historical calibration - see 27.6).
+4. Interaction terms measurably improve the representation, not just
+   plausible-looking cross terms.
+5. The result is robust to reasonable changes in the weights (sensitivity
+   analysis).
+6. AWCI is consistent with real observations (PIREP/METAR/SPECI-confirmed
+   hazard events).
+7. AWCI has real operational discrimination/validation capability (does
+   a high AWCI value actually correspond to operationally complex
+   situations, checked against real cases).
+
+**Explicit, standing rule: never hard-code weights like `Turbulence =
+20%, Icing = 15%, Convection = 20%, ...` and present them as
+scientifically validated.** That would be inventing a calibration. The
+real chain to build toward instead:
+
+```
+PHYSIQUE
+   ↓
+DIAGNOSTICS
+   ↓
+NORMALISATION
+   ↓
+FACTEURS AWCI
+   ↓
+ANALYSE STATISTIQUE
+   ↓
+POIDS
+   ↓
+INTERACTIONS
+   ↓
+AGRÉGATION
+   ↓
+VALIDATION
+   ↓
+SENSITIVITY / MONTE CARLO
+   ↓
+AWCI v1.0
+```
+
+### 27.4 The proposed mathematical architecture (not yet built, not yet validated)
+
+A general form, offered as a serious, real starting point for what AWCI
+v1.0's aggregation law could look like once validated - explicitly **not**
+presented as already correct:
+
+```
+AWCI = 100 · A[ Σ_d W_d·F_d + λ·Σ_{i<j} Γ_ij·F_i·F_j ]
+```
+
+where `F_d` are normalized factors, `W_d` their weights, `Γ_ij` pairwise
+interaction coefficients, `λ` the overall interaction intensity, and `A`
+a saturating aggregation function.
+
+**Six proposed levels**, raw data to score:
+
+1. **Raw meteorological variables** - thermodynamic (`T, Td, RH, q, r, e,
+   es, θ, θv, θe, Tv`), dynamic (`u, v, |V|, direction, ∂u/∂z, ∂v/∂z`),
+   pressure (`P, ∇P`), convective (`CAPE, CIN, LCL, LFC, EL`),
+   cloud/hydrometeor (cloud fraction, base, top, liquid water, ice,
+   precipitation).
+2. **Physical diagnostics** - raw variables are never fed directly into
+   AWCI; diagnostics are computed first: instability
+   `f(CAPE, CIN, θe, lapse rates)`, humidity
+   `f(RH, q, r, dewpoint depression)`, shear
+   `f(ΔV_0-1km, ΔV_0-3km, ΔV_0-6km)`, convection
+   `f(CAPE, CIN, LCL, shear, precipitation)`, turbulence
+   `f(vertical shear, stability, TKE, mountain waves, CAT diagnostics)`,
+   icing `f(T, RH, supercooled liquid water, cloud water)`, visibility
+   `f(visibility, fog, precipitation, aerosols, ceiling)`.
+3. **Normalization to [0, 1]** - not a same-day min-max normalization
+   (arbitrary, non-reproducible across cases); prefer physically- or
+   operationally-grounded saturating functions, e.g.
+   `H_CAPE = 1 - e^(-CAPE/C0)`, so an extreme value cannot make the score
+   explode.
+4. **Complexity factors** - `F = {F_thermo, F_wind, F_shear, F_convection,
+   F_turbulence, F_icing, F_visibility, F_ceiling, F_precipitation,
+   F_cloud, F_model, F_uncertainty}`, each `F_i ∈ [0, 1]`.
+5. **Interaction terms** - `AWCI* = Σ_i w_i·F_i + Σ_{i<j} γ_ij·F_i·F_j`,
+   e.g. `γ_conv,shear·F_conv·F_shear` (convection + strong shear) or
+   `γ_icing,RH·F_icing·F_humidity`, so AWCI represents the *structure* of
+   a situation, not just a sum of independent phenomena. **This exact
+   mathematical form already exists as real code** - see 27.7.
+6. **Uncertainty and model disagreement** - kept as a *separate* output
+   from physical complexity, not merged in immediately:
+   `D_models = (1/N)·Σ_m (AWCI_m - AWCI_mean)²` (or a more robust spread
+   measure) across the real per-model runs (AROME/ALADIN/ARPEGE/WRF),
+   giving two distinct outputs `C = AWCI_physical` and
+   `U = f(model disagreement, ensemble spread, observation uncertainty,
+   data quality)`, combined only afterward as `AWCI_final = f(C, U)` -
+   this cleanly separates "the situation is complex" from "we are
+   uncertain about the situation".
+
+### 27.5 Further real refinements proposed, not yet built
+
+- **AWCI is inherently 4D**: `AWCI(x, y, z, t)`, not just `(x, y, t)` -
+  essential for aviation (`AWCI_FL050`, `AWCI_FL100`, `AWCI_FL200`, ...,
+  `AWCI_column = f(AWCI_surface, AWCI_BL, AWCI_mid, AWCI_upper)`).
+- **Two distinct indices, not one**, to avoid mixing atmospheric physics
+  with operational consequences:
+  - **AWCI-M** (Atmospheric Weather Complexity) - `AWCI_M = f(Atmosphere)`,
+    purely meteorological, aircraft-independent.
+  - **AWCI-O** (Operational Aviation Weather Complexity) -
+    `AWCI_O = f(AWCI_M, aircraft, flight phase, route, airport)` - the
+    meteorological core stays independent; the operational layer adds
+    aircraft profile, flight phase, route, and airport on top.
+- **AWCI must be explainable, not just a number**: every AWCI value
+  should decompose back into its real contributing factors, interaction
+  terms, model disagreement, and observation confidence - e.g.
+  `AWCI = 78` should be traceable to `Convection 0.82, Wind shear 0.76,
+  Turbulence 0.71, ...`, `Convection × Shear +0.11`, `Model disagreement
+  0.18`, `Observation confidence 0.91`. This is standard composite-
+  indicator practice (traceability back to underlying indicators, real
+  sensitivity analysis) applied to AWCI specifically.
+
+### 27.6 How weights should eventually be determined - not by invention
+
+Four real methods, to be combined (method D, hybrid, is the recommended
+approach):
+
+- **A — Expertise**: aviation meteorologists define weights directly.
+- **B — Statistical**: PCA / factor analysis / covariance / mutual
+  information, to detect which dimensions are genuinely distinct (the
+  OECD's own recommendation for avoiding redundancy between indicators).
+- **C — Historical data**: real observations, PIREP, METAR/SPECI, radar,
+  satellite, NWP, and real turbulence/icing/convection/LLWS events used
+  to calibrate parameters against - the FAA's own operationally
+  significant phenomena (moderate-or-greater turbulence, light-or-greater
+  icing, wind shear, thunderstorms, low visibility, low ceiling, volcanic
+  ash) and urgent PIREP categories (severe/extreme turbulence, severe
+  icing, hail, LLWS) are real, usable validation points here - **AWCI can
+  be calibrated against real operational observations, not an invented
+  score.**
+- **D — Hybrid** (recommended): `W_final = f(expertise, statistics,
+  observations, validation)`.
+
+### 27.7 Cross-check against the real codebase - already consistent, nothing to fix
+
+This whole section's central demand - never present an unvalidated weight
+or formula as scientifically settled - **is already the real, enforced
+discipline in this codebase**, not a new requirement being introduced
+here:
+
+- `awci/complexity/scientific_status.py` is a real, queryable registry of
+  the evidentiary status of every threshold and weight
+  `AWCICalculator`/`Normalizer`/`WeightsManager` actually uses, per
+  `docs/ACF_MASTER_PROMPT.md` sections 77-81's own explicit demand ("ne
+  jamais considérer les poids/seuils comme scientifiquement établis...
+  chaque poids/seuil doit avoir un statut"). Its own module docstring
+  states plainly: **"No status here is CONFIRMED - nothing in this
+  codebase's AWCI weights/thresholds has gone through the master
+  prompt's own calibration/validation pipeline yet."** Module weights are
+  labeled `EXPERT_BASED` or `INITIAL` (`WeightStatus`, never
+  `CALIBRATED`/`VALIDATED`); general thresholds use `HYPOTHESIS`/
+  `PROPOSED`/`REQUIRES_VALIDATION` (`ScientificStatus`), never
+  `CONFIRMED` unless real external validation exists.
+- `AWCICalculator.INTERACTION_WEIGHTS`/`INTERACTION_TERMS`
+  (`src/awci/complexity/calculator.py`) **already implement exactly
+  §27.4's proposed `Σw_i·F_i + Σγ_ij·F_i·F_j` interaction-term
+  mathematical form** - real code, not a future proposal - with two real
+  pairwise terms (`wind_topo_interaction`, `conv_thermo_interaction`).
+  The class's own docstring already discloses them as "an ACF design
+  choice... not derived from an external published formula... not
+  presented as an established literature result", and
+  `scientific_status.py` classifies both as `WeightStatus.INITIAL` for
+  exactly that reason.
+
+**What this section adds that the code does not yet have**: the
+uncertainty/model-disagreement layer is not yet split out as an explicit,
+separately-reported `AWCI-M` vs `AWCI-O`-style output (§27.4's level 6,
+§27.5); there is no `AWCI(x, y, z, t)` explicit 4D API surface yet
+(vertical-level AWCI values exist via `awci.complexity.vertical_field`,
+but not named/exposed as `AWCI_FL050`-style levels); no statistical
+(PCA/factor-analysis) or historical-observation-calibrated weight
+derivation has been done (§27.6, methods B/C/D); and no sensitivity/
+Monte Carlo robustness analysis across weight choices exists yet. These
+are real, scoped candidates for future work - not gaps to be silently
+filled with invented numbers.
+
+### 27.8 The recommended next step, if pursued
+
+A **factor-by-factor AWCI validation survey**: for each real factor,
+document its atmospheric variable, its published physical equation, its
+unit, its threshold(s), its normalization function, its scientific
+source, its weight (once determined), its interaction terms, and its
+validation method - built only from what is actually documented in the
+literature, exactly the same evidence-based discipline already applied
+throughout this codebase's own real formulas. This would be the real
+"AWCI calculation law", written up as a scientific specification, not
+just a dashboard formula. Not started; offered here as the honest next
+step rather than skipped past.
