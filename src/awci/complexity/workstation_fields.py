@@ -134,7 +134,7 @@ from awci.hazards.orographic_froude import compute_real_mountain_wave_froude_num
 from awci.hazards.terrain_elevation import interpolate_real_terrain_elevation
 from awci.hazards.theta_e import compute_real_theta_e_at_point
 from awci.hazards.wind_shear import compute_real_wind_shear_at_point
-from acf.science.divergence import Divergence
+from acf.science.dynamics.divergence import Divergence
 from acf.science.convection.lcl import LCL
 from acf.science.thermodynamics.potential_temperature import PotentialTemperature
 from acf.science.severe_weather import SevereWeather

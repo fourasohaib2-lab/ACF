@@ -1,35 +1,12 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.dynamics.vorticity`` on
+2026-09-21 (Phase 3 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/dynamics/__init__.py``'s own docstring and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.vorticity`` import keeps
+working unchanged.
 """
-Relative Vorticity
-==================
-"""
 
-
-class Vorticity:
-    """Relative vorticity calculator."""
-
-    @staticmethod
-    def calculate(
-        dv_dx: float,
-        du_dy: float,
-    ) -> float:
-        """
-        Relative vorticity (s^-1)
-
-        ζ = dv/dx − du/dy
-        """
-
-        return dv_dx - du_dy
-
-    @staticmethod
-    def category(value: float) -> str:
-        """
-        Simple classification.
-        """
-
-        if abs(value) < 1e-5:
-            return "Weak"
-
-        if abs(value) < 5e-5:
-            return "Moderate"
-
-        return "Strong"
+from acf.science.dynamics.vorticity import *  # noqa: F401,F403

@@ -1,32 +1,12 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.dynamics.frontogenesis`` on
+2026-09-21 (Phase 3 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/dynamics/__init__.py``'s own docstring and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.frontogenesis`` import keeps
+working unchanged.
 """
-Frontogenesis
-=============
-"""
 
-
-class Frontogenesis:
-    """Simple frontogenesis calculator."""
-
-    @staticmethod
-    def calculate(
-        temperature_gradient: float,
-        deformation: float,
-    ) -> float:
-        """
-        Simplified frontogenesis.
-
-        F = |grad(T)| × deformation
-        """
-
-        return abs(temperature_gradient) * deformation
-
-    @staticmethod
-    def category(value: float) -> str:
-
-        if value < 1e-5:
-            return "Weak"
-
-        if value < 5e-5:
-            return "Moderate"
-
-        return "Strong"
+from acf.science.dynamics.frontogenesis import *  # noqa: F401,F403

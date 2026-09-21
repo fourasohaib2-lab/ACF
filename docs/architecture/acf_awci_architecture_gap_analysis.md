@@ -1058,10 +1058,10 @@ locks in the re-export identities, both packages' `__all__`, the
 dependencies, and the 2 cross-package fixes into already-migrated
 `awci.*` code.
 
-**What remains for item 2**: the other 16 blueprint subdomains
-(`constants/`, `dynamics/`, `radiation/`, `microphysics/`, `turbulence/`,
-`boundary_layer/`, `clouds/` [already a real subpackage, but not yet
-reconciled with the blueprint's own `clouds/` role],
+**What remains for item 2** (before §4c below): the other 16 blueprint
+subdomains (`constants/`, `dynamics/`, `radiation/`, `microphysics/`,
+`turbulence/`, `boundary_layer/`, `clouds/` [already a real subpackage,
+but not yet reconciled with the blueprint's own `clouds/` role],
 `precipitation/`, `atmospheric_composition/`, `ocean/`, `hydrology/`,
 `cryosphere/`, `land_surface/`, `carbon_cycle/`, `climate/`,
 `diagnostics/`), the entire `parameters/` reorganization (including the
@@ -1069,11 +1069,62 @@ reconciled with the blueprint's own `clouds/` role],
 item 4 above), and reconciling the 6 other already-existing
 non-blueprint-named `science/` subpackages
 (`encyclopedia/`, `knowledge_graph/`, `laws/`, `observations/`,
-`physics_ai/` - `clouds/` counted above). Not started. `dynamics.py`
-(6 real modules: `dynamics.py`, `divergence.py`, `vorticity.py`,
-`frontogenesis.py`, `fronts.py`, `potential_vorticity.py`) is a natural
-next candidate - it already depends on `geopotential_height.py` and
-`hypsometric_equation.py`, both moved in §4a.
+`physics_ai/` - `clouds/` counted above).
+
+### 4c. Phase 3: `science/dynamics/` (2026-09-21)
+
+**Placement**: 6 real modules map to the blueprint's `science/dynamics/`
+subdomain directly by content: `dynamics.py` (a composite `Dynamics`
+class grouping all dynamics diagnostics, mirroring `stability.py`'s own
+aggregator role from §4b), `divergence.py`, `vorticity.py`,
+`frontogenesis.py`, `fronts.py` (`AirMass`/`FrontType`/`FrontMovement`,
+three real classes in one module), `potential_vorticity.py`.
+
+**Investigation, before any move**: `dynamics.py` depends on 4 same-batch
+siblings (`divergence.py`, `frontogenesis.py`, `potential_vorticity.py`,
+`vorticity.py`) plus 2 already-migrated `science/thermodynamics/`
+modules from §4a (`geopotential_height.py`, `hypsometric_equation.py`) -
+confirmed by reading its real imports, exactly as anticipated when this
+phase was scoped at the end of §4b. No `__all__` restrictions, no
+deferred imports, no underscore-prefixed whitebox test imports found in
+any of the 6 modules. External fan-in 1-9 dependents per module
+(`divergence.py` highest, 9).
+
+**Applying the established self-naming-collision check** (from §4a/§4b's
+bug-fix note): `dynamics.py` shares its own name with the new
+`acf.science.dynamics` package, so - per the now-established rule - no
+flat shim was written for it; the package's own `__init__.py`
+re-exports `Dynamics` directly instead, exactly like
+`Thermodynamics`/`Stability` before it. Confirmed the one real bare-path
+caller (`acf/science/engine.py`, `from acf.science.dynamics import
+Dynamics`) already resolves correctly through the package for this exact
+reason.
+
+**Execution**: all 6 files physically moved via `git mv`.
+`dynamics.py`'s 6 internal imports repointed - 4 to same-package
+siblings, 2 to `acf.science.thermodynamics.*` directly. `__init__.py`
+written re-exporting all 6 real classes (`Dynamics`, `Divergence`,
+`Vorticity`, `Frontogenesis`, `AirMass`, `FrontType`, `FrontMovement` -
+7 names from 6 modules, `fronts.py` contributing 3) with a real
+`__all__`. 5 shims created at the old flat locations (all except
+`dynamics.py`). The mandatory sweep found 1 already-migrated `awci.*`
+module depending on a module moved in this phase -
+`awci/complexity/workstation_fields.py` (`Divergence`) - repointed to
+`acf.science.dynamics.divergence` directly. 2 still-flat `acf.science.*`
+siblings (`synoptic.py`, and `engine.py`'s own bare-path `Dynamics`
+import, already correctly resolving through the package) left
+unchanged.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (7 source files);
+identity confirmed programmatically for all 5 shimmed modules (`Dynamics`
+via the package directly) plus the package's own `__all__`; full test
+collection under xvfb - 5023 tests, 0 errors; a targeted
+dynamics/divergence/vorticity/frontogenesis/fronts/potential_vorticity/
+synoptic sweep (non-GUI) passed 554/554. A new
+`tests/test_science_dynamics_reorganization.py` (10 tests) locks in the
+re-export identities, the `Dynamics`-via-package special case, the
+cross-package dependency into `science/thermodynamics/`, and the 1
+cross-package fix into already-migrated `awci.*` code.
 
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven

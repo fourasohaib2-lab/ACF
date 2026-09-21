@@ -1,40 +1,12 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.dynamics.potential_vorticity`` on
+2026-09-21 (Phase 3 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/dynamics/__init__.py``'s own docstring and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.potential_vorticity`` import keeps
+working unchanged.
 """
-Potential Vorticity (PV)
-========================
-"""
 
-
-class PotentialVorticity:
-    """Potential Vorticity calculator."""
-
-    GRAVITY = 9.81
-
-    @staticmethod
-    def calculate(
-        relative_vorticity: float,
-        coriolis: float,
-        dtheta_dp: float,
-    ) -> float:
-        """
-        Compute Ertel Potential Vorticity.
-
-        PV = -g (ζ + f) dθ/dp
-        """
-
-        return -PotentialVorticity.GRAVITY * (relative_vorticity + coriolis) * dtheta_dp
-
-    @staticmethod
-    def category(value: float) -> str:
-        """
-        Simple PV classification.
-        """
-
-        magnitude = abs(value)
-
-        if magnitude < 1e-6:
-            return "Weak"
-
-        if magnitude < 5e-6:
-            return "Moderate"
-
-        return "Strong"
+from acf.science.dynamics.potential_vorticity import *  # noqa: F401,F403

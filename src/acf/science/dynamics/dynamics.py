@@ -5,12 +5,12 @@ Dynamics Engine
 Groups all atmospheric dynamics diagnostics.
 """
 
-from acf.science.divergence import Divergence
-from acf.science.frontogenesis import Frontogenesis
-from acf.science.geopotential_height import GeopotentialHeight
-from acf.science.hypsometric_equation import HypsometricEquation
-from acf.science.potential_vorticity import PotentialVorticity
-from acf.science.vorticity import Vorticity
+from acf.science.dynamics.divergence import Divergence
+from acf.science.dynamics.frontogenesis import Frontogenesis
+from acf.science.dynamics.potential_vorticity import PotentialVorticity
+from acf.science.dynamics.vorticity import Vorticity
+from acf.science.thermodynamics.geopotential_height import GeopotentialHeight
+from acf.science.thermodynamics.hypsometric_equation import HypsometricEquation
 
 
 class Dynamics:
