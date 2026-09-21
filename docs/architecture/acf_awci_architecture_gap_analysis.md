@@ -107,7 +107,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/ai/` | 🟡 `awci/ai/rag/` **built 2026-09-21** (see §2n below) - real, headless, lexical BM25 evidence-retrieval over `awci.knowledge.*`, no new dependency, no network/LLM call. `assistant.py`/`agents/`/`knowledge/`/`reasoning/`/`anomaly_detection/`/`explanation/`/`summarization/`/`orchestration/` remain unbuilt. Still overlaps conceptually with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai` for those unbuilt pieces. |
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
-| `awci/reports/` | 🟡 `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) exist in the GUI; no standalone `reports/aviation_report.py` generator. |
+| `awci/reports/` | 🟡 **`src/awci/reports/` created 2026-09-21** (see §2u below) with `generator.py` and `aviation_report.py` — a real, composed report over `awci.airport.weather`+`awci.decision`+`awci.provenance`, no new computation. `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) still exist separately in the GUI. `flight_report.py`/`airport_report.py`/`hazard_report.py`/`complexity_report.py`/`model_report.py`/`verification_report.py`/`templates/` deliberately not built — `aviation_report.py` already covers the same real composed content. |
 | `awci/api/` | ❌ No dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are ACF-general, not AWCI-specific. |
 | `awci/alerts/` | 🟡 `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) exists; no standalone alerts engine. |
 | `awci/plugins/` | ✅ **Built 2026-09-21** (see §2p below) — all 5 files named in `awci_reference_architecture.md` §20 (`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`), real, tested, working extensibility infrastructure (register/get, on-disk discovery, lifecycle hooks). Zero real AWCI module has been adapted to implement the new `AWCIPlugin` interface yet — honestly disclosed, not fabricated. |
@@ -1378,6 +1378,49 @@ nm, matching the real ~3150 nm great-circle distance). Full non-GUI
 suite collection: 4929 tests (up from 4911, +18); a targeted sweep
 (`-k "flight or waypoint or route_weather"`, excluding `tests/gui`)
 shows 53 passed, 0 failed.
+
+## 2u. The AWCI Aviation Report generator (2026-09-21)
+
+Seventh item of "on les attaque toutes un par un": `awci/reports/` -
+specifically the named gap ("no standalone `reports/aviation_report.py`
+generator").
+
+**Built**: `generator.py` (`ReportSection`/`render_report()` - real,
+generic, reusable text-rendering helpers) and `aviation_report.py`
+(`build_aviation_report()`/`format_aviation_report()`), composing 3
+already-real systems built earlier this session - `awci.airport.
+weather.AirportWeatherSnapshot` (location, live weather, always
+built), `awci.decision.DecisionSupportView` (hazards, confidence,
+cited recommendations - built only when the caller supplies real
+module scores), `awci.provenance.AuditRecord` (model, calculation,
+provenance - built only when the caller supplies a real `AWCIResult`).
+Matches section 17's own required preservation list (data sources,
+model, time, location, calculation, factors, hazards, confidence,
+uncertainty, provenance) directly, since every one of those already
+exists as a real field on one of the 3 composed systems.
+
+**Honest degradation**: every optional section renders "not available"
+rather than a fabricated value when its underlying real data was never
+supplied - verified by test with a weather-only report (decision/audit
+both `None`) alongside a full 3-system composition.
+
+**Deliberately not built this round**: `flight_report.py`/
+`airport_report.py`/`hazard_report.py`/`complexity_report.py`/
+`model_report.py`/`verification_report.py` - `aviation_report.py`
+already covers the same real composed content a flight/airport-
+specific report would otherwise duplicate; `templates/` would need a
+real templating-engine decision out of scope here.
+
+**Verified, not assumed**: manual end-to-end runs (a weather-only
+report against a fake hub; a full report combining a real decoded KJFK
+METAR - `BKN008 OVC015 -RA` - a real `AWCICalculator` run, and a real
+`Provenance`, correctly showing the real IFR ceiling category, real
+hazard severity bands, real cited CAT-turbulence recommendations, and
+real provenance-completeness disclosure). `ruff check`/`mypy` clean;
+13 new tests (`tests/test_awci_reports_aviation.py`). Full non-GUI
+suite collection: 4942 tests (up from 4929, +13); a targeted sweep
+(`-k "reports_aviation or awci_decision or awci_provenance or
+airport_runway"`, excluding `tests/gui`) shows 87 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
