@@ -93,7 +93,7 @@ since-migrated path has been updated to point at its real, current
 | Blueprint layer | Closest current equivalent |
 |---|---|
 | `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
-| `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | 🟡 **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. No `knowledge_graph/` (entities/relations/ontology) for aviation exists yet — the one real content gap remaining in this layer. |
+| `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | ✅ **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. `knowledge_graph/` **built 2026-09-21** — see §2w: `entities.py` (10 real, cited aviation-hazard `KnowledgeNode`s) + `graph.py` (`build_aviation_knowledge_graph()`, seeding the already-real `acf.science.encyclopedia.knowledge_graph.KnowledgeGraphEngine` rather than a second engine); `relations.py`/`ontology.py` deliberately not separate files (see §2w). |
 | `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `src/acf/connectors/` is also real: `pirep_reports.py`, `nexrad_stations.py`, `argo_floats.py`, `wmo_wis.py`, `eumetsat_mtg.py`, `live_connectors.py` — genuine METAR/PIREP/radar/satellite connectors exist, still under `acf.connectors` rather than `awci.data.connectors`, not yet migrated; SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `awci.knowledge.icao` (moved from `acf.aviation.icao` in §2j), not separate `connectors/` modules. |
 | `awci/observations/` | 🟡 **`hub.py` built 2026-09-21** (see §2r below) — real, single aggregation point over `awci.knowledge.icao.live_source` (METAR/TAF/SIGMET) + `acf.connectors.{pirep_reports,nexrad_stations,eumetsat_mtg}` (PIREP/radar/satellite), all already-real connectors, never re-implemented. The blueprint's full 11-file package (`stations.py`/`metar.py`/per-source `parser/decoder/validator` subpackages) deliberately not built — real METAR/TAF/SIGMET decoding already exists elsewhere; duplicating it would not close a real gap. |
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
@@ -1454,6 +1454,76 @@ failing subscriber correctly isolated from 2 other real subscribers).
 Full non-GUI suite collection: 4957 tests (up from 4942, +15); a
 targeted sweep (`-k "alerts or awci_plugins"`, excluding `tests/gui`)
 shows 66 passed, 0 failed.
+
+## 2w. The AWCI aviation knowledge graph (2026-09-21)
+
+Ninth item of "on les attaque toutes un par un": `awci/knowledge/
+knowledge_graph/` - `docs/architecture/awci_reference_architecture.md`
+section 2 ("Aviation Knowledge Base") names `entities.py`/
+`relations.py`/`graph.py`/`ontology.py` under this path, but no such
+package existed - the one real content gap remaining in the otherwise
+fully migrated `awci/knowledge/` layer (§2j).
+
+**Built**: `entities.py` (`AVIATION_KNOWLEDGE_NODES` - 10 real, cited
+aviation-hazard `KnowledgeNode`s: jet stream, clear air turbulence,
+orographic wave, rotor turbulence, wake turbulence, thunderstorm,
+microburst, airframe icing, cold front, squall line, each citing an
+already-real, already-built `awci.knowledge.meteorology`/`hazards`/
+`performance` module plus a real ICAO/FAA source - ICAO Doc 9837, 9817,
+4444, Annex 3 Ch3; FAA AC 00-54; FAA Aviation Weather Handbook Ch19)
+and `graph.py` (`build_aviation_knowledge_graph()` - seeds the
+already-real, already-working
+`acf.science.encyclopedia.knowledge_graph.KnowledgeGraphEngine` (real
+BFS `find_path()`/`explain_chain()`/`get_related_concepts()`) with
+those nodes plus 7 real, cited causal edges: jet stream→CAT
+(`associated_with`, ICAO Doc 9837), orographic wave→rotor turbulence
+(`produces`, ICAO Doc 9817), cumulonimbus→microburst and
+thunderstorm→microburst (`produces`, FAA AC 00-54/ICAO Doc 9837),
+thunderstorm→squall line (`produces`), cold front→thunderstorm
+(`triggers`), updraft→airframe icing (`produces`, FAA Aviation Weather
+Handbook Ch19). The edges from the base engine's own already-real
+general nodes (`cumulonimbus`, `updraft`) into the new aviation nodes
+mean the two node sets are genuinely interconnected, not two disjoint
+islands - e.g. `explain_chain("cold front", "microburst")` returns a
+real 2-hop causal chain (cold front → thunderstorm → microburst) with
+a real citation on each edge.
+
+**Deliberately not built this round**: a second graph engine class -
+`KnowledgeGraphEngine` is reused by identity, not copied; a duplicate
+would re-implement already-real, already-tested pathfinding/
+explanation logic for no benefit. `relations.py` as a separate file -
+the edges are built inline via `add_edge()`, the exact same convention
+the base engine's own `_build_default_graph()` already uses; splitting
+them into a second file would change no real logic, only add
+indirection. `ontology.py` - a formal ontology/reasoner framework
+(e.g. OWL/RDF class hierarchies) is a real, separate architectural
+decision out of scope for this session, and nothing in this codebase
+currently needs one: the flat node/edge graph already answers every
+real query this package's callers need.
+
+**Verified, not assumed**: manual end-to-end run confirming real
+connectivity - `get_related_concepts("jet stream")` returns
+`[("clear air turbulence", "associated_with")]`;
+`find_path("orographic wave", "rotor turbulence")` returns the direct
+2-node path; `explain_chain("cold front", "microburst")` returns the
+real 2-hop chain with a real reference on each edge;
+`explain_chain("wake turbulence", "airframe icing")` honestly reports
+`connected: False` (no real causal link asserted between them); the
+base engine's own pre-existing nodes (`cape`, `cumulonimbus`,
+`instability`) remain present after seeding. `ruff check`/`mypy` clean
+on the new package. 15 new tests
+(`tests/test_awci_knowledge_graph.py`), including a discipline test
+that every added edge carries a real, non-empty `reference` and a test
+that no second `KnowledgeGraphEngine`-like class is defined in
+`graph.py`. Full non-GUI collection in this session's environment:
+4595 tests collected with 45 pre-existing collection errors unrelated
+to this change (the already-tracked `awci_map_panel` circular-import
+bug, `task_468ac835` - confirmed by collecting `tests/test_map_camera.py`
+standalone, which succeeds with 8 tests when not collected alongside
+the full suite); none of the 45 errors touch
+`awci/knowledge/knowledge_graph/` or this test file. A targeted
+`pytest tests/test_awci_knowledge_graph.py` run shows 15 passed, 0
+failed.
 
 ## 3. What this means for a real migration
 
