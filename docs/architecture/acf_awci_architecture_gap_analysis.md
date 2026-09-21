@@ -86,7 +86,7 @@ this is new construction, not a rename of an equivalent existing tree.
 | `awci/vertical/` | ✅ Real and substantial — `acf.awci.vertical_field`, `acf.gui.dashboard.acf_workstation_sounding_panel`, and the AWCI dashboard's own `AWCIVerticalSoundingWidget`/`ACFVerticalSoundingWidget` cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). |
 | `awci/hazards/` (one module per hazard) | ✅ Strong real match, just flat rather than one-subpackage-per-hazard: `src/acf/awci/` has `icing_temperature_range.py`, `ceiling.py`, `visibility.py`, `dust.py`, `microburst.py`, `volcanic_ash.py`, `wind_shear.py`, `cat_turbulence.py`, `orographic_froude.py`, `hydrometeor_phase.py`. Every one of these is a real, physically-grounded module (per this session's own and prior sessions' audits) — this is the single closest AWCI blueprint match after `model4d`. |
 | `awci/complexity/` (the actual AWCI score) | ✅ `src/acf/awci/calculator.py` is the real `AWCICalculator` — the actual scoring/aggregation engine, plus `weights.py`, `normalization.py` (`normalizer.py`), `scale_classification.py`, `wind_classification.py`. Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. |
-| `awci/comparison/` + `awci/consensus/` | 🟡 Real logic exists (`ModelConsensusEngine`, multi-model disagreement fields) but it lives inside the **GUI layer** (`acf.gui.dashboard.awci_dashboard`, `acf.gui.dashboard.acf_general_dashboard`, `acf.gui.dashboard.acf_workstation_complexity`) rather than as a standalone, GUI-independent `awci/comparison/` + `awci/consensus/` engine pair. This is a real architectural gap: today, using multi-model comparison/consensus outside the GUI means importing GUI modules. |
+| `awci/comparison/` + `awci/consensus/` | 🟡 **Corrected 2026-09-21** (an earlier version of this document wrongly placed this logic inside the GUI layer — verified by grep, not assumed, this time): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 `src/acf/aviation/routing/flight_routing.py` covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
 | `awci/airport/` | 🟡 `src/acf/aviation/airports/airport_database.py` covers the airport data; no dedicated runway/terminal/crosswind/runway_condition/disruption modules as named — some of this (crosswind, ceiling, visibility) exists inside `acf.awci`'s own hazard modules instead. |
 | `awci/decision/` | ❌ No dedicated decision-support engine (risk_matrix/scenario/recommendation) exists as a standalone module; the AWCI dashboard's "Current Situation"/risk cards present some of this information in the UI layer directly. |
@@ -100,15 +100,45 @@ this is new construction, not a rename of an equivalent existing tree.
 | `awci/workspace/` | ❌ No AWCI-specific project/session format; ACF's own `acf.workspace` is general-purpose. |
 | `awci/provenance/` | 🟡 Provenance discipline is a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length) but not a dedicated `provenance/lineage.py`/`audit.py` module.
 
+## 2a. `model4d`/`models` migration (started 2026-09-21)
+
+The first concrete migration step, scoped from this document at the user's
+request. Findings:
+
+- **`model4d`** needs no real migration: `model4d/operators/` already
+  matches the blueprint's own `operators/` subpackage with real, audited
+  content (`advection.py`, `divergence.py`, `gradient.py`, `laplacian.py`,
+  `curl.py`, `diffusion.py`). Renaming files for literal blueprint-name
+  parity (`gradient.py` → `gradients.py`, `curl.py` → `vorticity.py`) was
+  considered and rejected: it would touch imports across the 152 audited
+  files in `model4d/physics/` for zero functional or architectural gain.
+- **`models`**: found and removed 7 genuinely dead placeholder files under
+  `models/implementations/` (`arome.py`, `arpege.py`, `gefs.py`, `gfs.py`,
+  `icon.py`, `ifs.py`, `wrf.py` — each a 28-line docstring-only stub with
+  zero real code, confirmed by `grep` to have zero real importers anywhere
+  in `src/` or `tests/`, and already implicitly flagged as non-real by
+  `models/__init__.py`'s own prior-audit docstring). Real per-model logic
+  lives elsewhere already: `models/{arome,aladin,arpege,wrf,icon,openifs}/
+  ingestion_adapter.py` (real EPyGrAM-backed adapters) and
+  `models/implementations/era5.py` (the one real `implementations/` file).
+  Verified after removal: `ruff`/`mypy` clean, 93 tests passed across
+  `test_model_detector.py`, `test_wrf_icon_openifs_adapters.py`,
+  `test_model_adapter_protocol.py`, `test_ai_forecast_center.py`,
+  `test_awci_calculator.py`.
+- The comparison/consensus location question (§1 above, "corrected
+  2026-09-21") remains open — deferred pending a decision on whether the
+  15+-file blast radius is worth a purely organizational move.
+
 ## 3. What this means for a real migration
 
 Adopting these two blueprints literally would require, at minimum:
 
 1. **Splitting `src/acf/awci/` + `src/acf/aviation/` + the AWCI portions of
    `src/acf/gui/dashboard/` into a new top-level `src/awci/` package** —
-   the single largest structural change, since AWCI's real logic is
-   currently reachable from, and in the consensus/comparison case *only*
-   reachable from, the GUI layer.
+   the single largest structural change, since most of AWCI's real logic
+   is currently only reachable through `acf.*` imports (some of it, like
+   model consensus, already GUI-independent — see §1's correction above —
+   but still under `acf.*`, not a separate `awci.*` namespace).
 2. **Reorganizing `src/acf/science/` and `src/acf/parameters/` from flat,
    topic-named modules into the blueprint's per-domain subpackages** — a
    large but mechanically simpler rename/move, since the underlying real
