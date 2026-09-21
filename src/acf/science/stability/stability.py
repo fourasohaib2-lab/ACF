@@ -45,15 +45,15 @@ formula.
 
 from typing import Literal
 
-from acf.science.cape import CAPE
-from acf.science.cin import CIN
-from acf.science.k_index import KIndex
-from acf.science.lcl import LCL
-from acf.science.lifted_index import LiftedIndex
-from acf.science.showalter_index import ShowalterIndex
-from acf.science.storm_relative_helicity import StormRelativeHelicity
-from acf.science.sweat_index import SWEATIndex
-from acf.science.total_totals import TotalTotals
+from acf.science.convection.cape import CAPE
+from acf.science.convection.cin import CIN
+from acf.science.convection.lcl import LCL
+from acf.science.convection.storm_relative_helicity import StormRelativeHelicity
+from acf.science.stability.k_index import KIndex
+from acf.science.stability.lifted_index import LiftedIndex
+from acf.science.stability.showalter_index import ShowalterIndex
+from acf.science.stability.sweat_index import SWEATIndex
+from acf.science.stability.total_totals import TotalTotals
 
 ParcelType = Literal["surface_based", "mixed_layer", "most_unstable"]
 

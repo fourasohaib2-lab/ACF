@@ -49,7 +49,7 @@ from __future__ import annotations
 from typing import Any
 
 from acf.physics_guard import PhysicsGuard
-from acf.science.bulk_wind_shear import BulkWindShear
+from acf.science.convection.bulk_wind_shear import BulkWindShear
 
 
 def compute_real_wind_shear_at_point(

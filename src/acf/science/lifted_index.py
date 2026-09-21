@@ -1,44 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.stability.lifted_index`` on
+2026-09-21 (Phase 2 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/stability/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.lifted_index`` import keeps
+working unchanged.
 """
-Lifted Index (LI)
-=================
-"""
 
-
-class LiftedIndex:
-    """Lifted Index calculator."""
-
-    @staticmethod
-    def calculate(
-        parcel_temperature: float,
-        environment_temperature: float,
-    ) -> float:
-        """
-        Compute Lifted Index.
-
-        LI = T_environment - T_parcel
-        """
-
-        return environment_temperature - parcel_temperature
-
-    @staticmethod
-    def category(li: float) -> str:
-        """
-        Classify Lifted Index.
-        """
-
-        if li > 6:
-            return "Very Stable"
-
-        if li > 2:
-            return "Stable"
-
-        if li > 0:
-            return "Slightly Unstable"
-
-        if li > -3:
-            return "Unstable"
-
-        if li > -6:
-            return "Very Unstable"
-
-        return "Extreme Instability"
+from acf.science.stability.lifted_index import *  # noqa: F401,F403

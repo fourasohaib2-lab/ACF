@@ -135,11 +135,11 @@ from awci.hazards.terrain_elevation import interpolate_real_terrain_elevation
 from awci.hazards.theta_e import compute_real_theta_e_at_point
 from awci.hazards.wind_shear import compute_real_wind_shear_at_point
 from acf.science.divergence import Divergence
-from acf.science.lcl import LCL
+from acf.science.convection.lcl import LCL
 from acf.science.thermodynamics.potential_temperature import PotentialTemperature
 from acf.science.severe_weather import SevereWeather
-from acf.science.storm_motion import StormMotion
-from acf.science.storm_relative_helicity import StormRelativeHelicity
+from acf.science.convection.storm_motion import StormMotion
+from acf.science.convection.storm_relative_helicity import StormRelativeHelicity
 
 #: Real Earth mean radius, metres - same constant
 #: acf.awci.path_sampling._haversine_km() already uses (6371.0 km).

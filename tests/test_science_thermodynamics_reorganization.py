@@ -10,6 +10,16 @@ atmospheric priority" subdomain. ``acf.science.<module>`` is now a
 thin re-export for every one of them. This locks in that every old
 import path still resolves to the exact same real object as the new
 one.
+
+``thermodynamics.py`` is special-cased: it shares its own name with
+the new package (``acf.science.thermodynamics``), so a flat shim file
+at that exact path would be permanently shadowed by the package
+directory and never actually reachable through Python's import
+system - dead code, not a working re-export. There is no flat shim for
+it; the package's own ``__init__.py`` re-exports ``Thermodynamics``
+directly instead, which is what every real caller of
+``from acf.science.thermodynamics import Thermodynamics`` already
+uses.
 """
 
 from __future__ import annotations
@@ -19,7 +29,6 @@ import importlib
 import pytest
 
 _MODULES = [
-    "thermodynamics",
     "potential_temperature",
     "virtual_temperature",
     "virtual_potential_temperature",
@@ -72,6 +81,20 @@ def test_package_reexports_its_own_real_public_api():
     assert pkg.__all__
     for name in pkg.__all__:
         assert hasattr(pkg, name), f"acf.science.thermodynamics is missing {name!r} in its own namespace"
+
+
+def test_thermodynamics_module_is_reachable_only_through_the_package_not_a_dead_flat_shim():
+    """No src/acf/science/thermodynamics.py shim exists - it would be
+    permanently shadowed by the acf.science.thermodynamics package and
+    never actually importable. acf.science.thermodynamics.Thermodynamics
+    (via the package's own __init__.py) is the one real, reachable path
+    for every caller that used to do
+    `from acf.science.thermodynamics import Thermodynamics`."""
+    import acf.science.thermodynamics as pkg
+    from acf.science.thermodynamics.thermodynamics import Thermodynamics
+
+    assert pkg.__file__.endswith("__init__.py")
+    assert pkg.Thermodynamics is Thermodynamics
 
 
 def test_internal_cross_reference_uses_the_new_package_directly():

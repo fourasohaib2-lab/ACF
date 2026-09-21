@@ -964,20 +964,120 @@ the re-export identity for all 21 modules, the package's own `__all__`,
 the internal cross-reference, and the 7 cross-package fixes into
 already-migrated `awci.*` code.
 
-**What remains for item 2**: the other 18 blueprint subdomains
-(`constants/`, `dynamics/`, `stability/`, `convection/`, `radiation/`,
-`microphysics/`, `turbulence/`, `boundary_layer/`, `clouds/` [already a
-real subpackage, but not yet reconciled with the blueprint's own
-`clouds/` role], `precipitation/`, `atmospheric_composition/`, `ocean/`,
-`hydrology/`, `cryosphere/`, `land_surface/`, `carbon_cycle/`, `climate/`,
+**A real bug found and fixed during §4b, retroactively affecting this
+phase too**: `thermodynamics.py` was moved into a package of the exact
+same name (`acf.science.thermodynamics`), and a flat shim file was
+written at the old `src/acf/science/thermodynamics.py` path - but a
+regular package always shadows a same-named module in CPython's import
+resolution, so that shim file was permanently unreachable, dead code
+from the moment it was written; every real caller happened to keep
+working anyway only because the package's own `__init__.py` already
+re-exports `Thermodynamics` directly (the one name any real caller ever
+imported from that bare path). Found while investigating §4b's own,
+identical `stability.py`/`science.stability` collision. Fixed by
+deleting the dead `thermodynamics.py` shim file entirely and updating
+`tests/test_science_thermodynamics_reorganization.py` to lock in the
+package-level re-export instead of a nonexistent flat one.
+
+### 4b. Phase 2: `science/stability/` and `science/convection/` (2026-09-21)
+
+**Placement**: 7 real modules map to the blueprint's `science/stability/`
+subdomain by content: `stability.py` (a composite `Stability` index
+aggregator - the closest real match to the blueprint's illustrative
+`stability_diagnostics.py`), `bulk_richardson_number.py`, `k_index.py`,
+`sweat_index.py`, `total_totals.py`, `lifted_index.py`,
+`showalter_index.py`. 8 real modules map to `science/convection/`:
+`cape.py`, `cin.py`, `lcl.py`, `lfc.py`, `parcel_ascent.py` (the real
+match for the blueprint's illustrative `parcel.py`),
+`storm_relative_helicity.py`, `storm_motion.py`, `bulk_wind_shear.py` -
+the last three are not named in the blueprint's own smaller sketch, but
+are real, standard severe-convective-storm kinematic diagnostics (SRH,
+storm motion, bulk shear) computed alongside CAPE/CIN in operational
+forecasting; placed here by real role, a disclosed decision.
+
+**Investigation, before any move**: `stability.py`'s own `Stability`
+class is a real composite aggregator that reuses `CAPE`, `CIN`, `LCL`,
+`KIndex`, `LiftedIndex`, `ShowalterIndex`, `StormRelativeHelicity`,
+`SWEATIndex`, `TotalTotals` directly - a genuine cross-domain dependency
+spanning both new packages, confirmed by reading its actual imports, not
+assumed from the filename. `cape.py`/`cin.py` depend on
+`VirtualTemperature` and `lcl.py` on `EquivalentPotentialTemperature` -
+both already moved to `science/thermodynamics/` in §4a, so these
+references were repointed directly rather than left on the
+`acf.science.thermodynamics` shim. `parcel_ascent.py` depends on
+`radiosonde.py` (still flat, not part of this phase) - deliberately left
+on the shim, same treatment as every other still-flat sibling. No
+`__all__` restrictions, no deferred imports, no underscore-prefixed
+whitebox test imports found in any of the 15 modules. External fan-in
+1-10 dependents per module (`cape.py` highest, 10).
+
+**A real bug found and fixed, not just a migration artifact**: moving
+`stability.py` into a package also named `stability` reproduces the exact
+same shadowing bug retroactively found in `thermodynamics.py` (§4a's own
+note above) - a flat `stability.py` shim would be permanently
+unreachable, dead code. No such shim was written this time; the
+package's own `__init__.py` re-exports `Stability` directly instead,
+which is what the sole real caller (`radiosonde.py`) and the tests
+already use. This is now the established pattern for any future
+self-named aggregator module: check whether the flat module and its own
+target package would share a name *before* writing a flat shim for it,
+and skip the shim in favor of the package's own re-export when they do.
+
+**Execution**: all 15 files physically moved via `git mv`. `stability.py`'s
+9 internal imports repointed - 4 to same-package siblings
+(`acf.science.stability.{k_index,lifted_index,showalter_index,
+sweat_index,total_totals}`), 4 to the sibling `convection` package
+(`acf.science.convection.{cape,cin,lcl,storm_relative_helicity}`).
+`cape.py`/`cin.py`/`lcl.py` repointed to
+`acf.science.thermodynamics.*` directly. Two `__init__.py` files written
+re-exporting all real classes with a real `__all__` each, mirroring
+`science/clouds/__init__.py`'s established style. 14 shims created at the
+old flat locations (all except `stability.py`, per the bug fix above).
+The mandatory sweep across the whole codebase found 2 already-migrated
+`awci.*` modules depending on modules moved in this phase - repointed to
+`acf.science.{stability,convection}.*` directly:
+`awci/hazards/wind_shear.py` (`BulkWindShear`) and
+`awci/complexity/workstation_fields.py` (`LCL`, `StormMotion`,
+`StormRelativeHelicity`). 4 still-flat `acf.science.*` siblings
+(`laws/thermodynamics.py`, `laws/dynamics.py`,
+`encyclopedia/convection_extended.py`, `radiosonde.py`) also reference
+the moved modules - deliberately left on the shim, to be cleaned up when
+each of them is itself moved in a future phase.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (17 source files
+across both packages); identity confirmed programmatically for all 15
+modules (14 via their flat shim, `Stability` via the package directly)
+plus both packages' own `__all__`; full test collection under xvfb - 5002
+tests, 0 errors; a targeted stability/convection sweep (non-GUI) passed
+252/252 (6 skipped); the 3 directly-relevant GUI test files (workstation
+thermodynamics/convection/stability_indices) passed 16/16. A new
+`tests/test_science_stability_convection_reorganization.py` (21 tests)
+locks in the re-export identities, both packages' `__all__`, the
+`Stability`-via-package special case, the cross-domain `Stability`↔
+`convection` dependency, the `cape`/`cin`/`lcl`↔`thermodynamics`
+dependencies, and the 2 cross-package fixes into already-migrated
+`awci.*` code.
+
+**What remains for item 2**: the other 16 blueprint subdomains
+(`constants/`, `dynamics/`, `radiation/`, `microphysics/`, `turbulence/`,
+`boundary_layer/`, `clouds/` [already a real subpackage, but not yet
+reconciled with the blueprint's own `clouds/` role],
+`precipitation/`, `atmospheric_composition/`, `ocean/`, `hydrology/`,
+`cryosphere/`, `land_surface/`, `carbon_cycle/`, `climate/`,
 `diagnostics/`), the entire `parameters/` reorganization (including the
 `acf.science.parameters` vs `acf.parameters` duplicate-naming question,
 item 4 above), and reconciling the 6 other already-existing
 non-blueprint-named `science/` subpackages
 (`encyclopedia/`, `knowledge_graph/`, `laws/`, `observations/`,
-`physics_ai/` - `clouds/` counted above). Not started.
+`physics_ai/` - `clouds/` counted above). Not started. `dynamics.py`
+(6 real modules: `dynamics.py`, `divergence.py`, `vorticity.py`,
+`frontogenesis.py`, `fronts.py`, `potential_vorticity.py`) is a natural
+next candidate - it already depends on `geopotential_height.py` and
+`hypsometric_equation.py`, both moved in §4a.
 
-Item 1's `src/acf/awci/` half is the only one substantially executed so
-far (Phases 1-8, 2026-09-21) — see §2a-§2i above for the real, verified,
-per-phase detail. `src/acf/aviation/`, items 2-4, and the GUI-layer
-reorganization remain real gap-survey findings, not yet started.
+Both migration efforts (§2, the AWCI separate-package migration, and §4,
+the ACF `science/`/`parameters/` reorganization) follow the same proven
+method: real investigation before any move, `git mv` + backward-
+compatible shims, a mandatory codebase-wide sweep for cross-package
+references, and full verification (ruff/mypy/identity checks/targeted and
+broad test sweeps/collection) before every commit.
