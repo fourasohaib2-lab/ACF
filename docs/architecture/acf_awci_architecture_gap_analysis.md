@@ -103,7 +103,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/comparison/` + `awci/consensus/` | 🟡 **`awci/comparison/` created 2026-09-21** (see §2i below) with `multi_model_fusion.py` (real full-field multi-model fusion) and `regridding.py` (real generic grid regridding, its one real dependent). This is distinct from `ModelConsensusEngine` (see the "corrected 2026-09-21" note directly above from an earlier pass of this same document): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint for *that* module is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`/`awci.comparison`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 **`src/awci/flight/` created 2026-09-21** (see §2t below) with `waypoint.py` (real great-circle intermediate-point generation) and `route_weather.py` (real per-route weather briefing composing routing + waypoints + live weather). `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing itself. `planning.py`/`corridor.py`/`altitude.py`/`flight_levels.py`/`departure.py`/`arrival.py`/`alternate.py` real content already exists elsewhere; `fuel_weather.py` would need a real aircraft-type fuel-burn model this codebase does not have. |
 | `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. **`runway.py`/`weather.py` added 2026-09-21** (see §2s below) — real per-runway wind assessment and a real per-airport weather snapshot, both thin compositions of already-real formulas. `terminal.py`/`operations.py`/`runway_condition.py`/`departure.py`/`arrival.py`/`disruption.py` remain unbuilt — each would need real data or a real, cited regulatory threshold this codebase does not have. Crosswind/ceiling/visibility computation already lives in `awci.hazards`/`awci.knowledge.performance.aircraft_performance` rather than duplicated blueprint-named files. |
-| `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). Deliberately real-core-only, user-confirmed scope: composes already-computed AWCI outputs and reuses the 3 already-cited real `flight_recommendations` entries; `risk_matrix.py`/`confidence.py`/`alternatives.py`/`scenario.py` are NOT built - each needs its own real, cited methodology first (e.g. ICAO Doc 9859 SMS for `risk_matrix.py`), not an invented one. |
+| `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). **`risk_matrix.py` added 2026-09-21 with explicit user confirmation** — see §2ag: the real ICAO Doc 9859 SMS 5x5 risk-assessment matrix, standalone (not auto-derived from a continuous AWCI score). `confidence.py`/`alternatives.py`/`scenario.py` remain NOT built — each still needs its own real, cited methodology first, not an invented one. |
 | `awci/ai/` | 🟡 `awci/ai/rag/` **built 2026-09-21** (see §2n below) - real, headless, lexical BM25 evidence-retrieval over `awci.knowledge.*`, no new dependency, no network/LLM call. `assistant.py`/`agents/`/`knowledge/`/`reasoning/`/`anomaly_detection/`/`explanation/`/`summarization/`/`orchestration/` remain unbuilt. Still overlaps conceptually with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai` for those unbuilt pieces. |
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
@@ -2049,6 +2049,49 @@ clean after the re-export change. Full non-GUI collection: 4680 tests
 With this item, the full 5-part ACF-general batch from the remaining-
 gaps list (`core/` §2ab, `utils/` §2ac, `api/` §2ad, `alerts/` §2ae,
 `reports/` §2af) is complete.
+
+## 2ag. The real ICAO Doc 9859 SMS risk matrix (2026-09-21)
+
+Nineteenth item, and the first of the "higher-risk" items explicitly
+called out at the end of §2af's batch summary - this one blocked by a
+real, cited-methodology requirement, addressed by explicit user
+confirmation before building (since it reverses the deferral decision
+Phase 1 of `awci.decision` (§2m) made deliberately and with the
+user's own confirmation at the time).
+
+**Built**: `risk_matrix.py` - `SeverityCategory` (A-Catastrophic
+through E-Negligible), `LikelihoodCategory` (5-Frequent through
+1-Extremely Improbable), and `assess_risk()` implementing ICAO Doc
+9859's own standard 5x5 Safety Management Manual risk-assessment
+matrix - the same structure reproduced identically across ICAO/FAA/
+EASA SMS guidance material, not an invented scheme. Self-consistency
+(the 25 real (likelihood, severity) combinations partition into
+exactly 3 disjoint tolerability bands: 6 Unacceptable + 8 Review + 11
+Acceptable = 25) was verified programmatically before any test was
+written, then locked in by a dedicated discipline test.
+
+**Deliberately not auto-derived from AWCI's own score**: ICAO's
+matrix operates on discrete, qualitative categories a safety analyst
+assigns from operational judgement - inventing a rule mapping a
+continuous 0-100 AWCI complexity score onto these discrete categories
+would itself be an ACF-invented scheme, exactly what Phase 1's own
+scope decision was built to avoid. A real caller (a safety analyst,
+or a future real module with its own cited derivation) supplies both
+categories explicitly. Locked in by a discipline test confirming
+`risk_matrix.py` never imports from `awci.decision.situation`/
+`engine` (the continuous-score layer).
+
+**Verified, not assumed**: manual end-to-end run - a programmatic
+sweep of all 25 real (likelihood, severity) combinations, confirming
+the tolerability-band membership and the 6/8/11 split, before writing
+the test file at all; individually-verified real cells (worst case
+"5A" → Unacceptable, best case "1E" → Acceptable, a real Review-band
+cell "3B"). `ruff check`/`mypy` clean. 10 new tests
+(`tests/test_awci_decision_risk_matrix.py`); the pre-existing 27
+`tests/test_awci_decision_support.py` tests re-run clean (no
+regression from the package `__init__.py` export additions). Full
+non-GUI collection: 4690 tests (up from 4680, +10), same pre-existing
+45 collection errors (`task_468ac835`) confirmed unrelated.
 
 ## 3. What this means for a real migration
 
