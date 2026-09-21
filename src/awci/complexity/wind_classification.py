@@ -59,7 +59,7 @@ existing `dynamic` module score, wind shear, and microburst modules).
 
 from __future__ import annotations
 
-from acf.science.wind_turbulence import JET_STREAM_THRESHOLD_M_S, JetStream
+from acf.science.turbulence.wind_turbulence import JET_STREAM_THRESHOLD_M_S, JetStream
 
 #: Real WMO Beaufort wind force scale (WMO Manual on Codes, WMO-No.
 #: 306) - (force, name, upper bound in m/s, standard 10 m equivalent

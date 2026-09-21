@@ -1224,6 +1224,61 @@ flat shim, and that the real `laws/radiation.py` caller still resolves
 correctly - plus a documented note explaining why `microphysics/` was
 not done this phase.
 
+### 4f. Phase 6: `science/turbulence/` and `science/boundary_layer/` (2026-09-21)
+
+**Placement**: two single flat modules, one to each blueprint subdomain.
+`wind_turbulence.py` (3 real classes - `CATIndex`, `JetStream`,
+`TKEProduction` - plus a real constant `JET_STREAM_THRESHOLD_M_S`) maps
+to `science/turbulence/`. `boundary_layer.py` (4 real classes -
+`MoninObukhovLength`, `FrictionVelocity`, `BowenRatio`, `PBLHeight` -
+plus a real constant `VON_KARMAN`) maps to `science/boundary_layer/`.
+Both depend only on `acf.science.constants` (already migrated in §4d,
+resolving transparently through its own package) and nothing else - true
+leaves, no cross-batch dependency between them.
+
+**A visible contrast in the self-naming-collision rule**:
+`wind_turbulence.py` does **not** collide with its own target package
+name (`science/turbulence/`), so - unlike every module renamed into a
+same-named package in §4a-§4e - it keeps a real, working flat shim at
+`src/acf/science/wind_turbulence.py`. `boundary_layer.py` **does**
+collide with `science/boundary_layer/`, so it gets no flat shim, per the
+established rule - the package's own `__init__.py` re-exports its 5 real
+names directly instead. Both cases were checked explicitly before
+writing either `__init__.py`, now a standing step in this reorganization's
+own method.
+
+**Execution**: both files physically moved via `git mv`, keeping their
+real names (`turbulence/wind_turbulence.py`,
+`boundary_layer/boundary_layer.py`). Two `__init__.py` files written,
+each re-exporting only the names genuinely defined in their own module
+(the constants transitively imported from `acf.science.constants` - `G`
+in `wind_turbulence.py`; `CP`/`EPSILON`/`G`/`LV` in `boundary_layer.py` -
+deliberately excluded from each package's own `__all__`, matching the
+precedent from §4a's `equivalent_potential_temperature.py`). One real
+flat shim written for `wind_turbulence.py`. The mandatory sweep found 2
+already-migrated `awci.*` modules depending on `wind_turbulence.py` -
+`awci/hazards/cat_turbulence.py` and
+`awci/complexity/wind_classification.py` - repointed to
+`acf.science.turbulence.wind_turbulence` directly (`path_sampling.py`'s
+own reference was comment-only, left as-is). `boundary_layer.py` has 2
+still-flat `acf.science.*` dependents (`laws/boundary_layer.py`,
+`surface_fire.py`) - needed no code change, since the bare
+`acf.science.boundary_layer` import path itself never changed, exactly
+like `constants.py`/`radiation.py` in §4d/§4e.
+
+**Verified, not assumed**: `ruff check`/`mypy` clean (4 source files
+across both packages); identity confirmed programmatically for both
+modules (`wind_turbulence.py` via its real shim, `boundary_layer.py` via
+its package directly) and both packages' own `__all__`; full test
+collection under xvfb - 5043 tests, 0 errors; a targeted turbulence/
+CAT/wind-classification/boundary-layer/jet-stream/Monin-Obukhov/friction-
+velocity/Bowen/PBL/surface-fire sweep (non-GUI) passed 147/147. A new
+`tests/test_science_turbulence_boundary_layer_reorganization.py`
+(7 tests) locks in both packages' re-export identities, the contrasting
+shim-vs-no-shim treatment, the 2 cross-package fixes into already-migrated
+`awci.*` code, and that the 2 still-flat `acf.science.*` siblings still
+resolve correctly.
+
 Both migration efforts (§2, the AWCI separate-package migration, and §4,
 the ACF `science/`/`parameters/` reorganization) follow the same proven
 method: real investigation before any move, `git mv` + backward-

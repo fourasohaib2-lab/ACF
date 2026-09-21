@@ -98,7 +98,7 @@ import numpy as np
 
 from awci.knowledge.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
 from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
-from acf.science.wind_turbulence import CATIndex
+from acf.science.turbulence.wind_turbulence import CATIndex
 
 from awci.complexity.workstation_fields import real_grid_spacing_m
 
