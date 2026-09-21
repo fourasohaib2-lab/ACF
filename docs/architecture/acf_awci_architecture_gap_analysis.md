@@ -45,7 +45,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 | `maps/` | ✅ Two real implementations exist: `src/acf/maps/` (`projection.py`, `map_engine.py`, `layer_manager.py`, `canvas.py`, `contours.py`, `vector.py`, `streamlines.py`, `basemap.py`, plus `projections/layers/styles/canvas/renderers` subpackages) and `src/acf/gui/map/` (the one actually embedded in the live GUI windows). Already documented in `docs/architecture/duplicate_components.md` as a genuine, not-yet-consolidated duplicate — see that file and `tests/test_collisions_consolidation.py::test_map_canvas_is_a_real_verified_duplicate_not_yet_consolidated`. |
 | `visualization/` | ✅ `src/acf/visualization/` is real and large: `layer.py`, `layer_group.py`, `layer_collection.py`, `auto_renderer.py`, `data_renderer.py`, `cartopy_renderer.py`, `renderer.py`, `colormap.py`, `visualization_manager.py`, `layer_manager.py`, `radar_satellite_center.py`, plus `layer_engine/`, `scene/`, `timeline/`, `layers/`, `legends/`, `volume_engine/`, `ai_forecast_center/`, `gpu/`, `camera/`, `widgets/` subpackages. The blueprint's `scientific/` (skewt/hodograph/sounding) diagrams exist too, but under `src/acf/gui/dashboard/` (e.g. `acf_workstation_sounding_panel.py`) rather than a dedicated `visualization/scientific/` module. |
 | `models/` | ✅ `src/acf/models/` is real: `manager.py`, `ensemble.py`, `forecast_config.py`, `base_model.py`, `hub.py`, `registry.py`, `detector.py`, plus per-model subpackages `common/`, `implementations/`, `arpege/`, `wrf/`, `openifs/`, `arome/`, `aladin/`, `icon/`. Direct, close match to the blueprint. |
-| `ai/` | ✅ `src/acf/ai/` is real and broad: `engine.py`, `cloud_reasoning.py`, plus `data_assimilation/`, `uncertainty/`, `physics_informed/`, `ensemble/`, `xai/`, `emergency_assistant/`, `forecast/`, `analyzers/`, `atmosphere_explorer/`, `digital_twin/`, `decision_support/`, `neural_models/`, `alerts/`, `simulation/`, `plugins/`. No dedicated `ai/agents/` or `ai/rag/` subpackage — a real, verified gap: a repo-wide search for RAG (`retriever`/`vector_store`/`embeddings`-style modules) found nothing beyond a name coincidence in `src/acf/storage/` — **RAG is not implemented anywhere in this codebase today.** |
+| `ai/` | ✅ `src/acf/ai/` is real and broad: `engine.py`, `cloud_reasoning.py`, plus `data_assimilation/`, `uncertainty/`, `physics_informed/`, `ensemble/`, `xai/`, `emergency_assistant/`, `forecast/`, `analyzers/`, `atmosphere_explorer/`, `digital_twin/`, `decision_support/`, `neural_models/`, `alerts/`, `simulation/`, `plugins/`. No dedicated `ai/agents/` subpackage. `ai/rag/` was fully absent until **2026-09-21, when `src/awci/ai/rag/` was built** (see §2n below) — a real, lexical/BM25 evidence-retrieval layer over `awci.knowledge.*`, deliberately placed under `awci/ai/` (the AWCI-specific location named in `awci_reference_architecture.md` §14) rather than `acf.ai`, since its corpus is scoped to AWCI-specific, ICAO/WMO-cited knowledge only. `acf.ai`'s own general-purpose RAG gap remains real and unaddressed. |
 | `awci/` (historical, layer 3) | See §2 below — AWCI is intentionally not part of ACF's own layer 3 per the "AWCI separation" decision both blueprints agree on. |
 
 ### L4 — Presentation & applications
@@ -102,7 +102,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/flight/` | 🟡 `src/awci/knowledge/routing/flight_routing.py` (moved from `acf.aviation.routing` in §2j) covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
 | `awci/airport/` | 🟡 **`awci/airport/` created 2026-09-21** (see §2i below) with its first real module, `airport.py` (real airport approach/departure corridor geometry), which now imports `AirportDatabase` directly from `awci.knowledge.airports.airport_database` (moved from `acf.aviation.airports` in §2j, see that section) rather than through a shim. No dedicated runway/terminal/crosswind/runway_condition/disruption modules as named — some of this (crosswind, ceiling, visibility) exists inside `awci.hazards`'s own hazard modules instead. |
 | `awci/decision/` | 🟡 **Phase 1 built 2026-09-21** (`context.py`/`situation.py`/`recommendation.py`/`engine.py`, real, headless, tested - see §2m below). Deliberately real-core-only, user-confirmed scope: composes already-computed AWCI outputs and reuses the 3 already-cited real `flight_recommendations` entries; `risk_matrix.py`/`confidence.py`/`alternatives.py`/`scenario.py` are NOT built - each needs its own real, cited methodology first (e.g. ICAO Doc 9859 SMS for `risk_matrix.py`), not an invented one. |
-| `awci/ai/` | 🟡 Overlaps with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai`, not AWCI-specific. |
+| `awci/ai/` | 🟡 `awci/ai/rag/` **built 2026-09-21** (see §2n below) - real, headless, lexical BM25 evidence-retrieval over `awci.knowledge.*`, no new dependency, no network/LLM call. `assistant.py`/`agents/`/`knowledge/`/`reasoning/`/`anomaly_detection/`/`explanation/`/`summarization/`/`orchestration/` remain unbuilt. Still overlaps conceptually with `acf.ai.emergency_assistant`/`acf.ai.decision_support`/`acf.ai.xai` for those unbuilt pieces. |
 | `awci/visualization/` (maps/complexity overlays) | ✅ Real — `acf.gui.map.map_layers` (e.g. `VolcanicAshLayer`, `MicroburstLayer`, correctly still ACF-side generic map infrastructure) and `awci.dashboard.awci_map_panel` (**moved from `acf.gui.dashboard` 2026-09-21, §2k**) — the latter now a real module inside `awci/`, though still coupled to the GUI layer, not a standalone visualization package. |
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
 | `awci/reports/` | 🟡 `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) exist in the GUI; no standalone `reports/aviation_report.py` generator. |
@@ -998,6 +998,66 @@ sampling to search over - computable from already-real
 phase), `scenario.py` (would need real temporal-evolution wiring to
 `temporal_field.py`). Each remains a real, honestly-reported gap, not
 a fabricated stub.
+
+## 2n. The AWCI RAG evidence-retrieval layer (2026-09-21)
+
+The user asked to build "Le RAG layer" - the `ai/rag/` gap named in §3
+point 3 and confirmed still fully absent by a fresh investigation
+(zero embedding/vector-store/LLM-client dependency in
+`requirements.txt`, zero real LLM API call anywhere in the codebase).
+Given the real risk of a RAG layer either needing a new heavy
+dependency (a local embedding model) or an external network/API-key
+dependency (a hosted LLM), the user was offered a scoped choice and
+confirmed, verbatim: lexical/deterministic retrieval now, a clean
+retriever interface for a future embedding backend, no external LLM
+API/network dependency, no fake knowledge/synthetic documents, exact
+provenance (source path/module/symbol/version) on every result, a
+strictly evidence-only role never replacing deterministic AWCI
+calculations, and a corpus limited to documented/validated AWCI
+knowledge only (never inventing a law/threshold "from assumptions").
+
+**Built**, under a new, deliberately headless `src/awci/ai/rag/`
+package (no PySide6/matplotlib/cartopy, and verified by test to import
+neither `awci.complexity` nor `awci.hazards` - a strict, one-way,
+read-only relationship to the rest of AWCI):
+
+- `documents.py` - `Document`/`Provenance` dataclasses;
+  `build_document_corpus()` walks `awci.knowledge` (the ~39-module
+  real, ICAO/WMO/aviation-cited knowledge base built earlier this
+  session) via `pkgutil`, extracting every real module docstring and
+  every real class/enum docstring via `inspect` - never hand-typed or
+  synthesized text. A class reused across modules (e.g. `CloudGenus`)
+  is indexed once, under its real defining module, never duplicated.
+  Provenance includes the real git commit hash last touching each
+  source file (cached per file, honestly `None` when unavailable).
+- `retriever.py` - a real `Retriever` protocol (`retrieve(query,
+  top_k) -> list[ScoredDocument]`) as the one, stable public contract;
+  `BM25Retriever`, Phase 1's real implementation, using the real,
+  published Okapi BM25 algorithm (Robertson & Zaragoza 2009, standard
+  k1=1.5/b=0.75 parameters) in pure Python - no new dependency. Returns
+  an honestly empty list for a query sharing no real token with any
+  document, never a fabricated "closest match".
+- `citations.py` - `format_citation()`, built entirely from a
+  document's own real provenance fields.
+
+**Deliberately not built**: `ai/rag/embeddings.py`/`vector_store.py`
+(the blueprint's own file names) - no real embedding backend has been
+chosen, and creating empty/fake versions of those two files would
+itself be a fabricated placeholder; the `Retriever` protocol is the
+real extension point for that future work if/when a backend is chosen.
+
+**Verified, not assumed**: a manual end-to-end run confirmed 80 real
+documents built from the real corpus in 0.23 s, real citations with
+real (short) git commit hashes, and a genuinely empty result for a
+nonsense query. `ruff check`/`mypy` clean; 24 new tests
+(`tests/test_awci_rag.py`), including corpus-determinism, a
+provenance-vs-real-file-on-disk check, a direct `git log` cross-check,
+BM25 ranking/empty-query/empty-corpus behavior, and 2 explicit
+discipline tests (no `awci.complexity`/`awci.hazards` import; no
+heavy ML/network dependency import anywhere in the package). Full
+non-GUI suite collection: 4804 tests (up from 4780, +24); a targeted
+sweep (`-k "rag or awci_knowledge or awci_icao_wmo"`, excluding
+`tests/gui`) shows 203 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
