@@ -27,8 +27,10 @@ microburst physical-scale/detection-system reference
 ("grain") reference (awci.knowledge.meteorology.squall_line), and the
 real turbulence-intensity/source-type reference
 (awci.knowledge.meteorology.turbulence_intensity), the real jet-stream
-reference (awci.knowledge.meteorology.jet_stream), and the real
-weather-front reference (awci.knowledge.meteorology.weather_front).
+reference (awci.knowledge.meteorology.jet_stream), the real
+weather-front reference (awci.knowledge.meteorology.weather_front), and
+the real general-atmospheric-circulation reference
+(awci.knowledge.meteorology.general_circulation).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -48,8 +50,9 @@ https://www.lavionnaire.fr/PhenomGradient.php,
 https://www.lavionnaire.fr/PhenomCisaille.php,
 https://www.lavionnaire.fr/MeteoLesGrains.php,
 https://www.lavionnaire.fr/PhenomDifTurbule.php,
-https://www.lavionnaire.fr/MeteoJetStream.php, and
-https://www.lavionnaire.fr/MeteoFronts.php, at the user's own
+https://www.lavionnaire.fr/MeteoJetStream.php,
+https://www.lavionnaire.fr/MeteoFronts.php, and
+https://www.lavionnaire.fr/MeteoCirculation.php, at the user's own
 request, rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
@@ -1134,3 +1137,89 @@ def test_front_structural_and_persistence_descriptions_are_present():
     assert "cold front" in OCCLUDED_FRONT_FORMATION_DESCRIPTION
     assert "warm front" in OCCLUDED_FRONT_FORMATION_DESCRIPTION
     assert "dry-air" in KATABATIC_COLD_FRONT_FEATURE_DESCRIPTION
+
+
+def test_circulation_cell_latitude_bands_are_real_and_contiguous():
+    from awci.knowledge.meteorology.general_circulation import (
+        FERREL_CELL_LATITUDE_RANGE_DEG,
+        HADLEY_CELL_LATITUDE_RANGE_DEG,
+        POLAR_CELL_LATITUDE_RANGE_DEG,
+    )
+
+    assert HADLEY_CELL_LATITUDE_RANGE_DEG == (0.0, 30.0)
+    assert FERREL_CELL_LATITUDE_RANGE_DEG == (30.0, 60.0)
+    assert POLAR_CELL_LATITUDE_RANGE_DEG == (60.0, 90.0)
+    assert HADLEY_CELL_LATITUDE_RANGE_DEG[1] == FERREL_CELL_LATITUDE_RANGE_DEG[0]
+    assert FERREL_CELL_LATITUDE_RANGE_DEG[1] == POLAR_CELL_LATITUDE_RANGE_DEG[0]
+
+
+def test_ferrel_polar_convergence_latitude_is_real_and_ordered():
+    from awci.knowledge.meteorology.general_circulation import (
+        FERREL_CELL_LATITUDE_RANGE_DEG,
+        FERREL_POLAR_CONVERGENCE_LATITUDE_RANGE_DEG,
+    )
+
+    low, high = FERREL_POLAR_CONVERGENCE_LATITUDE_RANGE_DEG
+    assert low == 60.0
+    assert high == 70.0
+    assert low >= FERREL_CELL_LATITUDE_RANGE_DEG[1]
+
+
+def test_general_circulation_jet_stream_altitude_is_distinct_from_per_type_jet_facts():
+    """The real, general circulation-cell-context jet-stream altitude
+    band here is independent of and does not duplicate the real
+    per-type jet-core altitude/speed facts already recorded in
+    awci.knowledge.meteorology.jet_stream - both can coexist without
+    overlap."""
+    import awci.knowledge.meteorology.general_circulation as circulation_module
+    import awci.knowledge.meteorology.jet_stream as jet_module
+
+    circulation_names = {name for name in dir(circulation_module) if name.isupper()}
+    jet_names = {name for name in dir(jet_module) if name.isupper()}
+    assert circulation_names.isdisjoint(jet_names)
+
+    from awci.knowledge.meteorology.general_circulation import (
+        GENERAL_CIRCULATION_JET_STREAM_ALTITUDE_RANGE_KM,
+    )
+
+    low, high = GENERAL_CIRCULATION_JET_STREAM_ALTITUDE_RANGE_KM
+    assert low == 6.0
+    assert high == 15.0
+
+
+def test_trade_wind_extent_and_speed_are_real_and_positive():
+    from awci.knowledge.meteorology.general_circulation import (
+        TRADE_WIND_TYPICAL_SPEED_KMH_APPROX,
+        TRADE_WIND_VERTICAL_EXTENT_RANGE_M,
+    )
+
+    low, high = TRADE_WIND_VERTICAL_EXTENT_RANGE_M
+    assert low == 1_500.0
+    assert high == 2_000.0
+    assert TRADE_WIND_TYPICAL_SPEED_KMH_APPROX == 20.0
+
+
+def test_itcz_seasonal_lag_and_latitude_facts_are_real_and_ordered():
+    from awci.knowledge.meteorology.general_circulation import (
+        ITCZ_EAST_ASIA_SUMMER_MAXIMUM_LATITUDE_DEG_N,
+        ITCZ_JULY_AUGUST_OCEANIC_LATITUDE_RANGE_DEG_N,
+        ITCZ_SEASONAL_LAG_RANGE_MONTHS,
+    )
+
+    lag_low, lag_high = ITCZ_SEASONAL_LAG_RANGE_MONTHS
+    assert lag_low == 1.0
+    assert lag_high == 2.0
+
+    lat_low, lat_high = ITCZ_JULY_AUGUST_OCEANIC_LATITUDE_RANGE_DEG_N
+    assert lat_low == 5.0
+    assert lat_high == 15.0
+    assert ITCZ_EAST_ASIA_SUMMER_MAXIMUM_LATITUDE_DEG_N == 30.0
+    assert ITCZ_EAST_ASIA_SUMMER_MAXIMUM_LATITUDE_DEG_N > lat_high
+
+
+def test_itcz_cumulonimbus_maximum_top_altitude_is_real():
+    from awci.knowledge.meteorology.general_circulation import (
+        ITCZ_CUMULONIMBUS_MAXIMUM_TOP_ALTITUDE_FT_APPROX,
+    )
+
+    assert ITCZ_CUMULONIMBUS_MAXIMUM_TOP_ALTITUDE_FT_APPROX == 55_000.0
