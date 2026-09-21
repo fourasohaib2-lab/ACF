@@ -109,7 +109,7 @@ since-migrated path has been updated to point at its real, current
 | `awci/dashboard/` | ✅ **Migrated 2026-09-21, §2k** — `src/awci/dashboard/awci_dashboard.py` and its 28 companion modules (`awci_topbar.py`, `awci_route_chart.py`, `awci_situation_panel.py`, `awci_model_spread_chart.py`, etc. - 29 real modules total) are the single most heavily tested part of the whole codebase, and now the blueprint's own literal, physically separate `awci/dashboard/` "application layer above everything else" (§16). `acf.gui.dashboard.awci_*` kept as a real backward-compatible re-export for every module. Reachable both embedded (`AWCIDashboard` widget) and as its own standalone process (`acf-awci` / `acf.awci_app`, confirmed independent per `tests/test_awci_app.py` - `acf.awci_app` itself deliberately not moved, a packaging-level decision distinct from moving the dashboard's implementation, see §2k). |
 | `awci/reports/` | 🟡 **`src/awci/reports/` created 2026-09-21** (see §2u below) with `generator.py` and `aviation_report.py` — a real, composed report over `awci.airport.weather`+`awci.decision`+`awci.provenance`, no new computation. `src/awci/dashboard/awci_messages_panel.py`/`awci_execution_report_dialog.py`-style panels (moved from `acf.gui.dashboard` in §2k) still exist separately in the GUI. `flight_report.py`/`airport_report.py`/`hazard_report.py`/`complexity_report.py`/`model_report.py`/`verification_report.py`/`templates/` deliberately not built — `aviation_report.py` already covers the same real composed content. |
 | `awci/api/` | ❌ No dedicated AWCI API surface; `src/acf/api/` and `src/acf/web/` are ACF-general, not AWCI-specific. |
-| `awci/alerts/` | 🟡 `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) exists; no standalone alerts engine. |
+| `awci/alerts/` | 🟡 **`src/awci/alerts/` created 2026-09-21** (see §2v below) with `engine.py` (real, headless `AlertEngine` over `awci.decision.situation.SituationSnapshot`) and `notifications.py` (real in-process `AlertNotifier`, same pattern as `awci.plugins.hooks.HookRegistry`). `awci.dashboard.awci_alerts_panel`-style UI (moved from `acf.gui.dashboard` in §2k) still exists separately. `rules.py`/`thresholds.py`/`severity.py`/`hazard_alerts.py`/`airport_alerts.py`/`route_alerts.py`/`complexity_alerts.py` deliberately not built — real content already exists (`awci.decision.situation`) or no real per-scope taxonomy exists to split on. |
 | `awci/plugins/` | ✅ **Built 2026-09-21** (see §2p below) — all 5 files named in `awci_reference_architecture.md` §20 (`interface.py`/`registry.py`/`loader.py`/`hooks.py`/`manager.py`), real, tested, working extensibility infrastructure (register/get, on-disk discovery, lifecycle hooks). Zero real AWCI module has been adapted to implement the new `AWCIPlugin` interface yet — honestly disclosed, not fabricated. |
 | `awci/workspace/` | ❌ No AWCI-specific project/session format; ACF's own `acf.workspace` is general-purpose. |
 | `awci/provenance/` | 🟡 **Built 2026-09-21** (see §2o below) — all 7 files named in `awci_reference_architecture.md` §22 (`lineage.py`/`source.py`/`calculation.py`/`version.py`/`audit.py`/`reproducibility.py`), a real assembler over `AWCIResult`/`Provenance`/`scientific_status`/`WeightsManager` — never a new computation, never a persisted audit log/database (a disclosed scope limit, not a fabricated one). Provenance discipline was already a strong, repeatedly-enforced *convention* throughout this codebase (real formulas, real citations, "honest disclosure" of what's simulated vs. real — see `docs/STATUS.md` at length); this closes the gap of it never having a dedicated, queryable module. |
@@ -1421,6 +1421,39 @@ real provenance-completeness disclosure). `ruff check`/`mypy` clean;
 suite collection: 4942 tests (up from 4929, +13); a targeted sweep
 (`-k "reports_aviation or awci_decision or awci_provenance or
 airport_runway"`, excluding `tests/gui`) shows 87 passed, 0 failed.
+
+## 2v. The AWCI alerts engine (2026-09-21)
+
+Eighth item of "on les attaque toutes un par un": `awci/alerts/` -
+specifically the named gap ("only a UI panel (`awci_alerts_panel`), no
+standalone alerts engine").
+
+**Built**: `engine.py` (`Alert`/`AlertEngine.alerts_for()` - a real,
+headless composition over `SituationSnapshot`, reusing its own real
+"elevated" rule rather than duplicating a second severity scale;
+`hazard_key_map` lets a caller attach real, cited recommendations to a
+specific elevated row, never inferred automatically) and
+`notifications.py` (`AlertNotifier` - real, generic, in-process
+subscriber register/dispatch, the same real error-isolation pattern
+already established by `awci.plugins.hooks.HookRegistry`).
+Deliberately headless (verified by test) - usable outside the GUI
+dashboard, matching this session's `decision`/`ai.rag`/`provenance`
+packages' own precedent.
+
+**Deliberately not built this round**: `rules.py`/`thresholds.py`/
+`severity.py` (the real severity bands this package uses already exist
+in `awci.decision.situation`); `hazard_alerts.py`/`airport_alerts.py`/
+`route_alerts.py`/`complexity_alerts.py` (no real per-scope hazard
+taxonomy exists beyond what `SituationSnapshot` already provides).
+
+**Verified, not assumed**: manual end-to-end run (a real
+`SituationSnapshot` with 3 elevated rows correctly producing 3 alerts,
+one with real cited CAT-turbulence recommendations attached; a real
+failing subscriber correctly isolated from 2 other real subscribers).
+`ruff check`/`mypy` clean; 15 new tests (`tests/test_awci_alerts.py`).
+Full non-GUI suite collection: 4957 tests (up from 4942, +15); a
+targeted sweep (`-k "alerts or awci_plugins"`, excluding `tests/gui`)
+shows 66 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
