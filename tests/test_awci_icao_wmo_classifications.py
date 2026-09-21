@@ -468,3 +468,31 @@ def test_airmet_wind_gust_threshold_matches_the_real_icao_value():
     assert AIRMET_SURFACE_WIND_GUST_THRESHOLD_KT == 40.0
     assert len(AIRMET_PHENOMENA) == 7
     assert "freezing rain" in AIRMET_PHENOMENA
+
+
+def test_runway_contamination_minimum_depth_matches_the_real_easa_thresholds():
+    from awci.knowledge.airports.runway_state import RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM
+
+    assert RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM["dry_or_wet_snow"] == 3.0
+    assert RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM["water_or_slush"] == 3.0
+    assert RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM["compacted_snow"] is None
+    assert RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM["ice"] is None
+
+
+def test_hydroplaning_coefficient_discrepancy_is_disclosed_not_silently_merged():
+    """acf.science.encyclopedia.aviation_extended already implements
+    and cites the real Vp = 9*sqrt(p_psi) dynamic hydroplaning speed
+    formula (Horonjeff & McKelvey); this module's own alternate
+    source cites 8.73 - a real, disclosed discrepancy between two
+    real, independently cited references, deliberately not merged
+    into the existing, already-working formula."""
+    from acf.science.encyclopedia.aviation_extended import calculate_hydroplaning_speed_knots
+    from awci.knowledge.airports.runway_state import DYNAMIC_HYDROPLANING_SPEED_COEFFICIENT_ALTERNATE_SOURCE
+
+    tire_pressure_psi = 121.0
+    existing_speed_kt = calculate_hydroplaning_speed_knots(tire_pressure_psi)
+    alternate_speed_kt = DYNAMIC_HYDROPLANING_SPEED_COEFFICIENT_ALTERNATE_SOURCE * tire_pressure_psi**0.5
+
+    assert existing_speed_kt == pytest.approx(99.0)
+    assert alternate_speed_kt == pytest.approx(96.03, abs=0.01)
+    assert existing_speed_kt != pytest.approx(alternate_speed_kt, abs=0.5)

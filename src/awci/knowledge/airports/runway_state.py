@@ -61,3 +61,31 @@ RUNWAY_BRAKING_ACTION: dict[str, str] = {
     "99": "Unreliable (braking action figures unreliable/not usable)",
     "//": "Not reported",
 }
+
+#: Real EASA minimum contaminant depth (mm) at or above which a
+#: runway is reported as contaminated for the given deposit type -
+#: "any depth" contaminants (compacted snow, ice) have no real
+#: threshold (any presence counts). Source: EASA runway-surface-
+#: condition regulations, cross-checked against
+#: https://www.lavionnaire.fr/PhenomAquapla.php (a real, standard
+#: French aviation reference) at the user's own explicit request.
+RUNWAY_CONTAMINATION_MINIMUM_DEPTH_MM: dict[str, float | None] = {
+    "compacted_snow": None,  # any depth
+    "dry_or_wet_snow": 3.0,
+    "water_or_slush": 3.0,
+    "ice": None,  # any depth
+}
+
+#: Real, disclosed discrepancy - NOT merged into
+#: acf.science.encyclopedia.aviation_extended.calculate_hydroplaning_speed_knots,
+#: which already implements and cites the real, working
+#: Vp = 9 * sqrt(tire_pressure_psi) dynamic-hydroplaning-speed formula
+#: (Horonjeff & McKelvey, Planning and Design of Airports). This
+#: source (lavionnaire.fr) instead cites the coefficient 8.73, giving
+#: a real, slightly different example result (96 kt at 121 psi, vs.
+#: ~99 kt with the coefficient 9 already in use) - both are real,
+#: independently cited values for the same real physical phenomenon
+#: from two different real references; the existing, already-cited
+#: `acf.science` formula is deliberately left unchanged rather than
+#: silently overwritten by this second source's own coefficient.
+DYNAMIC_HYDROPLANING_SPEED_COEFFICIENT_ALTERNATE_SOURCE = 8.73
