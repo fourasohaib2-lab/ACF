@@ -85,7 +85,7 @@ this is new construction, not a rename of an equivalent existing tree.
 | `awci/forecast/` | ✅ `src/acf/forecast/` is real: `forecast_engine.py`, `engine.py` — used across the AWCI dashboard's real per-model runs. |
 | `awci/vertical/` | ✅ Real and substantial — `acf.awci.vertical_field`, `acf.gui.dashboard.acf_workstation_sounding_panel`, and the AWCI dashboard's own `AWCIVerticalSoundingWidget`/`ACFVerticalSoundingWidget` cover profile/sounding/wind-shear/icing-profile territory, just not under a dedicated `awci/vertical/` package with the blueprint's exact file split (skew_t/tephigram/emagram/stuve as separate diagram modules). |
 | `awci/hazards/` (one module per hazard) | ✅ **Migrated 2026-09-21** — see §2b below. Physically moved to `src/awci/hazards/{icing_temperature_range,ceiling,visibility,dust,microburst,volcanic_ash,wind_shear,cat_turbulence,orographic_froude,hydrometeor_phase}.py`, with `acf.awci.<module>` kept as a real backward-compatible re-export. This is now a literal, not just conceptual, match to the blueprint's `awci/hazards/` (still flat rather than one-subpackage-per-hazard, which the blueprint itself is ambiguous about — it lists both a flat file-per-hazard example and per-hazard subdirectories). |
-| `awci/complexity/` (the actual AWCI score) | ✅ `src/acf/awci/calculator.py` is the real `AWCICalculator` — the actual scoring/aggregation engine, plus `weights.py`, `normalization.py` (`normalizer.py`), `scale_classification.py`, `wind_classification.py`. Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. |
+| `awci/complexity/` (the actual AWCI score) | ✅ **Migrated 2026-09-21** — see §2c below. `AWCICalculator` (the actual scoring/aggregation engine), `WeightsManager`, `Normalizer`, and `scientific_status` (the shared classification types both use) physically moved to `src/awci/complexity/{calculator,weights,normalizer,scientific_status}.py`, with `acf.awci.<module>` kept as a real backward-compatible re-export. `scale_classification.py`/`wind_classification.py` have not moved yet (real next candidates). Matches the blueprint's core principle (traceable scientific factors, not an arbitrary score) — this has been the subject of extensive audit across this session and prior ones. |
 | `awci/comparison/` + `awci/consensus/` | 🟡 **Corrected 2026-09-21** (an earlier version of this document wrongly placed this logic inside the GUI layer — verified by grep, not assumed, this time): the real `ModelConsensusEngine` lives in `src/acf/visualization/ai_forecast_center/model_consensus_engine.py` (604 lines), a genuine non-GUI domain layer already reachable independently of the GUI — it is imported directly by `acf.awci.calculator`, `acf.awci.result`, `acf.awci.multi_model_fusion`, `acf.forecast.engine`, and `acf.core.contracts.uncertainty`, in addition to 9 GUI dashboard modules. The only real gap versus the blueprint is its **location/naming**: it sits under `acf.visualization.ai_forecast_center` rather than `acf.models.comparison`/`acf.models.consensus`. A literal move would need to update 15+ real importers (across science, awci, forecast, core.contracts and GUI) plus 5 test files — assessed 2026-09-21 as real, mechanical, but high-blast-radius work with no functional benefit, so deferred rather than done reflexively; see the gap-analysis conclusion below. |
 | `awci/flight/` | 🟡 `src/acf/aviation/routing/flight_routing.py` covers routing; no dedicated `planning.py`/`corridor.py`/`fuel_weather.py`/`route_weather.py` as named. |
 | `awci/airport/` | 🟡 `src/acf/aviation/airports/airport_database.py` covers the airport data; no dedicated runway/terminal/crosswind/runway_condition/disruption modules as named — some of this (crosswind, ceiling, visibility) exists inside `acf.awci`'s own hazard modules instead. |
@@ -182,15 +182,69 @@ Python code). A dedicated new test file,
 re-export identity and the new package's real top-level existence going
 forward.
 
-**What is intentionally not done yet**: `src/acf/awci/` still holds 35
-other modules (`calculator.py`, `normalizer.py`, `weights.py`,
-`archive_field.py`, `spatial_field.py`, `vertical_field.py`,
-`temporal_field.py`, etc.) and `src/acf/aviation/` (17 files) have not
-moved. Those are real next candidates for further phases, each needing
-the same investigate-first treatment this phase used — `calculator.py`
-in particular is AWCI's actual scoring engine and by far the most
-widely-depended-on module in the package, so moving it is a materially
-bigger and riskier phase than this one.
+**What is intentionally not done yet**: `src/acf/awci/` still holds 31
+other modules (`archive_field.py`, `spatial_field.py`, `vertical_field.py`,
+`temporal_field.py`, `scale_classification.py`, `wind_classification.py`,
+etc.) and `src/acf/aviation/` (17 files) have not moved. Those are real
+next candidates for further phases, each needing the same
+investigate-first treatment this phase used.
+
+## 2c. AWCI separate-package migration, Phase 2: `awci/complexity/` (2026-09-21)
+
+Continuing directly from Phase 1 ("continue avec calculator.py"). Scoped
+before touching anything: **57 files import `acf.awci.calculator`
+specifically, 100 reference `AWCICalculator` overall, 48 test files touch
+this engine** — confirmed to be, as flagged in §2b, the single
+widest-blast-radius module in the whole `acf.awci` package. Investigation
+found a clean, small, acyclic dependency chain suited to moving together as
+one coherent unit: `scientific_status.py` (self-contained, zero `acf.awci`
+siblings) → `{normalizer.py, weights.py}` (each depends only on
+`scientific_status`) → `calculator.py` (depends on all three, plus the
+external `acf.ai.ensemble.ensemble_manager`). These four map directly onto
+the blueprint's own `awci/complexity/` layer (`engine.py`/`weights.py`/
+`normalization.py`/classification types).
+
+1. Created `src/awci/complexity/`.
+2. Physically moved all four modules there via `git mv` (history
+   preserved): `scientific_status.py`, `normalizer.py`, `weights.py`,
+   `calculator.py`.
+3. Fixed the 3 real intra-group imports found by inspection
+   (`normalizer.py` and `weights.py` each importing from
+   `acf.awci.scientific_status`; `calculator.py` importing from both) to
+   point at the new sibling locations within `awci.complexity`.
+   `calculator.py`'s one real external dependency
+   (`acf.ai.ensemble.ensemble_manager`) was left untouched — it's a
+   genuinely separate ACF subsystem, not part of this move.
+4. Left a real backward-compatible re-export at every old location,
+   verified to be the exact same object, not a copy — including the
+   "shim reaching a shim" case: `awci.hazards.microburst` (Phase 1) still
+   imports `Normalizer` via `acf.awci.normalizer`, which is now itself a
+   Phase 2 shim forwarding to `awci.complexity.normalizer` — confirmed the
+   chain resolves to the one real class
+   (`test_awci_package_migration_complexity.py::
+   test_hazards_modules_still_reach_the_moved_normalizer_through_the_shim`).
+5. `acf/awci/__init__.py` needed **no changes**: its existing relative
+   imports (`from .calculator import AWCICalculator`) still resolve, since
+   the shim file physically exists at that same path.
+
+**Verified, not assumed**: `ruff`/`mypy` clean (62 files under `src/awci/`
++ `src/acf/awci/`); direct import identity confirmed for
+`AWCICalculator`/`Normalizer`/`WeightsManager` at both the module level and
+`acf.awci`'s own package-level re-exports; `AWCICalculator()` still
+constructs through its full real dependency chain; 507 tests passed across
+every test file touching the calculator/normalizer/weights/scientific_status
+directly (all `test_awci_calculator*.py` variants, `test_awci_result.py`,
+`test_awci_pipeline.py`, `test_awci_scientific_status.py`,
+`test_fire_weather.py`, `tests/scientific/regression/test_golden_datasets.py`,
+etc.); a broader `-k "awci"` sweep (excluding the slow full GUI suite)
+passed 913/914, the one failure being the same already-confirmed
+pre-existing native subprocess-shutdown crash from Phase 1; a targeted GUI
+sweep (ACF Workstation, AWCI dashboard reference parity/synchronization/
+analysis panels — all real, heavy consumers of `AWCICalculator`) passed
+101/108 (7 skipped, 0 failed); full test collection under xvfb — 4879
+tests, 0 errors. A new `tests/test_awci_package_migration_complexity.py`
+(6 tests) locks in the re-export identity, the shim-of-a-shim chain, and
+end-to-end construction going forward.
 
 ## 3. What this means for a real migration
 
