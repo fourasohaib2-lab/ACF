@@ -1314,6 +1314,23 @@ class AWCIDashboard(QWidget):
         self.global_map.setMinimumHeight(max(140, int(210 * self._screen_scale)))
         self.global_map.pointClicked.connect(self._on_map_point_clicked)
         self.global_map.modelDisagreementLayerRequested.connect(self._run_real_model_disagreement_field)
+        # NOTE (correction, 2026-09-21 - real bug report: "les cartes 2D
+        # et 3D ne marche pas et n'affiche rien"): this map panel's own
+        # floating "3D" pill (AWCIMapPanel._build_view_toggle()) had no
+        # enabled-state gate at all, unlike self.view_3d_button (the
+        # header/sidebar one, disabled here until a real Real Physics
+        # volume exists) - clicking it before Real Physics has ever run
+        # opened a genuinely empty AWCIVolume3DView (self._real_volume
+        # is None, so _refresh_3d_view() silently no-ops) with no real
+        # data and no explanation, confirmed with a real screenshot.
+        # Synced to the exact same real self._real_volume-backed
+        # condition as the header button - see the matching real
+        # enabled/disabled toggles in _on_real_physics_ready() and
+        # _revert_to_demo().
+        self.global_map.view_3d_button.setEnabled(False)
+        self.global_map.view_3d_button.setToolTip(
+            "Open the real 3D volume view - only available once '🔬 Real Physics' has produced a real volume."
+        )
         apply_elevation(self.global_map)
         row1.addWidget(self.global_map, stretch=3)
 
@@ -2747,6 +2764,7 @@ class AWCIDashboard(QWidget):
         # earlier Real Physics run), refresh it with this new volume
         # rather than leaving it showing stale data.
         self.view_3d_button.setEnabled(True)
+        self.global_map.view_3d_button.setEnabled(True)
         if self._volume_3d_window is not None:
             self._refresh_3d_view()
 
@@ -2948,7 +2966,25 @@ class AWCIDashboard(QWidget):
     def _open_3d_view(self) -> None:
         """Open (or raise, or refresh) the real 3D volume view -
         explicit user request "ajoute la 4eme dimension" (the real-3D
-        half, alongside the level slider above)."""
+        half, alongside the level slider above).
+
+        NOTE (correction, 2026-09-21 - real bug report: "les cartes 2D
+        et 3D ne marche pas et n'affiche rien"): both the header/sidebar
+        and floating map-panel "3D" buttons are now disabled until a
+        real Real Physics volume exists (see _on_real_physics_ready()/
+        _revert_to_demo()), but this guard stays as defense-in-depth
+        against any other future trigger path - opening a genuinely
+        empty 3D window with no explanation is never acceptable, even
+        if it should now be unreachable via the UI."""
+        if self._real_volume is None:
+            QMessageBox.information(
+                self,
+                "3D Volume View",
+                "No real 3D volume is available yet.\n\n"
+                "Run '🔬 Real Physics' first - the 3D view is populated "
+                "from its real, per-level output.",
+            )
+            return
         if self._volume_3d_window is None:
             self._volume_3d_window = AWCIVolume3DView("AWCI 3D VOLUME", parent=self)
             self._volume_3d_window.setWindowFlag(Qt.WindowType.Window, True)
@@ -3551,6 +3587,7 @@ class AWCIDashboard(QWidget):
         self.level_slider.setEnabled(False)
         self.level_readout.setText("L0")
         self.view_3d_button.setEnabled(False)
+        self.global_map.view_3d_button.setEnabled(False)
         if self._volume_3d_window is not None:
             self._volume_3d_window.clear_volume()
         self.real_physics_button.setText("🔬 Real Physics")
