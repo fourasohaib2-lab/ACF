@@ -92,7 +92,7 @@ since-migrated path has been updated to point at its real, current
 
 | Blueprint layer | Closest current equivalent |
 |---|---|
-| `awci/core/` | ❌ No dedicated AWCI application/lifecycle/registry core exists; AWCI code is simply part of `acf.*`'s own process. |
+| `awci/core/` | ✅ **Built 2026-09-21** — see §2z: `AWCIError` exception hierarchy (real sibling of `ACFError`), `EventBus`/`Event` (real app-lifecycle pub/sub, same discipline as `HookRegistry`/`AlertNotifier`), `ServiceRegistry` (real alias for `acf.core.service_manager.ServiceManager`), `AWCIContext`, `AWCILifecycle`, `AWCIApplication` (headless, distinct from the GUI-coupled `acf.awci_app` launcher), `configuration.py` (re-exports the already-real `awci.complexity.config_loader`), `logging.py` (`logs/awci.log` filtered sink). `dependencies.py` deliberately not a separate file — see `registry.py`'s own docstring. |
 | `awci/knowledge/` (aviation/meteorology/regulations/hazards/knowledge_graph) | ✅ **Migrated 2026-09-21** — see §2j. Real, physically moved to `src/awci/knowledge/`: `airports/airport_database.py`, `icao/{live_source,metar_decoder,sigmet_decoder,taf_decoder,products}.py`, `performance/aircraft_performance.py`, `routing/flight_routing.py`, `hazards/aviation_hazards.py`, `graphics/cross_section.py`, with `acf.aviation.<x>` kept as a real backward-compatible re-export for all 10 modules plus the package itself. `knowledge_graph/` **built 2026-09-21** — see §2w: `entities.py` (10 real, cited aviation-hazard `KnowledgeNode`s) + `graph.py` (`build_aviation_knowledge_graph()`, seeding the already-real `acf.science.encyclopedia.knowledge_graph.KnowledgeGraphEngine` rather than a second engine); `relations.py`/`ontology.py` deliberately not separate files (see §2w). |
 | `awci/data/` + `data/connectors/` | 🟡 **`awci/data/` created 2026-09-21** (see §2e, §2i below), now holding `archive_field.py` (real ALADIN RESTOR archive ingestion via EPyGrAM) and the 3 generic model-import adapters `model_import.py`/`model_import_cross_section.py`/`model_import_evolution.py`. `awci/data/connectors/` **built 2026-09-21** — see §2x: `pirep_reports.py`, `nexrad_stations.py`, `eumetsat_mtg.py` migrated from `acf.connectors` (the 3 already established as aviation-relevant, reused by `awci.observations.hub`), with `acf.connectors.<x>` kept as a real backward-compatible re-export. `argo_floats.py` (ocean, not aviation), `wmo_wis.py` (generic WMO bulletin-header parser) and `live_connectors.py` (generic, disclosed-unconnected NWP-model registry) deliberately stay under `acf.connectors` — not aviation-specific. SIGMET/AIRMET/NOTAM/TAF connectors are decoders under `awci.knowledge.icao` (moved from `acf.aviation.icao` in §2j), not separate `connectors/` modules. |
 | `awci/observations/` | 🟡 **`hub.py` built 2026-09-21** (see §2r below) — real, single aggregation point over `awci.knowledge.icao.live_source` (METAR/TAF/SIGMET) + `acf.connectors.{pirep_reports,nexrad_stations,eumetsat_mtg}` (PIREP/radar/satellite), all already-real connectors, never re-implemented. The blueprint's full 11-file package (`stations.py`/`metar.py`/per-source `parser/decoder/validator` subpackages) deliberately not built — real METAR/TAF/SIGMET decoding already exists elsewhere; duplicating it would not close a real gap. |
@@ -1685,6 +1685,87 @@ as the base class's, not copies. Full non-GUI collection: 4611 tests
 targeted sweep (`-k "workspace" --continue-on-collection-errors`)
 shows 12 passed (9 new + 3 pre-existing ACF workspace tests), 0
 failed.
+
+## 2z. The AWCI application/lifecycle core (2026-09-21)
+
+Twelfth item of "on les attaque toutes un par un": `awci/core/` - the
+specific gap named in
+`docs/architecture/acf_awci_architecture_gap_analysis.md` ("No
+dedicated AWCI application/lifecycle/registry core exists; AWCI code
+is simply part of `acf.*`'s own process").
+
+**Investigation**: `src/acf/core/` already exists and is real -
+`ConfigManager`, `get_logger()` (loguru), `PluginManager` (simple
+directory-scan, distinct from the far more sophisticated
+`awci.plugins` built earlier this session), `ServiceManager` (a real,
+fully generic name→service registry), `Bootstrap`/`Application` (a
+real headless startup sequence, confirmed never actually constructed
+anywhere - `acf-gui` launches `ACFWorkstationWindow` directly instead
+- per that module's own already-existing NOTE), and a real
+`ACFError` exception hierarchy. Two more real, already-existing,
+directly relevant pieces found: `acf.awci_app` (the real, GUI-coupled
+standalone AWCI launcher - its own `--version` output is the only
+place this codebase already names the real "AWCI" application
+identity: `"ACF AWCI (Atmospheric Weather Complexity Index)"`) and
+`awci.complexity.config_loader` (a real, already-versioned, JSON-
+backed AWCI configuration system, built earlier in this codebase's
+history to close `docs/ACF_MASTER_PROMPT.md` section 56's own gap -
+already exactly what the blueprint's `configuration.py` wants).
+`src/acf/aeos/events/event_bus.py`'s `PlanetaryEventBus` was also
+found and read, but not reused - its event vocabulary
+(`PlanetaryEvent.event_type` values like `EarthquakeDetected`/
+`CycloneDetected`) is hardcoded to `acf.aeos`'s own Earth-system
+domain, not a generic app-lifecycle bus.
+
+**Placement decision (disclosed)**: reuse every real, already-generic
+ACF component directly rather than duplicate it (`ServiceManager` as
+`ServiceRegistry`, `awci.complexity.config_loader` as
+`configuration.py`, `acf.__version__` as AWCI's own version - AWCI
+ships inside the `acf` distribution and has no independent release),
+and build only what is genuinely AWCI-specific or genuinely new:
+a real `AWCIError` hierarchy kept as a sibling of `ACFError` rather
+than a subclass (matching the reference architecture's own explicit
+framing of AWCI as "a separate aviation product/project... not... a
+subpackage buried inside ACF's own layer 3"); a real `EventBus`/
+`Event` at a new, genuine scope (arbitrary named app-lifecycle events,
+distinct from `awci.plugins.hooks.HookRegistry`'s plugin hooks and
+`awci.alerts.notifications.AlertNotifier`'s alert dispatch, but
+following the exact same real dispatch/error-isolation discipline
+already established by both); a real `logs/awci.log` filtered loguru
+sink, alongside (not replacing) `acf.core.logger`'s own shared
+unfiltered sinks, matching the same separate-artifact convention
+`awci.workspace`'s own `~/.awci/recent_projects.json` already
+established; a real `AWCIContext`/`AWCILifecycle`/`AWCIApplication`
+wiring these together, mirroring `Bootstrap`'s own real shape but with
+AWCI's own real components (`get_awci_logger()`,
+`AWCIWorkspaceManager`) instead of ACF's generic ones.
+
+**Deliberately not built this round**: `dependencies.py` - "service
+registration/lookup by name" (`registry.py`) and "dependency
+injection" are the same real concept in this codebase; splitting them
+into two files would add indirection with no real behavioral
+difference. Plugin discovery is not re-implemented inside
+`AWCILifecycle` - a caller passes an already-constructed
+`awci.plugins.manager.PluginManager` through `start()`'s
+`extra_services` parameter instead, reusing the real, already-built
+plugin system rather than a second discovery pass.
+
+**Verified, not assumed**: manual end-to-end run - a real
+`AWCIApplication` started (services `logger`/`workspace` both real and
+reachable via `ServiceRegistry.get()`), a real `EventBus.emit()`
+dispatched with zero errors, `stop()` then a second `stop()` correctly
+raising `AWCILifecycleError`; confirmed `logs/awci.log` was genuinely
+created on disk with the real log line. `ruff check`/`mypy` clean on
+the new package and its test file (12 source files, 0 errors). 19 new
+tests (`tests/test_awci_core.py`), every test that constructs a real
+`AWCIWorkspaceManager` (via `AWCILifecycle`/`AWCIApplication`)
+monkeypatching `Path.home()` to an isolated `tmp_path` first - confirmed
+by direct inspection that the real user's `~/.awci` was never created
+by this test run. Full non-GUI collection: 4630 tests (up from 4611,
++19), same pre-existing 45 collection errors (`task_468ac835`, already
+tracked in §2w/§2x/§2y) confirmed unrelated. A targeted sweep
+(`-k "awci_core or service_manager" --continue-on-collection-errors`)
+shows 21 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
