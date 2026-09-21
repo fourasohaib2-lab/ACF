@@ -56,10 +56,18 @@ def test_moist_lapse_rate():
 
 
 def test_lcl_temperature():
+    """
+    CORRECTED: the source used to return a fixed "Td - 3.33" offset
+    that ignored the actual temperature/dewpoint spread. The physically
+    consistent value (T cooling at the dry adiabatic lapse rate up to
+    z_LCL = 125*(T-Td) = 1250 m, matching lcl_height() below) is
+    300 - (9.8/1000)*1250 = 287.75, close to the Bolton (1980) eq. 22
+    reference value of ~287.7 K.
+    """
 
     value = AtmosphericThermodynamicsPhysics.lcl_temperature(300, 290)
 
-    assert round(value, 2) == 286.67
+    assert round(value, 2) == 287.75
 
 
 def test_lcl_height():

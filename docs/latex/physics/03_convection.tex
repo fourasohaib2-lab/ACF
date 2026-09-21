@@ -35,3 +35,38 @@ Important parameters:
 \item Cloud base height
 
 \end{itemize}
+
+
+
+Convective Available Potential Energy (CAPE) is the vertically integrated
+positive buoyancy of a lifted parcel between its Level of Free Convection
+(LFC) and Equilibrium Level (EL), using virtual temperature $T_v$ to
+account for moisture loading (Doswell \& Rasmussen, 1994):
+
+\begin{equation}
+\mathrm{CAPE}
+=
+g\int_{\mathrm{LFC}}^{\mathrm{EL}}
+\frac{T_{v,parcel}-T_{v,env}}{T_{v,env}}
+\, dz
+\end{equation}
+
+
+Convective Inhibition (CIN) is the corresponding negative-buoyancy integral
+below the LFC that must be overcome to initiate convection:
+
+\begin{equation}
+\mathrm{CIN}
+=
+-g\int_{\mathrm{SFC}}^{\mathrm{LFC}}
+\frac{T_{v,parcel}-T_{v,env}}{T_{v,env}}
+\, dz
+\end{equation}
+
+
+An estimate of the maximum convective updraft speed follows directly from
+CAPE (energy conservation for an unentrained parcel):
+
+\begin{equation}
+w_{max} = \sqrt{2\,\mathrm{CAPE}}
+\end{equation}

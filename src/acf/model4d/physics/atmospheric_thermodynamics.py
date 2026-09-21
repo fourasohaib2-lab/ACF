@@ -133,16 +133,34 @@ class AtmosphericThermodynamicsPhysics:
     @staticmethod
     def lcl_temperature(temperature, dew_point):
         """
-        Temperature at lifting condensation level.
+        Temperature at the lifting condensation level (LCL).
 
-        Formula:
-        Tlcl ≈ Td - 3.33
+        T_LCL = T - Gamma_d * z_LCL, with z_LCL = 125*(T - Td) (Espy's
+        rule, same approximation already used by lcl_height() below)
+        and Gamma_d = dry_adiabatic_lapse_rate() (K/km): the parcel
+        cools at the dry adiabatic lapse rate from the surface up to
+        the LCL.
+
+        NOTE (correction - Physics Guard): this used to be a fixed
+        offset "Td - 3.33", which ignores the surface temperature
+        entirely - for a fixed Td, the LCL temperature must depend on
+        how far the parcel has to rise (and thus cool) to reach
+        saturation, which depends on both T and Td, not on Td alone.
+        E.g. for T=295,Td=290 (small T-Td) the old formula returned the
+        same 286.67 as for T=305,Td=290 (large T-Td), even though the
+        physically correct LCL temperatures differ by several K. The
+        corrected formula is self-consistent with lcl_height() in this
+        same class and agrees with the Bolton (1980) eq. 22 formula to
+        within ~0.1 K for typical tropospheric T, Td.
         """
 
         if dew_point > temperature:
             raise ValueError("Dew point cannot exceed temperature")
 
-        return round(dew_point - 3.33, 2)
+        z_lcl = AtmosphericThermodynamicsPhysics.lcl_height(temperature, dew_point)
+        gamma_d = AtmosphericThermodynamicsPhysics.dry_adiabatic_lapse_rate()  # K/km
+
+        return round(temperature - (gamma_d / 1000.0) * z_lcl, 2)
 
     @staticmethod
     def lcl_height(temperature, dew_point):

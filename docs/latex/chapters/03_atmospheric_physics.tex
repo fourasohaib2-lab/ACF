@@ -56,12 +56,18 @@ where:
 
 \subsection{Thermodynamic Energy Equation}
 
-The temperature evolution follows:
+The temperature evolution follows the first law of thermodynamics; the
+adiabatic compression/expansion term $\frac{RT}{c_p p}\frac{Dp}{Dt}$ must be
+retained alongside the diabatic term (it vanishes only when the equation is
+written for potential temperature $\theta$ instead of $T$, Wallace \& Hobbs
+Eq. 3.53):
 
 \begin{equation}
 \frac{DT}{Dt}
 =
 \frac{Q}{c_p}
++
+\frac{RT}{c_p p}\frac{Dp}{Dt}
 \end{equation}
 
 where:
@@ -70,6 +76,8 @@ where:
 \item $T$ is temperature
 \item $Q$ represents diabatic heating
 \item $c_p$ is the specific heat capacity
+\item $R$ is the specific gas constant for (moist) air and $Dp/Dt$ is the
+  parcel's pressure tendency
 \end{itemize}
 
 

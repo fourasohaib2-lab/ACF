@@ -71,28 +71,42 @@ class CloudMicrophysicsPhysics:
     def freezing(liquid_water, temperature):
         """
         Liquid water freezing below 0°C.
+
+        NOTE (correction): the raw rate liquid_water * |T-273.15| / 10 grows
+        without bound as subcooling increases (e.g. |T-273.15| > 10 makes
+        the returned amount exceed liquid_water itself) - freezing more
+        water than is physically available. Capped at liquid_water so this
+        can never remove more mass than the source species actually holds
+        (mass-conservation bound), matching the Kessler-style "sink capped
+        by available mass" rule used across the other microphysics modules.
         """
 
-        if temperature >= 273.15:
+        if temperature >= 273.15 or liquid_water <= 0:
             return 0.0
 
-        return liquid_water * abs(
-            temperature - 273.15
-        ) / 10
+        return min(
+            liquid_water,
+            liquid_water * abs(temperature - 273.15) / 10,
+        )
 
 
     @staticmethod
     def melting(ice_content, temperature):
         """
         Ice melting above freezing point.
+
+        NOTE (correction): same unbounded-rate issue as freezing() above -
+        the raw rate ice_content * (T-273.15) / 10 can exceed ice_content
+        once T is more than 10 K above freezing. Capped at ice_content.
         """
 
-        if temperature <= 273.15:
+        if temperature <= 273.15 or ice_content <= 0:
             return 0.0
 
-        return ice_content * (
-            temperature - 273.15
-        ) / 10
+        return min(
+            ice_content,
+            ice_content * (temperature - 273.15) / 10,
+        )
 
 
     @staticmethod

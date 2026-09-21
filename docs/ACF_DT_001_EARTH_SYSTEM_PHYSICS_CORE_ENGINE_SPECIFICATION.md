@@ -8,11 +8,14 @@
 
 The **Earth System Physics Core Engine** builds the foundational physical equations layer for the **Atmospheric Complexity Framework (ACF)** Earth Digital Twin.
 
-Governed by the master conservation law:
+Governed schematically by:
 
 $$\frac{\partial \text{Earth}}{\partial t} = \text{Physics} + \text{Energy} + \text{Mass} + \text{Momentum} + \text{Feedbacks}$$
 
-the core integrates atmospheric primitive Navier-Stokes dynamics, Ertel's potential vorticity, moist thermodynamics, solar/terrestrial radiative balance, ocean Boussinesq circulation (AMOC, Gulf Stream, ENSO), cryosphere ice sheet dynamics (Greenland & Antarctica), land surface hydrology (Penman-Monteith ET), global carbon cycle fluxes, and a strictly conserved coupled solver ($\Delta M = 0, \Delta E = 0, \Delta \text{Momentum} = 0$).
+(a conceptual summary, not a literal balance equation — the engine's actual
+conservation constraints are the strict $\Delta M = 0$, $\Delta E = 0$,
+$\Delta \text{Momentum} = 0$ closures enforced by the coupled solver, see
+Section 2.4), the core integrates atmospheric primitive Navier-Stokes dynamics, Ertel's potential vorticity, moist thermodynamics, solar/terrestrial radiative balance, ocean Boussinesq circulation (AMOC, Gulf Stream, ENSO), cryosphere ice sheet dynamics (Greenland & Antarctica), land surface hydrology (Penman-Monteith ET), global carbon cycle fluxes, and a strictly conserved coupled solver ($\Delta M = 0, \Delta E = 0, \Delta \text{Momentum} = 0$).
 
 ---
 

@@ -30,4 +30,31 @@ q_x
 \end{equation}
 
 
-where $x$ represents each hydrometeor category.
+where $x$ represents each hydrometeor category
+($x \in \{v,c,r,i,s,g\}$: vapor, cloud water, rain, cloud ice, snow,
+graupel). Each category obeys a flux-form conservation law with a
+microphysical source/sink term $S_x$:
+
+\begin{equation}
+\frac{\partial(\rho q_x)}{\partial t}
++
+\nabla\cdot(\rho q_x \vec{V})
+=
+S_x
+\end{equation}
+
+
+The dominant warm-rain source terms follow the Kessler (1969)
+parameterization. Autoconversion of cloud water to rain past a critical
+threshold $q_{c,crit}$:
+
+\begin{equation}
+P_{auto} = k_{auto}\max(q_c - q_{c,crit},\,0)
+\end{equation}
+
+
+Collision-coalescence growth of rain by collection of cloud water:
+
+\begin{equation}
+P_{coll} = k_{coll}\, q_c\, q_r^{7/8}
+\end{equation}

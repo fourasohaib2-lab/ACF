@@ -123,12 +123,35 @@ class AtmosphericThermodynamics:
 
         return round(lcl, 2)
 
-    def brunt_vaisala_frequency(self, theta_gradient):
+    def brunt_vaisala_frequency(self, theta_gradient, reference_theta=300.0):
+        """
+        Brunt-Vaisala (buoyancy) frequency.
+
+        N = sqrt((g / theta) * dtheta/dz)
+
+        NOTE (correction - Physics Guard): this used to be
+        sqrt(G * theta_gradient), which is dimensionally wrong (K/s^2
+        under the square root instead of 1/s^2) because it omitted the
+        division by a reference potential temperature theta. Fixed to
+        the standard AMS Glossary / Holton & Hakim form, matching the
+        already-correct sibling implementations in
+        model4d.physics.atmospheric_stability.AtmosphericStabilityPhysics
+        and model4d.physics.stability.StabilityPhysics (both of which
+        take an explicit reference temperature, default 300 K, used
+        here too for consistency).
+
+        Parameters
+        ----------
+        theta_gradient : float
+            Vertical potential temperature gradient d(theta)/dz (K/m).
+        reference_theta : float
+            Reference potential temperature (K), default 300 K.
+        """
 
         if theta_gradient <= 0:
             return 0.0
 
-        value = math.sqrt(G * theta_gradient)
+        value = math.sqrt((G / reference_theta) * theta_gradient)
 
         return round(value, 4)
 
@@ -141,9 +164,26 @@ class AtmosphericThermodynamics:
 
         return round(cape, 2)
 
-    def convective_inhibition(self, temperature_deficit, height):
+    def convective_inhibition(self, temperature_deficit, height, environment_temperature=300.0):
+        """
+        Simplified single-layer CIN estimate.
 
-        cin = -G * temperature_deficit * height
+        CIN = -g * (temperature_deficit / T_env) * height  (magnitude,
+        signed negative), mirroring the buoyancy formula used by
+        convective_available_potential_energy() just above.
+
+        NOTE (correction - Physics Guard): this used to be
+        -G * temperature_deficit * height, missing the division by the
+        environment temperature that CAPE (right above, in this same
+        class) correctly includes. Without it the result has an extra
+        stray factor of K in its units (K*m^2/s^2 instead of J/kg) and
+        is off by two orders of magnitude at typical tropospheric
+        temperatures (~250-300 K). A reference_theta-style
+        environment_temperature parameter (default 300 K) was added to
+        keep the existing 2-argument call sites working.
+        """
+
+        cin = -G * (temperature_deficit / environment_temperature) * height
 
         return round(cin, 2)
 

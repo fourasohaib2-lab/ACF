@@ -26,20 +26,38 @@ equations of geophysical fluid dynamics.
 \frac{D\vec{V}}{Dt}
 =
 -\frac{1}{\rho}\nabla p
--2\Omega\times V
-+g
-+F
+-2\vec{\Omega}\times\vec{V}
++\vec{g}
++\vec{F}
 \end{equation}
+
+
+where $\vec{\Omega}$ is Earth's rotation vector and $\vec{F}$ represents
+frictional (viscous/turbulent) forces (Wallace \& Hobbs, Eq. 7.9).
 
 
 
 \subsection{Thermodynamic Equation}
 
+The first law of thermodynamics for a moist parcel, in flux form, retains
+the adiabatic compression/expansion term omitted by a bare $DT/Dt=Q/c_p$:
 
 \begin{equation}
 \frac{DT}{Dt}
 =
-\frac{Q}{C_p}
+\frac{Q}{c_p}
++
+\frac{RT}{c_p p}\frac{Dp}{Dt}
+\end{equation}
+
+
+Equivalently, in terms of potential temperature $\theta$ (which absorbs the
+adiabatic term exactly, Wallace \& Hobbs, Eq. 3.53):
+
+\begin{equation}
+\frac{D\theta}{Dt}
+=
+\frac{\theta}{T}\frac{Q}{c_p}
 \end{equation}
 
 

@@ -80,34 +80,79 @@ class CloudThermodynamicsEngine:
         return max(125.0 * (temp_c - td_c), 0.0)
 
     def calculate_cape(
-        self, z_levels: list[float], t_env_k: list[float], t_parcel_k: list[float], g: float = 9.81
+        self,
+        z_levels: list[float],
+        t_env_k: list[float],
+        t_parcel_k: list[float],
+        g: float = 9.81,
+        qv_env_kgkg: list[float] | None = None,
+        qv_parcel_kgkg: list[float] | None = None,
     ) -> float:
         """
-        Calcule l'intégrale du CAPE = int g * (Tparcel - Tenv) / Tenv dz pour Tparcel > Tenv.
+        Calcule l'intégrale du CAPE = int g * (Tv,parcel - Tv,env) / Tv,env dz
+        pour Tv,parcel > Tv,env, entre le LFC et l'EL (Doswell & Rasmussen 1994).
+
+        NOTE (correction — Physics Guard): la buoyancy doit être évaluée avec
+        la température VIRTUELLE (Tv = T*(1+0.61*w)), pas la température brute,
+        sinon la flottabilité due à la vapeur d'eau est ignorée. Si des profils
+        de rapport de mélange (qv_env_kgkg/qv_parcel_kgkg) sont fournis, Tv est
+        utilisée. À défaut (aucun profil d'humidité disponible chez l'appelant,
+        ex. convective_sounding_analysis ci-dessous), on retombe sur T brute —
+        une approximation documentée, pas une formule fabriquée.
         """
         cape = 0.0
         n = min(len(z_levels), len(t_env_k), len(t_parcel_k))
+        use_tv = qv_env_kgkg is not None and qv_parcel_kgkg is not None
         for i in range(n - 1):
             dz = z_levels[i + 1] - z_levels[i]
-            t_env_avg = 0.5 * (t_env_k[i] + t_env_k[i + 1])
-            t_parcel_avg = 0.5 * (t_parcel_k[i] + t_parcel_k[i + 1])
+            if use_tv:
+                t_env_avg = 0.5 * (
+                    self.virtual_temperature(t_env_k[i], qv_env_kgkg[i])
+                    + self.virtual_temperature(t_env_k[i + 1], qv_env_kgkg[i + 1])
+                )
+                t_parcel_avg = 0.5 * (
+                    self.virtual_temperature(t_parcel_k[i], qv_parcel_kgkg[i])
+                    + self.virtual_temperature(t_parcel_k[i + 1], qv_parcel_kgkg[i + 1])
+                )
+            else:
+                t_env_avg = 0.5 * (t_env_k[i] + t_env_k[i + 1])
+                t_parcel_avg = 0.5 * (t_parcel_k[i] + t_parcel_k[i + 1])
             dT = t_parcel_avg - t_env_avg
             if dT > 0 and t_env_avg > 0:
                 cape += g * (dT / t_env_avg) * dz
         return cape
 
     def calculate_cin(
-        self, z_levels: list[float], t_env_k: list[float], t_parcel_k: list[float], g: float = 9.81
+        self,
+        z_levels: list[float],
+        t_env_k: list[float],
+        t_parcel_k: list[float],
+        g: float = 9.81,
+        qv_env_kgkg: list[float] | None = None,
+        qv_parcel_kgkg: list[float] | None = None,
     ) -> float:
         """
-        Calcule l'intégrale du CIN = - int g * (Tparcel - Tenv) / Tenv dz pour Tparcel < Tenv sous le LFC.
+        Calcule l'intégrale du CIN = - int g * (Tv,parcel - Tv,env) / Tv,env dz
+        pour Tv,parcel < Tv,env sous le LFC (voir NOTE dans calculate_cape sur
+        l'usage de la température virtuelle et le fallback documenté).
         """
         cin = 0.0
         n = min(len(z_levels), len(t_env_k), len(t_parcel_k))
+        use_tv = qv_env_kgkg is not None and qv_parcel_kgkg is not None
         for i in range(n - 1):
             dz = z_levels[i + 1] - z_levels[i]
-            t_env_avg = 0.5 * (t_env_k[i] + t_env_k[i + 1])
-            t_parcel_avg = 0.5 * (t_parcel_k[i] + t_parcel_k[i + 1])
+            if use_tv:
+                t_env_avg = 0.5 * (
+                    self.virtual_temperature(t_env_k[i], qv_env_kgkg[i])
+                    + self.virtual_temperature(t_env_k[i + 1], qv_env_kgkg[i + 1])
+                )
+                t_parcel_avg = 0.5 * (
+                    self.virtual_temperature(t_parcel_k[i], qv_parcel_kgkg[i])
+                    + self.virtual_temperature(t_parcel_k[i + 1], qv_parcel_kgkg[i + 1])
+                )
+            else:
+                t_env_avg = 0.5 * (t_env_k[i] + t_env_k[i + 1])
+                t_parcel_avg = 0.5 * (t_parcel_k[i] + t_parcel_k[i + 1])
             dT = t_parcel_avg - t_env_avg
             if dT < 0 and t_env_avg > 0:
                 cin += g * (-dT / t_env_avg) * dz

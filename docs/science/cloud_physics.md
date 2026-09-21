@@ -35,12 +35,21 @@ The **Atmospheric Complexity Framework (ACF) Cloud Physics Knowledge Engine** is
   $$P_{coll} = k_{coll} q_c q_r^{0.875}$$
 
 ### 2.2 Cloud Thermodynamics
-- **Convective Available Potential Energy (CAPE)**:
-  $$\text{CAPE} = \int_{\text{LFC}}^{\text{EL}} g \frac{T_{parcel} - T_{env}}{T_{env}} dz$$
+- **Convective Available Potential Energy (CAPE)**, using virtual
+  temperature $T_v$ to account for moisture loading (Doswell &
+  Rasmussen, 1994):
+  $$\text{CAPE} = \int_{\text{LFC}}^{\text{EL}} g \frac{T_{v,parcel} - T_{v,env}}{T_{v,env}} dz$$
 - **Convective Inhibition (CIN)**:
-  $$\text{CIN} = -\int_{\text{SFC}}^{\text{LFC}} g \frac{T_{parcel} - T_{env}}{T_{env}} dz$$
-- **Lifting Condensation Level (LCL)**:
-  $$z_{\text{LCL}} \approx 125 \times (T - T_d)$$
+  $$\text{CIN} = -\int_{\text{SFC}}^{\text{LFC}} g \frac{T_{v,parcel} - T_{v,env}}{T_{v,env}} dz$$
+  > Note: `acf.science.clouds.thermodynamics.CloudThermodynamicsEngine`
+  > (`calculate_cape`/`calculate_cin`) integrates raw temperature $T$
+  > rather than $T_v$, unlike the canonical `acf.science.cape.CAPE`
+  > implementation, which supports the virtual-temperature correction.
+  > This is a code inconsistency between the two CAPE implementations,
+  > not a documentation choice — see report for routing to the
+  > code-fixing stream.
+- **Lifting Condensation Level (LCL)**, Espy's approximation:
+  $$z_{\text{LCL}} \approx 125 \times (T - T_d) \quad [\text{m, with } T, T_d \text{ in } ^\circ\text{C}]$$
 
 ### 2.3 Cloud Convective Dynamics
 - **Convective Mass Flux**:

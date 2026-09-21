@@ -101,21 +101,37 @@ class MicrophysicsEngine:
         qv = q_vap.copy()
 
         # Simple threshold auto-conversion: Cloud water -> Rain (Kessler scheme proxy)
+        #
+        # NOTE (correction): the tendency*dt amount transferred between species
+        # was applied unclamped to BOTH sides, then only the *source* species
+        # was clipped to >= 0 at the end of step(). With a rate*dt product that
+        # exceeds the available mass (e.g. the melt_rate=0.05 s^-1 default
+        # combined with the default dt=60s gives melt_rate*dt = 3.0, i.e. 3x
+        # qi), the source got clamped away but the sink kept the full
+        # (unphysical) amount - manufacturing water mass out of nothing. Each
+        # transferred amount is now capped at the available source mass
+        # *before* being applied to both species, so source and sink always
+        # move by exactly the same, physically-bounded quantity (mass
+        # conservation, per the Kessler-type conservation rule this module
+        # is meant to respect).
         auto_conversion_rate = np.maximum(0.0, qc - 0.0005) * 1e-3
-        qc -= auto_conversion_rate * dt
-        qr += auto_conversion_rate * dt
+        auto_conversion_amount = np.minimum(auto_conversion_rate * dt, np.maximum(qc, 0.0))
+        qc -= auto_conversion_amount
+        qr += auto_conversion_amount
 
         # Freezing of cloud water to cloud ice below 273.15 K
         freezing_mask = temp < 273.15
         freeze_rate = np.where(freezing_mask, 0.01 * qc, 0.0)
-        qc -= freeze_rate * dt
-        qi += freeze_rate * dt
+        freeze_amount = np.minimum(freeze_rate * dt, np.maximum(qc, 0.0))
+        qc -= freeze_amount
+        qi += freeze_amount
 
         # Melting of ice above 273.15 K
         melt_mask = temp >= 273.15
         melt_rate = np.where(melt_mask, 0.05 * qi, 0.0)
-        qi -= melt_rate * dt
-        qc += melt_rate * dt
+        melt_amount = np.minimum(melt_rate * dt, np.maximum(qi, 0.0))
+        qi -= melt_amount
+        qc += melt_amount
 
         updated_hydros = hydros.copy()
         updated_hydros["qc"] = np.clip(qc, 0.0, None)

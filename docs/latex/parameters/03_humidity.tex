@@ -42,3 +42,31 @@ Applications:
 \item Atmospheric moisture transport
 
 \end{itemize}
+
+
+
+\section{Saturation Vapor Pressure}
+
+
+The saturation vapor pressure $e_s$ (hPa) as a function of temperature
+$T$ (\si{\celsius}) follows the Bolton (1980) fit to the
+Clausius-Clapeyron relation:
+
+\begin{equation}
+e_s(T) = 6.112 \exp\left(\frac{17.67\,T}{T+243.5}\right)
+\end{equation}
+
+
+
+\section{Virtual Temperature}
+
+
+Virtual temperature $T_v$ is the temperature dry air would need to have
+the same density as moist air at the same pressure:
+
+\begin{equation}
+T_v = T\,(1 + 0.61\,q_v)
+\end{equation}
+
+
+where $q_v$ is specific humidity (kg/kg).
