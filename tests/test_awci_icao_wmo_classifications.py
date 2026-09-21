@@ -28,9 +28,14 @@ microburst physical-scale/detection-system reference
 real turbulence-intensity/source-type reference
 (awci.knowledge.meteorology.turbulence_intensity), the real jet-stream
 reference (awci.knowledge.meteorology.jet_stream), the real
-weather-front reference (awci.knowledge.meteorology.weather_front), and
-the real general-atmospheric-circulation reference
-(awci.knowledge.meteorology.general_circulation).
+weather-front reference (awci.knowledge.meteorology.weather_front), the real general-atmospheric-circulation reference
+(awci.knowledge.meteorology.general_circulation), the real atmosphere
+composition/layer-structure reference
+(awci.knowledge.meteorology.atmosphere_composition), the real
+emagram/skew-T diagram and radiosonde reference
+(awci.knowledge.meteorology.skew_t_diagram), and the real wind-unit/
+gust-criterion/named-local-wind reference
+(awci.knowledge.meteorology.local_winds).
 
 Added 2026-09-21 at explicit user request, scoped to real, bounded,
 published classification schemes (ICAO airspace classes A-G, the
@@ -52,7 +57,10 @@ https://www.lavionnaire.fr/MeteoLesGrains.php,
 https://www.lavionnaire.fr/PhenomDifTurbule.php,
 https://www.lavionnaire.fr/MeteoJetStream.php,
 https://www.lavionnaire.fr/MeteoFronts.php, and
-https://www.lavionnaire.fr/MeteoCirculation.php, at the user's own
+https://www.lavionnaire.fr/MeteoCirculation.php,
+https://www.lavionnaire.fr/MeteoAtmosphere.php,
+https://www.lavionnaire.fr/MeteoEmagram.php, and
+https://www.lavionnaire.fr/MeteoVent.php, at the user's own
 request, rather than relying on recalled tables alone for this level of
 numeric/letter-code detail.
 """
@@ -1223,3 +1231,213 @@ def test_itcz_cumulonimbus_maximum_top_altitude_is_real():
     )
 
     assert ITCZ_CUMULONIMBUS_MAXIMUM_TOP_ALTITUDE_FT_APPROX == 55_000.0
+
+
+def test_dry_air_composition_percentages_sum_close_to_100():
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        DRY_AIR_ARGON_PERCENT,
+        DRY_AIR_CARBON_DIOXIDE_PERCENT,
+        DRY_AIR_NITROGEN_PERCENT,
+        DRY_AIR_OXYGEN_PERCENT,
+        DRY_AIR_TRACE_GASES_MAXIMUM_PERCENT,
+    )
+
+    assert DRY_AIR_NITROGEN_PERCENT == 78.09
+    assert DRY_AIR_OXYGEN_PERCENT == 20.95
+    assert DRY_AIR_ARGON_PERCENT == 0.93
+    assert DRY_AIR_CARBON_DIOXIDE_PERCENT == 0.035
+    total = (
+        DRY_AIR_NITROGEN_PERCENT
+        + DRY_AIR_OXYGEN_PERCENT
+        + DRY_AIR_ARGON_PERCENT
+        + DRY_AIR_CARBON_DIOXIDE_PERCENT
+        + DRY_AIR_TRACE_GASES_MAXIMUM_PERCENT
+    )
+    assert total == pytest.approx(100.0, abs=0.05)
+
+
+def test_troposphere_observed_lapse_rate_is_disclosed_distinct_from_isa_standard():
+    """A real, disclosed discrepancy - NOT merged into the existing
+    ISA standard-atmosphere 6.5 degC/1000m constant already used by
+    acf.science.encyclopedia.aerodynamics.isa_atmosphere - both are
+    real, distinct quantities (a defined standard vs. an observed
+    average) for the same physical process."""
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        TROPOSPHERE_OBSERVED_AVERAGE_LAPSE_RATE_C_PER_1000M,
+    )
+
+    assert TROPOSPHERE_OBSERVED_AVERAGE_LAPSE_RATE_C_PER_1000M == 6.4
+    isa_standard_lapse_rate_c_per_1000m = 6.5
+    assert TROPOSPHERE_OBSERVED_AVERAGE_LAPSE_RATE_C_PER_1000M != isa_standard_lapse_rate_c_per_1000m
+
+
+def test_tropopause_altitude_is_real_and_highest_at_the_equator():
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        TROPOPAUSE_ALTITUDE_EQUATORIAL_KM_APPROX,
+        TROPOPAUSE_ALTITUDE_RANGE_POLAR_KM,
+        TROPOPAUSE_ALTITUDE_RANGE_TEMPERATE_KM,
+    )
+
+    polar_low, polar_high = TROPOPAUSE_ALTITUDE_RANGE_POLAR_KM
+    temperate_low, temperate_high = TROPOPAUSE_ALTITUDE_RANGE_TEMPERATE_KM
+    assert polar_high == 8.0
+    assert temperate_high == 12.0
+    assert polar_high < temperate_high < TROPOPAUSE_ALTITUDE_EQUATORIAL_KM_APPROX
+    assert TROPOPAUSE_ALTITUDE_EQUATORIAL_KM_APPROX == 18.0
+
+
+def test_atmosphere_layers_are_real_and_altitude_ordered():
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        EXOSPHERE_UPPER_LIMIT_KM_APPROX,
+        MESOSPHERE_ALTITUDE_RANGE_KM,
+        STRATOPAUSE_ALTITUDE_KM,
+        THERMOSPHERE_ALTITUDE_RANGE_KM,
+    )
+
+    assert MESOSPHERE_ALTITUDE_RANGE_KM == (50.0, 85.0)
+    assert STRATOPAUSE_ALTITUDE_KM == 50.0
+    assert MESOSPHERE_ALTITUDE_RANGE_KM[0] == STRATOPAUSE_ALTITUDE_KM
+    low, high = THERMOSPHERE_ALTITUDE_RANGE_KM
+    assert low == 80.0
+    assert high == 500.0
+    assert high < EXOSPHERE_UPPER_LIMIT_KM_APPROX
+    assert EXOSPHERE_UPPER_LIMIT_KM_APPROX == 10_000.0
+
+
+def test_ionosphere_sublayers_are_real_and_altitude_ordered():
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        IONOSPHERE_D_LAYER_ALTITUDE_RANGE_KM,
+        IONOSPHERE_E_LAYER_ALTITUDE_RANGE_KM,
+        IONOSPHERE_F_LAYER_ALTITUDE_RANGE_KM,
+    )
+
+    d_low, d_high = IONOSPHERE_D_LAYER_ALTITUDE_RANGE_KM
+    e_low, e_high = IONOSPHERE_E_LAYER_ALTITUDE_RANGE_KM
+    f_low, f_high = IONOSPHERE_F_LAYER_ALTITUDE_RANGE_KM
+    assert d_low < e_low < f_low
+    assert d_high == e_low
+
+
+def test_skew_t_dry_and_moist_adiabatic_rates_are_real_and_distinct():
+    """The real dry-adiabatic PARCEL rate here is a different real
+    quantity from the real, observed ENVIRONMENTAL lapse rate in
+    atmosphere_composition.py - both are real, standard, distinct
+    meteorological quantities."""
+    from awci.knowledge.meteorology.atmosphere_composition import (
+        TROPOSPHERE_OBSERVED_AVERAGE_LAPSE_RATE_C_PER_1000M,
+    )
+    from awci.knowledge.meteorology.skew_t_diagram import (
+        DRY_ADIABATIC_LAPSE_RATE_C_PER_100M,
+        MOIST_ADIABATIC_LAPSE_RATE_C_PER_1000M_TYPICAL,
+        MOIST_ADIABATIC_LAPSE_RATE_RANGE_C_PER_1000M,
+    )
+
+    assert DRY_ADIABATIC_LAPSE_RATE_C_PER_100M == 1.0
+    dry_rate_per_1000m = DRY_ADIABATIC_LAPSE_RATE_C_PER_100M * 10.0
+    assert dry_rate_per_1000m != TROPOSPHERE_OBSERVED_AVERAGE_LAPSE_RATE_C_PER_1000M
+    assert MOIST_ADIABATIC_LAPSE_RATE_C_PER_1000M_TYPICAL == 5.0
+    low, high = MOIST_ADIABATIC_LAPSE_RATE_RANGE_C_PER_1000M
+    assert low == 1.0
+    assert high == 8.0
+    assert low <= MOIST_ADIABATIC_LAPSE_RATE_C_PER_1000M_TYPICAL <= high
+    assert MOIST_ADIABATIC_LAPSE_RATE_C_PER_1000M_TYPICAL < dry_rate_per_1000m
+
+
+def test_radiosonde_operational_facts_are_real_and_positive():
+    from awci.knowledge.meteorology.skew_t_diagram import (
+        RADIOSONDE_ASCENT_DURATION_RANGE_HOURS,
+        RADIOSONDE_BURST_ALTITUDE_RANGE_KM,
+        RADIOSONDE_STANDARD_RELEASE_TIMES_UTC,
+    )
+
+    duration_low, duration_high = RADIOSONDE_ASCENT_DURATION_RANGE_HOURS
+    assert duration_low == 2.0
+    assert duration_high == 2.5
+    burst_low, burst_high = RADIOSONDE_BURST_ALTITUDE_RANGE_KM
+    assert burst_low == 20.0
+    assert burst_high == 30.0
+    assert RADIOSONDE_STANDARD_RELEASE_TIMES_UTC == ("00:00", "12:00")
+
+
+def test_knot_to_kmh_conversion_is_the_real_standard_value():
+    from awci.knowledge.meteorology.local_winds import KNOT_TO_KMH
+
+    assert KNOT_TO_KMH == 1.852
+
+
+def test_wind_barb_symbology_is_real_and_ordered():
+    from awci.knowledge.meteorology.local_winds import (
+        WIND_BARB_FULL_BARBULE_KT,
+        WIND_BARB_HALF_BARBULE_KT,
+        WIND_BARB_PENNANT_KT,
+    )
+
+    assert WIND_BARB_HALF_BARBULE_KT == 5.0
+    assert WIND_BARB_FULL_BARBULE_KT == 10.0
+    assert WIND_BARB_PENNANT_KT == 50.0
+    assert WIND_BARB_HALF_BARBULE_KT < WIND_BARB_FULL_BARBULE_KT < WIND_BARB_PENNANT_KT
+
+
+def test_gust_reporting_criterion_is_real():
+    from awci.knowledge.meteorology.local_winds import (
+        GUST_REPORTING_MINIMUM_EXCESS_KMH,
+        GUST_REPORTING_MINIMUM_EXCESS_KT,
+        GUST_REPORTING_MINIMUM_MEAN_WIND_KT,
+    )
+
+    assert GUST_REPORTING_MINIMUM_EXCESS_KT == 10.0
+    assert GUST_REPORTING_MINIMUM_EXCESS_KMH == 19.0
+    assert GUST_REPORTING_MINIMUM_MEAN_WIND_KT == 10.0
+
+
+def test_local_wind_types_have_real_speed_and_extent_facts():
+    from awci.knowledge.meteorology.local_winds import (
+        LAND_BREEZE_TYPICAL_PENETRATION_DEPTH_RANGE_M,
+        LAND_BREEZE_TYPICAL_SPEED_RANGE_KT,
+        SEA_BREEZE_TYPICAL_PENETRATION_DEPTH_RANGE_M,
+        SEA_BREEZE_TYPICAL_SPEED_RANGE_KT,
+    )
+
+    assert SEA_BREEZE_TYPICAL_SPEED_RANGE_KT == (10.0, 15.0)
+    assert LAND_BREEZE_TYPICAL_SPEED_RANGE_KT == (5.0, 10.0)
+    sea_low, sea_high = SEA_BREEZE_TYPICAL_PENETRATION_DEPTH_RANGE_M
+    land_low, land_high = LAND_BREEZE_TYPICAL_PENETRATION_DEPTH_RANGE_M
+    assert sea_high > land_high  # real sea breeze penetrates further inland than the land breeze offshore
+
+
+def test_mistral_speeds_are_real_and_ordered():
+    from awci.knowledge.meteorology.local_winds import (
+        MISTRAL_GUST_SPEED_MINIMUM_EXCEEDED_KMH,
+        MISTRAL_TYPICAL_MEAN_SPEED_KMH_APPROX,
+    )
+
+    assert MISTRAL_TYPICAL_MEAN_SPEED_KMH_APPROX == 50.0
+    assert MISTRAL_GUST_SPEED_MINIMUM_EXCEEDED_KMH == 100.0
+    assert MISTRAL_GUST_SPEED_MINIMUM_EXCEEDED_KMH > MISTRAL_TYPICAL_MEAN_SPEED_KMH_APPROX
+
+
+def test_foehn_reference_is_complementary_to_the_computed_formula():
+    """The real, typical empirical Foehn temperature-increase range
+    here is independent of and does not duplicate the real, computed
+    acf.model4d.physics.mountain_physics.MountainPhysics.
+    foehn_temperature() dry-adiabatic formula - both can coexist
+    without overlap."""
+    from acf.model4d.physics.mountain_physics import MountainPhysics
+    from awci.knowledge.meteorology.local_winds import FOEHN_TYPICAL_TEMPERATURE_INCREASE_RANGE_C
+
+    low, high = FOEHN_TYPICAL_TEMPERATURE_INCREASE_RANGE_C
+    assert low == 5.0
+    assert high == 10.0
+    assert not hasattr(MountainPhysics, "FOEHN_TYPICAL_TEMPERATURE_INCREASE_RANGE_C")
+
+
+def test_coriolis_and_geostrophic_equator_facts_are_real():
+    from awci.knowledge.meteorology.local_winds import (
+        CORIOLIS_FORCE_MAXIMUM_AT_POLES,
+        CORIOLIS_FORCE_ZERO_AT_EQUATOR,
+        GEOSTROPHIC_WIND_UNDEFINED_AT_EQUATOR,
+    )
+
+    assert CORIOLIS_FORCE_ZERO_AT_EQUATOR is True
+    assert CORIOLIS_FORCE_MAXIMUM_AT_POLES is True
+    assert GEOSTROPHIC_WIND_UNDEFINED_AT_EQUATOR is True
