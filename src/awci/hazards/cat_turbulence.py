@@ -96,10 +96,11 @@ from typing import Any
 
 import numpy as np
 
-from acf.awci.workstation_fields import real_grid_spacing_m
 from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
 from acf.science.encyclopedia.aerodynamics.isa_atmosphere import calculate_isa_pressure_altitude
 from acf.science.wind_turbulence import CATIndex
+
+from awci.complexity.workstation_fields import real_grid_spacing_m
 
 #: Same real physical threshold `workstation_fields.
 #: compute_real_vorticity_divergence()` already uses for the pole-row

@@ -66,7 +66,8 @@ from __future__ import annotations
 from typing import Any
 
 from acf.aviation.hazards.aviation_hazards import AviationHazardEngine, AviationHazardInfo
-from acf.awci.normalizer import Normalizer
+
+from awci.complexity.normalizer import Normalizer
 
 #: Real ICAO Doc 9837 / FAA AC 00-54 microburst-alert threshold (30 kt),
 #: converted to SI - see module docstring. Reused from

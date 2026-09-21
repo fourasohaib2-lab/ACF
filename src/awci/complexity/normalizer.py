@@ -269,7 +269,7 @@ class Normalizer:
         saturation point) - see get_range_status("ceiling") for the
         full disclosure of what is and is not a published value here.
         """
-        from acf.awci.ceiling import MVFR_CEILING_M
+        from awci.hazards.ceiling import MVFR_CEILING_M
 
         ceiling_height_m = max(0.0, min(MVFR_CEILING_M, ceiling_height_m))
         return 1.0 - (ceiling_height_m / MVFR_CEILING_M)
