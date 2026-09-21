@@ -66,7 +66,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from acf.science.thermodynamics import Thermodynamics
+from acf.science.thermodynamics.thermodynamics import Thermodynamics
 
 #: Real, disclosed ACF design-choice wind-speed ramp for wind-erosion
 #: potential (m/s, at whatever level the caller's wind_speed_m_s was

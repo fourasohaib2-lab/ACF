@@ -1,40 +1,13 @@
-"""
-Atmospheric Complexity Framework (ACF)
+"""Backward-compatible re-export.
 
-SCIENCE - Pressure
-
-Purpose:
---------
-Pure mathematical and thermodynamic formulations (CAPE, CIN, LCL, vorticity).
-
-Responsibilities:
------------------
-• Manage pressure logic and state representations.
-• Integrate with the science subsystem of the ACF scientific engine.
-
-Major Components:
------------------
-• Pressure
-
-Dependencies:
--------------
-• Python Standard Library and NumPy/Scientific Python Stack.
-• Internal acf.science module infrastructure.
-
-Scientific Context:
--------------------
-Provides foundational capabilities for numerical weather prediction, atmospheric data processing,
-physical modeling, and spatial-temporal analysis within the Atmospheric Complexity Framework.
+Real module moved to ``acf.science.thermodynamics.pressure`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.pressure`` import keeps
+working unchanged.
 """
 
-
-class Pressure:
-    @staticmethod
-    def pa_to_hpa(value):
-
-        return value / 100.0
-
-    @staticmethod
-    def hpa_to_pa(value):
-
-        return value * 100.0
+from acf.science.thermodynamics.pressure import *  # noqa: F401,F403

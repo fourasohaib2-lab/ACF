@@ -841,20 +841,22 @@ Adopting these two blueprints literally would require, at minimum:
 
 1. **Splitting `src/acf/awci/` + `src/acf/aviation/` + the AWCI portions of
    `src/acf/gui/dashboard/` into a new top-level `src/awci/` package** —
-   **both `src/acf/awci/` and `src/acf/aviation/` are done** (Phases 1-9,
-   §2a-§2j): 44 real modules physically moved into
-   `awci.{hazards,complexity,data,comparison,airport}` and 17 more into
-   `awci.knowledge.{airports,graphics,hazards,icao,performance,routing}`;
-   both `src/acf/awci/` and `src/acf/aviation/` now hold only backward-
-   compatible re-export shims. Only the AWCI portions of
-   `src/acf/gui/dashboard/` (the live dashboard UI itself, ~15 modules,
-   deliberately left in the GUI layer as real consumers rather than moved)
-   remain.
+   **complete** (Phases 1-10, §2a-§2k): 44 real modules physically moved
+   into `awci.{hazards,complexity,data,comparison,airport}`, 17 more into
+   `awci.knowledge.{airports,graphics,hazards,icao,performance,routing}`,
+   and the 29-module AWCI dashboard into `awci.dashboard`. `src/acf/awci/`,
+   `src/acf/aviation/`, and the AWCI modules of `src/acf/gui/dashboard/`
+   now hold only backward-compatible re-export shims. The deliberately
+   untouched pieces (ACF-side widget reuse, the `acf-awci` console-script
+   entry point) are real product/packaging decisions, not migration
+   mechanics - see §2k's own closing note.
 2. **Reorganizing `src/acf/science/` and `src/acf/parameters/` from flat,
-   topic-named modules into the blueprint's per-domain subpackages** — a
-   large but mechanically simpler rename/move, since the underlying real
-   physics is already implemented and tested; the risk is import breakage
-   across the ~50+ modules that consume them, not re-deriving formulas.
+   topic-named modules into the blueprint's per-domain subpackages** —
+   **started 2026-09-21** (Phase 1, §4a): the 21-module
+   `science/thermodynamics/` subdomain is done. A large but mechanically
+   simpler rename/move than item 1, since the underlying real physics is
+   already implemented and tested; the risk is import breakage across the
+   ~50+ modules that consume them, not re-deriving formulas. See §4 below.
 3. **Filling genuine, currently-absent pieces**: a RAG layer (`ai/rag/`),
    an AWCI-specific decision-support engine, an AWCI-specific
    provenance/audit module, `acfctl` as an operational CLI, and a real
@@ -862,9 +864,118 @@ Adopting these two blueprints literally would require, at minimum:
    placeholders today — they are simply not built yet, which is the
    correct, honest state to report rather than inventing stubs.
 4. **Deciding what to do with confirmed, already-documented duplicates**
-   (`acf.maps` vs `acf.gui.map`, `acf.catalog` vs `acf.catalogs`) before or
-   during the reorganization, since the blueprints assume one canonical
-   location per concern.
+   (`acf.maps` vs `acf.gui.map`, `acf.catalog` vs `acf.catalogs`, and a
+   newly-found instance of the same pattern: `acf.science.parameters`,
+   the real `PhysicalParameter` data model, vs the top-level
+   `acf.parameters`, a real, unrelated catalog/registry/converter/units
+   system — see §4's own investigation notes) before or during the
+   reorganization, since the blueprints assume one canonical location per
+   concern.
+
+## 4. ACF `science/`/`parameters/` per-domain reorganization
+
+Started 2026-09-21 ("continue avec la réorganisation de science/ et
+parameters/"), following item 2 above. `src/acf/science/` holds ~60 flat,
+topic-named modules plus 7 already-existing subpackages
+(`clouds/`, `encyclopedia/`, `knowledge_graph/`, `laws/`, `observations/`,
+`parameters/`, `physics_ai/`) that don't correspond to the blueprint's own
+19 subdomain names. `src/acf/parameters/` is a separate, real
+catalog/registry system (`aliases.py`, `catalog.py`, `categories.py`,
+`converter.py`, `hub.py`, `index.py`, `parameter.py`, `registry.py`,
+`search.py`, `units.py`, `validator.py`) - genuinely distinct from the
+blueprint's own idealized `parameters/atmosphere/ocean/land/...` sketch
+and, confusingly, distinct from `acf.science.parameters` too (a small,
+real `PhysicalParameter` data model: `definitions.py`, `engine.py`,
+`physical_parameter.py`) - a second, newly-found instance of the same
+duplicate-naming pattern already flagged for `acf.maps`/`acf.catalog`.
+Given the scale (dwarfing any single AWCI phase - `science/` alone is
+larger than all of `acf.awci` + `acf.aviation` combined) and the
+blueprint's own "initial atmospheric priority" callout, this reorganization
+proceeds the same way the AWCI migration did: one bounded, fully-verified
+phase at a time, `git mv` + backward-compatible shims, never a big-bang
+rewrite.
+
+### 4a. Phase 1: `science/thermodynamics/` (2026-09-21)
+
+**Placement**: the blueprint names `science/thermodynamics/` as its own
+"initial atmospheric priority" subdomain. 21 real, already-existing flat
+modules map to it directly by content: `thermodynamics.py`,
+`potential_temperature.py`, `virtual_temperature.py`,
+`virtual_potential_temperature.py`, `equivalent_potential_temperature.py`,
+`mixing_ratio.py`, `saturation_mixing_ratio.py`, `specific_humidity.py`,
+`vapor_pressure.py`, `saturation_vapor_pressure.py`,
+`relative_humidity.py`, `humidity.py`, `air_density.py`, `dewpoint.py`,
+`wet_bulb_temperature.py`, `moist_static_energy.py`,
+`dry_static_energy.py`, `hypsometric_equation.py`,
+`geopotential_height.py`, `pressure.py`, `temperature.py` - real module
+names kept as-is (not renamed to the blueprint's own smaller illustrative
+set), following the same precedent established throughout the AWCI
+migration.
+
+**Investigation, before any move**: each module follows a clean
+one-class-per-module pattern (`PotentialTemperature`, `DewPoint`, etc.),
+matching the style already used by the existing `science/clouds/`
+subpackage - its own `__init__.py` was read first as the real, in-codebase
+precedent for how a science subpackage should re-export its public API.
+Internal cross-references: only `equivalent_potential_temperature.py`
+depends on two same-batch siblings (`saturation_mixing_ratio.py`,
+`saturation_vapor_pressure.py`); everything else is either a true leaf or
+depends only on `acf.science.constants` (staying in its current flat
+location this phase - moving it now would touch nearly every other
+`science/` module, out of scope for a single bounded phase). No `__all__`
+restrictions, no deferred imports, no underscore-prefixed whitebox test
+imports found in any of the 21 modules. External fan-in checked per
+module via grep - a real but manageable 1-10 dependents each (`cape.py`
+had the most, 10), the same order of magnitude the shim strategy already
+proved out across 100+ AWCI callers.
+
+**Execution**: all 21 files physically moved via `git mv` into a new
+`src/acf/science/thermodynamics/` package. The one internal cross-
+reference repointed to a relative-package import. `__init__.py` written
+re-exporting all 21 real classes with a real `__all__`, mirroring
+`science/clouds/__init__.py`'s own established style. 21 shims created at
+the old flat locations. The mandatory sweep across the whole codebase
+found 7 already-migrated `awci.*` modules (from Phases 1-10) depending on
+thermodynamics modules moved in this phase - repointed to
+`acf.science.thermodynamics.*` directly: `awci/hazards/visibility.py`,
+`awci/hazards/theta_e.py`, `awci/hazards/hydrometeor_phase.py`,
+`awci/hazards/dust.py`, `awci/hazards/ceiling.py`,
+`awci/complexity/metar_verification.py`,
+`awci/complexity/workstation_fields.py`. Six still-flat `acf.science.*`
+siblings (`cin.py`, `lcl.py`, `cape.py`, `dynamics.py`, `radiosonde.py`,
+`moisture.py`, `laws/thermodynamics.py`) also reference the moved
+modules - deliberately left importing the `acf.science.<module>` shim
+unchanged, exactly as every external caller outside the package being
+moved has been treated throughout this whole reorganization effort; they
+will be cleaned up naturally when each of *them* is moved in a future
+phase (`cape.py`/`cin.py`/`lcl.py` likely into `science/convection/`,
+matching the blueprint's own next-named subdomain).
+
+**Verified, not assumed**: `ruff check` clean (the same single,
+already-existing, pre-migration unused import in `awci_footer.py` noted in
+§2k - untouched, unrelated); `mypy` clean (22 source files); identity
+confirmed programmatically for all 21 modules plus the package `__init__`;
+full test collection under xvfb - 4977 tests, 0 errors; a targeted sweep
+across every thermodynamics/moisture/convection-adjacent keyword (`-k
+"thermodynamic or potential_temperature or ... or cape or cin or lcl"`,
+non-GUI) passed 472/472 (9 skipped); a new
+`tests/test_science_thermodynamics_reorganization.py` (25 tests) locks in
+the re-export identity for all 21 modules, the package's own `__all__`,
+the internal cross-reference, and the 7 cross-package fixes into
+already-migrated `awci.*` code.
+
+**What remains for item 2**: the other 18 blueprint subdomains
+(`constants/`, `dynamics/`, `stability/`, `convection/`, `radiation/`,
+`microphysics/`, `turbulence/`, `boundary_layer/`, `clouds/` [already a
+real subpackage, but not yet reconciled with the blueprint's own
+`clouds/` role], `precipitation/`, `atmospheric_composition/`, `ocean/`,
+`hydrology/`, `cryosphere/`, `land_surface/`, `carbon_cycle/`, `climate/`,
+`diagnostics/`), the entire `parameters/` reorganization (including the
+`acf.science.parameters` vs `acf.parameters` duplicate-naming question,
+item 4 above), and reconciling the 6 other already-existing
+non-blueprint-named `science/` subpackages
+(`encyclopedia/`, `knowledge_graph/`, `laws/`, `observations/`,
+`physics_ai/` - `clouds/` counted above). Not started.
 
 Item 1's `src/acf/awci/` half is the only one substantially executed so
 far (Phases 1-8, 2026-09-21) — see §2a-§2i above for the real, verified,

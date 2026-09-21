@@ -69,9 +69,9 @@ from __future__ import annotations
 from typing import Any
 
 from acf.physics_guard import PhysicsGuard
-from acf.science.dewpoint import DewPoint
-from acf.science.equivalent_potential_temperature import EquivalentPotentialTemperature
-from acf.science.thermodynamics import Thermodynamics
+from acf.science.thermodynamics.dewpoint import DewPoint
+from acf.science.thermodynamics.equivalent_potential_temperature import EquivalentPotentialTemperature
+from acf.science.thermodynamics.thermodynamics import Thermodynamics
 
 
 def compute_real_theta_e_at_point(

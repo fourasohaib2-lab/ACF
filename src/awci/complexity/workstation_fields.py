@@ -136,7 +136,7 @@ from awci.hazards.theta_e import compute_real_theta_e_at_point
 from awci.hazards.wind_shear import compute_real_wind_shear_at_point
 from acf.science.divergence import Divergence
 from acf.science.lcl import LCL
-from acf.science.potential_temperature import PotentialTemperature
+from acf.science.thermodynamics.potential_temperature import PotentialTemperature
 from acf.science.severe_weather import SevereWeather
 from acf.science.storm_motion import StormMotion
 from acf.science.storm_relative_helicity import StormRelativeHelicity

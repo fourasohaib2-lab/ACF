@@ -72,8 +72,8 @@ from __future__ import annotations
 from typing import Any
 
 from acf.physics_guard import PhysicsGuard
-from acf.science.dewpoint import DewPoint
-from acf.science.thermodynamics import Thermodynamics
+from acf.science.thermodynamics.dewpoint import DewPoint
+from acf.science.thermodynamics.thermodynamics import Thermodynamics
 
 #: Real FAA / NOAA Aviation Weather Center ceiling-only thresholds
 #: (500 ft / 1000 ft / 3000 ft AGL, converted to meters) - see module

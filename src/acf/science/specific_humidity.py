@@ -1,35 +1,13 @@
-"""
-Specific Humidity
-=================
+"""Backward-compatible re-export.
 
-Calculation of specific humidity from mixing ratio.
-
-Formula
--------
-q = w / (1 + w)
-
-where:
-    q : specific humidity (kg/kg)
-    w : mixing ratio (kg/kg)
+Real module moved to ``acf.science.thermodynamics.specific_humidity`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.specific_humidity`` import keeps
+working unchanged.
 """
 
-
-class SpecificHumidity:
-    """Specific humidity calculator."""
-
-    @staticmethod
-    def calculate(mixing_ratio: float) -> float:
-        """
-        Calculate specific humidity.
-
-        Parameters
-        ----------
-        mixing_ratio : float
-            Mixing ratio (kg/kg)
-
-        Returns
-        -------
-        float
-            Specific humidity (kg/kg)
-        """
-        return mixing_ratio / (1.0 + mixing_ratio)
+from acf.science.thermodynamics.specific_humidity import *  # noqa: F401,F403

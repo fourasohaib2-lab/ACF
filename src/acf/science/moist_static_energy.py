@@ -1,28 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.thermodynamics.moist_static_energy`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.moist_static_energy`` import keeps
+working unchanged.
 """
-Moist Static Energy
-===================
-"""
 
-from acf.science.constants import CP, LV, G
-
-
-class MoistStaticEnergy:
-    """Moist static energy calculator."""
-
-    @staticmethod
-    def calculate(
-        temperature_k: float,
-        height_m: float,
-        specific_humidity: float,
-    ) -> float:
-
-        if temperature_k <= 0:
-            raise ValueError("temperature must be positive.")
-
-        if height_m < 0:
-            raise ValueError("height must be non-negative.")
-
-        if specific_humidity < 0:
-            raise ValueError("specific_humidity must be non-negative.")
-
-        return CP * temperature_k + G * height_m + LV * specific_humidity
+from acf.science.thermodynamics.moist_static_energy import *  # noqa: F401,F403

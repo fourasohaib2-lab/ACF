@@ -64,7 +64,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from acf.science.thermodynamics import Thermodynamics
+from acf.science.thermodynamics.thermodynamics import Thermodynamics
 
 #: Real precondition ramp for fog/haze proximity - see module docstring.
 #: Below FOG_RH_FLOOR_PCT, real relative humidity is far enough from

@@ -1,21 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.thermodynamics.potential_temperature`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.potential_temperature`` import keeps
+working unchanged.
 """
-Potential Temperature
-"""
 
-import math
-
-
-class PotentialTemperature:
-    P0 = 1000.0  # hPa
-    RD_CP = 0.286  # R/Cp
-
-    @staticmethod
-    def calculate(temperature_k, pressure_hpa):
-        """
-        Calculate potential temperature (K)
-        """
-
-        return temperature_k * math.pow(
-            PotentialTemperature.P0 / pressure_hpa,
-            PotentialTemperature.RD_CP,
-        )
+from acf.science.thermodynamics.potential_temperature import *  # noqa: F401,F403

@@ -77,8 +77,8 @@ from __future__ import annotations
 from typing import Any
 
 from awci.knowledge.icao.metar_decoder import METARReport
-from acf.science.saturation_mixing_ratio import SaturationMixingRatio
-from acf.science.saturation_vapor_pressure import SaturationVaporPressure
+from acf.science.thermodynamics.saturation_mixing_ratio import SaturationMixingRatio
+from acf.science.thermodynamics.saturation_vapor_pressure import SaturationVaporPressure
 
 from awci.hazards.ceiling import compute_real_ceiling_at_point
 from awci.hazards.visibility import compute_real_visibility_risk_at_point

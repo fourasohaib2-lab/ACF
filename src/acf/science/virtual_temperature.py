@@ -1,30 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.thermodynamics.virtual_temperature`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.virtual_temperature`` import keeps
+working unchanged.
 """
-Virtual Temperature
-===================
 
-Formula:
-    Tv = T * (1 + 0.61 * q)
-"""
-
-
-class VirtualTemperature:
-    """Virtual temperature calculator."""
-
-    @staticmethod
-    def calculate(temperature: float, specific_humidity: float) -> float:
-        """
-        Calculate virtual temperature.
-
-        Parameters
-        ----------
-        temperature : float
-            Air temperature in Kelvin.
-        specific_humidity : float
-            Specific humidity in kg/kg.
-
-        Returns
-        -------
-        float
-            Virtual temperature in Kelvin.
-        """
-        return temperature * (1.0 + 0.61 * specific_humidity)
+from acf.science.thermodynamics.virtual_temperature import *  # noqa: F401,F403
