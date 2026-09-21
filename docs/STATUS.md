@@ -1030,3 +1030,57 @@ fichiers : 20 `*_engine.py` + orchestrateur + 130 autres, plus
 100%, une première pour ce package. Reste Tier X (zéro appelant réel
 ailleurs dans `src/acf/`) — la couverture complète change ce qu'on
 sait du code, pas si le produit livré l'utilise réellement.
+
+## Mise à jour (2026-09-21) : suppression complète du dashboard ESOC
+
+Demande explicite de l'utilisateur : "je ne veux plus de ce
+dashboard là et je ne veux plus qu'il soit présent dans tout le
+projet", avec clarification que ACF est le projet principal et
+qu'AWCI (aviation) n'est qu'un sous-projet parmi d'autres futurs
+(ex. un "MWCI" maritime) — donc le nouveau point d'entrée par défaut
+doit être générique ACF, pas AWCI.
+
+**Supprimé** : tout `src/acf/gui/esoc/` (19 fichiers - ESOCWindow,
+esoc_toolbar, panel_manager avec ses 28 panneaux, module_registry,
+command_dispatcher, view_manager, etc.), ainsi que le wrapper legacy
+`acf.gui.main_window.MainWindow` (déjà documenté comme mort — rien ne
+le construisait — mais qui héritait d'`ESOCWindow`). Le dialogue
+"Volcanic Ash Exercise" (fermeture du gap "ash", §28-29, la veille)
+vivait dans `esoc/` et était exclusivement déclenché depuis le
+toolbar ESOC ; il part avec ESOC plutôt que d'être migré sans
+demande explicite - fonctionnalité réelle mais désormais inaccessible
+depuis l'UI, à réintégrer si demandé.
+
+**Conservé et déplacé** (code réellement réutilisé par d'autres
+dashboards, jamais recréé) :
+- Les 4 workers de fetch off-thread (Argo/METAR/NEXRAD/PIREP), utilisés
+  par `ACFWorkstation._show_observations_dialog()` :
+  `esoc/panel_manager.py` → `acf/gui/workers/observation_fetch_workers.py`.
+- `HPCConnectionDialog`, utilisé par `AWCIDashboard._toggle_hpc_connection()` :
+  `esoc/hpc_connection_dialog.py` → `acf/gui/dialogs/hpc_connection_dialog.py`.
+
+**Nouveau point d'entrée par défaut** : `acf.gui.app.run()` construit
+désormais `ACFWorkstationWindow` (déjà existante, déjà AWCI-free) au
+lieu d'`ESOCWindow`. `acf.gui.single_instance.SERVER_NAME` renommé de
+`"acf-esoc-single-instance"` à `"acf-workstation-single-instance"`
+(cosmétique - même mécanisme QLocalServer réel).
+
+**Tests** : ~36 fichiers de tests exclusivement dédiés à ESOC
+supprimés (`tests/test_esoc_*.py` et consorts) ; les fichiers mixtes
+(`test_gui_stack_scroll_no_permanent_growth.py`,
+`test_awci_dashboard_fullscreen.py`, `test_hpc_connector.py`,
+`test_main_windows_fit_the_hpc_vnc_fallback_screen.py`,
+`test_collisions_consolidation.py`) ont eu leurs parties ESOC retirées
+chirurgicalement, en gardant chaque test réel non lié à ESOC intact.
+Collecte complète (`pytest --collect-only`, sous xvfb) : 4860 tests,
+0 erreur. Suites ciblées re-testées après coup (acf_workstation,
+awci_dashboard, hpc_connector/hpc_dialog, map_layers, single_instance,
+main_windows sizing) : toutes vertes, à l'exception de 2 échecs
+pré-existants confirmés sans rapport avec ce travail par comparaison
+`git stash` (`test_awci_screen_adaptability.py`, écarts de largeur
+d'affichage déjà présents avant cette session) et d'un crash natif
+`double free or corruption` au niveau glibc/Qt à la sortie du
+sous-processus `acf-awci --version` (le script affiche la bonne
+version avant de planter au nettoyage - confirmé indépendant du code
+Python en le reproduisant hors pytest). ruff et mypy propres sur tous
+les fichiers touchés.

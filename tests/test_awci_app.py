@@ -1,9 +1,9 @@
 """
 Tests for acf.awci_app - the standalone AWCI launcher (explicit user
 request: "une vraie application séparée... pas juste une 2e fenêtre Qt
-dans le même processus"). Genuinely independent from acf.gui.app
-(ESOC): own QApplication, own process, own SingleInstanceGuard server
-name.
+dans le même processus"). Genuinely independent from acf.gui.app (the
+ACF Scientific Workstation): own QApplication, own process, own
+SingleInstanceGuard server name.
 
 run()'s real happy path ends in `sys.exit(app.exec())`, which blocks
 forever - not callable directly in a test (same reason acf.gui.app.run()
@@ -11,9 +11,7 @@ itself has no direct test either). The --version/--help early-return
 paths are safe (they return before touching Qt at all) and are tested
 directly; the real end-to-end process behavior (launch, second-instance
 detection, clean exit) was verified once by hand with two real
-`acf-awci` processes - see this module's own docstring and
-tests/test_esoc_launch_awci_app_action.py's own docstring for that
-methodology.
+`acf-awci` processes.
 """
 
 from __future__ import annotations
@@ -24,7 +22,7 @@ from pathlib import Path
 
 from acf import __version__
 from acf.awci_app import _AWCI_APP_SERVER_NAME
-from acf.gui.single_instance import SERVER_NAME as ESOC_SERVER_NAME
+from acf.gui.single_instance import SERVER_NAME as WORKSTATION_SERVER_NAME
 
 
 def test_version_flag_prints_and_returns_without_touching_qt(capsys, monkeypatch):
@@ -50,13 +48,13 @@ def test_help_flag_prints_usage_and_returns(capsys, monkeypatch):
     assert "Usage: acf-awci" in captured.out
 
 
-def test_server_name_is_distinct_from_esocs_own():
+def test_server_name_is_distinct_from_the_workstations_own():
     """The whole safety property this app's single-instance guard
-    depends on: a real ESOC instance and a real acf-awci instance
-    running at the same time must never be mistaken for each other -
-    confirmed by construction (different server name), not by
+    depends on: a real ACF Workstation instance and a real acf-awci
+    instance running at the same time must never be mistaken for each
+    other - confirmed by construction (different server name), not by
     assumption."""
-    assert _AWCI_APP_SERVER_NAME != ESOC_SERVER_NAME
+    assert _AWCI_APP_SERVER_NAME != WORKSTATION_SERVER_NAME
 
 
 def test_console_script_is_installed_and_reports_its_own_version():

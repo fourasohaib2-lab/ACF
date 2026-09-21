@@ -7,11 +7,8 @@ WAYLAND_DISPLAY is available (an HPC login/compute node, this exact
 sandbox included) - a *real* screen size this app is deployed against,
 not a hypothetical one.
 
-Before this session's fixes, none of the 3 main windows actually fit
+Before this session's fixes, none of these main windows actually fit
 that screen once shown:
-- ESOCWindow's own enforced minimum was ~1314x1053 (QTabWidget floored
-  at its largest of 44 tabs + oversized ViewManager combos) - wider AND
-  taller than 1280x720.
 - ACFWorkstationWindow's was ~1119x978 (QStackedWidget floored at its
   largest of 15 Lab panels) - taller than 720.
 - AWCIDashboardWindow's was ~1489x1064 (its own dense real map/chart
@@ -34,7 +31,6 @@ from PySide6.QtWidgets import QApplication
 
 from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
 from acf.gui.dashboard.awci_window import AWCIDashboardWindow
-from acf.gui.esoc.esoc_window import ESOCWindow
 from acf.gui_screen_utils import fit_window_to_screen
 
 #: This session's own tests/exploration confirmed acf.gui.bootstrap.py
@@ -47,7 +43,6 @@ _HPC_VNC_FALLBACK_SIZE = (1280, 720)
 #: Each window's own real desired size, as passed to fit_window_to_screen
 #: at construction - see each window's own __init__.
 _WINDOWS_AND_DESIRED_SIZE = [
-    (ESOCWindow, (1600, 1000)),
     (ACFWorkstationWindow, (1600, 1000)),
     (AWCIDashboardWindow, (1500, 950)),
 ]

@@ -1643,43 +1643,47 @@ class ACFWorkstation(QWidget):
         """
         NOTE (correction, 2026-09-06): this dialog used to unconditionally
         state "No real observation feed is connected to this Workstation" -
-        true when written, but stale by the time of this correction: ESOC's
-        Earth Monitoring panel (acf.gui.esoc.panel_manager.
-        EarthMonitoringPanel, Phases 57-60, same session) wired 4 real
+        true when written, but stale by the time of this correction: 4 real
         observation feeds (GOES/MTG, ARGO ocean floats, NOAA METAR
-        stations, NEXRAD radar status) that this Workstation-level dialog
-        never learned about. Reuses those exact same connectors/workers
-        (never a second, duplicated implementation) rather than continuing
-        to assert a now-false blanket claim. The underlying physics fields
-        elsewhere in this Workstation genuinely still come only from
-        CoupledEarthSolver - that half of the original disclosure stands.
+        stations, NEXRAD radar status) were wired in via
+        acf.gui.workers.observation_fetch_workers. Reuses those exact same
+        connectors/workers (never a second, duplicated implementation)
+        rather than continuing to assert a now-false blanket claim. The
+        underlying physics fields elsewhere in this Workstation genuinely
+        still come only from CoupledEarthSolver - that half of the
+        original disclosure stands.
 
-        UPDATED (Phase 64, same session): a 5th real feed joined
-        EarthMonitoringPanel - acf.connectors.pirep_reports.PIREPConnector
-        (real NOAA PIREP - pilot reports, not AMDAR, which has no free
-        public feed ACF can reach). Updated here too, in the same commit
-        that adds it, specifically to not repeat the staleness this NOTE
-        itself documents.
+        UPDATED (Phase 64, same session): a 5th real feed joined -
+        acf.connectors.pirep_reports.PIREPConnector (real NOAA PIREP -
+        pilot reports, not AMDAR, which has no free public feed ACF can
+        reach). Updated here too, in the same commit that adds it,
+        specifically to not repeat the staleness this NOTE itself
+        documents.
+
+        UPDATED (ESOC dashboard removed): the fetch workers used to live in
+        the former acf.gui.esoc.panel_manager (ESOC's own Earth Monitoring
+        panel) - moved to acf.gui.workers.observation_fetch_workers, a
+        dashboard-agnostic shared module, when ESOC was removed. Zero
+        behavior change, same real workers.
         """
         from acf.connectors.argo_floats import ArgoFloatsConnector
         from acf.connectors.nexrad_stations import NEXRADRadarConnector
         from acf.connectors.pirep_reports import PIREPConnector
-        from acf.gui.esoc.panel_manager import (
+        from acf.gui.map.mtg_basemap import MTGBasemapProvider
+        from acf.gui.workers.observation_fetch_workers import (
             _ArgoFetchWorker,
             _METARFetchWorker,
             _NexradFetchWorker,
             _PIREPFetchWorker,
         )
-        from acf.gui.map.mtg_basemap import MTGBasemapProvider
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Observations")
         layout = QVBoxLayout(dialog)
         note = QLabel(
-            "5 real observation feeds below (same connectors as the ESOC Earth Monitoring panel; "
-            "PIREP is pilot reports, not AMDAR, which has no free public feed ACF can reach) - the "
-            "physics fields shown elsewhere in this Workstation still come only from a real, live "
-            "CoupledEarthSolver run, never from these observation feeds."
+            "5 real observation feeds below (PIREP is pilot reports, not AMDAR, which has no free "
+            "public feed ACF can reach) - the physics fields shown elsewhere in this Workstation "
+            "still come only from a real, live CoupledEarthSolver run, never from these observation feeds."
         )
         note.setWordWrap(True)
         layout.addWidget(note)

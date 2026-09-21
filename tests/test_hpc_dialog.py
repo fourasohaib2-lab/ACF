@@ -1,10 +1,9 @@
-"""Unit test suite for ACF-HPC-002 HPC Connection Dialog & Remote Terminal Panel."""
+"""Unit test suite for ACF-HPC-002 HPC Connection Dialog."""
 
 import pytest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
-from acf.gui.esoc.hpc_terminal_panel import HPCTerminalPanel
+from acf.gui.dialogs.hpc_connection_dialog import HPCConnectionDialog
 
 # See tests/test_hpc_connector.py's own comment for the full story: on an
 # ONM-networked machine (this one), the real "login2.fennec.meteo.dz" hostname
@@ -90,17 +89,3 @@ def test_hpc_connection_dialog_test_connection_and_save_are_now_real(qapp, monke
     # never had one entered - a real, present password would make this
     # assertion meaningful; ensure the key is at least never emitted.
     assert "password" not in saved_path.read_text(encoding="utf-8").lower()
-
-
-def test_hpc_terminal_panel(qapp):
-    """
-    CORRECTED: used to assert a fabricated "squeue" response (job id
-    "1024") that was returned for ANY command regardless of whether it
-    was ever really executed. With no registry supplied, the terminal
-    now honestly reports it has no real HPC connector to route through.
-    """
-    term = HPCTerminalPanel()
-    assert term is not None
-    term.cmd_input.setText("squeue")
-    term._exec_cmd()
-    assert "[NOT CONNECTED]" in term.terminal_output.toPlainText()

@@ -15,7 +15,7 @@ The **Atmospheric Complexity Framework (ACF)** is an Earth System and Meteorolog
 - **Universal Data Ingestion**: Formats supported include GRIB1/GRIB2 (via eccodes/cfgrib), NetCDF4, HDF5, GeoTIFF/Raster, Shapefile, BUFR, and FA/LFI (epygram).
 - **Meteorological Knowledge Base**: Comprehensive physical encyclopedia, WMO cloud taxonomy, instability indices (CAPE, CIN, Lifted Index, K-Index, SWEAT), and severe weather diagnostic engines.
 - **Atmospheric Weather Complexity Index (AWCI)**: Multi-factor composite complexity diagnostic calculating dynamic, thermodynamic, convective, microphysical, topographic, and temporal complexity scores.
-- **Earth System Operations Center (ESOC) GUI**: High-performance Qt/PySide6 visualization platform with interactive 2D/3D map rendering, cross-sections, streamlines, and real-time HPC monitoring.
+- **ACF Scientific Workstation GUI**: High-performance Qt/PySide6 visualization platform with interactive 2D/3D map rendering, cross-sections, streamlines, and real-time HPC monitoring.
 - **HPC Cluster Integration**: Slurm and PBS/Torque workload management, remote execution over SSH/SFTP, environment management, and job lifecycle monitoring.
 
 ---
@@ -69,11 +69,16 @@ ruff check .
 mypy src
 ```
 
-### Launching the ESOC GUI
+### Launching the ACF Scientific Workstation GUI
 
 ```bash
 acf-gui
 ```
+
+ACF is the main project; AWCI (aviation) and future sibling indices
+(e.g. a maritime "MWCI") are separate sub-projects, each reachable
+from this Workstation rather than being the application's own default
+window.
 
 ### Launching AWCI as its own standalone application
 
@@ -83,11 +88,8 @@ acf-awci
 
 Genuinely independent from `acf-gui` (2026-09-07, explicit user
 request) - its own process, its own window, its own single-instance
-guard. Closing ESOC does not close this, and closing this does not
-close ESOC. ESOC's own toolbar also has two ways to reach AWCI: "✈️
-AWCI" opens the same dashboard as a second window inside ESOC's own
-process (lighter-weight); "🚀 AWCI (App)" launches this exact same
-standalone application as a real separate process instead.
+guard. Closing the Workstation does not close this, and closing this
+does not close the Workstation.
 
 ---
 
@@ -111,7 +113,7 @@ src/acf/
 ├── core/             # Fundamental parameter, unit, and coordinate system abstractions
 ├── data/             # Universal reader, format adapters, and preprocessing pipelines
 ├── digital_twin/     # Earth system coupling, knowledge graph, and scenarios
-├── gui/              # ESOC UI, map canvas, GIS rendering, and dashboard widgets
+├── gui/              # ACF Workstation UI, map canvas, GIS rendering, and dashboard widgets
 ├── hpc_connector/    # Slurm/PBS workload scheduling and remote task execution
 ├── hpc_workflow/     # Forecast cycle pipelines and model runner orchestration
 ├── hydrology/        # Drought, runoff, flood routing, and soil moisture coupling

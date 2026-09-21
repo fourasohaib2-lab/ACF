@@ -1,6 +1,15 @@
 """Atmospheric Complexity Framework (ACF) GUI Application Launcher.
 
-Launches the Unified Earth System Operations Center (ESOC) (ACF-UI-012).
+Launches the ACF Scientific Workstation - ACF is the main project;
+AWCI (aviation) and future sibling indices (e.g. a maritime "MWCI")
+are separate sub-projects, each reachable from this Workstation rather
+than being the application's own default window.
+
+NOTE (ESOC dashboard removed, explicit user request): the former
+default window, ESOCWindow (acf.gui.esoc), has been deleted from the
+project entirely - it does not exist anywhere in this codebase
+anymore. ACFWorkstationWindow (acf.gui.dashboard.acf_workstation_window)
+is the new, real default operational entry point.
 """
 
 import sys
@@ -9,17 +18,16 @@ import time
 from PySide6.QtWidgets import QApplication
 
 from acf import __version__
-from acf.gui.esoc.esoc_window import ESOCWindow
-from acf.gui.main_window.main_window import MainWindow
+from acf.gui.dashboard.acf_workstation_window import ACFWorkstationWindow
 from acf.gui.single_instance import SingleInstanceGuard
 from acf.gui.splash import SplashScreen
 from acf.gui.theme import ThemeManager
 
-__all__ = ["ESOCWindow", "MainWindow", "main", "run"]
+__all__ = ["ACFWorkstationWindow", "main", "run"]
 
 
 def run() -> None:
-    """Official application entry point launching ESOCWindow."""
+    """Official application entry point launching ACFWorkstationWindow."""
     if "--version" in sys.argv or "-v" in sys.argv:
         print(f"Atmospheric Complexity Framework (ACF) v{__version__}")
         return
@@ -60,8 +68,8 @@ def run() -> None:
 
     time.sleep(2)
 
-    # Boot into ESOCWindow as default operational command interface
-    window = ESOCWindow()
+    # Boot into ACFWorkstationWindow as default operational command interface
+    window = ACFWorkstationWindow()
     window.show()
 
     def _activate_existing_window() -> None:

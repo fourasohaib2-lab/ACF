@@ -32,7 +32,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from acf.gui.dashboard.awci_dashboard import AWCIDashboard
-from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
+from acf.gui.dialogs.hpc_connection_dialog import HPCConnectionDialog
 
 
 def _real_ssh_connector_stub(is_real: bool) -> MagicMock:

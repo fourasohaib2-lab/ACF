@@ -1,10 +1,9 @@
 """
 Tests for the AWCI dashboard window opening maximized ("plein écran",
 explicit user request) rather than at fit_window_to_screen's own fixed
-size - both real entry points: acf.awci_app's standalone launcher, and
-ESOCWindow._open_awci_dashboard()'s in-process second window.
+size - real entry point: acf.awci_app's standalone launcher.
 
-Real behavioural constraint kept in both fixes: maximizing must happen
+Real behavioural constraint kept in this fix: maximizing must happen
 only once, on first real open - re-showing/re-activating an
 already-open window must never silently override an operator's own
 manual resize/un-maximize.
@@ -18,7 +17,6 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from acf.gui.dashboard.awci_window import AWCIDashboardWindow
-from acf.gui.esoc.esoc_window import ESOCWindow
 
 
 def _qapp():
@@ -140,34 +138,3 @@ def test_play_evolution_button_state_toggles_and_does_not_change_the_header_widt
 
     assert dashboard.play_evolution_button.isEnabled() is True
     assert header.sizeHint().width() == width_before  # the real fix: genuinely unchanged, not just "close enough"
-
-
-class TestESOCOpenAWCIDashboardMaximizesOnlyOnFirstOpen:
-    def test_first_open_maximizes_the_real_window(self, qtbot):
-        win = ESOCWindow()
-        qtbot.addWidget(win)
-        assert win._awci_dashboard_window is None
-
-        win._open_awci_dashboard()
-
-        assert win._awci_dashboard_window.isMaximized() is True
-
-    def test_reopening_does_not_force_maximize_again_over_a_manual_resize(self, qtbot):
-        """The real behavioural guarantee this fix must not break:
-        an operator who manually un-maximizes/resizes the AWCI window
-        must not have that choice silently overridden the next time
-        they click the same open-or-raise toolbar action."""
-        win = ESOCWindow()
-        qtbot.addWidget(win)
-
-        win._open_awci_dashboard()
-        window = win._awci_dashboard_window
-        window.showNormal()
-        window.resize(900, 600)
-        qtbot.wait(50)
-        assert window.isMaximized() is False
-
-        win._open_awci_dashboard()
-
-        assert window.isMaximized() is False
-        assert win._awci_dashboard_window is window  # same real window, not a new one

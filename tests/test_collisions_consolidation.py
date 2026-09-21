@@ -10,8 +10,6 @@ from acf.core.parameter_registry import ParameterRegistry as CoreParameterRegist
 from acf.data.dataset_registry import DatasetRegistry as DataDatasetRegistry
 from acf.data.dataset_validator import DatasetValidator as CanonicalDatasetValidator
 from acf.data.engine.dataset_validator import DatasetValidator as EngineDatasetValidator
-from acf.gui.main_window import MainWindow as LegacyMainWindow
-from acf.gui.main_window.main_window import MainWindow as CanonicalMainWindow
 from acf.maps.engine import MapEngine as LegacyMapEngine
 from acf.maps.map_engine import MapEngine as CanonicalMapEngine
 from acf.model4d.operators.divergence import Divergence as OperatorDivergence
@@ -68,10 +66,6 @@ def test_dataset_validator_dual_api_support():
     val2 = EngineDatasetValidator()
     assert val1 is not None
     assert val2 is not None
-
-
-def test_main_window_reexport():
-    assert CanonicalMainWindow is LegacyMainWindow
 
 
 def test_map_engine_reexport():

@@ -2313,13 +2313,12 @@ class AWCIDashboard(QWidget):
 
     def _toggle_hpc_connection(self) -> None:
         """Open the real HPC wizard and connect, or disconnect if
-        already connected - same real connector as ESOC's own toolbar
-        (see _HPCConnectWorker's own docstring)."""
+        already connected (see _HPCConnectWorker's own docstring)."""
         if self._hpc_connected:
             self._disconnect_hpc()
             return
 
-        from acf.gui.esoc.hpc_connection_dialog import HPCConnectionDialog
+        from acf.gui.dialogs.hpc_connection_dialog import HPCConnectionDialog
 
         dialog = HPCConnectionDialog(self)
         if dialog.exec() != HPCConnectionDialog.DialogCode.Accepted:

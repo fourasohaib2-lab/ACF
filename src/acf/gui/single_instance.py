@@ -1,13 +1,13 @@
 """
-acf.gui.single_instance - prevents multiple simultaneous ESOC instances.
+acf.gui.single_instance - prevents multiple simultaneous ACF Workstation instances.
 
 Real user-reported bug (2026-09-06): launching the app more than once
 (double-clicking a desktop shortcut, re-running the launch command
 without noticing a previous instance was already up, a misconfigured
-autostart entry) opened a separate, fully independent ESOCWindow each
+autostart entry) opened a separate, fully independent main window each
 time - "several dashboards showing at once", with zero coordination
-between them. Verified by reading acf.gui.app.run() and
-ESOCWindow.__init__(): neither ever checked for an existing instance -
+between them. Verified by reading acf.gui.app.run() and the default
+window's own __init__(): neither ever checked for an existing instance -
 confirmed by grepping the whole gui/ package for
 "QLocalServer"/"QLocalSocket"/"singleton" before this fix, zero hits.
 
@@ -27,7 +27,7 @@ from PySide6.QtNetwork import QLocalServer, QLocalSocket
 #: machine/user session tries to reach the same name, which is exactly
 #: the point (one name -> at most one real listener -> at most one real
 #: instance).
-SERVER_NAME = "acf-esoc-single-instance"
+SERVER_NAME = "acf-workstation-single-instance"
 
 #: How long to wait for a connection/write/read before concluding no
 #: real instance answered. Generous enough for a loaded machine, short
