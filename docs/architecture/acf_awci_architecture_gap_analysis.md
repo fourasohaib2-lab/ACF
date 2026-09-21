@@ -62,9 +62,11 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 
 `tests/`, `docs/`, `resources/`, `scripts/`, `examples/`, `tools/`, `assets/`,
 `configs/` all exist at the repository root today, though none has been
-individually re-verified against the blueprint's own internal layout (e.g.
-`tools/acfctl/` — an operational CLI control point — was not found in a
-`tools/` survey; `acfctl start/stop/status/report` does not exist).
+individually re-verified against the blueprint's own internal layout, except
+`tools/acfctl/` — **built 2026-09-21** (see §2q below): a real, tested
+`acfctl start|stop|status|report` operational control point, managing the 3
+real, already-registered `acf-gui`/`acf-web`/`acf-awci` console-script apps
+as real OS subprocesses.
 
 ## 2. AWCI — current state vs. the separate-project blueprint
 
@@ -1181,6 +1183,56 @@ real on-disk plugin loading via `tmp_path`. Full non-GUI suite
 collection: 4855 tests (up from 4829, +26); a targeted sweep (`-k
 "plugin"`, excluding `tests/gui`) shows 33 passed (including the
 pre-existing `acf.ai.plugins` tests), 0 failed.
+
+## 2q. acfctl, the ACF operational control point (2026-09-21)
+
+Third item of "on les attaque toutes un par un" (after `awci/plugins/`
+and, restarting to acfctl since it was the other item never touched at
+all): `tools/acfctl/` was the one project-root gap explicitly named in
+§1 ("not found in a `tools/` survey").
+
+**Real, disclosed scope**: manages the 3 real, already-registered
+console-script apps (`pyproject.toml`'s own `[project.scripts]`:
+`acf-gui`/`acf-web`/`acf-awci`) as real OS subprocesses, tracked via a
+real PID file under the same real `~/.acf/` local-state directory
+already established by `acf.workspace.recent`, using `psutil` (an
+already-real dependency) for cross-platform liveness checks.
+Deliberately not built on Qt's own `QLocalServer` single-instance
+mechanism (`acf.gui.single_instance`) - that needs a running Qt event
+loop and only ever covered `acf-gui`, not `acf-web`/`acf-awci`.
+`status()` guards against PID reuse (a real, currently-alive but
+unrelated process after a reboot) by also checking the real process's
+own cmdline for the expected console-script name, not just PID
+existence.
+
+`report()` builds a real environment/health report (ACF version,
+Python version, each app's PATH/running status, real free disk space)
+from independently-verifiable facts only - explicitly never a
+synthesized overall "status: OK", citing `docs/STATUS.md`'s own
+already-documented `earth_system_operations.py` fabricated-
+self-certification finding as the cautionary precedent this module is
+deliberately built to avoid repeating.
+
+**Deliberately NOT registered as a `pyproject.toml`
+`[project.scripts]` entry**: `acf-gui`/`acf-web`/`acf-awci` all live
+under `src/`, the only directory `[tool.setuptools.packages.find]`
+actually scans; `tools/` (like every other real script already there)
+is repo-root-only development tooling, not part of the installable
+distribution. Registering `acfctl` there would silently break a real
+`pip install`/wheel build - a real packaging inconsistency avoided
+rather than introduced by reflexively mirroring the other 3 entries.
+Callable as `python -m tools.acfctl <command>` instead.
+
+**Verified, not assumed**: manual end-to-end smoke tests (a real health
+report against this real installation; a real start/status/stop cycle
+against a real, lightweight fake executable, never the actual heavy
+`acf-gui`/`acf-web`/`acf-awci`, which need a real display/network).
+`ruff check`/`mypy` clean; 22 new tests (`tests/test_acfctl.py`),
+including a real start/stop lifecycle, a real PID-reuse detection test,
+and a `pyproject.toml`-parsing parity test locking `KNOWN_APPS` to the
+real `[project.scripts]` table. Full non-GUI suite collection: 4877
+tests (up from 4855, +22); a targeted sweep (`-k "acfctl"`, excluding
+`tests/gui`) shows 22 passed, 0 failed.
 
 ## 3. What this means for a real migration
 
