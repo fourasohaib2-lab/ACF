@@ -55,7 +55,7 @@ Legend: ✅ real equivalent exists (possibly under a different name/location)
 | `gui/` | ✅ `src/acf/gui/` is real and is the actual live application (`app.py` is the real `acf-gui` entry point, launching `ACFWorkstationWindow` — see `docs/STATUS.md`'s 2026-09-21 ESOC-removal entry). Contains `theme.py`, `menu.py`, `statusbar.py`, `toolbar.py`, `earth_system_operations.py`, `bootstrap.py`, `single_instance.py`, `splash.py`, plus `layer_panel/`, `docks/`, `map/`, `dialogs/`, `resources/`, `workers/`, `dashboard/`, `widgets/` subpackages. The blueprint's flat `gui/main_window.py` central-file convention does not match reality: the live default window is `acf.gui.dashboard.acf_workstation_window.ACFWorkstationWindow`; `acf.gui.main_window` is confirmed dead legacy code (removed 2026-09-21 alongside ESOC, since it subclassed the now-deleted `ESOCWindow`). |
 | `dashboard/` | ✅ Two real dashboard trees exist: `src/acf/dashboard/` (blueprint-shaped: `manager.py`, `window.py`, `dashboard.py`, `layout.py`, `widgets.py`, `panels/` — but itself unreachable from the running app today, a pre-existing, disclosed state, see that module's own docstring) and the much larger, actually-live `src/acf/gui/dashboard/` (ACF Workstation and ~30 other panel/window modules - the AWCI dashboard itself physically moved out to `src/awci/dashboard/` on 2026-09-21, §2k; `acf.gui.dashboard.awci_*` now holds only re-export shims, `acf.dashboard.window.py` still launches `AWCIDashboardWindow` via a deferred import). |
 | `api/` | 🟡 **Reconciled 2026-09-21** — see §2ad: `data`→`datasets_router`, `models`→`models_router`, `diagnostics`→`workstation_router` (already real since 2026-09-04, a naming difference not a gap), `system`→new `system_router` (real `/health`/`/version`). `maps`/`visualization`/`ai`/`reports` have no real router anywhere — no real backing content exists yet to expose. `src/acf/api/api.py` remains a separate, minimal, non-HTTP facade (unchanged). |
-| `alerts/` | 🟡 `src/acf/alerts/` exists (`warning_engine.py`) — real but much thinner than the blueprint's `engine/rules/thresholds/events/notification/severity` split. |
+| `alerts/` | 🟡 `src/acf/alerts/` has `warning_engine.py` (`engine`). **`severity.py`/`notification.py` added 2026-09-21** — see §2ae. `rules.py`/`thresholds.py`/`events.py` deliberately not built — no real per-phenomenon threshold table exists to extract; would require fabricated values or a change to the already-tested `WarningEngine` class. |
 | `reports/` | 🟡 `src/acf/reports/` exists with a `briefings/` subpackage, but no `generator.py`/`scientific_report.py`/`model_report.py`/`diagnostic_report.py`/`export.py`/`templates/` as named. |
 
 ### Project root
@@ -1962,6 +1962,44 @@ convention, not a new file) - all 25 tests in that file pass (2 new +
 (51 tests) also re-run clean. Full non-GUI collection: 4666 tests (up
 from 4664, +2), same pre-existing 45 collection errors
 (`task_468ac835`) confirmed unrelated.
+
+## 2ae. Closing acf.alerts's own remaining gap (2026-09-21)
+
+Seventeenth item of "on les attaque toutes un par un" - fourth of the
+5-part ACF-general batch: the `alerts/` row's own gap -
+`src/acf/alerts/` has only `warning_engine.py`
+(`WarningEngine`/`OperationalWarning`, a real WMO/EUMETNET-CAP-style
+warning issuance engine) versus the blueprint's `engine/rules/
+thresholds/events/notification/severity` split.
+
+**Built**: `severity.py` (`SEVERITY_ORDER`/`severity_rank()`/
+`is_at_least()` - the exact real 3-level Yellow/Orange/Red vocabulary
+`OperationalWarning.severity` already documents in its own field
+comment, not a newly invented scale), `notification.py`
+(`WarningNotifier` - real, in-process dispatch, following the exact
+same real register/dispatch/error-isolation pattern already
+established by `awci.alerts.notifications.AlertNotifier`, applied
+here to `OperationalWarning`).
+
+**Deliberately not built**: `rules.py`/`thresholds.py` -
+`WarningEngine.issue_warning()` takes severity/probability as
+caller-supplied values with no internal per-phenomenon threshold
+table anywhere in the existing code to extract; inventing specific
+numeric thresholds (e.g. "70% probability triggers Orange for
+Thunderstorm") would be fabrication, explicitly against this
+project's own `AGENTS.md` rule to never invent scientific thresholds.
+`events.py` - wiring `WarningEngine` to emit real lifecycle events
+would require modifying that already-tested class, out of this
+item's minimal-change scope (a real, disclosed future addition, not
+skipped for lack of a real use).
+
+**Verified, not assumed**: manual end-to-end run (severity ranking/
+comparison including a rejected unknown level; real dispatch/error-
+isolation against a real `OperationalWarning` from a real
+`WarningEngine`). `ruff check`/`mypy` clean. 8 new tests
+(`tests/test_acf_alerts_severity_notification.py`). Full non-GUI
+collection: 4674 tests (up from 4666, +8), same pre-existing 45
+collection errors (`task_468ac835`) confirmed unrelated.
 
 ## 3. What this means for a real migration
 
