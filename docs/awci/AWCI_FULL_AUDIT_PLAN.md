@@ -59,6 +59,30 @@ trop localisée pour un modèle global 0.25°, à garder en tête si une
 vraie validation quantitative est tentée un jour avec des données à
 plus haute résolution (ALADIN/AROME réels).
 
+**Complément du 2026-09-22 (test exhaustif, tous les modules)** : ajout
+de θₑ (Bolton 1980, remplace le blend température/humidité naïf),
+updraft_velocity (√(2·CAPE), corrélé au CAPE), sévérité de phase de
+précipitation, et surtout **altitude réelle des stations** (vérifiée
+via recherche web, pas de mémoire) - correction d'une erreur de test
+précédente où `altitude=0.0` était utilisé partout, y compris pour
+Tamanrasset (1377m réels) et Sétif (1016m réels). Résultat : Tamanrasset
+passe de 20.3 à **30.5 ("Low")**, principalement grâce à l'altitude
+réelle désormais correctement prise en compte dans le module
+topographique. Ceiling/visibility/dust/microburst sont bien calculés
+avec de vraies formules (ex. microburst_risk=0.025 à Ouargla) mais
+leur poids reste à 0.0 par défaut (opt-in, jamais activé ici - pas une
+décision de calibration à prendre unilatéralement).
+
+**Module `model_disagreement`** (Ouargla, AROME/ALADIN/ARPEGE réels
+grilles/solveur ACF) : per_model_value = {AROME: 286.5K, ALADIN:
+288.6K, ARPEGE: 291.8K}, spread réel = 2.65K, module_score normalisé =
+52.9/100. Un vrai calcul (le solveur tourne réellement une fois par
+modèle), mais explicitement documenté comme un **substitut** au vrai
+désaccord inter-modèles opérationnel (aucune archive AROME/ALADIN/
+ARPEGE réelle disponible dans cet environnement) - à ne jamais
+présenter comme équivalent à un vrai ensemble opérationnel. Poids
+resté à 0.0 par défaut, comme les autres modules opt-in.
+
 ## Décision de l'utilisateur (confirmée le 2026-09-22)
 
 Lancement reporté à jeudi. Point de départ choisi : **PHASE 1
