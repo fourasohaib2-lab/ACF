@@ -20,13 +20,19 @@ architecture, dette technique restante). C'est un travail de plusieurs
 sessions intensives, pas une tâche ponctuelle - donc explicitement
 reporté pour ne pas épuiser le quota avant jeudi.
 
-## Recommandation d'exécution (à confirmer avec l'utilisateur jeudi)
+## Décision de l'utilisateur (confirmée le 2026-09-22)
 
-Vu l'ampleur, exécuter en plusieurs sessions/chunks plutôt qu'en un seul
-passage continu, dans l'ordre des phases ci-dessous (PHASE 1/2 d'abord -
-cartographie + inventaire - avant toute correction), avec un point d'étape
-et un commit après chaque module significatif plutôt qu'à la toute fin,
-pour ne jamais perdre le travail si la session s'interrompt.
+Lancement reporté à jeudi. Point de départ choisi : **PHASE 1
+(cartographie) + PHASE 2 (inventaire des scripts, sans aucune
+correction)** en premier, pour produire d'abord une vue d'ensemble et une
+liste priorisée CRITICAL/HIGH/MEDIUM/LOW, avant de décider ensemble par
+où attaquer les corrections (PHASE 3+). Ne pas commencer directement par
+des corrections dispersées.
+
+Exécuter en plusieurs sessions/chunks plutôt qu'en un seul passage
+continu, avec un point d'étape et un commit après chaque module
+significatif plutôt qu'à la toute fin, pour ne jamais perdre le travail
+si la session s'interrompt.
 
 ---
 
