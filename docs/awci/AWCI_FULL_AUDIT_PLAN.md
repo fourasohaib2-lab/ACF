@@ -20,6 +20,29 @@ architecture, dette technique restante). C'est un travail de plusieurs
 sessions intensives, pas une tâche ponctuelle - donc explicitement
 reporté pour ne pas épuiser le quota avant jeudi.
 
+## Constat scientifique réel à vérifier en priorité (trouvé le 2026-09-22)
+
+Test end-to-end 100% réel effectué (vrais METAR NOAA aviationweather.gov +
+vrai CAPE/CIN GFS NOMADS 22/09/2026 12Z) sur 5 aéroports algériens,
+recoupé avec un vrai BMS niveau 2 ONM actif ce jour-là (Ouargla/Touggourt/
+Ghardaïa/Tamanrasset, 20-40mm). Résultat : même avec un vrai CAPE non
+négligeable (507 J/kg à Ouargla, 147 J/kg à Tamanrasset, sous alerte
+active), l'AWCI ne bouge que de +1.5/+0.5 point et reste "Very Low". Le
+calcul lui-même est mathématiquement exact (vérifié à la main), donc ce
+n'est pas un bug d'implémentation - c'est une question de **calibration
+scientifique réelle** à investiguer jeudi :
+- L'échelle de normalisation CAPE (0-5000 J/kg, `normalizer.py
+  normalize_cape()`) est peut-être mal calibrée pour les régimes
+  convectifs sahariens/pré-sahariens (déclenchement à des CAPE bien plus
+  modestes que les régimes continentaux classiques).
+- Le module microphysique n'a reçu aucun signal réel car le `PRATE` d'une
+  analyse instantanée (f000) ne capture pas une prévision de pluie sur
+  fenêtre 3h-21h - il faudrait un vrai champ de précipitation prévue, pas
+  une analyse ponctuelle.
+- Piste possible : un signal de convergence d'humidité/relief, plus
+  pertinent que le CAPE seul pour ce régime, actuellement absent du
+  module convectif.
+
 ## Décision de l'utilisateur (confirmée le 2026-09-22)
 
 Lancement reporté à jeudi. Point de départ choisi : **PHASE 1
