@@ -43,6 +43,22 @@ scientifique réelle** à investiguer jeudi :
   pertinent que le CAPE seul pour ce régime, actuellement absent du
   module convectif.
 
+**Complément du 2026-09-22 (mêmes 5 stations, plus de signaux réels)** :
+ajout du cisaillement de vent réel (850-200hPa GFS, via
+`compute_real_wind_shear_at_point()`), de la précipitation **prévue**
+à 6h (GFS `tp`, pas l'instantané f000 qui était toujours à 0), et du
+plafond/visibilité/poussière réels (calculés depuis l'humidité dérivée
+du METAR). Résultat : Tamanrasset passe de "Very Low" à **"Low"**
+(20.3, seuil à 20.0) - c'est le cisaillement réel (45.6 m/s sur la
+couche 850-200hPa, très fort) qui fait basculer la classification, pas
+le CAPE. Le module dynamique semble donc réagir plus fort que le
+module convectif à ce type de situation. Limite honnête : la
+précipitation prévue à 6h reste quasi nulle aux points de grille GFS
+malgré l'alerte BMS active - la convection saharienne est probablement
+trop localisée pour un modèle global 0.25°, à garder en tête si une
+vraie validation quantitative est tentée un jour avec des données à
+plus haute résolution (ALADIN/AROME réels).
+
 ## Décision de l'utilisateur (confirmée le 2026-09-22)
 
 Lancement reporté à jeudi. Point de départ choisi : **PHASE 1
