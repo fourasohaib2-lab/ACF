@@ -1,7 +1,8 @@
 "use client"
 
-import { Activity, Globe2, Radio, RefreshCw } from "lucide-react"
+import { Activity, Globe2, Radio } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 
 function useUtcClock() {
   const [now, setNow] = useState<string>("--:--:--Z")
@@ -20,6 +21,7 @@ function useUtcClock() {
 
 export function DashboardHeader() {
   const clock = useUtcClock()
+  const { data } = useComplexityField()
   return (
     <header className="flex flex-col gap-3 border-b border-border-subtle bg-panel/40 px-4 py-3 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3">
@@ -38,8 +40,7 @@ export function DashboardHeader() {
 
       <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
         <StatusPill icon={<Radio className="size-3" />} label="FEED" value="LIVE" tone="ok" />
-        <StatusPill icon={<Activity className="size-3" />} label="MODEL" value="ECMWF-HRES" />
-        <StatusPill icon={<RefreshCw className="size-3" />} label="CYCLE" value="12Z" />
+        <StatusPill icon={<Activity className="size-3" />} label="MODEL" value={data?.model ?? "—"} />
         <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-panel px-3 py-1.5">
           <span className="text-muted">UTC</span>
           <span className="tabular-nums text-accent">{clock}</span>
