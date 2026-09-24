@@ -149,6 +149,21 @@ class AWCIVolume3DView(QWidget):
 
         lon_grid, lat_grid = np.meshgrid(lons, lats)
         contour = None
+        # NOTE (correction, 2026-09-22 - real bug found while rendering
+        # non-AWCI real 3D cubes, e.g. temperature): passing an int to
+        # `levels=` makes matplotlib auto-compute that layer's own
+        # level boundaries from ITS OWN local data range, not from
+        # field_vmin/field_vmax - the colorbar (built from the LAST
+        # layer's own contourf artist) then honestly reflected only
+        # that top layer's narrow local range (e.g. -45..-61 degC)
+        # instead of the real full volume range (e.g. -60..+35 degC),
+        # even though the fill colors themselves were correctly
+        # normalized. Fixed by passing one real, explicit, shared level
+        # array spanning the full real [field_vmin, field_vmax] range -
+        # every layer now contours against the same real boundaries, so
+        # the colorbar built from any one of them is honestly
+        # representative of the whole volume.
+        shared_levels = np.linspace(field_vmin, field_vmax, 16)
         for level_idx in level_indices:
             contour = self.axis.contourf(
                 lon_grid,
@@ -156,7 +171,7 @@ class AWCIVolume3DView(QWidget):
                 awci_volume[level_idx],
                 zdir="z",
                 offset=level_idx,
-                levels=15,
+                levels=shared_levels,
                 cmap=field_cmap,
                 vmin=field_vmin,
                 vmax=field_vmax,
