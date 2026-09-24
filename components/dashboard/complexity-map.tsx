@@ -100,6 +100,20 @@ function RouteOverlay() {
   )
 }
 
+function FitToRoute({ signal }: { signal: number }) {
+  const map = useMap()
+  const { data } = useRouteWeather()
+
+  useEffect(() => {
+    if (!signal || !data || data.waypoints.length === 0) return
+    const bounds = L.latLngBounds(data.waypoints.map((wp) => [wp.latitude, wp.longitude] as [number, number]))
+    map.fitBounds(bounds, { padding: [40, 40] })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signal])
+
+  return null
+}
+
 function CursorTracker({
   field,
   onMove,
@@ -122,12 +136,17 @@ export default function ComplexityMap({
   zoom = 2,
   showRoute = true,
   showCursor = true,
+  fitToRouteSignal = 0,
 }: {
   moduleKey?: string
   center?: [number, number]
   zoom?: number
   showRoute?: boolean
   showCursor?: boolean
+  /** Incrementing this number re-fits the map to the current real
+   * route's bounds (see FitToRoute) - a real Leaflet fitBounds() call
+   * on the route's own waypoint coordinates, not a canned zoom. */
+  fitToRouteSignal?: number
 }) {
   const { data: field } = useComplexityField()
   const [cursor, setCursor] = useState<{ lat: number; lon: number; awci: number | null } | null>(null)
@@ -159,6 +178,7 @@ export default function ComplexityMap({
         <RasterOverlay field={field} moduleKey={moduleKey} opacity={0.75} />
         {showRoute && <RouteOverlay />}
         {showCursor && <CursorTracker field={field} onMove={setCursor} />}
+        <FitToRoute signal={fitToRouteSignal} />
       </MapContainer>
 
       {showCursor && cursor && (
