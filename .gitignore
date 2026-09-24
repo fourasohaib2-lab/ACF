@@ -109,3 +109,9 @@ project/*.docx
 /metpy-cookbook/
 /*.odt
 
+
+# Node.js / Next.js frontend (awci-dashboard-reference)
+node_modules/
+.next/
+next-env.d.ts
+.env.local

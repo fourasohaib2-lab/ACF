@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jbmono), ui-monospace, "SFMono-Regular", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-border-subtle: var(--border-subtle);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-critical: var(--critical);
+  --color-warning: var(--warning);
+
+  --radius: 0.375rem;
+}
+
+:root {
+  /* deep night-blue, near black */
+  --background: oklch(0.16 0.02 250);
+  --foreground: oklch(0.93 0.01 240);
+  /* panels slightly lighter */
+  --panel: oklch(0.21 0.025 255);
+  --panel-raised: oklch(0.25 0.03 255);
+  --border-subtle: oklch(0.32 0.03 255);
+  --muted: oklch(0.62 0.02 250);
+  /* tech cyan accent */
+  --accent: oklch(0.78 0.14 205);
+  /* critical values */
+  --critical: oklch(0.68 0.2 25);
+  --warning: oklch(0.78 0.16 65);
+}
+
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* thin custom scrollbars for panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 9999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes awci-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-sweep {
+  animation: awci-sweep 6s linear infinite;
+}
