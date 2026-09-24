@@ -142,10 +142,12 @@ def test_flight_routing_engine():
     # CORRECTED: used to assert on 2 alternates hardcoded per-departure
     # ("LFPO"/"LILH") that weren't even in AirportDatabase and had no
     # relation to the actual arrival airport (see flight_routing.py).
-    # AirportDatabase only has LFPG/KJFK/EGLL - excluding departure
-    # (LFPG) and arrival (KJFK) leaves EGLL as the one genuine
-    # nearest-by-distance candidate.
-    assert plan["recommended_alternates"] == ["EGLL"]
+    # UPDATED (2026-09-24): AirportDatabase grew from 3 to 6 real
+    # airports (DAAG/DTTA/LIRF added for the AWCI web dashboard's
+    # Algiers-Tunis-Rome route). Ranked by real great-circle distance
+    # from KJFK (arrival): EGLL 2991nm, DAAG 3498nm, LIRF 3707nm,
+    # DTTA 3782nm - EGLL and DAAG are genuinely the 2 nearest.
+    assert plan["recommended_alternates"] == ["EGLL", "DAAG"]
 
 
 def test_flight_cross_section_engine():

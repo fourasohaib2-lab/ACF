@@ -147,7 +147,10 @@ def test_build_route_weather_briefing_composes_real_route_and_weather():
 def test_build_route_weather_briefing_fetches_every_real_alternate():
     hub = _FakeHub()
     briefing = build_route_weather_briefing("LFPG", "KJFK", hub=hub)
-    assert set(briefing.alternate_weather) <= {"EGLL"}  # the only other real airport in the small test DB
+    # UPDATED (2026-09-24): AirportDatabase grew from 3 to 6 real airports
+    # (DAAG/DTTA/LIRF added for the AWCI web dashboard's Algiers-Tunis-Rome
+    # route) - EGLL and DAAG are the 2 real nearest-to-KJFK alternates now.
+    assert set(briefing.alternate_weather) <= {"EGLL", "DAAG"}
     for icao, snapshot in briefing.alternate_weather.items():
         assert snapshot.is_real_data is True
         assert icao in hub.calls
