@@ -15,6 +15,7 @@ covered behavior.
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 import awci.observations.hub as hub_module
@@ -124,6 +125,18 @@ def test_observations_endpoint_returns_the_real_assembled_snapshot(monkeypatch):
 
 
 # --------------------------------------------------------------------- airports.py
+
+
+def test_list_airports_endpoint_returns_the_real_registry():
+    client = TestClient(create_app())
+    response = client.get("/airports")
+    assert response.status_code == 200
+    body = response.json()
+    icao_codes = {a["icao_code"] for a in body}
+    assert {"LFPG", "KJFK", "EGLL"} <= icao_codes
+    lfpg = next(a for a in body if a["icao_code"] == "LFPG")
+    assert lfpg["iata_code"] == "CDG"
+    assert lfpg["latitude"] == pytest.approx(49.0097)
 
 
 def test_runway_wind_endpoint_returns_real_per_runway_assessments():

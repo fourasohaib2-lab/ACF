@@ -5,6 +5,7 @@ import { AlertTriangle, Loader2 } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Panel, PanelHeader } from "@/components/ui/panel"
 import { useRouteWeather } from "@/lib/hooks/use-route-weather"
+import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 import { ApiError, getVerticalProfile, type VerticalProfile } from "@/lib/api"
 
 /** Same coarse-but-fast resolution as ComplexityFieldProvider's
@@ -13,6 +14,7 @@ const PROFILE_PARAMS = { n_lat: 24, n_lon: 48 }
 
 export function VerticalCrossSection() {
   const route = useRouteWeather()
+  const { model } = useComplexityField()
   const [profile, setProfile] = useState<VerticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +29,7 @@ export function VerticalCrossSection() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getVerticalProfile({ lat: midpoint.latitude, lon: midpoint.longitude, ...PROFILE_PARAMS })
+    getVerticalProfile({ lat: midpoint.latitude, lon: midpoint.longitude, model, ...PROFILE_PARAMS })
       .then((result) => {
         if (!cancelled) setProfile(result)
       })
@@ -43,7 +45,7 @@ export function VerticalCrossSection() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [midpoint?.latitude, midpoint?.longitude])
+  }, [midpoint?.latitude, midpoint?.longitude, model])
 
   const subtitle = midpoint
     ? `${midpoint.latitude.toFixed(1)}°N ${midpoint.longitude.toFixed(1)}°E · Route Midpoint`

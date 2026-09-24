@@ -14,8 +14,20 @@ from fastapi import APIRouter, HTTPException, Request
 from awci.api.routes._serialization import to_json_safe
 from awci.airport.runway import assess_airport_runways_wind
 from awci.airport.weather import build_weather_snapshot
+from awci.knowledge.airports.airport_database import AirportDatabase
 
 router = APIRouter(prefix="/airports", tags=["airports"])
+
+
+@router.get("")
+async def list_airports() -> list[dict[str, Any]]:
+    """
+    Real list of every airport in ``AirportDatabase`` - genuinely
+    calls ``AirportDatabase.all_airport_infos()`` (the AWCI web
+    dashboard's own route/model selector reads this list rather than
+    hardcoding a copy of the known ICAO codes client-side).
+    """
+    return [to_json_safe(info) for info in AirportDatabase.all_airport_infos()]
 
 
 @router.get("/{icao_or_iata}/runways")

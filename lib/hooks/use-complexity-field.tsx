@@ -22,6 +22,11 @@ interface ComplexityFieldState {
    * carries none), but a real, honest record of when this browser
    * last received it. */
   fetchedAt: number | null
+  model: NonNullable<ComplexityFieldParams["model"]>
+  /** Switches the real backend model (AROME/ALADIN/ARPEGE - see
+   * `acf.forecast.engine.MODEL_CONFIGS`) and refetches a real field
+   * at that model's own grid configuration. */
+  setModel: (model: NonNullable<ComplexityFieldParams["model"]>) => void
   refresh: () => void
 }
 
@@ -34,12 +39,13 @@ const ComplexityFieldContext = createContext<ComplexityFieldState | null>(null)
 const DEFAULT_PARAMS: ComplexityFieldParams = { model: "ARPEGE", n_lat: 24, n_lon: 48 }
 
 export function ComplexityFieldProvider({
-  params = DEFAULT_PARAMS,
+  params: initialParams = DEFAULT_PARAMS,
   children,
 }: {
   params?: ComplexityFieldParams
   children: ReactNode
 }) {
+  const [model, setModel] = useState<NonNullable<ComplexityFieldParams["model"]>>(initialParams.model ?? "ARPEGE")
   const [data, setData] = useState<ComplexityField | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +58,7 @@ export function ComplexityFieldProvider({
     let cancelled = false
     setLoading(true)
     setError(null)
-    getComplexityField(params)
+    getComplexityField({ ...initialParams, model })
       .then((result) => {
         if (!cancelled) {
           setData(result)
@@ -71,10 +77,10 @@ export function ComplexityFieldProvider({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nonce, params.model, params.level, params.steps, params.seed, params.n_lat, params.n_lon])
+  }, [nonce, model])
 
   return (
-    <ComplexityFieldContext.Provider value={{ data, loading, error, fetchedAt, refresh }}>
+    <ComplexityFieldContext.Provider value={{ data, loading, error, fetchedAt, model, setModel, refresh }}>
       {children}
     </ComplexityFieldContext.Provider>
   )

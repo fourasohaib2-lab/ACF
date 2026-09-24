@@ -186,6 +186,26 @@ export function getVerticalProfile(params: VerticalProfileParams): Promise<Verti
 
 // --------------------------------------------------------------------- /airports
 
+/** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`. */
+export interface AirportInfo {
+  icao_code: string
+  iata_code: string
+  name: string
+  city: string
+  country: string
+  latitude: number
+  longitude: number
+  elevation_ft: number
+  runways: { identifier: string; length_m: number; width_m: number; surface: string }[]
+  ils_categories: string[]
+  magnetic_variation_deg: number
+  code_letter: string
+}
+
+export function listAirports(): Promise<AirportInfo[]> {
+  return request("/airports")
+}
+
 export interface RunwayWindAssessment {
   runway_end: string
   heading_deg: number
