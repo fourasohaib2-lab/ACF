@@ -17,6 +17,11 @@ interface ComplexityFieldState {
   data: ComplexityField | null
   loading: boolean
   error: string | null
+  /** Real client-side timestamp (ms since epoch) of when this fetch
+   * resolved - not a server-side generation time (the field response
+   * carries none), but a real, honest record of when this browser
+   * last received it. */
+  fetchedAt: number | null
   refresh: () => void
 }
 
@@ -38,6 +43,7 @@ export function ComplexityFieldProvider({
   const [data, setData] = useState<ComplexityField | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchedAt, setFetchedAt] = useState<number | null>(null)
   const [nonce, setNonce] = useState(0)
 
   const refresh = useCallback(() => setNonce((n) => n + 1), [])
@@ -48,7 +54,10 @@ export function ComplexityFieldProvider({
     setError(null)
     getComplexityField(params)
       .then((result) => {
-        if (!cancelled) setData(result)
+        if (!cancelled) {
+          setData(result)
+          setFetchedAt(Date.now())
+        }
       })
       .catch((cause: unknown) => {
         if (cancelled) return
@@ -65,7 +74,7 @@ export function ComplexityFieldProvider({
   }, [nonce, params.model, params.level, params.steps, params.seed, params.n_lat, params.n_lon])
 
   return (
-    <ComplexityFieldContext.Provider value={{ data, loading, error, refresh }}>
+    <ComplexityFieldContext.Provider value={{ data, loading, error, fetchedAt, refresh }}>
       {children}
     </ComplexityFieldContext.Provider>
   )

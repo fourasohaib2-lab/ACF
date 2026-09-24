@@ -1,135 +1,102 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
-import { Layers, MapPin, Crosshair, Plus, Minus } from "lucide-react"
-import { HeatmapCanvas } from "@/components/heatmap-canvas"
+import dynamic from "next/dynamic"
+import { Layers, Loader2 } from "lucide-react"
 import { Panel, PanelHeader } from "@/components/ui/panel"
-import { HOVER_POINT, MAP_LAYERS } from "@/lib/data"
 import { TurboLegend } from "@/components/dashboard/turbo-legend"
+import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 import { cn } from "@/lib/utils"
 
+const ComplexityMap = dynamic(() => import("@/components/dashboard/complexity-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center text-muted">
+      <Loader2 className="size-6 animate-spin" />
+    </div>
+  ),
+})
+
+/** Real AWCICalculator module fields available at the field's default
+ * weights (see radar-complexity.tsx's own comment on which modules
+ * carry non-zero default weight). "Wind Vectors"/"ATS Routes" from
+ * the original mockup layer list are not real toggleable data layers
+ * here: no raw wind-vector field is exposed by the API (only scalar
+ * wind speed feeds the dynamic module) - ATS Routes is instead always
+ * shown when a route is loaded (see ComplexityMap's showRoute). */
+const LAYERS: { id: string; label: string }[] = [
+  { id: "awci", label: "AWCI Composite" },
+  { id: "convective", label: "Convective" },
+  { id: "thermodynamic", label: "Thermodynamic" },
+  { id: "dynamic", label: "Dynamic (Wind)" },
+]
+
 export function GlobalMap() {
-  const [layers, setLayers] = useState(MAP_LAYERS)
+  const { data, error } = useComplexityField()
+  const [activeLayer, setActiveLayer] = useState("awci")
 
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        title="Global Map · FL300"
+        title="Global Map"
         subtitle="AWCI Composite · Equirectangular"
         right={
           <span className="flex items-center gap-1.5 rounded border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
             <span className="size-1.5 animate-pulse rounded-full bg-accent" />
-            Nowcast
+            Live
           </span>
         }
       />
 
       <div className="relative aspect-[16/7] w-full">
-        <Image
-          src="/maps/global-dark.png"
-          alt="Dark world map showing global aviation weather complexity"
-          fill
-          priority
-          className="object-cover opacity-90"
-        />
-        <HeatmapCanvas seed={3} cells={9} className="absolute inset-0 h-full w-full" />
+        {error ? (
+          <div className="flex h-full items-center justify-center p-4 text-center font-mono text-[11px] text-critical">
+            AWCI field unavailable: {error}
+          </div>
+        ) : (
+          <ComplexityMap moduleKey={activeLayer} center={[35, -20]} zoom={2} />
+        )}
 
-        {/* scan sweep */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="animate-sweep absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-accent/5 to-transparent" />
-        </div>
-
-        {/* Layers overlay (glassmorphism) */}
-        <div className="absolute left-3 top-3 w-44 rounded-md border border-white/10 bg-black/50 p-3 backdrop-blur-md">
+        {/* Layers panel (glassmorphism) */}
+        <div className="pointer-events-auto absolute left-3 top-3 z-[1000] w-44 rounded-md border border-white/10 bg-black/50 p-3 backdrop-blur-md">
           <div className="mb-2 flex items-center gap-2 font-sans text-[10px] font-semibold uppercase tracking-widest text-foreground">
             <Layers className="size-3.5 text-accent" />
-            Layers
+            Layer
           </div>
           <ul className="space-y-1.5">
-            {layers.map((l) => (
+            {LAYERS.map((l) => (
               <li key={l.id}>
                 <button
                   type="button"
-                  onClick={() =>
-                    setLayers((prev) =>
-                      prev.map((p) => (p.id === l.id ? { ...p, active: !p.active } : p)),
-                    )
-                  }
+                  onClick={() => setActiveLayer(l.id)}
                   className="flex w-full items-center gap-2 font-mono text-[11px] text-muted transition-colors hover:text-foreground"
                 >
                   <span
                     className={cn(
                       "flex size-3.5 items-center justify-center rounded-sm border",
-                      l.active
-                        ? "border-accent bg-accent/20 text-accent"
-                        : "border-white/20 text-transparent",
+                      activeLayer === l.id ? "border-accent bg-accent/20 text-accent" : "border-white/20 text-transparent",
                     )}
                   >
                     <span className="size-1.5 rounded-[1px] bg-accent" />
                   </span>
-                  <span className={l.active ? "text-foreground" : ""}>{l.label}</span>
+                  <span className={activeLayer === l.id ? "text-foreground" : ""}>{l.label}</span>
                 </button>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Hover point readout (glassmorphism) */}
-        <div className="absolute right-3 top-3 w-52 rounded-md border border-white/10 bg-black/50 p-3 backdrop-blur-md">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 font-sans text-[10px] font-semibold uppercase tracking-widest text-foreground">
-              <Crosshair className="size-3.5 text-accent" />
-              Cursor
-            </span>
-            <span className="font-mono text-[10px] text-muted">{HOVER_POINT.fl}</span>
-          </div>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px]">
-            <Row k="LAT" v={HOVER_POINT.lat} />
-            <Row k="LON" v={HOVER_POINT.lon} />
-            <Row k="CAPE" v={HOVER_POINT.cape} />
-            <Row k="SHEAR" v={HOVER_POINT.shear} />
-            <Row k="CLD TOP" v={HOVER_POINT.cloudTop} />
-            <Row k="ECHO" v={HOVER_POINT.echoTop} />
-          </dl>
-          <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted">AWCI</span>
-            <span className="font-mono text-lg font-bold leading-none text-critical">
-              {HOVER_POINT.awci}
-            </span>
-          </div>
-        </div>
-
         {/* Legend (glassmorphism) */}
-        <div className="absolute bottom-3 left-3 rounded-md border border-white/10 bg-black/50 p-2.5 backdrop-blur-md">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-md border border-white/10 bg-black/50 p-2.5 backdrop-blur-md">
           <TurboLegend />
         </div>
 
-        {/* Zoom controls */}
-        <div className="absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-md border border-white/10 bg-black/50 backdrop-blur-md">
-          <button className="p-1.5 text-muted transition-colors hover:text-accent" aria-label="Zoom in">
-            <Plus className="size-4" />
-          </button>
-          <div className="h-px bg-white/10" />
-          <button className="p-1.5 text-muted transition-colors hover:text-accent" aria-label="Zoom out">
-            <Minus className="size-4" />
-          </button>
-        </div>
-
-        {/* focus reticle */}
-        <div className="pointer-events-none absolute left-[58%] top-[38%] -translate-x-1/2 -translate-y-1/2">
-          <MapPin className="size-5 text-critical drop-shadow-[0_0_6px_rgba(255,60,40,0.8)]" />
-        </div>
+        {data && (
+          <div className="pointer-events-none absolute bottom-3 right-3 z-[1000] rounded border border-white/10 bg-black/50 px-2 py-1 font-mono text-[10px] text-muted backdrop-blur-md">
+            {data.model} · {data.lats.length}×{data.lons.length} grid
+          </div>
+        )}
       </div>
     </Panel>
-  )
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <dt className="text-muted">{k}</dt>
-      <dd className="text-right text-foreground">{v}</dd>
-    </>
   )
 }
