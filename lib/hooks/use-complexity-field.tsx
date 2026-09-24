@@ -13,6 +13,11 @@ import { ApiError, getComplexityField, type ComplexityField, type ComplexityFiel
  * `error` is surfaced honestly for the UI to render an explicit error
  * state.
  */
+export interface GridResolution {
+  n_lat: number
+  n_lon: number
+}
+
 interface ComplexityFieldState {
   data: ComplexityField | null
   loading: boolean
@@ -27,6 +32,13 @@ interface ComplexityFieldState {
    * `acf.forecast.engine.MODEL_CONFIGS`) and refetches a real field
    * at that model's own grid configuration. */
   setModel: (model: NonNullable<ComplexityFieldParams["model"]>) => void
+  resolution: GridResolution
+  /** Overrides the real grid size `compute_real_complexity_field()`
+   * runs `CoupledEarthSolver` at (n_lat x n_lon real grid points) -
+   * a real cost/detail tradeoff, not a cosmetic zoom: a finer grid is
+   * a genuinely larger real physics run (see ControlBar's own timing
+   * comment for measured real costs at each preset). */
+  setResolution: (resolution: GridResolution) => void
   refresh: () => void
 }
 
@@ -36,7 +48,8 @@ const ComplexityFieldContext = createContext<ComplexityFieldState | null>(null)
  * hundred grid points) while still real - not the model's full native
  * resolution (see ComplexityFieldParams docs in lib/api.ts to request
  * a finer field for a zoomed-in view). */
-const DEFAULT_PARAMS: ComplexityFieldParams = { model: "ARPEGE", n_lat: 24, n_lon: 48 }
+const DEFAULT_RESOLUTION: GridResolution = { n_lat: 24, n_lon: 48 }
+const DEFAULT_PARAMS: ComplexityFieldParams = { model: "ARPEGE", ...DEFAULT_RESOLUTION }
 
 export function ComplexityFieldProvider({
   params: initialParams = DEFAULT_PARAMS,
@@ -46,6 +59,10 @@ export function ComplexityFieldProvider({
   children: ReactNode
 }) {
   const [model, setModel] = useState<NonNullable<ComplexityFieldParams["model"]>>(initialParams.model ?? "ARPEGE")
+  const [resolution, setResolution] = useState<GridResolution>({
+    n_lat: initialParams.n_lat ?? DEFAULT_RESOLUTION.n_lat,
+    n_lon: initialParams.n_lon ?? DEFAULT_RESOLUTION.n_lon,
+  })
   const [data, setData] = useState<ComplexityField | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +75,7 @@ export function ComplexityFieldProvider({
     let cancelled = false
     setLoading(true)
     setError(null)
-    getComplexityField({ ...initialParams, model })
+    getComplexityField({ ...initialParams, model, n_lat: resolution.n_lat, n_lon: resolution.n_lon })
       .then((result) => {
         if (!cancelled) {
           setData(result)
@@ -77,10 +94,12 @@ export function ComplexityFieldProvider({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nonce, model])
+  }, [nonce, model, resolution.n_lat, resolution.n_lon])
 
   return (
-    <ComplexityFieldContext.Provider value={{ data, loading, error, fetchedAt, model, setModel, refresh }}>
+    <ComplexityFieldContext.Provider
+      value={{ data, loading, error, fetchedAt, model, setModel, resolution, setResolution, refresh }}
+    >
       {children}
     </ComplexityFieldContext.Provider>
   )

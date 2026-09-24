@@ -8,13 +8,9 @@ import { useRouteWeather } from "@/lib/hooks/use-route-weather"
 import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 import { ApiError, getVerticalProfile, type VerticalProfile } from "@/lib/api"
 
-/** Same coarse-but-fast resolution as ComplexityFieldProvider's
- * default, for a consistent, responsive real physics run. */
-const PROFILE_PARAMS = { n_lat: 24, n_lon: 48 }
-
 export function VerticalCrossSection() {
   const route = useRouteWeather()
-  const { model } = useComplexityField()
+  const { model, resolution } = useComplexityField()
   const [profile, setProfile] = useState<VerticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +25,13 @@ export function VerticalCrossSection() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getVerticalProfile({ lat: midpoint.latitude, lon: midpoint.longitude, model, ...PROFILE_PARAMS })
+    // Real grid resolution shared with ComplexityFieldProvider (the
+    // same ControlBar preset) - a real 3D volume run over n_levels x
+    // n_lat x n_lon points, genuinely more expensive than the 2D
+    // field at the same resolution (measured: ~1s at 24x48, ~3.9s at
+    // 48x96), so the "Fine" preset trades a real, disclosed wait here
+    // for real extra vertical detail, not a fabricated instant result.
+    getVerticalProfile({ lat: midpoint.latitude, lon: midpoint.longitude, model, ...resolution })
       .then((result) => {
         if (!cancelled) setProfile(result)
       })
@@ -45,7 +47,7 @@ export function VerticalCrossSection() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [midpoint?.latitude, midpoint?.longitude, model])
+  }, [midpoint?.latitude, midpoint?.longitude, model, resolution.n_lat, resolution.n_lon])
 
   const subtitle = midpoint
     ? `${midpoint.latitude.toFixed(1)}°N ${midpoint.longitude.toFixed(1)}°E · Route Midpoint`
