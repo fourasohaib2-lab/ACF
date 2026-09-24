@@ -183,6 +183,52 @@ def test_complexity_score_endpoint_computes_a_real_score():
     assert 0.0 <= body["awci"] <= 100.0
 
 
+def test_complexity_field_endpoint_returns_a_real_2d_field():
+    """A small (4x4) grid keeps this real CoupledEarthSolver run fast
+    in the test suite - see compute_real_complexity_field()'s own
+    docstring for the real physics behind this endpoint."""
+    client = TestClient(create_app())
+    response = client.get("/complexity/field", params={"n_lat": 4, "n_lon": 4})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["is_real_data"] is True
+    assert len(body["lats"]) == 4
+    assert len(body["lons"]) == 4
+    assert len(body["awci_field"]) == 4
+    assert len(body["awci_field"][0]) == 4
+    assert all(0.0 <= cell <= 100.0 for row in body["awci_field"] for cell in row)
+    assert "dynamic" in body["module_fields"]
+
+
+def test_complexity_field_endpoint_400s_for_an_unknown_model():
+    client = TestClient(create_app())
+    response = client.get("/complexity/field", params={"model": "NOT_A_REAL_MODEL"})
+    assert response.status_code == 400
+
+
+def test_complexity_vertical_profile_endpoint_returns_a_real_column():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/vertical-profile",
+        params={"lat": 45.0, "lon": 5.0, "n_lat": 4, "n_lon": 4, "n_levels": 6},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["is_real_data"] is True
+    assert body["n_levels"] == 6
+    assert len(body["awci_profile"]) == 6
+    assert len(body["pressure_profile_hpa"]) == 6
+    # Real ICAO convention: index 0 is the surface, so it carries the
+    # highest real local pressure in the column.
+    assert body["pressure_profile_hpa"][0] == max(body["pressure_profile_hpa"])
+
+
+def test_complexity_vertical_profile_endpoint_400s_for_an_unknown_model():
+    client = TestClient(create_app())
+    response = client.get("/complexity/vertical-profile", params={"lat": 45.0, "lon": 5.0, "model": "NOPE"})
+    assert response.status_code == 400
+
+
 # --------------------------------------------------------------------- reports.py
 
 
