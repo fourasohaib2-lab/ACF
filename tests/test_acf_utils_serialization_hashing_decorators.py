@@ -52,6 +52,40 @@ def test_to_json_safe_leaves_plain_values_unchanged():
     assert to_json_safe(None) is None
 
 
+def test_to_json_safe_base64_encodes_real_binary_data():
+    """Real bug found via GET /observations/{icao} against a real
+    request: bytes (e.g. a real downloaded MTG satellite quicklook
+    image, MTGFetchResult.image_bytes) used to fall through as
+    "already JSON-safe" and crash FastAPI's real JSON serializer with
+    PydanticSerializationError. Base64 is the real, reversible,
+    JSON-safe encoding - decoding the result must recover the exact
+    original bytes, not an approximation."""
+    import base64
+
+    raw = b"\xff\xd8\xff\xe0real-jpeg-like-bytes\x00\x01"
+    encoded = to_json_safe(raw)
+    assert isinstance(encoded, str)
+    assert base64.b64decode(encoded) == raw
+
+    encoded_bytearray = to_json_safe(bytearray(raw))
+    assert base64.b64decode(encoded_bytearray) == raw
+
+
+@dataclass
+class _WithImage:
+    label: str
+    image_bytes: bytes | None
+
+
+def test_to_json_safe_handles_bytes_nested_in_a_dataclass():
+    result = to_json_safe(_WithImage(label="quicklook", image_bytes=b"\x89PNG\r\n"))
+    assert result["label"] == "quicklook"
+    import base64
+
+    assert base64.b64decode(result["image_bytes"]) == b"\x89PNG\r\n"
+    assert to_json_safe(_WithImage(label="none", image_bytes=None))["image_bytes"] is None
+
+
 def test_awci_api_serialization_reuses_this_module_not_a_copy():
     from awci.api.routes._serialization import to_json_safe as awci_to_json_safe
 
