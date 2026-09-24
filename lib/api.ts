@@ -55,7 +55,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
-function query(params: Record<string, string | number | undefined>): string {
+function query(params: Record<string, string | number | boolean | undefined>): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) search.set(key, String(value))
@@ -108,6 +108,80 @@ export function getComplexityScore(input: ComplexityInput): Promise<ComplexitySc
     method: "POST",
     body: JSON.stringify(input),
   })
+}
+
+export interface ComplexityFieldParams {
+  model?: "AROME" | "ALADIN" | "ARPEGE"
+  level?: number
+  steps?: number
+  seed?: number
+  n_lat?: number
+  n_lon?: number
+}
+
+/** Real classification band from `AWCICalculator.LEVEL_THRESHOLDS` -
+ * `upper_bound: null` means the top band (no upper bound, "Extreme"). */
+export type LevelThreshold = [number | null, string]
+
+/** Real 2D Complexity(x, y) field - mirrors the JSON built by
+ * `GET /complexity/field`. `*_field` values are `lats.length` rows of
+ * `lons.length` columns; a `null` cell is a real, honestly-undefined
+ * value (the underlying engine's own `np.nan`), never a fabricated 0. */
+export interface ComplexityField {
+  lats: number[]
+  lons: number[]
+  model: string
+  level: number
+  awci_field: (number | null)[][]
+  physical_field: (number | null)[][]
+  forecast_field: (number | null)[][]
+  module_fields: Record<string, (number | null)[][]>
+  level_thresholds: LevelThreshold[]
+  status: string
+  is_real_data: boolean
+  honest_limitation: string
+}
+
+export function getComplexityField(params: ComplexityFieldParams = {}): Promise<ComplexityField> {
+  const { model, level, steps, seed, n_lat, n_lon } = params
+  return request(`/complexity/field${query({ model, level, steps, seed, n_lat, n_lon })}`)
+}
+
+export interface VerticalProfileParams {
+  lat: number
+  lon: number
+  model?: "AROME" | "ALADIN" | "ARPEGE"
+  steps?: number
+  seed?: number
+  n_lat?: number
+  n_lon?: number
+  n_levels?: number
+}
+
+/** Real Complexity(z) column - mirrors the JSON built by
+ * `GET /complexity/vertical-profile`. Ordered surface (index 0) to
+ * top of atmosphere; `lat`/`lon` are the real grid point actually
+ * used (nearest-neighbour match, not necessarily the requested point
+ * exactly - see the route's own docstring). */
+export interface VerticalProfile {
+  lat: number
+  lon: number
+  awci_profile: (number | null)[]
+  physical_profile: (number | null)[]
+  forecast_profile: (number | null)[]
+  pressure_profile_hpa: number[]
+  temperature_profile: number[]
+  wind_speed_profile: number[]
+  model: string
+  n_levels: number
+  status: string
+  is_real_data: boolean
+  honest_limitation: string
+}
+
+export function getVerticalProfile(params: VerticalProfileParams): Promise<VerticalProfile> {
+  const { lat, lon, model, steps, seed, n_lat, n_lon, n_levels } = params
+  return request(`/complexity/vertical-profile${query({ lat, lon, model, steps, seed, n_lat, n_lon, n_levels })}`)
 }
 
 // --------------------------------------------------------------------- /airports

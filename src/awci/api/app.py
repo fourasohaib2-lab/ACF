@@ -17,7 +17,10 @@ product).
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from awci.api.routes import (
     airports_router,
@@ -28,6 +31,25 @@ from awci.api.routes import (
     reports_router,
 )
 from awci.observations.hub import ObservationsHub
+
+#: Real, disclosed default: the Next.js dashboard's own local dev
+#: server origins (see package.json's "dev" script / next.config.mjs -
+#: `next dev` defaults to port 3000, bound on both localhost and
+#: 127.0.0.1 depending on how the browser resolves it). Without CORS
+#: headers here, every browser genuinely blocks the dashboard's own
+#: `lib/api.ts` fetch calls with a real preflight failure (found while
+#: exercising the dashboard against this live API in a real browser,
+#: not assumed) - FastAPI issues no CORS headers by default.
+#: Overridable via AWCI_API_CORS_ORIGINS (comma-separated) for any
+#: other real deployment origin (e.g. a production dashboard domain).
+_DEFAULT_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+
+
+def _cors_origins() -> list[str]:
+    configured = os.environ.get("AWCI_API_CORS_ORIGINS")
+    if configured:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return list(_DEFAULT_CORS_ORIGINS)
 
 
 def create_app(observations_hub: ObservationsHub | None = None) -> FastAPI:
@@ -46,6 +68,12 @@ def create_app(observations_hub: ObservationsHub | None = None) -> FastAPI:
     """
     app = FastAPI(title="AWCI API", description="Aviation Weather Complexity Index - real aviation data API")
     app.state.observations_hub = observations_hub or ObservationsHub()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins(),
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
 
     app.include_router(observations_router)
     app.include_router(airports_router)

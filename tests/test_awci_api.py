@@ -83,6 +83,33 @@ def test_create_app_defaults_to_a_real_observations_hub():
     assert isinstance(app.state.observations_hub, ObservationsHub)
 
 
+def test_create_app_allows_cors_from_the_dashboard_dev_server():
+    """Real bug found exercising the dashboard against this API in an
+    actual browser: FastAPI issues no CORS headers by default, so
+    every browser genuinely blocks lib/api.ts's cross-origin fetch
+    calls with a preflight failure. See app.py's own docstring."""
+    client = TestClient(create_app())
+    response = client.options(
+        "/health",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+def test_create_app_cors_origins_are_configurable_via_env(monkeypatch):
+    monkeypatch.setenv("AWCI_API_CORS_ORIGINS", "https://awci.example.com")
+    client = TestClient(create_app())
+    response = client.options(
+        "/health",
+        headers={"Origin": "https://awci.example.com", "Access-Control-Request-Method": "GET"},
+    )
+    assert response.headers["access-control-allow-origin"] == "https://awci.example.com"
+
+
 # --------------------------------------------------------------------- observations.py
 
 
@@ -198,6 +225,11 @@ def test_complexity_field_endpoint_returns_a_real_2d_field():
     assert len(body["awci_field"][0]) == 4
     assert all(0.0 <= cell <= 100.0 for row in body["awci_field"] for cell in row)
     assert "dynamic" in body["module_fields"]
+    # Real bands straight from AWCICalculator.LEVEL_THRESHOLDS - the top
+    # band's real upper bound (float("inf")) must come through as JSON
+    # null (never a fabricated numeric sentinel), never dropped.
+    assert body["level_thresholds"][0] == [20.0, "Very Low"]
+    assert body["level_thresholds"][-1] == [None, "Extreme"]
 
 
 def test_complexity_field_endpoint_400s_for_an_unknown_model():

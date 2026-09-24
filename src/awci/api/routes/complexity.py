@@ -119,6 +119,17 @@ async def field(
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+    # Real classification bands straight from AWCICalculator.LEVEL_THRESHOLDS
+    # - returned alongside the field so a caller (e.g. the dashboard's
+    # KpiBar "affected area" statistic) classifies cells against the
+    # SAME real bands the backend itself uses, rather than duplicating
+    # (and risking drift from) these numbers a second time client-side.
+    # The top band's real upper bound is float("inf") - not valid JSON,
+    # so it is honestly represented as `null` ("no upper bound") here.
+    level_thresholds = [
+        (None if math.isinf(upper_bound) else upper_bound, label)
+        for upper_bound, label in AWCICalculator.LEVEL_THRESHOLDS
+    ]
     return _to_json_safe_numeric(
         {
             "lats": result["lats"],
@@ -129,6 +140,7 @@ async def field(
             "physical_field": result["physical_field"],
             "forecast_field": result["forecast_field"],
             "module_fields": result["module_fields"],
+            "level_thresholds": level_thresholds,
             "status": result["status"],
             "is_real_data": result["is_real_data"],
             "honest_limitation": result["honest_limitation"],
