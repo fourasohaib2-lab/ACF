@@ -91,6 +91,24 @@ request) - its own process, its own window, its own single-instance
 guard. Closing the Workstation does not close this, and closing this
 does not close the Workstation.
 
+### Launching the AWCI web dashboard
+
+A separate, real Next.js/React browser dashboard (`app/`,
+`components/dashboard/`) wired to the same AWCI backend over HTTP
+(`src/awci/api/`), rather than to Qt widgets directly:
+
+```bash
+# Terminal 1 - the AWCI HTTP API
+.venv/bin/python -m uvicorn awci.api.app:create_app --factory --host 127.0.0.1 --port 8010
+
+# Terminal 2 - the dashboard
+pnpm install && pnpm dev
+```
+
+See [`docs/awci/AWCI_WEB_DASHBOARD.md`](docs/awci/AWCI_WEB_DASHBOARD.md)
+for its architecture, which real endpoint backs each panel, and its
+current, honestly-disclosed limitations.
+
 ---
 
 ## 📂 Architecture Overview
@@ -142,6 +160,7 @@ Governance manuals, ADRs, and technical specifications live in [`docs/`](docs/):
 - **[Architecture Governance](docs/ACF_ARCHITECTURE_GOVERNANCE.md)**
 - **[Scientific Reference Guide](docs/ACF_SCIENTIFIC_REFERENCE.md)**
 - **[Operational Manual](docs/ACF_OPERATIONAL_MANUAL.md)**
+- **[AWCI Web Dashboard](docs/awci/AWCI_WEB_DASHBOARD.md)** — the real Next.js dashboard's architecture and which backend endpoint feeds each panel.
 
 `docs/archive/` holds ~185 historical sprint/release/"CERTIFIED" documents that were generated automatically and asserted completion without a reproducible test run backing them - kept for history, explicitly superseded by the two living sources above, not deleted. See [`docs/archive/README.md`](docs/archive/README.md) for why.
 
