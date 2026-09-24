@@ -3,7 +3,7 @@
 import { AlertTriangle, Loader2 } from "lucide-react"
 import { Panel } from "@/components/ui/panel"
 import { useComplexityField } from "@/lib/hooks/use-complexity-field"
-import { affectedAreaKm2, maxField, meanConfidence, meanField } from "@/lib/complexity-stats"
+import { affectedAreaKm2, classifyLevel, maxField, meanConfidence, meanField, toneForLevel } from "@/lib/complexity-stats"
 import { cn } from "@/lib/utils"
 
 interface Kpi {
@@ -23,12 +23,6 @@ const toneBar: Record<Kpi["tone"], string> = {
   normal: "bg-accent",
   warning: "bg-warning",
   critical: "bg-critical",
-}
-
-function toneForAwci(value: number): Kpi["tone"] {
-  if (value >= 65) return "critical"
-  if (value >= 35) return "warning"
-  return "normal"
 }
 
 export function KpiBar() {
@@ -65,13 +59,13 @@ export function KpiBar() {
       label: "Global Mean AWCI",
       value: mean !== null ? mean.toFixed(1) : "—",
       unit: "idx",
-      tone: mean !== null ? toneForAwci(mean) : "normal",
+      tone: mean !== null ? toneForLevel(classifyLevel(data.level_thresholds, mean)) : "normal",
     },
     {
       label: "Max AWCI",
       value: max !== null ? max.toFixed(0) : "—",
       unit: "idx",
-      tone: max !== null ? toneForAwci(max) : "normal",
+      tone: max !== null ? toneForLevel(classifyLevel(data.level_thresholds, max)) : "normal",
     },
     {
       label: "Affected Area (≥ Moderate)",
