@@ -11,12 +11,12 @@ interface HazardTile {
   label: string
   value: string
   unit: string
-  tone: "normal" | "warning" | "critical"
+  tone: "normal" | "warning" | "severe" | "critical"
   note?: string
 }
 
-const toneText = { normal: "text-accent", warning: "text-warning", critical: "text-critical" } as const
-const toneBar = { normal: "bg-accent", warning: "bg-warning", critical: "bg-critical" } as const
+const toneText = { normal: "text-accent", warning: "text-warning", severe: "text-severe", critical: "text-critical" } as const
+const toneBar = { normal: "bg-accent", warning: "bg-warning", severe: "bg-severe", critical: "bg-critical" } as const
 
 /**
  * Real "AWCI Global" gauge + 6 real hazard tiles, matching the

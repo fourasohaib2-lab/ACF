@@ -7,8 +7,8 @@ import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 import { classifyLevel, toneForLevel } from "@/lib/complexity-stats"
 import { cn } from "@/lib/utils"
 
-const toneText = { normal: "text-accent", warning: "text-warning", critical: "text-critical" } as const
-const toneBg = { normal: "bg-accent/15", warning: "bg-warning/15", critical: "bg-critical/15" } as const
+const toneText = { normal: "text-accent", warning: "text-warning", severe: "text-severe", critical: "text-critical" } as const
+const toneBg = { normal: "bg-accent/15", warning: "bg-warning/15", severe: "bg-severe/15", critical: "bg-critical/15" } as const
 
 /**
  * Real "AWCI Vertical Profile" table - one row per real native model

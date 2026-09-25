@@ -10,18 +10,20 @@ interface Kpi {
   label: string
   value: string
   unit: string
-  tone: "normal" | "warning" | "critical"
+  tone: "normal" | "warning" | "severe" | "critical"
 }
 
 const toneText: Record<Kpi["tone"], string> = {
   normal: "text-accent",
   warning: "text-warning",
+  severe: "text-severe",
   critical: "text-critical",
 }
 
 const toneBar: Record<Kpi["tone"], string> = {
   normal: "bg-accent",
   warning: "bg-warning",
+  severe: "bg-severe",
   critical: "bg-critical",
 }
 

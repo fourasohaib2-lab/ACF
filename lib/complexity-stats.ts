@@ -54,11 +54,26 @@ export function classifyLevel(thresholds: LevelThreshold[], score: number): stri
   return thresholds[thresholds.length - 1]?.[1] ?? "Unknown"
 }
 
-/** UI tone for a real `classifyLevel()` label - a purely presentational
- * mapping (which bands read as "needs attention"), not a scientific
- * claim. */
-export function toneForLevel(label: string): "normal" | "warning" | "critical" {
-  if (label === "High" || label === "Very High" || label === "Extreme") return "critical"
+/**
+ * UI severity tone for a real `classifyLevel()` label - maps AWCI's 6
+ * real composite bands onto the real, named 4-level awareness scale
+ * EUMETNET Meteoalarm and Météo-France's own "vigilance" system both
+ * use (Green/no particular awareness -> Yellow/be aware ->
+ * Orange/be prepared -> Red/take action), not an ACF invention: "There
+ * are four colours to point out the weather conditions: green,
+ * yellow, orange, and red" (Meteoalarm); Météo-France's 4 official
+ * vigilance colors carry the same semantics. Neither publisher
+ * documents a single universal hex/RGB swatch for these names
+ * (checked 2026-09-25) - only the LEVEL NAMES and their ordering are
+ * real/cited here, not a specific color value (see the CSS custom
+ * properties this maps to in app/globals.css for the disclosed,
+ * ACF-chosen swatches within that real 4-color family).
+ * "normal" doubles as the real "Green" baseline (Very Low/Low - no
+ * particular awareness).
+ */
+export function toneForLevel(label: string): "normal" | "warning" | "severe" | "critical" {
+  if (label === "Very High" || label === "Extreme") return "critical"
+  if (label === "High") return "severe"
   if (label === "Moderate") return "warning"
   return "normal"
 }

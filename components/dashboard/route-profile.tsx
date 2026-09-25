@@ -7,7 +7,12 @@ import { useRouteWeather } from "@/lib/hooks/use-route-weather"
 import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 import { classifyLevel, sampleFieldAt, toneForLevel } from "@/lib/complexity-stats"
 
-const toneColor = { normal: "var(--accent)", warning: "var(--warning)", critical: "var(--critical)" } as const
+const toneColor = {
+  normal: "var(--accent)",
+  warning: "var(--warning)",
+  severe: "var(--severe)",
+  critical: "var(--critical)",
+} as const
 
 const KM_TO_NM = 0.539957
 

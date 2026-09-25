@@ -4,6 +4,13 @@
  * animation/decoration beyond what the real number implies). Sweeps
  * 270 real degrees (-135 to +135) so 0 and 100 read as distinct
  * endpoints, matching common aviation-gauge convention. */
+const TONE_COLOR = {
+  normal: "var(--accent)",
+  warning: "var(--warning)",
+  severe: "var(--severe)",
+  critical: "var(--critical)",
+} as const
+
 export function AwciGauge({
   value,
   label,
@@ -13,7 +20,7 @@ export function AwciGauge({
   value: number | null
   label: string
   size?: number
-  tone?: "normal" | "warning" | "critical"
+  tone?: "normal" | "warning" | "severe" | "critical"
 }) {
   const stroke = 10
   const radius = (size - stroke) / 2
@@ -21,7 +28,7 @@ export function AwciGauge({
   const sweepFraction = 270 / 360
   const arcLength = circumference * sweepFraction
   const filledLength = value !== null ? arcLength * Math.max(0, Math.min(1, value / 100)) : 0
-  const toneColor = tone === "critical" ? "var(--critical)" : tone === "warning" ? "var(--warning)" : "var(--accent)"
+  const toneColor = TONE_COLOR[tone]
 
   return (
     <div className="flex flex-col items-center justify-center" style={{ width: size, height: size }}>

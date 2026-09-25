@@ -31,7 +31,12 @@ const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 const TILE_FILTER = "invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6)"
 
-const toneColor = { normal: "var(--accent)", warning: "var(--warning)", critical: "var(--critical)" } as const
+const toneColor = {
+  normal: "var(--accent)",
+  warning: "var(--warning)",
+  severe: "var(--severe)",
+  critical: "var(--critical)",
+} as const
 
 function airportIcon(color: string) {
   return L.divIcon({

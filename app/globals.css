@@ -12,6 +12,7 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-critical: var(--critical);
+  --color-severe: var(--severe);
   --color-warning: var(--warning);
 
   --radius: 0.375rem;
@@ -26,11 +27,23 @@
   --panel-raised: oklch(0.25 0.03 255);
   --border-subtle: oklch(0.32 0.03 255);
   --muted: oklch(0.62 0.02 250);
-  /* tech cyan accent */
+  /* tech cyan accent - general UI branding, also stands in for the
+     real WMO/EUMETNET Meteoalarm/Météo-France vigilance "Green" (no
+     particular awareness) severity level, see lib/complexity-stats.ts
+     toneForLevel() */
   --accent: oklch(0.78 0.14 205);
-  /* critical values */
-  --critical: oklch(0.68 0.2 25);
-  --warning: oklch(0.78 0.16 65);
+  /* Real 4-level severity escalation matching the named
+     Green/Yellow/Orange/Red awareness levels EUMETNET Meteoalarm and
+     Météo-France vigilance both use (confirmed 2026-09-25 via
+     independent sources for both; see toneForLevel()'s own docstring
+     for the citation and why no single official hex/RGB swatch is
+     claimed - neither publishes one universal value). --warning
+     (Yellow) and --severe (Orange) are two distinct hues so a real
+     AWCI "Moderate" vs "High" classification renders as two visibly
+     different colors, not the same one. */
+  --critical: oklch(0.68 0.2 25); /* Red */
+  --severe: oklch(0.78 0.16 65); /* Orange */
+  --warning: oklch(0.85 0.17 90); /* Yellow */
 }
 
 * {

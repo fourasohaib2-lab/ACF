@@ -7,7 +7,7 @@ import { useHazardField } from "@/lib/hooks/use-hazard-field"
 import { affectedAreaKm2, classifyLevel, meanConfidence, meanField, toneForLevel } from "@/lib/complexity-stats"
 import { cn } from "@/lib/utils"
 
-const toneText = { normal: "text-accent", warning: "text-warning", critical: "text-critical" } as const
+const toneText = { normal: "text-accent", warning: "text-warning", severe: "text-severe", critical: "text-critical" } as const
 
 /**
  * Real "Current Situation" panel - the reference mockup's ranked
