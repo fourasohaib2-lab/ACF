@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from acf.awci.ops.domains import DEFAULT_DOMAINS_PATH, load_domains
 from acf.awci.ops.store import CubeStore
-from acf.web.routers.awci_router import default_profile, router
+from acf.web.awci_router import default_profile, router
 
 
 def attach_awci_state(app: FastAPI, data_dir: Path | None = None, domains_file: Path | None = None) -> None:

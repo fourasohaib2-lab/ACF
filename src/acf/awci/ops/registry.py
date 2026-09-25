@@ -28,7 +28,8 @@ _SPECS = (
               "Ellrod & Knapp (1992), Wea. Forecasting 7, 150-165", "HYPOTHESIS"),
     LayerSpec("cat_category", "CAT category", "code 0-3", True, "TI2 x1e7 thresholds 4/8/12",
               "Ellrod & Knapp (1992)", "HYPOTHESIS"),
-    LayerSpec("icing_potential", "Icing potential", "0/1", True, "-20 <= T <= 0 degC and RH >= 70 %",
+    LayerSpec("icing_potential", "Icing potential", "0/1", True,
+              "-20 <= T <= 0 degC and RH over water >= 70 % (RH from q, T, p; IFS r is not used: it is w.r.t. ice below -23 degC)",
               "T+RH approach of Schultz & Politovich (1992); thresholds ACF choice", "HYPOTHESIS"),
     LayerSpec("theta_e", "Equivalent potential temperature", "K", True, "Bolton (1980) eq. 43",
               "Bolton (1980), Mon. Wea. Rev. 108, 1046-1053", "CONFIRMED"),
@@ -47,3 +48,15 @@ _SPECS = (
 )
 
 LAYERS: dict[str, LayerSpec] = {spec.name: spec for spec in _SPECS}
+
+#: Stored cube variables (names only - kept here, free of eccodes/netCDF imports, so the web router
+#: can be imported with the ``web`` extra alone).
+MODULES: tuple[str, ...] = ("dynamic", "thermodynamic", "convective", "microphysical", "topographic")
+LEVEL_LAYERS: tuple[str, ...] = (
+    "t", "q", "r", "u", "v", "w", "gh", "wind_speed", "layer_shear", "vertical_shear", "cat_ti2",
+    "cat_category", "icing_potential", "theta_e", "awci", "awci_level", *(f"module_{m}" for m in MODULES),
+)
+SURFACE_LAYERS: tuple[str, ...] = (
+    "t2m", "d2m", "rh2m", "mucape", "cloud_base_lcl", "precip_rate", "precip_class", "precip_type",
+    "ptype_severity", "gust_10m", "dust_proxy", "tcc", "sp_hpa",
+)

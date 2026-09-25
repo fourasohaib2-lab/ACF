@@ -123,3 +123,49 @@ def test_point_profile_timeseries_never_load_whole_variables(client: TestClient,
         sizes.clear()
         assert client.get(url).status_code == 200
         assert max(sizes) <= 12, f"{url} materialized an array of {max(sizes)} values"
+
+
+# Final-review fixes
+@pytest.mark.parametrize("run", ["../../../evil", "2026092500x", "abc"])
+def test_run_parameter_rejects_path_traversal(client: TestClient, run: str) -> None:
+    assert client.get(f"{BASE}/meta?domain=fixture&run={run}").status_code in (400, 422)
+
+
+def test_point_reports_missing_inputs_present_weight_and_decomposition(client: TestClient) -> None:
+    body = client.get(f"{BASE}/point?{Q}&step=0&level=300&lat=36&lon=3").json()
+    assert body["missing_inputs"] == ["temporal", "confidence"]
+    assert body["present_weight"] == pytest.approx(0.9)
+    parts = [v for v in body["decomposition"].values() if v is not None]
+    assert sum(parts) == pytest.approx(body["awci"], abs=1e-3)
+    assert body["scientific_status"]["awci"] == "HYPOTHESIS"
+
+
+def test_point_breakdown_lists_point_specific_missing_module() -> None:
+    from acf.web.awci_router import breakdown
+
+    profile = load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH)
+    out = breakdown({"dynamic": 0.4, "thermodynamic": None, "convective": 0.1, "microphysical": 0.0,
+                     "topographic": 0.2}, profile)
+    assert out["missing_inputs"] == ["thermodynamic", "temporal", "confidence"]
+    assert out["present_weight"] == pytest.approx(0.65)
+    assert out["decomposition"]["thermodynamic"] is None
+
+
+def test_timeseries_carries_modules_per_step(client: TestClient) -> None:
+    points = client.get(f"{BASE}/timeseries?{Q}&level=300&lat=36&lon=3").json()["points"]
+    assert set(points[0]["modules"]) >= {"dynamic", "thermodynamic"} and "missing_inputs" in points[0]
+
+
+def test_corrupt_cube_is_503(tmp_path) -> None:
+    root = tmp_path
+    run_dir = root / "fixture" / "2026092500"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text('{"run": "2026092500", "steps": [0], "missing_steps": [], '
+                                           '"status": "complete", "levels_hpa": [300.0], "valid_times": ["x"], '
+                                           '"domain": "fixture", "profile": "operational-v1", "profile_version": "1"}')
+    (run_dir / "cube.nc").write_bytes(b"not a netcdf file")
+    domains = root / "domains.json"
+    domains.write_text('{"domains": [{"name": "fixture", "label": "f", "south": 35, "north": 37, '
+                       '"west": 2, "east": 4, "default": true}]}')
+    c = TestClient(create_awci_app(data_dir=root, domains_file=domains), raise_server_exceptions=False)
+    assert c.get(f"{BASE}/field?{Q}&layer=awci&step=0&level=300").status_code == 503

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime, timedelta
@@ -21,7 +22,7 @@ import xarray as xr
 from acf.awci.ops.domains import Domain
 from acf.awci.ops.engine import Profile
 from acf.awci.ops.isa import flight_level
-from acf.awci.ops.pipeline import LEVEL_LAYERS, SURFACE_LAYERS
+from acf.awci.ops.registry import LEVEL_LAYERS, SURFACE_LAYERS
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[4] / "data" / "awci"
 LICENSE = "CC-BY-4.0"
@@ -80,8 +81,18 @@ class CubeWriter:
             self.nc[name][step_index] = layers[name].astype(np.float32)
         self.nc["elevation"][:] = np.asarray(elevation, dtype=np.float32)
 
-    def finalize(self, status: str, missing_steps: list[int], extra: dict[str, Any]) -> dict[str, Any]:
+    def finalize(
+        self, status: str, missing_steps: list[int], extra: dict[str, Any], force: bool = False
+    ) -> dict[str, Any]:
+        """Publish the cube. An existing `complete` run is never replaced by a less complete one unless
+        `force`; the swap goes through `<run>.old` so readers never see the run missing."""
         self.nc.close()
+        existing = self.final_dir / "manifest.json"
+        if not force and status != "complete" and existing.exists():
+            previous = json.loads(existing.read_text())
+            if previous.get("status") == "complete":
+                shutil.rmtree(self.tmp_dir, ignore_errors=True)
+                return {**previous, "rejected_rerun_status": status, "rejected_rerun_missing_steps": missing_steps}
         manifest = {
             "run": run_id(self.run), "run_time": self.run.isoformat(), "domain": self.domain.name,
             "status": status, "steps": self.steps, "missing_steps": missing_steps,
@@ -93,8 +104,12 @@ class CubeWriter:
             "model": MODEL, "license": LICENSE, "attribution": ATTRIBUTION, "acf_git_sha": _git_sha(), **extra,
         }
         (self.tmp_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
-        shutil.rmtree(self.final_dir, ignore_errors=True)
+        old_dir = self.final_dir.with_name(self.final_dir.name + ".old")
+        shutil.rmtree(old_dir, ignore_errors=True)
+        if self.final_dir.exists():
+            os.replace(self.final_dir, old_dir)
         os.replace(self.tmp_dir, self.final_dir)
+        shutil.rmtree(old_dir, ignore_errors=True)
         return manifest
 
     def abort(self) -> None:
@@ -117,6 +132,15 @@ def _open(path: str, mtime: float) -> xr.Dataset:
     return xr.open_dataset(path, engine="netcdf4", cache=False)
 
 
+_RUN_ID_RE = re.compile(r"^\d{10}$")
+
+
+def _check_run_id(run: str) -> str:
+    if not _RUN_ID_RE.fullmatch(run):
+        raise ValueError(f"invalid run id {run!r} - expected YYYYMMDDHH")
+    return run
+
+
 class CubeStore:
     def __init__(self, root: Path | None = None) -> None:
         self.root = Path(root) if root is not None else data_root()
@@ -130,13 +154,13 @@ class CubeStore:
         return sorted(manifests, key=lambda m: m["run"], reverse=True)
 
     def manifest(self, domain: str, run: str) -> dict[str, Any]:
-        path = self.root / domain / run / "manifest.json"
+        path = self.root / domain / _check_run_id(run) / "manifest.json"
         if not path.exists():
             raise FileNotFoundError(f"no run {run!r} for domain {domain!r}")
         return json.loads(path.read_text())
 
     def dataset(self, domain: str, run: str) -> xr.Dataset:
-        path = self.root / domain / run / "cube.nc"
+        path = self.root / domain / _check_run_id(run) / "cube.nc"
         if not path.exists():
             raise FileNotFoundError(f"no cube for {domain!r}/{run!r}")
         return _open(str(path), path.stat().st_mtime)

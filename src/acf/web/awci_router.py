@@ -9,22 +9,24 @@ Every response carries provenance and source_tier "nwp_forecast".
 from __future__ import annotations
 
 import math
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
+from loguru import logger
 from pydantic import BaseModel
 
 from acf.awci.ops.domains import Domain
-from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, load_profile
-from acf.awci.ops.pipeline import LEVEL_LAYERS, SURFACE_LAYERS
-from acf.awci.ops.registry import LAYERS
+from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, Profile, combine, load_profile
+from acf.awci.ops.registry import LAYERS, LEVEL_LAYERS, MODULES, SURFACE_LAYERS
 from acf.awci.ops.store import ATTRIBUTION, LICENSE, MODEL, CubeStore
 
 router = APIRouter(prefix="/awci", tags=["awci"])
-_MODULES = ("dynamic", "thermodynamic", "convective", "microphysical", "topographic")
-_EXCLUDED = ["temporal", "confidence"]
+_MODULES = MODULES
+_EXCLUDED = ["temporal", "confidence"]  # not fed in V1 (spec §5.2)
+#: Run ids are YYYYMMDDHH only - never a path fragment (path traversal guard).
+RunId = Annotated[str, Query(pattern=r"^\d{10}$", description="run id YYYYMMDDHH")]
 
 
 class Provenance(BaseModel):
@@ -61,6 +63,35 @@ def _manifest(request: Request, domain: str, run: str) -> dict[str, Any]:
         return _store(request).manifest(domain, run)
     except FileNotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+def _dataset(request: Request, domain: str, run: str) -> Any:
+    try:
+        return _store(request).dataset(domain, run)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.error("AWCI cube {}/{} unreadable: {}", domain, run, exc)
+        raise HTTPException(503, f"cube {domain}/{run} is unreadable on this server") from exc
+
+
+def breakdown(module_values: dict[str, float | None], profile: Profile) -> dict[str, Any]:
+    """Per-point composite explanation re-derived from the stored module scores (0-1): excluded
+    modules, present weight and the decomposition in AWCI points (same formula as engine.combine)."""
+    scores: dict[str, np.ndarray | None] = {
+        m: (None if m in _EXCLUDED else np.array([np.nan if module_values.get(m) is None else module_values[m]]))
+        for m in profile.weights
+    }
+    result = combine(scores, profile)
+    point_missing = [m for m in _MODULES if module_values.get(m) is None]
+    decomposition = {
+        k: _num(v[0]) for k, v in result.decomposition.items() if k in _MODULES or k in profile.interaction_terms
+    }
+    return {
+        "missing_inputs": point_missing + list(_EXCLUDED),
+        "present_weight": float(result.present_weight[0]),
+        "decomposition": decomposition,
+    }
 
 
 def _step_index(manifest: dict[str, Any], step: int) -> int:
@@ -108,7 +139,7 @@ def runs(request: Request, domain: str) -> list[dict[str, Any]]:
 
 
 @router.get("/meta")
-def meta(request: Request, domain: str, run: str) -> dict[str, Any]:
+def meta(request: Request, domain: str, run: RunId) -> dict[str, Any]:
     m = _manifest(request, domain, run)
     return {"levels_hpa": m["levels_hpa"], "flight_levels": m["flight_levels"], "steps": m["steps"],
             "valid_times": m["valid_times"], "missing_steps": m["missing_steps"], "status": m["status"],
@@ -118,14 +149,14 @@ def meta(request: Request, domain: str, run: str) -> dict[str, Any]:
 
 @router.get("/field", response_model=None)
 def field(
-    request: Request, domain: str, run: str, layer: str, step: int = Query(ge=0, le=384),
+    request: Request, domain: str, run: RunId, layer: str, step: int = Query(ge=0, le=384),
     level: float | None = None, format: Literal["json", "f32"] = "json",
 ) -> dict[str, Any] | Response:
     m = _manifest(request, domain, run)
     if layer not in LEVEL_LAYERS and layer not in SURFACE_LAYERS:
         raise HTTPException(400, f"unknown layer {layer!r}")
     si = _step_index(m, step)
-    ds = _store(request).dataset(domain, run)
+    ds = _dataset(request, domain, run)
     if layer in LEVEL_LAYERS:
         if level is None:
             raise HTTPException(400, f"layer {layer!r} is per-level: 'level' (hPa) is required")
@@ -151,55 +182,64 @@ def _column(ds: Any, si: int, i: int, j: int) -> dict[str, np.ndarray]:
     return {name: ds[name].isel(step=si, lat=i, lon=j).values for name in LEVEL_LAYERS}
 
 
-def _level_payload(column: dict[str, np.ndarray], li: int, thresholds: Any) -> dict[str, Any]:
+def _level_payload(column: dict[str, np.ndarray], li: int, thresholds: Any, profile: Profile) -> dict[str, Any]:
+    modules = {m: _num(column[f"module_{m}"][li]) for m in _MODULES}
     level_values = {name: _num(values[li]) for name, values in column.items()
                     if not name.startswith("module_") and name not in ("awci", "awci_level")}
     return {
         "awci": _num(column["awci"][li]),
         "awci_level": _level_label(thresholds, float(column["awci_level"][li])),
-        "modules": {m: _num(column[f"module_{m}"][li]) for m in _MODULES},
+        "modules": modules,
         "excluded_modules": list(_EXCLUDED),
+        **breakdown(modules, profile),
         "level_layers": level_values,
+        "scientific_status": {name: LAYERS[name].status for name in level_values if name in LAYERS}
+        | {"awci": LAYERS["awci"].status},
     }
 
 
 @router.get("/point")
-def point(request: Request, domain: str, run: str, step: int, level: float, lat: float, lon: float) -> dict[str, Any]:
+def point(request: Request, domain: str, run: RunId, step: int, level: float, lat: float, lon: float) -> dict[str, Any]:
     m = _manifest(request, domain, run)
     si, li = _step_index(m, step), _level_index(m, level)
-    ds = _store(request).dataset(domain, run)
+    ds = _dataset(request, domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level,
-            "flight_level": m["flight_levels"][li], **_level_payload(_column(ds, si, i, j), li, thresholds),
+            "flight_level": m["flight_levels"][li], **_level_payload(_column(ds, si, i, j), li, thresholds, request.app.state.awci_profile),
             "surface_layers": {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in SURFACE_LAYERS},
             "elevation_m": _num(ds["elevation"].isel(lat=i, lon=j).values),
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
 @router.get("/profile")
-def profile(request: Request, domain: str, run: str, step: int, lat: float, lon: float) -> dict[str, Any]:
+def profile(request: Request, domain: str, run: RunId, step: int, lat: float, lon: float) -> dict[str, Any]:
     m = _manifest(request, domain, run)
     si = _step_index(m, step)
-    ds = _store(request).dataset(domain, run)
+    ds = _dataset(request, domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
     column = _column(ds, si, i, j)
-    levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds)}
+    levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds, request.app.state.awci_profile)}
               for li, (p, fl) in enumerate(zip(m["levels_hpa"], m["flight_levels"]))]
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "levels": levels,
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
 @router.get("/timeseries")
-def timeseries(request: Request, domain: str, run: str, level: float, lat: float, lon: float) -> dict[str, Any]:
+def timeseries(request: Request, domain: str, run: RunId, level: float, lat: float, lon: float) -> dict[str, Any]:
     m = _manifest(request, domain, run)
     li = _level_index(m, level)
-    ds = _store(request).dataset(domain, run)
+    ds = _dataset(request, domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
+    prof = request.app.state.awci_profile
     series = ds["awci"].isel(level=li, lat=i, lon=j).values
-    points = [{"step": s, "valid_time": vt, "awci": _num(series[si])}
-              for si, (s, vt) in enumerate(zip(m["steps"], m["valid_times"]))]
+    module_series = {m: ds[f"module_{m}"].isel(level=li, lat=i, lon=j).values for m in _MODULES}
+    points = []
+    for si, (s, vt) in enumerate(zip(m["steps"], m["valid_times"])):
+        modules = {mod: _num(values[si]) for mod, values in module_series.items()}
+        points.append({"step": s, "valid_time": vt, "awci": _num(series[si]), "modules": modules,
+                       **breakdown(modules, prof)})
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level,
             "points": points, "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
 

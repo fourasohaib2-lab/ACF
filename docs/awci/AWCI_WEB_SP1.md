@@ -2,7 +2,7 @@
 
 Spec : `docs/superpowers/specs/2026-09-25-awci-web-sp1-data-science-design.md`.
 Code : `src/acf/awci/ops/` (ingestion, diagnostics, moteur, stockage) et
-`src/acf/web/routers/awci_router.py` (API). Le desktop Qt n'est pas concerné.
+`src/acf/web/awci_router.py` (API). Le desktop Qt n'est pas concerné.
 
 ## Installation
 
@@ -21,7 +21,9 @@ acf-awci-ingest --run 2026092506 --domain north_africa --steps 0-24/3
 
 - Données écrites sous `ACF_AWCI_DATA_DIR` (défaut `<repo>/data/awci/`),
   un dossier par domaine et par run : `cube.nc` + `manifest.json`.
-- Écriture atomique (`<run>.tmp/` puis renommage). Rétention : `--keep 8`.
+- Écriture atomique (`<run>.tmp/`, bascule via `<run>.old`). Rétention : `--keep 8`.
+- Une réingestion qui finit `partial` ne remplace jamais un run `complete`
+  (le manifest renvoyé porte `rejected_rerun_status`) ; `--force` pour l'imposer.
 - `latest` = run le plus récent dont la dernière échéance demandée est
   publiée ; sinon repli automatique sur le run précédent.
 - Une échéance en échec est journalisée et marquée ; le run est `partial`.
@@ -95,6 +97,12 @@ Le router est aussi monté dans l'application existante (`acf-web`).
   TI2 négatif = divergence > déformation, classé « Smooth »), le
   givrage (seuils T/HR choix ACF), la base nuageuse LCL (n'est pas un
   plafond), la poussière (proxy) et le composite AWCI.
+- Niveaux sous le relief (pression du niveau > pression de surface) : `null`
+  pour toutes les couches par niveau — ce sont des extrapolations IFS.
+- Givrage : humidité relative par rapport à l'eau calculée depuis q, T, p
+  (le `r` IFS, relatif à la glace sous −23 °C, n'est pas utilisé).
+- `/point`, `/profile`, `/timeseries` : `missing_inputs`, `present_weight` et
+  `decomposition` (points AWCI) par point.
 - Pas d'interpolation verticale : niveaux IFS natifs uniquement.
 - Domaines traversant l'antiméridien non supportés en V1.
 

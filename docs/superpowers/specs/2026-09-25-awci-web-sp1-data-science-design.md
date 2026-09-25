@@ -79,7 +79,7 @@ acf-awci-ingest (CLI, planifié cron/systemd)
           │
           ▼  data/awci/{domain}/{run}/cube.nc + manifest.json
           │
-src/acf/web/routers/awci_router.py   /api/v1/awci/*  (lecture seule)
+src/acf/web/awci_router.py   /api/v1/awci/*  (lecture seule)
 ```
 
 Emplacement du code : `src/acf/awci/ops/` (nouveau sous-paquet, sans
@@ -117,7 +117,7 @@ en test de parité. Chaque diagnostic déclare : grandeur, unité,
 | `vertical_shear` | ‖ΔV‖/Δz entre le niveau et le niveau supérieur adjacent (au niveau le plus haut, 100 hPa : niveau inférieur adjacent), Δz = Δ`gh` réel | s⁻¹ | standard |
 | `layer_shear` | ‖ΔV‖ entre les mêmes deux niveaux | m/s | standard |
 | `cat_ti2` | Ellrod–Knapp TI2 = VWS × (DEF + CVG), DEF à partir des gradients horizontaux de u,v (espacement métrique réel), **CVG = −`d`** (divergence IFS réelle) ; catégories `CATIndex.category()` (seuils 4/8/12 ×10⁻⁷ s⁻²) | s⁻² | Ellrod & Knapp (1992) — CONFIRMED pour la formule, HYPOTHESIS pour l'usage à 0,25° |
-| `icing_potential` | 1 si −20 °C ≤ T ≤ 0 °C **et** HR ≥ 70 %, sinon 0 ; HR = `r` IFS (par rapport à l'eau) | booléen | approche T+HR de Schultz & Politovich (1992) ; **seuils = choix ACF, statut HYPOTHESIS**, à calibrer (SP ultérieur) |
+| `icing_potential` | 1 si −20 °C ≤ T ≤ 0 °C **et** HR ≥ 70 %, sinon 0 ; HR **par rapport à l'eau** calculée depuis q, T, p (le `r` IFS n'est pas utilisé : il est relatif à la glace sous −23 °C, mixte entre −23 et 0 °C — corrigé à la revue finale) | booléen | approche T+HR de Schultz & Politovich (1992) ; **seuils = choix ACF, statut HYPOTHESIS**, à calibrer (SP ultérieur) |
 | `theta_e` | Bolton (1980) à partir de T, q, p | K | CONFIRMED |
 | `mucape` | champ IFS tel quel (colonne) | J/kg | champ modèle |
 | `cloud_base_lcl` | 125 m × (2t − 2d) (Espy) — **libellé « base nuageuse estimée (LCL) », jamais « plafond »** | m AGL | approximation standard, HYPOTHESIS comme estimateur de plafond |
@@ -125,6 +125,8 @@ en test de parité. Chaque diagnostic déclare : grandeur, unité,
 | `precip_type` | `ptype` IFS décodé (pluie, neige, pluie verglaçante, grésil…) | code | champ modèle |
 | `gust_10m` | `10fg` | m/s | champ modèle |
 | `dust_proxy` | rampe(10fg ; 8→18 m/s) × (1 − rampe(HR2m ; 20→70 %)) — HR2m de 2t/2d | 0–1 | **proxy HYPOTHESIS, libellé comme tel** |
+
+**Niveaux sous le relief :** tout niveau pression dont la pression dépasse la pression de surface `sp` est extrapolé par IFS ; toutes les couches par niveau y valent `NaN` (`null` dans l'API).
 
 Les couches surface/colonne (`mucape`, `cloud_base_lcl`, `precip_*`,
 `gust_10m`, `dust_proxy`) sont indépendantes du niveau et servies comme
@@ -187,7 +189,7 @@ palette de couleurs appartient au front (SP2).
 - `manifest.json` : run, domaine, profil et sa version, pas présents,
   pas manquants, variables, attribution, version d'ACF (git SHA), durée,
   `status` ∈ {`complete`, `partial`, `failed`}.
-- Écriture dans `…/{run}.tmp/` puis renommage atomique.
+- Écriture dans `…/{run}.tmp/` puis bascule via `{run}.old` (le run n'est jamais absent pour un lecteur) ; un run `complete` n'est jamais remplacé par un run moins complet sans `--force`.
 - Rétention : N derniers runs par domaine (config, défaut 8 = 2 jours).
 - Reproductibilité : aucun aléa ; ordre de calcul déterministe ;
   attributs d'horodatage isolés dans le manifest.
@@ -221,7 +223,7 @@ validés contre le manifest (400 sinon, 404 si run/domaine inconnu).
 | `GET /runs?domain=` | runs disponibles + `status` + pas présents |
 | `GET /meta?domain=&run=` | niveaux (hPa + FL ISA), pas, heures de validité, couches, provenance |
 | `GET /field?domain=&run=&layer=&step=&level=&format=json\|f32` | champ 2D ; `json` : `null` pour manquant ; `f32` : `application/octet-stream` little-endian + en-têtes `X-AWCI-Shape`, `X-AWCI-Lats`, `X-AWCI-Lons` (bornes), `X-AWCI-Nodata: NaN` |
-| `GET /point?domain=&run=&step=&level=&lat=&lon=` | point le plus proche : entrées, couches, modules, décomposition, modules exclus, classes, statuts |
+| `GET /point?domain=&run=&step=&level=&lat=&lon=` | point le plus proche : entrées, couches, modules, décomposition, `missing_inputs` (exclusions V1 + modules non alimentés en ce point), `present_weight`, classes, statuts |
 | `GET /profile?domain=&run=&step=&lat=&lon=` | idem sur tous les niveaux |
 | `GET /timeseries?domain=&run=&level=&lat=&lon=` | idem sur tous les pas |
 | `GET /registry` | couches (unité, équation, source, statut), modules, poids du profil, classes |

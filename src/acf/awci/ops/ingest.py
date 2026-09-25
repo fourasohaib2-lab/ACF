@@ -2,7 +2,7 @@
 acf-awci-ingest: download one ECMWF IFS run, compute AWCI layers, store cubes.
 
     acf-awci-ingest [--run latest|YYYYMMDDHH] [--domain NAME|all] [--steps 0-72/3]
-                    [--profile PATH] [--domains-file PATH] [--data-dir PATH] [--keep N]
+                    [--profile PATH] [--domains-file PATH] [--data-dir PATH] [--keep N] [--force]
 
 Exit code 0 when every domain is complete or partial, 1 when any failed.
 A failed step never aborts the run; a run with no step at all is 'failed' and not stored.
@@ -47,7 +47,7 @@ def parse_steps(spec: str) -> list[int]:
 
 def ingest_run(
     run: datetime, domains: list[Domain], profile: Profile, fetcher: Fetcher, root: Path,
-    steps: list[int], keep: int = 8,
+    steps: list[int], keep: int = 8, force: bool = False,
 ) -> dict[str, dict[str, Any]]:
     started = time.monotonic()
     writers: dict[str, CubeWriter] = {}
@@ -76,7 +76,9 @@ def ingest_run(
         if writer is None:
             manifests[domain.name] = {"status": "failed", "domain": domain.name, "missing_steps": missing}
             continue
-        manifests[domain.name] = writer.finalize(status, missing, {"duration_s": round(time.monotonic() - started, 1)})
+        manifests[domain.name] = writer.finalize(
+            status, missing, {"duration_s": round(time.monotonic() - started, 1)}, force=force
+        )
         apply_retention(root, domain.name, keep)
     return manifests
 
@@ -90,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--domains-file", default=str(DEFAULT_DOMAINS_PATH))
     parser.add_argument("--data-dir", default=None)
     parser.add_argument("--keep", type=int, default=8)
+    parser.add_argument("--force", action="store_true", help="replace a complete run even with a partial rerun")
     args = parser.parse_args(argv)
 
     steps = parse_steps(args.steps)
@@ -99,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     run = (find_latest_run(fetcher, datetime.now(UTC), steps[-1]) if args.run == "latest"
            else datetime.strptime(args.run, "%Y%m%d%H").replace(tzinfo=UTC))
     root = Path(args.data_dir) if args.data_dir else data_root()
-    manifests = ingest_run(run, domains, load_profile(args.profile), fetcher, root, steps, args.keep)
+    manifests = ingest_run(run, domains, load_profile(args.profile), fetcher, root, steps, args.keep, args.force)
     for name, manifest in manifests.items():
         logger.info("AWCI ingest {} {}: {}", run, name, manifest["status"])
     return 1 if any(m["status"] == "failed" for m in manifests.values()) else 0

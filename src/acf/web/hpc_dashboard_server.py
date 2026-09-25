@@ -100,7 +100,7 @@ def create_app(
 
     # AWCI Web SP1 read-only API (/api/v1/awci) - see acf.web.awci_app.
     from acf.web.awci_app import attach_awci_state
-    from acf.web.routers.awci_router import router as awci_router
+    from acf.web.awci_router import router as awci_router
 
     attach_awci_state(app)
     app.include_router(awci_router, prefix="/api/v1")
