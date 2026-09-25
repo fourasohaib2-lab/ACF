@@ -34,8 +34,9 @@ reproductibles**, et les servir par une API typée en lecture seule.
    de validité, domaine, attribution CC-BY-4.0) et un `source_tier`.
 5. Les requêtes API de lecture répondent en < 300 ms (p95) sur le
    domaine par défaut ; aucune requête ne déclenche de calcul lourd.
-6. Le moteur vectorisé reproduit `AWCICalculator.calculate()` à
-   1e-9 près sur le profil `legacy` (test de parité).
+6. Le moteur vectorisé reproduit les scores de module d'`AWCICalculator` à
+   1e-12 près et son `awci` à l'arrondi 0,1 près (|Δ| ≤ 0,05) sur le
+   profil `legacy` (test de parité).
 
 **Hors périmètre SP1 :** front web, METAR/aéroports, route et coupe
 verticale, authentification, interpolation verticale, ensemble ECMWF
@@ -138,8 +139,8 @@ telles (pas dupliquées artificiellement sur chaque niveau).
 poids, classes) sur des tableaux. Profil `legacy` = constantes actuelles
 d'`AWCICalculator`/`Normalizer`/`WeightsManager` lues **depuis ces
 classes** (pas recopiées). Test de parité sur ≥ 10 000 points tirés
-dans les plages physiques : écart ≤ 1e-9 sur `awci`, `module_scores`,
-`decomposition`, `physical_score`, `forecast_score`. `AWCICalculator`
+dans les plages physiques : scores de module à ≤ 1e-12 ; `awci` égal à
+celui d'`AWCICalculator` après son propre arrondi à 0,1 (|Δ| ≤ 0,05). `AWCICalculator`
 n'est pas modifié.
 
 ### 5.2 Profil `operational-v1` (fichier JSON versionné)

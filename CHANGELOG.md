@@ -11,6 +11,9 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 ## [Unreleased] - 2026-09-06
 
 ### Added
+- AWCI Web SP1 : ingestion ECMWF IFS 0,25° Open Data (`acf-awci-ingest`), dangers
+  vectorisés + AWCI `operational-v1`, API en lecture seule `/api/v1/awci`
+  (`acf-awci-web`). Voir `docs/awci/AWCI_WEB_SP1.md`.
 - Table de tiers de maturité/scope (Foundation/Core/Extended/Experimental)
   dans `ARCHITECTURE.md`, couvrant les 62 sous-modules de `src/acf/`.
 - `docs/STATUS.md` : suivi unique et vérifiable de l'avancement réel

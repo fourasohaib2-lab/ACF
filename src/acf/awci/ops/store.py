@@ -62,14 +62,16 @@ class CubeWriter:
         for name, dims, values in (("step", ("step",), steps), ("level", ("level",), levels_hpa),
                                    ("lat", ("lat",), lats), ("lon", ("lon",), lons)):
             self.nc.createVariable(name, "f8", dims)[:] = np.asarray(values, dtype=float)
-        comp = {"zlib": True, "complevel": 4, "fill_value": np.float32(np.nan)}
+        nan = np.float32(np.nan)
         # Never-written cells (a missing step) read back as the NaN fill value - no explicit init needed.
         for name in LEVEL_LAYERS:
             self.nc.createVariable(name, "f4", ("step", "level", "lat", "lon"),
-                                   chunksizes=(1, 1, len(lats), len(lons)), **comp)
+                                   chunksizes=(1, 1, len(lats), len(lons)), zlib=True, complevel=4,
+                                   fill_value=nan)
         for name in SURFACE_LAYERS:
-            self.nc.createVariable(name, "f4", ("step", "lat", "lon"), chunksizes=(1, len(lats), len(lons)), **comp)
-        self.nc.createVariable("elevation", "f4", ("lat", "lon"), **comp)
+            self.nc.createVariable(name, "f4", ("step", "lat", "lon"), chunksizes=(1, len(lats), len(lons)),
+                                   zlib=True, complevel=4, fill_value=nan)
+        self.nc.createVariable("elevation", "f4", ("lat", "lon"), zlib=True, complevel=4, fill_value=nan)
 
     def write_step(self, step_index: int, layers: dict[str, np.ndarray], elevation: np.ndarray) -> None:
         for name in LEVEL_LAYERS:
