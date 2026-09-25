@@ -228,6 +228,7 @@ export function getVerticalProfile(params: VerticalProfileParams): Promise<Verti
 export interface RouteCrossSectionParams {
   dep_icao: string
   arr_icao: string
+  stopover_icao?: string | null
   n_waypoints?: number
   model?: "AROME" | "ALADIN" | "ARPEGE"
   steps?: number
@@ -254,6 +255,7 @@ export interface RouteCrossSectionColumn {
 export interface RouteCrossSection {
   departure_icao: string
   arrival_icao: string
+  stopover_icao: string | null
   model: string
   n_levels: number
   columns: RouteCrossSectionColumn[]
@@ -263,15 +265,25 @@ export interface RouteCrossSection {
 }
 
 export function getRouteCrossSection(params: RouteCrossSectionParams): Promise<RouteCrossSection> {
-  const { dep_icao, arr_icao, n_waypoints, model, steps, seed, n_lat, n_lon, n_levels } = params
+  const { dep_icao, arr_icao, stopover_icao, n_waypoints, model, steps, seed, n_lat, n_lon, n_levels } = params
   return request(
-    `/complexity/route-cross-section${query({ dep_icao, arr_icao, n_waypoints, model, steps, seed, n_lat, n_lon, n_levels })}`,
+    `/complexity/route-cross-section${query({
+      dep_icao,
+      arr_icao,
+      stopover_icao: stopover_icao ?? undefined,
+      n_waypoints,
+      model,
+      steps,
+      seed,
+      n_lat,
+      n_lon,
+      n_levels,
+    })}`,
   )
 }
 
 // --------------------------------------------------------------------- /airports
 
-/** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`. */
 /** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`.
  * `iata_code`, `magnetic_variation_deg`, and `code_letter` are `null`
  * for a real airport this dataset genuinely has none/no citable value
@@ -343,14 +355,20 @@ export interface Waypoint {
   fraction: number
 }
 
-/** Mirrors `awci.flight.route_weather.RouteWeatherBriefing`. */
+/** Mirrors `awci.flight.route_weather.RouteWeatherBriefing`.
+ * `stopover_icao`/`stopover_weather` are `null` for a real direct
+ * route - a stopover is an explicit, opt-in choice, never inferred. */
 export interface RouteWeatherBriefing {
   departure_icao: string
   arrival_icao: string
+  stopover_icao: string | null
+  stopover_latitude: number | null
+  stopover_longitude: number | null
   great_circle_distance_nm: number
   waypoints: Waypoint[]
   departure_weather: AirportWeatherSnapshot
   arrival_weather: AirportWeatherSnapshot
+  stopover_weather: AirportWeatherSnapshot | null
   alternate_weather: Record<string, AirportWeatherSnapshot>
 }
 
@@ -358,8 +376,16 @@ export function getRouteWeather(
   depIcao: string,
   arrIcao: string,
   nWaypoints = 10,
+  stopoverIcao?: string | null,
 ): Promise<RouteWeatherBriefing> {
-  return request(`/flights/route-weather${query({ dep_icao: depIcao, arr_icao: arrIcao, n_waypoints: nWaypoints })}`)
+  return request(
+    `/flights/route-weather${query({
+      dep_icao: depIcao,
+      arr_icao: arrIcao,
+      n_waypoints: nWaypoints,
+      stopover_icao: stopoverIcao ?? undefined,
+    })}`,
+  )
 }
 
 // --------------------------------------------------------------------- /observations

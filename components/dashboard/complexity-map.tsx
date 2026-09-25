@@ -94,6 +94,13 @@ function RouteOverlay() {
           </Tooltip>
         </Marker>
       )}
+      {data.stopover_icao && data.stopover_latitude !== null && data.stopover_longitude !== null && (
+        <Marker position={[data.stopover_latitude, data.stopover_longitude]} icon={airportIcon("var(--severe)")}>
+          <Tooltip direction="top" offset={[0, -6]}>
+            {data.stopover_icao} · Stopover
+          </Tooltip>
+        </Marker>
+      )}
       {arr && (
         <Marker position={[arr.latitude, arr.longitude]} icon={airportIcon("var(--critical)")}>
           <Tooltip direction="top" offset={[0, -6]}>

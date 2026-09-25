@@ -22,11 +22,14 @@ export function RouteProfile() {
 
   const loading = route.loading || field.loading
   const error = route.error ?? field.error
+  const subtitle = route.stopoverIcao
+    ? `${route.depIcao} → ${route.stopoverIcao} → ${route.arrIcao} · Along-track`
+    : `${route.depIcao} → ${route.arrIcao} · Along-track`
 
   if (error) {
     return (
       <Panel className="flex h-full flex-col overflow-hidden">
-        <PanelHeader title="Route AWCI Profile" subtitle={`${route.depIcao} → ${route.arrIcao} · Along-track`} />
+        <PanelHeader title="Route AWCI Profile" subtitle={subtitle} />
         <div className="flex flex-1 items-center gap-2 p-4 text-critical">
           <AlertTriangle className="size-4 shrink-0" />
           <p className="font-mono text-[11px]">{error}</p>
@@ -38,7 +41,7 @@ export function RouteProfile() {
   if (loading || !route.data || !field.data) {
     return (
       <Panel className="flex h-full flex-col overflow-hidden">
-        <PanelHeader title="Route AWCI Profile" subtitle={`${route.depIcao} → ${route.arrIcao} · Along-track`} />
+        <PanelHeader title="Route AWCI Profile" subtitle={subtitle} />
         <div className="flex flex-1 items-center justify-center text-muted">
           <Loader2 className="size-5 animate-spin" />
         </div>
@@ -64,7 +67,7 @@ export function RouteProfile() {
     <Panel className="flex h-full flex-col overflow-hidden">
       <PanelHeader
         title="Route AWCI Profile"
-        subtitle={`${briefing.departure_icao} → ${briefing.arrival_icao} · Along-track`}
+        subtitle={subtitle}
         right={
           <span className="font-mono text-[10px] text-muted">{Math.round(briefing.great_circle_distance_nm)} NM</span>
         }

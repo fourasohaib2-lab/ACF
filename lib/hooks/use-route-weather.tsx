@@ -17,7 +17,13 @@ interface RouteWeatherState {
   error: string | null
   depIcao: string
   arrIcao: string
+  /** Real, optional intermediate airport - `null` for a real direct
+   * route (the default). Set via `setStopover()`. */
+  stopoverIcao: string | null
   setRoute: (depIcao: string, arrIcao: string) => void
+  /** Sets/clears the real stopover airport - pass `null` to go back to
+   * a real direct route. */
+  setStopover: (stopoverIcao: string | null) => void
   refresh: () => void
 }
 
@@ -30,6 +36,7 @@ const N_WAYPOINTS = 20
 export function RouteWeatherProvider({ children }: { children: ReactNode }) {
   const [depIcao, setDepIcao] = useState(DEFAULT_DEP)
   const [arrIcao, setArrIcao] = useState(DEFAULT_ARR)
+  const [stopoverIcao, setStopoverIcao] = useState<string | null>(null)
   const [data, setData] = useState<RouteWeatherBriefing | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -40,12 +47,15 @@ export function RouteWeatherProvider({ children }: { children: ReactNode }) {
     setDepIcao(dep.toUpperCase())
     setArrIcao(arr.toUpperCase())
   }, [])
+  const setStopover = useCallback((stopover: string | null) => {
+    setStopoverIcao(stopover ? stopover.toUpperCase() : null)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getRouteWeather(depIcao, arrIcao, N_WAYPOINTS)
+    getRouteWeather(depIcao, arrIcao, N_WAYPOINTS, stopoverIcao)
       .then((result) => {
         if (!cancelled) setData(result)
       })
@@ -60,10 +70,12 @@ export function RouteWeatherProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [depIcao, arrIcao, nonce])
+  }, [depIcao, arrIcao, stopoverIcao, nonce])
 
   return (
-    <RouteWeatherContext.Provider value={{ data, loading, error, depIcao, arrIcao, setRoute, refresh }}>
+    <RouteWeatherContext.Provider
+      value={{ data, loading, error, depIcao, arrIcao, stopoverIcao, setRoute, setStopover, refresh }}
+    >
       {children}
     </RouteWeatherContext.Provider>
   )

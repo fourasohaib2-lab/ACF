@@ -18,6 +18,7 @@ interface LogEntry {
 interface Scenario {
   depIcao: string
   arrIcao: string
+  stopoverIcao: string | null
   model: "AROME" | "ALADIN" | "ARPEGE"
   n_lat: number
   n_lon: number
@@ -60,7 +61,7 @@ export function OpsFooterPanel() {
   const [log, setLog] = useState<LogEntry[]>([])
   const [actionStatus, setActionStatus] = useState<string | null>(null)
   const nextId = useRef(0)
-  const prevRoute = useRef<{ dep: string; arr: string } | null>(null)
+  const prevRoute = useRef<{ dep: string; arr: string; stopover: string | null } | null>(null)
   const prevModel = useRef<string | null>(null)
   const prevResolution = useRef<{ n_lat: number; n_lon: number } | null>(null)
 
@@ -69,16 +70,18 @@ export function OpsFooterPanel() {
     setLog((prev) => [{ id: nextId.current, time: Date.now(), text }, ...prev].slice(0, 12))
   }
 
-  // Real SIGMETs for the current real departure/arrival airports.
+  // Real SIGMETs for the current real departure/stopover (if any)/
+  // arrival airports.
   useEffect(() => {
     let cancelled = false
     setAlertsError(null)
-    Promise.all([getObservations(route.depIcao), getObservations(route.arrIcao)])
-      .then(([dep, arr]) => {
+    const icaos = [route.depIcao, ...(route.stopoverIcao ? [route.stopoverIcao] : []), route.arrIcao]
+    Promise.all(icaos.map((icao) => getObservations(icao)))
+      .then((results) => {
         if (cancelled) return
         setAlerts({
-          icao: `${dep.icao_code} / ${arr.icao_code}`,
-          reports: [...dep.sigmets, ...arr.sigmets],
+          icao: results.map((r) => r.icao_code).join(" / "),
+          reports: results.flatMap((r) => r.sigmets),
         })
       })
       .catch((cause: unknown) => {
@@ -88,17 +91,24 @@ export function OpsFooterPanel() {
     return () => {
       cancelled = true
     }
-  }, [route.depIcao, route.arrIcao])
+  }, [route.depIcao, route.arrIcao, route.stopoverIcao])
 
   // Real session log: append one real entry per real route/model/
   // resolution change this browser tab has actually made.
   useEffect(() => {
-    if (prevRoute.current && (prevRoute.current.dep !== route.depIcao || prevRoute.current.arr !== route.arrIcao)) {
-      appendLog(`Route set to ${route.depIcao} → ${route.arrIcao}`)
+    const current = { dep: route.depIcao, arr: route.arrIcao, stopover: route.stopoverIcao }
+    if (
+      prevRoute.current &&
+      (prevRoute.current.dep !== current.dep ||
+        prevRoute.current.arr !== current.arr ||
+        prevRoute.current.stopover !== current.stopover)
+    ) {
+      const label = current.stopover ? `${current.dep} → ${current.stopover} → ${current.arr}` : `${current.dep} → ${current.arr}`
+      appendLog(`Route set to ${label}`)
     }
-    prevRoute.current = { dep: route.depIcao, arr: route.arrIcao }
+    prevRoute.current = current
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.depIcao, route.arrIcao])
+  }, [route.depIcao, route.arrIcao, route.stopoverIcao])
 
   useEffect(() => {
     if (prevModel.current && prevModel.current !== field.model) {
@@ -142,15 +152,19 @@ export function OpsFooterPanel() {
     const scenario: Scenario = {
       depIcao: route.depIcao,
       arrIcao: route.arrIcao,
+      stopoverIcao: route.stopoverIcao,
       model: field.model,
       n_lat: field.resolution.n_lat,
       n_lon: field.resolution.n_lon,
       savedAt: Date.now(),
     }
+    const routeLabel = scenario.stopoverIcao
+      ? `${scenario.depIcao} → ${scenario.stopoverIcao} → ${scenario.arrIcao}`
+      : `${scenario.depIcao} → ${scenario.arrIcao}`
     try {
       window.localStorage.setItem(SCENARIO_KEY, JSON.stringify(scenario))
-      setActionStatus(`Scenario saved locally (${scenario.depIcao} → ${scenario.arrIcao}, ${scenario.model})`)
-      appendLog(`Scenario saved to this browser (${scenario.depIcao} → ${scenario.arrIcao}, ${scenario.model})`)
+      setActionStatus(`Scenario saved locally (${routeLabel}, ${scenario.model})`)
+      appendLog(`Scenario saved to this browser (${routeLabel}, ${scenario.model})`)
     } catch {
       setActionStatus("localStorage unavailable - could not save scenario")
     }
@@ -165,10 +179,14 @@ export function OpsFooterPanel() {
       }
       const scenario = JSON.parse(raw) as Scenario
       route.setRoute(scenario.depIcao, scenario.arrIcao)
+      route.setStopover(scenario.stopoverIcao ?? null)
       field.setModel(scenario.model)
       field.setResolution({ n_lat: scenario.n_lat, n_lon: scenario.n_lon })
+      const routeLabel = scenario.stopoverIcao
+        ? `${scenario.depIcao} → ${scenario.stopoverIcao} → ${scenario.arrIcao}`
+        : `${scenario.depIcao} → ${scenario.arrIcao}`
       setActionStatus(`Scenario restored (saved ${new Date(scenario.savedAt).toLocaleTimeString()})`)
-      appendLog(`Scenario restored from this browser (${scenario.depIcao} → ${scenario.arrIcao}, ${scenario.model})`)
+      appendLog(`Scenario restored from this browser (${routeLabel}, ${scenario.model})`)
     } catch {
       setActionStatus("Could not parse the saved scenario")
     }

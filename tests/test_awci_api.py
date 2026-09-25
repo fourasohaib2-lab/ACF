@@ -183,6 +183,30 @@ def test_route_weather_endpoint_404s_for_an_unknown_airport(monkeypatch):
     assert response.status_code == 404
 
 
+def test_route_weather_endpoint_with_a_real_stopover(monkeypatch):
+    client = _test_client(monkeypatch)
+    response = client.get(
+        "/flights/route-weather",
+        params={"dep_icao": "LFPG", "arr_icao": "KJFK", "stopover_icao": "DAAG", "n_waypoints": 4},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["stopover_icao"] == "DAAG"
+    assert body["stopover_weather"] is not None
+    assert body["stopover_weather"]["is_real_data"] is True
+    # 2 real legs of 4 waypoints each, junction shared once: 4+3=7.
+    assert len(body["waypoints"]) == 7
+
+
+def test_route_weather_endpoint_404s_for_an_unknown_stopover(monkeypatch):
+    client = _test_client(monkeypatch)
+    response = client.get(
+        "/flights/route-weather",
+        params={"dep_icao": "LFPG", "arr_icao": "KJFK", "stopover_icao": "NOTREAL"},
+    )
+    assert response.status_code == 404
+
+
 # --------------------------------------------------------------------- hazards.py
 
 
@@ -324,6 +348,39 @@ def test_complexity_route_cross_section_endpoint_returns_real_columns_along_the_
     for column in body["columns"]:
         assert len(column["awci_profile"]) == 5
         assert len(column["pressure_profile_hpa"]) == 5
+
+
+def test_complexity_route_cross_section_endpoint_with_a_real_stopover():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/route-cross-section",
+        params={
+            "dep_icao": "LFPG",
+            "arr_icao": "KJFK",
+            "stopover_icao": "DAAG",
+            "n_waypoints": 4,
+            "n_lat": 4,
+            "n_lon": 4,
+            "n_levels": 5,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["stopover_icao"] == "DAAG"
+    # 2 real legs of 4 waypoints each, junction shared once: 4+3=7.
+    assert len(body["columns"]) == 7
+    distances = [c["distance_from_origin_km"] for c in body["columns"]]
+    assert distances == sorted(distances)
+    assert distances[0] == 0.0
+
+
+def test_complexity_route_cross_section_endpoint_404s_for_an_unknown_stopover():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/route-cross-section",
+        params={"dep_icao": "LFPG", "arr_icao": "KJFK", "stopover_icao": "ZZZZ", "n_lat": 4, "n_lon": 4},
+    )
+    assert response.status_code == 404
 
 
 def test_complexity_route_cross_section_endpoint_404s_for_an_unknown_airport():

@@ -29,11 +29,14 @@ export function FlightRouteAnalysis() {
 
   const loading = route.loading || field.loading
   const error = route.error ?? field.error
+  const subtitle = route.stopoverIcao
+    ? `${route.depIcao} → ${route.stopoverIcao} → ${route.arrIcao}`
+    : `${route.depIcao} → ${route.arrIcao}`
 
   if (error) {
     return (
       <Panel className="flex h-full flex-col overflow-hidden">
-        <PanelHeader title="Flight Route Analysis" subtitle={`${route.depIcao} → ${route.arrIcao}`} />
+        <PanelHeader title="Flight Route Analysis" subtitle={subtitle} />
         <div className="flex flex-1 items-center gap-2 p-4 text-critical">
           <AlertTriangle className="size-4 shrink-0" />
           <p className="font-mono text-[11px]">{error}</p>
@@ -45,7 +48,7 @@ export function FlightRouteAnalysis() {
   if (loading || !route.data || !field.data) {
     return (
       <Panel className="flex h-full flex-col overflow-hidden">
-        <PanelHeader title="Flight Route Analysis" subtitle={`${route.depIcao} → ${route.arrIcao}`} />
+        <PanelHeader title="Flight Route Analysis" subtitle={subtitle} />
         <div className="flex flex-1 items-center justify-center text-muted">
           <Loader2 className="size-5 animate-spin" />
         </div>
@@ -68,7 +71,7 @@ export function FlightRouteAnalysis() {
     <Panel className="flex h-full flex-col overflow-hidden">
       <PanelHeader
         title="Flight Route Analysis"
-        subtitle={`${briefing.departure_icao} → ${briefing.arrival_icao} · ${rows.length} waypoints`}
+        subtitle={`${subtitle} · ${rows.length} waypoints`}
         right={
           <span className="font-mono text-[10px] text-muted">{Math.round(briefing.great_circle_distance_nm)} NM</span>
         }

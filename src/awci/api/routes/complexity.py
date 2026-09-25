@@ -44,7 +44,7 @@ from fastapi import APIRouter, Body, HTTPException
 from awci.complexity.calculator import AWCICalculator
 from awci.complexity.spatial_field import compute_real_complexity_field
 from awci.complexity.vertical_field import compute_real_complexity_volume, vertical_profile_at_point
-from awci.flight.waypoint import generate_route_waypoints
+from awci.flight.waypoint import generate_multi_leg_route_waypoints
 from awci.knowledge.airports.airport_database import AirportDatabase
 
 router = APIRouter(prefix="/complexity", tags=["complexity"])
@@ -229,6 +229,7 @@ async def vertical_profile(
 async def route_cross_section(
     dep_icao: str,
     arr_icao: str,
+    stopover_icao: str | None = None,
     n_waypoints: int = 10,
     model: str = "ARPEGE",
     steps: int = 8,
@@ -241,22 +242,23 @@ async def route_cross_section(
     Real Complexity(along-track distance, z) cross-section for the
     dashboard's Vertical Cross Section panel - composes 3 already-real
     pieces, no new physics: real great-circle waypoints
-    (``awci.flight.waypoint.generate_route_waypoints()``, the same
-    function ``awci.flight.route_weather.build_route_weather_briefing()``
-    already uses for ``/flights/route-weather``), ONE real
-    ``compute_real_complexity_volume()`` run (the whole 3D field
-    computed once, not once per waypoint), then a real nearest-grid-
-    column extraction (``vertical_profile_at_point()``) at each real
-    waypoint's position - the same honest nearest-neighbour convention
-    ``/complexity/vertical-profile`` already uses for a single point,
-    just repeated along the route.
+    (``awci.flight.waypoint.generate_multi_leg_route_waypoints()``,
+    the same function ``awci.flight.route_weather.
+    build_route_weather_briefing()`` already uses for
+    ``/flights/route-weather`` - 2 real legs when ``stopover_icao`` is
+    given), ONE real ``compute_real_complexity_volume()`` run (the
+    whole 3D field computed once, not once per waypoint), then a real
+    nearest-grid-column extraction (``vertical_profile_at_point()``)
+    at each real waypoint's position - the same honest nearest-
+    neighbour convention ``/complexity/vertical-profile`` already uses
+    for a single point, just repeated along the route.
 
     Raises
     ------
     HTTPException(404)
-        If ``dep_icao``/``arr_icao`` is not a real airport in
-        ``AirportDatabase`` - the same real convention
-        ``/flights/route-weather`` already uses.
+        If ``dep_icao``/``arr_icao``/``stopover_icao`` (when given) is
+        not a real airport in ``AirportDatabase`` - the same real
+        convention ``/flights/route-weather`` already uses.
     """
     dep = AirportDatabase.get_airport(dep_icao)
     arr = AirportDatabase.get_airport(arr_icao)
@@ -266,6 +268,9 @@ async def route_cross_section(
             f"{dep_icao!r}/{arr_icao!r} must both be real airports in AirportDatabase - "
             f"known: {AirportDatabase.list_airports()}",
         )
+    stopover = AirportDatabase.get_airport(stopover_icao) if stopover_icao else None
+    if stopover_icao and stopover is None:
+        raise HTTPException(404, f"{stopover_icao!r} must be a real airport in AirportDatabase")
     try:
         volume = compute_real_complexity_volume(
             model=model, steps=steps, seed=seed, n_lat=n_lat, n_lon=n_lon, n_levels=n_levels
@@ -273,7 +278,12 @@ async def route_cross_section(
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
 
-    waypoints = generate_route_waypoints(dep.latitude, dep.longitude, arr.latitude, arr.longitude, n_points=n_waypoints)
+    route_points = (
+        [(dep.latitude, dep.longitude), (arr.latitude, arr.longitude)]
+        if stopover is None
+        else [(dep.latitude, dep.longitude), (stopover.latitude, stopover.longitude), (arr.latitude, arr.longitude)]
+    )
+    waypoints = generate_multi_leg_route_waypoints(route_points, n_points_per_leg=n_waypoints)
     columns = []
     for wp in waypoints:
         profile = vertical_profile_at_point(volume, wp.latitude, wp.longitude)
@@ -291,6 +301,7 @@ async def route_cross_section(
         {
             "departure_icao": dep.icao_code,
             "arrival_icao": arr.icao_code,
+            "stopover_icao": stopover.icao_code if stopover else None,
             "model": volume["model"],
             "n_levels": volume["n_levels"],
             "columns": columns,

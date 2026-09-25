@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight, Grid3x3, Plane, Satellite } from "lucide-react"
+import { ArrowRight, Grid3x3, Plane, PlusCircle, Satellite, X } from "lucide-react"
 import { Panel } from "@/components/ui/panel"
 import { useComplexityField, type GridResolution } from "@/lib/hooks/use-complexity-field"
 import { useRouteWeather } from "@/lib/hooks/use-route-weather"
@@ -41,7 +41,7 @@ function selectClassName() {
 
 export function ControlBar() {
   const { model, setModel, resolution, setResolution } = useComplexityField()
-  const { depIcao, arrIcao, setRoute } = useRouteWeather()
+  const { depIcao, arrIcao, stopoverIcao, setRoute, setStopover } = useRouteWeather()
   const { airports, error } = useAirports()
 
   return (
@@ -59,6 +59,36 @@ export function ControlBar() {
       />
 
       <ArrowRight className="size-3.5 text-muted" />
+
+      {stopoverIcao ? (
+        <>
+          <AirportCombobox
+            label="Stopover airport"
+            airports={airports}
+            value={stopoverIcao}
+            onChange={(icao) => setStopover(icao)}
+          />
+          <button
+            type="button"
+            aria-label="Remove stopover"
+            onClick={() => setStopover(null)}
+            className="rounded-md border border-border-subtle p-1.5 text-muted transition-colors hover:border-critical/50 hover:text-critical"
+          >
+            <X className="size-3.5" />
+          </button>
+          <ArrowRight className="size-3.5 text-muted" />
+        </>
+      ) : (
+        <button
+          type="button"
+          disabled={!airports}
+          onClick={() => airports && setStopover(airports.find((a) => a.icao_code !== depIcao && a.icao_code !== arrIcao)?.icao_code ?? null)}
+          className="flex items-center gap-1 rounded-md border border-dashed border-border-subtle px-2 py-1.5 font-mono text-[11px] text-muted transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
+        >
+          <PlusCircle className="size-3.5" />
+          Stopover
+        </button>
+      )}
 
       <AirportCombobox
         label="Arrival airport"

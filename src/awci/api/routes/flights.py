@@ -19,17 +19,26 @@ router = APIRouter(prefix="/flights", tags=["flights"])
 
 
 @router.get("/route-weather")
-async def route_weather(dep_icao: str, arr_icao: str, request: Request, n_waypoints: int = 10) -> dict[str, Any]:
+async def route_weather(
+    dep_icao: str,
+    arr_icao: str,
+    request: Request,
+    stopover_icao: str | None = None,
+    n_waypoints: int = 10,
+) -> dict[str, Any]:
     """
-    Real, composed route weather briefing between two real airports -
-    genuinely calls ``build_route_weather_briefing()`` (real route
-    geometry, real great-circle waypoints, real live weather at
-    departure/arrival/every real recommended alternate), not a canned
-    response.
+    Real, composed route weather briefing between two real airports,
+    with an optional real stopover (``stopover_icao``) - genuinely
+    calls ``build_route_weather_briefing()`` (real route geometry -
+    2 real great-circle legs when a stopover is given - real
+    waypoints, real live weather at departure/stopover/arrival/every
+    real recommended alternate), not a canned response.
     """
     hub = request.app.state.observations_hub
     try:
-        briefing = build_route_weather_briefing(dep_icao, arr_icao, n_waypoints=n_waypoints, hub=hub)
+        briefing = build_route_weather_briefing(
+            dep_icao, arr_icao, stopover_icao=stopover_icao, n_waypoints=n_waypoints, hub=hub
+        )
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
     return to_json_safe(briefing)

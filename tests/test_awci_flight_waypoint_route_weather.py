@@ -19,7 +19,12 @@ from __future__ import annotations
 import pytest
 
 from awci.flight.route_weather import RouteWeatherBriefing, build_route_weather_briefing
-from awci.flight.waypoint import Waypoint, generate_route_waypoints, great_circle_intermediate_point
+from awci.flight.waypoint import (
+    Waypoint,
+    generate_multi_leg_route_waypoints,
+    generate_route_waypoints,
+    great_circle_intermediate_point,
+)
 from awci.knowledge.icao.live_source import LiveReport, LiveStationBundle
 from awci.knowledge.icao.metar_decoder import METARDecoder
 
@@ -94,6 +99,55 @@ def test_generate_route_waypoints_fractions_are_evenly_spaced():
     assert fractions == pytest.approx([0.0, 1 / 3, 2 / 3, 1.0])
 
 
+def test_generate_multi_leg_route_waypoints_matches_single_leg_for_2_points():
+    """A real, decisive cross-check: 2 points is the degenerate case of
+    a multi-leg route - the multi-leg generator must reproduce
+    generate_route_waypoints()'s own real output exactly (same real
+    formula, just composed)."""
+    single = generate_route_waypoints(49.0097, 2.5479, 40.6413, -73.7781, n_points=5)
+    multi = generate_multi_leg_route_waypoints([(49.0097, 2.5479), (40.6413, -73.7781)], n_points_per_leg=5)
+    assert len(single) == len(multi)
+    for a, b in zip(single, multi, strict=True):
+        assert a.latitude == pytest.approx(b.latitude)
+        assert a.longitude == pytest.approx(b.longitude)
+        assert a.distance_from_origin_km == pytest.approx(b.distance_from_origin_km)
+        assert a.fraction == pytest.approx(b.fraction)
+
+
+def test_generate_multi_leg_route_waypoints_does_not_duplicate_the_junction():
+    """LFPG -> DAAG -> KJFK: the real DAAG waypoint (stopover) must
+    appear exactly once, not twice (leg 1's destination == leg 2's
+    origin)."""
+    lfpg, daag, kjfk = (49.0097, 2.5479), (36.6910, 3.2154), (40.6413, -73.7781)
+    waypoints = generate_multi_leg_route_waypoints([lfpg, daag, kjfk], n_points_per_leg=4)
+    # 4 points per leg, 2 legs, junction shared once: 4 + (4 - 1) = 7.
+    assert len(waypoints) == 7
+    assert waypoints[0].latitude == pytest.approx(lfpg[0])
+    assert waypoints[0].longitude == pytest.approx(lfpg[1])
+    assert waypoints[-1].latitude == pytest.approx(kjfk[0])
+    assert waypoints[-1].longitude == pytest.approx(kjfk[1])
+
+
+def test_generate_multi_leg_route_waypoints_distance_and_fraction_are_real_and_monotonic():
+    lfpg, daag, kjfk = (49.0097, 2.5479), (36.6910, 3.2154), (40.6413, -73.7781)
+    waypoints = generate_multi_leg_route_waypoints([lfpg, daag, kjfk], n_points_per_leg=4)
+    distances = [wp.distance_from_origin_km for wp in waypoints]
+    assert distances == sorted(distances)
+    assert distances[0] == 0.0
+    assert waypoints[0].fraction == 0.0
+    assert waypoints[-1].fraction == pytest.approx(1.0)
+    # A real stopover via Algiers is physically longer than the direct
+    # LFPG->KJFK great circle (~3150 nm / ~5834 km) - not a fabricated
+    # detour, a genuine consequence of the real geometry.
+    direct_km = generate_route_waypoints(*lfpg, *kjfk, n_points=2)[-1].distance_from_origin_km
+    assert distances[-1] > direct_km
+
+
+def test_generate_multi_leg_route_waypoints_rejects_fewer_than_2_points():
+    with pytest.raises(ValueError):
+        generate_multi_leg_route_waypoints([(49.0097, 2.5479)])
+
+
 def test_waypoint_is_a_real_frozen_dataclass():
     waypoint = Waypoint(latitude=1.0, longitude=2.0, distance_from_origin_km=3.0, fraction=0.5)
     with pytest.raises(Exception):
@@ -164,6 +218,32 @@ def test_build_route_weather_briefing_rejects_an_unknown_airport():
         build_route_weather_briefing("ZZZZ", "KJFK", hub=_FakeHub())
     with pytest.raises(ValueError):
         build_route_weather_briefing("LFPG", "ZZZZ", hub=_FakeHub())
+
+
+def test_build_route_weather_briefing_without_stopover_leaves_it_honestly_none():
+    briefing = build_route_weather_briefing("LFPG", "KJFK", hub=_FakeHub())
+    assert briefing.stopover_icao is None
+    assert briefing.stopover_weather is None
+
+
+def test_build_route_weather_briefing_with_a_real_stopover():
+    hub = _FakeHub()
+    direct = build_route_weather_briefing("LFPG", "KJFK", n_waypoints=4, hub=_FakeHub())
+    briefing = build_route_weather_briefing("LFPG", "KJFK", stopover_icao="DAAG", n_waypoints=4, hub=hub)
+    assert briefing.stopover_icao == "DAAG"
+    assert briefing.stopover_weather is not None
+    assert briefing.stopover_weather.is_real_data is True
+    assert "DAAG" in hub.calls
+    # 2 real legs of 4 waypoints each, junction shared once: 4+3=7.
+    assert len(briefing.waypoints) == 7
+    # A real stopover route is physically longer than the direct one -
+    # not an approximation of the direct great-circle distance.
+    assert briefing.great_circle_distance_nm > direct.great_circle_distance_nm
+
+
+def test_build_route_weather_briefing_rejects_an_unknown_stopover():
+    with pytest.raises(ValueError):
+        build_route_weather_briefing("LFPG", "KJFK", stopover_icao="ZZZZ", hub=_FakeHub())
 
 
 def test_build_route_weather_briefing_constructs_a_real_default_hub(monkeypatch):

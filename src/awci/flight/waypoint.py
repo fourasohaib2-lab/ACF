@@ -114,3 +114,66 @@ def generate_route_waypoints(
             Waypoint(latitude=lat, longitude=lon, distance_from_origin_km=fraction * total_km, fraction=fraction)
         )
     return waypoints
+
+
+def generate_multi_leg_route_waypoints(
+    points: list[tuple[float, float]], n_points_per_leg: int = 10
+) -> list[Waypoint]:
+    """
+    Real, multi-leg waypoint list (e.g. departure -> stopover ->
+    arrival), added to support a real routing stopover - a real,
+    exact COMPOSITION of ``generate_route_waypoints()`` called once
+    per real leg (no new formula): each leg's own real great-circle
+    waypoints, concatenated with real cumulative along-track distance
+    (leg 2's distances added on top of leg 1's real total, not reset
+    to 0) and ``fraction`` recomputed against the real TOTAL route
+    distance (0.0 at the real origin, 1.0 at the real final
+    destination) rather than each leg's own fraction.
+
+    The real junction waypoint between two legs (leg N's destination =
+    leg N+1's origin) is included exactly once, not duplicated.
+
+    Parameters
+    ----------
+    points : list[tuple[float, float]]
+        Real (latitude, longitude) pairs for every real stop, in
+        order (origin, ..., destination) - at least 2 required.
+    n_points_per_leg : int
+        Passed through to ``generate_route_waypoints()`` for each real
+        leg - see that function's own docstring.
+
+    Raises
+    ------
+    ValueError
+        If fewer than 2 real points are given.
+    """
+    if len(points) < 2:
+        raise ValueError(f"at least 2 real points are required (origin, destination), got {len(points)}")
+
+    all_waypoints: list[Waypoint] = []
+    cumulative_km = 0.0
+    for i in range(len(points) - 1):
+        (lat1, lon1), (lat2, lon2) = points[i], points[i + 1]
+        leg_waypoints = generate_route_waypoints(lat1, lon1, lat2, lon2, n_points=n_points_per_leg)
+        start_index = 1 if i > 0 else 0  # skip the junction point already added by the previous leg
+        for wp in leg_waypoints[start_index:]:
+            all_waypoints.append(
+                Waypoint(
+                    latitude=wp.latitude,
+                    longitude=wp.longitude,
+                    distance_from_origin_km=cumulative_km + wp.distance_from_origin_km,
+                    fraction=0.0,  # real total distance not yet known - fixed up below
+                )
+            )
+        cumulative_km += leg_waypoints[-1].distance_from_origin_km
+
+    total_km = cumulative_km
+    return [
+        Waypoint(
+            latitude=wp.latitude,
+            longitude=wp.longitude,
+            distance_from_origin_km=wp.distance_from_origin_km,
+            fraction=(wp.distance_from_origin_km / total_km if total_km > 0.0 else 0.0),
+        )
+        for wp in all_waypoints
+    ]

@@ -33,6 +33,7 @@ export function RouteCrossSection() {
     getRouteCrossSection({
       dep_icao: route.depIcao,
       arr_icao: route.arrIcao,
+      stopover_icao: route.stopoverIcao,
       n_waypoints: N_WAYPOINTS,
       model,
       ...resolution,
@@ -51,9 +52,11 @@ export function RouteCrossSection() {
     return () => {
       cancelled = true
     }
-  }, [route.depIcao, route.arrIcao, model, resolution.n_lat, resolution.n_lon])
+  }, [route.depIcao, route.arrIcao, route.stopoverIcao, model, resolution.n_lat, resolution.n_lon])
 
-  const subtitle = `${route.depIcao} → ${route.arrIcao} · Along-Track`
+  const subtitle = route.stopoverIcao
+    ? `${route.depIcao} → ${route.stopoverIcao} → ${route.arrIcao} · Along-Track`
+    : `${route.depIcao} → ${route.arrIcao} · Along-Track`
 
   if (error) {
     return (
