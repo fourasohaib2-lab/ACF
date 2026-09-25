@@ -20,6 +20,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from acf.awci.ops.cloud_profile import CloudProfile
+from acf.awci.ops.isa import flight_level
 from acf.awci.ops.kinematics import horizontal_gradients
 from acf.awci.ops.parcel import ParcelResult
 from acf.awci.ops.thermo import saturation_specific_humidity, theta_e_bolton_k
@@ -289,3 +290,75 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
         "convective_class": cls.astype(float), "convective_top_m": conv_top, "convective_top_temp_k": conv_top_t,
         "species_flags": flags.astype(float),
     }
+
+
+FT_PER_M = 1.0 / 0.3048
+_LAYER_SPECIES = {"castellanus": _CELLULAR, "lenticularis": _CELLULAR,
+                  "fractus": (GENUS_CODES["St"], GENUS_CODES["Sc"]),
+                  "nebulosus": (GENUS_CODES["St"], GENUS_CODES["Cs"]), "spissatus": (GENUS_CODES["Ci"],)}
+
+
+def _convective_species(cls: int, depth_m: float, profile: CloudProfile) -> list[str]:
+    if cls >= 3:
+        return ["capillatus" if cls == 4 else "calvus"]
+    if cls == 2:
+        return ["congestus"]
+    return ["humilis" if depth_m < profile.convection["humilis_max_depth_m"] else "mediocris"]
+
+
+def column_layers(levels_hpa: np.ndarray, fraction: np.ndarray, genus: np.ndarray, gh: np.ndarray, elevation: float,
+                  sp_hpa: float, species_flags: float, convective_class: float, convective_top_m: float, lcl_agl_m: float,
+                  profile: CloudProfile) -> list[dict[str, object]]:
+    """Cloud layers of one column (1-D arrays over levels), same layer rule as diagnose_clouds."""
+    frac = np.nan_to_num(np.asarray(fraction, dtype=float))
+    cloudy = frac >= profile.layer_min_fraction
+    lower, _ = level_interfaces(np.asarray(gh, dtype=float)[:, None, None], np.array([[elevation]]))
+    flags = 0 if np.isnan(species_flags) else int(species_flags)
+    out: list[dict[str, object]] = []
+    k = 0
+    while k < len(frac):
+        if not cloudy[k]:
+            k += 1
+            continue
+        top = k
+        while top + 1 < len(frac) and cloudy[top + 1]:
+            top += 1
+        code = int(genus[k]) if np.isfinite(genus[k]) else INDETERMINATE
+        n_ok = float(oktas(np.array(frac[k:top + 1].max())))
+        base_agl = max(float(gh[k]) - elevation, 0.0)
+        out.append({
+            "kind": "layer", "genus": GENUS_NAMES.get(code, "indeterminate"),
+            "etage": ETAGE_NAMES[int(sigma_etage(np.array(levels_hpa[k] / sp_hpa), profile))],
+            "species": [name for name, bit in SPECIES_BITS.items()
+                        if flags & bit and code in _LAYER_SPECIES[name]],
+            "base_agl_m": base_agl, "base_uncertainty_m": float(gh[k] - lower[k, 0, 0]),
+            "base_ft": int(base_agl * FT_PER_M), "top_amsl_m": float(gh[top]),
+            "top_fl": flight_level(float(levels_hpa[top])), "oktas": int(n_ok), "amount": amount_code(n_ok),
+        })
+        k = top + 1
+    cls = 0 if np.isnan(convective_class) else int(convective_class)
+    if cls > 0:
+        depth = float(convective_top_m) - (elevation + float(lcl_agl_m))
+        out.append({
+            "kind": "convective", "genus": "Cb" if cls >= 3 else "Cu", "etage": None,
+            "species": _convective_species(cls, depth, profile), "base_agl_m": float(lcl_agl_m),
+            "base_uncertainty_m": None, "base_ft": int(float(lcl_agl_m) * FT_PER_M),
+            "top_amsl_m": float(convective_top_m), "top_fl": None, "oktas": None, "amount": None,
+        })
+    return sorted(out, key=lambda lay: lay["base_agl_m"])  # type: ignore[arg-type, return-value]
+
+
+def metar_cloud_group(layers: list[dict[str, object]]) -> str:
+    """Model cloud line in METAR form (ICAO Annex 3): amount + base in hundreds of feet (floor), CB/TCU suffix;
+    '///' when the amount is unknown (sub-grid convection)."""
+    if not layers:
+        return "NSC"
+    parts = []
+    for lay in layers:
+        hundreds = int(lay["base_ft"]) // 100  # type: ignore[call-overload]
+        if lay["kind"] == "convective":
+            suffix = "CB" if lay["genus"] == "Cb" else ("TCU" if lay["species"] == ["congestus"] else "")
+            parts.append(f"///{hundreds:03d}{suffix}")
+        else:
+            parts.append(f"{lay['amount']}{hundreds:03d}")
+    return " ".join(parts)
