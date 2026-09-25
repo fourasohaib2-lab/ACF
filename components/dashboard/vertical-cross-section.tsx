@@ -1,56 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { AlertTriangle, Loader2 } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Panel, PanelHeader } from "@/components/ui/panel"
 import { useRouteWeather } from "@/lib/hooks/use-route-weather"
-import { useComplexityField } from "@/lib/hooks/use-complexity-field"
-import { ApiError, getVerticalProfile, type VerticalProfile } from "@/lib/api"
+import { useVerticalProfile } from "@/lib/hooks/use-vertical-profile"
 
 export function VerticalCrossSection() {
   const route = useRouteWeather()
-  const { model, resolution } = useComplexityField()
-  const [profile, setProfile] = useState<VerticalProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: profile, loading, error, samplePoint } = useVerticalProfile()
 
-  // Real sample point: the route's own great-circle midpoint waypoint
-  // (a real position along the actual EGLL->KJFK route), not an
-  // arbitrary fixed coordinate.
-  const midpoint = route.data?.waypoints[Math.floor(route.data.waypoints.length / 2)] ?? null
-
-  useEffect(() => {
-    if (!midpoint) return
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    // Real grid resolution shared with ComplexityFieldProvider (the
-    // same ControlBar preset) - a real 3D volume run over n_levels x
-    // n_lat x n_lon points, genuinely more expensive than the 2D
-    // field at the same resolution (measured: ~1s at 24x48, ~3.9s at
-    // 48x96), so the "Fine" preset trades a real, disclosed wait here
-    // for real extra vertical detail, not a fabricated instant result.
-    getVerticalProfile({ lat: midpoint.latitude, lon: midpoint.longitude, model, ...resolution })
-      .then((result) => {
-        if (!cancelled) setProfile(result)
-      })
-      .catch((cause: unknown) => {
-        if (cancelled) return
-        const message = cause instanceof ApiError ? cause.message : "Unknown error fetching the vertical profile"
-        setError(message)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [midpoint?.latitude, midpoint?.longitude, model, resolution.n_lat, resolution.n_lon])
-
-  const subtitle = midpoint
-    ? `${midpoint.latitude.toFixed(1)}°N ${midpoint.longitude.toFixed(1)}°E · Route Midpoint`
+  const subtitle = samplePoint
+    ? `${samplePoint.latitude.toFixed(1)}°N ${samplePoint.longitude.toFixed(1)}°E · Route Midpoint`
     : "AWCI vs Native Level"
 
   if (error || route.error) {
