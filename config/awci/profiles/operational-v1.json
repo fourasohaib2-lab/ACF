@@ -1,0 +1,17 @@
+{
+  "name": "operational-v1",
+  "version": "1.0.0",
+  "min_present_weight": 0.5,
+  "weights": {
+    "dynamic": 0.20, "thermodynamic": 0.25, "convective": 0.20, "microphysical": 0.15,
+    "topographic": 0.10, "temporal": 0.05, "confidence": 0.05,
+    "ensemble_spread": 0.0, "model_disagreement": 0.0, "ceiling": 0.0, "visibility": 0.0,
+    "dust": 0.0, "ash": 0.0, "microburst": 0.0
+  },
+  "interaction_terms": {
+    "wind_topo_interaction": ["dynamic", "topographic"],
+    "conv_thermo_interaction": ["convective", "thermodynamic"]
+  },
+  "interaction_weights": {"wind_topo_interaction": 0.05, "conv_thermo_interaction": 0.05},
+  "level_thresholds": [[20.0, "Very Low"], [35.0, "Low"], [50.0, "Moderate"], [65.0, "High"], [85.0, "Very High"], [null, "Extreme"]]
+}
