@@ -1,6 +1,6 @@
 # AWCI Web — SP1C : nuages (couverture par niveau, étages, genres, espèces, variabilité) et champs étendus — design
 
-**Date :** 2026-09-25 · **Statut :** en revue · **Sous-projet :** 1C (s'insère entre SP1 et SP2)
+**Date :** 2026-09-25 · **Statut :** implémenté (écarts de mise en œuvre intégrés) · **Sous-projet :** 1C (s'insère entre SP1 et SP2)
 **Entrées :** spec et code SP1 (`src/acf/awci/ops/`, PR #6), index réels ECMWF Open Data
 (`oper` et `enfo`, run 2026-09-25 06Z, consultés le 2026-09-25), capacités WMS EUMETView du même jour,
 maquette `docs/reference/awci_web_mockup.jpg`.
@@ -50,7 +50,7 @@ si l'ONM obtient un accès, les produits NWC SAF numériques (Data Store EUMETSA
 
 ## 2. Ingestion : paramètres ajoutés
 
-Ajoutés à `SFC_PARAMS` : `tcw`, `tcwv`, `ttr`, `sf`, `sd`, `rsn`, `skt`. Coût : 7 messages par
+Ajoutés à `SFC_PARAMS` : `tcw`, `tcwv`, `ttr`, `sf`, `sd`, `rsn`, `tp`. Coût : 7 messages par
 échéance en plus des 108 actuels (+6,5 %). Les niveaux restent les 12 niveaux SP1 (1000→100 hPa) : 50
 et 10 hPa n'apportent rien sous la tropopause subtropicale. Les grandeurs **cumulées** (`ttr`, `sf`,
 `tp`) sont différenciées entre échéances consécutives : l'échéance 0 et une échéance dont la
@@ -135,8 +135,9 @@ d'épaisseur optique disponible. Elle distingue les voiles minces (Ci) des nuage
 ### 3.8 Convection : ascendance de particule et sommet
 - **Particule** : issue du niveau valide le plus bas (surface : `2t`, `2d`, `sp`). On la soulève à
   sec jusqu'au niveau de condensation (Bolton 1980, éq. 15, depuis T et Td), puis selon la pseudo-adiabatique, en
-  conservant θe (Bolton 1980, éq. 39, SP1). À chaque niveau, on résout T tel que
-  θe_sat(T, p) = θe_particule, par Newton vectorisé (tolérance 0,01 K, 20 itérations au plus).
+  conservant θe (Bolton 1980, SP1). À chaque niveau, on résout T tel que
+  θe_sat(T, p) = θe_particule, par **bissection** vectorisée (θe_sat croît avec T ; 40 itérations,
+  précision < 10⁻⁹ K ; borne haute telle que e_s ≤ p/2 pour garder q_s fini).
   La flottabilité utilise la température virtuelle.
 - **Niveau d'équilibre (EL)** : le plus haut niveau où la particule est plus chaude que
   l'environnement. On en tire `convective_top_m` et `convective_top_temp_k`.
@@ -158,9 +159,9 @@ Chaque couche reçoit **un** genre. Les critères reposent sur des grandeurs phy
 
 | Genre | Critère (seuils du profil, HYPOTHESIS sauf mention) |
 |---|---|
-| **Cb** | `mucape` ≥ CAPE_min ET profondeur convective ≥ D_cb ET T sommet ≤ T_glace (−20 °C initial : début de glaciation des sommets convectifs observé vers −20 à −25 °C, Rosenfeld & Lensky 1998, *BAMS* 79, 2457–2476) |
+| **Cb** | `mucape` ≥ CAPE_min ET condensat colonne IFS ≥ 0,01 kg m⁻² (sans nuage dans le modèle, pas de nuage convectif ; vaut pour toutes les classes convectives) ET profondeur convective ≥ D_cb ET T sommet ≤ T_glace (−20 °C initial : début de glaciation des sommets convectifs observé vers −20 à −25 °C, Rosenfeld & Lensky 1998, *BAMS* 79, 2457–2476) |
 | **Cu** (dont TCU) | convection présente, mais critères Cb non atteints ; espèce §3.10 |
-| **Ns** | couche stratiforme de base basse ou moyenne, épaisseur ≥ D_ns, précipitation continue au sol (`tprate` ≥ 0,1 mm h⁻¹, seuil OMM-N° 8 « pluie faible ») |
+| **Ns** | couche stratiforme de base basse ou moyenne, épaisseur ≥ D_ns, précipitation continue au sol (`tprate` ≥ 0,1 mm h⁻¹ et `ptype` ≠ 0 ; seuil choix ACF) |
 | **St** | base basse ≤ H_st (base type < 600 m, OMM-N° 407), stable |
 | **Sc** | base basse, au-dessus de H_st ou potentiellement instable |
 | **As** | base moyenne, stable, épaisseur ≥ D_as, pas de précipitation continue |
@@ -206,8 +207,8 @@ choisi par défaut.
 
 Par niveau (`level`, `lat`, `lon`) :
 - `cloud_fraction` (0–1) ;
-- `cloud_layer_genus` (code du genre de la couche à laquelle appartient le niveau ;
-  0 = pas de nuage, 255 = indéterminé) ;
+- `cloud_genus` (code OMM 0500 du genre de la couche à laquelle appartient le niveau ;
+  −1 = clair, −2 = indéterminé, `NaN` = sous le relief) ;
 - `potential_instability` (∂θe/∂z, K km⁻¹).
 
 Surface (`lat`, `lon`) :
@@ -215,7 +216,13 @@ Surface (`lat`, `lon`) :
 - `tcc` (IFS brut) et `cloud_cover_bias` ;
 - `ceiling_m` ;
 - `lowest_cloud_base_m` et `highest_cloud_top_m` ;
-- `genus_low`, `genus_mid`, `genus_high` (genre dominant par étage) ;
+- `genus_low`, `genus_mid`, `genus_high` : genre du nuage **présent** dans l'étage (plus forte
+  couverture à l'intérieur de l'étage, quelle que soit l'altitude de la base ; Cb/TCU sur tous les
+  étages que la colonne convective traverse). L'étage de la base, au sens de l'Atlas, reste donné
+  couche par couche par `/clouds` ;
+- `surface_height_m` : hauteur de surface pour toutes les hauteurs au-dessus du sol : relief SRTM15+
+  sur terre (`lsm` ≥ 0,5), 0 m sur mer. Le relief SRTM15+ contient la bathymétrie (jusqu'à −3 800 m
+  au large du Sénégal), qui ne doit jamais relever un plafond ;
 - `convective_class` (0 aucun, 1 Cu hum/med, 2 TCU, 3 Cb calvus, 4 Cb capillatus) ;
 - `convective_top_m` et `convective_top_temp_k` ;
 - `cloud_top_teff_k` ;
@@ -236,6 +243,8 @@ l'alimentent pas en `operational-v1`. Un futur `operational-v2` pourra les utili
     le biais ;
   - une **ligne nuageuse de type METAR** (« BKN030 OVC080 CB », préfixée « modèle ») ;
   - la provenance, les statuts et les seuils du profil.
+- `GET /api/v1/awci/terrain?domain=&run=&stride=` renvoie `surface_height_m` en float32 (404 pour un
+  run antérieur à SP1C, dont le relief contient la bathymétrie).
 - `GET /api/v1/awci/volume?domain=&run=&step=&layer=&stride=` renvoie, pour la vue 3D (SP2B), le
   champ 3D en float32 (niveaux × lat × lon) et `gh` en float32 (mêmes dimensions), avec les en-têtes
   `X-AWCI-*`. `stride` ∈ {1, 2, 4} ; seules les couches par niveau sont autorisées.
@@ -256,7 +265,7 @@ l'alimentent pas en `operational-v1`. Un futur `operational-v2` pourra les utili
   - recouvrement : couche unique = C ; deux couches adjacentes = max ; deux couches séparées =
     1 − (1 − a)(1 − b) ;
   - T_e : OLR 240 W m⁻² donne 255,06 K ;
-  - Newton θe : θe conservé à 0,05 K près et comparaison au pseudo-adiabat de MetPy si installé
+  - bissection θe : θe conservé à 0,05 K près et comparaison au pseudo-adiabat de MetPy si installé
     (test sauté sinon, marqué) ;
   - octas et codes ; plafond selon la définition OACI (cas BKN au-dessus de 6000 m exclu) ;
   - règles de genre et d'espèce (un cas par ligne des tableaux, plus le cas « indéterminé ») ;
@@ -292,5 +301,5 @@ Deux variabilités sont disponibles **dès SP1C**, sans ensemble :
 | Genres surinterprétés par l'utilisateur | libellé « genre probable (diagnostic modèle) », statut affiché, validation METAR |
 | RHc mal calibrée hors du domaine de calibration | calibration par domaine, contrôle `tcc` à chaque échéance, statut « dégradé » |
 | Couches fines manquées (niveaux standard) | limite déclarée ; incertitude de base/sommet renvoyée |
-| Temps d'ingestion (+ Newton, + 7 messages) | budget : +2 min maximum sur les 8,1 min mesurées ; profilage avant optimisation |
+| Temps d’ingestion (+ bissection, + 7 messages) | budget : +2 min maximum sur les 8,1 min mesurées ; profilage avant optimisation |
 | Cumuls (`ttr`, `sf`, `tp`) sur des échéances manquantes | `null` explicite, jamais une différence sur 6 h présentée comme 3 h |

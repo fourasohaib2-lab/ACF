@@ -14,6 +14,13 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 - AWCI Web SP1 : ingestion ECMWF IFS 0,25° Open Data (`acf-awci-ingest`), dangers
   vectorisés + AWCI `operational-v1`, API en lecture seule `/api/v1/awci`
   (`acf-awci-web`). Voir `docs/awci/AWCI_WEB_SP1.md`.
+- AWCI Web SP1C (nuages) : fraction nuageuse par niveau (Sundqvist 1989), couvertures
+  par étage (σ ECMWF, recouvrement maximum-aléatoire) contrôlées contre le `tcc` IFS,
+  couches (base/sommet/octas), plafond OACI, convection (particule de surface, Cu/TCU/Cb),
+  genre OMM probable par couche et par étage, espèces diagnosticables, température
+  d'émission des sommets (OLR), condensat colonne, neige, pluie verglaçante ; routes
+  `/clouds`, `/volume`, `/terrain` ; calibration reproductible de RHc
+  (`tools/awci/calibrate_cloud_rhc.py`). Statut HYPOTHESIS. Voir `docs/awci/AWCI_WEB_SP1.md`.
 - Table de tiers de maturité/scope (Foundation/Core/Extended/Experimental)
   dans `ARCHITECTURE.md`, couvrant les 62 sous-modules de `src/acf/`.
 - `docs/STATUS.md` : suivi unique et vérifiable de l'avancement réel
