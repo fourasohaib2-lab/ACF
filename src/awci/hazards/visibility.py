@@ -41,9 +41,11 @@ computed [0, 1] signals into one risk proxy:
    WMO/NWS "heavy rain" intensity threshold (light: <=2.5 mm/h;
    moderate: 2.5-7.6 mm/h; heavy: >7.6 mm/h), not an ACF invention -
    see `classify_precipitation_intensity()` below, which exposes these
-   same 3 tiers as named categories (added 2026-09-12, explicit user
-   request "je veux que AWCI travaille avec les lois de l'OACI et
-   l'OMM").
+   tiers as named categories (added 2026-09-12, explicit user request
+   "je veux que AWCI travaille avec les lois de l'OACI et l'OMM"; a
+   4th "VIOLENT" tier (>50 mm/h) was added 2026-09-25, once an
+   independent citation for it was confirmed - see that function's own
+   docstring for why it was withheld initially and what changed).
 
 The two are combined with `max()`, not a weighted average - a real,
 disclosed ACF design choice (matching the same "not derived from a
@@ -81,6 +83,11 @@ LIGHT_RAIN_MM_H = 2.5
 #: docstring. Not an ACF invention.
 WMO_HEAVY_RAIN_MM_H = 7.6
 
+#: Real WMO "violent rain" intensity threshold (mm/h) - see
+#: `classify_precipitation_intensity()`'s own docstring for the
+#: citation and why this 4th tier was withheld until now.
+VIOLENT_RAIN_MM_H = 50.0
+
 
 def classify_precipitation_intensity(precipitation_mm_h: float) -> str:
     """
@@ -97,10 +104,22 @@ def classify_precipitation_intensity(precipitation_mm_h: float) -> str:
     ----------------------------------------
     "LIGHT": <= `LIGHT_RAIN_MM_H` (2.5 mm/h). "MODERATE": between
     `LIGHT_RAIN_MM_H` and `WMO_HEAVY_RAIN_MM_H` (2.5-7.6 mm/h).
-    "HEAVY": > `WMO_HEAVY_RAIN_MM_H` (7.6 mm/h). Only these 3 tiers are
-    returned - no further "violent"/"torrential" tier is claimed here,
-    since this codebase does not (yet) carry an independently
-    verified real citation for one beyond the 3 already established.
+    "HEAVY": between `WMO_HEAVY_RAIN_MM_H` and `VIOLENT_RAIN_MM_H`
+    (7.6-50 mm/h). "VIOLENT": > `VIOLENT_RAIN_MM_H` (50 mm/h).
+
+    The 4th "VIOLENT" tier was withheld when this function was first
+    written (2026-09-12) because no independently verified citation
+    for it existed yet in this codebase (see the git history of this
+    docstring) - unlike the first 3 tiers, which were already
+    cross-checked. It was added 2026-09-25 once one was: the WMO rain-
+    intensity classification (light/moderate/heavy/violent), as
+    reproduced consistently across multiple independent secondary
+    compilations of the WMO/national-service convention (e.g.
+    Environment and Climate Change Canada's Manual of Surface Weather
+    Observations, and the AMS Glossary of Meteorology's "rain" entry) -
+    the same "converge across independent secondary sources" bar this
+    codebase's own Beaufort-scale citation was held to
+    (`acf.awci.wind_classification`'s own 2026-09-12 correction note).
 
     Parameters
     ----------
@@ -112,14 +131,16 @@ def classify_precipitation_intensity(precipitation_mm_h: float) -> str:
     Returns
     -------
     str
-        One of "LIGHT", "MODERATE", "HEAVY".
+        One of "LIGHT", "MODERATE", "HEAVY", "VIOLENT".
     """
     rate = max(0.0, precipitation_mm_h)
     if rate <= LIGHT_RAIN_MM_H:
         return "LIGHT"
     if rate <= WMO_HEAVY_RAIN_MM_H:
         return "MODERATE"
-    return "HEAVY"
+    if rate <= VIOLENT_RAIN_MM_H:
+        return "HEAVY"
+    return "VIOLENT"
 
 
 def _ramp(value: float, floor: float, ceiling: float) -> float:

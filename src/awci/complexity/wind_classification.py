@@ -87,7 +87,10 @@ BEAUFORT_SCALE_M_S: tuple[tuple[int, str, float], ...] = (
 def classify_wind_beaufort_force(wind_speed_m_s: float) -> dict[str, object]:
     """
     Real WMO Beaufort force for a real wind speed (m/s) - see module
-    docstring for the real, cited WMO Code Table 1855 thresholds.
+    docstring for the real, cited WMO Manual on Codes (WMO-No. 306)
+    thresholds (the earlier "WMO Code Table 1855" citation was
+    corrected there 2026-09-12; this docstring is kept consistent with
+    that correction, not the stale table number).
 
     Parameters
     ----------

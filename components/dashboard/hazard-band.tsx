@@ -84,9 +84,9 @@ export function HazardBand() {
     {
       label: "Icing",
       value: icingScore !== null ? icingScore.toFixed(0) : "—",
-      unit: icingScore !== null ? (icingScore >= 60 ? "High" : icingScore >= 30 ? "Moderate" : "Low") : "—",
-      tone: icingScore !== null ? (icingScore >= 60 ? "critical" : icingScore >= 30 ? "warning" : "normal") : "normal",
-      note: "Real Stull wet-bulb precipitation-phase severity.",
+      unit: "%",
+      tone: "normal",
+      note: "Real Stull wet-bulb freezing-precipitation-phase probability, ×100 - not the ICAO/FAA airframe-icing severity scale (LIGHT/MODERATE/SEVERE by liquid-water-content or ice-accretion rate, a different physical quantity this proxy cannot classify), so no qualitative label is applied here.",
     },
     {
       label: "Wind Shear",
