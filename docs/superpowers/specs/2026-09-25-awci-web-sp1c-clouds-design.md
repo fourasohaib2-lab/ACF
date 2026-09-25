@@ -220,9 +220,13 @@ Surface (`lat`, `lon`) :
   couverture à l'intérieur de l'étage, quelle que soit l'altitude de la base ; Cb/TCU sur tous les
   étages que la colonne convective traverse). L'étage de la base, au sens de l'Atlas, reste donné
   couche par couche par `/clouds` ;
-- `surface_height_m` : hauteur de surface pour toutes les hauteurs au-dessus du sol : relief SRTM15+
-  sur terre (`lsm` ≥ 0,5), 0 m sur mer. Le relief SRTM15+ contient la bathymétrie (jusqu'à −3 800 m
-  au large du Sénégal), qui ne doit jamais relever un plafond ;
+- `surface_height_m` : hauteur de la **surface du modèle IFS**, utilisée pour toutes les hauteurs au-dessus
+  du sol. Elle vient de l'équation hypsométrique à partir de `sp` et du niveau valide le plus bas :
+  z_s = gh_k − (R_d·T̄_v/g)·ln(p_s/p_k), cohérente avec le masque sous le relief et la particule, et vaut
+  ±2 m sur mer. Le relief SRTM15+ embarqué est une grille à 1°, dont la bathymétrie déborde
+  jusqu'à des dizaines de km dans les terres (−677 m près d'Alger) ; il ne sert plus pour les nuages ;
+- `cloud_species` (par niveau) : espèces de la couche à laquelle appartient le niveau. Chaque couche a
+  ses propres espèces ; `species_flags` est leur OU sur la colonne ;
 - `convective_class` (0 aucun, 1 Cu hum/med, 2 TCU, 3 Cb calvus, 4 Cb capillatus) ;
 - `convective_top_m` et `convective_top_temp_k` ;
 - `cloud_top_teff_k` ;

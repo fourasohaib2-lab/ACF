@@ -134,7 +134,7 @@ ils valent `null` (`accumulation_interval_h` du manifest).
 
 | Famille | Couches |
 |---|---|
-| Par niveau | `cloud_fraction`, `cloud_genus` (code OMM 0500, −1 clair, −2 indéterminé), `potential_instability` |
+| Par niveau | `cloud_fraction`, `cloud_genus` (code OMM 0500, −1 clair, −2 indéterminé), `cloud_species`, `potential_instability` |
 | Étages | `cloud_cover_low/mid/high/total_diag`, `genus_low/mid/high` (nuage présent dans l'étage) |
 | Aviation | `ceiling_m` (définition OACI), `lowest_cloud_base_m`, `highest_cloud_top_m` |
 | Convection | `convective_class` (Cu, TCU, Cb calvus, Cb capillatus), `convective_top_m`, `convective_top_temp_k` |
@@ -147,11 +147,19 @@ ils valent `null` (`accumulation_interval_h` du manifest).
 - `/volume?…&layer&step&stride=1|2|4` : float32 niveaux × lat × lon, suivi de `gh` ;
 - `/terrain?…&stride` : hauteur de surface (0 m sur mer).
 
+`/meta` et `/clouds` exposent aussi le statut nuageux du run (`cloud_status`), le contrôle de
+cohérence avec le `tcc` IFS par échéance et l'intervalle de cumul (`accumulation_interval_h`).
 Un run ingéré avant SP1C reste servi ; ses couches nuageuses renvoient 404.
 
-**Hauteur de surface** : le relief SRTM15+ contient la bathymétrie (jusqu'à −3 800 m au large du
-Sénégal). Toutes les hauteurs au-dessus du sol utilisent `surface_height_m`, qui vaut le relief sur
-terre (`lsm` ≥ 0,5) et 0 m sur mer.
+**Hauteur de surface** : toutes les hauteurs au-dessus du sol (plafond, bases, profondeur convective,
+`/terrain`) utilisent `surface_height_m`, la surface du modèle IFS obtenue par l'équation hypsométrique
+à partir de `sp` (±2 m sur mer). Elle est cohérente avec le masque sous le relief et la particule.
+Le relief SRTM15+ embarqué (grille à 1°) n'est pas utilisé : sa bathymétrie déborde sur les côtes
+(−677 m près d'Alger), ce qui relevait les plafonds côtiers jusqu'à environ 1 km.
+
+**Règles notables** : un Cb est une convection profonde à sommet glacé ; la pluie au sol n'est pas
+exigée (Cb secs à base haute du Sahel et du Sahara, virga). Les espèces sont portées par chaque
+couche (`cloud_species`) ; *fractus* ne s'applique qu'au St (OMM-N° 407).
 
 **Calibration de RHc** :
 
