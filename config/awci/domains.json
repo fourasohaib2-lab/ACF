@@ -1,0 +1,6 @@
+{
+  "domains": [
+    {"name": "north_africa", "label": "Afrique du Nord / Méditerranée", "south": 15.0, "north": 45.0,
+     "west": -20.0, "east": 40.0, "default": true}
+  ]
+}
