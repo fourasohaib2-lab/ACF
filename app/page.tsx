@@ -11,6 +11,7 @@ import { VerticalCrossSection } from "@/components/dashboard/vertical-cross-sect
 import { RouteCrossSection } from "@/components/dashboard/route-cross-section"
 import { AtmosphericProfile } from "@/components/dashboard/atmospheric-profile"
 import { FlightRouteAnalysis } from "@/components/dashboard/flight-route-analysis"
+import { TimeEvolution } from "@/components/dashboard/time-evolution"
 import { RadarComplexity } from "@/components/dashboard/radar-complexity"
 import { RouteProfile } from "@/components/dashboard/route-profile"
 import { RiskPanel } from "@/components/dashboard/risk-panel"
@@ -71,10 +72,13 @@ export default function Page() {
                     <RouteProfile />
                   </section>
 
-                  {/* Route analysis row - real per-waypoint segment table */}
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="h-80">
+                  {/* Route analysis row - real per-waypoint segment table + session history */}
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+                    <div className="h-80 xl:col-span-2">
                       <FlightRouteAnalysis />
+                    </div>
+                    <div className="h-80">
+                      <TimeEvolution />
                     </div>
                   </div>
                 </main>
