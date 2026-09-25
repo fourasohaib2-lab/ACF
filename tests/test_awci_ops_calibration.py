@@ -13,7 +13,7 @@ LEVELS = np.array([1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100],
 
 def test_recovers_known_rhc() -> None:
     rng = np.random.default_rng(20260925)
-    base = load_cloud_profile()
+    base = replace(load_cloud_profile(), rh_critical={"low": 0.80, "mid": 0.70, "high": 0.70})
     truth = replace(base, rh_critical={"low": 0.775, "mid": 0.65, "high": 0.725})
     n, ny, nx = 4, 20, 20
     r = rng.uniform(40.0, 100.0, size=(n, len(LEVELS), ny, nx))
@@ -22,7 +22,7 @@ def test_recovers_known_rhc() -> None:
                     for k in range(n)])
     result = calibrate_rhc(r, sp, LEVELS, tcc, base)
     for name, value in truth.rh_critical.items():
-        assert abs(result["rh_critical"][name] - value) <= 0.025, (name, result)
+        assert abs(result["rh_critical"][name] - value) <= 0.025 + 1e-9, (name, result)
     assert result["rmse_after"] < result["rmse_before"] and result["n_cells"] == n * ny * nx
 
 
@@ -45,11 +45,12 @@ def test_tool_runs_on_a_real_cube_and_writes_a_calibration_record(tmp_path, caps
                FixtureFetcher(), tmp_path, [0, 3])
     profile = tmp_path / "cloud.json"
     shutil.copy(DEFAULT_CLOUD_PROFILE_PATH, profile)
+    major, minor, _ = (int(x) for x in json.loads(profile.read_text())["version"].split("."))
     calibrate_cloud_rhc.main(["--domain", "fixture", "--runs", "2026092500", "--steps", "0,3",
                               "--data-dir", str(tmp_path), "--profile", str(profile), "--write"])
     printed = json.loads(capsys.readouterr().out)
     written = json.loads(profile.read_text())
     assert printed["steps"] == [0, 3] and printed["n_cells"] > 0
-    assert written["version"] == "1.1.0" and written["calibration"]["rmse_after"] <= printed["rmse_before"]
+    assert written["version"] == f"{major}.{minor + 1}.0" and written["calibration"]["rmse_after"] <= printed["rmse_before"]
     assert written["rh_critical"] == printed["rh_critical"]
     assert load_cloud_profile(profile).calibration is not None

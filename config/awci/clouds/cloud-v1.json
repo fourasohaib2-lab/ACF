@@ -1,24 +1,45 @@
 {
   "name": "cloud-v1",
-  "version": "1.0.0",
-  "rh_critical": {"low": 0.80, "mid": 0.70, "high": 0.70},
-  "sigma_bounds": {"low_mid": 0.8, "mid_high": 0.45},
+  "version": "1.1.0",
+  "rh_critical": {
+    "low": 0.8,
+    "mid": 0.6,
+    "high": 0.8
+  },
+  "sigma_bounds": {
+    "low_mid": 0.8,
+    "mid_high": 0.45
+  },
   "layer_min_fraction": 0.125,
   "ceiling_max_base_m": 6000.0,
   "bias_degraded_threshold": 0.15,
   "convection": {
-    "cape_min_j_kg": 100.0, "precip_min_mm_h": 0.1, "cb_min_depth_m": 6000.0, "tcu_min_depth_m": 3000.0,
-    "humilis_max_depth_m": 1000.0, "glaciation_temp_k": 253.15, "capillatus_temp_k": 235.15,
+    "cape_min_j_kg": 100.0,
+    "precip_min_mm_h": 0.1,
+    "cb_min_depth_m": 6000.0,
+    "tcu_min_depth_m": 3000.0,
+    "humilis_max_depth_m": 1000.0,
+    "glaciation_temp_k": 253.15,
+    "capillatus_temp_k": 235.15,
     "condensate_min_kg_m2": 0.01
   },
   "genus": {
-    "st_max_base_m": 600.0, "ns_min_depth_m": 3000.0, "as_min_depth_m": 1500.0, "cc_max_depth_m": 1500.0,
-    "cs_min_oktas": 5, "continuous_precip_mm_h": 0.1
+    "st_max_base_m": 600.0,
+    "ns_min_depth_m": 3000.0,
+    "as_min_depth_m": 1500.0,
+    "cc_max_depth_m": 1500.0,
+    "cs_min_oktas": 5,
+    "continuous_precip_mm_h": 0.1
   },
   "species": {
-    "lenticularis_min_wind_m_s": 10.0, "lenticularis_min_relief_m": 300.0, "lenticularis_froude_min": 0.5,
-    "lenticularis_froude_max": 1.5, "fractus_min_wind_m_s": 10.0, "nebulosus_min_oktas": 7,
-    "nebulosus_max_std": 0.1, "spissatus_min_condensate_kg_m2": 0.05
+    "lenticularis_min_wind_m_s": 10.0,
+    "lenticularis_min_relief_m": 300.0,
+    "lenticularis_froude_min": 0.5,
+    "lenticularis_froude_max": 1.5,
+    "fractus_min_wind_m_s": 10.0,
+    "nebulosus_min_oktas": 7,
+    "nebulosus_max_std": 0.1,
+    "spissatus_min_condensate_kg_m2": 0.05
   },
   "references": {
     "rh_critical": "Sundqvist, Berge & Kristjansson (1989), Mon. Wea. Rev. 117; initial values ACF choice (HYPOTHESIS), calibrated against IFS tcc by tools/awci/calibrate_cloud_rhc.py",
@@ -31,5 +52,41 @@
     "condensate_min_kg_m2": "convection is diagnosed only where the IFS column holds condensate (tcw - tcwv >= 10 g m-2): no model cloud, no convective cloud; ACF choice",
     "other": "ACF choices, status HYPOTHESIS, to be validated against METAR cloud groups (SP3)"
   },
-  "calibration": null
+  "calibration": {
+    "rh_critical": {
+      "low": 0.8,
+      "mid": 0.6,
+      "high": 0.8
+    },
+    "rmse_before": 0.2659,
+    "rmse_after": 0.262,
+    "bias_after": 0.038,
+    "n_cells": 379093,
+    "runs": [
+      "2026092512"
+    ],
+    "steps": [
+      0,
+      6,
+      12,
+      18,
+      24,
+      30,
+      36,
+      42,
+      48,
+      54,
+      60,
+      66,
+      72
+    ],
+    "domain": "north_africa",
+    "date": "2026-09-25",
+    "acf_git_sha": "8766394",
+    "rh_critical_before": {
+      "low": 0.8,
+      "mid": 0.7,
+      "high": 0.7
+    }
+  }
 }

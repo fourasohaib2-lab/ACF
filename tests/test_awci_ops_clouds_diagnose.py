@@ -1,4 +1,5 @@
 import warnings
+from dataclasses import replace
 
 import numpy as np
 
@@ -8,7 +9,8 @@ from acf.awci.ops.clouds import (
 )
 from acf.awci.ops.parcel import ParcelResult
 
-P = load_cloud_profile()
+# Fixed RHc so that the rule tests do not depend on the calibrated values of the shipped profile.
+P = replace(load_cloud_profile(), rh_critical={"low": 0.80, "mid": 0.70, "high": 0.70})
 LEVELS = np.array([1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100], dtype=float)
 NL, NY, NX = len(LEVELS), 3, 3
 ISA_GH = 44330.8 * (1 - (LEVELS / 1013.25) ** 0.190263)
