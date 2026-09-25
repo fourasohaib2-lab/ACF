@@ -12,6 +12,7 @@ import { RouteCrossSection } from "@/components/dashboard/route-cross-section"
 import { AtmosphericProfile } from "@/components/dashboard/atmospheric-profile"
 import { FlightRouteAnalysis } from "@/components/dashboard/flight-route-analysis"
 import { TimeEvolution } from "@/components/dashboard/time-evolution"
+import { AwciVerticalProfileTable } from "@/components/dashboard/awci-vertical-profile-table"
 import { RadarComplexity } from "@/components/dashboard/radar-complexity"
 import { RouteProfile } from "@/components/dashboard/route-profile"
 import { RiskPanel } from "@/components/dashboard/risk-panel"
@@ -79,6 +80,13 @@ export default function Page() {
                     </div>
                     <div className="h-80">
                       <TimeEvolution />
+                    </div>
+                  </div>
+
+                  {/* Real per-level AWCI breakdown */}
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="h-96">
+                      <AwciVerticalProfileTable />
                     </div>
                   </div>
                 </main>
