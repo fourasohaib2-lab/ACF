@@ -304,6 +304,45 @@ def test_complexity_vertical_profile_endpoint_400s_for_an_unknown_model():
     assert response.status_code == 400
 
 
+def test_complexity_route_cross_section_endpoint_returns_real_columns_along_the_route():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/route-cross-section",
+        params={"dep_icao": "LFPG", "arr_icao": "KJFK", "n_waypoints": 4, "n_lat": 4, "n_lon": 4, "n_levels": 5},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["departure_icao"] == "LFPG"
+    assert body["arrival_icao"] == "KJFK"
+    assert body["is_real_data"] is True
+    assert len(body["columns"]) == 4
+    # Real great-circle distance accumulates monotonically along the route.
+    distances = [c["distance_from_origin_km"] for c in body["columns"]]
+    assert distances == sorted(distances)
+    assert distances[0] == 0.0
+    assert distances[-1] > 5000.0  # real LFPG-KJFK is ~5800 km
+    for column in body["columns"]:
+        assert len(column["awci_profile"]) == 5
+        assert len(column["pressure_profile_hpa"]) == 5
+
+
+def test_complexity_route_cross_section_endpoint_404s_for_an_unknown_airport():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/route-cross-section", params={"dep_icao": "ZZZZ", "arr_icao": "KJFK", "n_lat": 4, "n_lon": 4}
+    )
+    assert response.status_code == 404
+
+
+def test_complexity_route_cross_section_endpoint_400s_for_an_unknown_model():
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/route-cross-section",
+        params={"dep_icao": "LFPG", "arr_icao": "KJFK", "model": "NOPE"},
+    )
+    assert response.status_code == 400
+
+
 # --------------------------------------------------------------------- reports.py
 
 

@@ -44,6 +44,8 @@ from fastapi import APIRouter, Body, HTTPException
 from awci.complexity.calculator import AWCICalculator
 from awci.complexity.spatial_field import compute_real_complexity_field
 from awci.complexity.vertical_field import compute_real_complexity_volume, vertical_profile_at_point
+from awci.flight.waypoint import generate_route_waypoints
+from awci.knowledge.airports.airport_database import AirportDatabase
 
 router = APIRouter(prefix="/complexity", tags=["complexity"])
 
@@ -216,6 +218,82 @@ async def vertical_profile(
             **profile,
             "model": volume["model"],
             "n_levels": volume["n_levels"],
+            "status": volume["status"],
+            "is_real_data": volume["is_real_data"],
+            "honest_limitation": volume["honest_limitation"],
+        }
+    )
+
+
+@router.get("/route-cross-section")
+async def route_cross_section(
+    dep_icao: str,
+    arr_icao: str,
+    n_waypoints: int = 10,
+    model: str = "ARPEGE",
+    steps: int = 8,
+    seed: int = 0,
+    n_lat: int | None = None,
+    n_lon: int | None = None,
+    n_levels: int | None = None,
+) -> dict[str, Any]:
+    """
+    Real Complexity(along-track distance, z) cross-section for the
+    dashboard's Vertical Cross Section panel - composes 3 already-real
+    pieces, no new physics: real great-circle waypoints
+    (``awci.flight.waypoint.generate_route_waypoints()``, the same
+    function ``awci.flight.route_weather.build_route_weather_briefing()``
+    already uses for ``/flights/route-weather``), ONE real
+    ``compute_real_complexity_volume()`` run (the whole 3D field
+    computed once, not once per waypoint), then a real nearest-grid-
+    column extraction (``vertical_profile_at_point()``) at each real
+    waypoint's position - the same honest nearest-neighbour convention
+    ``/complexity/vertical-profile`` already uses for a single point,
+    just repeated along the route.
+
+    Raises
+    ------
+    HTTPException(404)
+        If ``dep_icao``/``arr_icao`` is not a real airport in
+        ``AirportDatabase`` - the same real convention
+        ``/flights/route-weather`` already uses.
+    """
+    dep = AirportDatabase.get_airport(dep_icao)
+    arr = AirportDatabase.get_airport(arr_icao)
+    if dep is None or arr is None:
+        raise HTTPException(
+            404,
+            f"{dep_icao!r}/{arr_icao!r} must both be real airports in AirportDatabase - "
+            f"known: {AirportDatabase.list_airports()}",
+        )
+    try:
+        volume = compute_real_complexity_volume(
+            model=model, steps=steps, seed=seed, n_lat=n_lat, n_lon=n_lon, n_levels=n_levels
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    waypoints = generate_route_waypoints(dep.latitude, dep.longitude, arr.latitude, arr.longitude, n_points=n_waypoints)
+    columns = []
+    for wp in waypoints:
+        profile = vertical_profile_at_point(volume, wp.latitude, wp.longitude)
+        columns.append(
+            {
+                "distance_from_origin_km": wp.distance_from_origin_km,
+                "latitude": profile["lat"],
+                "longitude": profile["lon"],
+                "awci_profile": profile["awci_profile"],
+                "pressure_profile_hpa": profile["pressure_profile_hpa"],
+            }
+        )
+
+    return _to_json_safe_numeric(
+        {
+            "departure_icao": dep.icao_code,
+            "arrival_icao": arr.icao_code,
+            "model": volume["model"],
+            "n_levels": volume["n_levels"],
+            "columns": columns,
             "status": volume["status"],
             "is_real_data": volume["is_real_data"],
             "honest_limitation": volume["honest_limitation"],
