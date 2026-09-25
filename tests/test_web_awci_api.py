@@ -103,3 +103,23 @@ def test_router_mounted_in_main_app() -> None:
 
     app = create_app(hpc=object(), fno_checkpoint_path=None, event_db_path=":memory:", dataset_db_path=":memory:")
     assert TestClient(app).get("/api/v1/awci/registry").status_code == 200
+
+
+def test_point_profile_timeseries_never_load_whole_variables(client: TestClient, monkeypatch) -> None:
+    """Regression: reading one column must not decompress entire (step, level, lat, lon) variables."""
+    import xarray as xr
+
+    sizes: list[int] = []
+    original = xr.DataArray.values
+
+    def spy(self):  # noqa: ANN001, ANN202
+        out = original.fget(self)
+        sizes.append(int(np.asarray(out).size))
+        return out
+
+    monkeypatch.setattr(xr.DataArray, "values", property(spy))
+    for url in (f"{BASE}/point?{Q}&step=0&level=300&lat=36&lon=3", f"{BASE}/profile?{Q}&step=0&lat=36&lon=3",
+                f"{BASE}/timeseries?{Q}&level=300&lat=36&lon=3"):
+        sizes.clear()
+        assert client.get(url).status_code == 200
+        assert max(sizes) <= 12, f"{url} materialized an array of {max(sizes)} values"

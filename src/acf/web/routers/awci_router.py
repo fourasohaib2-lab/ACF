@@ -146,13 +146,18 @@ def field(
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
-def _point_payload(ds: Any, si: int, li: int, i: int, j: int, thresholds: Any) -> dict[str, Any]:
-    level_values = {name: _num(ds[name].values[si, li, i, j]) for name in LEVEL_LAYERS
+def _column(ds: Any, si: int, i: int, j: int) -> dict[str, np.ndarray]:
+    """Every per-level layer at one (step, lat, lon) as a (level,) array - reads only that column's chunks."""
+    return {name: ds[name].isel(step=si, lat=i, lon=j).values for name in LEVEL_LAYERS}
+
+
+def _level_payload(column: dict[str, np.ndarray], li: int, thresholds: Any) -> dict[str, Any]:
+    level_values = {name: _num(values[li]) for name, values in column.items()
                     if not name.startswith("module_") and name not in ("awci", "awci_level")}
     return {
-        "awci": _num(ds["awci"].values[si, li, i, j]),
-        "awci_level": _level_label(thresholds, float(ds["awci_level"].values[si, li, i, j])),
-        "modules": {m: _num(ds[f"module_{m}"].values[si, li, i, j]) for m in _MODULES},
+        "awci": _num(column["awci"][li]),
+        "awci_level": _level_label(thresholds, float(column["awci_level"][li])),
+        "modules": {m: _num(column[f"module_{m}"][li]) for m in _MODULES},
         "excluded_modules": list(_EXCLUDED),
         "level_layers": level_values,
     }
@@ -166,9 +171,9 @@ def point(request: Request, domain: str, run: str, step: int, level: float, lat:
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level,
-            "flight_level": m["flight_levels"][li], **_point_payload(ds, si, li, i, j, thresholds),
-            "surface_layers": {name: _num(ds[name].values[si, i, j]) for name in SURFACE_LAYERS},
-            "elevation_m": _num(ds["elevation"].values[i, j]),
+            "flight_level": m["flight_levels"][li], **_level_payload(_column(ds, si, i, j), li, thresholds),
+            "surface_layers": {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in SURFACE_LAYERS},
+            "elevation_m": _num(ds["elevation"].isel(lat=i, lon=j).values),
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
@@ -179,7 +184,8 @@ def profile(request: Request, domain: str, run: str, step: int, lat: float, lon:
     ds = _store(request).dataset(domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
-    levels = [{"level_hpa": p, "flight_level": fl, **_point_payload(ds, si, li, i, j, thresholds)}
+    column = _column(ds, si, i, j)
+    levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds)}
               for li, (p, fl) in enumerate(zip(m["levels_hpa"], m["flight_levels"]))]
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "levels": levels,
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
@@ -191,7 +197,8 @@ def timeseries(request: Request, domain: str, run: str, level: float, lat: float
     li = _level_index(m, level)
     ds = _store(request).dataset(domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
-    points = [{"step": s, "valid_time": vt, "awci": _num(ds["awci"].values[si, li, i, j])}
+    series = ds["awci"].isel(level=li, lat=i, lon=j).values
+    points = [{"step": s, "valid_time": vt, "awci": _num(series[si])}
               for si, (s, vt) in enumerate(zip(m["steps"], m["valid_times"]))]
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level,
             "points": points, "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
