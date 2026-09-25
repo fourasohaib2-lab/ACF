@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from acf.awci.ops.thermo import (
     cloud_base_lcl_m,
