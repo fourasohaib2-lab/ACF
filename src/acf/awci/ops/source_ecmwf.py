@@ -21,7 +21,10 @@ from typing import Protocol
 BASE_URL = "https://data.ecmwf.int/forecasts"
 PL_PARAMS: tuple[str, ...] = ("t", "q", "r", "u", "v", "w", "gh", "d")
 PL_LEVELS: tuple[int, ...] = (1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100)
-SFC_PARAMS: tuple[str, ...] = ("2t", "2d", "10u", "10v", "10fg", "sp", "msl", "mucape", "tprate", "ptype", "tcc", "lsm")
+SFC_PARAMS: tuple[str, ...] = (
+    "2t", "2d", "10u", "10v", "10fg", "sp", "msl", "mucape", "tprate", "ptype", "tcc", "lsm",
+    "tcw", "tcwv", "ttr", "sf", "sd", "rsn", "tp",  # SP1C: clouds, OLR, snow, freezing precipitation
+)
 RUN_HOURS = (0, 6, 12, 18)
 USER_AGENT = "ACF-AWCI-Web/1.0 (+https://github.com/fourasohaib2-lab/ACF)"
 

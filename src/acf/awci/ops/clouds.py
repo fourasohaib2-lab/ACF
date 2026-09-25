@@ -161,7 +161,8 @@ def convective_diagnosis(inp: CloudInputs, profile: CloudProfile) -> tuple[np.nd
     top, top_t = inp.parcel.el_gh_m, inp.parcel.el_temp_k
     with np.errstate(invalid="ignore"):
         depth = top - (inp.elevation + inp.lcl_agl_m)
-        ok = (inp.mucape >= c["cape_min_j_kg"]) & np.isfinite(depth) & (depth > 0.0)
+        ok = ((inp.mucape >= c["cape_min_j_kg"]) & np.isfinite(depth) & (depth > 0.0)
+              & (inp.column_condensate >= c["condensate_min_kg_m2"]))
         cb = ok & (depth >= c["cb_min_depth_m"]) & (top_t <= c["glaciation_temp_k"]) & (
             inp.precip_rate_mm_h >= c["precip_min_mm_h"])
         cls = np.select([cb & (top_t <= c["capillatus_temp_k"]), cb, ok & (depth >= c["tcu_min_depth_m"]), ok],
@@ -238,10 +239,12 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
         code = _genus(e_base, depth, n_ok, base_agl, mean_pi < 0.0, precip, g)
         code = np.where(present, np.where(np.isfinite(mean_pi), code, INDETERMINATE), CLEAR)
         genus_level = np.where(mask, code, genus_level)
-        for e in range(len(ETAGE_NAMES)):
-            better = present & (e_base == e) & (cover > best_cover[e])
+        for e in range(len(ETAGE_NAMES)):  # the cloud present in the etage, wherever its base is
+            in_etage = mask & (etage == e)
+            cover_e = np.where(in_etage, np.nan_to_num(frac), 0.0).max(axis=0)
+            better = in_etage.any(axis=0) & (cover_e > best_cover[e])
             genus_etage[e] = np.where(better, code, genus_etage[e])
-            best_cover[e] = np.where(better, cover, best_cover[e])
+            best_cover[e] = np.where(better, cover_e, best_cover[e])
         qualifies = present & (n_ok >= 5) & (base_agl < profile.ceiling_max_base_m)
         ceiling = np.where(qualifies, np.fmin(ceiling, base_agl), ceiling)
         lowest = np.where(present, np.fmin(lowest, base_agl), lowest)
@@ -268,8 +271,8 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
     genus_level = np.where(in_conv & (cls >= 2)[None], conv_code[None], genus_level)
     genus_level = np.where(in_conv & (cls == 1)[None] & (genus_level == CLEAR), GENUS_CODES["Cu"], genus_level)
     conv_etage = sigma_etage(inp.parcel.p_lcl_hpa / inp.sp_hpa, profile)
-    for e in range(len(ETAGE_NAMES)):
-        here = conv_etage == e
+    for e in range(len(ETAGE_NAMES)):  # every etage the convective column crosses, base etage at least
+        here = (in_conv & (etage == e)).any(axis=0) | (conv_etage == e)
         genus_etage[e] = np.where(here & (cls >= 2), conv_code, genus_etage[e])
         genus_etage[e] = np.where(here & (cls == 1) & (genus_etage[e] == CLEAR), GENUS_CODES["Cu"], genus_etage[e])
     lowest = np.where(cls > 0, np.fmin(lowest, inp.lcl_agl_m), lowest)

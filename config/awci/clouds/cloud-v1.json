@@ -8,7 +8,8 @@
   "bias_degraded_threshold": 0.15,
   "convection": {
     "cape_min_j_kg": 100.0, "precip_min_mm_h": 0.1, "cb_min_depth_m": 6000.0, "tcu_min_depth_m": 3000.0,
-    "humilis_max_depth_m": 1000.0, "glaciation_temp_k": 253.15, "capillatus_temp_k": 235.15
+    "humilis_max_depth_m": 1000.0, "glaciation_temp_k": 253.15, "capillatus_temp_k": 235.15,
+    "condensate_min_kg_m2": 0.01
   },
   "genus": {
     "st_max_base_m": 600.0, "ns_min_depth_m": 3000.0, "as_min_depth_m": 1500.0, "cc_max_depth_m": 1500.0,
@@ -27,6 +28,7 @@
     "glaciation_temp_k": "-20 degC: glaciation of convective tops observed near -20 to -25 degC, Rosenfeld & Lensky (1998), BAMS 79",
     "capillatus_temp_k": "-38 degC: homogeneous freezing of supercooled droplets, Pruppacher & Klett (1997)",
     "lenticularis_froude": "mountain-wave regime Fr = U/(N h) of order 1, Durran (1990), Meteor. Monogr. 23; bounds ACF choice",
+    "condensate_min_kg_m2": "convection is diagnosed only where the IFS column holds condensate (tcw - tcwv >= 10 g m-2): no model cloud, no convective cloud; ACF choice",
     "other": "ACF choices, status HYPOTHESIS, to be validated against METAR cloud groups (SP3)"
   },
   "calibration": null

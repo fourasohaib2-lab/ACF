@@ -85,7 +85,7 @@ def test_mid_etage_genera_and_high_etage_genera() -> None:
 
 
 def test_deep_cold_topped_precipitating_convection_is_cb_capillatus() -> None:
-    out = diagnose_clouds(_inputs(el=9, mucape=1500.0, precip=5.0, ptype=1.0, lcl=800.0), P)  # EL 200 hPa ~ -57 C
+    out = diagnose_clouds(_inputs(el=9, mucape=1500.0, precip=5.0, ptype=1.0, lcl=800.0, condensate=2.0), P)  # EL 200 hPa ~ -57 C
     assert out["convective_class"][1, 1] == 4 and out["genus_low"][1, 1] == GENUS_CODES["Cb"]
     assert np.isclose(out["convective_top_m"][1, 1], ISA_GH[9])
     assert np.isclose(out["lowest_cloud_base_m"][1, 1], 800.0)
@@ -93,12 +93,14 @@ def test_deep_cold_topped_precipitating_convection_is_cb_capillatus() -> None:
 
 
 def test_moderate_convection_is_tcu_and_shallow_is_cu() -> None:
-    tcu = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0), P)  # EL 500 hPa, ~4.8 km deep, no precip
+    tcu = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3), P)  # EL 500 hPa, ~4.8 km deep, no precip
     assert tcu["convective_class"][1, 1] == 2
-    cu = diagnose_clouds(_inputs(el=2, mucape=200.0, lcl=800.0), P)  # EL 850 hPa
+    cu = diagnose_clouds(_inputs(el=2, mucape=200.0, lcl=800.0, condensate=0.05), P)  # EL 850 hPa
     assert cu["convective_class"][1, 1] == 1
-    capped = diagnose_clouds(_inputs(el=5, mucape=20.0, lcl=800.0), P)  # CAPE below the profile minimum
+    capped = diagnose_clouds(_inputs(el=5, mucape=20.0, lcl=800.0, condensate=0.3), P)  # CAPE below the profile minimum
     assert capped["convective_class"][1, 1] == 0
+    no_condensate = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.0), P)  # no model cloud
+    assert no_condensate["convective_class"][1, 1] == 0
 
 
 def test_castellanus_flag_on_conditionally_unstable_mid_layer() -> None:
@@ -125,3 +127,13 @@ def test_underground_levels_are_nan() -> None:
     inp.underground[0] = True
     out = diagnose_clouds(inp, P)
     assert np.isnan(out["cloud_fraction"][0]).all() and np.isnan(out["cloud_genus"][0]).all()
+
+
+def test_etage_genus_describes_the_cloud_present_in_the_etage() -> None:
+    deep = diagnose_clouds(_inputs(r=_r_with({k: 100.0 for k in range(4, 11)})), P)  # 600-150 hPa, based mid
+    assert deep["genus_mid"][1, 1] == GENUS_CODES["As"] and deep["genus_high"][1, 1] == GENUS_CODES["As"]
+    assert deep["genus_low"][1, 1] == CLEAR
+    cb = diagnose_clouds(_inputs(el=9, mucape=1500.0, precip=5.0, ptype=1.0, lcl=800.0, condensate=2.0), P)
+    assert cb["genus_low"][1, 1] == cb["genus_mid"][1, 1] == cb["genus_high"][1, 1] == GENUS_CODES["Cb"]
+    tcu = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3), P)  # top 500 hPa (mid etage)
+    assert tcu["genus_mid"][1, 1] == GENUS_CODES["Cu"] and tcu["genus_high"][1, 1] == CLEAR
