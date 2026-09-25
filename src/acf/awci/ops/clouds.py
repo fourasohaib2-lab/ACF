@@ -163,8 +163,8 @@ def convective_diagnosis(inp: CloudInputs, profile: CloudProfile) -> tuple[np.nd
         depth = top - (inp.elevation + inp.lcl_agl_m)
         ok = ((inp.mucape >= c["cape_min_j_kg"]) & np.isfinite(depth) & (depth > 0.0)
               & (inp.column_condensate >= c["condensate_min_kg_m2"]))
-        cb = ok & (depth >= c["cb_min_depth_m"]) & (top_t <= c["glaciation_temp_k"]) & (
-            inp.precip_rate_mm_h >= c["precip_min_mm_h"])
+        # Cb = deep convection with a glaciated top; rain at the ground is not required (high-based dry Cb, virga)
+        cb = ok & (depth >= c["cb_min_depth_m"]) & (top_t <= c["glaciation_temp_k"])
         cls = np.select([cb & (top_t <= c["capillatus_temp_k"]), cb, ok & (depth >= c["tcu_min_depth_m"]), ok],
                         [4, 3, 2, 1], 0)
     return cls, np.where(cls > 0, top, np.nan), np.where(cls > 0, top_t, np.nan)

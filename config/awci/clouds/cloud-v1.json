@@ -15,8 +15,7 @@
   "bias_degraded_threshold": 0.15,
   "convection": {
     "cape_min_j_kg": 100.0,
-    "precip_min_mm_h": 0.1,
-    "cb_min_depth_m": 6000.0,
+        "cb_min_depth_m": 6000.0,
     "tcu_min_depth_m": 3000.0,
     "humilis_max_depth_m": 1000.0,
     "glaciation_temp_k": 253.15,

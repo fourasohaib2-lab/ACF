@@ -15,7 +15,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_CLOUD_PROFILE_PATH = REPO_ROOT / "config" / "awci" / "clouds" / "cloud-v1.json"
 
-_CONVECTION = ("cape_min_j_kg", "precip_min_mm_h", "cb_min_depth_m", "tcu_min_depth_m", "humilis_max_depth_m",
+_CONVECTION = ("cape_min_j_kg", "cb_min_depth_m", "tcu_min_depth_m", "humilis_max_depth_m",
                "glaciation_temp_k", "capillatus_temp_k", "condensate_min_kg_m2")
 _GENUS = ("st_max_base_m", "ns_min_depth_m", "as_min_depth_m", "cc_max_depth_m", "cs_min_oktas",
           "continuous_precip_mm_h")

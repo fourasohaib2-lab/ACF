@@ -139,3 +139,9 @@ def test_etage_genus_describes_the_cloud_present_in_the_etage() -> None:
     assert cb["genus_low"][1, 1] == cb["genus_mid"][1, 1] == cb["genus_high"][1, 1] == GENUS_CODES["Cb"]
     tcu = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3), P)  # top 500 hPa (mid etage)
     assert tcu["genus_mid"][1, 1] == GENUS_CODES["Cu"] and tcu["genus_high"][1, 1] == CLEAR
+
+
+def test_dry_high_based_deep_cold_convection_is_still_cb() -> None:
+    # Sahel/Sahara high-based Cb: no rain at the ground (virga), glaciated top: pilots need "CB", not "TCU"
+    out = diagnose_clouds(_inputs(el=9, mucape=1500.0, precip=0.0, lcl=2500.0, condensate=0.5), P)
+    assert out["convective_class"][1, 1] == 4
