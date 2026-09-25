@@ -157,6 +157,7 @@ dev = ["pytest", "pytest-cov", "pytest-timeout", "pytest-qt", "black", "ruff", "
 acf-gui = "acf.gui.app:main"
 acf-web = "acf.web.hpc_dashboard_server:run"
 acf-awci = "acf.awci_app:main"
+acf-awci-ingest = "acf.awci.ops.ingest:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
