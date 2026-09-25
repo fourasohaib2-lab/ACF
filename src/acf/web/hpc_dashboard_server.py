@@ -42,6 +42,7 @@ from acf.web.routers import (
     fno_router,
     hpc_router,
     models_router,
+    system_router,
     workstation_router,
 )
 from acf.web.routers.fno_router import DEFAULT_FNO_CHECKPOINT
@@ -97,6 +98,7 @@ def create_app(
     app.include_router(hpc_router, prefix="/api/v1")
     app.include_router(fno_router, prefix="/api/v1")
     app.include_router(workstation_router, prefix="/api/v1")
+    app.include_router(system_router, prefix="/api/v1")
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:

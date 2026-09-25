@@ -1,34 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.thermodynamics.relative_humidity`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.relative_humidity`` import keeps
+working unchanged.
 """
-Relative Humidity
-=================
 
-Calculation of relative humidity.
-
-Formula
--------
-RH = e / es
-"""
-
-
-class RelativeHumidity:
-    """Relative humidity calculator."""
-
-    @staticmethod
-    def calculate(
-        vapor_pressure: float,
-        saturation_vapor_pressure: float,
-    ) -> float:
-        """
-        Calculate relative humidity.
-
-        Returns
-        -------
-        float
-            Relative humidity (0-1)
-        """
-        if saturation_vapor_pressure <= 0:
-            raise ValueError("saturation_vapor_pressure must be positive.")
-
-        rh = vapor_pressure / saturation_vapor_pressure
-
-        return max(0.0, min(1.0, rh))
+from acf.science.thermodynamics.relative_humidity import *  # noqa: F401,F403

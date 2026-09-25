@@ -61,7 +61,8 @@ class ArgoFloatsConnector:
         Honest on every failure path (network error, non-200 HTTP status,
         malformed/unexpected JSON): returns is_real_data=False with the
         real reason in `status`, never a fabricated profile list - same
-        convention as acf.connectors.eumetsat_mtg.EUMETSATMTGConnector.
+        convention as awci.data.connectors.eumetsat_mtg.EUMETSATMTGConnector
+        (moved from acf.connectors.eumetsat_mtg on 2026-09-21).
         """
         end = datetime.now(timezone.utc)
         start = end - timedelta(hours=hours_back)

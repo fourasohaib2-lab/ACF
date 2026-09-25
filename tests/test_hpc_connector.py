@@ -2,7 +2,6 @@
 
 import sys
 
-from acf.gui.esoc.module_registry import ModuleRegistry
 from acf.hpc_connector.arome_aladin_detector import AromeAladinDetector
 from acf.hpc_connector.cluster_detector import ClusterDetector
 from acf.hpc_connector.configuration import HPCConfiguration
@@ -422,10 +421,3 @@ def test_hpc_connection_manager_fennec_workflow(monkeypatch):
     assert summary["telemetry"]["status"] == "NOT_MEASURED_NO_LIVE_TELEMETRY_PROBE_CONNECTED"
     assert summary["telemetry"]["mpi_active_ranks"] is None
     assert hpc.disconnect() is True
-
-
-def test_esoc_module_registry_integration():
-    registry = ModuleRegistry()
-    assert registry.is_connected("hpc_connector") is True
-    hpc_mod = registry.get_module("hpc_connector")
-    assert hpc_mod is not None

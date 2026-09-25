@@ -1,39 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.stability.total_totals`` on
+2026-09-21 (Phase 2 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/stability/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.total_totals`` import keeps
+working unchanged.
 """
-Total Totals Index (TT)
-=======================
-"""
 
-
-class TotalTotals:
-    """Total Totals Index calculator."""
-
-    @staticmethod
-    def calculate(
-        t850: float,
-        td850: float,
-        t500: float,
-    ) -> float:
-        """
-        Compute Total Totals Index.
-
-        TT = T850 + Td850 - 2*T500
-        """
-
-        return t850 + td850 - (2 * t500)
-
-    @staticmethod
-    def category(tt: float) -> str:
-        """
-        Classify Total Totals Index.
-        """
-
-        if tt < 44:
-            return "Low"
-
-        if tt < 50:
-            return "Moderate"
-
-        if tt < 55:
-            return "High"
-
-        return "Extreme"
+from acf.science.stability.total_totals import *  # noqa: F401,F403

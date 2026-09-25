@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QThreadPool
 
-from acf.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
+from awci.data.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
 from acf.gui.map import mtg_basemap as mtg_basemap_module
 from acf.gui.map.mtg_basemap import (
     MTGBasemapProvider,

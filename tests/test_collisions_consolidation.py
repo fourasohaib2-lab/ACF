@@ -10,8 +10,6 @@ from acf.core.parameter_registry import ParameterRegistry as CoreParameterRegist
 from acf.data.dataset_registry import DatasetRegistry as DataDatasetRegistry
 from acf.data.dataset_validator import DatasetValidator as CanonicalDatasetValidator
 from acf.data.engine.dataset_validator import DatasetValidator as EngineDatasetValidator
-from acf.gui.main_window import MainWindow as LegacyMainWindow
-from acf.gui.main_window.main_window import MainWindow as CanonicalMainWindow
 from acf.maps.engine import MapEngine as LegacyMapEngine
 from acf.maps.map_engine import MapEngine as CanonicalMapEngine
 from acf.model4d.operators.divergence import Divergence as OperatorDivergence
@@ -20,6 +18,7 @@ from acf.parameters.parameter import Parameter as CanonicalParameter
 from acf.parameters.registry import ParameterRegistry as CanonicalParameterRegistry
 from acf.science.divergence import Divergence as ScienceDivergence
 from acf.science.dynamics import Dynamics as ScienceDynamics
+from acf.science.parameters.physical_parameter import PhysicalParameter
 
 # The four below were re-verified (not assumed) while auditing
 # docs/architecture/duplicate_components.md's "Canvas carte" / "Plugins"
@@ -68,10 +67,6 @@ def test_dataset_validator_dual_api_support():
     val2 = EngineDatasetValidator()
     assert val1 is not None
     assert val2 is not None
-
-
-def test_main_window_reexport():
-    assert CanonicalMainWindow is LegacyMainWindow
 
 
 def test_map_engine_reexport():
@@ -152,3 +147,36 @@ def test_map_canvas_is_a_real_verified_duplicate_not_yet_consolidated():
     assert GuiMapCanvas is not MapsCanvasMapCanvas
     assert not issubclass(GuiMapCanvas, FigureCanvasQTAgg)
     assert issubclass(MapsCanvasMapCanvas, FigureCanvasQTAgg)
+
+
+def test_physical_parameter_vs_parameter_is_a_real_homonym_not_a_duplicate():
+    """
+    Investigated 2026-09-21 while re-assessing the parameters/catalog/
+    reorganization question (docs/architecture/
+    acf_awci_architecture_gap_analysis.md section 4h, correcting that
+    same document's own first-pass conclusion): acf.parameters.parameter.
+    Parameter (a simple code/name/unit metadata record, backed by
+    ParameterRegistry/ParameterHub for lookup/search/aliasing) and
+    acf.science.parameters.physical_parameter.PhysicalParameter (a much
+    richer scientific-documentation model - governing equation, LaTeX
+    form, assumptions, limitations, applicability, and CF/GRIB2/BUFR/
+    NetCDF cross-references) share the word "parameter" but serve two
+    genuinely different real purposes, the same class of finding as
+    PluginManager/DataManager/Divergence/Dynamics above - not a
+    duplicate to merge.
+    """
+    simple_parameter = CanonicalParameter(code="t2m", name="2m Temperature", unit="K")
+    physical_parameter = PhysicalParameter(
+        key="t2m",
+        name="2m Temperature",
+        symbol="T2m",
+        domain="thermodynamics",
+        unit="K",
+        description="Air temperature at 2 metres above ground level.",
+        physical_meaning="A standard surface observation height for temperature.",
+    )
+    assert simple_parameter is not physical_parameter
+    assert not hasattr(simple_parameter, "governing_equation")
+    assert hasattr(physical_parameter, "governing_equation")
+    assert hasattr(physical_parameter, "cf_standard_name")
+    assert not hasattr(simple_parameter, "cf_standard_name")

@@ -34,6 +34,29 @@ class NetCDFReader(BaseReader):
         ".cdf",
     )
 
+    # NOTE (correction, found alongside the identical real bug in
+    # acf.importers.readers.grib_reader.GRIBReader while testing
+    # against real GRIB2 data): `read()` used to call
+    # `dataset.add_variable(name)` with only the variable's real NAME,
+    # never its real decoded array - `Dataset.add_variable()`'s own
+    # `value` parameter defaults to `None`, so `dataset.get_variable(x)`
+    # returned `None` for every real variable in every real NetCDF
+    # file this reader ever read. Coordinate arrays (latitude/
+    # longitude, any vertical level coordinate) were also never
+    # registered - only `ds.coords`'s NAMES were recorded as metadata
+    # (`dataset.set_metadata("coordinates", list(ds.coords))`), never
+    # their real values. `awci.data.model_import.
+    # extract_awci_point_inputs()` depends on both being real arrays -
+    # this bug meant importing any real NetCDF file could never
+    # actually compute a real AWCI score from it. The existing test
+    # (tests/test_netcdf_reader.py) never caught this because it only
+    # asserted variable NAMES were present, never that
+    # `get_variable(name)` returned real data. Fixed below: real
+    # decoded values and real coordinate arrays are now both stored,
+    # before `ds.close()` (the array is materialized into memory via
+    # `.values` first - reading from the file after `close()` would
+    # otherwise silently fail).
+
     def __init__(self):
         self.mapper = create_default_mapper()
         self.detector = CFDetector()
@@ -57,9 +80,9 @@ class NetCDFReader(BaseReader):
                 source="xarray",
             )
 
-            # Variables
+            # Variables - real decoded values, not just names.
             for name, variable in ds.data_vars.items():
-                dataset.add_variable(name)
+                dataset.add_variable(name, variable.values)
 
                 dataset.set_metadata(
                     f"{name}_acf",
@@ -100,7 +123,13 @@ class NetCDFReader(BaseReader):
                     value,
                 )
 
-            # Coordinates
+            # Coordinates - real arrays (not just names), needed by any
+            # real point-sampling caller (e.g. awci.data.model_import).
+            for name, coord in ds.coords.items():
+                if name in ds.data_vars:
+                    continue
+                dataset.add_variable(name, coord.values)
+
             dataset.set_metadata(
                 "coordinates",
                 list(ds.coords),

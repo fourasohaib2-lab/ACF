@@ -1,36 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.stability.bulk_richardson_number`` on
+2026-09-21 (Phase 2 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/stability/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.bulk_richardson_number`` import keeps
+working unchanged.
 """
-Bulk Richardson Number (BRN)
-============================
-"""
 
-
-class BulkRichardsonNumber:
-    """Bulk Richardson Number calculator."""
-
-    @staticmethod
-    def calculate(
-        cape: float,
-        shear: float,
-    ) -> float:
-        """
-        BRN = 2 * CAPE / shear²
-        """
-
-        if shear == 0:
-            raise ValueError("shear must not be zero")
-
-        return (2.0 * cape) / (shear**2)
-
-    @staticmethod
-    def category(value: float) -> str:
-        """
-        BRN classification.
-        """
-
-        if value < 10:
-            return "Weak"
-
-        if value <= 45:
-            return "Supercell"
-
-        return "Multicell"
+from acf.science.stability.bulk_richardson_number import *  # noqa: F401,F403

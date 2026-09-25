@@ -1,50 +1,13 @@
-"""
-Vapor Pressure
-==============
+"""Backward-compatible re-export.
 
-Formula:
-    e = q * p / (epsilon + q * (1 - epsilon))
-
-where:
-    e = vapor pressure (hPa)
-    q = specific humidity (kg/kg)
-    p = atmospheric pressure (hPa)
-    epsilon = 0.622 (molecular weight ratio)
+Real module moved to ``acf.science.thermodynamics.vapor_pressure`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.vapor_pressure`` import keeps
+working unchanged.
 """
 
-
-class VaporPressure:
-    """Vapor pressure calculator."""
-
-    EPSILON = 0.622
-
-    @staticmethod
-    def calculate(specific_humidity: float, pressure: float) -> float:
-        """
-        Calculate vapor pressure.
-
-        Parameters
-        ----------
-        specific_humidity : float
-            Specific humidity (kg/kg) in [0, 1]
-        pressure : float
-            Atmospheric pressure (hPa)
-
-        Returns
-        -------
-        float
-            Vapor pressure (hPa)
-        """
-        if specific_humidity < 0.0 or specific_humidity > 1.0:
-            raise ValueError("Specific humidity must be in [0, 1]")
-        if pressure <= 0:
-            raise ValueError("Pressure must be positive")
-
-        epsilon = VaporPressure.EPSILON
-        denominator = epsilon + specific_humidity * (1.0 - epsilon)
-
-        # Éviter division par zéro
-        if denominator == 0:
-            return 0.0
-
-        return specific_humidity * pressure / denominator
+from acf.science.thermodynamics.vapor_pressure import *  # noqa: F401,F403

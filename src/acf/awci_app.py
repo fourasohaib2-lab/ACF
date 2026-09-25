@@ -29,10 +29,10 @@ from acf.gui.theme import ThemeManager
 
 __all__ = ["AWCIDashboardWindow", "main", "run"]
 
-#: Distinct from acf.gui.single_instance's own default SERVER_NAME
-#: (ESOC's) - a real second instance of THIS app must still be caught
-#: and raise the existing one, but must never collide with, or be
-#: confused for, a second ESOC instance.
+#: Distinct from acf.gui.single_instance's own default SERVER_NAME (the
+#: ACF Scientific Workstation's) - a real second instance of THIS app
+#: must still be caught and raise the existing one, but must never
+#: collide with, or be confused for, a second Workstation instance.
 _AWCI_APP_SERVER_NAME = "acf-awci-app-single-instance"
 
 

@@ -1,42 +1,13 @@
-"""
-Saturation Mixing Ratio
-=======================
+"""Backward-compatible re-export.
 
-Calculation of the saturation mixing ratio.
-
-Formula
--------
-ws = 0.622 * es / (p - es)
-
-where:
-    ws : saturation mixing ratio (kg/kg)
-    es : saturation vapor pressure (hPa)
-    p  : atmospheric pressure (hPa)
+Real module moved to ``acf.science.thermodynamics.saturation_mixing_ratio`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.saturation_mixing_ratio`` import keeps
+working unchanged.
 """
 
-
-class SaturationMixingRatio:
-    """Saturation mixing ratio calculator."""
-
-    @staticmethod
-    def calculate(saturation_vapor_pressure: float, pressure: float) -> float:
-        """
-        Calculate the saturation mixing ratio.
-
-        Parameters
-        ----------
-        saturation_vapor_pressure : float
-            Saturation vapor pressure (hPa)
-
-        pressure : float
-            Atmospheric pressure (hPa)
-
-        Returns
-        -------
-        float
-            Saturation mixing ratio (kg/kg)
-        """
-        if saturation_vapor_pressure >= pressure:
-            raise ValueError("saturation_vapor_pressure must be smaller than pressure.")
-
-        return 0.622 * saturation_vapor_pressure / (pressure - saturation_vapor_pressure)
+from acf.science.thermodynamics.saturation_mixing_ratio import *  # noqa: F401,F403

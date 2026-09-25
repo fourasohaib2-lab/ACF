@@ -1,3 +1,9 @@
+> **REMOVED (2026-09-21)**: ESOC has been deleted from this codebase
+> entirely, at explicit user request - see `docs/STATUS.md`'s
+> "suppression complète du dashboard ESOC" entry. `acf.gui.app` now
+> boots `ACFWorkstationWindow` instead. This document is kept as a
+> historical record of ESOC's design, not as current status.
+
 # ATMOSPHERIC COMPLEXITY FRAMEWORK (ACF)
 ## UNIFIED EARTH SYSTEM OPERATIONS CENTER (ESOC)
 ### FULL OPERATIONAL INTEGRATION SPECIFICATION — ACF-UI-013 VERSION 1.0

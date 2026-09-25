@@ -44,26 +44,29 @@ def test_module_complexity_layers_covers_every_real_awci_module():
     real and non-uniform. Registered as real layers below; no longer
     excluded.
 
-    "ash" and "microburst" remain excluded, for two DIFFERENT real
-    reasons, not one shared one: `ash` needs a real eruption source
+    "ash" remains excluded: it needs a real eruption source
     (lat/lon/rate/wind) that simply does not exist anywhere in
     `CoupledEarthSolver`'s state - there is no cheap way to opt it in.
-    `microburst` needs `compute_wind_shear=True` AND
-    `compute_convective_energy=True` together (see
-    `acf.awci.spatial_field.compute_real_complexity_field`'s own
-    `compute_microburst` docstring) - `compute_wind_shear` is real but
-    NOT free (a second real column extraction per point,
-    `esoc_window.py`'s default call does not currently pay for it) -
-    registering either today would show a uniform blank heatmap in
-    real GUI use, implying real data where there is none yet.
-    `esoc_window.py._on_awci_field_ready()` now explicitly skips any
+    `esoc_window.py`'s own `_on_awci_field_ready()` skips any
     module_key not registered here, so this exclusion is silent-by-
     design (no more `set_module_complexity_field()` warning noise for
-    them), not silent-by-bug. Revisit either exclusion if/when a real,
-    cheap per-point source is wired for it (a separate, larger closure,
-    not attempted here)."""
+    it), not silent-by-bug. Revisit if/when a real, cheap per-point
+    eruption-source signal is wired in (a separate, larger closure, not
+    attempted here).
+
+    "microburst" (closed 2026-09-20, Master Prompt V3 §28-29): used to
+    be excluded for the same "not free" reason - it needs
+    `compute_wind_shear=True` AND `compute_convective_energy=True`
+    together (see `acf.awci.spatial_field.compute_real_complexity_field`'s
+    own `compute_microburst` docstring). `compute_wind_shear` turned
+    out to be a genuinely cheap per-point slice of the already-computed
+    real solver U/V column (same real cost class as
+    `compute_convective_energy`'s own already-accepted per-point cost,
+    not a second solver run) - `esoc_window.py`'s real GUI call now
+    passes both flags, so `module_fields["microburst"]` is a real,
+    non-uniform field."""
     all_real_modules = AWCICalculator.PHYSICAL_MODULES | AWCICalculator.FORECAST_MODULES
-    deliberately_unregistered_pending_real_field_data = {"ash", "microburst"}
+    deliberately_unregistered_pending_real_field_data = {"ash"}
     assert set(MODULE_COMPLEXITY_LAYERS.values()) == all_real_modules - deliberately_unregistered_pending_real_field_data
 
 
@@ -75,6 +78,23 @@ class _FakeAxes:
 
     def contourf(self, lon_grid, lat_grid, values, **kwargs):
         self.contourf_calls.append({"lon_grid": lon_grid, "lat_grid": lat_grid, "values": values, **kwargs})
+
+
+def test_microburst_field_is_genuinely_non_uniform_at_a_real_production_scale_grid():
+    """Real regression guard for the 2026-09-20 closure (Master Prompt
+    V3 §28-29): a genuinely small/short test grid can legitimately
+    show an all-zero real microburst field (real CAPE and real shear
+    co-occurring is a real, rarer combination) - this uses the SAME
+    real grid size/step count esoc_window.py's own real GUI call uses
+    (n_lat=24, n_lon=36, n_levels=6, steps=6), confirmed empirically
+    (not assumed) to produce a real, non-uniform field."""
+    result = compute_real_complexity_field(
+        model="ARPEGE", n_lat=24, n_lon=36, n_levels=6, steps=6,
+        compute_convective_energy=True, compute_wind_shear=True, compute_microburst=True,
+    )
+    microburst = result["module_fields"]["microburst"]
+    assert not np.isnan(microburst).any()
+    assert len(set(np.round(microburst, 6).ravel())) > 1
 
 
 def test_every_module_complexity_layer_is_registered():
@@ -233,3 +253,92 @@ def test_map_canvas_clear_uncertainty_field_removes_it(qtbot):
 
     assert "Uncertainty" not in canvas.layer_manager.active_layer_names
     assert canvas.layer_manager.available_layers["Uncertainty"].custom_data is None
+
+
+# ----------------------------------------------------- VolcanicAshLayer (§28-29, closed 2026-09-20)
+
+
+def test_volcanic_ash_is_not_a_module_complexity_layer():
+    """Real regression guard: "ash" must NEVER appear in
+    MODULE_COMPLEXITY_LAYERS - registering it there would let
+    esoc_window.py's generic per-module sweep loop auto-populate it
+    with a fabricated-looking flat-zero field (no real eruption source
+    exists in that sweep) - see VolcanicAshLayer's own docstring."""
+    assert "ash" not in MODULE_COMPLEXITY_LAYERS.values()
+
+
+def test_volcanic_ash_layer_is_registered():
+    manager = LayerManager()
+    assert "Volcanic Ash" in manager.available_layers
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    assert isinstance(manager.available_layers["Volcanic Ash"], VolcanicAshLayer)
+
+
+def test_volcanic_ash_is_not_active_by_default():
+    manager = LayerManager()
+    assert "Volcanic Ash" not in manager.active_layer_names
+
+
+def test_volcanic_ash_layer_draws_nothing_without_real_data():
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    layer = VolcanicAshLayer()
+    axes = _FakeAxes()
+    layer.render(axes, transform=ccrs.PlateCarree())
+    assert axes.contourf_calls == []
+
+
+def test_volcanic_ash_layer_draws_the_real_data_once_set():
+    from acf.gui.map.map_layers import VolcanicAshLayer
+
+    layer = VolcanicAshLayer()
+    lons = np.linspace(-10, 10, 5)
+    lats = np.linspace(-5, 5, 4)
+    values = np.random.default_rng(0).uniform(0, 1, size=(4, 5))
+    layer.set_data(lons, lats, values)
+
+    axes = _FakeAxes()
+    layer.render(axes, transform=ccrs.PlateCarree())
+
+    assert len(axes.contourf_calls) == 1
+    call = axes.contourf_calls[0]
+    assert call["vmin"] == 0
+    assert call["vmax"] == 1
+    assert np.array_equal(call["values"], values)
+
+
+def test_map_canvas_set_volcanic_ash_field_populates_the_real_layer(qtbot):
+    from acf.awci.volcanic_ash import compute_real_ash_exposure_risk_field
+    from acf.gui.map.map_canvas import MapCanvas
+
+    canvas = MapCanvas()
+    qtbot.addWidget(canvas)
+    lats = np.linspace(36.0, 38.0, 5)
+    lons = np.linspace(2.0, 6.0, 6)
+    result = compute_real_ash_exposure_risk_field(
+        lats=lats, lons=lons, point_altitude_m=8000.0,
+        eruption_lat=36.7, eruption_lon=3.0, volumetric_eruption_rate_m3_s=500.0,
+        wind_speed_m_s=10.0, wind_direction_deg=270.0, hours_since_eruption=1.0,
+    )
+
+    canvas.set_volcanic_ash_field(result["lons"], result["lats"], result["ash_risk_field"], label="Exercise")
+
+    assert "Volcanic Ash" in canvas.layer_manager.active_layer_names
+    layer = canvas.layer_manager.available_layers["Volcanic Ash"]
+    assert layer.custom_data is not None
+    assert np.array_equal(layer.custom_data["values"], result["ash_risk_field"])
+    assert "Exercise" in canvas.title_text
+
+
+def test_map_canvas_clear_volcanic_ash_field_removes_it(qtbot):
+    from acf.gui.map.map_canvas import MapCanvas
+
+    canvas = MapCanvas()
+    qtbot.addWidget(canvas)
+    canvas.set_volcanic_ash_field([0.0, 1.0], [0.0, 1.0], np.zeros((2, 2)))
+
+    canvas.clear_volcanic_ash_field()
+
+    assert "Volcanic Ash" not in canvas.layer_manager.active_layer_names
+    assert canvas.layer_manager.available_layers["Volcanic Ash"].custom_data is None

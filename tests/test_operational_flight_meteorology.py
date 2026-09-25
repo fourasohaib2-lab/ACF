@@ -142,10 +142,15 @@ def test_flight_routing_engine():
     # CORRECTED: used to assert on 2 alternates hardcoded per-departure
     # ("LFPO"/"LILH") that weren't even in AirportDatabase and had no
     # relation to the actual arrival airport (see flight_routing.py).
-    # AirportDatabase only has LFPG/KJFK/EGLL - excluding departure
-    # (LFPG) and arrival (KJFK) leaves EGLL as the one genuine
-    # nearest-by-distance candidate.
-    assert plan["recommended_alternates"] == ["EGLL"]
+    # UPDATED (2026-09-25): AirportDatabase grew from 6 real airports to
+    # ~10,500 (the real, world-wide OurAirports-sourced bulk import, see
+    # scripts/build_world_airports.py) - the real nearest airports to
+    # KJFK by great-circle distance are now genuinely 2 real New-York-
+    # area fields (KLGA LaGuardia, KFRG Republic) rather than EGLL/DAAG,
+    # which were only "nearest" in the old, artificially tiny 6-airport
+    # universe. This is the algorithm working correctly on real, richer
+    # data, not a regression.
+    assert plan["recommended_alternates"] == ["KLGA", "KFRG"]
 
 
 def test_flight_cross_section_engine():

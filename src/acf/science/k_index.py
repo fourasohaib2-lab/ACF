@@ -1,42 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.stability.k_index`` on
+2026-09-21 (Phase 2 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/stability/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.k_index`` import keeps
+working unchanged.
 """
-K Index (KI)
-============
-"""
 
-
-class KIndex:
-    """K Index calculator."""
-
-    @staticmethod
-    def calculate(
-        t850: float,
-        t700: float,
-        t500: float,
-        td850: float,
-        td700: float,
-    ) -> float:
-        """
-        Compute K Index.
-        """
-
-        return (t850 - t500) + td850 - (t700 - td700)
-
-    @staticmethod
-    def category(ki: float) -> str:
-        """
-        Classify K Index.
-        """
-
-        if ki < 15:
-            return "Very Low"
-
-        if ki < 25:
-            return "Low"
-
-        if ki < 35:
-            return "Moderate"
-
-        if ki < 40:
-            return "High"
-
-        return "Extreme"
+from acf.science.stability.k_index import *  # noqa: F401,F403

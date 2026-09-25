@@ -18,7 +18,7 @@ import requests
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QApplication, QDialog, QListWidgetItem, QTableWidget, QTextEdit
 
-from acf.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
+from awci.data.connectors.eumetsat_mtg import EUMETSATMTGConnector, MTGFetchResult
 from acf.forecast.engine import MODEL_CONFIGS
 from acf.gui.dashboard.acf_workstation import ACFWorkstation
 from acf.gui.map.mtg_basemap import MTGBasemapProvider

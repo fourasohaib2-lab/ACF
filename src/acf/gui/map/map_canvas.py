@@ -381,6 +381,41 @@ class MapCanvas(EventMixin, QWidget):
             self.layer_manager.active_layer_names.remove("Uncertainty")
         self.title_text = self.title_text.split(" — ")[0]
         self.draw_map()
+
+    def set_volcanic_ash_field(
+        self, lons: Any, lats: Any, values: Any, label: str = "Volcanic Ash", activate: bool = True
+    ) -> None:
+        """Feed a real volcanic-ash exposure-risk field (Master Prompt
+        V3 §28-29's "ash" layer - e.g.
+        acf.awci.volcanic_ash.compute_real_ash_exposure_risk_field()'s
+        own `ash_risk_field`) into this canvas's VolcanicAshLayer and
+        redraw. Deliberately its own dedicated method, mirroring
+        set_uncertainty_field() rather than set_module_complexity_field()
+        - see VolcanicAshLayer's own docstring for why this layer must
+        never be auto-populated from the generic per-module sweep."""
+        layer = self.layer_manager.available_layers.get("Volcanic Ash")
+        if layer is None:
+            logger.warning("MapCanvas.set_volcanic_ash_field(): Volcanic Ash layer not registered")
+            return
+        layer.set_data(lons, lats, values)
+        if not activate:
+            return
+        if "Volcanic Ash" not in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.append("Volcanic Ash")
+        base_title = self.title_text.split(" — ")[0]
+        self.title_text = f"{base_title} — {label}"
+        self.draw_map()
+        self._apply_camera_extent()
+
+    def clear_volcanic_ash_field(self) -> None:
+        """Remove the real ash overlay set by set_volcanic_ash_field()."""
+        layer = self.layer_manager.available_layers.get("Volcanic Ash")
+        if layer is not None:
+            layer.custom_data = None
+        if "Volcanic Ash" in self.layer_manager.active_layer_names:
+            self.layer_manager.active_layer_names.remove("Volcanic Ash")
+        self.title_text = self.title_text.split(" — ")[0]
+        self.draw_map()
         self._apply_camera_extent()
 
     def redraw(self) -> None:

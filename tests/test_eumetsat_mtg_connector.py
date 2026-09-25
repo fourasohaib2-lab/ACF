@@ -1,5 +1,5 @@
 """
-Tests for acf.connectors.eumetsat_mtg.EUMETSATMTGConnector - the real
+Tests for awci.data.connectors.eumetsat_mtg.EUMETSATMTGConnector - the real
 EUMETSAT Data Store connector backing the live MTG basemap (explicit
 user request "je veux que toutes les maps affiché soient des maps du
 mtg"). All real HTTP calls are mocked here (unittest.mock.patch, same
@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from acf.connectors.eumetsat_mtg import (
+from awci.data.connectors.eumetsat_mtg import (
     MTG_FCI_NORMAL_RESOLUTION,
     EUMETSATMTGConnector,
 )
@@ -76,7 +76,7 @@ def test_authenticate_real_oauth2_exchange_returns_the_real_token(tmp_path, monk
     token_response.json.return_value = {"access_token": "real-token-abc", "expires_in": 3600}
     token_response.raise_for_status.return_value = None
 
-    with patch("acf.connectors.eumetsat_mtg.requests.post", return_value=token_response) as mock_post:
+    with patch("awci.data.connectors.eumetsat_mtg.requests.post", return_value=token_response) as mock_post:
         token = connector._authenticate()
 
     assert token == "real-token-abc"
@@ -92,7 +92,7 @@ def test_authenticate_failure_is_honest_not_a_fabricated_token(tmp_path, monkeyp
     monkeypatch.setenv("EUMETSAT_CONSUMER_SECRET", "secret")
     connector = _connector(tmp_path)
 
-    with patch("acf.connectors.eumetsat_mtg.requests.post", side_effect=ConnectionError("no route")):
+    with patch("awci.data.connectors.eumetsat_mtg.requests.post", side_effect=ConnectionError("no route")):
         token = connector._authenticate()
 
     assert token is None
@@ -109,7 +109,7 @@ def test_fetch_latest_image_real_success_path(tmp_path, no_env_credentials):
     image_response.content = b"fake-jpeg-bytes"
     image_response.raise_for_status.return_value = None
 
-    with patch("acf.connectors.eumetsat_mtg.requests.get", side_effect=[search_response, image_response]) as mock_get:
+    with patch("awci.data.connectors.eumetsat_mtg.requests.get", side_effect=[search_response, image_response]) as mock_get:
         result = connector.fetch_latest_image()
 
     assert result.is_real_data is True
@@ -127,7 +127,7 @@ def test_fetch_latest_image_real_success_path(tmp_path, no_env_credentials):
 
 def test_fetch_latest_image_honest_when_search_itself_fails(tmp_path, no_env_credentials):
     connector = _connector(tmp_path)
-    with patch("acf.connectors.eumetsat_mtg.requests.get", side_effect=ConnectionError("no route")):
+    with patch("awci.data.connectors.eumetsat_mtg.requests.get", side_effect=ConnectionError("no route")):
         result = connector.fetch_latest_image()
     assert result.is_real_data is False
     assert result.status.startswith("NOT_FETCHED_SEARCH_FAILED")
@@ -140,7 +140,7 @@ def test_fetch_latest_image_honest_when_no_products_returned(tmp_path, no_env_cr
     empty_response.json.return_value = {"features": []}
     empty_response.raise_for_status.return_value = None
 
-    with patch("acf.connectors.eumetsat_mtg.requests.get", return_value=empty_response):
+    with patch("awci.data.connectors.eumetsat_mtg.requests.get", return_value=empty_response):
         result = connector.fetch_latest_image()
 
     assert result.is_real_data is False
@@ -155,7 +155,7 @@ def test_fetch_latest_image_honest_when_no_quicklook_link_present(tmp_path, no_e
     }
     response.raise_for_status.return_value = None
 
-    with patch("acf.connectors.eumetsat_mtg.requests.get", return_value=response):
+    with patch("awci.data.connectors.eumetsat_mtg.requests.get", return_value=response):
         result = connector.fetch_latest_image()
 
     assert result.is_real_data is False
@@ -169,7 +169,7 @@ def test_fetch_latest_image_honest_when_the_quicklook_download_fails(tmp_path, n
     search_response.raise_for_status.return_value = None
 
     with patch(
-        "acf.connectors.eumetsat_mtg.requests.get",
+        "awci.data.connectors.eumetsat_mtg.requests.get",
         side_effect=[search_response, ConnectionError("no route")],
     ):
         result = connector.fetch_latest_image()

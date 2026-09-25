@@ -166,12 +166,23 @@ def test_layers_panel_extra_layers_are_real_working_toggles(qtbot):
     "je veux rendre tout les boutons de awci en marche"): every extra
     layer checkbox is a real, enabled toggle that shows/hides a real
     matplotlib contour built from awci_layer_grids() - not a fabricated
-    interactivity, and not honestly-disabled decoration either."""
+    interactivity, and not honestly-disabled decoration either.
+
+    "Model Disagreement" (added 2026-09-20, Master Prompt V3 §9/§32) is
+    deliberately excluded from the immediate-contour assertion below -
+    its real grid is not already computed (unlike every other layer
+    here), so checking it for the first time emits
+    modelDisagreementLayerRequested instead of building a contour
+    synchronously; see test_awci_map_panel_model_disagreement.py for
+    its own dedicated real-behavior tests."""
     panel = AWCIMapPanel("AWCI GLOBAL MAP", show_layers_panel=True)
     qtbot.addWidget(panel)
     for name, checkbox in panel.extra_layer_checkboxes.items():
         assert checkbox.isEnabled() is True, f"{name} checkbox should be a real, enabled toggle"
         assert checkbox.isChecked() is False  # off by default, same convention as before
+
+        if name == "Model Disagreement":
+            continue
 
         checkbox.setChecked(True)
         contour = panel._extra_layer_contours[name]

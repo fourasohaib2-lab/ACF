@@ -50,9 +50,9 @@ def _wait_until(condition, timeout_s: float = 10.0) -> None:
 
 def test_dialog_shows_real_decoded_fields_from_a_successful_fetch(qtbot):
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -68,9 +68,9 @@ def test_dialog_shows_real_section_32_quality_status_for_a_normal_station(qtbot)
     status, closing the quality-flagging half of "brancher acf et awci
     avec des vrais station" for this panel's own real live data."""
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -87,8 +87,8 @@ def test_dialog_surfaces_a_real_out_of_range_variable_in_the_quality_line(qtbot)
         return bundle
 
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station", side_effect=_bundle_with_bad_temperature
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station", side_effect=_bundle_with_bad_temperature
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -100,9 +100,9 @@ def test_dialog_surfaces_a_real_out_of_range_variable_in_the_quality_line(qtbot)
 
 def test_dialog_shows_an_honest_error_not_blank_on_fetch_failure(qtbot):
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao, with_data=False),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -115,9 +115,9 @@ def test_dialog_shows_an_honest_error_not_blank_on_fetch_failure(qtbot):
 def test_dialog_shows_real_sigmet_raw_text_when_available(qtbot):
     sigmet = LiveReport(raw_text="MWRA SIGMET 1 VALID 030100/030500 MMMX-\nsome real text")
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[sigmet]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[sigmet]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -127,9 +127,9 @@ def test_dialog_shows_real_sigmet_raw_text_when_available(qtbot):
 
 def test_dialog_honestly_reports_no_sigmets_rather_than_blank(qtbot):
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
         _wait_until(lambda: "Fetching" not in dialog.status_label.text())
@@ -144,8 +144,8 @@ def test_refresh_button_triggers_a_real_new_fetch(qtbot):
         call_count["n"] += 1
         return _fake_bundle(icao)
 
-    with patch("acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station", side_effect=_counting_fetch), patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]
+    with patch("awci.dashboard.awci_messages_panel.fetch_and_decode_station", side_effect=_counting_fetch), patch(
+        "awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]
     ):
         dialog = AWCIMessagesDialog()
         qtbot.addWidget(dialog)
@@ -160,9 +160,9 @@ def test_refresh_button_triggers_a_real_new_fetch(qtbot):
 
 def test_awci_dashboard_message_button_opens_the_real_dialog(qtbot):
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dashboard = AWCIDashboard()
         qtbot.addWidget(dashboard)
         assert dashboard._messages_window is None
@@ -175,9 +175,9 @@ def test_awci_dashboard_message_button_opens_the_real_dialog(qtbot):
 
 def test_awci_dashboard_message_button_reuses_the_same_dialog_on_second_click(qtbot):
     with patch(
-        "acf.gui.dashboard.awci_messages_panel.fetch_and_decode_station",
+        "awci.dashboard.awci_messages_panel.fetch_and_decode_station",
         side_effect=lambda icao, timeout=8.0: _fake_bundle(icao),
-    ), patch("acf.gui.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
+    ), patch("awci.dashboard.awci_messages_panel.fetch_active_sigmets", return_value=[]):
         dashboard = AWCIDashboard()
         qtbot.addWidget(dashboard)
         dashboard._open_messages()

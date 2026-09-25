@@ -309,12 +309,15 @@ class AWCILayer(BaseMapLayer):
 #: regardless, so this is genuinely free (no extra MetPy parcel-ascent
 #: call, unlike `compute_convective_energy` already enabled there) and
 #: produces a genuinely non-uniform per-point field, unlike leaving
-#: them un-opted-in would. (2) ash/microburst remain deliberately
-#: EXCLUDED from this dict (see test_map_layers_module_complexity.py's
-#: own NOTE for why neither can be honestly enabled by default today) -
-#: esoc_window.py._on_awci_field_ready() now skips any module_key not
-#: registered here instead of calling into a warning-logging dead end,
-#: so their continued exclusion is silent-by-design, not silent-by-bug.
+#: them un-opted-in would. (2) ash/microburst remained deliberately
+#: EXCLUDED from this dict at the time (see
+#: test_map_layers_module_complexity.py's own NOTE for why neither
+#: could be honestly enabled by default then) - esoc_window.py._on_
+#: awci_field_ready() skips any module_key not registered here instead
+#: of calling into a warning-logging dead end, so an exclusion here is
+#: silent-by-design, not silent-by-bug. "microburst" closed 2026-09-20
+#: (see this dict's own entry below); "ash" remains the one real,
+#: still-open exclusion.
 MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Dynamic Complexity": "dynamic",
     "Thermodynamic Complexity": "thermodynamic",
@@ -328,6 +331,18 @@ MODULE_COMPLEXITY_LAYERS: dict[str, str] = {
     "Ceiling": "ceiling",
     "Visibility": "visibility",
     "Dust/Sand": "dust",
+    # NOTE (correction, 2026-09-20): closes the 2nd of the 2 disclosed
+    # exclusions this dict's own NOTE above named ("ash and microburst
+    # remain excluded, for two DIFFERENT real reasons") - esoc_window.py's
+    # real GUI call now passes compute_wind_shear=True AND
+    # compute_microburst=True (both genuinely cheap real per-point
+    # slices of the already-computed solver state, not a second solver
+    # run - see that call site's own updated docstring), so
+    # module_fields["microburst"] is now a real, non-uniform field
+    # instead of the all-NaN it would have been before. "ash" remains
+    # the one real, still-open exclusion - no real eruption source
+    # exists anywhere in CoupledEarthSolver's state to derive it from.
+    "Microburst": "microburst",
 }
 
 
@@ -400,6 +415,48 @@ class UncertaintyLayer(BaseMapLayer):
         )
 
 
+class VolcanicAshLayer(BaseMapLayer):
+    """
+    Real volcanic-ash exposure-risk map layer (Master Prompt V3
+    §28-29's "ash" layer, closed 2026-09-20) - deliberately NOT a
+    `ModuleComplexityLayer`/`MODULE_COMPLEXITY_LAYERS` entry (see that
+    dict's own NOTE): every other module layer is auto-populated from
+    ACF's ordinary per-point meteorological sweep
+    (`acf.awci.spatial_field.compute_real_complexity_field()`), which
+    has no real eruption source to supply "ash" from and would
+    otherwise show a misleading flat-zero field. This layer is instead
+    fed ONLY by `acf.awci.volcanic_ash.
+    compute_real_ash_exposure_risk_field()`, itself only ever called
+    from a real, explicit "Volcanic Ash Exercise" action (a real VAAC
+    bulletin or a deliberately-entered exercise scenario - see that
+    module's own docstring) - `set_volcanic_ash_field()`/
+    `clear_volcanic_ash_field()` on `MapCanvas`, mirroring
+    `UncertaintyLayer`'s own dedicated (not generic-sweep) wiring.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Volcanic Ash", zorder=18)
+
+    def render(self, axes: Any, transform: ccrs.CRS) -> None:
+        if self.custom_data is None:
+            return
+        lon_grid = self.custom_data["lons"]
+        lat_grid = self.custom_data["lats"]
+        values = self.custom_data["values"]
+        axes.contourf(
+            lon_grid,
+            lat_grid,
+            values,
+            levels=20,
+            cmap="YlOrBr",
+            vmin=0,
+            vmax=1,
+            alpha=0.7,
+            zorder=self.zorder,
+            transform=transform,
+        )
+
+
 class LayerManager:
     """Manages active scientific layers and orchestrates rendering with real NWP data binding."""
 
@@ -421,6 +478,7 @@ class LayerManager:
                 for i, (layer_name, module_key) in enumerate(MODULE_COMPLEXITY_LAYERS.items(), start=1)
             },
             "Uncertainty": UncertaintyLayer(),
+            "Volcanic Ash": VolcanicAshLayer(),
         }
         self.active_layer_names: list[str] = [
             "Satellite RGB",

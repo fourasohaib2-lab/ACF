@@ -1,38 +1,13 @@
-"""
-Geopotential Height
-===================
+"""Backward-compatible re-export.
 
-Conversion from geopotential to geopotential height.
-
-Formula
--------
-Z = Φ / g
-
-where:
-    Z : geopotential height (m)
-    Φ : geopotential (m² s⁻²)
-    g : gravity (m s⁻²)
+Real module moved to ``acf.science.thermodynamics.geopotential_height`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.geopotential_height`` import keeps
+working unchanged.
 """
 
-from acf.science.constants import G
-
-
-class GeopotentialHeight:
-    """Geopotential height calculator."""
-
-    @staticmethod
-    def calculate(geopotential: float) -> float:
-        """
-        Calculate geopotential height.
-
-        Parameters
-        ----------
-        geopotential : float
-            Geopotential (m² s⁻²)
-
-        Returns
-        -------
-        float
-            Geopotential height (m)
-        """
-        return geopotential / G
+from acf.science.thermodynamics.geopotential_height import *  # noqa: F401,F403

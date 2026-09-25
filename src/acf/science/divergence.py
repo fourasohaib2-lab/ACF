@@ -1,35 +1,12 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.dynamics.divergence`` on
+2026-09-21 (Phase 3 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/dynamics/__init__.py``'s own docstring and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.divergence`` import keeps
+working unchanged.
 """
-Horizontal Divergence
-=====================
-"""
 
-
-class Divergence:
-    """Horizontal divergence calculator."""
-
-    @staticmethod
-    def calculate(
-        du_dx: float,
-        dv_dy: float,
-    ) -> float:
-        """
-        Horizontal divergence.
-
-        δ = du/dx + dv/dy
-        """
-
-        return du_dx + dv_dy
-
-    @staticmethod
-    def category(value: float) -> str:
-        """
-        Classify divergence.
-        """
-
-        if abs(value) < 1e-5:
-            return "Weak"
-
-        if abs(value) < 5e-5:
-            return "Moderate"
-
-        return "Strong"
+from acf.science.dynamics.divergence import *  # noqa: F401,F403

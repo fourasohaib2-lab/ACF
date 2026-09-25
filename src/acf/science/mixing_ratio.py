@@ -1,34 +1,13 @@
+"""Backward-compatible re-export.
+
+Real module moved to ``acf.science.thermodynamics.mixing_ratio`` on
+2026-09-21 (Phase 1 of the ACF science/ per-domain
+reorganization - see
+``src/acf/science/thermodynamics/__init__.py``'s own docstring
+and
+``docs/architecture/acf_awci_architecture_gap_analysis.md``).
+Kept here so every existing ``acf.science.mixing_ratio`` import keeps
+working unchanged.
 """
-Mixing Ratio
-============
 
-Formula:
-    w = q / (1 - q)
-
-where:
-    w = mixing ratio (kg/kg)
-    q = specific humidity (kg/kg)
-"""
-
-
-class MixingRatio:
-    """Mixing ratio calculator."""
-
-    @staticmethod
-    def calculate(specific_humidity: float) -> float:
-        """
-        Calculate mixing ratio from specific humidity.
-
-        Parameters
-        ----------
-        specific_humidity : float
-            Specific humidity (kg/kg) in [0, 1)
-
-        Returns
-        -------
-        float
-            Mixing ratio (kg/kg)
-        """
-        if specific_humidity < 0.0 or specific_humidity >= 1.0:
-            raise ValueError("Specific humidity must be in [0, 1)")
-        return specific_humidity / (1.0 - specific_humidity)
+from acf.science.thermodynamics.mixing_ratio import *  # noqa: F401,F403

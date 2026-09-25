@@ -208,6 +208,56 @@ def test_compute_real_weighted_field_fusion_delegates_to_the_real_awci_fusion(mo
     assert calls[0]["steps"] == 2
 
 
+def test_compute_real_multi_model_vertical_profiles_returns_one_real_profile_per_model():
+    """Master Prompt V3 §19 ("Allow comparison between: AROME, ALADIN,
+    ARPEGE, WRF, observation") - real per-model vertical profile
+    comparison, added 2026-09-20."""
+    profiles = ModelConsensusEngine.compute_real_multi_model_vertical_profiles(
+        lat=36.7, lon=3.0, models=["AROME", "ALADIN"], steps=2
+    )
+
+    assert set(profiles.keys()) == {"AROME", "ALADIN"}
+    for profile in profiles.values():
+        assert "pressure_profile_hpa" in profile
+        assert "temperature_profile" in profile
+        assert "wind_speed_profile" in profile
+        assert len(profile["pressure_profile_hpa"]) > 1  # a real multi-level column, not one point
+
+
+def test_compute_real_multi_model_vertical_profiles_rejects_unknown_model():
+    import pytest
+
+    with pytest.raises(ValueError, match="Unknown model"):
+        ModelConsensusEngine.compute_real_multi_model_vertical_profiles(lat=36.7, lon=3.0, models=["AROME", "WRF"])
+
+
+def test_compute_real_multi_model_vertical_profiles_rejects_fewer_than_2_models():
+    import pytest
+
+    with pytest.raises(ValueError, match="at least 2"):
+        ModelConsensusEngine.compute_real_multi_model_vertical_profiles(lat=36.7, lon=3.0, models=["AROME"])
+
+
+def test_compute_real_multi_model_vertical_profiles_defaults_to_every_real_model():
+    from acf.forecast.engine import MODEL_CONFIGS
+
+    profiles = ModelConsensusEngine.compute_real_multi_model_vertical_profiles(lat=36.7, lon=3.0, steps=2)
+
+    assert set(profiles.keys()) == set(MODEL_CONFIGS)
+
+
+def test_compute_real_multi_model_vertical_profiles_produces_genuinely_different_columns():
+    """Real regression guard against an accidental shared-state bug
+    (e.g. the same volume reused for every model) - each real model's
+    own grid resolution must give a real, distinct temperature profile."""
+    profiles = ModelConsensusEngine.compute_real_multi_model_vertical_profiles(
+        lat=36.7, lon=3.0, models=["AROME", "ARPEGE"], steps=2
+    )
+    arome_temps = list(profiles["AROME"]["temperature_profile"])
+    arpege_temps = list(profiles["ARPEGE"]["temperature_profile"])
+    assert arome_temps != arpege_temps
+
+
 def test_model_consensus_and_dashboard():
     """Test du moteur de consensus pondéré et des modes du tableau de bord."""
     # CORRECTED: models_combined_count/weight_sum are genuinely

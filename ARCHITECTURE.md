@@ -7,7 +7,7 @@ The Atmospheric Complexity Framework (ACF) is built upon a layered, decoupled mi
 
 ```
 +-------------------------------------------------------------------------+
-|                  ESOC & UI Layer (acf.gui, acf.visualization)           |
+|          ACF Scientific Workstation & UI Layer (acf.gui, acf.visualization) |
 +-------------------------------------------------------------------------+
 |                  Digital Twin & AEOS Platform Layer                     |
 |            (acf.aeos, acf.digital_twin, acf.intelligence)               |

@@ -6,24 +6,27 @@ Standalone QMainWindow hosting the "classic" ACF dashboard
 (DashboardManager -> Dashboard -> DashboardLayout: central MapView plus
 Explorer / Charts / Properties / Timeline / Console / Status docks).
 
-NOTE (context): this dashboard package (acf.dashboard) predates ESOC
-(acf.gui.esoc.esoc_window.ESOCWindow, the application's current primary
-window - see acf-gui's own entry point) and was completely unreachable
-from the running application: nothing outside this package's own test
-suite (test_dashboard_manager.py, test_dashboard_gui_construction.py)
-ever constructed a Dashboard/DashboardManager against a real window.
-DashboardLayout.build() calls window.setCentralWidget()/addDockWidget()
-directly, so - unlike the AWCI dashboard, which also fits as an ESOC
-tab - this one wants to own an entire top-level window, not be embedded
-inside another one's panel area. This class gives it that window and is
-launched as a separate, non-modal window from ESOC's toolbar ("Classic
-View" action).
+NOTE (context, updated - ESOC dashboard removed): this dashboard
+package (acf.dashboard) predates the former ESOC window (the
+application's former primary window; ACFWorkstationWindow is the
+current one - see acf-gui's own entry point, acf.gui.app) and was
+completely unreachable from the running application: nothing outside
+this package's own test suite (test_dashboard_manager.py,
+test_dashboard_gui_construction.py) ever constructed a Dashboard/
+DashboardManager against a real window. DashboardLayout.build() calls
+window.setCentralWidget()/addDockWidget() directly, so this one wants
+to own an entire top-level window, not be embedded inside another
+one's panel area. This class gives it that window; it used to be
+launched as a separate, non-modal window from ESOC's own toolbar
+("Classic View" action) - now removed along with ESOC, so this window
+is once again unreachable from the running application (same status
+this NOTE originally documented), pending a real entry point on
+ACFWorkstationWindow if this dashboard is wanted back.
 
 This is the main ACF dashboard: it carries its own "✈️ AWCI Dashboard"
 button opening the AWCI dashboard as a secondary window from here, per
 the requested relationship (ACF dashboard is primary, AWCI is opened
-from a button inside it) - not just two independent windows both hanging
-off ESOC.
+from a button inside it).
 
 It also carries a real File/Data menu bar (acf.gui.menu.MenuManager) -
 also found completely unreachable (never constructed anywhere), and it
@@ -80,14 +83,11 @@ class ClassicDashboardWindow(QMainWindow):
         self.workspace = WorkspaceManager()
         self.data = DataManager()
 
-        # NOTE: local import, not module-level - acf.gui.menu is under the
-        # acf.gui package, and importing anything under acf.gui triggers
-        # acf/gui/__init__.py's eager `from acf.gui.esoc.esoc_window import
-        # ESOCWindow`. By the time this __init__ runs (either via ESOC's
-        # already-loaded "Classic View" action, or a standalone
-        # construction that imports acf.gui.menu itself first), this is
-        # safe - but keeping it local avoids re-introducing the same class
-        # of circular-import risk fixed for open_awci_dashboard() below.
+        # NOTE: local import, not module-level - kept local to avoid any
+        # module-level coupling between acf.dashboard and acf.gui (the
+        # historical reason was a circular import through ESOC's eager
+        # gui/__init__.py import, now removed along with ESOC, but this
+        # stays local as good hygiene rather than re-widening the coupling).
         from acf.gui.docks.dataset_panel import DatasetPanel
         from acf.gui.menu import MenuManager
 
@@ -112,15 +112,10 @@ class ClassicDashboardWindow(QMainWindow):
     def open_awci_dashboard(self) -> None:
         """Open (or raise) the AWCI dashboard as a secondary window.
 
-        NOTE: the import is deliberately local, not at module level -
-        acf.gui.dashboard.awci_window pulls in acf.gui.dashboard, and
-        importing acf.gui at all triggers acf/gui/__init__.py, which
-        eagerly imports ESOCWindow, which itself imports
-        ClassicDashboardWindow (this class) for its 'Classic View' toolbar
-        action - a module-level import here would be a circular import
-        (confirmed: raises ImportError on a partially-initialized module).
-        Deferring it until the button is actually clicked breaks the cycle,
-        since by then every module involved has finished loading.
+        NOTE: the import is kept local, not at module level, as good
+        hygiene against acf.dashboard <-> acf.gui coupling (the historical
+        circular-import reason - ESOC's eager gui/__init__.py import of
+        ClassicDashboardWindow - no longer applies, since ESOC was removed).
         """
         from acf.gui.dashboard.awci_window import AWCIDashboardWindow
 
