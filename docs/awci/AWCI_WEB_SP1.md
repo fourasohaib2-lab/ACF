@@ -32,8 +32,11 @@ acf-awci-ingest --run 2026092506 --domain north_africa --steps 0-24/3
 
 **Mesures réelles** (run IFS 2026-09-25 06Z, domaine `north_africa`
 15–45°N / 20°W–40°E, 25 échéances, conteneur 4 cœurs) :
-durée **8,8 min** (critère < 30 min), cube **329 Mo** (l'estimation
+durée **8,1 min** (critère < 30 min), cube **314 Mo** (l'estimation
 initiale de la spec, ~170 Mo, était sous-évaluée), `status: complete`.
+Niveaux valides après masquage sous le relief : 39 % des points à
+1000 hPa, 89 % à 925 hPa, 99 % à 850 hPa, 100 % dès 700 hPa (relief et
+dépression thermique saharienne).
 
 ### Planification systemd
 
@@ -81,8 +84,8 @@ ACF_AWCI_DATA_DIR=/srv/awci ACF_AWCI_CORS_ORIGINS=http://awci.intra acf-awci-web
 Le router est aussi monté dans l'application existante (`acf-web`).
 
 **Latences mesurées** (cube réel ci-dessus, 50 requêtes, TestClient) :
-`/field` f32 p95 5,7 ms ; `/field` JSON p95 67 ms ; `/point` p95 28 ms ;
-`/profile` p95 19 ms ; `/timeseries` p95 4,8 ms (critère < 300 ms).
+`/field` f32 p95 5,0 ms ; `/field` JSON p95 64 ms ; `/point` p95 29 ms ;
+`/profile` p95 24 ms ; `/timeseries` p95 20 ms (critère < 300 ms).
 
 ## Garanties et limites
 
