@@ -339,6 +339,7 @@ def column_layers(levels_hpa: np.ndarray, fraction: np.ndarray, genus: np.ndarra
                         if np.isfinite(species[k]) and int(species[k]) & bit],
             "base_agl_m": base_agl, "base_uncertainty_m": float(gh[k] - lower[k, 0, 0]),
             "base_ft": int(base_agl * FT_PER_M), "top_amsl_m": float(gh[top]),
+            "base_fl": flight_level(float(levels_hpa[k])),
             "top_fl": flight_level(float(levels_hpa[top])), "oktas": int(n_ok), "amount": amount_code(n_ok),
         })
         k = top + 1
@@ -348,7 +349,7 @@ def column_layers(levels_hpa: np.ndarray, fraction: np.ndarray, genus: np.ndarra
         out.append({
             "kind": "convective", "genus": "Cb" if cls >= 3 else "Cu", "etage": None,
             "species": _convective_species(cls, depth, profile), "base_agl_m": float(lcl_agl_m),
-            "base_uncertainty_m": None, "base_ft": int(float(lcl_agl_m) * FT_PER_M),
+            "base_uncertainty_m": None, "base_ft": int(float(lcl_agl_m) * FT_PER_M), "base_fl": None,
             "top_amsl_m": float(convective_top_m), "top_fl": None, "oktas": None, "amount": None,
         })
     return sorted(out, key=lambda lay: lay["base_agl_m"])  # type: ignore[arg-type, return-value]

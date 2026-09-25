@@ -10,7 +10,7 @@ import os
 import re
 import shutil
 import subprocess
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -95,6 +95,7 @@ class CubeWriter:
                 return {**previous, "rejected_rerun_status": status, "rejected_rerun_missing_steps": missing_steps}
         manifest = {
             "run": run_id(self.run), "run_time": self.run.isoformat(), "domain": self.domain.name,
+            "ingested_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "status": status, "steps": self.steps, "missing_steps": missing_steps,
             "valid_times": [(self.run + timedelta(hours=s)).isoformat() for s in self.steps],
             "levels_hpa": self.levels_hpa.tolist(),

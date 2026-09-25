@@ -32,7 +32,10 @@ from acf.awci.ops.clouds import (
 from acf.awci.ops.domains import Domain
 from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, Profile, combine, load_profile
 from acf.awci.ops.registry import LAYERS, LEVEL_LAYERS, MODULES, SURFACE_LAYERS
+from acf.awci.ops.isa import flight_level
 from acf.awci.ops.store import ATTRIBUTION, LICENSE, MODEL, CubeStore
+from acf.awci.ops.summary import SUMMARY_THRESHOLDS, area_weights, summarize, weighted_percentile
+from acf.awci.ops.thermo import dewpoint_k_from_vapor_pressure, vapor_pressure_hpa
 
 router = APIRouter(prefix="/awci", tags=["awci"])
 _MODULES = MODULES
@@ -159,7 +162,8 @@ def domains(request: Request) -> list[dict[str, Any]]:
 def runs(request: Request, domain: str) -> list[dict[str, Any]]:
     _domain(request, domain)
     return [{"run": m["run"], "run_time": m["run_time"], "status": m["status"], "steps": m["steps"],
-             "missing_steps": m["missing_steps"]} for m in _store(request).runs(domain)]
+             "missing_steps": m["missing_steps"], "ingested_at": m.get("ingested_at")}
+            for m in _store(request).runs(domain)]
 
 
 @router.get("/meta")
@@ -249,6 +253,14 @@ def point(request: Request, domain: str, run: RunId, step: int, level: float, la
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
+def _dewpoint(column: dict[str, np.ndarray], li: int, p_hpa: float) -> float | None:
+    """Td from q and the level pressure (thermo: exact inverse of Bolton e_s), never computed in the browser."""
+    q = column.get("q")
+    if q is None or not np.isfinite(q[li]):
+        return None
+    return _num(dewpoint_k_from_vapor_pressure(vapor_pressure_hpa(np.array(q[li]), np.array(p_hpa))))
+
+
 @router.get("/profile")
 def profile(request: Request, domain: str, run: RunId, step: int, lat: float, lon: float) -> dict[str, Any]:
     m = _manifest(request, domain, run)
@@ -257,7 +269,8 @@ def profile(request: Request, domain: str, run: RunId, step: int, lat: float, lo
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
     column = _column(ds, m, si, i, j)
-    levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds, request.app.state.awci_profile)}
+    levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds, request.app.state.awci_profile),
+               "dewpoint_k": _dewpoint(column, li, p)}
               for li, (p, fl) in enumerate(zip(m["levels_hpa"], m["flight_levels"]))]
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "levels": levels,
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
@@ -292,6 +305,7 @@ def registry(request: Request) -> dict[str, Any]:
             "cloud_profile": request.app.state.awci_cloud_profile.to_dict(),
             "codes": {"genus": GENUS_CODES, "clear": CLEAR, "indeterminate": INDETERMINATE,
                       "species_bits": SPECIES_BITS, "convective_classes": CONVECTIVE_CLASSES},
+            "summary_thresholds": SUMMARY_THRESHOLDS,
             "attribution": ATTRIBUTION, "license": LICENSE}
 
 
@@ -337,6 +351,9 @@ def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon
     return {
         "lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "elevation_m": elevation,
         "layers": layers, "metar": "MODEL " + metar_cloud_group(layers),
+        "etage_bounds_fl": None if sfc["sp_hpa"] is None else {
+            "low_mid": flight_level(cloud_profile.sigma_low_mid * sfc["sp_hpa"]),
+            "mid_high": flight_level(cloud_profile.sigma_mid_high * sfc["sp_hpa"])},
         "ceiling_m": ceiling, "ceiling_ft": None if ceiling is None else int(ceiling * FT_PER_M),
         "convective": {"class": cls, "label": CONVECTIVE_CLASSES[cls], "top_m": sfc["convective_top_m"],
                        "top_temp_k": sfc["convective_top_temp_k"]},
@@ -353,6 +370,73 @@ def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon
         "accumulation_interval_h": (m.get("accumulation_interval_h") or [None] * len(m["steps"]))[si],
         "provenance": _provenance(m, step), "source_tier": "nwp_forecast",
     }
+
+
+_SUMMARY_LEVEL = ("awci", "cat_category", "icing_potential", "vertical_shear")
+_SUMMARY_SURFACE = ("mucape", "precip_class", "ceiling_m", "convective_class", "cloud_cover_bias")
+
+
+def _summary_layers(ds: Any, m: dict[str, Any], si: int, li: int) -> dict[str, np.ndarray | None]:
+    surface = _run_layers(m, "surface_layers")
+    out: dict[str, np.ndarray | None] = {n: ds[n].isel(step=si, level=li).values for n in _SUMMARY_LEVEL}
+    out |= {n: ds[n].isel(step=si).values if n in surface else None for n in _SUMMARY_SURFACE}
+    return out
+
+
+@router.get("/summary")
+def summary(request: Request, domain: str, run: RunId, level: float,
+            step: int = Query(ge=0, le=384)) -> dict[str, Any]:
+    m = _manifest(request, domain, run)
+    si, li = _step_index(m, step), _level_index(m, level)
+    ds = _dataset(request, domain, run)
+    lats = ds["lat"].values
+    body = summarize(_summary_layers(ds, m, si, li), lats, request.app.state.awci_profile)
+    awci_all = ds["awci"].isel(step=si).values
+    w = area_weights(lats, awci_all.shape[2])
+    body["awci_p95_by_level"] = [{"level_hpa": p, "flight_level": fl, "awci_p95": weighted_percentile(awci_all[k], w, 95.0)}
+                                 for k, (p, fl) in enumerate(zip(m["levels_hpa"], m["flight_levels"]))]
+    return body | {"level_hpa": level, "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
+
+
+@router.get("/summary/series")
+def summary_series(request: Request, domain: str, run: RunId, level: float) -> dict[str, Any]:
+    m = _manifest(request, domain, run)
+    li = _level_index(m, level)
+    ds = _dataset(request, domain, run)
+    lats, prof = ds["lat"].values, request.app.state.awci_profile
+    points = []
+    for si, (s, vt) in enumerate(zip(m["steps"], m["valid_times"])):
+        if s in m["missing_steps"]:
+            points.append({"step": s, "valid_time": vt, "missing": True})
+            continue
+        body = summarize(_summary_layers(ds, m, si, li), lats, prof)
+        points.append({"step": s, "valid_time": vt, "missing": False,
+                       **{k: body[k] for k in ("awci_p95", "turbulence_area_pct", "icing_area_pct",
+                                               "convection_area_pct", "cb_area_pct")}})
+    return {"level_hpa": level, "points": points, "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
+
+
+@router.get("/clouds/series")
+def clouds_series(request: Request, domain: str, run: RunId, lat: float, lon: float) -> dict[str, Any]:
+    """Per-step etage genus, convection and ceiling at a point: temporal variability of the cloud diagnosis."""
+    m = _manifest(request, domain, run)
+    _require_layer(m, "genus_low")
+    ds = _dataset(request, domain, run)
+    i, j = _nearest(ds, _domain(request, domain), lat, lon)
+    names = ("genus_low", "genus_mid", "genus_high", "convective_class", "ceiling_m", "cloud_cover_total_diag")
+    series = {n: ds[n].isel(lat=i, lon=j).values for n in names}
+    points = []
+    for si, (s, vt) in enumerate(zip(m["steps"], m["valid_times"])):
+        if s in m["missing_steps"]:
+            points.append({"step": s, "valid_time": vt, "missing": True})
+            continue
+        points.append({"step": s, "valid_time": vt, "missing": False,
+                       "genus": {e: _genus_name(_num(series[f"genus_{e}"][si])) for e in ("low", "mid", "high")},
+                       "convective_class": _num(series["convective_class"][si]),
+                       "ceiling_m": _num(series["ceiling_m"][si]),
+                       "cloud_cover_total_diag": _num(series["cloud_cover_total_diag"][si])})
+    return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "points": points,
+            "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
 
 
 def _grid_headers(lats: np.ndarray, lons: np.ndarray, unit: str) -> dict[str, str]:
