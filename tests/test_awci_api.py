@@ -251,6 +251,36 @@ def test_complexity_field_endpoint_400s_for_an_unknown_model():
     assert response.status_code == 400
 
 
+def test_complexity_field_endpoint_opt_in_hazard_flags_return_real_nonzero_fields():
+    """A tiny 2x2 grid keeps this real (and otherwise expensive -
+    CAPE/CIN parcel ascent, real ceiling/visibility risk) computation
+    fast in the test suite."""
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/field",
+        params={
+            "n_lat": 2,
+            "n_lon": 2,
+            "compute_convective_energy": True,
+            "compute_wind_shear": True,
+            "compute_precipitation_phase": True,
+            "compute_ceiling": True,
+            "compute_visibility": True,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "wind_shear_field" in body
+    assert "precipitation_phase_severity_field" in body
+    assert len(body["wind_shear_field"]) == 2
+    # module_fields.convective/ceiling/visibility now come from real
+    # per-point physics rather than staying flat at the calculator's
+    # own "no signal supplied" default.
+    assert "convective" in body["module_fields"]
+    assert "ceiling" in body["module_fields"]
+    assert "visibility" in body["module_fields"]
+
+
 def test_complexity_vertical_profile_endpoint_returns_a_real_column():
     client = TestClient(create_app())
     response = client.get(

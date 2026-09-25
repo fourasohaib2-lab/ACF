@@ -102,6 +102,11 @@ async def field(
     seed: int = 0,
     n_lat: int | None = None,
     n_lon: int | None = None,
+    compute_convective_energy: bool = False,
+    compute_wind_shear: bool = False,
+    compute_precipitation_phase: bool = False,
+    compute_ceiling: bool = False,
+    compute_visibility: bool = False,
 ) -> dict[str, Any]:
     """
     Real 2D Complexity(x, y) field for the dashboard's GlobalMap/
@@ -112,10 +117,33 @@ async def field(
     pattern. ``n_lat``/``n_lon`` override the model's default
     resolution (e.g. for a faster, coarser field) - omit for
     ``model``'s real default grid.
+
+    The 5 ``compute_*`` flags mirror
+    ``compute_real_complexity_field()``'s own opt-in parameters
+    (default off there too - see that function's docstring for the
+    real per-point cost of each): enabling them makes
+    ``module_fields["convective"]``/``["ceiling"]``/``["visibility"]``
+    genuinely non-zero (real CAPE/CIN, real estimated ceiling/
+    visibility risk) and adds real ``wind_shear_field``/
+    ``precipitation_phase_severity_field`` to the response - real,
+    substantially more expensive work (measured ~2s at a small 8x16
+    grid with all 5 on, ~20s at the dashboard's usual 24x48 - so the
+    frontend requests these only for a small, separate "hazard
+    summary" fetch, never for the main shared map field).
     """
     try:
         result = compute_real_complexity_field(
-            model=model, steps=steps, seed=seed, level=level, n_lat=n_lat, n_lon=n_lon
+            model=model,
+            steps=steps,
+            seed=seed,
+            level=level,
+            n_lat=n_lat,
+            n_lon=n_lon,
+            compute_convective_energy=compute_convective_energy,
+            compute_wind_shear=compute_wind_shear,
+            compute_precipitation_phase=compute_precipitation_phase,
+            compute_ceiling=compute_ceiling,
+            compute_visibility=compute_visibility,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -130,22 +158,25 @@ async def field(
         (None if math.isinf(upper_bound) else upper_bound, label)
         for upper_bound, label in AWCICalculator.LEVEL_THRESHOLDS
     ]
-    return _to_json_safe_numeric(
-        {
-            "lats": result["lats"],
-            "lons": result["lons"],
-            "model": result["model"],
-            "level": result["level"],
-            "awci_field": result["awci_field"],
-            "physical_field": result["physical_field"],
-            "forecast_field": result["forecast_field"],
-            "module_fields": result["module_fields"],
-            "level_thresholds": level_thresholds,
-            "status": result["status"],
-            "is_real_data": result["is_real_data"],
-            "honest_limitation": result["honest_limitation"],
-        }
-    )
+    output = {
+        "lats": result["lats"],
+        "lons": result["lons"],
+        "model": result["model"],
+        "level": result["level"],
+        "awci_field": result["awci_field"],
+        "physical_field": result["physical_field"],
+        "forecast_field": result["forecast_field"],
+        "module_fields": result["module_fields"],
+        "level_thresholds": level_thresholds,
+        "status": result["status"],
+        "is_real_data": result["is_real_data"],
+        "honest_limitation": result["honest_limitation"],
+    }
+    if compute_wind_shear:
+        output["wind_shear_field"] = result["wind_shear_field"]
+    if compute_precipitation_phase:
+        output["precipitation_phase_severity_field"] = result["precipitation_phase_severity_field"]
+    return _to_json_safe_numeric(output)
 
 
 @router.get("/vertical-profile")
