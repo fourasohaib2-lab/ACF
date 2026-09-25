@@ -5,7 +5,8 @@ import { Panel } from "@/components/ui/panel"
 import { useComplexityField, type GridResolution } from "@/lib/hooks/use-complexity-field"
 import { useRouteWeather } from "@/lib/hooks/use-route-weather"
 import { useAirports } from "@/lib/hooks/use-airports"
-import type { AirportInfo, ComplexityFieldParams } from "@/lib/api"
+import { AirportCombobox } from "@/components/dashboard/airport-combobox"
+import type { ComplexityFieldParams } from "@/lib/api"
 
 /** Real model IDs from `acf.forecast.engine.MODEL_CONFIGS` - a fixed,
  * small, real enum (not guessed) already reused as the type union in
@@ -50,35 +51,21 @@ export function ControlBar() {
         <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">Route</span>
       </div>
 
-      <select
-        aria-label="Departure airport"
-        className={selectClassName()}
+      <AirportCombobox
+        label="Departure airport"
+        airports={airports}
         value={depIcao}
-        disabled={!airports}
-        onChange={(e) => setRoute(e.target.value, arrIcao)}
-      >
-        {(airports ?? [{ icao_code: depIcao, name: depIcao } as AirportInfo]).map((a) => (
-          <option key={a.icao_code} value={a.icao_code}>
-            {a.icao_code} · {a.name}
-          </option>
-        ))}
-      </select>
+        onChange={(icao) => setRoute(icao, arrIcao)}
+      />
 
       <ArrowRight className="size-3.5 text-muted" />
 
-      <select
-        aria-label="Arrival airport"
-        className={selectClassName()}
+      <AirportCombobox
+        label="Arrival airport"
+        airports={airports}
         value={arrIcao}
-        disabled={!airports}
-        onChange={(e) => setRoute(depIcao, e.target.value)}
-      >
-        {(airports ?? [{ icao_code: arrIcao, name: arrIcao } as AirportInfo]).map((a) => (
-          <option key={a.icao_code} value={a.icao_code}>
-            {a.icao_code} · {a.name}
-          </option>
-        ))}
-      </select>
+        onChange={(icao) => setRoute(depIcao, icao)}
+      />
 
       {error && <span className="font-mono text-[10px] text-critical">{error}</span>}
 

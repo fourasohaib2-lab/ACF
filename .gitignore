@@ -8,6 +8,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Re-fetchable raw source data caches (e.g. scripts/build_world_airports.py's
+# OurAirports.com CSV downloads) - the generated output under src/ is
+# committed; the raw cache is not.
+.cache/
+
 # C extensions
 *.so
 

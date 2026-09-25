@@ -272,19 +272,27 @@ export function getRouteCrossSection(params: RouteCrossSectionParams): Promise<R
 // --------------------------------------------------------------------- /airports
 
 /** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`. */
+/** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`.
+ * `iata_code`, `magnetic_variation_deg`, and `code_letter` are `null`
+ * for a real airport this dataset genuinely has none/no citable value
+ * for - most of the ~10,500 real world airports bulk-imported from
+ * OurAirports.com carry no `code_letter` (no bulk, per-airport ICAO
+ * Annex 14 source exists - see `scripts/build_world_airports.py`),
+ * and not every real airport has an IATA code. A runway's `width_m`
+ * is `null` when the real source didn't report one. */
 export interface AirportInfo {
   icao_code: string
-  iata_code: string
+  iata_code: string | null
   name: string
   city: string
   country: string
   latitude: number
   longitude: number
   elevation_ft: number
-  runways: { identifier: string; length_m: number; width_m: number; surface: string }[]
+  runways: { identifier: string; length_m: number; width_m: number | null; surface: string | null }[]
   ils_categories: string[]
-  magnetic_variation_deg: number
-  code_letter: string
+  magnetic_variation_deg: number | null
+  code_letter: string | null
 }
 
 export function listAirports(): Promise<AirportInfo[]> {

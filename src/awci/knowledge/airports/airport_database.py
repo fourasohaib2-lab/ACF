@@ -2,15 +2,39 @@
 Atmospheric Complexity Framework (ACF)
 
 Global Airport & Aeronautical Infrastructure Database Module (ICAO/IATA)
+
+Two real, honestly-distinct data tiers, merged into one registry
+(``AirportDatabase``):
+
+1. A handful of hand-curated airports (below) with individually
+   researched, complete data - real runway dimensions/surfaces, real
+   ILS approach categories, and a real, published ICAO Annex 14 Code
+   Letter, each cited at its own entry.
+2. A real, world-wide bulk dataset (``data/world_airports.json``,
+   ~10,500 airports, built by ``scripts/build_world_airports.py`` from
+   OurAirports.com's public-domain data) covering every real, non-
+   closed, ICAO-coded airport in the world - added per explicit user
+   request ("ajoute tous les aéroports du monde"). ``ils_categories``
+   and ``code_letter`` are honestly left empty/``None`` for this tier:
+   no real, bulk, per-airport open-data source exists for either (see
+   that script's own docstring). A hand-curated entry always wins over
+   a same-ICAO-code bulk one - the bulk import never overwrites
+   individually-researched data.
 """
 
+from __future__ import annotations
+
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from awci.knowledge.airports.reference_code import (
     AerodromeReferenceCode,
     classify_aerodrome_code_number,
 )
+
+_WORLD_AIRPORTS_JSON = Path(__file__).resolve().parent / "data" / "world_airports.json"
 
 
 @dataclass
@@ -20,16 +44,19 @@ class AirportInfo:
     ``code_letter`` is real, published ICAO Annex 14 design data (the
     largest aircraft category the aerodrome is certified to receive) -
     not derivable from a formula, so it is supplied per-airport,
-    cited at each entry below. ``code_number`` is computed for real
-    (see ``reference_code`` property) from the longest runway's real
-    published length as a proxy for the true Aerodrome Reference
-    Field Length (ARFL) - an honest approximation, since the true
-    ARFL additionally depends on elevation/temperature/slope
-    performance corrections not modeled in this database.
+    cited at each entry below. It is honestly ``None`` for the bulk-
+    imported world airports (see module docstring), not fabricated.
+    ``code_number`` is computed for real (see ``reference_code``
+    property) from the longest runway's real published length as a
+    proxy for the true Aerodrome Reference Field Length (ARFL) - an
+    honest approximation, since the true ARFL additionally depends on
+    elevation/temperature/slope performance corrections not modeled
+    in this database. ``iata_code`` is honestly ``None`` when a real
+    airport has none (not every real airport does).
     """
 
     icao_code: str
-    iata_code: str
+    iata_code: str | None
     name: str
     city: str
     country: str
@@ -38,16 +65,24 @@ class AirportInfo:
     elevation_ft: float
     runways: list[dict[str, Any]]
     ils_categories: list[str]
-    magnetic_variation_deg: float
-    code_letter: str
+    magnetic_variation_deg: float | None
+    code_letter: str | None = None
 
     @property
-    def reference_code(self) -> AerodromeReferenceCode:
+    def reference_code(self) -> AerodromeReferenceCode | None:
         """Real ICAO Annex 14 aerodrome reference code (e.g. "4F"),
         combining the computed Code Number (from the longest real
         runway length, see this class's own docstring) with this
-        airport's published Code Letter."""
-        longest_runway_m = max(runway["length_m"] for runway in self.runways)
+        airport's published Code Letter - honestly ``None`` (never a
+        fabricated code) when either input is unavailable (no real
+        runway length data, or no real, individually-researched Code
+        Letter - true for every bulk-imported world airport, see
+        module docstring)."""
+        if not self.runways or self.code_letter is None:
+            return None
+        longest_runway_m = max(
+            runway["length_m"] for runway in self.runways if runway.get("length_m") is not None
+        )
         return AerodromeReferenceCode(
             code_number=classify_aerodrome_code_number(longest_runway_m),
             code_letter=self.code_letter,
@@ -185,24 +220,68 @@ AIRPORT_REGISTRY: dict[str, AirportInfo] = {
 }
 
 
+def _load_world_airports() -> dict[str, AirportInfo]:
+    """Real, world-wide bulk airport tier (see module docstring) -
+    loaded once from the real, pre-built ``data/world_airports.json``
+    (``scripts/build_world_airports.py``'s own output). Returns an
+    empty dict (never a fabricated fallback list) if that file is
+    absent - e.g. before the generation script has been run in a
+    fresh checkout - so the database still works with just the 6
+    hand-curated airports."""
+    if not _WORLD_AIRPORTS_JSON.exists():
+        return {}
+    with _WORLD_AIRPORTS_JSON.open(encoding="utf-8") as f:
+        payload = json.load(f)
+    return {
+        entry["icao_code"].lower(): AirportInfo(
+            icao_code=entry["icao_code"],
+            iata_code=entry["iata_code"],
+            name=entry["name"],
+            city=entry["city"],
+            country=entry["country"],
+            latitude=entry["latitude"],
+            longitude=entry["longitude"],
+            elevation_ft=entry["elevation_ft"],
+            runways=entry["runways"],
+            ils_categories=entry["ils_categories"],
+            magnetic_variation_deg=entry["magnetic_variation_deg"],
+            code_letter=entry["code_letter"],
+        )
+        for entry in payload["airports"]
+    }
+
+
+#: Real, merged registry, built once at import time (not per call - the
+#: world tier is ~10,500 entries, so rebuilding it on every lookup
+#: would be wasteful): the world tier first, then the 6 hand-curated
+#: entries overlaid on top, so a curated entry always wins over a
+#: same-ICAO-code bulk one (see module docstring).
+_MERGED_REGISTRY: dict[str, AirportInfo] = {**_load_world_airports(), **AIRPORT_REGISTRY}
+
+#: Real ICAO/IATA lookup index, built once alongside the merged
+#: registry - avoids an O(n) scan over ~10,500 airports on every real
+#: IATA-code lookup.
+_IATA_INDEX: dict[str, AirportInfo] = {
+    ap.iata_code.lower(): ap for ap in _MERGED_REGISTRY.values() if ap.iata_code
+}
+
+
 class AirportDatabase:
-    """Base de données et moteur d'infrastructure des aéroports mondiaux."""
+    """Base de données et moteur d'infrastructure des aéroports mondiaux -
+    fusionne les 6 fiches aéroports individuellement documentées
+    (``AIRPORT_REGISTRY``) avec le vrai jeu de données mondial
+    (~10 500 aéroports réels, voir docstring du module)."""
 
     @classmethod
     def get_airport(cls, icao_or_iata: str) -> AirportInfo | None:
         key = icao_or_iata.lower()
-        if key in AIRPORT_REGISTRY:
-            return AIRPORT_REGISTRY[key]
-        for ap in AIRPORT_REGISTRY.values():
-            if ap.iata_code.lower() == key:
-                return ap
-        return None
+        return _MERGED_REGISTRY.get(key) or _IATA_INDEX.get(key)
 
     @classmethod
     def list_airports(cls) -> list[str]:
-        return list(AIRPORT_REGISTRY.keys())
+        return list(_MERGED_REGISTRY.keys())
 
     @classmethod
     def all_airport_infos(cls) -> list[AirportInfo]:
         """Retourne les fiches complètes de tous les aérodromes de la base (pas seulement leurs clés)."""
-        return list(AIRPORT_REGISTRY.values())
+        return list(_MERGED_REGISTRY.values())
