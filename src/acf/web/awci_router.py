@@ -168,7 +168,15 @@ def meta(request: Request, domain: str, run: RunId) -> dict[str, Any]:
     return {"levels_hpa": m["levels_hpa"], "flight_levels": m["flight_levels"], "steps": m["steps"],
             "valid_times": m["valid_times"], "missing_steps": m["missing_steps"], "status": m["status"],
             "level_layers": m["level_layers"], "surface_layers": m["surface_layers"],
-            "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
+            **_cloud_run_info(m), "provenance": _provenance(m, None), "source_tier": "nwp_forecast"}
+
+
+def _cloud_run_info(m: dict[str, Any]) -> dict[str, Any]:
+    """SP1C run-level cloud metadata (None for runs ingested before SP1C)."""
+    name = m.get("cloud_profile")
+    return {"cloud_status": m.get("cloud_status"), "cloud_consistency": m.get("cloud_consistency"),
+            "accumulation_interval_h": m.get("accumulation_interval_h"),
+            "cloud_profile": None if name is None else {"name": name, "version": m.get("cloud_profile_version")}}
 
 
 @router.get("/field", response_model=None)
@@ -338,7 +346,11 @@ def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon
                          "high": sfc["cloud_cover_high"], "total_diag": sfc["cloud_cover_total_diag"]},
         "genus": {e: _genus_name(sfc[f"genus_{e}"]) for e in ("low", "mid", "high")},
         "scientific_status": {name: LAYERS[name].status for name in names},
-        "cloud_profile": {"name": cloud_profile.name, "version": cloud_profile.version},
+        "cloud_profile": {"name": m.get("cloud_profile", cloud_profile.name),
+                          "version": m.get("cloud_profile_version", cloud_profile.version)},
+        "run_cloud_status": m.get("cloud_status"),
+        "step_consistency": next((c for c in m.get("cloud_consistency") or [] if c["step"] == step), None),
+        "accumulation_interval_h": (m.get("accumulation_interval_h") or [None] * len(m["steps"]))[si],
         "provenance": _provenance(m, step), "source_tier": "nwp_forecast",
     }
 

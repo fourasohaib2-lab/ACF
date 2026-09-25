@@ -47,6 +47,8 @@ def old_client(tmp_path_factory) -> TestClient:
     manifest = json.loads((run_dir / "manifest.json").read_text())
     manifest["level_layers"] = [n for n in manifest["level_layers"] if n not in SP1C_ONLY]
     manifest["surface_layers"] = [n for n in manifest["surface_layers"] if n not in SP1C_ONLY]
+    for key in ("cloud_profile", "cloud_profile_version", "accumulation_interval_h", "cloud_consistency", "cloud_status"):
+        manifest.pop(key, None)
     (run_dir / "manifest.json").write_text(json.dumps(manifest))
     return _app(root)
 
@@ -122,3 +124,18 @@ def test_clouds_over_sea_use_sea_level_not_bathymetry(tmp_path) -> None:
     assert "CB" in body["metar"]
     terrain = np.frombuffer(c.get("/api/v1/awci/terrain", params=q).content, dtype="<f4")
     assert (np.abs(terrain) < 50.0).all()
+
+
+def test_meta_and_clouds_expose_cloud_status_and_accumulation_interval(client, run_id) -> None:
+    meta = client.get("/api/v1/awci/meta", params={"domain": "fixture", "run": run_id}).json()
+    assert meta["cloud_status"] in ("ok", "degraded") and meta["accumulation_interval_h"] == [None, 3]
+    assert [c["step"] for c in meta["cloud_consistency"]] == [0, 3] and meta["cloud_profile"]["name"] == "cloud-v1"
+    body = client.get("/api/v1/awci/clouds", params={"domain": "fixture", "run": run_id, "step": 3, "lat": 36,
+                                                     "lon": 3}).json()
+    assert body["run_cloud_status"] == meta["cloud_status"] and body["accumulation_interval_h"] == 3
+    assert body["step_consistency"]["step"] == 3
+
+
+def test_meta_of_a_pre_sp1c_run_has_null_cloud_status(old_client, run_id) -> None:
+    meta = old_client.get("/api/v1/awci/meta", params={"domain": "fixture", "run": run_id}).json()
+    assert meta["cloud_status"] is None and meta["accumulation_interval_h"] is None
