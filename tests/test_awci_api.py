@@ -305,6 +305,43 @@ def test_complexity_field_endpoint_opt_in_hazard_flags_return_real_nonzero_field
     assert "visibility" in body["module_fields"]
 
 
+def test_complexity_field_endpoint_exposes_real_raw_instability_fields():
+    """cape_field/cin_field/theta_e_field/updraft_velocity_field are
+    real physical-unit diagnostics (J/kg, K, m/s) already computed by
+    compute_real_complexity_field() whenever their flag is set, but
+    were not previously surfaced in this response - only the derived
+    0-100 module score was."""
+    client = TestClient(create_app())
+    response = client.get(
+        "/complexity/field",
+        params={
+            "n_lat": 2,
+            "n_lon": 2,
+            "compute_convective_energy": True,
+            "compute_theta_e": True,
+            "compute_updraft_velocity": True,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "cape_field" in body
+    assert "cin_field" in body
+    assert "theta_e_field" in body
+    assert "updraft_velocity_field" in body
+    assert len(body["cape_field"]) == 2
+    assert len(body["theta_e_field"]) == 2
+
+
+def test_complexity_field_endpoint_omits_instability_fields_when_not_requested():
+    client = TestClient(create_app())
+    response = client.get("/complexity/field", params={"n_lat": 2, "n_lon": 2})
+    assert response.status_code == 200
+    body = response.json()
+    assert "cape_field" not in body
+    assert "theta_e_field" not in body
+    assert "updraft_velocity_field" not in body
+
+
 def test_complexity_vertical_profile_endpoint_returns_a_real_column():
     client = TestClient(create_app())
     response = client.get(

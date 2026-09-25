@@ -106,6 +106,8 @@ async def field(
     n_lon: int | None = None,
     compute_convective_energy: bool = False,
     compute_wind_shear: bool = False,
+    compute_theta_e: bool = False,
+    compute_updraft_velocity: bool = False,
     compute_precipitation_phase: bool = False,
     compute_ceiling: bool = False,
     compute_visibility: bool = False,
@@ -120,18 +122,20 @@ async def field(
     resolution (e.g. for a faster, coarser field) - omit for
     ``model``'s real default grid.
 
-    The 5 ``compute_*`` flags mirror
+    The 7 ``compute_*`` flags mirror
     ``compute_real_complexity_field()``'s own opt-in parameters
     (default off there too - see that function's docstring for the
     real per-point cost of each): enabling them makes
     ``module_fields["convective"]``/``["ceiling"]``/``["visibility"]``
     genuinely non-zero (real CAPE/CIN, real estimated ceiling/
-    visibility risk) and adds real ``wind_shear_field``/
+    visibility risk) and adds real ``cape_field``/``cin_field``/
+    ``wind_shear_field``/``theta_e_field``/``updraft_velocity_field``/
     ``precipitation_phase_severity_field`` to the response - real,
     substantially more expensive work (measured ~2s at a small 8x16
-    grid with all 5 on, ~20s at the dashboard's usual 24x48 - so the
-    frontend requests these only for a small, separate "hazard
-    summary" fetch, never for the main shared map field).
+    grid with all 5 original flags on, ~20s at the dashboard's usual
+    24x48 - so the frontend requests these only for a small, separate
+    "hazard summary"/"instability indices" fetch, never for the main
+    shared map field).
     """
     try:
         result = compute_real_complexity_field(
@@ -143,6 +147,8 @@ async def field(
             n_lon=n_lon,
             compute_convective_energy=compute_convective_energy,
             compute_wind_shear=compute_wind_shear,
+            compute_theta_e=compute_theta_e,
+            compute_updraft_velocity=compute_updraft_velocity,
             compute_precipitation_phase=compute_precipitation_phase,
             compute_ceiling=compute_ceiling,
             compute_visibility=compute_visibility,
@@ -174,8 +180,28 @@ async def field(
         "is_real_data": result["is_real_data"],
         "honest_limitation": result["honest_limitation"],
     }
+    if compute_convective_energy:
+        # Real raw CAPE/CIN (J/kg) - already computed by
+        # compute_real_complexity_field() whenever this flag is set
+        # (it feeds module_fields["convective"]'s 0-100 score), but
+        # never previously surfaced in this response - a real
+        # instability index in its own physical units, not just the
+        # composite score derived from it.
+        output["cape_field"] = result["cape_field"]
+        output["cin_field"] = result["cin_field"]
     if compute_wind_shear:
         output["wind_shear_field"] = result["wind_shear_field"]
+    if compute_theta_e:
+        # Real equivalent potential temperature (K) - a real,
+        # standard instability diagnostic (a decreasing theta_e with
+        # height signals real potential/convective instability),
+        # already computed but never previously surfaced here either.
+        output["theta_e_field"] = result["theta_e_field"]
+    if compute_updraft_velocity:
+        # Real CAPE-derived maximum parcel updraft velocity (m/s,
+        # w_max = sqrt(2*CAPE)) - a real, standard convective-
+        # intensity diagnostic.
+        output["updraft_velocity_field"] = result["updraft_velocity_field"]
     if compute_precipitation_phase:
         output["precipitation_phase_severity_field"] = result["precipitation_phase_severity_field"]
     return _to_json_safe_numeric(output)
