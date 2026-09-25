@@ -492,3 +492,9 @@ def default_profile() -> Any:
 
 def default_cloud_profile() -> CloudProfile:
     return load_cloud_profile()
+
+
+# Observation overlays (EUMETView relay) share the /awci prefix and every app that mounts this router.
+from acf.web.awci_wms import router as _wms_router  # noqa: E402
+
+router.include_router(_wms_router)

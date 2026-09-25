@@ -15,8 +15,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from acf.awci.ops.domains import DEFAULT_DOMAINS_PATH, load_domains
-from acf.awci.ops.store import CubeStore
+from acf.awci.ops.store import CubeStore, data_root
 from acf.web.awci_router import default_cloud_profile, default_profile, router
+from acf.web.awci_wms import UrllibWmsFetcher, WmsRelay
 
 
 def attach_awci_state(app: FastAPI, data_dir: Path | None = None, domains_file: Path | None = None) -> None:
@@ -24,6 +25,8 @@ def attach_awci_state(app: FastAPI, data_dir: Path | None = None, domains_file: 
     app.state.awci_domains = load_domains(domains_file or DEFAULT_DOMAINS_PATH)
     app.state.awci_profile = default_profile()
     app.state.awci_cloud_profile = default_cloud_profile()
+    cache = os.environ.get("ACF_AWCI_WMS_CACHE")
+    app.state.awci_wms = WmsRelay(UrllibWmsFetcher(), Path(cache) if cache else (data_dir or data_root()) / ".wms-cache")
 
 
 def create_awci_app(
@@ -38,7 +41,7 @@ def create_awci_app(
         app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET"], allow_headers=["*"],
                            expose_headers=["X-AWCI-Shape", "X-AWCI-Lats", "X-AWCI-Lons", "X-AWCI-Nodata",
                                            "X-AWCI-Unit", "X-AWCI-Attribution", "X-AWCI-Levels",
-                                           "X-AWCI-Parts"])
+                                           "X-AWCI-Parts", "X-AWCI-Observed-At"])
     app.include_router(router, prefix="/api/v1")
     return app
 
