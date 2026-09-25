@@ -6,6 +6,8 @@ Vectorized moist thermodynamics (NumPy), consistent with acf.science.
 - Td = exact inverse of es: Tc = 243.5 ln(e/6.112) / (17.67 - ln(e/6.112))
 - theta_e: Bolton (1980) eq. 43 as in EquivalentPotentialTemperature.calculate_bolton_1980
 - LCL height (Espy): 125 m per K of dewpoint depression.
+- q_s = eps e_s / (p - (1 - eps) e_s); Tv = T (1 + (1/eps - 1) q), condensate loading neglected
+- LCL temperature: Bolton (1980) eq. 15, T_L = 1 / (1/(Td - 56) + ln(T/Td)/800) + 56
 """
 
 from __future__ import annotations
@@ -55,3 +57,21 @@ def theta_e_bolton_k(t_k: np.ndarray, q: np.ndarray, p_hpa: np.ndarray) -> np.nd
 def cloud_base_lcl_m(t2m_k: np.ndarray, d2m_k: np.ndarray) -> np.ndarray:
     depression = np.asarray(t2m_k, dtype=float) - np.asarray(d2m_k, dtype=float)
     return ESPY_M_PER_K * np.maximum(depression, 0.0)
+
+
+def saturation_specific_humidity(t_k: np.ndarray, p_hpa: np.ndarray) -> np.ndarray:
+    """q_s = eps e_s / (p - (1 - eps) e_s), e_s from Bolton (1980)."""
+    es = saturation_vapor_pressure_hpa(t_k)
+    return EPSILON * es / (np.asarray(p_hpa, dtype=float) - (1.0 - EPSILON) * es)
+
+
+def virtual_temperature_k(t_k: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Tv = T (1 + (1/eps - 1) q), condensate loading neglected."""
+    return np.asarray(t_k, dtype=float) * (1.0 + (1.0 / EPSILON - 1.0) * np.asarray(q, dtype=float))
+
+
+def lcl_temperature_bolton_k(t_k: np.ndarray, td_k: np.ndarray) -> np.ndarray:
+    """Bolton (1980) eq. 15: T_L = 1 / (1/(Td - 56) + ln(T/Td)/800) + 56."""
+    t = np.asarray(t_k, dtype=float)
+    td = np.minimum(np.asarray(td_k, dtype=float), t)
+    return 1.0 / (1.0 / (td - 56.0) + np.log(t / td) / 800.0) + 56.0
