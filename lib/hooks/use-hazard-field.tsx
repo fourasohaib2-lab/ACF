@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { ApiError, getComplexityField, type ComplexityField } from "@/lib/api"
 import { useComplexityField } from "@/lib/hooks/use-complexity-field"
 
@@ -18,11 +18,15 @@ interface HazardFieldState {
   error: string | null
 }
 
+const HazardFieldContext = createContext<HazardFieldState | null>(null)
+
 /** Real hazard-enriched field, refetched whenever the dashboard's
  * shared model selection changes (reuses ComplexityFieldProvider's
  * `model`, so this tile band always matches whatever model the rest
- * of the dashboard is showing). */
-export function useHazardField(): HazardFieldState {
+ * of the dashboard is showing). Shared via context so every consumer
+ * (HazardBand, CurrentSituation) reads the same one real fetch
+ * instead of each triggering its own redundant ~2s physics run. */
+export function HazardFieldProvider({ children }: { children: ReactNode }) {
   const { model } = useComplexityField()
   const [data, setData] = useState<ComplexityField | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,5 +61,13 @@ export function useHazardField(): HazardFieldState {
     }
   }, [model])
 
-  return { data, loading, error }
+  return <HazardFieldContext.Provider value={{ data, loading, error }}>{children}</HazardFieldContext.Provider>
+}
+
+export function useHazardField(): HazardFieldState {
+  const ctx = useContext(HazardFieldContext)
+  if (!ctx) {
+    throw new Error("useHazardField must be used within a HazardFieldProvider")
+  }
+  return ctx
 }

@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { ArrowRight, Grid3x3, Plane, Satellite } from "lucide-react"
 import { Panel } from "@/components/ui/panel"
 import { useComplexityField, type GridResolution } from "@/lib/hooks/use-complexity-field"
 import { useRouteWeather } from "@/lib/hooks/use-route-weather"
-import { listAirports, type AirportInfo } from "@/lib/api"
-import type { ComplexityFieldParams } from "@/lib/api"
+import { useAirports } from "@/lib/hooks/use-airports"
+import type { AirportInfo, ComplexityFieldParams } from "@/lib/api"
 
 /** Real model IDs from `acf.forecast.engine.MODEL_CONFIGS` - a fixed,
  * small, real enum (not guessed) already reused as the type union in
@@ -42,22 +41,7 @@ function selectClassName() {
 export function ControlBar() {
   const { model, setModel, resolution, setResolution } = useComplexityField()
   const { depIcao, arrIcao, setRoute } = useRouteWeather()
-  const [airports, setAirports] = useState<AirportInfo[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    listAirports()
-      .then((result) => {
-        if (!cancelled) setAirports(result)
-      })
-      .catch(() => {
-        if (!cancelled) setError("Airport list unavailable")
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { airports, error } = useAirports()
 
   return (
     <Panel className="flex flex-wrap items-center gap-3 p-3">
