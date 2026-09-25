@@ -117,8 +117,8 @@ def test_clouds_over_sea_use_sea_level_not_bathymetry(tmp_path) -> None:
     c = TestClient(create_awci_app(data_dir=tmp_path, domains_file=domains))
     q = {"domain": "fixture_wet", "run": "2026092500"}
     body = c.get("/api/v1/awci/clouds", params=q | {"step": 3, "lat": 16, "lon": -19}).json()
-    assert body["elevation_m"] == 0.0
+    assert abs(body["elevation_m"]) < 50.0
     assert all(lay["base_agl_m"] < 6000.0 for lay in body["layers"] if lay["kind"] == "layer")
     assert "CB" in body["metar"]
     terrain = np.frombuffer(c.get("/api/v1/awci/terrain", params=q).content, dtype="<f4")
-    assert (terrain == 0.0).all()
+    assert (np.abs(terrain) < 50.0).all()

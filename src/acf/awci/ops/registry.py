@@ -46,8 +46,9 @@ _SPECS = (
     LayerSpec("awci", "AWCI (operational-v1)", "0-100", True, "weighted modules, missing ones renormalized",
               "ACF composite index", "HYPOTHESIS"),
     # --- SP1C clouds (model diagnostics, never observations) ---
-    LayerSpec("surface_height_m", "Surface height used for heights above ground", "m AMSL", False,
-              "SRTM15+ where lsm >= 0.5, else 0 m (SRTM15+ includes bathymetry)", "SRTM15+; ECMWF lsm", "CONFIRMED"),
+    LayerSpec("surface_height_m", "IFS model surface height used for heights above ground", "m AMSL", False,
+              "z_s = gh_k - (Rd Tv_mean / g) ln(p_s / p_k), k = lowest level above ground",
+              "hypsometric equation; ECMWF IFS sp, 2t, 2d, gh, t, q", "CONFIRMED"),
     LayerSpec("cloud_fraction", "Level cloud fraction (diagnosed)", "0-1", True,
               "C = 1 - sqrt((1 - RH) / (1 - RHc)) for RH >= RHc, RH = IFS r (mixed phase), RHc per etage",
               "Sundqvist, Berge & Kristjansson (1989), Mon. Wea. Rev. 117; RHc in cloud profile", "HYPOTHESIS"),

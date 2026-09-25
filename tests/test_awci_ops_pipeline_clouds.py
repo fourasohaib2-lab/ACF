@@ -83,9 +83,21 @@ def test_heights_above_sea_are_counted_from_sea_level_not_bathymetry() -> None:
     elevation = interpolate_real_terrain_elevation(f.lats, f.lons)
     assert (elevation < -1000).all() and (f.sfc["lsm"] < 0.5).all()
     out = compute_step(f, elevation, PROFILE)
-    assert (out["surface_height_m"] == 0.0).all()
+    assert (np.abs(out["surface_height_m"]) < 50.0).all()  # hypsometric IFS surface: sea level
     ceiling = out["ceiling_m"][np.isfinite(out["ceiling_m"])]
     assert ceiling.size and (ceiling <= 6000.0).all()
     gh = f.pl["gh"]
     for iy, ix in zip(*np.nonzero(np.isfinite(out["ceiling_m"]))):
-        assert np.isclose(gh[:, iy, ix], out["ceiling_m"][iy, ix]).any()  # base = gh of a level above 0 m
+        assert np.isclose(gh[:, iy, ix] - out["surface_height_m"][iy, ix], out["ceiling_m"][iy, ix]).any()
+
+
+def test_surface_height_is_the_ifs_model_surface_even_on_coastal_land() -> None:
+    # SRTM15+ bundled at 1 deg: bathymetry leaks inland (-677 m at 36.75N 3.25E, lsm 0.72, next to Algiers)
+    f = _fields(FIXTURE, DOMAIN, 3)
+    out = compute_step(f, interpolate_real_terrain_elevation(f.lats, f.lons), PROFILE)
+    z = out["surface_height_m"]
+    iy, ix = int(np.argmin(np.abs(f.lats - 36.75))), int(np.argmin(np.abs(f.lons - 3.25)))
+    assert -50.0 < z[iy, ix] < 400.0
+    sea = f.sfc["lsm"] < 0.5
+    assert (np.abs(z[sea]) < 50.0).all()  # hypsometric sea level within tens of metres
+    assert (z > -100.0).all()

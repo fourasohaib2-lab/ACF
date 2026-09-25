@@ -8,13 +8,15 @@ Vectorized moist thermodynamics (NumPy), consistent with acf.science.
 - LCL height (Espy): 125 m per K of dewpoint depression.
 - q_s = eps e_s / (p - (1 - eps) e_s); Tv = T (1 + (1/eps - 1) q), condensate loading neglected
 - LCL temperature: Bolton (1980) eq. 15, T_L = 1 / (1/(Td - 56) + ln(T/Td)/800) + 56
+- model surface height (hypsometric equation): z_s = gh_k - (Rd Tv_mean / g) ln(p_s / p_k),
+  k = lowest level above ground, Tv_mean = mean of surface (2t, 2d) and level-k virtual temperatures
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from acf.science.constants import KAPPA
+from acf.science.constants import KAPPA, RD, G
 
 EPSILON = 0.622
 ESPY_M_PER_K = 125.0
@@ -75,3 +77,20 @@ def lcl_temperature_bolton_k(t_k: np.ndarray, td_k: np.ndarray) -> np.ndarray:
     t = np.asarray(t_k, dtype=float)
     td = np.minimum(np.asarray(td_k, dtype=float), t)
     return 1.0 / (1.0 / (td - 56.0) + np.log(t / td) / 800.0) + 56.0
+
+
+def model_surface_height_m(sp_hpa: np.ndarray, t2m_k: np.ndarray, d2m_k: np.ndarray, levels_hpa: np.ndarray,
+                           gh: np.ndarray, t_k: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Height (m AMSL) of the IFS model surface, consistent with sp: hypsometric equation from the lowest
+    pressure level above ground (levels ordered by decreasing pressure). NaN if no level is above ground."""
+    sp = np.asarray(sp_hpa, dtype=float)
+    levels = np.asarray(levels_hpa, dtype=float)
+    above = levels[:, None, None] < sp[None]
+    k = np.argmax(above, axis=0)[None]
+    p_k = levels[k[0]]
+    take = lambda a: np.take_along_axis(np.asarray(a, dtype=float), k, axis=0)[0]  # noqa: E731
+    e_s = saturation_vapor_pressure_hpa(np.minimum(d2m_k, t2m_k))
+    q_s = EPSILON * e_s / (sp - (1.0 - EPSILON) * e_s)
+    tv_mean = 0.5 * (virtual_temperature_k(t2m_k, q_s) + virtual_temperature_k(take(t_k), take(q)))
+    z = take(gh) - RD * tv_mean / G * np.log(sp / p_k)
+    return np.where(above.any(axis=0), z, np.nan)

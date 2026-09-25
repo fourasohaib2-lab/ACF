@@ -7,8 +7,9 @@ Icing uses relative humidity over water computed from q, T, p (IFS `r` is relati
 ice below -23 degC and mixed-phase between -23 and 0 degC).
 Clouds (SP1C) use IFS `r` as is: its mixed-phase saturation is the one of the IFS cloud scheme.
 Accumulated fields (ttr, sf, tp) need the previous ingested step; without it they are NaN.
-Heights above ground use the surface height: SRTM15+ over land (lsm >= 0.5), 0 m over sea
-(SRTM15+ carries bathymetry, which must never lift cloud bases or ceilings).
+Heights above ground use the IFS model surface height (hypsometric from sp and the lowest level
+above ground), consistent with the below-ground mask and the parcel. The bundled SRTM15+ is a 1 deg
+grid whose bathymetry leaks inland along coasts: it must never lift cloud bases or ceilings.
 """
 
 from __future__ import annotations
@@ -33,20 +34,12 @@ from acf.awci.ops.hazards import (
 from acf.awci.ops.kinematics import cat_category_codes, ellrod_ti2, layer_shear, wind_speed
 from acf.awci.ops.parcel import surface_parcel
 from acf.awci.ops.registry import LEVEL_LAYERS, MODULES, SURFACE_LAYERS
-from acf.awci.ops.thermo import cloud_base_lcl_m, relative_humidity_pct, theta_e_bolton_k
+from acf.awci.ops.thermo import cloud_base_lcl_m, model_surface_height_m, relative_humidity_pct, theta_e_bolton_k
 
 if TYPE_CHECKING:
     from acf.awci.ops.decode import StepFields
 
 __all__ = ["LEVEL_LAYERS", "SURFACE_LAYERS", "compute_step"]
-
-
-LAND_FRACTION_THRESHOLD = 0.5  # ECMWF convention: a grid point is land when lsm >= 0.5
-
-
-def surface_height_m(elevation: np.ndarray, lsm: np.ndarray) -> np.ndarray:
-    """Terrain height over land, sea level (0 m) over sea; land below sea level keeps its real height."""
-    return np.where(np.asarray(lsm, dtype=float) >= LAND_FRACTION_THRESHOLD, elevation, 0.0)
 
 
 @lru_cache(maxsize=1)
@@ -85,7 +78,8 @@ def compute_step(
     )
     for module in MODULES:
         layers[f"module_{module}"] = np.broadcast_to(np.asarray(scores[module], dtype=float), shape).copy()
-    surface = surface_height_m(elevation, sfc["lsm"])
+    surface = model_surface_height_m(sfc["sp"] / 100.0, sfc["2t"], sfc["2d"], fields.levels_hpa, pl["gh"], pl["t"],
+                                     pl["q"])
     lcl = cloud_base_lcl_m(sfc["2t"], sfc["2d"])
     condensate = column_condensate(sfc["tcw"], sfc["tcwv"])
     parcel = surface_parcel(sfc["2t"], sfc["2d"], sfc["sp"] / 100.0, fields.levels_hpa, pl["t"], pl["q"], pl["gh"],
