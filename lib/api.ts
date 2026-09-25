@@ -225,6 +225,50 @@ export function getVerticalProfile(params: VerticalProfileParams): Promise<Verti
   return request(`/complexity/vertical-profile${query({ lat, lon, model, steps, seed, n_lat, n_lon, n_levels })}`)
 }
 
+export interface RouteCrossSectionParams {
+  dep_icao: string
+  arr_icao: string
+  n_waypoints?: number
+  model?: "AROME" | "ALADIN" | "ARPEGE"
+  steps?: number
+  seed?: number
+  n_lat?: number
+  n_lon?: number
+  n_levels?: number
+}
+
+/** One real waypoint's full vertical column - mirrors a `columns[]`
+ * entry from `GET /complexity/route-cross-section`. */
+export interface RouteCrossSectionColumn {
+  distance_from_origin_km: number
+  latitude: number
+  longitude: number
+  awci_profile: (number | null)[]
+  pressure_profile_hpa: number[]
+}
+
+/** Real Complexity(along-track distance, z) cross-section - mirrors
+ * the JSON built by `GET /complexity/route-cross-section`. Each
+ * column is a real nearest-grid vertical profile at a real
+ * great-circle waypoint (same convention as `VerticalProfile`). */
+export interface RouteCrossSection {
+  departure_icao: string
+  arrival_icao: string
+  model: string
+  n_levels: number
+  columns: RouteCrossSectionColumn[]
+  status: string
+  is_real_data: boolean
+  honest_limitation: string
+}
+
+export function getRouteCrossSection(params: RouteCrossSectionParams): Promise<RouteCrossSection> {
+  const { dep_icao, arr_icao, n_waypoints, model, steps, seed, n_lat, n_lon, n_levels } = params
+  return request(
+    `/complexity/route-cross-section${query({ dep_icao, arr_icao, n_waypoints, model, steps, seed, n_lat, n_lon, n_levels })}`,
+  )
+}
+
 // --------------------------------------------------------------------- /airports
 
 /** Mirrors `awci.knowledge.airports.airport_database.AirportInfo`. */

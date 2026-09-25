@@ -8,6 +8,7 @@ import { RegionalMap } from "@/components/dashboard/regional-map"
 import { CurrentSituation } from "@/components/dashboard/current-situation"
 import { AirportComplexity } from "@/components/dashboard/airport-complexity"
 import { VerticalCrossSection } from "@/components/dashboard/vertical-cross-section"
+import { RouteCrossSection } from "@/components/dashboard/route-cross-section"
 import { RadarComplexity } from "@/components/dashboard/radar-complexity"
 import { RouteProfile } from "@/components/dashboard/route-profile"
 import { RiskPanel } from "@/components/dashboard/risk-panel"
@@ -55,12 +56,11 @@ export default function Page() {
                 </section>
 
                 {/* Analytics row */}
-                <section id="analysis" className="scroll-mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                <section id="analysis" className="scroll-mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
+                  <RouteCrossSection />
                   <VerticalCrossSection />
                   <RadarComplexity />
-                  <div className="lg:col-span-2 xl:col-span-1">
-                    <RouteProfile />
-                  </div>
+                  <RouteProfile />
                 </section>
               </main>
 
