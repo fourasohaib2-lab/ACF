@@ -1,0 +1,56 @@
+import { fmt } from "../lib/format";
+import { AWCI_CLASS_COLORS, SEQ_BLUE } from "../theme/palette";
+import { GENUS_FAMILY, type LayerDef } from "./layers";
+
+interface Props { def: LayerDef; classLabels: string[]; awciBounds: number[] }
+
+const Swatch = ({ color, hatch = false }: { color?: string; hatch?: boolean }) => (
+  <span className={`legend-swatch${hatch ? " legend-hatch" : ""}`} style={color ? { background: color } : undefined} aria-hidden="true" />
+);
+
+function Rows({ def, classLabels, awciBounds }: Props) {
+  const r = def.render;
+  if (r.kind === "awci") {
+    return (
+      <>
+        {AWCI_CLASS_COLORS.map((c, i) => {
+          const lo = i === 0 ? 0 : awciBounds[i - 1];
+          const hi = awciBounds[i];
+          return (
+            <li key={c}><Swatch color={c} />{classLabels[i] ?? `Classe ${i}`}
+              <span className="legend-range num">{hi === undefined ? `≥ ${lo}` : `${lo}–${hi}`}</span></li>
+          );
+        })}
+      </>
+    );
+  }
+  if (r.kind === "codes") {
+    return <>{r.labels.map((label, i) => <li key={label}>{r.colors[i] ? <Swatch color={r.colors[i]!} /> : <Swatch />}
+      {label}{r.colors[i] ? "" : " (transparent)"}</li>)}</>;
+  }
+  if (r.kind === "genus") {
+    return <>{GENUS_FAMILY.map((f) => <li key={f.label}><Swatch color={f.color} />{f.label}</li>)}
+      <li><Swatch />Ciel clair (transparent)</li></>;
+  }
+  const scale = r.scale ?? 1;
+  const [lo, hi] = r.invert ? [r.max, r.min] : [r.min, r.max];
+  const show = (v: number) => (def.id === "cloud_top_teff_k" ? fmt(v - 273.15, 0) : fmt(v * scale, scale < 1 ? 0 : 1));
+  return (
+    <li className="legend-ramp">
+      <span className="legend-gradient" style={{ background: `linear-gradient(to right, ${SEQ_BLUE.join(",")})` }} aria-hidden="true" />
+      <span className="legend-ends num"><span>{show(lo)}</span><span>{show(hi)} {def.unit}</span></span>
+    </li>
+  );
+}
+
+export function Legend(props: Props) {
+  return (
+    <figure className="legend" aria-label={`Légende : ${props.def.label}`}>
+      <figcaption>{props.def.label}{props.def.unit && props.def.render.kind === "continuous" ? "" : props.def.unit ? ` (${props.def.unit})` : ""}</figcaption>
+      <ul>
+        <Rows {...props} />
+        <li><Swatch hatch />Sans donnée, sous le relief ou indéterminé</li>
+      </ul>
+    </figure>
+  );
+}
