@@ -17,6 +17,18 @@ from fastapi.responses import Response
 from loguru import logger
 from pydantic import BaseModel
 
+from acf.awci.ops.cloud_profile import CloudProfile, load_cloud_profile
+from acf.awci.ops.clouds import (
+    CLEAR,
+    CONVECTIVE_CLASSES,
+    FT_PER_M,
+    GENUS_CODES,
+    GENUS_NAMES,
+    INDETERMINATE,
+    SPECIES_BITS,
+    column_layers,
+    metar_cloud_group,
+)
 from acf.awci.ops.domains import Domain
 from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, Profile, combine, load_profile
 from acf.awci.ops.registry import LAYERS, LEVEL_LAYERS, MODULES, SURFACE_LAYERS
@@ -27,6 +39,8 @@ _MODULES = MODULES
 _EXCLUDED = ["temporal", "confidence"]  # not fed in V1 (spec §5.2)
 #: Run ids are YYYYMMDDHH only - never a path fragment (path traversal guard).
 RunId = Annotated[str, Query(pattern=r"^\d{10}$", description="run id YYYYMMDDHH")]
+#: Grid decimation for the 3-D views: every 1st, 2nd or 4th cell.
+Stride = Annotated[int, Query(ge=1, le=4, description="grid stride: 1, 2 or 4")]
 
 
 class Provenance(BaseModel):
@@ -102,6 +116,16 @@ def _step_index(manifest: dict[str, Any], step: int) -> int:
     return manifest["steps"].index(step)
 
 
+def _run_layers(manifest: dict[str, Any], kind: str) -> tuple[str, ...]:
+    """Layers stored in this run (manifest), falling back to the registry when the manifest does not list them."""
+    return tuple(manifest.get(kind) or (LEVEL_LAYERS if kind == "level_layers" else SURFACE_LAYERS))
+
+
+def _require_layer(manifest: dict[str, Any], layer: str) -> None:
+    if layer not in _run_layers(manifest, "level_layers") and layer not in _run_layers(manifest, "surface_layers"):
+        raise HTTPException(404, f"layer {layer!r} not in run {manifest['run']} (ingested before SP1C?)")
+
+
 def _level_index(manifest: dict[str, Any], level: float) -> int:
     if level not in manifest["levels_hpa"]:
         raise HTTPException(400, f"level {level} hPa not in {manifest['levels_hpa']}")
@@ -155,6 +179,7 @@ def field(
     m = _manifest(request, domain, run)
     if layer not in LEVEL_LAYERS and layer not in SURFACE_LAYERS:
         raise HTTPException(400, f"unknown layer {layer!r}")
+    _require_layer(m, layer)
     si = _step_index(m, step)
     ds = _dataset(request, domain, run)
     if layer in LEVEL_LAYERS:
@@ -177,9 +202,11 @@ def field(
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
 
-def _column(ds: Any, si: int, i: int, j: int) -> dict[str, np.ndarray]:
-    """Every per-level layer at one (step, lat, lon) as a (level,) array - reads only that column's chunks."""
-    return {name: ds[name].isel(step=si, lat=i, lon=j).values for name in LEVEL_LAYERS}
+def _column(ds: Any, manifest: dict[str, Any], si: int, i: int, j: int) -> dict[str, np.ndarray]:
+    """Every per-level layer of this run at one (step, lat, lon) as a (level,) array - reads only that
+    column's chunks. Layers are taken from the manifest, so cubes ingested before SP1C stay readable."""
+    return {name: ds[name].isel(step=si, lat=i, lon=j).values for name in LEVEL_LAYERS
+            if name in _run_layers(manifest, "level_layers")}
 
 
 def _level_payload(column: dict[str, np.ndarray], li: int, thresholds: Any, profile: Profile) -> dict[str, Any]:
@@ -206,8 +233,10 @@ def point(request: Request, domain: str, run: RunId, step: int, level: float, la
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level,
-            "flight_level": m["flight_levels"][li], **_level_payload(_column(ds, si, i, j), li, thresholds, request.app.state.awci_profile),
-            "surface_layers": {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in SURFACE_LAYERS},
+            "flight_level": m["flight_levels"][li],
+            **_level_payload(_column(ds, m, si, i, j), li, thresholds, request.app.state.awci_profile),
+            "surface_layers": {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in SURFACE_LAYERS
+                               if name in _run_layers(m, "surface_layers")},
             "elevation_m": _num(ds["elevation"].isel(lat=i, lon=j).values),
             "provenance": _provenance(m, step), "source_tier": "nwp_forecast"}
 
@@ -219,7 +248,7 @@ def profile(request: Request, domain: str, run: RunId, step: int, lat: float, lo
     ds = _dataset(request, domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
     thresholds = request.app.state.awci_profile.level_thresholds
-    column = _column(ds, si, i, j)
+    column = _column(ds, m, si, i, j)
     levels = [{"level_hpa": p, "flight_level": fl, **_level_payload(column, li, thresholds, request.app.state.awci_profile)}
               for li, (p, fl) in enumerate(zip(m["levels_hpa"], m["flight_levels"]))]
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "levels": levels,
@@ -252,8 +281,117 @@ def registry(request: Request) -> dict[str, Any]:
             "profile": {"name": prof.name, "version": prof.version, "weights": prof.weights,
                         "interaction_weights": prof.interaction_weights, "min_present_weight": prof.min_present_weight,
                         "excluded_modules": list(_EXCLUDED)},
+            "cloud_profile": request.app.state.awci_cloud_profile.to_dict(),
+            "codes": {"genus": GENUS_CODES, "clear": CLEAR, "indeterminate": INDETERMINATE,
+                      "species_bits": SPECIES_BITS, "convective_classes": CONVECTIVE_CLASSES},
             "attribution": ATTRIBUTION, "license": LICENSE}
+
+
+_CLOUD_SURFACE = ("ceiling_m", "convective_class", "convective_top_m", "convective_top_temp_k", "cloud_top_teff_k",
+                  "column_condensate", "tcc", "cloud_cover_bias", "cloud_cover_low", "cloud_cover_mid",
+                  "cloud_cover_high", "cloud_cover_total_diag", "genus_low", "genus_mid", "genus_high",
+                  "species_flags", "cloud_base_lcl", "sp_hpa", "surface_height_m")
+
+
+def _genus_name(code: float | None) -> str | None:
+    if code is None:
+        return None
+    return {CLEAR: "clear", INDETERMINATE: "indeterminate"}.get(int(code), GENUS_NAMES.get(int(code)))
+
+
+@router.get("/clouds")
+def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon: float) -> dict[str, Any]:
+    """Cloud layers at a point: probable genus and species, base/top, oktas, ICAO ceiling, convection,
+    model METAR-style cloud group. Model diagnostics (status HYPOTHESIS), never observations."""
+    m = _manifest(request, domain, run)
+    _require_layer(m, "cloud_fraction")
+    si = _step_index(m, step)
+    ds = _dataset(request, domain, run)
+    i, j = _nearest(ds, _domain(request, domain), lat, lon)
+    col = {name: ds[name].isel(step=si, lat=i, lon=j).values for name in ("cloud_fraction", "cloud_genus", "gh")}
+    sfc = {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in _CLOUD_SURFACE}
+    elevation = sfc["surface_height_m"] or 0.0  # sea level over sea (SRTM15+ elevation carries bathymetry)
+    cloud_profile: CloudProfile = request.app.state.awci_cloud_profile
+    nan = float("nan")
+    layers = column_layers(
+        np.asarray(m["levels_hpa"], dtype=float), col["cloud_fraction"], col["cloud_genus"], col["gh"], elevation,
+        sfc["sp_hpa"] if sfc["sp_hpa"] is not None else nan,
+        sfc["species_flags"] if sfc["species_flags"] is not None else nan,
+        sfc["convective_class"] if sfc["convective_class"] is not None else nan,
+        sfc["convective_top_m"] if sfc["convective_top_m"] is not None else nan,
+        sfc["cloud_base_lcl"] if sfc["cloud_base_lcl"] is not None else nan, cloud_profile,
+    )
+    ceiling = sfc["ceiling_m"]
+    cls = int(sfc["convective_class"] or 0)
+    names = ("cloud_fraction", "cloud_genus", "ceiling_m", "convective_class", "species_flags", "cloud_top_teff_k",
+             "column_condensate", "cloud_cover_total_diag")
+    return {
+        "lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "elevation_m": elevation,
+        "layers": layers, "metar": "MODEL " + metar_cloud_group(layers),
+        "ceiling_m": ceiling, "ceiling_ft": None if ceiling is None else int(ceiling * FT_PER_M),
+        "convective": {"class": cls, "label": CONVECTIVE_CLASSES[cls], "top_m": sfc["convective_top_m"],
+                       "top_temp_k": sfc["convective_top_temp_k"]},
+        "cloud_top_teff_k": sfc["cloud_top_teff_k"], "column_condensate": sfc["column_condensate"],
+        "tcc": sfc["tcc"], "cloud_cover_bias": sfc["cloud_cover_bias"],
+        "cloud_covers": {"low": sfc["cloud_cover_low"], "mid": sfc["cloud_cover_mid"],
+                         "high": sfc["cloud_cover_high"], "total_diag": sfc["cloud_cover_total_diag"]},
+        "genus": {e: _genus_name(sfc[f"genus_{e}"]) for e in ("low", "mid", "high")},
+        "scientific_status": {name: LAYERS[name].status for name in names},
+        "cloud_profile": {"name": cloud_profile.name, "version": cloud_profile.version},
+        "provenance": _provenance(m, step), "source_tier": "nwp_forecast",
+    }
+
+
+def _grid_headers(lats: np.ndarray, lons: np.ndarray, unit: str) -> dict[str, str]:
+    return {"X-AWCI-Lats": f"{lats[0]},{lats[-1]}", "X-AWCI-Lons": f"{lons[0]},{lons[-1]}",
+            "X-AWCI-Nodata": "NaN", "X-AWCI-Unit": unit, "X-AWCI-Attribution": "ECMWF CC-BY-4.0"}
+
+
+def _check_stride(stride: int) -> None:
+    if stride not in (1, 2, 4):
+        raise HTTPException(422, f"stride must be 1, 2 or 4, got {stride}")
+
+
+@router.get("/volume", response_model=None)
+def volume(request: Request, domain: str, run: RunId, layer: str, step: int = Query(ge=0, le=384),
+           stride: Stride = 1) -> Response:
+    """3-D field for the volume view: float32 values (level, lat, lon) followed by gh on the same grid."""
+    _check_stride(stride)
+    m = _manifest(request, domain, run)
+    if layer not in LEVEL_LAYERS:
+        raise HTTPException(400, f"layer {layer!r} is not a per-level layer")
+    _require_layer(m, layer)
+    si = _step_index(m, step)
+    ds = _dataset(request, domain, run)
+    values = ds[layer].isel(step=si).values[:, ::stride, ::stride]
+    gh = ds["gh"].isel(step=si).values[:, ::stride, ::stride]
+    lats, lons = ds["lat"].values[::stride], ds["lon"].values[::stride]
+    body = np.ascontiguousarray(values, dtype="<f4").tobytes() + np.ascontiguousarray(gh, dtype="<f4").tobytes()
+    unit = LAYERS[layer].unit if layer in LAYERS else ""
+    return Response(content=body, media_type="application/octet-stream", headers={
+        "X-AWCI-Shape": ",".join(str(n) for n in values.shape), "X-AWCI-Parts": "values,gh",
+        "X-AWCI-Levels": ",".join(f"{p:g}" for p in m["levels_hpa"]), **_grid_headers(lats, lons, unit)})
+
+
+@router.get("/terrain", response_model=None)
+def terrain(request: Request, domain: str, run: RunId, stride: Stride = 1) -> Response:
+    """Surface height (m AMSL: SRTM15+ over land, 0 m over sea) of the run's grid, float32 (lat, lon).
+    Runs ingested before SP1C only have the raw SRTM15+ elevation, bathymetry included: 404."""
+    _check_stride(stride)
+    m = _manifest(request, domain, run)
+    _require_layer(m, "surface_height_m")
+    ds = _dataset(request, domain, run)
+    first = next(si for si, s in enumerate(m["steps"]) if s not in m["missing_steps"])
+    values = ds["surface_height_m"].isel(step=first).values[::stride, ::stride]
+    lats, lons = ds["lat"].values[::stride], ds["lon"].values[::stride]
+    return Response(content=np.ascontiguousarray(values, dtype="<f4").tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"X-AWCI-Shape": f"{values.shape[0]},{values.shape[1]}", **_grid_headers(lats, lons, "m")})
 
 
 def default_profile() -> Any:
     return load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH)
+
+
+def default_cloud_profile() -> CloudProfile:
+    return load_cloud_profile()
