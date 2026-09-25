@@ -1,5 +1,6 @@
 import { DashboardHeader } from "@/components/dashboard/header"
 import { ControlBar } from "@/components/dashboard/control-bar"
+import { HazardBand } from "@/components/dashboard/hazard-band"
 import { KpiBar } from "@/components/dashboard/kpi-bar"
 import { GlobalMap } from "@/components/dashboard/global-map"
 import { RegionalMap } from "@/components/dashboard/regional-map"
@@ -20,6 +21,7 @@ export default function Page() {
 
           <main className="flex-1 space-y-3 p-3 md:p-4">
             <ControlBar />
+            <HazardBand />
             <KpiBar />
 
             {/* Maps row */}

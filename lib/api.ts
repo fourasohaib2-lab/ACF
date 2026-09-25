@@ -117,6 +117,14 @@ export interface ComplexityFieldParams {
   seed?: number
   n_lat?: number
   n_lon?: number
+  /** Real opt-in physics, each a genuine extra per-point computation
+   * (see GET /complexity/field's own docstring for measured real
+   * cost) - default off, matching the backend's own default. */
+  compute_convective_energy?: boolean
+  compute_wind_shear?: boolean
+  compute_precipitation_phase?: boolean
+  compute_ceiling?: boolean
+  compute_visibility?: boolean
 }
 
 /** Real classification band from `AWCICalculator.LEVEL_THRESHOLDS` -
@@ -140,11 +148,44 @@ export interface ComplexityField {
   status: string
   is_real_data: boolean
   honest_limitation: string
+  /** Present only when `compute_wind_shear: true` was requested -
+   * real bulk wind shear (m/s), not a 0-100 score. */
+  wind_shear_field?: (number | null)[][]
+  /** Present only when `compute_precipitation_phase: true` was
+   * requested - real severity in [0, 1] (multiply by 100 to compare
+   * with the other 0-100 module scores). */
+  precipitation_phase_severity_field?: (number | null)[][]
 }
 
 export function getComplexityField(params: ComplexityFieldParams = {}): Promise<ComplexityField> {
-  const { model, level, steps, seed, n_lat, n_lon } = params
-  return request(`/complexity/field${query({ model, level, steps, seed, n_lat, n_lon })}`)
+  const {
+    model,
+    level,
+    steps,
+    seed,
+    n_lat,
+    n_lon,
+    compute_convective_energy,
+    compute_wind_shear,
+    compute_precipitation_phase,
+    compute_ceiling,
+    compute_visibility,
+  } = params
+  return request(
+    `/complexity/field${query({
+      model,
+      level,
+      steps,
+      seed,
+      n_lat,
+      n_lon,
+      compute_convective_energy,
+      compute_wind_shear,
+      compute_precipitation_phase,
+      compute_ceiling,
+      compute_visibility,
+    })}`,
+  )
 }
 
 export interface VerticalProfileParams {
