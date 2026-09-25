@@ -2,6 +2,7 @@
 
 **Date :** 2026-09-25 · **Statut :** en revue · **Sous-projet :** 2 / 6
 **Entrées :** spec SP1 (`2026-09-25-awci-web-sp1-data-science-design.md`), API `/api/v1/awci/*` (PR #6),
+spec SP1C nuages (`2026-09-25-awci-web-sp1c-clouds-design.md`, prérequis des couches nuageuses),
 maquette de référence fournie par l'utilisateur (dashboard « AWCI – Aviation Weather Complexity Index »,
 thème sombre, copiée en `docs/reference/awci_web_mockup.jpg`).
 
@@ -25,7 +26,8 @@ avec leur source, leur heure et leur statut scientifique.
 6. Fonctionne sur un réseau interne sans accès Internet côté navigateur (polices, icônes, fond de
    carte embarqués ; imagerie relayée par le serveur).
 
-**Hors périmètre SP2 :** aéroports/METAR/TAF/SIGMET (SP3), route/coupe verticale/segments/exports
+**Hors périmètre SP2 :** vue volume 3D/4D (SP2B, spec `2026-09-25-awci-web-sp2b-3d4d-design.md`),
+aéroports/METAR/TAF/SIGMET (SP3), route/coupe verticale/segments/exports
 (SP4), ensemble ECMWF (SP5), multi-modèle (SP6), authentification, i18n autre que le français
 (les libellés sont regroupés pour une traduction ultérieure).
 
@@ -67,15 +69,20 @@ Dépendances npm (runtime) : `react`, `react-dom`, `maplibre-gl`, `@tanstack/rea
 | « Last Update » | heure d'ingestion (manifest) | 2 |
 | Area / Date & Time / Forecast / Model | domaine (`/domains`), validité UTC + pas ±3 h + « Maintenant », échéance +h, **« ECMWF IFS 0,25° »** | 2 |
 | AWCI GLOBAL (jauge) | `/summary` : P95 de l'AWCI sur le domaine au niveau/échéance + classe | 2 |
-| Turbulence / Convection / Icing / Wind Shear / Visibility / Ceiling | `/summary` (définitions §5) | 2 |
+| Turbulence / Convection / Icing / Wind Shear / Ceiling | `/summary` (définitions §5) ; plafond selon la définition OACI (SP1C) | 2 |
+| KPI « Visibility » | **non prévu** : l'IFS Open Data ne fournit aucune visibilité ; les diagnostics publiés fondés sur l'humidité relative à 2 m (par ex. Doran et al. 1999, utilisé dans le RUC) sont peu fiables pour le brouillard et restent candidats pour la piste validation, pas pour l'affichage opérationnel ; carte remplacée par **« Cb / TCU »** (SP1C) ; visibilité **observée** (METAR) en SP3 | 2/3 |
 | Map Layers (AWCI, Turbulence, Convection, Icing, Wind Shear, Ceiling, Precipitation) | couches du cube SP1 | 2 |
-| Map Layers « Satellite » | EUMETView MTG FCI (IR 10,5 µm, GeoColour, Dust RGB, Fog RGB) + MSG Convection RGB, relais `/wms` | 2 |
+| **Nuages** (demande prioritaire) | couches SP1C : couverture par étage (bas/moyen/haut), genre probable par étage, plafond OACI, classe convective, sommets, T_e, condensat ; panneau **Nuages** §7 | 2 |
+| Snow & Icing Accumulation | SP1C : `snowfall_mm`, `snow_depth_cm`, `freezing_precip_mm` (cumul verglaçant, pas d'épaisseur de glace) | 2 |
+| Dust / Sand | proxy poussière du cube SP1 (HYPOTHESIS) + MTG Dust RGB observé | 2 |
+| Volcanic Ash | MSG Ash RGB observé (overlay) ; SIGMET VA et avis VAAC en SP3 | 2/3 |
+| Map Layers « Satellite » | EUMETView MTG FCI (IR 10,5 µm, GeoColour, Dust RGB, Fog RGB, **Cloud Type RGB, Cloud Phase RGB**) + MSG (Convection RGB, **Ash RGB, Cloud Top Height, Cloud Mask, RDT**), relais `/wms` | 2 |
 | Map Layers « Lightning » | EUMETView MTG LI Accumulated Flash Area, relais `/wms` | 2 |
 | Map Layers « Radar » | **non proposé** (couverture quasi nulle Afrique du Nord, licence) | — |
 | Map Layers « Airports », « Flight Routes » | SP3 / SP4 | 3/4 |
 | Map Layers « Model Disagreement » | SP6 | 6 |
 | Lignes blanches (vent) | **lignes de courant réelles** calculées côté client depuis `u`,`v` du niveau | 2 |
-| 2D / 3D / 4D | **2D seul** en SP2 ; « 4D » = lecture animée des échéances (bouton ▶) ; 3D non retenu (pas de valeur opérationnelle démontrée) | 2 |
+| 2D / 3D / 4D | 2D + lecture animée en SP2 ; **3D (voxels réels, relief, exagération affichée) et 4D (3D animée sur les échéances) en SP2B** — décision argumentée dans sa spec | 2/2B |
 | Curseur temporel, ▶, « +12h » | échéances 0→72 h (pas manquants grisés), lecture 1 pas/s, respect reduced-motion | 2 |
 | Légende AWCI verticale | palette validée §4 + entrée « sans donnée » hachurée | 2 |
 | Current Situation | classe du P95, dangers principaux triés (KPI ≥ seuil), zone = domaine, altitude = niveau(x) où le P95 AWCI est maximal (depuis `/summary` par niveau), validité | 2 |
@@ -84,8 +91,10 @@ Dépendances npm (runtime) : `react`, `react-dom`, `maplibre-gl`, `@tanstack/rea
 | Vertical Cross Section, Flight Route Analysis | SP4 | 4 |
 | Atmospheric Profile | `/profile` au point choisi : T, Td (serveur), vent, en fonction de l'altitude géopotentielle réelle (`gh`), niveaux sous le relief omis | 2 |
 | Time Evolution (Global / Route / Airport) | **Point** (`/timeseries`) et **Domaine** (`/summary` sur toutes les échéances) ; Route/Airport en SP4/SP3 | 2 |
-| AWCI Vertical Profile (barres + empilement 3D) | barres par niveau depuis `/profile` ; l'empilement 3D décoratif n'est pas repris | 2 |
-| Recent Alerts / Latest Updates / Quick Actions | SP3 (alertes SIGMET/METAR) ; « Latest Updates » = journal des runs ingérés (2) ; Quick Actions en SP4 | 2/3/4 |
+| AWCI Vertical Profile (barres + empilement 3D) | barres par niveau depuis `/profile` (SP2) ; colonne 3D au point, mêmes données (SP2B) | 2/2B |
+| Recent Alerts / Latest Updates / Quick Actions | SP3 (alertes SIGMET/METAR) ; « Latest Updates » = journal des runs ingérés (2) ; « Save Scenario » = vues nommées (état d'URL, stockage local du navigateur) en SP2 ; « Generate Report », « Export Data », « Route Analysis » en SP4 | 2/3/4 |
+| Navigation « Model Comparison », « Uncertainty » | SP6, SP5 | 5/6 |
+| Navigation « API » | page de la documentation OpenAPI de FastAPI + navigateur du `/registry` (unités, équations, statuts) | 2 |
 | Utilisateur « sfoura / Meteorologist » | **non affiché** (pas de comptes en V1) | — |
 | Emojis | remplacés par Lucide (SVG) | 2 |
 
@@ -123,7 +132,9 @@ Chaque indicateur déclare définition, unité, statut dans `/registry` :
 | `icing_area_pct` | % des cellules valides avec `icing_potential` = 1 au niveau | % | idem |
 | `shear_p95` | 95ᵉ centile de `vertical_shear` | s⁻¹ (affiché ×10⁻³) | ≥ 5×10⁻³ attention, ≥ 8×10⁻³ sérieux |
 | `heavy_precip_area_pct` | % avec `precip_class` ≥ 3 (OMM : forte) | % | idem aires |
-| `low_ceiling_area_pct` | % avec `cloud_base_lcl` < 304,8 m (IFR 1000 ft) | % | idem aires |
+| `low_ceiling_area_pct` | % avec `ceiling_m` (plafond OACI, SP1C) < 304,8 m (1000 ft) | % | idem aires |
+| `cb_area_pct` | % des cellules avec `convective_class` ≥ 3 (Cb, SP1C) | % | idem aires |
+| `cloud_cover_bias_mean` | moyenne de la couverture diagnostiquée − `tcc` IFS (contrôle SP1C) | — | \|biais\| > 0,15 → « dégradé » |
 | `valid_cells_pct` | % de cellules non nulles au niveau (masque relief) | % | — |
 | `awci_p95_by_level` | P95 AWCI pour chaque niveau (pour « altitude principale ») | 0–100 | — |
 
@@ -133,7 +144,9 @@ HYPOTHESIS**, exposés par `/registry` ; les grandeurs elles-mêmes sont des sta
 ### 5.2 `GET /api/v1/awci/wms?layer=&time=&bbox=&width=&height=`
 Relais **en lecture seule** vers `https://view.eumetsat.int/geoserver/wms` (WMS 1.3.0, EPSG:3857).
 - Liste blanche de couches : `mtg_fd:ir105_hrfi`, `mtg_fd:rgb_geocolour`, `mtg_fd:rgb_dust`,
-  `mtg_fd:rgb_fog`, `msg_fes:rgb_convection`, `mtg_fd:li_afa`. Tout autre nom → 400.
+  `mtg_fd:rgb_fog`, `mtg_fd:rgb_cloudtype`, `mtg_fd:rgb_cloudphase`, `msg_fes:rgb_convection`,
+  `msg_fes:rgb_ash`, `msg_fes:cth`, `msg_fes:clm`, `msg_fes:rdt`, `mtg_fd:li_afa` (disponibilité et pas
+  de temps vérifiés dans les capacités du 2026-09-25 : FCI 10 min, MSG 15 min). Tout autre nom → 400.
 - `bbox` 4 flottants bornés à l'emprise Web-Mercator, `width`/`height` ≤ 2048 ; `time` ISO-8601
   optionnel (absent = dernière image, dont l'heure est lue dans les capacités et renvoyée en
   en-tête `X-AWCI-Observed-At`).
@@ -175,7 +188,15 @@ Calculé par `acf.awci.ops.thermo.dewpoint_k_from_vapor_pressure(vapor_pressure_
 - **Évolution temporelle** : courbe AWCI au point (et P95 domaine), échéance courante marquée,
   hover crosshair + tooltip ; tableau de données accessible.
 - **Profil vertical AWCI** : barres par niveau (FL + hPa), niveaux sous le relief marqués « sous le sol ».
-- **Profil atmosphérique** : T et Td vs altitude géopotentielle, barbules ou flèches de vent.
+- **Profil atmosphérique** : T et Td vs altitude géopotentielle, barbules ou flèches de vent,
+  bandes de fraction nuageuse par niveau (SP1C) en marge.
+- **Nuages** (au point, `/clouds`) : colonne verticale en FL avec les couches (base–sommet ± demi-
+  intervalle, octas, genre probable, espèces), repères d'étage (σ ECMWF) et des étages OMM de
+  référence, plafond OACI, sommet convectif et T_e, ligne « modèle : BKN030 OVC080 CB », `tcc` IFS
+  et biais ; évolution temporelle des genres par étage (bandes) pour la variabilité temporelle.
+  Libellé permanent « genre probable — diagnostic modèle, statut HYPOTHESIS ».
+- **Comparaison modèle / observation** : balayage (swipe) entre `cloud_top_teff_k` (prévision) et
+  MTG IR 10,5 µm (observé), heures de validité et d'observation affichées côte à côte.
 
 Tous les graphiques suivent le skill `dataviz` (un seul axe, traits fins, hover par défaut, légende
 si ≥ 2 séries, table alternative).
