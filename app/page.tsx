@@ -1,4 +1,5 @@
 import { DashboardHeader } from "@/components/dashboard/header"
+import { Sidebar } from "@/components/dashboard/sidebar"
 import { ControlBar } from "@/components/dashboard/control-bar"
 import { HazardBand } from "@/components/dashboard/hazard-band"
 import { KpiBar } from "@/components/dashboard/kpi-bar"
@@ -16,36 +17,47 @@ export default function Page() {
   return (
     <ComplexityFieldProvider>
       <RouteWeatherProvider>
-        <div className="flex min-h-screen flex-col bg-background">
-          <DashboardHeader />
+        <div className="flex min-h-screen bg-background">
+          <Sidebar />
 
-          <main className="flex-1 space-y-3 p-3 md:p-4">
-            <ControlBar />
-            <HazardBand />
-            <KpiBar />
+          <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
+            <DashboardHeader />
 
-            {/* Maps row */}
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-              <div className="xl:col-span-2">
-                <GlobalMap />
-              </div>
-              <div>
-                <RegionalMap />
-              </div>
-            </div>
+            <main className="flex-1 space-y-3 p-3 md:p-4">
+              <section id="overview" className="scroll-mt-3 space-y-3">
+                <ControlBar />
+                <HazardBand />
+                <KpiBar />
+              </section>
 
-            {/* Analytics row */}
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
-              <VerticalCrossSection />
-              <RadarComplexity />
-              <div className="lg:col-span-2 xl:col-span-1 xl:row-span-1">
-                <RouteProfile />
-              </div>
-              <RiskPanel />
-            </div>
-          </main>
+              {/* Maps row */}
+              <section id="map" className="scroll-mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <div className="xl:col-span-2">
+                  <GlobalMap />
+                </div>
+                <div>
+                  <RegionalMap />
+                </div>
+              </section>
 
-          <FooterBar />
+              <section id="hazards" className="scroll-mt-3">
+                <RiskPanel />
+              </section>
+
+              {/* Analytics row */}
+              <section id="analysis" className="scroll-mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                <VerticalCrossSection />
+                <RadarComplexity />
+                <div className="lg:col-span-2 xl:col-span-1">
+                  <RouteProfile />
+                </div>
+              </section>
+            </main>
+
+            <section id="reports" className="scroll-mt-3">
+              <FooterBar />
+            </section>
+          </div>
         </div>
       </RouteWeatherProvider>
     </ComplexityFieldProvider>
