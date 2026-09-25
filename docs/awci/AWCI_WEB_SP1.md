@@ -173,31 +173,36 @@ diagnostiquée face au `tcc` IFS passe de 0,266 à 0,262, avec un biais de +0,03
 (écart-type ≈ 0,26) est **structurel** : 12 niveaux standard contre le schéma nuageux pronostique de
 l'IFS sur 137 niveaux. Une calibration sur plusieurs runs et régimes reste à faire.
 
-**Mesures réelles** (run IFS 2026-09-25 12Z, `north_africa`, 25 échéances, profil 1.1.0) :
+**Mesures réelles** (run IFS 2026-09-25 12Z, `north_africa`, 25 échéances, profil 1.1.0, après
+les corrections de la revue finale) :
 
 | Mesure | Résultat |
 |---|---|
-| Ingestion | 559 s, contre 8,1 min en SP1 (budget +2 min respecté) |
-| Cube | 359 Mo (+14 %) |
+| Ingestion | 577 s, contre 8,1 min en SP1 (budget +2 min respecté) |
+| Cube | 361 Mo (+15 %) |
+| Hauteur de surface IFS | de −369 m (mer Morte) à 2 899 m, médiane 280 m |
 | Biais moyen de couverture | de +0,004 à +0,080 selon l'échéance, statut « ok » partout |
-| Latences p95 | `/clouds` 14,5 ms ; `/volume` 11,9 ms (stride 1) et 6,0 ms (stride 2) ; `/terrain` 5,7 ms ; `/point` 41 ms |
-| Genre par étage (% des cellules × échéances) | bas : clair 74,5, Cu 12,5, Sc 9,4, Cb 2,7, Ns 0,6, St 0,3 ; moyen : clair 56,4, Cu 14,3, Ac 13,2, As 10,9, Cb 2,8, Ns 1,4 ; haut : clair 46,2, Cs 21,7, Ci 11,6, Cu 11,8, As 4,5, Cb 2,8 |
-| Convection | TCU 14,3 %, Cb 2,8 % (100 % précipitants), Cu humilis/mediocris 0,2 % |
-| Plafond < 1000 ft | 1,2 % |
-| Espèces | castellanus 16,3 %, nebulosus 14,1 %, fractus 0,3 %, spissatus 0,3 %, lenticularis 0,04 % |
+| Latences p95 | `/clouds` 18,6 ms ; `/volume` 11,5 ms (stride 1) et 6,6 ms (stride 2) ; `/terrain` 4,9 ms ; `/point` 32 ms |
+| Genre par étage (% des cellules × échéances) | bas : clair 74,5, Cb 11,8, Sc 9,3, Cu 3,4, Ns 0,6, St 0,4 ; moyen : clair 56,4, Cb 13,2, Ac 13,2, As 10,9, Cu 3,9, Ns 1,4 ; haut : clair 46,2, Cs 21,7, Cb 13,2, Ci 11,6, As 4,5, Cu 1,4 |
+| Convection | Cb 13,2 % (capillatus 9,3, calvus 4,0), TCU 3,9 %, Cu humilis/mediocris 0,2 % |
+| Plafond < 1000 ft | 1,4 % |
+| Espèces | nebulosus 13,1 %, castellanus 12,0 %, spissatus 0,3 %, lenticularis 0,07 %, fractus 0,0 % |
 
 Sur la fixture humide (Atlantique tropical, convection profonde), la température d'émission tirée de
 l'OLR (≈ 209 K) et la température du sommet de la particule (≈ 214 K) concordent. Ces deux grandeurs
 sont indépendantes l'une de l'autre.
 
 **Limites et priorités de validation** :
-- **TCU probablement surdiagnostiqués** (14 % des cellules, 21 % à 35–40°N sur la Méditerranée) et
-  Cu humilis/mediocris presque absents. Avec des niveaux espacés de 1 à 2 km, la profondeur
-  convective est surestimée, et l'inhibition entre deux niveaux n'est pas vue. Priorité n° 1 : tables
-  de contingence contre les groupes TCU/CB des METAR (SP3), avant tout réglage.
+- **Convection profonde probablement surdiagnostiquée** : Cb sur 13 % des cellules. Avant la revue,
+  la règle exigeait de la pluie au sol ; les Cb secs à base haute apparaissaient alors en TCU (14 %).
+  Cu humilis/mediocris sont presque absents. La particule de surface ignore l'inhibition entre deux
+  niveaux standard, et la profondeur est quantifiée par des niveaux espacés de 1 à 2 km. Pour
+  l'aviation, l'excès de Cb est l'erreur la moins dangereuse, mais il nuit à la confiance.
+  Priorité n° 1 : tables de contingence contre les groupes TCU/CB des METAR, RDT et la foudre (SP3),
+  puis ajout d'un critère d'inhibition (CIN et LFC par la particule), avant tout réglage de seuil.
 - Couches fines (Sc de 200 m, Ci fin) manquées par la résolution verticale ; incertitude de la base
   renvoyée (`base_uncertainty_m`).
 - Le plafond ignore les couches convectives, dont la couverture n'est pas connue à l'échelle de la
   maille : la ligne METAR modèle les marque `///…CB`.
-- *Castellanus* fréquent (16 %) : un critère d'instabilité conditionnelle entre deux niveaux
+- *Castellanus* fréquent (12 %) : un critère d'instabilité conditionnelle entre deux niveaux
   standard est grossier ; à valider.
