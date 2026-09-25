@@ -244,6 +244,23 @@ Une forte pluie tropicale chaude s'affiche donc « Icing: High ».
 
 ## 7. Tests
 
-Voir la section « Tests exécutés » du compte rendu de session : suite
-AWCI + web exécutée fichier par fichier sous Python 3.12 /
-`QT_QPA_PLATFORM=offscreen`.
+Suite AWCI + web (110 fichiers) exécutée sous Python 3.12,
+`QT_QPA_PLATFORM=offscreen`, extras `gui,geospatial,science,web,
+monitoring,dev,hpc,satellite,formats` + `torch` CPU :
+
+- **1 168 passés, 27 ignorés, 0 échec** en fin de compte. Les tests
+  ignorés sont conditionnés à l'archive locale `~/RESTOR`, absente de cet
+  environnement : la lecture réelle de l'archive ALADIN n'a donc **pas**
+  été vérifiée ici.
+- 13 échecs initiaux dus uniquement à l'absence de `torch` (extra `ai`) :
+  tous passent une fois torch installé. Autrement dit, le lanceur ESOC,
+  le champ AWCI ESOC et la page web dépendent de torch à l'import.
+- Fragilité observée : lancés en 4 lots parallèles,
+  `test_awci_dashboard_hpc_and_import::…without_a_real_ssh_transport…`
+  a dépassé son `waitUntil(5000 ms)` et un lot s'est terminé par un
+  segfault (code 139). Aucun des deux ne se reproduit en exécution
+  isolée : tests sensibles à la charge machine.
+- Lancée en un seul processus, la suite complète a dépassé le
+  `timeout = 60 s` par test sur
+  `test_imported_cross_section_survives_revert_to_demo`, même cause
+  probable.
