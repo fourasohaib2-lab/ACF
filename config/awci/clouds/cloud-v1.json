@@ -1,0 +1,33 @@
+{
+  "name": "cloud-v1",
+  "version": "1.0.0",
+  "rh_critical": {"low": 0.80, "mid": 0.70, "high": 0.70},
+  "sigma_bounds": {"low_mid": 0.8, "mid_high": 0.45},
+  "layer_min_fraction": 0.125,
+  "ceiling_max_base_m": 6000.0,
+  "bias_degraded_threshold": 0.15,
+  "convection": {
+    "cape_min_j_kg": 100.0, "precip_min_mm_h": 0.1, "cb_min_depth_m": 6000.0, "tcu_min_depth_m": 3000.0,
+    "humilis_max_depth_m": 1000.0, "glaciation_temp_k": 253.15, "capillatus_temp_k": 235.15
+  },
+  "genus": {
+    "st_max_base_m": 600.0, "ns_min_depth_m": 3000.0, "as_min_depth_m": 1500.0, "cc_max_depth_m": 1500.0,
+    "cs_min_oktas": 5, "continuous_precip_mm_h": 0.1
+  },
+  "species": {
+    "lenticularis_min_wind_m_s": 10.0, "lenticularis_min_relief_m": 300.0, "lenticularis_froude_min": 0.5,
+    "lenticularis_froude_max": 1.5, "fractus_min_wind_m_s": 10.0, "nebulosus_min_oktas": 7,
+    "nebulosus_max_std": 0.1, "spissatus_min_condensate_kg_m2": 0.05
+  },
+  "references": {
+    "rh_critical": "Sundqvist, Berge & Kristjansson (1989), Mon. Wea. Rev. 117; initial values ACF choice (HYPOTHESIS), calibrated against IFS tcc by tools/awci/calibrate_cloud_rhc.py",
+    "sigma_bounds": "ECMWF parameter database, low/medium/high cloud cover (params 186-188)",
+    "layer_min_fraction": "1 okta, smallest reportable amount (FEW): ICAO Annex 3 App. 3, WMO code table 2700",
+    "ceiling_max_base_m": "ICAO Annex 2, definition of ceiling (below 6000 m / 20000 ft, more than half the sky)",
+    "glaciation_temp_k": "-20 degC: glaciation of convective tops observed near -20 to -25 degC, Rosenfeld & Lensky (1998), BAMS 79",
+    "capillatus_temp_k": "-38 degC: homogeneous freezing of supercooled droplets, Pruppacher & Klett (1997)",
+    "lenticularis_froude": "mountain-wave regime Fr = U/(N h) of order 1, Durran (1990), Meteor. Monogr. 23; bounds ACF choice",
+    "other": "ACF choices, status HYPOTHESIS, to be validated against METAR cloud groups (SP3)"
+  },
+  "calibration": null
+}
