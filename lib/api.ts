@@ -510,6 +510,24 @@ export function getObservations(icaoCode: string): Promise<ObservationsSnapshot>
   return request(`/observations/${icaoCode}`)
 }
 
+// --------------------------------------------------------------------- /reports
+
+/** Mirrors `awci.reports.aviation_report.AviationReport` - `decision`
+ * and `audit` are honestly `null` from this endpoint (it receives no
+ * real AWCI module scores to build them from - see the route's own
+ * docstring), never fabricated placeholder sections. */
+export interface AviationReport {
+  icao_code: string
+  generated_at: string
+  weather: AirportWeatherSnapshot
+  decision: Record<string, unknown> | null
+  audit: Record<string, unknown> | null
+}
+
+export function getAviationReport(icaoCode: string): Promise<AviationReport> {
+  return request(`/reports/${icaoCode}`)
+}
+
 // --------------------------------------------------------------------- /hazards
 
 /** Mirrors `awci.knowledge.hazards.aviation_hazards.AviationHazard`. */

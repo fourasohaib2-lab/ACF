@@ -16,6 +16,7 @@ import { AwciVerticalProfileTable } from "@/components/dashboard/awci-vertical-p
 import { RadarComplexity } from "@/components/dashboard/radar-complexity"
 import { RouteProfile } from "@/components/dashboard/route-profile"
 import { RiskPanel } from "@/components/dashboard/risk-panel"
+import { OpsFooterPanel } from "@/components/dashboard/ops-footer-panel"
 import { FooterBar } from "@/components/dashboard/footer-bar"
 import { ComplexityFieldProvider } from "@/lib/hooks/use-complexity-field"
 import { RouteWeatherProvider } from "@/lib/hooks/use-route-weather"
@@ -89,11 +90,16 @@ export default function Page() {
                       <AwciVerticalProfileTable />
                     </div>
                   </div>
+
+                  {/* Operations footer - real alerts, real session log, functional quick actions */}
+                  <section id="reports" className="scroll-mt-3">
+                    <div className="h-72">
+                      <OpsFooterPanel />
+                    </div>
+                  </section>
                 </main>
 
-                <section id="reports" className="scroll-mt-3">
-                  <FooterBar />
-                </section>
+                <FooterBar />
               </div>
             </div>
           </VerticalProfileProvider>
