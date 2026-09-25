@@ -1002,7 +1002,7 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
         e_base = _take(etage, base)
         count = mask.sum(axis=0)
         total = np.where(mask, np.nan_to_num(instability), 0.0).sum(axis=0)
-        valid = np.where(mask, np.isfinite(instability), False).all(axis=0)
+        valid = np.where(mask, np.isfinite(instability), True).all(axis=0)
         mean_pi = np.where(present & valid, total / np.maximum(count, 1), np.nan)
         code = _genus(e_base, depth, n_ok, base_agl, mean_pi < 0.0, precip, g)
         code = np.where(present, np.where(np.isfinite(mean_pi), code, INDETERMINATE), CLEAR)
