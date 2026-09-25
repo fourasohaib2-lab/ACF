@@ -18,6 +18,20 @@ coastal distance/thickness limits) that the risk proxy does not state
 Source: aviation meteorology reference material, cross-checked against
 https://www.lavionnaire.fr/MeteoBrouillard.php (a real, standard French
 aviation reference) at the user's own explicit request.
+
+FOG_VISIBILITY_MAX_KM (1.0 km) independently upgraded 2026-09-25 to a
+real primary WMO citation: the WMO International Cloud Atlas states
+"[t]he term 'fog' is used when microscopic droplets reduce horizontal
+visibility at the Earth's surface to less than 1 km" (WMO, cloudatlas.
+wmo.int, "Fog compared with mist") - an exact match, not merely a
+secondary-source cross-check. That same primary source defines "mist"
+only as "visibility [that does] not reduce ... to less than 1 km" -
+open-ended, with no fixed upper km bound (mist is distinguished from
+haze by relative humidity, not a hard distance cutoff). This module's
+own `MIST_VISIBILITY_RANGE_KM` upper bound (5.0 km) is therefore kept
+as the honestly-disclosed common aviation-training convention it
+always was (lavionnaire.fr), not upgraded to a WMO-cited figure - the
+real WMO definition does not specify one to cite.
 """
 
 from __future__ import annotations
@@ -36,7 +50,12 @@ class FogType(str, Enum):
 
 
 #: Real visibility definitions distinguishing mist ("brume") from fog
-#: ("brouillard") - mist is the lower-density regime, fog the denser one.
+#: ("brouillard") - mist is the lower-density regime, fog the denser
+#: one. FOG_VISIBILITY_MAX_KM (1.0) is a primary WMO International
+#: Cloud Atlas citation; MIST_VISIBILITY_RANGE_KM's upper bound (5.0)
+#: is the aviation-training convention (lavionnaire.fr) - see module
+#: docstring for why the real WMO definition of mist has no fixed
+#: upper km bound to cite instead.
 MIST_VISIBILITY_RANGE_KM = (1.0, 5.0)
 FOG_VISIBILITY_MAX_KM = 1.0
 

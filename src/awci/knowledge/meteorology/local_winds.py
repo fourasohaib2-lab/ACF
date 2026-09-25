@@ -35,6 +35,10 @@ WIND_BARB_PENNANT_KT = 50.0
 #: cited by this source): a gust is only reported when it exceeds the
 #: real mean wind speed by at least this margin (knots / km/h), AND the
 #: real mean wind speed itself is at least this same threshold.
+#: Independently confirmed 2026-09-25 against a second source
+#: (SKYbrary Aviation Safety, "Wind Velocity Reporting", itself citing
+#: ICAO Annex 3) - not just this module's original lavionnaire.fr
+#: cross-check.
 GUST_REPORTING_MINIMUM_EXCESS_KT = 10.0
 GUST_REPORTING_MINIMUM_EXCESS_KMH = 19.0
 GUST_REPORTING_MINIMUM_MEAN_WIND_KT = 10.0
