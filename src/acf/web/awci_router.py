@@ -308,7 +308,8 @@ def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon
     si = _step_index(m, step)
     ds = _dataset(request, domain, run)
     i, j = _nearest(ds, _domain(request, domain), lat, lon)
-    col = {name: ds[name].isel(step=si, lat=i, lon=j).values for name in ("cloud_fraction", "cloud_genus", "gh")}
+    col = {name: ds[name].isel(step=si, lat=i, lon=j).values
+           for name in ("cloud_fraction", "cloud_genus", "cloud_species", "gh")}
     sfc = {name: _num(ds[name].isel(step=si, lat=i, lon=j).values) for name in _CLOUD_SURFACE}
     elevation = sfc["surface_height_m"] or 0.0  # sea level over sea (SRTM15+ elevation carries bathymetry)
     cloud_profile: CloudProfile = request.app.state.awci_cloud_profile
@@ -316,7 +317,7 @@ def clouds(request: Request, domain: str, run: RunId, step: int, lat: float, lon
     layers = column_layers(
         np.asarray(m["levels_hpa"], dtype=float), col["cloud_fraction"], col["cloud_genus"], col["gh"], elevation,
         sfc["sp_hpa"] if sfc["sp_hpa"] is not None else nan,
-        sfc["species_flags"] if sfc["species_flags"] is not None else nan,
+        col["cloud_species"],
         sfc["convective_class"] if sfc["convective_class"] is not None else nan,
         sfc["convective_top_m"] if sfc["convective_top_m"] is not None else nan,
         sfc["cloud_base_lcl"] if sfc["cloud_base_lcl"] is not None else nan, cloud_profile,

@@ -145,3 +145,23 @@ def test_dry_high_based_deep_cold_convection_is_still_cb() -> None:
     # Sahel/Sahara high-based Cb: no rain at the ground (virga), glaciated top: pilots need "CB", not "TCU"
     out = diagnose_clouds(_inputs(el=9, mucape=1500.0, precip=0.0, lcl=2500.0, condensate=0.5), P)
     assert out["convective_class"][1, 1] == 4
+
+
+def test_species_belong_to_their_layer_not_to_the_column() -> None:
+    inp = _inputs(r=_r_with({1: 100.0, 5: 100.0}))  # Sc/St candidate at 925 hPa, Ac at 500 hPa
+    inp.t_k[2] = inp.t_k[1] - 12.0  # conditionally unstable above the 925 hPa base only
+    theta_e = np.linspace(300, 360, NL)
+    theta_e[2] = theta_e[1] - 3.0  # potentially unstable low layer -> Sc
+    inp.theta_e[:] = theta_e[:, None, None]
+    out = diagnose_clouds(inp, P)
+    assert out["cloud_genus"][1, 1, 1] == GENUS_CODES["Sc"] and out["cloud_genus"][5, 1, 1] == GENUS_CODES["Ac"]
+    assert int(out["cloud_species"][1, 1, 1]) & SPECIES_BITS["castellanus"]
+    assert not int(out["cloud_species"][5, 1, 1]) & SPECIES_BITS["castellanus"]
+
+
+def test_fractus_never_on_stratocumulus() -> None:
+    theta_e = np.linspace(300, 360, NL)
+    theta_e[1] = theta_e[0] - 3.0  # unstable -> Sc, not St
+    out = diagnose_clouds(_inputs(r=_r_with({0: 100.0}), theta_e=theta_e, precip=1.0, ptype=1.0, wind10=12.0), P)
+    assert out["genus_low"][1, 1] == GENUS_CODES["Sc"]
+    assert not int(out["species_flags"][1, 1]) & SPECIES_BITS["fractus"]

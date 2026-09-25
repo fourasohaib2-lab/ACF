@@ -111,7 +111,7 @@ def vertical_gradient_per_km(f: np.ndarray, gh: np.ndarray) -> np.ndarray:
         return np.where(np.abs(dz) >= 1.0, (f[upper] - f[lower]) / dz * 1000.0, np.nan)
 
 
-CLOUD_LEVEL_LAYERS: tuple[str, ...] = ("cloud_fraction", "cloud_genus", "potential_instability")
+CLOUD_LEVEL_LAYERS: tuple[str, ...] = ("cloud_fraction", "cloud_genus", "cloud_species", "potential_instability")
 CLOUD_SURFACE_LAYERS: tuple[str, ...] = (
     "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "cloud_cover_total_diag", "ceiling_m",
     "lowest_cloud_base_m", "highest_cloud_top_m", "genus_low", "genus_mid", "genus_high", "convective_class",
@@ -219,8 +219,8 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
     best_cover = [np.zeros(shape2) for _ in ETAGE_NAMES]
     ceiling = np.full(shape2, np.nan)
     lowest, highest = np.full(shape2, np.nan), np.full(shape2, np.nan)
-    flags = np.zeros(shape2, dtype=np.int32)
-    neb_low, neb_high, has_ci = (np.zeros(shape2, dtype=bool) for _ in range(3))
+    species = np.zeros(inp.gh.shape, dtype=np.int32)  # per level: the species of the layer it belongs to
+    layer_oktas = np.zeros(inp.gh.shape)
 
     for j in range(1, int(layer_id.max(initial=0)) + 1):
         mask = layer_id == j
@@ -250,25 +250,27 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
         lowest = np.where(present, np.fmin(lowest, base_agl), lowest)
         highest = np.where(present, np.fmax(highest, _take(inp.gh, top)), highest)
         cellular = present & np.isin(code, _CELLULAR)
-        flags |= np.where(cellular & (_take(conditional, base) < 0.0), SPECIES_BITS["castellanus"], 0)
-        flags |= np.where(cellular & _take(lenticular, base), SPECIES_BITS["lenticularis"], 0)
-        flags |= np.where(present & np.isin(code, (GENUS_CODES["St"], GENUS_CODES["Sc"])) & (e_base == ETAGE_LOW)
-                          & precip & (inp.wind10_m_s >= s["fractus_min_wind_m_s"]), SPECIES_BITS["fractus"], 0)
-        dense = n_ok >= s["nebulosus_min_oktas"]
-        neb_low |= present & (code == GENUS_CODES["St"]) & dense
-        neb_high |= present & (code == GENUS_CODES["Cs"]) & dense
-        has_ci |= present & (code == GENUS_CODES["Ci"])
+        bits = np.where(cellular & (_take(conditional, base) < 0.0), SPECIES_BITS["castellanus"], 0)
+        bits |= np.where(cellular & _take(lenticular, base), SPECIES_BITS["lenticularis"], 0)
+        bits |= np.where(present & (code == GENUS_CODES["St"]) & precip  # WMO-No. 407: fractus only with St, Cu
+                         & (inp.wind10_m_s >= s["fractus_min_wind_m_s"]), SPECIES_BITS["fractus"], 0)
+        species = np.where(mask, bits[None], species)
+        layer_oktas = np.where(mask, n_ok[None], layer_oktas)
 
     covers = {e: max_random_cover(frac, etage == code) for code, e in enumerate(ETAGE_NAMES)}
     smooth_low = _neighbourhood(covers["low"], "std") <= s["nebulosus_max_std"]
     smooth_high = _neighbourhood(covers["high"], "std") <= s["nebulosus_max_std"]
-    flags |= np.where((neb_low & smooth_low) | (neb_high & smooth_high), SPECIES_BITS["nebulosus"], 0)
+    dense = layer_oktas >= s["nebulosus_min_oktas"]
+    nebulosus = dense & (((genus_level == GENUS_CODES["St"]) & smooth_low[None])
+                         | ((genus_level == GENUS_CODES["Cs"]) & smooth_high[None]))
+    species |= np.where(nebulosus, SPECIES_BITS["nebulosus"], 0)
 
     cls, conv_top, conv_top_t = convective_diagnosis(inp, profile)
     conv_code = np.where(cls >= 3, GENUS_CODES["Cb"], GENUS_CODES["Cu"])
     with np.errstate(invalid="ignore"):
         in_conv = (cls > 0)[None] & (inp.gh >= (inp.elevation + inp.lcl_agl_m)[None]) & (inp.gh <= conv_top[None])
     genus_level = np.where(in_conv & (cls >= 2)[None], conv_code[None], genus_level)
+    species = np.where(in_conv & (cls >= 2)[None], 0, species)  # the layer's species no longer describe TCU/Cb
     genus_level = np.where(in_conv & (cls == 1)[None] & (genus_level == CLEAR), GENUS_CODES["Cu"], genus_level)
     conv_etage = sigma_etage(inp.parcel.p_lcl_hpa / inp.sp_hpa, profile)
     for e in range(len(ETAGE_NAMES)):  # every etage the convective column crosses, base etage at least
@@ -278,9 +280,12 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
     lowest = np.where(cls > 0, np.fmin(lowest, inp.lcl_agl_m), lowest)
     highest = np.where(cls > 0, np.fmax(highest, conv_top), highest)
 
-    only_high = has_ci & (genus_etage[ETAGE_LOW] == CLEAR) & (genus_etage[ETAGE_MID] == CLEAR) & (cls == 0)
-    flags |= np.where(only_high & (inp.column_condensate >= s["spissatus_min_condensate_kg_m2"]),
-                      SPECIES_BITS["spissatus"], 0)
+    only_high = (genus_etage[ETAGE_LOW] == CLEAR) & (genus_etage[ETAGE_MID] == CLEAR) & (cls == 0)
+    spissatus = (genus_level == GENUS_CODES["Ci"]) & (
+        only_high & (inp.column_condensate >= s["spissatus_min_condensate_kg_m2"]))[None]
+    species |= np.where(spissatus, SPECIES_BITS["spissatus"], 0)
+    species = np.where(inp.underground, 0, species)
+    flags = np.bitwise_or.reduce(species, axis=0)
 
     return {
         "cloud_fraction": frac,
@@ -292,13 +297,11 @@ def diagnose_clouds(inp: CloudInputs, profile: CloudProfile) -> dict[str, np.nda
         "genus_low": genus_etage[ETAGE_LOW], "genus_mid": genus_etage[ETAGE_MID], "genus_high": genus_etage[ETAGE_HIGH],
         "convective_class": cls.astype(float), "convective_top_m": conv_top, "convective_top_temp_k": conv_top_t,
         "species_flags": flags.astype(float),
+        "cloud_species": np.where(inp.underground, np.nan, species.astype(float)),
     }
 
 
 FT_PER_M = 1.0 / 0.3048
-_LAYER_SPECIES = {"castellanus": _CELLULAR, "lenticularis": _CELLULAR,
-                  "fractus": (GENUS_CODES["St"], GENUS_CODES["Sc"]),
-                  "nebulosus": (GENUS_CODES["St"], GENUS_CODES["Cs"]), "spissatus": (GENUS_CODES["Ci"],)}
 
 
 def _convective_species(cls: int, depth_m: float, profile: CloudProfile) -> list[str]:
@@ -310,13 +313,13 @@ def _convective_species(cls: int, depth_m: float, profile: CloudProfile) -> list
 
 
 def column_layers(levels_hpa: np.ndarray, fraction: np.ndarray, genus: np.ndarray, gh: np.ndarray, elevation: float,
-                  sp_hpa: float, species_flags: float, convective_class: float, convective_top_m: float, lcl_agl_m: float,
+                  sp_hpa: float, species: np.ndarray, convective_class: float, convective_top_m: float, lcl_agl_m: float,
                   profile: CloudProfile) -> list[dict[str, object]]:
-    """Cloud layers of one column (1-D arrays over levels), same layer rule as diagnose_clouds."""
+    """Cloud layers of one column (1-D arrays over levels), same layer rule as diagnose_clouds; `species` is the
+    per-level cloud_species bit field (the species of the layer each level belongs to)."""
     frac = np.nan_to_num(np.asarray(fraction, dtype=float))
     cloudy = frac >= profile.layer_min_fraction
     lower, _ = level_interfaces(np.asarray(gh, dtype=float)[:, None, None], np.array([[elevation]]))
-    flags = 0 if np.isnan(species_flags) else int(species_flags)
     out: list[dict[str, object]] = []
     k = 0
     while k < len(frac):
@@ -333,7 +336,7 @@ def column_layers(levels_hpa: np.ndarray, fraction: np.ndarray, genus: np.ndarra
             "kind": "layer", "genus": GENUS_NAMES.get(code, "indeterminate"),
             "etage": ETAGE_NAMES[int(sigma_etage(np.array(levels_hpa[k] / sp_hpa), profile))],
             "species": [name for name, bit in SPECIES_BITS.items()
-                        if flags & bit and code in _LAYER_SPECIES[name]],
+                        if np.isfinite(species[k]) and int(species[k]) & bit],
             "base_agl_m": base_agl, "base_uncertainty_m": float(gh[k] - lower[k, 0, 0]),
             "base_ft": int(base_agl * FT_PER_M), "top_amsl_m": float(gh[top]),
             "top_fl": flight_level(float(levels_hpa[top])), "oktas": int(n_ok), "amount": amount_code(n_ok),

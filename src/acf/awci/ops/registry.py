@@ -55,6 +55,8 @@ _SPECS = (
     LayerSpec("cloud_genus", "Probable cloud genus of the layer (model diagnostic)", "WMO code 0500, -1 clear, -2 indeterminate",
               True, "rule table SP1C spec 3.9 (etage, depth, cover, dtheta_e/dz, precipitation, convection)",
               "WMO-No. 407 genera; thresholds in cloud profile", "HYPOTHESIS"),
+    LayerSpec("cloud_species", "Diagnosable species of the layer the level belongs to", "bits: 1 cas, 2 len, 4 fra, 8 neb, 16 spi",
+              True, "rule table SP1C spec 3.10, evaluated per layer", "WMO-No. 407 species; Durran (1990)", "HYPOTHESIS"),
     LayerSpec("potential_instability", "Potential instability dtheta_e/dz", "K/km", True,
               "(theta_e(k+1) - theta_e(k)) / (gh(k+1) - gh(k)); < 0 = potentially unstable",
               "AMS Glossary (potential instability); Bolton (1980) theta_e", "CONFIRMED"),
@@ -89,8 +91,8 @@ _SPECS = (
               "gh of the highest level where Tv_parcel > Tv_env", "Bolton (1980) pseudo-adiabat", "HYPOTHESIS"),
     LayerSpec("convective_top_temp_k", "Convective top temperature", "K", False, "T_env at the EL",
               "Bolton (1980) pseudo-adiabat", "HYPOTHESIS"),
-    LayerSpec("species_flags", "Diagnosable cloud species", "bits: 1 cas, 2 len, 4 fra, 8 neb, 16 spi", False,
-              "rule table SP1C spec 3.10", "WMO-No. 407 species; Durran (1990) mountain waves", "HYPOTHESIS"),
+    LayerSpec("species_flags", "Diagnosable cloud species present in the column", "bits: 1 cas, 2 len, 4 fra, 8 neb, 16 spi",
+              False, "bitwise OR of cloud_species over the column", "WMO-No. 407 species; Durran (1990) mountain waves", "HYPOTHESIS"),
     LayerSpec("cloud_top_teff_k", "Effective emission temperature (from OLR)", "K", False,
               "(OLR / sigma)^(1/4), OLR = -d(ttr)/dt, broadband", "ECMWF ttr; Stefan-Boltzmann (CODATA 2018)", "CONFIRMED"),
     LayerSpec("column_condensate", "Column condensate (cloud liquid + ice + rain + snow)", "kg/m^2", False,
@@ -110,7 +112,7 @@ MODULES: tuple[str, ...] = ("dynamic", "thermodynamic", "convective", "microphys
 LEVEL_LAYERS: tuple[str, ...] = (
     "t", "q", "r", "u", "v", "w", "gh", "wind_speed", "layer_shear", "vertical_shear", "cat_ti2",
     "cat_category", "icing_potential", "theta_e", "awci", "awci_level", *(f"module_{m}" for m in MODULES),
-    "cloud_fraction", "cloud_genus", "potential_instability",
+    "cloud_fraction", "cloud_genus", "cloud_species", "potential_instability",
 )
 SURFACE_LAYERS: tuple[str, ...] = (
     "t2m", "d2m", "rh2m", "mucape", "cloud_base_lcl", "precip_rate", "precip_class", "precip_type",
