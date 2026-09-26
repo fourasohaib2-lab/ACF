@@ -503,3 +503,8 @@ router.include_router(_wms_router)
 from acf.web.awci_obs import router as _obs_router  # noqa: E402
 
 router.include_router(_obs_router)
+
+# IFS ENS probabilities and spread (SP5), read from the acf-awci-ens store.
+from acf.web.awci_ens import router as _ens_router  # noqa: E402
+
+router.include_router(_ens_router)
