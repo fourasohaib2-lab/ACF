@@ -144,6 +144,38 @@ convection réalisée par le modèle. Sinon, la convection reste Cu.
 - **Statut** : HYPOTHESIS. Sept runs d'une même semaine ne couvrent ni la saison ni le cycle diurne complet, et
   il faudra réévaluer régulièrement (page Validation).
 
+## Plafond : diagnostic des erreurs et piste évaluée (non retenue)
+
+Sur les 7 runs (0 à 24 h), la base du plafond modèle est en moyenne trop basse (−1068 ft sur les runs de
+calibration, −1472 ft sur les runs de test). Les plafonds bas sont peu prévus : l'ETS vaut 0,03 à 0,17 selon
+le seuil.
+
+Structure de l'erreur :
+- La base d'une couche est la hauteur du niveau standard nuageux : environ 100 à 150 m pour 1000 hPa, 760 m
+  pour 925 hPa. Le plafond modèle ne prend donc que quelques valeurs, et le seuil de 500 ft coïncide presque
+  avec la hauteur du niveau 1000 hPa.
+- Sous 500 ft, 143 des 177 fausses alertes ont en réalité un plafond observé, entre 600 et 1200 ft. Le modèle
+  voit bien le nuage bas, mais place sa base trop bas. Ce sont surtout des stations côtières pluvieuses de la
+  mer Noire (LTCB, LTCG, LTFH).
+
+Piste évaluée : dans une couche limite bien mélangée, la base est au LCL de la particule de surface (Stull
+1988). La variante `lcl_in_level` remplace la base par le LCL lorsqu'il tombe dans l'intervalle vertical que
+représente le niveau nuageux. Même protocole qu'en convection : `tools/awci/evaluate_ceiling_base.py`.
+
+| Variante | Calibration < 500 / 1000 / 1500 ft (ETS) | Test < 500 / 1000 / 1500 ft (ETS) | Erreur moyenne de base, test |
+|---|---|---|---|
+| Hauteur du niveau (actuel) | 0,051 / 0,158 / 0,167 | 0,033 / 0,032 / 0,063 | −1472 ft |
+| LCL dans l'intervalle du niveau | 0,035 / 0,103 / 0,166 | 0,052 / 0,031 / 0,062 | −1380 ft |
+
+Le biais sous 500 ft est corrigé (1,8 → 1,0), mais l'ETS se dégrade sur les runs de calibration et ne
+progresse que sous 500 ft en test, avec 13 à 60 événements par seuil. **Le gain n'est pas robuste : la règle
+n'est pas modifiée.**
+
+Conclusion : avec 12 niveaux de pression et sans hauteur de base nuageuse (`cbh`) ni niveaux modèle dans IFS
+Open Data, le plafond sous 1500 ft n'est pas résolu. Une amélioration demandera une autre donnée (niveaux
+modèle, `cbh`, modèle à aire limitée) ou une correction statistique contre les METAR, sur un échantillon
+bien plus grand.
+
 ## Tests
 
 - Python :
@@ -151,6 +183,7 @@ convection réalisée par le modèle. Sinon, la convection reste Cu.
   - `tests/test_awci_obs_ingest.py` : plafond de 400, validation, stockage, commande d'ingestion ;
   - `tests/test_awci_ops_verify.py` : scores calculés à la main, appariement, exclusions, cas réel DAAG sur la fixture IFS ;
   - `tests/test_web_awci_obs_api.py` : routes de l'API ;
+  - `tests/test_awci_ops_calibration_convection.py` et `tests/test_awci_tools_ceiling_base.py` : calibration de la convection et variantes de base du plafond ;
   - `tests/test_awci_ops_store_concurrency.py` : première ouverture concurrente du cube.
 - Front :
   - Vitest sur des réponses d'API réelles (`web/awci/src/test-data`, avec NOTICE) ;
