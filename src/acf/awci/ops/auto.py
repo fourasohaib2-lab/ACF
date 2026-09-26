@@ -2,7 +2,7 @@
 acf-awci-auto: automatic download of the real data AWCI Web needs, and deletion after a week.
 
     acf-awci-auto [--domain NAME|all] [--run-hours 0,12] [--steps 0-72/3] [--obs-every-min 30]
-                  [--gfs] [--ens] [--ens-run-hours 0] [--ens-steps 0-24/6] [--ens-members 1-50]
+                  [--gfs] [--soundings] [--ens] [--ens-run-hours 0] [--ens-steps 0-24/6] [--ens-members 1-50]
                   [--max-age-days 7] [--check-every-min 15] [--data-dir DIR] [--once]
 
 Every `check-every-min` minutes, one pass:
@@ -13,8 +13,11 @@ Every `check-every-min` minutes, one pass:
    run is retried after `retry` (1 h), a run that failed likewise;
 3. with `--gfs` (SP6), the NOAA GFS 0.25° run by the same rule, stored in <data>/gfs;
 4. the IFS ENS run (opt-in `--ens`: about 19 GB downloaded per run for +0..+24 h / 6 h), same rule;
-5. deletion of everything older than `max-age-days`: IFS, GFS and ENS runs whose run time is older,
-   METAR/SIGMET day files, and abandoned temporary directories (`<run>.tmp`, `<run>.old` untouched for a
+5. with `--soundings` (SP7), radiosondes (University of Wyoming) once a new 00/12 UTC sounding time is
+   published (2 h after it): the time since the last ingestion plus the previous nominal time, whose stations
+   that were still missing are asked once more; archived profiles are never requested again;
+6. deletion of everything older than `max-age-days`: IFS, GFS and ENS runs whose run time is older,
+   METAR/SIGMET/sounding day files, and abandoned temporary directories (`<run>.tmp`, `<run>.old` untouched for a
    day). The most recent run of each kind is kept whatever its age, so that the dashboard is never emptied
    by a machine that stayed offline for a week.
 
@@ -50,6 +53,7 @@ from acf.awci.ops.store import data_root, model_root, run_id
 
 STALE_TMP = timedelta(days=1)
 FIRST_OBS_HOURS = 72
+FIRST_SOUNDING_HOURS = 48
 MAX_OBS_HOURS = 168  # AWC Data API limit (acf-awci-obs --hours)
 
 
@@ -61,6 +65,7 @@ class AutoConfig:
     obs_every: timedelta = timedelta(minutes=30)
     ens: bool = False
     gfs: bool = False  # SP6: also follow NOAA GFS 0.25° (same run hours and steps), stored in <data>/gfs
+    soundings: bool = False  # SP7: radiosondes from the University of Wyoming (academic service: opt-in)
     ens_steps: list[int] = field(default_factory=lambda: parse_steps("0-24/6"))
     ens_run_hours: tuple[int, ...] = (0,)
     ens_members: list[int] = field(default_factory=lambda: list(range(1, 51)))
@@ -139,14 +144,17 @@ def apply_age_retention(root: Path, domains: list[Domain], max_age: timedelta, n
 IngestDet = Callable[..., dict[str, dict[str, Any]]]  # (run, domains, steps, model="ifs") -> manifests per domain
 IngestEns = Callable[[datetime, Domain, list[int], list[int]], dict[str, Any]]
 IngestObs = Callable[[Domain, int, datetime], dict[str, Any]]
+IngestSoundings = Callable[[Domain, int, datetime], dict[str, Any]]
 
 
 class AutoIngest:
     def __init__(self, root: Path, config: AutoConfig, fetcher: Fetcher, ingest_det: IngestDet,
                  ingest_ens: IngestEns, ingest_obs: IngestObs,
-                 clock: Callable[[], datetime] = lambda: datetime.now(UTC)) -> None:
+                 clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+                 ingest_soundings: IngestSoundings | None = None) -> None:
         self.root, self.config, self.fetcher, self.clock = Path(root), config, fetcher, clock
         self.ingest_det, self.ingest_ens, self.ingest_obs = ingest_det, ingest_ens, ingest_obs
+        self.ingest_soundings = ingest_soundings
         self.attempts: dict[str, datetime] = {}  # task key -> last attempt, for retries of incomplete runs
 
     # -- decisions ------------------------------------------------------------------------------------
@@ -169,6 +177,18 @@ class AutoIngest:
         if age < self.config.obs_every:
             return None
         return int(min(MAX_OBS_HOURS, max(3, math.ceil(age / timedelta(hours=1)) + 1)))
+
+    def sounding_hours(self, domain: Domain, now: datetime) -> int | None:
+        """Radiosonde history to request now, None until a new nominal time is published."""
+        from acf.awci.obs.ingest import sounding_times
+
+        published = sounding_times(now, 24)
+        last = ObsStore(self.root, domain.name).sounding_status().get("last_nominal")
+        if last is None:
+            return FIRST_SOUNDING_HOURS
+        if not published or published[-1] <= parse_time(last):
+            return None
+        return int(min(MAX_OBS_HOURS, math.ceil((now - parse_time(last)) / timedelta(hours=1)) + 12))
 
     # -- one pass -------------------------------------------------------------------------------------
     def _task(self, report: dict[str, Any], name: str, action: Callable[[], Any]) -> None:
@@ -231,6 +251,21 @@ class AutoIngest:
                 out[d.name] = {"hours": hours, "metars_added": result.get("metars_added")}
         return out or None
 
+    def _soundings(self, now: datetime) -> Any:
+        if self.ingest_soundings is None:
+            raise RuntimeError("no radiosonde ingestion configured")
+        out = {}
+        for d in self.config.domains:
+            hours, key = self.sounding_hours(d, now), f"soundings/{d.name}"
+            last = self.attempts.get(key)
+            if hours is None or (last is not None and now - last < self.config.retry):
+                continue
+            self.attempts[key] = now
+            result = self.ingest_soundings(d, hours, now)
+            out[d.name] = {"hours": hours, "soundings_added": result.get("soundings_added"),
+                           "missing": result.get("missing"), "errors": result.get("errors")}
+        return out or None
+
     def tick(self) -> dict[str, Any]:
         now = self.clock()
         report: dict[str, Any] = {"at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "done": {}, "errors": {}}
@@ -240,13 +275,15 @@ class AutoIngest:
             self._task(report, "gfs", lambda: self._det(now, "gfs"))
         if self.config.ens:
             self._task(report, "ensemble", lambda: self._ens(now))
+        if self.config.soundings:
+            self._task(report, "soundings", lambda: self._soundings(now))
         self._task(report, "retention", lambda: apply_age_retention(self.root, self.config.domains,
                                                                       self.config.max_age, self.clock()) or None)
         status_dir = self.root / ".auto"
         status_dir.mkdir(parents=True, exist_ok=True)
         tmp = status_dir / "status.json.tmp"
         tmp.write_text(json.dumps(report | {"max_age_days": self.config.max_age.days, "ens": self.config.ens,
-                                         "gfs": self.config.gfs}, indent=1))
+                                         "gfs": self.config.gfs, "soundings": self.config.soundings}, indent=1))
         os.replace(tmp, status_dir / "status.json")
         return report
 
@@ -274,6 +311,17 @@ class InstanceLock:
         self.handle.write(str(os.getpid()))
         self.handle.flush()
         return True
+
+
+def _real_soundings(root: Path) -> IngestSoundings:
+    from acf.awci.obs.ingest import ingest_soundings
+    from acf.awci.obs.sounding import IGRA_STATIONS_URL, UwyoClient
+
+    def soundings(domain: Domain, hours: int, now: datetime) -> dict[str, Any]:
+        return ingest_soundings(UwyoClient(), ObsStore(root, domain.name), domain, hours, now,
+                                lambda: UwyoClient._http_get(IGRA_STATIONS_URL))
+
+    return soundings
 
 
 def _real_tasks(root: Path, connections: int, max_age: timedelta) -> tuple[Fetcher, IngestDet, IngestEns, IngestObs]:
@@ -333,6 +381,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--obs-every-min", type=int, default=30)
     parser.add_argument("--ens", action="store_true", help="also compute the IFS ENS (≈19 GB downloaded per run)")
     parser.add_argument("--gfs", action="store_true", help="also follow NOAA GFS 0.25° (second model, SP6)")
+    parser.add_argument("--soundings", action="store_true",
+                        help="also archive radiosondes (University of Wyoming, SP7) after 00 and 12 UTC")
     parser.add_argument("--ens-run-hours", default="0")
     parser.add_argument("--ens-steps", default="0-24/6")
     parser.add_argument("--ens-members", default="1-50")
@@ -361,6 +411,7 @@ def config_from_args(args: argparse.Namespace) -> AutoConfig:
         raise ValueError("--connections must lie within 1-32 (be fair to data.ecmwf.int)")
     return AutoConfig(domains=domains, steps=parse_steps(args.steps), run_hours=_hours(args.run_hours),
                       obs_every=timedelta(minutes=args.obs_every_min), ens=args.ens, gfs=args.gfs,
+                      soundings=args.soundings,
                       ens_steps=parse_steps(args.ens_steps), ens_run_hours=_hours(args.ens_run_hours),
                       ens_members=parse_members(args.ens_members), max_age=timedelta(days=args.max_age_days))
 
@@ -378,7 +429,7 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("AWCI auto: another acf-awci-auto already runs on {}", root)
         return 1
     fetcher, det, ens, obs = _real_tasks(root, args.connections, config.max_age)
-    auto = AutoIngest(root, config, fetcher, det, ens, obs)
+    auto = AutoIngest(root, config, fetcher, det, ens, obs, ingest_soundings=_real_soundings(root))
     logger.info("AWCI auto on {}: domains {}, runs {} UTC, ENS {}, deletion after {} days", root,
                 [d.name for d in config.domains], config.run_hours, config.ens, config.max_age.days)
     try:

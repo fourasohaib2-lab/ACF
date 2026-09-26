@@ -25,9 +25,16 @@ acf-awci-web --auto --ens            # idem, avec l'ensemble ECMWF (volumineux, 
    - **Déjà complet** : un run complet n'est jamais retéléchargé.
    - **Partiel ou en échec** : il est retenté au bout d'une heure.
 3. **Ensemble IFS ENS** (seulement avec `--ens`) : même règle, run de 00 UTC, +0 à +24 h toutes les 6 h.
-4. **Suppression** de ce qui a plus de **7 jours** :
+4. **Radiosondages** (seulement avec `--soundings`, SP7) : University of Wyoming, stations actives de la liste
+   IGRA du domaine.
+   - **Quand** : dès qu'une nouvelle heure nominale (00 ou 12 UTC) est publiée, 2 h après ; 48 h la première fois.
+   - **Retardataires** : l'heure nominale précédente est redemandée une fois, pour les seules stations encore
+     absentes ; un profil déjà archivé n'est jamais redemandé.
+   - **En échec** : retenté au bout d'une heure.
+   - **Désactivé par défaut** : c'est un service académique, interrogé en séquence avec une pause d'une seconde.
+5. **Suppression** de ce qui a plus de **7 jours** :
    - runs déterministes et ensemble, selon leur heure de run ;
-   - fichiers journaliers de METAR et de SIGMET ;
+   - fichiers journaliers de METAR, de SIGMET et de radiosondages ;
    - dossiers temporaires abandonnés (`<run>.tmp`, `<run>.old` inchangés depuis un jour).
 
 **Exception à la suppression** : le run le plus récent de chaque type est toujours gardé, même au-delà de 7 jours.
@@ -46,6 +53,7 @@ premier run publié.
 | `--run-hours` | `0,12` | runs déterministes suivis (UTC). `0,6,12,18` pour les quatre runs quotidiens |
 | `--steps` | `0-72/3` | échéances du déterministe |
 | `--obs-every-min` | 30 | fréquence des observations (10 à 180) |
+| `--soundings` | désactivé | archive les radiosondages (University of Wyoming, SP7) après 00 et 12 UTC |
 | `--gfs` | désactivé | suit aussi NOAA GFS 0,25° (second modèle, SP6), stocké dans `<données>/gfs/` |
 | `--ens` | désactivé | calcule l'ensemble ECMWF |
 | `--ens-run-hours`, `--ens-steps`, `--ens-members` | `0`, `0-24/6`, `1-50` | réglages de l'ensemble |

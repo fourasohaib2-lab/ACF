@@ -73,7 +73,8 @@ def sounding_times(now: datetime, hours: int) -> list[datetime]:
 
 def ingest_soundings(client: UwyoClient, store: ObsStore, domain: Domain, hours: int, now: datetime,
                      fetch_station_list: Callable[[], str]) -> dict[str, object]:
-    """Radiosondes of the domain's active IGRA stations over the last `hours` hours (station list cached a week)."""
+    """Radiosondes of the domain's active IGRA stations over the last `hours` hours (station list cached a week);
+    profiles already archived are not requested again."""
     fetched = store.stations_fetched_at_of("sounding_stations.json")
     if fetched is None or now - fetched > STATION_MAX_AGE:
         listed = parse_igra_stations(fetch_station_list())
@@ -83,7 +84,11 @@ def ingest_soundings(client: UwyoClient, store: ObsStore, domain: Domain, hours:
         store.write_sounding_stations([s.as_dict() for s in stations], now)
     stations = [SoundingStation(**s) for s in store.sounding_stations()]  # type: ignore[arg-type]
     times = sounding_times(now, hours)
-    added = store.add_soundings(client.soundings(stations, times))
+    archived = {(r["wmo"], r["nominal_time"]) for r in store.soundings(times[0], times[-1])} if times else set()
+    added = store.add_soundings(client.soundings(stations, times, skip=archived))
+    if times:
+        store.write_sounding_status({"ingested_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                     "last_nominal": times[-1].strftime("%Y-%m-%dT%H:%M:%SZ")})
     return {"soundings_added": added, "stations": len(stations), "times": [f"{t:%Y%m%d%H}" for t in times],
             "missing": len(client.missing), "errors": len(client.errors), "source": ATTRIBUTION}
 

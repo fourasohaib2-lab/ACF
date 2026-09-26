@@ -227,3 +227,20 @@ def test_api(tmp_path: Path) -> None:
     assert client.get("/api/v1/awci/soundings/verification", params={"domain": "fixture", "run": "2026092500",
                                                                       "model": "gfs"}).status_code == 404
     assert client.get("/api/v1/awci/soundings/verification", params={"domain": "fixture", "run": "x"}).status_code == 422
+
+
+def test_archived_profiles_are_not_requested_again(tmp_path: Path) -> None:
+    store = ObsStore(tmp_path, DOMAIN.name)
+    urls: list[str] = []
+
+    def get(url: str) -> str:
+        urls.append(url)
+        return ALGER_CSV if "2026-09-25+00" in url else ""
+
+    now = datetime(2026, 9, 25, 14, tzinfo=UTC)
+    ingest_soundings(UwyoClient(get=get, sleep=lambda s: None), store, DOMAIN, 24, now, lambda: IGRA)
+    assert len(urls) == 2 and store.sounding_status() == {"ingested_at": "2026-09-25T14:00:00Z",
+                                                            "last_nominal": "2026-09-25T12:00:00Z"}
+    urls.clear()
+    ingest_soundings(UwyoClient(get=get, sleep=lambda s: None), store, DOMAIN, 24, now, lambda: IGRA)
+    assert len(urls) == 1 and "2026-09-25+12" in urls[0]  # only the still-missing 12 UTC profile

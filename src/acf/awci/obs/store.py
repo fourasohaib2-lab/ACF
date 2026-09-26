@@ -115,6 +115,14 @@ class ObsStore:
         path = self.root / "sounding_stations.json"
         return list(json.loads(path.read_text())["stations"]) if path.exists() else []
 
+    def write_sounding_status(self, status: dict[str, Any]) -> None:
+        _write(self.root / "sounding_status.json", json.dumps(status))
+
+    def sounding_status(self) -> dict[str, Any]:
+        """Last radiosonde ingestion: ingested_at and last_nominal (latest nominal time requested)."""
+        path = self.root / "sounding_status.json"
+        return json.loads(path.read_text()) if path.exists() else {}
+
     def add_sigmets(self, records: list[dict[str, Any]]) -> int:
         return self._add("sigmet", records, "valid_from", lambda r: r["raw"])
 

@@ -21,7 +21,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -151,11 +151,13 @@ class UwyoClient:
             self.missing.append(f"{wmo}@{nominal:%Y%m%d%H}")
         return record
 
-    def soundings(self, stations: Sequence[SoundingStation], times: Sequence[datetime]) -> list[dict[str, object]]:
-        """Every (station, time) profile available; a failed request is recorded in `errors` and skipped, and
+    def soundings(self, stations: Sequence[SoundingStation], times: Sequence[datetime],
+                  skip: Collection[tuple[str, str]] = frozenset()) -> list[dict[str, object]]:
+        """Every (station, time) profile available, except the (wmo, "YYYY-MM-DDTHH:MM:SSZ") pairs in `skip`
+        (already archived: never requested again). A failed request is recorded in `errors` and skipped;
         SoundingError is raised only when every request failed (service down)."""
         out = []
-        pairs = [(s, t) for t in times for s in stations]
+        pairs = [(s, t) for t in times for s in stations if (s.wmo, f"{t:%Y-%m-%dT%H:%M:%SZ}") not in skip]
         for i, (station, nominal) in enumerate(pairs):
             if i:
                 self.sleep(self.pause_s)

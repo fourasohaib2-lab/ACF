@@ -250,3 +250,50 @@ def test_age_retention_also_prunes_gfs(tmp_path: Path) -> None:
     for run in ("2026091800", "2026092600"):
         _manifest(tmp_path / "gfs" / "fixture" / run, "complete")
     assert apply_age_retention(tmp_path, [DOMAIN], timedelta(days=7), NOW)["fixture/gfs"] == ["2026091800"]
+
+
+def test_soundings_are_opt_in_and_follow_the_nominal_times(tmp_path: Path) -> None:
+    calls: list[tuple[int, datetime]] = []
+
+    def ingest_soundings(domain: Any, hours: int, now: datetime) -> dict[str, Any]:
+        calls.append((hours, now))
+        from acf.awci.obs.ingest import sounding_times
+
+        ObsStore(tmp_path, domain.name).write_sounding_status(
+            {"last_nominal": f"{sounding_times(now, hours)[-1]:%Y-%m-%dT%H:%M:%SZ}"})
+        return {"soundings_added": 3, "missing": 1, "errors": 0}
+
+    rec, clock = Recorder(tmp_path), [NOW]  # 26 Sept 15:07 UTC: the 12 UTC soundings are published (2 h delay)
+    AutoIngest(tmp_path, AutoConfig(domains=[DOMAIN]), ProbeFetcher(set()), rec.ingest_det, rec.ingest_ens,
+               rec.ingest_obs, clock=lambda: clock[0], ingest_soundings=ingest_soundings).tick()
+    assert calls == []  # opt-in
+    auto = AutoIngest(tmp_path, AutoConfig(domains=[DOMAIN], soundings=True), ProbeFetcher(set()), rec.ingest_det,
+                      rec.ingest_ens, rec.ingest_obs, clock=lambda: clock[0], ingest_soundings=ingest_soundings)
+    report = auto.tick()
+    assert calls == [(48, NOW)] and report["done"]["soundings"]["fixture"]["soundings_added"] == 3
+    assert ObsStore(tmp_path, DOMAIN.name).sounding_status()["last_nominal"] == "2026-09-26T12:00:00Z"
+    assert auto.sounding_hours(DOMAIN, datetime(2026, 9, 27, 1, 50, tzinfo=UTC)) is None  # 27/00 not yet published
+    calls.clear()
+    clock[0] = datetime(2026, 9, 27, 2, 10, tzinfo=UTC)  # 27/00 published: since 26/12 (14 h 10) plus the previous time
+    auto.tick()
+    assert calls == [(15 + 12, clock[0])]
+    assert json.loads((tmp_path / ".auto" / "status.json").read_text())["soundings"] is True
+
+
+def test_failed_sounding_ingestion_is_retried_after_an_hour(tmp_path: Path) -> None:
+    calls: list[datetime] = []
+
+    def down(domain: Any, hours: int, now: datetime) -> dict[str, Any]:
+        calls.append(now)
+        raise RuntimeError("weather.uwyo.edu unreachable")
+
+    rec, clock = Recorder(tmp_path), [NOW]
+    auto = AutoIngest(tmp_path, AutoConfig(domains=[DOMAIN], soundings=True), ProbeFetcher(set()), rec.ingest_det,
+                      rec.ingest_ens, rec.ingest_obs, clock=lambda: clock[0], ingest_soundings=down)
+    assert "unreachable" in auto.tick()["errors"]["soundings"]
+    clock[0] = NOW + timedelta(minutes=15)
+    auto.tick()
+    clock[0] = NOW + timedelta(minutes=61)
+    auto.tick()
+    assert calls == [NOW, NOW + timedelta(minutes=61)]
+    assert config_from_args(build_parser().parse_args(["--soundings"])).soundings is True
