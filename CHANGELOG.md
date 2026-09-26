@@ -27,6 +27,13 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web, téléchargement automatique : `acf-awci-auto` (ou `acf-awci-web --auto`, une seule commande) suit
+  les runs IFS publiés sur data.ecmwf.int (00 et 12 UTC par défaut, détection par interrogation), les METAR/TAF/SIGMET
+  toutes les 30 min, l'ensemble en option (`--ens`), et supprime les données de plus de 7 jours (le run le plus
+  récent est toujours gardé). `keep=None` désactive la rétention par nombre de runs. Voir `docs/awci/AWCI_WEB_AUTO.md`.
+- AWCI Web SP5b : validation probabiliste de l'ensemble contre les METAR (Brier, Brier « fair » de Ferro,
+  décomposition de Murphy, diagramme de fiabilité), déterministe noté sur les mêmes paires ; route
+  `/ens/verification`, section de la page Validation, outil `tools/awci/verify_ensemble.py`.
 - AWCI Web SP5 (ensemble ECMWF) : `acf-awci-ens` traite chaque membre de l'IFS ENS (50 membres, 0,25°) par le
   pipeline déterministe inchangé, en flux, et stocke des comptes exacts ; probabilités de AWCI ≥ High, nuage ≥ 5/8,
   givrage, turbulence ≥ modérée, TCU/Cb réalisé, plafond < 1500 ft, et moyenne ± écart-type de l'AWCI ; routes

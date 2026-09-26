@@ -120,7 +120,11 @@ class CubeWriter:
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
 
-def apply_retention(root: Path, domain: str, keep: int) -> list[str]:
+def apply_retention(root: Path, domain: str, keep: int | None) -> list[str]:
+    """Keep the `keep` most recent runs of the domain; None keeps them all (age-based retention instead,
+    acf.awci.ops.auto.apply_age_retention)."""
+    if keep is None:
+        return []
     domain_dir = Path(root) / domain
     runs = sorted(p.name for p in domain_dir.iterdir() if p.is_dir() and p.name.isdigit()) if domain_dir.exists() else []
     removed = runs[: max(0, len(runs) - keep)]

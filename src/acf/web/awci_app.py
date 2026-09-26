@@ -2,6 +2,7 @@
 Light FastAPI app serving only /api/v1/awci (no HPC/torch imports).
 
     acf-awci-web            # uvicorn on 127.0.0.1:8091
+    acf-awci-web --auto     # the same, plus automatic download and deletion after a week (acf-awci-auto)
 Data directory: ACF_AWCI_DATA_DIR (default <repo>/data/awci); domains: ACF_AWCI_DOMAINS_FILE.
 Front: the built web/awci (ACF_AWCI_WEB_DIST, default <repo>/web/awci/dist) is served on "/" when present,
 after the API routes, so the browser and the API share one origin (no CORS needed).
@@ -61,3 +62,48 @@ def run(host: str = "127.0.0.1", port: int = 8091) -> None:
     import uvicorn
 
     uvicorn.run(create_awci_app(), host=host, port=port)
+
+
+def _die_with_parent() -> None:
+    """In the child, before exec: ask Linux to send SIGTERM when the parent dies (prctl PR_SET_PDEATHSIG)."""
+    import ctypes
+    import signal
+
+    pr_set_pdeathsig = 1
+    ctypes.CDLL("libc.so.6", use_errno=True).prctl(pr_set_pdeathsig, signal.SIGTERM)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """acf-awci-web [--host H] [--port P] [--auto [acf-awci-auto options]]
+
+    With --auto, acf-awci-auto (automatic download and deletion after a week) runs beside the server as a
+    child process on the same data directory, and stops with it; its own options follow (e.g. --ens)."""
+    import argparse
+    import subprocess
+    import sys
+
+    parser = argparse.ArgumentParser(prog="acf-awci-web", description="AWCI Web: API and dashboard")
+    parser.add_argument("--host", default="127.0.0.1", help="127.0.0.1 (default) keeps the server local")
+    parser.add_argument("--port", type=int, default=8091)
+    parser.add_argument("--auto", action="store_true", help="download the data automatically (acf-awci-auto)")
+    args, auto_args = parser.parse_known_args(argv)
+    if auto_args and not args.auto:
+        parser.error(f"unrecognized arguments: {' '.join(auto_args)}")
+    if "--data-dir" in auto_args:  # the server and the downloader must share one directory
+        parser.error("set the data directory with ACF_AWCI_DATA_DIR, not --data-dir, when using --auto")
+    child = None
+    if args.auto:
+        # the downloader must not outlive the server: uvicorn re-raises SIGINT/SIGTERM after shutdown, so the
+        # `finally` below is not reached on a signal; the kernel (Linux) and the child's own watch cover that
+        child = subprocess.Popen([sys.executable, "-m", "acf.awci.ops.auto", "--parent-pid", str(os.getpid()), *auto_args],
+                                 preexec_fn=_die_with_parent if sys.platform.startswith("linux") else None)
+    try:
+        run(args.host, args.port)
+    finally:
+        if child is not None:
+            child.terminate()
+            try:
+                child.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                child.kill()
+    return 0

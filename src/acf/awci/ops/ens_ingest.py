@@ -52,7 +52,7 @@ def _submit(pool: ThreadPoolExecutor, fetcher: Fetcher, grib_url: str, index: li
 
 def ingest_ens_run(run: datetime, domain: Domain, fetcher: Fetcher, root: Path, steps: list[int], members: list[int],
                    profile: Profile | None = None, cloud_profile: CloudProfile | None = None,
-                   connections: int = 16, keep: int = 4) -> dict[str, Any]:
+                   connections: int = 16, keep: int | None = 4) -> dict[str, Any]:
     started = time.monotonic()
     profile = profile or load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH)
     cloud_profile = cloud_profile or load_cloud_profile(DEFAULT_CLOUD_PROFILE_PATH)

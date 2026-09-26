@@ -63,7 +63,7 @@ def _consistency(step: int, bias: np.ndarray, cloud_profile: CloudProfile) -> di
 
 def ingest_run(
     run: datetime, domains: list[Domain], profile: Profile, fetcher: Fetcher, root: Path,
-    steps: list[int], keep: int = 8, force: bool = False, cloud_profile: CloudProfile | None = None,
+    steps: list[int], keep: int | None = 8, force: bool = False, cloud_profile: CloudProfile | None = None,
 ) -> dict[str, dict[str, Any]]:
     started = time.monotonic()
     cloud_profile = cloud_profile or load_cloud_profile(DEFAULT_CLOUD_PROFILE_PATH)

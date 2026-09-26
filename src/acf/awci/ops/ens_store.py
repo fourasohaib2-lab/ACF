@@ -92,7 +92,10 @@ class EnsWriter:
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
 
-def apply_ens_retention(root: Path, domain: str, keep: int) -> list[str]:
+def apply_ens_retention(root: Path, domain: str, keep: int | None) -> list[str]:
+    """Keep the `keep` most recent ENS runs; None keeps them all (age-based retention instead)."""
+    if keep is None:
+        return []
     folder = ens_dir(root, domain)
     runs = sorted(p.name for p in folder.iterdir() if p.is_dir() and p.name.isdigit()) if folder.exists() else []
     removed = runs[:-keep] if keep > 0 else runs

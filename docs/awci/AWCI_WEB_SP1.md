@@ -14,6 +14,9 @@ pip install -e ".[formats,web,science]"   # eccodes, netCDF4/xarray, fastapi/uvi
 
 ## Ingestion
 
+Pour un téléchargement automatique (runs, observations, suppression après 7 jours) : `acf-awci-web --auto`,
+voir `AWCI_WEB_AUTO.md`. Les commandes ci-dessous restent disponibles pour une ingestion ponctuelle.
+
 ```bash
 acf-awci-ingest --run latest --domain all          # 0-72 h / 3 h, profil operational-v1
 acf-awci-ingest --run 2026092506 --domain north_africa --steps 0-24/3

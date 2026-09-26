@@ -160,7 +160,8 @@ acf-awci = "acf.awci_app:main"
 acf-awci-ingest = "acf.awci.ops.ingest:main"
 acf-awci-obs = "acf.awci.obs.ingest:main"
 acf-awci-ens = "acf.awci.ops.ens_ingest:main"
-acf-awci-web = "acf.web.awci_app:run"
+acf-awci-auto = "acf.awci.ops.auto:main"
+acf-awci-web = "acf.web.awci_app:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
