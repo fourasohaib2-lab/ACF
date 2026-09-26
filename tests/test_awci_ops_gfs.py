@@ -41,6 +41,10 @@ def test_messages_per_step_follow_the_gfs_buckets() -> None:
     assert wanted_keys(9)["ulwrf_toa"] == ("ULWRF", "top of atmosphere", "6-9 hour ave fcst")
     assert wanted_keys(12)["ulwrf_toa"][2] == "6-12 hour ave fcst" and wanted_keys(12)["apcp"][2] == "0-12 hour acc fcst"
     assert [bucket_start(s) for s in (3, 6, 9, 12, 13)] == [0, 0, 6, 6, 12]
+    # labels as NOAA writes them (real .idx of 2026-09-25 12Z): days when both ends are whole days
+    assert wanted_keys(24)["apcp"][2] == "0-1 day acc fcst" and wanted_keys(72)["apcp"][2] == "0-3 day acc fcst"
+    assert wanted_keys(30)["apcp"][2] == "0-30 hour acc fcst" and wanted_keys(24)["ulwrf_toa"][2] == "18-24 hour ave fcst"
+    assert wanted_keys(24)["2t"][2] == "24 hour fcst"
     entries = parse_gfs_index((GFS_FIXTURE / "gfs.t00z.pgrb2.0p25.f003.idx").read_text())
     assert len(select_gfs_entries(entries, 3)) == 93
     with pytest.raises(MissingFieldsError, match="apcp"):

@@ -100,14 +100,22 @@ def bucket_start(step: int) -> int:
     return ((step - 1) // BUCKET_H) * BUCKET_H
 
 
+def period(start: int, end: int, kind: str) -> str:
+    """wgrib2 inventory label of a time range: in days when both ends are whole days ("0-1 day acc fcst" at +24 h,
+    as NOAA writes it), else in hours ("6-9 hour ave fcst")."""
+    if start % 24 == 0 and end % 24 == 0:
+        return f"{start // 24}-{end // 24} day {kind} fcst"
+    return f"{start}-{end} hour {kind} fcst"
+
+
 def wanted_keys(step: int) -> dict[str, tuple[str, str, str]]:
     """key -> (var, level, time) of every message needed at this step."""
     t = _instant(step)
     keys = {f"{k}@{p}": (var, f"{p} mb", t) for k, var in PL_VARS.items() for p in PL_LEVELS}
     keys |= {k: (var, level, t) for k, (var, level) in SFC_VARS.items()}
     if step > 0:
-        keys["apcp"] = ("APCP", "surface", f"0-{step} hour acc fcst")
-        keys["ulwrf_toa"] = ("ULWRF", "top of atmosphere", f"{bucket_start(step)}-{step} hour ave fcst")
+        keys["apcp"] = ("APCP", "surface", period(0, step, "acc"))
+        keys["ulwrf_toa"] = ("ULWRF", "top of atmosphere", period(bucket_start(step), step, "ave"))
     return keys
 
 

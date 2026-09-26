@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import time
+import http.client
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Sequence
@@ -84,7 +85,8 @@ class UrllibFetcher:
                 last_error = exc
                 if attempt < len(self.backoff_s):
                     self.sleep(self.backoff_s[attempt])
-            except (OSError, urllib.error.URLError, FetchError) as exc:
+            except (OSError, urllib.error.URLError, http.client.HTTPException, FetchError) as exc:
+                # HTTPException: a body cut short (IncompleteRead) or a malformed response is transient too
                 last_error = exc
                 if attempt < len(self.backoff_s):
                     self.sleep(self.backoff_s[attempt])

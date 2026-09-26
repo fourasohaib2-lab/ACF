@@ -133,6 +133,32 @@ def test_404_is_final_other_http_errors_are_retried(monkeypatch: pytest.MonkeyPa
     assert isinstance(info.value, NotPublished) == (code == 404)
 
 
+def test_a_body_cut_short_is_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    import http.client
+
+    calls, sleeps = [], []
+
+    class Cut:
+        def __enter__(self):  # noqa: ANN204
+            return self
+
+        def __exit__(self, *exc) -> None:  # noqa: ANN002
+            return None
+
+        def read(self) -> bytes:
+            if len(calls) < 2:
+                raise http.client.IncompleteRead(b"x", 10)
+            return b"payload"
+
+    def urlopen(request, timeout):  # noqa: ANN001, ANN202
+        calls.append(1)
+        return Cut()
+
+    monkeypatch.setattr("acf.awci.ops.source_ecmwf.urllib.request.urlopen", urlopen)
+    assert UrllibFetcher(sleep=sleeps.append).get_text("https://example.invalid/x") == "payload"
+    assert len(calls) == 2 and sleeps == [2]  # one cut body, retried once
+
+
 def _ens_index_text(members: tuple[int, ...], drop_member: int | None = None) -> str:
     lines, offset = [], 0
     for m in members:
