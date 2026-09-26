@@ -34,6 +34,7 @@ from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, Profile, combi
 from acf.awci.ops.registry import LAYERS, LEVEL_LAYERS, MODULES, SURFACE_LAYERS
 from acf.awci.ops.isa import flight_level
 from acf.awci.ops.store import ATTRIBUTION, LICENSE, MODEL, CubeStore
+from acf.web.awci_models import model_store
 from acf.awci.ops.summary import SUMMARY_THRESHOLDS, area_weights, summarize, weighted_percentile
 from acf.awci.ops.thermo import dewpoint_k_from_vapor_pressure, vapor_pressure_hpa
 
@@ -64,7 +65,7 @@ def _num(value: Any) -> float | None:
 
 
 def _store(request: Request) -> CubeStore:
-    return request.app.state.awci_store
+    return model_store(request)  # model=ifs|gfs (SP6)
 
 
 def _domain(request: Request, name: str) -> Domain:
@@ -137,9 +138,10 @@ def _level_index(manifest: dict[str, Any], level: float) -> int:
 
 def _provenance(manifest: dict[str, Any], step: int | None) -> dict[str, Any]:
     valid = manifest["valid_times"][manifest["steps"].index(step)] if step is not None else None
-    return Provenance(model=MODEL, run=manifest["run"], step=step, valid_time=valid, domain=manifest["domain"],
-                      profile=manifest["profile"], profile_version=manifest["profile_version"],
-                      license=LICENSE, attribution=ATTRIBUTION).model_dump()
+    return Provenance(model=manifest.get("model", MODEL), run=manifest["run"], step=step, valid_time=valid,
+                      domain=manifest["domain"], profile=manifest["profile"], profile_version=manifest["profile_version"],
+                      license=manifest.get("license", LICENSE),
+                      attribution=manifest.get("attribution", ATTRIBUTION)).model_dump()
 
 
 def _nearest(ds: Any, domain: Domain, lat: float, lon: float) -> tuple[int, int]:
@@ -207,7 +209,8 @@ def field(
             content=np.ascontiguousarray(values, dtype="<f4").tobytes(), media_type="application/octet-stream",
             headers={"X-AWCI-Shape": f"{values.shape[0]},{values.shape[1]}",
                      "X-AWCI-Lats": f"{lats[0]},{lats[-1]}", "X-AWCI-Lons": f"{lons[0]},{lons[-1]}",
-                     "X-AWCI-Nodata": "NaN", "X-AWCI-Unit": unit, "X-AWCI-Attribution": "ECMWF CC-BY-4.0"},
+                     "X-AWCI-Nodata": "NaN", "X-AWCI-Unit": unit,
+                     "X-AWCI-Attribution": "NOAA/NCEP GFS public domain" if m.get("model_id") == "gfs" else "ECMWF CC-BY-4.0"},
         )
     return {"layer": layer, "unit": unit, "level_hpa": level, "lats": lats.tolist(), "lons": lons.tolist(),
             "values": [[_num(v) for v in row] for row in values],
@@ -512,3 +515,7 @@ router.include_router(_ens_router)
 from acf.web.awci_route import router as _route_router  # noqa: E402
 
 router.include_router(_route_router)
+
+from acf.web.awci_compare import router as _compare_router  # noqa: E402
+
+router.include_router(_compare_router)

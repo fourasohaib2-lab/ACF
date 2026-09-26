@@ -21,6 +21,7 @@ from acf.awci.obs.store import ObsStore, parse_time
 from acf.awci.ops.clouds import CLEAR, GENUS_NAMES, INDETERMINATE
 from acf.awci.ops.domains import Domain
 from acf.awci.ops.store import CubeStore
+from acf.web.awci_models import data_root, model_store
 from acf.awci.ops.verify import VerifyConfig, build_pairs, match_reports, model_at_stations, verify_run
 
 ATTRIBUTION = "Aviation Weather Center, NOAA/NWS — domaine public"
@@ -33,7 +34,7 @@ RunId = Annotated[str, Query(pattern=r"^\d{10}$")]
 
 
 def _cubes(request: Request) -> CubeStore:
-    return request.app.state.awci_store
+    return model_store(request)  # model=ifs|gfs (SP6); observations stay at the data root
 
 
 def _domain(request: Request, name: str) -> Domain:
@@ -44,7 +45,7 @@ def _domain(request: Request, name: str) -> Domain:
 
 
 def _obs(request: Request, domain: str) -> ObsStore:
-    return ObsStore(_cubes(request).root, _domain(request, domain).name)
+    return ObsStore(data_root(request), _domain(request, domain).name)
 
 
 def _time(value: str | None) -> datetime:
@@ -169,8 +170,8 @@ def sigmets(request: Request, domain: str, time: str | None = None) -> dict[str,
 
 
 @lru_cache(maxsize=16)
-def _verification(root: str, domain: Domain, run: str, cube_mtime: float, obs_mtime: float) -> str:
-    cubes, store = CubeStore(Path(root)), ObsStore(root, domain.name)
+def _verification(cube_root: str, obs_root: str, domain: Domain, run: str, cube_mtime: float, obs_mtime: float) -> str:
+    cubes, store = CubeStore(Path(cube_root)), ObsStore(obs_root, domain.name)
     manifest = cubes.manifest(domain.name, run)
     model = model_at_stations(cubes.dataset(domain.name, run), manifest, store.stations(), domain)
     first, last = model.valid_times[0], model.valid_times[-1]
@@ -179,7 +180,9 @@ def _verification(root: str, domain: Domain, run: str, cube_mtime: float, obs_mt
     pairs, excluded = build_pairs(model, store.stations(), metars, config)
     report = verify_run(pairs, excluded, config, stations_total=len(store.stations()))
     report.update({"domain": domain.name, "run": run, "valid_from": _fmt(first), "valid_to": _fmt(last),
-                   "observations_ingested_at": store.status().get("ingested_at")})
+                   "observations_ingested_at": store.status().get("ingested_at"),
+                   "model_id": manifest.get("model_id", "ifs"),
+                   "forecast": f"AWCI cloud diagnostics on {manifest.get('model', 'ECMWF IFS 0.25°')} (status HYPOTHESIS)"})
     return json.dumps(report)
 
 
@@ -191,6 +194,7 @@ def verification(request: Request, domain: str, run: RunId) -> dict[str, Any]:
     cube = cubes.root / d.name / run / "cube.nc"
     if not cube.exists():
         raise HTTPException(404, f"no run {run!r} for domain {domain!r}")
-    store = ObsStore(cubes.root, d.name)
-    report: dict[str, Any] = json.loads(_verification(str(cubes.root), d, run, cube.stat().st_mtime, store.mtime()))
+    store = ObsStore(data_root(request), d.name)
+    report: dict[str, Any] = json.loads(_verification(str(cubes.root), str(data_root(request)), d, run,
+                                                      cube.stat().st_mtime, store.mtime()))
     return report

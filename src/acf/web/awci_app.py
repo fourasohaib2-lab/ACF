@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from acf.awci.ops.domains import DEFAULT_DOMAINS_PATH, load_domains
-from acf.awci.ops.store import CubeStore, data_root
+from acf.awci.ops.store import MODELS, CubeStore, data_root, model_root
 from acf.web.awci_router import default_cloud_profile, default_profile, router
 from acf.web.awci_wms import UrllibWmsFetcher, WmsRelay
 
@@ -27,7 +27,8 @@ DEFAULT_WEB_DIST = Path(__file__).resolve().parents[3] / "web" / "awci" / "dist"
 
 
 def attach_awci_state(app: FastAPI, data_dir: Path | None = None, domains_file: Path | None = None) -> None:
-    app.state.awci_store = CubeStore(data_dir)
+    app.state.awci_store = CubeStore(data_dir)  # IFS, at the data root
+    app.state.awci_stores = {m: CubeStore(model_root(app.state.awci_store.root, m)) for m in MODELS}
     env_domains = os.environ.get("ACF_AWCI_DOMAINS_FILE")
     app.state.awci_domains = load_domains(domains_file or (Path(env_domains) if env_domains else DEFAULT_DOMAINS_PATH))
     app.state.awci_profile = default_profile()
