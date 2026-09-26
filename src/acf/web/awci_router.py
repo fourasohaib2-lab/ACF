@@ -519,3 +519,7 @@ router.include_router(_route_router)
 from acf.web.awci_compare import router as _compare_router  # noqa: E402
 
 router.include_router(_compare_router)
+
+from acf.web.awci_sounding import router as _sounding_router  # noqa: E402
+
+router.include_router(_sounding_router)

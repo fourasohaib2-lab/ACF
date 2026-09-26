@@ -50,6 +50,10 @@ class ObsStore:
         payload = {"fetched_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "stations": stations}
         _write(self.root / "stations.json", json.dumps(payload))
 
+    def stations_fetched_at_of(self, name: str) -> datetime | None:
+        path = self.root / name
+        return parse_time(json.loads(path.read_text())["fetched_at"]) if path.exists() else None
+
     def stations_fetched_at(self) -> datetime | None:
         path = self.root / "stations.json"
         return parse_time(json.loads(path.read_text())["fetched_at"]) if path.exists() else None
@@ -96,6 +100,21 @@ class ObsStore:
         """METAR/SPECI observed in [start, end], sorted by time."""
         return self._between("metar", "obs_time", start, end)
 
+    def add_soundings(self, records: list[dict[str, Any]]) -> int:
+        """Radiosonde profiles (SP7), one record per station and nominal time (00/12 UTC)."""
+        return self._add("sounding", records, "nominal_time", lambda r: (r["wmo"], r["nominal_time"]))
+
+    def soundings(self, start: datetime, end: datetime) -> list[dict[str, Any]]:
+        return self._between("sounding", "nominal_time", start, end)
+
+    def write_sounding_stations(self, stations: list[dict[str, Any]], now: datetime) -> None:
+        _write(self.root / "sounding_stations.json",
+               json.dumps({"fetched_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "stations": stations}))
+
+    def sounding_stations(self) -> list[dict[str, Any]]:
+        path = self.root / "sounding_stations.json"
+        return list(json.loads(path.read_text())["stations"]) if path.exists() else []
+
     def add_sigmets(self, records: list[dict[str, Any]]) -> int:
         return self._add("sigmet", records, "valid_from", lambda r: r["raw"])
 
@@ -132,7 +151,7 @@ class ObsStore:
         """Delete day files older than `days` days; returns their paths relative to the store."""
         limit = (now - timedelta(days=days)).date()
         removed = []
-        for kind in ("metar", "sigmet"):
+        for kind in ("metar", "sigmet", "sounding"):
             folder = self.root / kind
             for path in sorted(folder.glob("*.jsonl")) if folder.exists() else []:
                 match = _DAY_FILE.match(path.name)
