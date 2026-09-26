@@ -99,3 +99,13 @@ describe("route in the URL (SP4)", () => {
   });
 });
 
+
+describe("model in the URL (SP6)", () => {
+  it("defaults to IFS, keeps GFS, never writes the default", () => {
+    expect(parseView("?domain=x").model).toBe("ifs");
+    expect(parseView("?model=gfs").model).toBe("gfs");
+    expect(parseView("?model=icon").model).toBe("ifs");
+    expect(serializeView(parseView("?model=gfs"))).toContain("model=gfs");
+    expect(serializeView(parseView("?domain=x"))).not.toContain("model=");
+  });
+});

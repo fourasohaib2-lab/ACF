@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Domain, Meta, RunInfo } from "../api/types";
 import { fr } from "../i18n/fr";
 import { flLabel, stepLabel, utcLabel } from "../lib/format";
-import type { ViewState } from "../state/view";
+import { MODEL_LABELS, type Model, type ViewState } from "../state/view";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
@@ -20,9 +20,14 @@ interface Props {
   onNext: () => void;
   onNow: () => void;
   status: ReactNode;
+  /** Deterministic model on screen and whether each model has at least one run for the domain (SP6). */
+  model: Model;
+  modelsAvailable: Record<Model, boolean>;
+  onModel: (model: Model) => void;
 }
 
-export function TopBar({ domains, domain, runs, run, meta, step, level, now, onChange, onPrev, onNext, onNow, status }: Props) {
+export function TopBar({ domains, domain, runs, run, meta, step, level, now, onChange, onPrev, onNext, onNow, status, model,
+  modelsAvailable, onModel }: Props) {
   const si = meta && step !== undefined ? meta.steps.indexOf(step) : -1;
   return (
     <header className="topbar">
@@ -64,10 +69,16 @@ export function TopBar({ domains, domain, runs, run, meta, step, level, now, onC
             {meta?.levels_hpa.map((p, i) => <option key={p} value={p}>{p} hPa · {flLabel(meta.flight_levels[i]!)}</option>)}
           </select>
         </label>
-        <div className="field">
+        <label className="field">
           <span>Modèle</span>
-          <span className="field-static">{fr.model}</span>
-        </div>
+          <select value={model} onChange={(e) => onModel(e.target.value as Model)}>
+            {(Object.keys(MODEL_LABELS) as Model[]).map((m) => (
+              <option key={m} value={m} disabled={!modelsAvailable[m] && m !== model}>
+                {MODEL_LABELS[m]}{modelsAvailable[m] ? "" : " (aucun run)"}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="topbar-right">
         {status}

@@ -1,5 +1,5 @@
 import { fmt } from "../lib/format";
-import { AWCI_CLASS_COLORS, AWCI_CLASS_VIGILANCE, SEQ_BLUE } from "../theme/palette";
+import { AWCI_CLASS_COLORS, AWCI_CLASS_VIGILANCE, DIVERGING_IFS_GFS, SEQ_BLUE } from "../theme/palette";
 import { CATEGORY_COLORS, HAZARDS } from "../lib/aero";
 import { GENUS_FAMILY, type LayerDef } from "./layers";
 
@@ -33,6 +33,14 @@ function Rows({ def, classLabels, awciBounds }: Props) {
   if (r.kind === "genus") {
     return <>{GENUS_FAMILY.map((f) => <li key={f.label}><Swatch color={f.color} />{f.label}</li>)}
       <li><Swatch />Ciel clair (transparent)</li></>;
+  }
+  if (r.kind === "diverging") {
+    return (
+      <li className="legend-ramp">
+        <span className="legend-gradient" style={{ background: `linear-gradient(to right, ${DIVERGING_IFS_GFS.join(",")})` }} aria-hidden="true" />
+        <span className="legend-ends num"><span>≤ −{r.limit} (GFS plus bas)</span><span>0</span><span>≥ +{r.limit} (GFS plus haut)</span></span>
+      </li>
+    );
   }
   const scale = r.scale ?? 1;
   const [lo, hi] = r.invert ? [r.max, r.min] : [r.min, r.max];

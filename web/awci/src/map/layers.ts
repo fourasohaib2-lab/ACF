@@ -1,22 +1,25 @@
-import { AWCI_CLASS_COLORS, CATEGORICAL, SEQ_BLUE, VIGILANCE as V, hexToRgb, rampColor } from "../theme/palette";
+import { AGREEMENT_COLORS as AG, AWCI_CLASS_COLORS, CATEGORICAL, DIVERGING_IFS_GFS, SEQ_BLUE, VIGILANCE as V, hexToRgb, rampColor } from "../theme/palette";
 
 export type Rgba = [number, number, number, number];
-export type Group = "awci" | "hazards" | "clouds" | "surface" | "ensemble";
+export type Group = "awci" | "hazards" | "clouds" | "surface" | "ensemble" | "compare";
 export type Render =
   | { kind: "awci" }
   | { kind: "codes"; colors: (string | null)[]; labels: string[] }
   | { kind: "continuous"; min: number; max: number; invert?: boolean; scale?: number; unitLabel?: string; openEnd?: boolean }
-  | { kind: "genus" };
+  | { kind: "genus" }
+  /** Signed quantity around 0, saturating at ±limit (SP6: GFS - IFS). */
+  | { kind: "diverging"; limit: number };
 /** `nanMeaning`: what an empty (NaN) cell means when it is an answer rather than missing data; drawn transparent. */
 export interface LayerDef {
   id: string; label: string; group: Group; perLevel: boolean; unit: string; render: Render; nanMeaning?: string;
-  /** "ens": read from /ens/field (IFS ENS, SP5) instead of the deterministic cube. */
-  source?: "ens";
+  /** "ens": read from /ens/field (IFS ENS, SP5); "cmp": from /compare/field (IFS-GFS, SP6). */
+  source?: "ens" | "cmp";
 }
 
 export const GROUP_LABELS: Record<Group, string> = {
   awci: "AWCI", hazards: "Dangers", clouds: "Nuages", surface: "Surface et précipitations",
   ensemble: "Probabilités (ensemble ECMWF)",
+  compare: "Désaccord IFS–GFS",
 };
 const S = SEQ_BLUE;
 const cont = (min: number, max: number, extra: Partial<Extract<Render, { kind: "continuous" }>> = {}): Render =>
@@ -70,8 +73,23 @@ export const ENS_LAYER_DEFS: LayerDef[] = [
   { id: "awci_std", label: "Dispersion de l'AWCI (écart-type)", group: "ensemble", perLevel: true, unit: "points", render: cont(0, 30), source: "ens" },
 ];
 
+const AGREE_LABELS = ["Aucun des deux", "IFS seul", "GFS seul", "Les deux"];
+const agree = (id: string, label: string, perLevel: boolean): LayerDef => ({
+  id, label, group: "compare", perLevel, unit: "accord", source: "cmp",
+  render: { kind: "codes", colors: [null, AG.ifsOnly, AG.gfsOnly, AG.both], labels: AGREE_LABELS },
+});
+
+/** IFS-GFS comparison layers (SP6): same run and valid time in both models, same grid. */
+export const CMP_LAYER_DEFS: LayerDef[] = [
+  { id: "awci_diff", label: "Écart d'AWCI (GFS − IFS)", group: "compare", perLevel: true, unit: "points", source: "cmp",
+    render: { kind: "diverging", limit: 30 } },
+  agree("agree_icing", "Accord givrage potentiel", true),
+  agree("agree_cat", "Accord turbulence CAT ≥ modérée", true),
+  agree("agree_convection", "Accord convection TCU/Cb", false),
+];
+
 export function layerDef(id: string): LayerDef {
-  const def = [...LAYER_DEFS, ...ENS_LAYER_DEFS].find((d) => d.id === id);
+  const def = [...LAYER_DEFS, ...ENS_LAYER_DEFS, ...CMP_LAYER_DEFS].find((d) => d.id === id);
   if (!def) throw new Error(`unknown layer ${id}`);
   return def;
 }
@@ -98,6 +116,8 @@ export function colorFn(def: LayerDef, awciBounds: number[]): (v: number) => Rgb
         if (v === 8) return rgba(CATEGORICAL[2]);
         return v >= 0 && v <= 7 ? rgba(CATEGORICAL[0]) : null;
       };
+    case "diverging":
+      return (v) => [...rampColor(DIVERGING_IFS_GFS, (Math.max(-r.limit, Math.min(r.limit, v)) + r.limit) / (2 * r.limit)), 255];
     case "continuous":
       return (v) => {
         const t = (v - r.min) / (r.max - r.min);

@@ -13,3 +13,6 @@ the deterministic cube of the same run built with cloud profile 1.1.0 (hence `li
 `route_section_gmmn_heca.json` and `route_meteogram_gmmn_heca.json` are `/route/section` (AWCI, +12 h) and
 `/route/meteogram` responses for the route Casablanca GMMN → Algiers DAAG → Tunis DTTA → Cairo HECA (3 770 km) over the
 real IFS 2026-09-25 12Z run, North Africa (© ECMWF CC-BY-4.0).
+`compare_point_fixture.json` is the `/compare/point` response (850 hPa, +3 h, 36.5° N 3.0° E) over the real cropped
+IFS fixture (© ECMWF CC-BY-4.0) and the real cropped GFS fixture of the same run (`tests/data/awci_gfs`, NOAA public
+domain).

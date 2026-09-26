@@ -4,7 +4,7 @@ import { clickMap, open } from "./helpers";
 test("the main view shows real data, its provenance and its freshness", async ({ page }) => {
   await open(page, "?domain=fixture&step=3&level=300");
   await expect(page.getByLabel("État des données")).toContainText("complet");
-  await expect(page.getByText("ECMWF IFS 0,25°")).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Modèle" }).locator("option:checked")).toHaveText("ECMWF IFS 0,25°");
   await expect(page.locator(".maplibregl-ctrl-attrib")).toContainText("ECMWF");
   await expect(page.getByRole("region", { name: "Situation actuelle" })).toContainText("Classe AWCI");
 });

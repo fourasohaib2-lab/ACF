@@ -14,7 +14,7 @@ interface Props {
   children?: ReactNode;
 }
 
-const GROUPS: Group[] = ["awci", "hazards", "clouds", "surface", "ensemble"];
+const GROUPS: Group[] = ["awci", "hazards", "clouds", "surface", "ensemble", "compare"];
 
 /** Layer choice (only layers present in this run) and sections that exist; later sub-projects add their own. */
 export function SideNav({ layers, layer, onLayer, streamlines, onStreamlines, panel, onPanel, layerListRef, children }: Props) {

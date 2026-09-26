@@ -54,6 +54,13 @@ export async function getEnsField(params: Params, signal?: AbortSignal): Promise
   return parseField(r.headers, await r.arrayBuffer());
 }
 
+/** IFS-GFS comparison (SP6 /compare/field): AWCI difference or agreement codes, same binary layout as /field. */
+export async function getCompareField(params: Params, signal?: AbortSignal): Promise<FieldData> {
+  const r = await fetch(`${API_BASE}/compare/field${query(params)}`, { signal });
+  if (!r.ok) return fail(r);
+  return parseField(r.headers, await r.arrayBuffer());
+}
+
 /** 3-D field (level, lat, lon) followed by gh (SP1C /volume), split by acf volume/geometry.parseVolume. */
 export async function getVolume(params: Params, signal?: AbortSignal): Promise<{ body: ArrayBuffer; headers: Headers }> {
   const r = await fetch(`${API_BASE}/volume${query(params)}`, { signal });

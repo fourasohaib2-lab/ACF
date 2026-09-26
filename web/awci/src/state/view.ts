@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Domain, EnsMeta, Meta, RunInfo } from "../api/types";
-import { ENS_LAYER_DEFS, LAYER_DEFS, type LayerDef } from "../map/layers";
+import { CMP_LAYER_DEFS, ENS_LAYER_DEFS, LAYER_DEFS, type LayerDef } from "../map/layers";
 import { parseRoute, serializeRoute, type LatLon } from "../lib/route";
 import { allowedWith, type VolumeLayerId } from "../volume/layers3d";
 
@@ -13,7 +13,11 @@ export interface ViewState {
   mode3d: boolean; vol: VolumeLayerId[]; exag: number; cth: number;
   /** Route waypoints [lat, lon] (SP4): cross-section and route meteogram. */
   route?: LatLon[];
+  /** Deterministic model on screen (SP6). */
+  model: Model;
 }
+export type Model = "ifs" | "gfs";
+export const MODEL_LABELS: Record<Model, string> = { ifs: "ECMWF IFS 0,25°", gfs: "NOAA GFS 0,25°" };
 const VOLUME_IDS: VolumeLayerId[] = ["clouds", "icing", "cat", "awci"];
 export const EXAG_DEFAULT = 40;
 export const CTH_DEFAULT = 0.625; // 5/8: broken (BKN)
@@ -55,6 +59,7 @@ export function parseView(search: string): ViewState {
     exag: clamp(Math.round(num(q.get("exag")) ?? EXAG_DEFAULT), 10, 100),
     cth: clamp(Math.round((num(q.get("cth")) ?? CTH_DEFAULT) * 8) / 8, 0.125, 1),
     route: parseRoute(q.get("route")),
+    model: q.get("model") === "gfs" ? "gfs" : "ifs",
   };
 }
 
@@ -70,6 +75,7 @@ export function serializeView(v: ViewState): string {
   if (v.exag !== EXAG_DEFAULT) set("exag", v.exag);
   if (v.cth !== CTH_DEFAULT) set("cth", v.cth);
   if (v.route?.length) set("route", serializeRoute(v.route));
+  if (v.model === "gfs") set("model", "gfs");
   return `?${q.toString()}`;
 }
 
@@ -88,17 +94,21 @@ export function nextLevel(m: Meta, level: number, dir: 1 | -1): number {
   return sorted[Math.min(sorted.length - 1, Math.max(0, i + dir))] ?? level;
 }
 
-export function availableLayers(m: Meta, ens?: Pick<EnsMeta, "steps" | "missing_steps">): LayerDef[] {
+export function availableLayers(m: Meta, ens?: Pick<EnsMeta, "steps" | "missing_steps">, compare = false): LayerDef[] {
   const present = new Set([...m.level_layers, ...m.surface_layers]);
-  return [...LAYER_DEFS.filter((d) => present.has(d.id)), ...(ens ? ENS_LAYER_DEFS : [])];
+  return [...LAYER_DEFS.filter((d) => present.has(d.id)), ...(ens ? ENS_LAYER_DEFS : []), ...(compare ? CMP_LAYER_DEFS : [])];
 }
+
+/** An IFS-GFS comparison needs the step in both runs (it is never taken from a neighbouring step). */
+export const compareStepAvailable = (a: Meta | undefined, b: Meta | undefined, step: number) =>
+  !!a && !!b && [a, b].every((m) => m.steps.includes(step) && !m.missing_steps.includes(step));
 
 /** ENS steps are 6-hourly; a step not computed (or missing) is never replaced by a neighbouring one. */
 export const ensStepAvailable = (ens: Pick<EnsMeta, "steps" | "missing_steps"> | undefined, step: number) =>
   !!ens && ens.steps.includes(step) && !ens.missing_steps.includes(step);
 
 export function resolveView(v: ViewState, domains: Domain[], runs: RunInfo[], meta: Meta | undefined,
-                            now: Date, ens?: Pick<EnsMeta, "steps" | "missing_steps">): Resolved | null {
+                            now: Date, ens?: Pick<EnsMeta, "steps" | "missing_steps">, compare = false): Resolved | null {
   const domain = domains.find((d) => d.name === v.domain)?.name ?? domains.find((d) => d.default)?.name ?? domains[0]?.name;
   const usable = runs.filter((r) => r.status !== "failed");
   const run = usable.find((r) => r.run === v.run)?.run ?? usable[0]?.run;
@@ -114,7 +124,7 @@ export function resolveView(v: ViewState, domains: Domain[], runs: RunInfo[], me
   }
   const level = v.level !== undefined && meta.levels_hpa.includes(v.level) ? v.level
     : meta.levels_hpa.includes(300) ? 300 : meta.levels_hpa[0]!;
-  const layer = availableLayers(meta, ens).some((d) => d.id === v.layer) ? v.layer : "awci";
+  const layer = availableLayers(meta, ens, compare).some((d) => d.id === v.layer) ? v.layer : "awci";
   return { domain, run, step, level, layer };
 }
 

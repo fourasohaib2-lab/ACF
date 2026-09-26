@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useRouteMeteogram, useRouteSection, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useRouteMeteogram, useRouteSection, useComparePoint, type CubeModel, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -30,6 +30,7 @@ import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { SigmetList } from "./panels/SigmetList";
 import { EnsVerification } from "./panels/EnsVerification";
+import { ModelAgreement } from "./panels/ModelAgreement";
 import { RoutePanel } from "./panels/RoutePanel";
 import { ValidationPage } from "./panels/ValidationPage";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
@@ -38,7 +39,7 @@ import { TopBar } from "./panels/TopBar";
 import { runLabel, stepLabel } from "./lib/format";
 import { ownsKeys } from "./lib/keys";
 import { MAX_WAYPOINTS, serializeRoute } from "./lib/route";
-import { availableLayers, ensStepAvailable, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
+import { availableLayers, compareStepAvailable, ensStepAvailable, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type Model, type ViewState } from "./state/view";
 
 const MapView = lazy(() => import("./map/MapView").then((m) => ({ default: m.MapView })));
 const Volume3D = lazy(() => import("./volume/Volume3D"));
@@ -68,16 +69,28 @@ export function App() {
 
   const domains = useDomains();
   const domain = domains.data?.find((d) => d.name === view.domain) ?? domains.data?.find((d) => d.default) ?? domains.data?.[0];
-  const runs = useRuns(domain?.name);
+  // SP6: deterministic model on screen (IFS by default, GFS on request); the other model feeds the comparison
+  const cubeModel: CubeModel = view.model === "gfs" ? "gfs" : undefined;
+  const ifsRuns = useRuns(domain?.name);
+  const gfsRuns = useRuns(domain?.name, "gfs");
+  const runs = cubeModel ? gfsRuns : ifsRuns;
+  const otherRuns = cubeModel ? ifsRuns : gfsRuns;
   const usableRuns = useMemo(() => (runs.data ?? []).filter((r) => r.status !== "failed"), [runs.data]);
   const runId = usableRuns.find((r) => r.run === view.run)?.run ?? usableRuns[0]?.run;
-  const meta = useMeta(domain?.name, runId);
+  const meta = useMeta(domain?.name, runId, cubeModel);
+  const hasOther = !!runId && !!otherRuns.data?.some((r) => r.run === runId && r.status !== "failed");
+  const otherMeta = useMeta(domain?.name, hasOther ? runId : undefined, cubeModel ? undefined : "gfs");
+  const modelsAvailable = { ifs: !!ifsRuns.data?.length, gfs: !!gfsRuns.data?.length };
+  const onModel = useCallback((model: Model) => {
+    const target = model === "gfs" ? gfsRuns.data : ifsRuns.data;
+    setView((old) => ({ model, run: target?.some((r) => r.run === old.run) ? old.run : undefined }));
+  }, [gfsRuns.data, ifsRuns.data, setView]);
   // SP5: IFS ENS for the run on screen, when acf-awci-ens produced it
   const ensRuns = useEnsRuns(domain?.name);
   const hasEns = !!runId && !!ensRuns.data?.some((r) => r.run === runId);
   const ensMeta = useEnsMeta(domain?.name, runId, hasEns);
   const registry = useRegistry();
-  const resolved = domains.data && runs.data ? resolveView(view, domains.data, runs.data, meta.data, now, ensMeta.data) : null;
+  const resolved = domains.data && runs.data ? resolveView(view, domains.data, runs.data, meta.data, now, ensMeta.data, hasOther) : null;
   const run = usableRuns.find((r) => r.run === resolved?.run);
   const shownRun = useRef<string | undefined>(undefined);
   useEffect(() => { shownRun.current = resolved?.run; }, [resolved?.run]);
@@ -90,15 +103,16 @@ export function App() {
     ? [nextStep(meta.data, resolved.step, 1), nextStep(meta.data, resolved.step, -1)].filter((s) => s !== resolved.step) : []),
   [meta.data, resolved?.step]); // eslint-disable-line react-hooks/exhaustive-deps
   // An ENS layer at a step the ensemble did not compute is not requested (and never borrowed from a neighbour).
-  const ensGap = def.source === "ens" && resolved !== null && !ensStepAvailable(ensMeta.data, resolved.step);
+  const ensGap = (def.source === "ens" && resolved !== null && !ensStepAvailable(ensMeta.data, resolved.step))
+    || (def.source === "cmp" && resolved !== null && !compareStepAvailable(meta.data, otherMeta.data, resolved.step));
   const ensNeighbours = useMemo(() => (def.source === "ens" ? neighbours.filter((s) => ensStepAvailable(ensMeta.data, s)) : neighbours),
     [def.source, neighbours, ensMeta.data]);
   const field = useField({ domain: resolved?.domain, run: resolved?.run, layer: ensGap ? undefined : resolved?.layer,
-    step: resolved?.step, level: resolved?.level, perLevel: def.perLevel, source: def.source }, ensNeighbours);
+    step: resolved?.step, level: resolved?.level, perLevel: def.perLevel, source: def.source, model: cubeModel }, ensNeighbours);
   const uField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "u" : undefined,
-    step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
+    step: resolved?.step, level: resolved?.level, perLevel: true, model: cubeModel }, neighbours);
   const vField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "v" : undefined,
-    step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
+    step: resolved?.step, level: resolved?.level, perLevel: true, model: cubeModel }, neighbours);
   // Only data of the current key reaches the map: a neighbour's field kept as placeholder is never drawn as current,
   // and u and v always come from the same step and level.
   const fieldData = freshData(field);
@@ -114,12 +128,17 @@ export function App() {
   const sectionDef = def.perLevel && !def.source ? def : layerDef("awci");
   const routePoints = view.route && view.route.length >= 2 ? serializeRoute(view.route) : undefined;
   const routeSection = useRouteSection({ domain: resolved?.domain, run: resolved?.run, step: resolved?.step, layer: sectionDef.id,
-    points: routePoints }, !!routePoints);
-  const routeMeteogram = useRouteMeteogram({ domain: resolved?.domain, run: resolved?.run, points: routePoints }, !!routePoints);
-  const layers = useMemo(() => (meta.data ? availableLayers(meta.data, ensMeta.data) : []), [meta.data, ensMeta.data]);
-  const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level, neighbours);
+    points: routePoints, model: cubeModel }, !!routePoints);
+  const routeMeteogram = useRouteMeteogram({ domain: resolved?.domain, run: resolved?.run, points: routePoints, model: cubeModel },
+    !!routePoints);
+  const layers = useMemo(() => (meta.data ? availableLayers(meta.data, ensMeta.data, hasOther) : []), [meta.data, ensMeta.data, hasOther]);
+  const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level, neighbours, cubeModel);
   const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
-  const pointKey = { domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level, lat: view.lat, lon: view.lon };
+  const pointKey = { domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level, lat: view.lat, lon: view.lon,
+    model: cubeModel };
+  const compareOk = hasOther && !!resolved && compareStepAvailable(meta.data, otherMeta.data, resolved.step);
+  const comparePoint = useComparePoint({ domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level,
+    lat: view.lat, lon: view.lon }, compareOk);
   const point = usePoint(pointKey);
   const ensPoint = useEnsPoint({ domain: resolved?.domain, run: resolved?.run, lat: view.lat, lon: view.lon, level: resolved?.level }, hasEns);
   const profile = useProfile(pointKey);
@@ -127,7 +146,7 @@ export function App() {
   const hasClouds = !!meta.data?.level_layers.includes("cloud_fraction");
   const clouds = useClouds(pointKey, hasClouds);
   const cloudsSeries = useCloudsSeries(pointKey, hasClouds);
-  const domainSeries = useSummarySeries(resolved?.domain, resolved?.run, resolved?.level);
+  const domainSeries = useSummarySeries(resolved?.domain, resolved?.run, resolved?.level, cubeModel);
   const wmsLayers = useWmsLayers();
   const overlayTimes = useOverlayTimes(view.ov);
   const overlayStates: Record<string, OverlayState> = Object.fromEntries(view.ov.map((layer, i) => {
@@ -154,8 +173,8 @@ export function App() {
   const validTime = meta.data && resolved ? meta.data.valid_times[meta.data.steps.indexOf(resolved.step)] : undefined;
   const airportsQ = useAirports(domain?.name, validTime);
   const sigmetsQ = useSigmets(domain?.name, validTime, view.aero.includes("sigmet"));
-  const airportQ = useAirport(domain?.name, view.ap, resolved?.run);
-  const verificationQ = useVerification(domain?.name, resolved?.run, view.panel === "validation");
+  const airportQ = useAirport(domain?.name, view.ap, resolved?.run, cubeModel);
+  const verificationQ = useVerification(domain?.name, resolved?.run, view.panel === "validation", cubeModel);
   const ensVerificationQ = useEnsVerification(domain?.name, resolved?.run, view.panel === "validation" && hasEns);
   const freshAirports = freshData(airportsQ);
   const airportPoints = useMemo(() => (view.aero.includes("metar") ? airportFeatures(freshAirports) : undefined),
@@ -177,12 +196,13 @@ export function App() {
     const b = nextStep(meta.data, a, 1);
     return [a, b].filter((s, i, all) => s !== resolved.step && all.indexOf(s) === i);
   }, [meta.data, resolved?.step]); // eslint-disable-line react-hooks/exhaustive-deps
-  const volKey = (layer: string | undefined) => ({ domain: resolved?.domain, run: resolved?.run, layer, step: resolved?.step, stride: 1 });
+  const volKey = (layer: string | undefined) => ({ domain: resolved?.domain, run: resolved?.run, layer, step: resolved?.step, stride: 1,
+    model: cubeModel });
   const vol0 = useVolume(volKey(volDefs[0]?.source), next3d, mode3d && !!volDefs[0]);
   const aux0 = useVolume(volKey(volDefs[0]?.aux), next3d, mode3d && !!volDefs[0]?.aux);
   const vol1 = useVolume(volKey(volDefs[1]?.source), next3d, mode3d && !!volDefs[1]);
   const aux1 = useVolume(volKey(volDefs[1]?.aux), next3d, mode3d && !!volDefs[1]?.aux);
-  const terrain = useTerrain(resolved?.domain, resolved?.run, 1, mode3d);
+  const terrain = useTerrain(resolved?.domain, resolved?.run, 1, mode3d, cubeModel);
   const volIds = view.vol.join(",");
   const volumeInputs = useMemo(() => {
     const volDefs = VOLUME_LAYERS.filter((d) => volIds.split(",").includes(d.id));
@@ -274,7 +294,8 @@ export function App() {
       <TopBar domains={domains.data ?? []} domain={domain.name} runs={runs.data ?? []} run={resolved?.run ?? ""}
               meta={meta.data} step={resolved?.step} level={resolved?.level} now={now} onChange={update}
               onPrev={() => step(-1)} onNext={() => step(1)} onNow={onNow}
-              status={<DataStatus run={run} cloudStatus={meta.data?.cloud_status} now={now} />} />
+              status={<DataStatus run={run} cloudStatus={meta.data?.cloud_status} now={now} />}
+              model={view.model} modelsAvailable={modelsAvailable} onModel={onModel} />
       <SideNav layers={layers} layer={def.id} onLayer={(id) => update({ layer: id })} streamlines={streamlines}
                onStreamlines={setStreamlines} panel={view.panel} onPanel={(panel) => update({ panel })} layerListRef={layerListRef}>
         <AeroControls airports={airportsQ.data} layers={view.aero} selected={view.ap} now={now}
@@ -332,7 +353,9 @@ export function App() {
               {field.isPlaceholderData && !ensGap && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
               {ensGap && (
                 <div className="map-loading" role="status">
-                  Pas de probabilité ENS à {stepLabel(resolved.step)} : l'ensemble est calculé à {(ensMeta.data?.steps ?? []).filter((s) => !ensMeta.data?.missing_steps.includes(s)).map(stepLabel).join(", ")}.
+                  {def.source === "cmp"
+                    ? `Pas de comparaison à ${stepLabel(resolved.step)} : cette échéance manque dans l'un des deux runs (IFS ou GFS).`
+                    : `Pas de probabilité ENS à ${stepLabel(resolved.step)} : l'ensemble est calculé à ${(ensMeta.data?.steps ?? []).filter((s) => !ensMeta.data?.missing_steps.includes(s)).map(stepLabel).join(", ")}.`}
                 </div>
               )}
               {field.isError && <div className="map-error"><ErrorBox error={field.error} what={def.label} /></div>}
@@ -363,8 +386,14 @@ export function App() {
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
             {view.aero.includes("sigmet") && <SigmetList sigmets={freshSigmets} isError={sigmetsQ.isError} />}
-            <EnsemblePanel point={ensPoint.data} step={resolved.step} deterministicAwci={point.data?.awci ?? null} unavailable={!hasEns}
-                           ensCloudProfile={ensMeta.data?.cloud_profile_version} detCloudProfile={meta.data.cloud_profile?.version} />
+            <ModelAgreement data={comparePoint.data} isLoading={comparePoint.isLoading} error={comparePoint.error}
+                            classLabels={classLabels} awciBounds={awciBounds}
+                            unavailable={!hasOther ? `Pas de run ${cubeModel ? "IFS" : "GFS"} ${resolved.run} : aucune comparaison (acf-awci-ingest --model ${cubeModel ? "ifs" : "gfs"} --run ${resolved.run}).`
+                              : !compareOk ? `L'échéance ${stepLabel(resolved.step)} n'existe pas dans les deux runs : aucune comparaison.`
+                                : view.lat === undefined ? "Cliquer sur la carte pour comparer IFS et GFS au point." : undefined} />
+            {/* the ensemble is IFS ENS: it is set against the IFS deterministic value only */}
+            <EnsemblePanel point={ensPoint.data} step={resolved.step} deterministicAwci={cubeModel ? null : point.data?.awci ?? null} unavailable={!hasEns}
+                           ensCloudProfile={ensMeta.data?.cloud_profile_version} detCloudProfile={cubeModel ? undefined : meta.data.cloud_profile?.version} />
             <LatestRuns runs={runs.data ?? []} now={now} />
           </aside>
         )}

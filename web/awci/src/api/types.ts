@@ -196,3 +196,13 @@ export interface RouteMeteogramStep {
   frac_cloud_bkn: (number | null)[] | null;
 }
 export interface RouteMeteogram extends RouteGeometry { awci_high_lower_bound: number; steps: RouteMeteogramStep[]; provenance: Provenance }
+
+// ---- SP6: IFS-GFS comparison ----
+export interface ComparePointModel {
+  values: Record<string, number | null>; model: string | null; attribution: string | null; cloud_profile_version: string | null;
+}
+export interface ComparePoint {
+  lat: number; lon: number; level_hpa: number; step: number; run: string; valid_time: string;
+  models: { ifs: ComparePointModel; gfs: ComparePointModel }; awci_diff: number | null;
+  definition_differences: Record<string, string>;
+}

@@ -39,3 +39,10 @@ export function rampColor(stops: readonly string[], t: number): Rgb {
 
 /** Chart series colours resolved per theme by CSS (dark or light categorical slots 1-3, both validated). */
 export const SERIES = ["var(--series-1)", "var(--series-2)", "var(--series-3)"] as const;
+
+/** IFS-GFS AWCI difference (SP6), GFS - IFS: blue where GFS is lower, orange where higher, dark centre (no
+ *  difference stays quiet). Measured with tools/awci/check_palette.py: smallest CIEDE2000 step 15.9 under every
+ *  colour-vision simulation; contrast on the map 10.5 / 11.9 at the ends. */
+export const DIVERGING_IFS_GFS = ["#9ec5f4", "#3987e5", "#184f95", "#1a2642", "#8f4a14", "#e07a1f", "#ffc285"] as const;
+/** Hazard agreement codes 1 IFS only, 2 GFS only, 3 both: smallest CIEDE2000 difference 26.3 (deuteranopia). */
+export const AGREEMENT_COLORS = { ifsOnly: "#3987e5", gfsOnly: "#ffeb3b", both: "#e8413c" } as const;
