@@ -33,6 +33,12 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   `/compare/field` et `/compare/point` ; sélecteur de modèle, couches « Désaccord IFS–GFS » et panneau « Accord des
   modèles » ; scores IFS et GFS contre les METAR (`tools/awci/compare_models_verification.py`). Correctifs : périodes
   wgrib2 en jours, corps HTTP tronqués retentés. Voir `docs/awci/AWCI_WEB_SP6.md`.
+- AWCI Web SP7 (validation contre les radiosondages) : stations IGRA v2 actives du domaine, profils University of
+  Wyoming aux 12 niveaux AWCI sans interpolation (`acf-awci-obs --soundings`, `acf-awci-auto --soundings`) ; biais et
+  RMSE de T, humidité relative sur l'eau, vent (vitesse et vectoriel) et cisaillement vertical, contingence du
+  diagnostic de givrage appliqué au profil observé ; route `/soundings/verification`, section « Radiosondages » de la
+  page Validation, outil de cumul `tools/awci/verify_soundings.py`. Correctif : les tableaux de la page Validation
+  défilent dans leur cadre sur mobile. Voir `docs/awci/AWCI_WEB_SP7.md`.
 - AWCI Web, couleurs : classes AWCI et catégories de danger (CAT, givrage, convection, vue 3D) aux couleurs de la
   convention de vigilance ONM (vert, jaune, orange, rouge ; Extreme en pourpre au-delà du rouge), sans valeur de
   vigilance officielle (dit dans la légende). Teintes choisies par mesure (contraste WCAG, CIEDE2000 sous
