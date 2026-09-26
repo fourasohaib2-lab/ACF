@@ -103,9 +103,46 @@ Les scores suivent Jolliffe et Stephenson (2012), chapitre 3 :
 - **Exclusions** : 9 469 couples station-échéance pas encore observés et 1 804 sans METAR à ± 30 min. S'y ajoutent, parmi les 2 651 paires, 140 écartées du plafond pour Δz > 300 m et 143 à convection inconnue.
 
 Lecture :
-- La convection diagnostiquée est **environ 4 fois trop fréquente**. Cela confirme la surestimation suspectée en SP1C (13 % de Cb). C'est désormais mesuré, et c'est la priorité de recalibration du diagnostic convectif : seuils de CAPE, d'épaisseur et de condensat, inhibition.
+- La convection diagnostiquée est **environ 4 fois trop fréquente**. Cela confirme la surestimation suspectée en SP1C (13 % de Cb). Elle a été recalibrée depuis (section suivante).
 - Les plafonds bas sont peu prévisibles avec 12 niveaux standard (1 à 2 km entre 1000 et 700 hPa). Le plafond modèle est en moyenne plus bas que l'observé.
 - Ce sont des scores d'un seul run sur 21 h. Il faut cumuler plusieurs runs avant de conclure sur des seuils.
+
+## Recalibration de la convection (profil nuageux 1.2.0)
+
+La convection était surdiagnostiquée d'un facteur 4 : l'ancienne règle ne demandait qu'un potentiel convectif
+(MUCAPE ≥ 100 J/kg, profondeur du nuage, condensat ≥ 0,01 kg/m²).
+
+Protocole :
+- **Données** : sept runs IFS (23/09 00Z → 26/09 00Z, échéances 0 à 24 h). Les METAR sont appariés comme dans la
+  validation ; les stations automatiques sans type de nuage sont exclues.
+- **Candidats** : uniquement des règles **plus strictes**, faites de l'ancienne règle ET de conditions portant sur
+  des grandeurs que le diagnostic reçoit (MUCAPE, condensat colonne, taux de précipitation).
+- **Sélection** : sur 4 runs de calibration (23 et 24/09), la meilleure ETS parmi les règles de biais compris
+  entre 0,7 et 1,5. Le jugement se fait ensuite sur 3 runs de test indépendants (25/09 00Z, 25/09 12Z, 26/09 00Z).
+- **Outil reproductible** : `tools/awci/calibrate_convection.py`. L'enregistrement complet figure dans
+  `calibration_convection` de `config/awci/clouds/cloud-v1.json`.
+
+Règle retenue : TCU et Cb exigent en plus un **taux de précipitation IFS ≥ 0,1 mm/h**, c'est-à-dire une
+convection réalisée par le modèle. Sinon, la convection reste Cu.
+
+| Runs de test, poolés (7 073 paires) | a / b / c / d | POD | FAR | Biais | ETS |
+|---|---|---|---|---|---|
+| Règle précédente | 80 / 518 / 57 / 6418 | 0,58 | 0,87 | 4,36 | 0,11 |
+| Règle recalibrée | 43 / 113 / 94 / 6823 | 0,31 | 0,72 | 1,14 | 0,16 |
+
+- **Robustesse** : l'ETS progresse sur chacun des trois runs de test, de 0,13 à 0,19, de 0,10 à 0,15 et de 0,06
+  à 0,11. Les règles voisines fondées sur la réalisation (précipitation ou condensat ≥ 0,1 kg/m²) donnent une ETS
+  de test de 0,13 à 0,165. Les règles fondées sur la seule MUCAPE n'apportent rien (0,09 à 0,11).
+- **Physique** : la CAPE est un potentiel. La médiane de MUCAPE est même plus forte pour les fausses alertes
+  (490 J/kg) que pour les succès (387 J/kg). Ce sont la précipitation et le condensat modèle qui signalent une
+  convection effectivement déclenchée.
+- **Coût** : la POD passe de 0,58 à 0,31. Des TCU et Cb observés deviennent Cu dans le diagnostic, en particulier
+  les Cb secs à base haute (Sahara, virga) dont la pluie n'atteint pas le sol modèle. Pour l'alerte, le potentiel
+  reste visible par la MUCAPE (couche et indicateur « Convection »).
+- **Portée** : la règle s'applique aux runs ingérés avec le profil 1.2.0. Les cubes antérieurs gardent leur
+  diagnostic, et leur manifeste indique la version du profil utilisé.
+- **Statut** : HYPOTHESIS. Sept runs d'une même semaine ne couvrent ni la saison ni le cycle diurne complet, et
+  il faudra réévaluer régulièrement (page Validation).
 
 ## Tests
 

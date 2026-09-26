@@ -157,8 +157,12 @@ Un run ingéré avant SP1C reste servi ; ses couches nuageuses renvoient 404.
 Le relief SRTM15+ embarqué (grille à 1°) n'est pas utilisé : sa bathymétrie déborde sur les côtes
 (−677 m près d'Alger), ce qui relevait les plafonds côtiers jusqu'à environ 1 km.
 
-**Règles notables** : un Cb est une convection profonde à sommet glacé ; la pluie au sol n'est pas
-exigée (Cb secs à base haute du Sahel et du Sahara, virga). Les espèces sont portées par chaque
+**Règles notables** : un Cb est une convection profonde à sommet glacé. Depuis le profil 1.2.0
+(calibration contre les METAR, voir `docs/awci/AWCI_WEB_SP3.md`), TCU et Cb exigent en plus une convection
+**réalisée** par l'IFS : taux de précipitation modèle ≥ 0,1 mm/h. Sans cela, la convection seulement
+possible (CAPE, profondeur) reste Cu. Les Cb secs à base haute (Sahel, Sahara, virga), dont la pluie
+n'atteint pas le sol du modèle, sont donc sous-diagnostiqués : c'est le prix, mesuré, de la division par
+quatre des fausses alertes. Les espèces sont portées par chaque
 couche (`cloud_species`) ; *fractus* ne s'applique qu'au St (OMM-N° 407).
 
 **Calibration de RHc** :
@@ -200,6 +204,10 @@ sont indépendantes l'une de l'autre.
   l'aviation, l'excès de Cb est l'erreur la moins dangereuse, mais il nuit à la confiance.
   Priorité n° 1 : tables de contingence contre les groupes TCU/CB des METAR, RDT et la foudre (SP3),
   puis ajout d'un critère d'inhibition (CIN et LFC par la particule), avant tout réglage de seuil.
+  **Fait en SP3** : le biais mesuré contre les METAR valait 4,4. La règle recalibrée (convection réalisée
+  par l'IFS, profil 1.2.0) le ramène à 1,14 sur des runs de test indépendants, avec une ETS de 0,16 au
+  lieu de 0,11 (`docs/awci/AWCI_WEB_SP3.md`). Le CIN reste à ajouter : les critères fondés sur la seule
+  CAPE n'amélioraient rien.
 - Couches fines (Sc de 200 m, Ci fin) manquées par la résolution verticale ; incertitude de la base
   renvoyée (`base_uncertainty_m`).
 - Le plafond ignore les couches convectives, dont la couverture n'est pas connue à l'échelle de la

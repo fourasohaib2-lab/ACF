@@ -27,6 +27,9 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- Diagnostic convectif recalibré contre les METAR (profil nuageux 1.2.0) : TCU et Cb exigent une convection
+  réalisée par l'IFS (précipitation ≥ 0,1 mm/h). Choix fait sur 4 runs, jugé sur 3 runs indépendants :
+  biais de 4,36 à 1,14, ETS de 0,11 à 0,16, POD de 0,58 à 0,31. Outil `tools/awci/calibrate_convection.py`.
 - AWCI Web SP3 (aérodromes, METAR/TAF, SIGMET, validation) : ingestion AWC (`acf-awci-obs`, domaine
   public) avec pagination au-delà du plafond de 400 éléments ; décodeur METAR (CB/TCU, `///`, CAVOK/NSC/NCD,
   plafond OACI, convection inconnue pour les stations automatiques) contrôlé sur 400 METAR réels ; validation

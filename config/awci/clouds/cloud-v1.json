@@ -1,6 +1,6 @@
 {
   "name": "cloud-v1",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "rh_critical": {
     "low": 0.8,
     "mid": 0.6,
@@ -15,12 +15,18 @@
   "bias_degraded_threshold": 0.15,
   "convection": {
     "cape_min_j_kg": 100.0,
-        "cb_min_depth_m": 6000.0,
+    "cb_min_depth_m": 6000.0,
     "tcu_min_depth_m": 3000.0,
     "humilis_max_depth_m": 1000.0,
     "glaciation_temp_k": 253.15,
     "capillatus_temp_k": 235.15,
-    "condensate_min_kg_m2": 0.01
+    "condensate_min_kg_m2": 0.01,
+    "realised": {
+      "precip_rate": [
+        ">=",
+        0.1
+      ]
+    }
   },
   "genus": {
     "st_max_base_m": 600.0,
@@ -49,7 +55,8 @@
     "capillatus_temp_k": "-38 degC: homogeneous freezing of supercooled droplets, Pruppacher & Klett (1997)",
     "lenticularis_froude": "mountain-wave regime Fr = U/(N h) of order 1, Durran (1990), Meteor. Monogr. 23; bounds ACF choice",
     "condensate_min_kg_m2": "convection is diagnosed only where the IFS column holds condensate (tcw - tcwv >= 10 g m-2): no model cloud, no convective cloud; ACF choice",
-    "other": "ACF choices, status HYPOTHESIS, to be validated against METAR cloud groups (SP3)"
+    "other": "ACF choices, status HYPOTHESIS, to be validated against METAR cloud groups (SP3)",
+    "convection_realised": "TCU and Cb require an IFS precipitation rate >= 0.1 mm/h (tprate): the model's convection is realised, not only possible (CAPE, depth). Selected against METAR on calibration runs, judged on separate test runs (calibration_convection); rules on MUCAPE alone did not improve ETS. Status HYPOTHESIS"
   },
   "calibration": {
     "rh_critical": {
@@ -87,5 +94,83 @@
       "mid": 0.7,
       "high": 0.7
     }
+  },
+  "calibration_convection": {
+    "method": "tools/awci/calibrate_convection.py: best ETS with frequency bias in [0.7, 1.5] on calibration runs, among stricter rules (mucape, column condensate, precipitation rate)",
+    "domain": "north_africa",
+    "train_runs": [
+      "2026092300",
+      "2026092312",
+      "2026092400",
+      "2026092412"
+    ],
+    "test_runs": [
+      "2026092500",
+      "2026092512",
+      "2026092600"
+    ],
+    "steps": "0-24/3",
+    "observations": "METAR/SPECI, NOAA/NWS Aviation Weather Center (public domain), +-30 min, nearest grid cell",
+    "event": "TCU or CB observed (TS/VCTS included); AUTO reports without cloud type excluded",
+    "selected_rule": {
+      "precip_rate": [
+        ">=",
+        0.1
+      ]
+    },
+    "train": {
+      "before": {
+        "a": 181,
+        "b": 1172,
+        "c": 161,
+        "d": 10681,
+        "n": 12195,
+        "pod": 0.5292,
+        "far": 0.8662,
+        "csi": 0.1196,
+        "bias": 3.9561,
+        "ets": 0.0969
+      },
+      "after": {
+        "a": 69,
+        "b": 250,
+        "c": 273,
+        "d": 11603,
+        "n": 12195,
+        "pod": 0.2018,
+        "far": 0.7837,
+        "csi": 0.1166,
+        "bias": 0.9327,
+        "ets": 0.103
+      }
+    },
+    "test_pooled": {
+      "before": {
+        "a": 80,
+        "b": 518,
+        "c": 57,
+        "d": 6418,
+        "n": 7073,
+        "pod": 0.5839,
+        "far": 0.8662,
+        "csi": 0.1221,
+        "bias": 4.365,
+        "ets": 0.1063
+      },
+      "after": {
+        "a": 43,
+        "b": 113,
+        "c": 94,
+        "d": 6823,
+        "n": 7073,
+        "pod": 0.3139,
+        "far": 0.7244,
+        "csi": 0.172,
+        "bias": 1.1387,
+        "ets": 0.1619
+      }
+    },
+    "date": "2026-09-26",
+    "acf_git_sha": "df35410"
   }
 }

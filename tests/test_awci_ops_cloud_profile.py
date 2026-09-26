@@ -43,3 +43,12 @@ def test_realised_convection_conditions_are_parsed_and_validated(tmp_path) -> No
     del raw["convection"]["realised"]
     path.write_text(_json.dumps(raw))
     assert _load(path).convection_realised == {}
+
+
+def test_default_profile_carries_the_metar_calibrated_convection_rule() -> None:
+    p = load_cloud_profile()
+    assert p.convection_realised == {"precip_rate": (">=", 0.1)}
+    record = p.calibration_convection
+    assert record is not None and set(record["train_runs"]).isdisjoint(record["test_runs"])  # out of sample
+    assert record["test_pooled"]["after"]["ets"] > record["test_pooled"]["before"]["ets"]
+    assert abs(record["test_pooled"]["after"]["bias"] - 1) < abs(record["test_pooled"]["before"]["bias"] - 1)

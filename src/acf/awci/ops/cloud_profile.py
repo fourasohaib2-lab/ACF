@@ -41,6 +41,7 @@ class CloudProfile:
     calibration: dict[str, Any] | None
     # TCU and Cb also require these IFS signs of convection realised by the model (see _REALISED); otherwise Cu
     convection_realised: dict[str, tuple[str, float]] = field(default_factory=dict)
+    calibration_convection: dict[str, Any] | None = None  # METAR calibration record of convection_realised
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -88,4 +89,5 @@ def load_cloud_profile(path: Path | str = DEFAULT_CLOUD_PROFILE_PATH) -> CloudPr
         convection=_group(raw, "convection", _CONVECTION), genus=_group(raw, "genus", _GENUS),
         species=_group(raw, "species", _SPECIES), references=dict(raw.get("references", {})),
         calibration=raw.get("calibration"), convection_realised=_realised(raw),
+        calibration_convection=raw.get("calibration_convection"),
     )
