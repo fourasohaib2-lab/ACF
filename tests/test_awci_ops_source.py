@@ -111,3 +111,37 @@ def test_urllib_fetcher_retries_then_fails(monkeypatch) -> None:
     with pytest.raises(FetchError):
         fetcher.get_text("https://example.invalid/x")
     assert len(calls) == 5 and sleeps == [2, 4, 8, 16]
+
+
+def _ens_index_text(members: tuple[int, ...], drop_member: int | None = None) -> str:
+    lines, offset = [], 0
+    for m in members:
+        for p in PL_PARAMS:
+            for lev in PL_LEVELS:
+                lines.append(json.dumps({"param": p, "levtype": "pl", "levelist": str(lev), "number": str(m), "type": "pf",
+                                         "_offset": offset, "_length": 10}))
+                offset += 10
+        for p in SFC_PARAMS:
+            if not (m == drop_member and p == "mucape"):
+                lines.append(json.dumps({"param": p, "levtype": "sfc", "number": str(m), "type": "pf", "_offset": offset,
+                                         "_length": 10}))
+            offset += 10
+    return "\n".join(lines)
+
+
+def test_ensemble_index_entries_carry_their_member_and_are_selected_per_member() -> None:
+    entries = parse_index(_ens_index_text((1, 2, 3)))
+    assert {e.number for e in entries} == {1, 2, 3}
+    chosen = select_entries(entries, member=2)
+    assert {e.number for e in chosen} == {2}
+    assert len(chosen) == len(PL_PARAMS) * len(PL_LEVELS) + len(SFC_PARAMS)
+    with pytest.raises(MissingFieldsError):
+        select_entries(parse_index(_ens_index_text((1, 2), drop_member=2)), member=2)
+    assert parse_index(_index_text())[0].number is None  # deterministic index: no member
+
+
+def test_ensemble_urls() -> None:
+    from acf.awci.ops.source_ecmwf import ens_step_urls
+    grib, index = ens_step_urls(datetime(2026, 9, 26, 0, tzinfo=UTC), 6)
+    assert grib.endswith("/20260926/00z/ifs/0p25/enfo/20260926000000-6h-enfo-ef.grib2")
+    assert index.endswith("-6h-enfo-ef.index")

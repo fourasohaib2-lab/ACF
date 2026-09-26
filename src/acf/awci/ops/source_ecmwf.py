@@ -44,6 +44,7 @@ class IndexEntry:
     level: int | None
     offset: int
     length: int
+    number: int | None = None  # ensemble member (enfo "pf"); None in the deterministic index
 
 
 class Fetcher(Protocol):
@@ -91,6 +92,12 @@ def step_urls(run: datetime, step: int) -> tuple[str, str]:
     return f"{stem}.grib2", f"{stem}.index"
 
 
+def ens_step_urls(run: datetime, step: int) -> tuple[str, str]:
+    """IFS ENS perturbed members (enfo, type pf, numbers 1-50) of one step: every member in one file."""
+    stem = f"{BASE_URL}/{run:%Y%m%d}/{run:%H}z/ifs/0p25/enfo/{run:%Y%m%d%H}0000-{step}h-enfo-ef"
+    return f"{stem}.grib2", f"{stem}.index"
+
+
 def parse_index(text: str) -> list[IndexEntry]:
     entries = []
     for line in text.splitlines():
@@ -98,15 +105,19 @@ def parse_index(text: str) -> list[IndexEntry]:
             continue
         raw = json.loads(line)
         level = raw.get("levelist")
+        number = raw.get("number")
         entries.append(IndexEntry(raw["param"], raw.get("levtype", ""), int(level) if level is not None else None,
-                                  int(raw["_offset"]), int(raw["_length"])))
+                                  int(raw["_offset"]), int(raw["_length"]), int(number) if number is not None else None))
     return entries
 
 
-def select_entries(entries: list[IndexEntry]) -> list[IndexEntry]:
+def select_entries(entries: list[IndexEntry], member: int | None = None) -> list[IndexEntry]:
+    """The messages the pipeline needs; with `member`, those of that ensemble member only."""
     wanted = {(p, lev) for p in PL_PARAMS for lev in PL_LEVELS} | {(p, None) for p in SFC_PARAMS}
     chosen = {}
     for entry in entries:
+        if member is not None and entry.number != member:
+            continue
         key = (entry.param, entry.level if entry.levtype == "pl" else None)
         if key in wanted and key not in chosen:
             chosen[key] = entry
