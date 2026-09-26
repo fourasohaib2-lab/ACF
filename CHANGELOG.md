@@ -27,6 +27,10 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP5 (ensemble ECMWF) : `acf-awci-ens` traite chaque membre de l'IFS ENS (50 membres, 0,25°) par le
+  pipeline déterministe inchangé, en flux, et stocke des comptes exacts ; probabilités de AWCI ≥ High, nuage ≥ 5/8,
+  givrage, turbulence ≥ modérée, TCU/Cb réalisé, plafond < 1500 ft, et moyenne ± écart-type de l'AWCI ; routes
+  `/ens/*` ; couches de probabilité et panneau « Ensemble ECMWF ». Voir `docs/awci/AWCI_WEB_SP5.md`.
 - AWCI Web SP2B (vue volume 3D et lecture 4D) : voxels = mailles IFS réelles entre interfaces de niveaux,
   relief du modèle, nuages par genre, givrage, turbulence et AWCI (deux couches au plus), exagération
   toujours énoncée, échelle en hPa, FL et km, clic sur voxel vers l'inspecteur au niveau du voxel,
