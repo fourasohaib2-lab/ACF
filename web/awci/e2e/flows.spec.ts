@@ -21,10 +21,10 @@ test("keyboard moves steps and levels and the URL follows", async ({ page }) => 
 
 test("changing layer updates the legend; a point fills the inspector and the clouds panel; reload keeps the view", async ({ page }) => {
   await open(page, "?domain=fixture&step=3&level=700");
-  await page.getByRole("radio", { name: "Givrage potentiel" }).check();
+  await page.getByRole("radio", { name: /^Givrage potentiel/ }).check();
   await expect(page).toHaveURL(/layer=icing_potential/);
   await expect(page.getByRole("figure", { name: /Givrage potentiel/ })).toBeVisible();
-  await page.getByRole("radio", { name: "Genre, étage bas" }).check();
+  await page.getByRole("radio", { name: /^Genre, étage bas/ }).check();
   await expect(page.getByRole("figure", { name: /Genre, étage bas/ })).toContainText("Cumulonimbus");
   await clickMap(page, 0.5, 0.5);
   await expect(page).toHaveURL(/lat=/);
@@ -54,7 +54,7 @@ test("outside the domain is refused; below the relief is named, never zero", asy
 
 test("observations carry their time and attribution; an unavailable relay is said so", async ({ page }) => {
   await open(page, "?domain=fixture&step=3&ov=mtg_fd:ir105_hrfi,msg_fes:rgb_ash");
-  await expect(page.locator(".observed-badge")).toContainText(/Observé .* UTC · il y a .* · © EUMETSAT/);
+  await expect(page.locator(".observed-badge").filter({ hasText: "MTG FCI IR" })).toContainText(/Observé .* UTC · il y a .* · © EUMETSAT/);
   await expect(page.getByText("EUMETView indisponible")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("checkbox", { name: /MSG Ash RGB/ })).not.toBeChecked();
 });
@@ -84,7 +84,7 @@ test("a slow EUMETView never delays the forecast", async ({ page }) => {
 test("the layer list is operable from the keyboard (L, arrows, Space)", async ({ page }) => {
   await open(page, "?domain=fixture&step=3&level=700");
   await page.locator("body").press("l");
-  await expect(page.getByRole("radio", { name: "AWCI" })).toBeFocused();
+  await expect(page.getByRole("radio", { name: /^AWCI/ })).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page).not.toHaveURL(/layer=awci/);
   await expect(page).toHaveURL(/level=700/); // the arrows moved the radio selection, not the level

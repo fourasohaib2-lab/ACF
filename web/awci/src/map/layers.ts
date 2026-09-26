@@ -1,7 +1,7 @@
 import { AWCI_CLASS_COLORS, CATEGORICAL, SEQ_BLUE, hexToRgb, rampColor } from "../theme/palette";
 
 export type Rgba = [number, number, number, number];
-export type Group = "awci" | "hazards" | "clouds" | "surface";
+export type Group = "awci" | "hazards" | "clouds" | "surface" | "ensemble";
 export type Render =
   | { kind: "awci" }
   | { kind: "codes"; colors: (string | null)[]; labels: string[] }
@@ -10,10 +10,13 @@ export type Render =
 /** `nanMeaning`: what an empty (NaN) cell means when it is an answer rather than missing data; drawn transparent. */
 export interface LayerDef {
   id: string; label: string; group: Group; perLevel: boolean; unit: string; render: Render; nanMeaning?: string;
+  /** "ens": read from /ens/field (IFS ENS, SP5) instead of the deterministic cube. */
+  source?: "ens";
 }
 
 export const GROUP_LABELS: Record<Group, string> = {
   awci: "AWCI", hazards: "Dangers", clouds: "Nuages", surface: "Surface et précipitations",
+  ensemble: "Probabilités (ensemble ECMWF)",
 };
 const S = SEQ_BLUE;
 const cont = (min: number, max: number, extra: Partial<Extract<Render, { kind: "continuous" }>> = {}): Render =>
@@ -53,8 +56,22 @@ export const LAYER_DEFS: LayerDef[] = [
   { id: "dust_proxy", label: "Soulèvement de poussière (proxy)", group: "surface", perLevel: false, unit: "0–1", render: cont(0, 1) },
 ];
 
+const prob = (id: string, label: string, perLevel: boolean): LayerDef =>
+  ({ id, label, group: "ensemble", perLevel, unit: "%", render: cont(0, 1, { scale: 100 }), source: "ens" });
+
+/** IFS ENS layers (SP5): probability = share of the members with the event, 0-100 %. */
+export const ENS_LAYER_DEFS: LayerDef[] = [
+  prob("p_awci_high", "P(AWCI ≥ High)", true),
+  prob("p_cloud_bkn", "P(nuage ≥ 5/8 au niveau)", true),
+  prob("p_icing", "P(givrage potentiel)", true),
+  prob("p_cat_moderate", "P(turbulence CAT ≥ modérée)", true),
+  prob("p_convection", "P(TCU/Cb réalisé)", false),
+  prob("p_ceiling_1500ft", "P(plafond < 1500 ft)", false),
+  { id: "awci_std", label: "Dispersion de l'AWCI (écart-type)", group: "ensemble", perLevel: true, unit: "points", render: cont(0, 30), source: "ens" },
+];
+
 export function layerDef(id: string): LayerDef {
-  const def = LAYER_DEFS.find((d) => d.id === id);
+  const def = [...LAYER_DEFS, ...ENS_LAYER_DEFS].find((d) => d.id === id);
   if (!def) throw new Error(`unknown layer ${id}`);
   return def;
 }

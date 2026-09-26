@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Domain, Meta, RunInfo } from "../api/types";
-import { LAYER_DEFS, type LayerDef } from "../map/layers";
+import type { Domain, EnsMeta, Meta, RunInfo } from "../api/types";
+import { ENS_LAYER_DEFS, LAYER_DEFS, type LayerDef } from "../map/layers";
 import { allowedWith, type VolumeLayerId } from "../volume/layers3d";
 
 export interface ViewState {
@@ -83,13 +83,17 @@ export function nextLevel(m: Meta, level: number, dir: 1 | -1): number {
   return sorted[Math.min(sorted.length - 1, Math.max(0, i + dir))] ?? level;
 }
 
-export function availableLayers(m: Meta): LayerDef[] {
+export function availableLayers(m: Meta, ens?: Pick<EnsMeta, "steps" | "missing_steps">): LayerDef[] {
   const present = new Set([...m.level_layers, ...m.surface_layers]);
-  return LAYER_DEFS.filter((d) => present.has(d.id));
+  return [...LAYER_DEFS.filter((d) => present.has(d.id)), ...(ens ? ENS_LAYER_DEFS : [])];
 }
 
+/** ENS steps are 6-hourly; a step not computed (or missing) is never replaced by a neighbouring one. */
+export const ensStepAvailable = (ens: Pick<EnsMeta, "steps" | "missing_steps"> | undefined, step: number) =>
+  !!ens && ens.steps.includes(step) && !ens.missing_steps.includes(step);
+
 export function resolveView(v: ViewState, domains: Domain[], runs: RunInfo[], meta: Meta | undefined,
-                            now: Date): Resolved | null {
+                            now: Date, ens?: Pick<EnsMeta, "steps" | "missing_steps">): Resolved | null {
   const domain = domains.find((d) => d.name === v.domain)?.name ?? domains.find((d) => d.default)?.name ?? domains[0]?.name;
   const usable = runs.filter((r) => r.status !== "failed");
   const run = usable.find((r) => r.run === v.run)?.run ?? usable[0]?.run;
@@ -105,7 +109,7 @@ export function resolveView(v: ViewState, domains: Domain[], runs: RunInfo[], me
   }
   const level = v.level !== undefined && meta.levels_hpa.includes(v.level) ? v.level
     : meta.levels_hpa.includes(300) ? 300 : meta.levels_hpa[0]!;
-  const layer = availableLayers(meta).some((d) => d.id === v.layer) ? v.layer : "awci";
+  const layer = availableLayers(meta, ens).some((d) => d.id === v.layer) ? v.layer : "awci";
   return { domain, run, step, level, layer };
 }
 

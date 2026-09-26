@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsPoint, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -25,7 +25,7 @@ import { KpiRow } from "./panels/KpiRow";
 import { LatestRuns } from "./panels/LatestRuns";
 import { RegistryPage } from "./panels/RegistryPage";
 import { SavedViews } from "./panels/SavedViews";
-import { ModelAgreement } from "./panels/ModelAgreement";
+import { EnsemblePanel } from "./panels/EnsemblePanel";
 import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { SigmetList } from "./panels/SigmetList";
@@ -33,9 +33,9 @@ import { ValidationPage } from "./panels/ValidationPage";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
 import { TopBar } from "./panels/TopBar";
-import { runLabel } from "./lib/format";
+import { runLabel, stepLabel } from "./lib/format";
 import { ownsKeys } from "./lib/keys";
-import { availableLayers, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
+import { availableLayers, ensStepAvailable, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
 
 const MapView = lazy(() => import("./map/MapView").then((m) => ({ default: m.MapView })));
 const Volume3D = lazy(() => import("./volume/Volume3D"));
@@ -68,8 +68,12 @@ export function App() {
   const usableRuns = useMemo(() => (runs.data ?? []).filter((r) => r.status !== "failed"), [runs.data]);
   const runId = usableRuns.find((r) => r.run === view.run)?.run ?? usableRuns[0]?.run;
   const meta = useMeta(domain?.name, runId);
+  // SP5: IFS ENS for the run on screen, when acf-awci-ens produced it
+  const ensRuns = useEnsRuns(domain?.name);
+  const hasEns = !!runId && !!ensRuns.data?.some((r) => r.run === runId);
+  const ensMeta = useEnsMeta(domain?.name, runId, hasEns);
   const registry = useRegistry();
-  const resolved = domains.data && runs.data ? resolveView(view, domains.data, runs.data, meta.data, now) : null;
+  const resolved = domains.data && runs.data ? resolveView(view, domains.data, runs.data, meta.data, now, ensMeta.data) : null;
   const run = usableRuns.find((r) => r.run === resolved?.run);
   const shownRun = useRef<string | undefined>(undefined);
   useEffect(() => { shownRun.current = resolved?.run; }, [resolved?.run]);
@@ -81,8 +85,12 @@ export function App() {
   const neighbours = useMemo(() => (meta.data && resolved
     ? [nextStep(meta.data, resolved.step, 1), nextStep(meta.data, resolved.step, -1)].filter((s) => s !== resolved.step) : []),
   [meta.data, resolved?.step]); // eslint-disable-line react-hooks/exhaustive-deps
-  const field = useField({ domain: resolved?.domain, run: resolved?.run, layer: resolved?.layer, step: resolved?.step,
-    level: resolved?.level, perLevel: def.perLevel }, neighbours);
+  // An ENS layer at a step the ensemble did not compute is not requested (and never borrowed from a neighbour).
+  const ensGap = def.source === "ens" && resolved !== null && !ensStepAvailable(ensMeta.data, resolved.step);
+  const ensNeighbours = useMemo(() => (def.source === "ens" ? neighbours.filter((s) => ensStepAvailable(ensMeta.data, s)) : neighbours),
+    [def.source, neighbours, ensMeta.data]);
+  const field = useField({ domain: resolved?.domain, run: resolved?.run, layer: ensGap ? undefined : resolved?.layer,
+    step: resolved?.step, level: resolved?.level, perLevel: def.perLevel, source: def.source }, ensNeighbours);
   const uField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "u" : undefined,
     step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
   const vField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "v" : undefined,
@@ -98,11 +106,12 @@ export function App() {
   const classes = useMemo(() => registry.data?.classes ?? [], [registry.data]);
   const awciBounds = useMemo(() => classes.filter((c) => c.upper_bound !== null).map((c) => c.upper_bound as number), [classes]);
   const classLabels = useMemo(() => classes.map((c) => c.label), [classes]);
-  const layers = useMemo(() => (meta.data ? availableLayers(meta.data) : []), [meta.data]);
+  const layers = useMemo(() => (meta.data ? availableLayers(meta.data, ensMeta.data) : []), [meta.data, ensMeta.data]);
   const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level, neighbours);
   const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
   const pointKey = { domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level, lat: view.lat, lon: view.lon };
   const point = usePoint(pointKey);
+  const ensPoint = useEnsPoint({ domain: resolved?.domain, run: resolved?.run, lat: view.lat, lon: view.lon, level: resolved?.level }, hasEns);
   const profile = useProfile(pointKey);
   const timeseries = useTimeseries(pointKey);
   const hasClouds = !!meta.data?.level_layers.includes("cloud_fraction");
@@ -275,7 +284,7 @@ export function App() {
           <section className="map-panel" aria-label="Carte">
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
-                <MapView domain={domain} field={fieldData} stale={field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
+                <MapView domain={domain} field={ensGap ? undefined : fieldData} stale={!ensGap && field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
                          onOverlayError={onOverlayError} airports={airportPoints} sigmets={sigmetShapes} onPickAirport={selectAirport}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
                          opacity={fieldOpacity(comparing, opacity)} onPick={mode3d ? noPick : onPick} mode3d={mode3d} onMap={setMapInstance} />
@@ -291,7 +300,12 @@ export function App() {
                         onClick={() => update({ mode3d: !view.mode3d })}>{mode3d ? "Vue 2D" : "Vue 3D"}</button>
               </div>
               {!mode3d && <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />}
-              {field.isPlaceholderData && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
+              {field.isPlaceholderData && !ensGap && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
+              {ensGap && (
+                <div className="map-loading" role="status">
+                  Pas de probabilité ENS à {stepLabel(resolved.step)} : l'ensemble est calculé à {(ensMeta.data?.steps ?? []).filter((s) => !ensMeta.data?.missing_steps.includes(s)).map(stepLabel).join(", ")}.
+                </div>
+              )}
               {field.isError && <div className="map-error"><ErrorBox error={field.error} what={def.label} /></div>}
               {toast && <div className="toast" role="alert">{toast}</div>}
               <ObservedBadges items={overlays.map((o) => ({ label: labelOf(o.layer), time: o.time }))} now={now} />
@@ -320,7 +334,7 @@ export function App() {
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
             {view.aero.includes("sigmet") && <SigmetList sigmets={freshSigmets} isError={sigmetsQ.isError} />}
-            <ModelAgreement />
+            <EnsemblePanel point={ensPoint.data} step={resolved.step} deterministicAwci={point.data?.awci ?? null} unavailable={!hasEns} />
             <LatestRuns runs={runs.data ?? []} now={now} />
           </aside>
         )}

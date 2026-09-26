@@ -1,0 +1,89 @@
+{
+ "acf_git_sha": "74c46f3",
+ "attribution": "\u00a9 ECMWF, CC-BY-4.0 \u2014 IFS ENS",
+ "awci_high_lower_bound": 50.0,
+ "cloud_profile": "cloud-v1",
+ "cloud_profile_version": "1.2.0",
+ "domain": "fixture",
+ "duration_s": 2.7,
+ "failed_members": {},
+ "flight_levels": [
+  4,
+  25,
+  48,
+  99,
+  138,
+  183,
+  236,
+  301,
+  340,
+  387,
+  446,
+  531
+ ],
+ "ingested_at": "2026-09-26T11:10:43+00:00",
+ "levels_hpa": [
+  1000.0,
+  925.0,
+  850.0,
+  700.0,
+  600.0,
+  500.0,
+  400.0,
+  300.0,
+  250.0,
+  200.0,
+  150.0,
+  100.0
+ ],
+ "license": "CC-BY-4.0",
+ "members_requested": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "members_used": {
+  "0": 4,
+  "6": 4
+ },
+ "missing_steps": [],
+ "model": "ECMWF IFS ENS 0.25\u00b0 Open Data (50 perturbed members)",
+ "products": {
+  "p_awci_high": {
+   "dims": "level"
+  },
+  "p_cat_moderate": {
+   "dims": "level"
+  },
+  "p_ceiling_1500ft": {
+   "dims": "surface"
+  },
+  "p_cloud_bkn": {
+   "dims": "level"
+  },
+  "p_convection": {
+   "dims": "surface"
+  },
+  "p_icing": {
+   "dims": "level"
+  }
+ },
+ "profile": "operational-v1",
+ "profile_version": "1.0.0",
+ "run": "2026092500",
+ "run_time": "2026-09-25T00:00:00+00:00",
+ "statistics": [
+  "awci_mean",
+  "awci_std"
+ ],
+ "status": "complete",
+ "steps": [
+  0,
+  6
+ ],
+ "valid_times": [
+  "2026-09-25T00:00:00+00:00",
+  "2026-09-25T06:00:00+00:00"
+ ]
+}

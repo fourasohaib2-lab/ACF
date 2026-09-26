@@ -42,7 +42,7 @@ def ens_member_layers(root: Path, step: int, members: tuple[int, ...]) -> list[d
     from acf.awci.ops.source_ecmwf import parse_index, select_entries
     from acf.awci.terrain_elevation import interpolate_real_terrain_elevation
 
-    stem = f"20260926000000-{step}h-enfo-ef"
+    stem = f"20260925000000-{step}h-enfo-ef"
     data = (root / f"{stem}.grib2").read_bytes()
     entries = parse_index((root / f"{stem}.index").read_text())
     profile = load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH)

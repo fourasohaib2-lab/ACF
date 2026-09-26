@@ -2,9 +2,9 @@
 import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { parseVolume, type Volume } from "../volume/geometry";
-import { ApiError, getField, getJson, getTerrain, getVolume } from "./client";
+import { ApiError, getEnsField, getField, getJson, getTerrain, getVolume } from "./client";
 import type {
-  AirportDetail, AirportsPayload, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
+  AirportDetail, AirportsPayload, EnsMeta, EnsPoint, EnsRun, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
   Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
 } from "./types";
 
@@ -27,12 +27,13 @@ export const useMeta = (domain?: string, run?: string) =>
   useQuery({ queryKey: ["meta", domain, run], enabled: !!domain && !!run, ...IMMUTABLE, retry,
     queryFn: ({ signal }) => getJson<Meta>("/meta", { domain, run }, signal) });
 
-interface FieldKey { domain?: string; run?: string; layer?: string; step?: number; level?: number; perLevel?: boolean }
+interface FieldKey { domain?: string; run?: string; layer?: string; step?: number; level?: number; perLevel?: boolean; source?: "ens" }
 
 const fieldQuery = (k: FieldKey) => ({
-  queryKey: ["field", k.domain, k.run, k.layer, k.step, k.perLevel ? k.level : null],
-  queryFn: ({ signal }: { signal: AbortSignal }) =>
-    getField({ domain: k.domain, run: k.run, layer: k.layer, step: k.step, level: k.perLevel ? k.level : undefined }, signal),
+  queryKey: ["field", k.source ?? "det", k.domain, k.run, k.layer, k.step, k.perLevel ? k.level : null],
+  queryFn: ({ signal }: { signal: AbortSignal }) => k.source === "ens"
+    ? getEnsField({ domain: k.domain, run: k.run, product: k.layer, step: k.step, level: k.perLevel ? k.level : undefined }, signal)
+    : getField({ domain: k.domain, run: k.run, layer: k.layer, step: k.step, level: k.perLevel ? k.level : undefined }, signal),
   ...IMMUTABLE, retry,
 });
 
@@ -164,3 +165,17 @@ export function useVolume(k: VolumeKey, next: number[] = [], enabled = true) {
 export const useTerrain = (domain: string | undefined, run: string | undefined, stride: number, enabled = true) =>
   useQuery({ queryKey: ["terrain", domain, run, stride], enabled: enabled && !!domain && !!run, ...IMMUTABLE, retry,
     queryFn: ({ signal }) => getTerrain({ domain, run, stride }, signal) });
+
+// ---- SP5: IFS ENS (runs are appended by acf-awci-ens; a run's content is immutable) ----
+export const useEnsRuns = (domain: string | undefined) =>
+  useQuery({ queryKey: ["ens-runs", domain], enabled: !!domain, refetchInterval: 300_000, retry,
+    queryFn: ({ signal }) => getJson<EnsRun[]>("/ens/runs", { domain }, signal) });
+
+export const useEnsMeta = (domain: string | undefined, run: string | undefined, enabled: boolean) =>
+  useQuery({ queryKey: ["ens-meta", domain, run], enabled: enabled && !!domain && !!run, ...IMMUTABLE, retry,
+    queryFn: ({ signal }) => getJson<EnsMeta>("/ens/meta", { domain, run }, signal) });
+
+export const useEnsPoint = (k: { domain?: string; run?: string; lat?: number; lon?: number; level?: number }, enabled: boolean) =>
+  useQuery({ queryKey: ["ens-point", k.domain, k.run, k.lat, k.lon, k.level], ...IMMUTABLE, retry,
+    enabled: enabled && !!k.run && k.lat !== undefined && k.lon !== undefined && k.level !== undefined,
+    queryFn: ({ signal }) => getJson<EnsPoint>("/ens/point", { ...k }, signal) });

@@ -3,7 +3,7 @@ Regenerate the AWCI ENS test fixture: real ECMWF IFS ENS messages (enfo, perturb
 needs, for a few members and steps, cropped with eccodes, with a matching .index that keeps "number".
 Data: © ECMWF, CC-BY-4.0.
 
-    .venv/bin/python tools/awci/make_ens_fixture.py   # run 2026-09-26 00Z, members 1-4, steps 0,6, 35-37N / 2-4E
+    .venv/bin/python tools/awci/make_ens_fixture.py   # run 2026-09-25 00Z, members 1-4, steps 0,6, 35-37N / 2-4E
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from make_ops_fixture import BOX, crop  # noqa: E402
 from acf.awci.ops.source_ecmwf import UrllibFetcher, ens_step_urls, parse_index, select_entries  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[2] / "tests" / "data" / "awci_ens"
-RUN = datetime(2026, 9, 26, 0, tzinfo=UTC)
+RUN = datetime(2026, 9, 25, 0, tzinfo=UTC)  # same run as the deterministic fixture (tests/data/awci_ops)
 
 
 def main(argv: list[str] | None = None) -> None:

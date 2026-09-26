@@ -1,4 +1,4 @@
-import { availableLayers, newerRun, nextLevel, nextStep, parseView, resolveView, serializeView, withPinnedRun } from "./view";
+import { availableLayers, ensStepAvailable, newerRun, nextLevel, nextStep, parseView, resolveView, serializeView, withPinnedRun } from "./view";
 
 const meta = { steps: [0, 3, 6, 9], missing_steps: [6], valid_times: ["2026-09-25T12:00:00+00:00",
   "2026-09-25T15:00:00+00:00", "2026-09-25T18:00:00+00:00", "2026-09-25T21:00:00+00:00"],
@@ -72,4 +72,20 @@ test("3-D view state round-trips and is clamped; defaults stay out of the URL", 
   expect(parseView("?exag=5000&cth=3").exag).toBe(100);
   expect(parseView("?exag=5000&cth=3").cth).toBe(1);
   expect(parseView("?vol=evil,awci,cat,clouds").vol).toEqual(["awci", "clouds"]); // unknown dropped, AWCI+CAT excluded, max 2
+});
+
+test("ENS probability layers are offered only when the run has an ENS run", () => {
+  expect(availableLayers(meta).some((d) => d.source === "ens")).toBe(false);
+  const ens = availableLayers(meta, { steps: [0, 6], missing_steps: [] } as never);
+  const ids = ens.filter((d) => d.source === "ens").map((d) => d.id);
+  expect(ids).toEqual(["p_awci_high", "p_cloud_bkn", "p_icing", "p_cat_moderate", "p_convection", "p_ceiling_1500ft", "awci_std"]);
+  expect(ens.find((d) => d.id === "p_convection")!.perLevel).toBe(false);
+});
+
+test("an ENS layer at a step the ensemble did not compute is flagged, never replaced by a neighbour", () => {
+  const ensMeta = { steps: [0, 6, 12], missing_steps: [12] } as never;
+  expect(ensStepAvailable(ensMeta, 6)).toBe(true);
+  expect(ensStepAvailable(ensMeta, 3)).toBe(false); // ENS every 6 h
+  expect(ensStepAvailable(ensMeta, 12)).toBe(false); // missing
+  expect(ensStepAvailable(undefined, 0)).toBe(false);
 });

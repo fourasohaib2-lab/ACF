@@ -148,3 +148,17 @@ export interface Verification {
   ceiling_base_error_ft: { n: number; mean_error: number | null; mae: number | null; definition: string };
   observed: string; forecast: string; observations_ingested_at: string | null;
 }
+
+// ---- SP5: IFS ENS probabilities (count / n over 50 perturbed members) ----
+export type EnsProduct = "p_awci_high" | "p_cloud_bkn" | "p_icing" | "p_cat_moderate" | "p_convection" | "p_ceiling_1500ft";
+export interface EnsMeta {
+  run: string; steps: number[]; missing_steps: number[]; valid_times: string[]; members_requested: number[];
+  members_used: Record<string, number>; failed_members: Record<string, number[]>; products: Record<string, { dims: string }>;
+  attribution: string; profile_version: string; cloud_profile_version: string; awci_high_lower_bound: number;
+}
+export interface EnsRun { run: string; status: string; steps: number[]; missing_steps: number[]; members_used: Record<string, number> }
+export interface EnsPointStep {
+  step: number; valid_time: string; missing: boolean; members: number;
+  probabilities: Record<EnsProduct, number | null> | null; awci_mean: number | null; awci_std: number | null;
+}
+export interface EnsPoint { lat: number; lon: number; level_hpa: number; points: EnsPointStep[]; run: string; members_requested: number; attribution: string }

@@ -47,6 +47,13 @@ export async function getField(params: Params, signal?: AbortSignal): Promise<Fi
   return parseField(r.headers, await r.arrayBuffer());
 }
 
+/** IFS ENS probability or AWCI mean/spread (SP5): same binary layout as /field. */
+export async function getEnsField(params: Params, signal?: AbortSignal): Promise<FieldData> {
+  const r = await fetch(`${API_BASE}/ens/field${query(params)}`, { signal });
+  if (!r.ok) return fail(r);
+  return parseField(r.headers, await r.arrayBuffer());
+}
+
 /** 3-D field (level, lat, lon) followed by gh (SP1C /volume), split by acf volume/geometry.parseVolume. */
 export async function getVolume(params: Params, signal?: AbortSignal): Promise<{ body: ArrayBuffer; headers: Headers }> {
   const r = await fetch(`${API_BASE}/volume${query(params)}`, { signal });

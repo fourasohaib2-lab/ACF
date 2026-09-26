@@ -12,6 +12,8 @@ so the forecast's independence from the relay can be measured. No network access
 Domains: `fixture` (35-37N / 2-4E, complete run, steps 0 and 3) and `fixture_wet`
 (15-17N / 20-18W, partial run: step 6 requested but absent from the fixture).
 
+IFS ENS: the `fixture` domain also gets the real 4-member ENS fixture of the same run (+0 and +6 h).
+
 Aeronautical observations: the `fixture` domain gets the real recorded AWC data of Algiers (DAAG): its
 METAR of 2026-09-24 21Z .. 2026-09-25 14Z and its TAF (tests/data/awc). `fixture_wet` has none, so the
 "no observation ingested" state is exercised too.
@@ -37,8 +39,9 @@ from acf.awci.ops.ingest import ingest_run  # noqa: E402
 from acf.web.awci_app import create_awci_app  # noqa: E402
 from acf.awci.obs.source_awc import AwcClient  # noqa: E402
 from acf.awci.obs.store import ObsStore  # noqa: E402
+from acf.awci.ops.ens_ingest import ingest_ens_run  # noqa: E402
 from acf.web.awci_wms import WmsRelay  # noqa: E402
-from tests.awci_ops_support import DOMAIN, WET_DOMAIN, WET_FIXTURE, FixtureFetcher  # noqa: E402
+from tests.awci_ops_support import DOMAIN, ENS_FIXTURE, WET_DOMAIN, WET_FIXTURE, FixtureFetcher  # noqa: E402
 
 CAPABILITIES = (REPO / "tests" / "data" / "wms" / "eumetview_capabilities_excerpt.xml").read_bytes()
 FAILING_LAYER = "msg_fes:rgb_ash"
@@ -87,6 +90,8 @@ def prepare(data_dir: Path) -> Path:
     ingest_run(RUN, [DOMAIN], profile, FixtureFetcher(), data_dir, [0, 3])
     ingest_run(RUN, [WET_DOMAIN], profile, FixtureFetcher(root=WET_FIXTURE), data_dir, [0, 3, 6])
     prepare_observations(data_dir)
+    # IFS ENS (real 4-member fixture, same run): +0 and +6 h, so +3 h exercises "not computed by the ensemble"
+    ingest_ens_run(RUN, DOMAIN, FixtureFetcher(root=ENS_FIXTURE), data_dir, steps=[0, 6], members=[1, 2, 3, 4])
     domains = data_dir / "domains.json"
     domains.write_text(json.dumps({"domains": [
         {"name": d.name, "label": d.label, "south": d.south, "north": d.north, "west": d.west, "east": d.east,
