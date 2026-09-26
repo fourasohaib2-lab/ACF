@@ -163,9 +163,16 @@ def convective_diagnosis(inp: CloudInputs, profile: CloudProfile) -> tuple[np.nd
         depth = top - (inp.elevation + inp.lcl_agl_m)
         ok = ((inp.mucape >= c["cape_min_j_kg"]) & np.isfinite(depth) & (depth > 0.0)
               & (inp.column_condensate >= c["condensate_min_kg_m2"]))
+        # TCU and Cb also need the model to realise the convection (profile.convection_realised, calibrated
+        # against METAR): potential convection (CAPE, depth) that the IFS does not realise stays Cu.
+        realised = np.ones_like(ok, dtype=bool)
+        values = {"mucape": inp.mucape, "column_condensate": inp.column_condensate,
+                  "precip_rate": inp.precip_rate_mm_h}
+        for name, (op, threshold) in profile.convection_realised.items():
+            realised &= (values[name] >= threshold) if op == ">=" else (values[name] <= threshold)
         # Cb = deep convection with a glaciated top; rain at the ground is not required (high-based dry Cb, virga)
-        cb = ok & (depth >= c["cb_min_depth_m"]) & (top_t <= c["glaciation_temp_k"])
-        cls = np.select([cb & (top_t <= c["capillatus_temp_k"]), cb, ok & (depth >= c["tcu_min_depth_m"]), ok],
+        cb = ok & realised & (depth >= c["cb_min_depth_m"]) & (top_t <= c["glaciation_temp_k"])
+        cls = np.select([cb & (top_t <= c["capillatus_temp_k"]), cb, ok & realised & (depth >= c["tcu_min_depth_m"]), ok],
                         [4, 3, 2, 1], 0)
     return cls, np.where(cls > 0, top, np.nan), np.where(cls > 0, top_t, np.nan)
 

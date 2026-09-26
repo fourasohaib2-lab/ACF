@@ -8,7 +8,7 @@ live side by side; every group carries a reference in ``references``.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -39,9 +39,26 @@ class CloudProfile:
     species: dict[str, float]
     references: dict[str, str]
     calibration: dict[str, Any] | None
+    # TCU and Cb also require these IFS signs of convection realised by the model (see _REALISED); otherwise Cu
+    convection_realised: dict[str, tuple[str, float]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+_REALISED = ("mucape", "column_condensate", "precip_rate")  # CloudInputs quantities a condition may use
+
+
+def _realised(raw: dict[str, Any]) -> dict[str, tuple[str, float]]:
+    out: dict[str, tuple[str, float]] = {}
+    for name, cond in raw.get("convection", {}).get("realised", {}).items():
+        if name not in _REALISED:
+            raise ValueError(f"cloud profile: convection.realised may use {_REALISED}, not {name!r}")
+        if not (isinstance(cond, list) and len(cond) == 2 and cond[0] in (">=", "<=")
+                and isinstance(cond[1], (int, float)) and not isinstance(cond[1], bool)):
+            raise ValueError(f"cloud profile: convection.realised.{name} must be [\">=\" or \"<=\", number]")
+        out[name] = (str(cond[0]), float(cond[1]))
+    return out
 
 
 def _group(raw: dict[str, Any], key: str, names: tuple[str, ...]) -> dict[str, float]:
@@ -70,5 +87,5 @@ def load_cloud_profile(path: Path | str = DEFAULT_CLOUD_PROFILE_PATH) -> CloudPr
         bias_degraded_threshold=float(raw["bias_degraded_threshold"]),
         convection=_group(raw, "convection", _CONVECTION), genus=_group(raw, "genus", _GENUS),
         species=_group(raw, "species", _SPECIES), references=dict(raw.get("references", {})),
-        calibration=raw.get("calibration"),
+        calibration=raw.get("calibration"), convection_realised=_realised(raw),
     )

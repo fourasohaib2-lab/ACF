@@ -10,7 +10,7 @@ from acf.awci.ops.clouds import (
 from acf.awci.ops.parcel import ParcelResult
 
 # Fixed RHc so that the rule tests do not depend on the calibrated values of the shipped profile.
-P = replace(load_cloud_profile(), rh_critical={"low": 0.80, "mid": 0.70, "high": 0.70})
+P = replace(load_cloud_profile(), rh_critical={"low": 0.80, "mid": 0.70, "high": 0.70}, convection_realised={})
 LEVELS = np.array([1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100], dtype=float)
 NL, NY, NX = len(LEVELS), 3, 3
 ISA_GH = 44330.8 * (1 - (LEVELS / 1013.25) ** 0.190263)
@@ -165,3 +165,17 @@ def test_fractus_never_on_stratocumulus() -> None:
     out = diagnose_clouds(_inputs(r=_r_with({0: 100.0}), theta_e=theta_e, precip=1.0, ptype=1.0, wind10=12.0), P)
     assert out["genus_low"][1, 1] == GENUS_CODES["Sc"]
     assert not int(out["species_flags"][1, 1]) & SPECIES_BITS["fractus"]
+
+
+def test_convection_not_realised_by_the_model_is_only_cumulus() -> None:
+    """A realised-convection condition (profile) gates TCU and Cb; potential convection without it stays Cu."""
+    gated = replace(P, convection_realised={"precip_rate": (">=", 0.1)})
+    dry = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3), gated)  # TCU potential, no precipitation
+    assert dry["convective_class"][1, 1] == 1
+    wet = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3, precip=0.5, ptype=1.0), gated)
+    assert wet["convective_class"][1, 1] == 2
+    deep_dry = diagnose_clouds(_inputs(el=9, mucape=1500.0, lcl=800.0, condensate=2.0), gated)
+    assert deep_dry["convective_class"][1, 1] == 1
+    below = diagnose_clouds(_inputs(el=5, mucape=600.0, lcl=800.0, condensate=0.3),
+                            replace(P, convection_realised={"column_condensate": (">=", 0.5)}))
+    assert below["convective_class"][1, 1] == 1

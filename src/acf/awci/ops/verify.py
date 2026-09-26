@@ -20,7 +20,7 @@ ETS = (a - a_r)/(a+b+c - a_r) with a_r = (a+b)(a+c)/n. A score with a zero denom
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -64,6 +64,7 @@ class ModelAtStations:
     ceiling_m: np.ndarray
     convective_class: np.ndarray
     surface_height_m: np.ndarray
+    extra: dict[str, np.ndarray] = field(default_factory=dict)  # further fields requested, same (step, station)
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,8 @@ class Pair:
     ceiling_ft: float | None  # model; None = no ceiling
     model_convective: bool | None
     dz_m: float | None  # station elevation - model surface height
+    k: int = -1  # step index in ModelAtStations
+    n: int = -1  # station index in ModelAtStations
 
 
 def scores(a: int, b: int, c: int, d: int, min_observed_events: int = 10) -> dict[str, Any]:
@@ -100,7 +103,7 @@ def match_reports(records: Sequence[dict[str, Any]], valid_times: Sequence[datet
 
 
 def model_at_stations(ds: xr.Dataset, manifest: dict[str, Any], stations: Sequence[dict[str, Any]],
-                      domain: Domain) -> ModelAtStations:
+                      domain: Domain, extra_fields: Sequence[str] = ()) -> ModelAtStations:
     inside = [s for s in stations if domain.contains(s["lat"], s["lon"])]
     lats, lons = ds["lat"].values, ds["lon"].values
     ii = np.array([int(np.abs(lats - s["lat"]).argmin()) for s in inside], dtype=int)
@@ -112,7 +115,7 @@ def model_at_stations(ds: xr.Dataset, manifest: dict[str, Any], stations: Sequen
         missing_steps=list(manifest.get("missing_steps", [])), icao=[s["icao"] for s in inside],
         grid_lat=[float(lats[i]) for i in ii], grid_lon=[float(lons[j]) for j in jj],
         ceiling_m=read("ceiling_m"), convective_class=read("convective_class"),
-        surface_height_m=read("surface_height_m"),
+        surface_height_m=read("surface_height_m"), extra={name: read(name) for name in extra_fields},
     )
 
 
@@ -155,7 +158,7 @@ def build_pairs(model: ModelAtStations, stations: Sequence[dict[str, Any]], meta
             pairs.append(Pair(icao, model.steps[k], model.valid_times[k], parse_time(record["obs_time"]), obs,
                               None if ceiling is None else ceiling * FT_PER_M,
                               None if cls is None else cls >= CONVECTIVE_MIN_CLASS,
-                              None if elev is None or surface is None else float(elev) - surface))
+                              None if elev is None or surface is None else float(elev) - surface, k, n))
     return pairs, excluded
 
 

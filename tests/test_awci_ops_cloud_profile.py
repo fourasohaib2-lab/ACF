@@ -25,3 +25,21 @@ def test_invalid_profiles_rejected(tmp_path: Path, patch: dict) -> None:
     path.write_text(json.dumps(raw))
     with pytest.raises(ValueError):
         load_cloud_profile(path)
+
+
+def test_realised_convection_conditions_are_parsed_and_validated(tmp_path) -> None:
+    import json as _json
+    from acf.awci.ops.cloud_profile import DEFAULT_CLOUD_PROFILE_PATH, load_cloud_profile as _load
+    raw = _json.loads(DEFAULT_CLOUD_PROFILE_PATH.read_text())
+    raw["convection"]["realised"] = {"precip_rate": [">=", 0.1], "column_condensate": [">=", 0.3]}
+    path = tmp_path / "p.json"
+    path.write_text(_json.dumps(raw))
+    assert _load(path).convection_realised == {"precip_rate": (">=", 0.1), "column_condensate": (">=", 0.3)}
+    for bad in ({"cape": [">=", 1]}, {"precip_rate": ["==", 1]}, {"precip_rate": [">=", "x"]}):
+        raw["convection"]["realised"] = bad
+        path.write_text(_json.dumps(raw))
+        with pytest.raises(ValueError):
+            _load(path)
+    del raw["convection"]["realised"]
+    path.write_text(_json.dumps(raw))
+    assert _load(path).convection_realised == {}

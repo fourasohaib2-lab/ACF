@@ -130,3 +130,15 @@ def test_valid_times_after_the_last_observation_are_not_counted_as_missing_repor
     _, excluded = build_pairs(model, stations, metars, VerifyConfig())
     # step 0: BBBB did not report; step 30 (26/06Z) lies after the last archived observation for both
     assert excluded["no_report_within_tolerance"] == 1 and excluded["not_yet_observed"] == 2
+
+
+def test_extra_fields_are_read_at_the_station_cells_and_pairs_keep_their_indices(fixture_cube: xr.Dataset) -> None:
+    manifest = json.loads(fixture_cube.attrs["manifest"])
+    stations = [{"icao": "DAAG", "name": "Alger", "lat": 36.691, "lon": 3.215, "elev_m": 18.0}]
+    model = model_at_stations(fixture_cube, manifest, stations, DOMAIN, extra_fields=("mucape", "column_condensate"))
+    i = int(np.abs(fixture_cube["lat"].values - 36.691).argmin())
+    j = int(np.abs(fixture_cube["lon"].values - 3.215).argmin())
+    np.testing.assert_allclose(model.extra["mucape"][:, 0], fixture_cube["mucape"].isel(lat=i, lon=j).values)
+    metars = [r for r in (AwcClient._metar(x) for x in DAAG_METARS) if r]
+    pairs, _ = build_pairs(model, stations, metars, VerifyConfig())
+    assert [(p.k, p.n) for p in pairs] == [(0, 0), (1, 0)]
