@@ -1,10 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useClouds, useCloudsSeries, useDomains, useField, useMeta, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useVerification, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
-import { Legend } from "./map/Legend";
+import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
 import type { WindGrid } from "./map/streamlines";
+import { airportFeatures } from "./lib/aero";
+import { AeroControls } from "./panels/AeroControls";
+import { AirportPanel } from "./panels/AirportPanel";
 import { AtmoProfile } from "./panels/AtmoProfile";
 import { AwciProfile } from "./panels/AwciProfile";
 import { CloudsPanel } from "./panels/CloudsPanel";
@@ -21,6 +24,8 @@ import { SavedViews } from "./panels/SavedViews";
 import { ModelAgreement } from "./panels/ModelAgreement";
 import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
+import { SigmetList } from "./panels/SigmetList";
+import { ValidationPage } from "./panels/ValidationPage";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
 import { TopBar } from "./panels/TopBar";
@@ -118,6 +123,21 @@ export function App() {
     overlayTimes[view.ov.indexOf(layer)]?.refetch();
   }, [overlayTimes, view.ov]);
   const onOverlayError = useCallback((layer: string) => setTileErrors((e) => (e[layer] ? e : { ...e, [layer]: true })), []);
+  // SP3: aeronautical observations at the valid time on screen (never the previous time's, see freshData).
+  const validTime = meta.data && resolved ? meta.data.valid_times[meta.data.steps.indexOf(resolved.step)] : undefined;
+  const airportsQ = useAirports(domain?.name, validTime);
+  const sigmetsQ = useSigmets(domain?.name, validTime, view.aero.includes("sigmet"));
+  const airportQ = useAirport(domain?.name, view.ap, resolved?.run);
+  const verificationQ = useVerification(domain?.name, resolved?.run, view.panel === "validation");
+  const freshAirports = freshData(airportsQ);
+  const airportPoints = useMemo(() => (view.aero.includes("metar") ? airportFeatures(freshAirports) : undefined),
+    [view.aero, freshAirports]);
+  const freshSigmets = freshData(sigmetsQ);
+  const sigmetShapes = view.aero.includes("sigmet") ? freshSigmets : undefined;
+  const selectAirport = useCallback((icao: string | undefined) => {
+    const a = icao ? airportsQ.data?.airports.find((x) => x.icao === icao) : undefined;
+    update(a ? { ap: a.icao, lat: Math.round(a.lat * 100) / 100, lon: Math.round(a.lon * 100) / 100 } : { ap: undefined });
+  }, [airportsQ.data, update]);
   const IR = "mtg_fd:ir105_hrfi";
   const comparing = def.id === "cloud_top_teff_k" && view.ov.includes(IR);
   const selectLayer = useCallback((id: string) => {
@@ -139,7 +159,7 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { update({ lat: undefined, lon: undefined, panel: undefined }); setToast(null); return; }
+      if (e.key === "Escape") { update({ lat: undefined, lon: undefined, panel: undefined, ap: undefined }); setToast(null); return; }
       if (ownsKeys(e.target) || e.ctrlKey || e.metaKey || e.altKey || !meta.data || !resolved) return;
       if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
       else if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
@@ -174,6 +194,8 @@ export function App() {
               status={<DataStatus run={run} cloudStatus={meta.data?.cloud_status} now={now} />} />
       <SideNav layers={layers} layer={def.id} onLayer={(id) => update({ layer: id })} streamlines={streamlines}
                onStreamlines={setStreamlines} panel={view.panel} onPanel={(panel) => update({ panel })} layerListRef={layerListRef}>
+        <AeroControls airports={airportsQ.data} layers={view.aero} selected={view.ap} now={now}
+                      onLayers={(aero) => update({ aero })} onSelect={selectAirport} />
         <OverlayPanel layers={wmsLayers.data} active={view.ov} states={overlayStates} onToggle={toggleOverlay} onRetry={retryOverlay} />
         <SavedViews onApply={(search) => { window.history.replaceState(null, "", search); window.dispatchEvent(new PopStateEvent("popstate")); }} />
       </SideNav>
@@ -191,6 +213,9 @@ export function App() {
           </Banner>
         )}
         {view.panel === "api" && <div className="api-overlay"><RegistryPage registry={registry.data} /></div>}
+        {view.panel === "validation" && (
+          <div className="api-overlay"><ValidationPage verification={verificationQ.data} isLoading={verificationQ.isLoading} error={verificationQ.error} /></div>
+        )}
         {resolved && meta.data && (
           <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer}
                   stale={summary.isPlaceholderData} />
@@ -201,7 +226,7 @@ export function App() {
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
                 <MapView domain={domain} field={fieldData} stale={field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
-                         onOverlayError={onOverlayError}
+                         onOverlayError={onOverlayError} airports={airportPoints} sigmets={sigmetShapes} onPickAirport={selectAirport}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
                          opacity={fieldOpacity(comparing, opacity)} onPick={onPick} />
               </Suspense>
@@ -214,6 +239,8 @@ export function App() {
             {def.id === "cloud_top_teff_k" && !view.ov.includes(IR) && (
               <button type="button" className="text-button" onClick={() => toggleOverlay(IR)}>Comparer à l'observation MTG IR 10,5 µm</button>
             )}
+            <ObsLegend metar={view.aero.includes("metar")}
+                       hazards={[...new Set((sigmetShapes?.features ?? []).map((f) => f.properties.hazard))]} />
             {comparing && (
               <CompareControl forecastValid={meta.data.valid_times[meta.data.steps.indexOf(resolved.step)]}
                               observedAt={overlayStates[IR]?.time} opacity={opacity} onOpacity={setOpacity} />
@@ -227,12 +254,15 @@ export function App() {
             <Situation summary={freshData(summary)} meta={meta.data} step={resolved.step} domainLabel={domain.label} />
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
+            {view.aero.includes("sigmet") && <SigmetList sigmets={freshSigmets} isError={sigmetsQ.isError} />}
             <ModelAgreement />
             <LatestRuns runs={runs.data ?? []} now={now} />
           </aside>
         )}
         {resolved && meta.data && (
           <div className="bottom-row">
+            {view.ap && <AirportPanel detail={airportQ.data} currentStep={resolved.step} now={now} loading={airportQ.isLoading} />}
+            {view.ap && airportQ.isError && <ErrorBox error={airportQ.error} what={`Aérodrome ${view.ap}`} />}
             <TimeEvolution point={timeseries.data} domain={domainSeries.data} meta={meta.data} step={resolved.step} />
             {profile.data && <AwciProfile profile={profile.data} awciBounds={awciBounds} current={resolved.level} />}
             {profile.data && <AtmoProfile profile={profile.data} />}

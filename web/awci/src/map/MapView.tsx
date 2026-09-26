@@ -3,9 +3,10 @@ import type { CanvasSource, GeoJSONSource, Map as MlMap } from "maplibre-gl";
 // MapLibre 6 runs its tile/GeoJSON work in a module worker that the bundler must emit as its own file.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef, useState } from "react";
-import type { Domain, FieldData } from "../api/types";
+import type { Domain, FieldData, SigmetFeature } from "../api/types";
 import { fr } from "../i18n/fr";
 import { gridEdges, renderField } from "./fieldRaster";
+import { CATEGORY_COLORS, HAZARDS, type AirportPoint } from "../lib/aero";
 import { colorFn, type LayerDef } from "./layers";
 import { streamlineFeatures, type WindGrid } from "./streamlines";
 import { baseStyle, wmsTileUrl } from "./style";
@@ -24,6 +25,10 @@ interface Props {
   opacity: number;
   onPick: (lat: number, lon: number) => void;
   onOverlayError?: (layer: string) => void;
+  /** Aerodromes with their METAR at the valid time, and SIGMETs valid then (SP3). */
+  airports?: { type: "FeatureCollection"; features: AirportPoint[] };
+  sigmets?: { type: "FeatureCollection"; features: SigmetFeature[] };
+  onPickAirport?: (icao: string) => void;
 }
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -38,7 +43,11 @@ const domainCorners = (d: Domain): [[number, number], [number, number], [number,
 
 const spacingForZoom = (z: number) => (z < 4 ? 3 : z < 6 ? 1.5 : 0.75);
 
-export function MapView({ domain, field, stale = false, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError }: Props) {
+const HAZARD_IDS = Object.keys(HAZARDS) as (keyof typeof HAZARDS)[];
+const PICK_PX = 6;
+
+export function MapView({ domain, field, stale = false, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError,
+  airports, sigmets, onPickAirport }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const pickRef = useRef(onPick);
@@ -53,6 +62,8 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
 
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
   useEffect(() => { overlayErrorRef.current = onOverlayError; }, [onOverlayError]);
+  const pickAirportRef = useRef(onPickAirport);
+  useEffect(() => { pickAirportRef.current = onPickAirport; }, [onPickAirport]);
 
   useEffect(() => {
     if (!container.current) return;
@@ -73,12 +84,35 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
       map.addSource("streamlines", { type: "geojson", data: EMPTY });
       map.addLayer({ id: "streamlines", type: "line", source: "streamlines",
         paint: { "line-color": "#ffffff", "line-opacity": 0.5, "line-width": 0.8 } });
+      map.addSource("sigmets", { type: "geojson", data: EMPTY });
+      map.addLayer({ id: "sigmet-fill", type: "fill", source: "sigmets",
+        paint: { "fill-color": ["match", ["get", "hazard"], ...HAZARD_IDS.flatMap((h) => [h, HAZARDS[h].color]), "#ffffff"] as never,
+          "fill-opacity": 0.12 } });
+      for (const h of HAZARD_IDS) { // one layer per hazard: MapLibre dash patterns are not data-driven
+        map.addLayer({ id: `sigmet-${h}`, type: "line", source: "sigmets", filter: ["==", ["get", "hazard"], h],
+          paint: { "line-color": HAZARDS[h].color, "line-width": HAZARDS[h].width, "line-dasharray": HAZARDS[h].dash } });
+      }
+      map.addSource("airports", { type: "geojson", data: EMPTY });
+      map.addLayer({ id: "airports-convective", type: "circle", source: "airports", filter: ["==", ["get", "convective"], true],
+        paint: { "circle-radius": 9, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": CATEGORY_COLORS.LIFR,
+          "circle-stroke-width": 2 } });
+      map.addLayer({ id: "airports", type: "circle", source: "airports",
+        paint: { "circle-radius": 5,
+          "circle-color": ["match", ["get", "category"], "VFR", CATEGORY_COLORS.VFR, "MVFR", CATEGORY_COLORS.MVFR,
+            "IFR", CATEGORY_COLORS.IFR, "LIFR", CATEGORY_COLORS.LIFR, "rgba(0,0,0,0)"],
+          "circle-stroke-color": ["case", ["get", "observed"], "#0b1220", "#8a94a8"], "circle-stroke-width": 1.5 } });
       map.addSource("point", { type: "geojson", data: EMPTY });
       map.addLayer({ id: "point", type: "circle", source: "point",
         paint: { "circle-radius": 6, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
       setReady(true);
     });
-    map.on("click", (e) => pickRef.current(e.lngLat.lat, e.lngLat.lng));
+    map.on("click", (e) => {
+      const box: [[number, number], [number, number]] = [[e.point.x - PICK_PX, e.point.y - PICK_PX], [e.point.x + PICK_PX, e.point.y + PICK_PX]];
+      const hit = map.getLayer("airports") ? map.queryRenderedFeatures(box, { layers: ["airports"] })[0] : undefined;
+      const icao = hit?.properties?.icao as string | undefined;
+      if (icao && pickAirportRef.current) pickAirportRef.current(icao);
+      else pickRef.current(e.lngLat.lat, e.lngLat.lng);
+    });
     map.on("zoomend", () => setSpacing(spacingForZoom(map.getZoom())));
     map.on("error", (e) => {
       const id = (e as { sourceId?: string }).sourceId; // set by MapLibre for source (tile) errors
@@ -131,6 +165,16 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
     const source = ready ? (mapRef.current?.getSource("streamlines") as GeoJSONSource | undefined) : undefined;
     source?.setData(wind ? (streamlineFeatures(wind, spacing) as never) : EMPTY);
   }, [ready, wind, spacing]);
+
+  useEffect(() => {
+    const source = ready ? (mapRef.current?.getSource("airports") as GeoJSONSource | undefined) : undefined;
+    source?.setData((airports ?? EMPTY) as never);
+  }, [ready, airports]);
+
+  useEffect(() => {
+    const source = ready ? (mapRef.current?.getSource("sigmets") as GeoJSONSource | undefined) : undefined;
+    source?.setData((sigmets ?? EMPTY) as never);
+  }, [ready, sigmets]);
 
   useEffect(() => {
     const source = ready ? (mapRef.current?.getSource("point") as GeoJSONSource | undefined) : undefined;

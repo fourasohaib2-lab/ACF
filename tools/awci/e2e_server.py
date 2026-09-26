@@ -11,6 +11,10 @@ so the forecast's independence from the relay can be measured. No network access
 
 Domains: `fixture` (35-37N / 2-4E, complete run, steps 0 and 3) and `fixture_wet`
 (15-17N / 20-18W, partial run: step 6 requested but absent from the fixture).
+
+Aeronautical observations: the `fixture` domain gets the real recorded AWC data of Algiers (DAAG): its
+METAR of 2026-09-24 21Z .. 2026-09-25 14Z and its TAF (tests/data/awc). `fixture_wet` has none, so the
+"no observation ingested" state is exercised too.
 """
 
 from __future__ import annotations
@@ -31,6 +35,8 @@ sys.path.insert(0, str(REPO))  # tests.awci_ops_support
 from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, load_profile  # noqa: E402
 from acf.awci.ops.ingest import ingest_run  # noqa: E402
 from acf.web.awci_app import create_awci_app  # noqa: E402
+from acf.awci.obs.source_awc import AwcClient  # noqa: E402
+from acf.awci.obs.store import ObsStore  # noqa: E402
 from acf.web.awci_wms import WmsRelay  # noqa: E402
 from tests.awci_ops_support import DOMAIN, WET_DOMAIN, WET_FIXTURE, FixtureFetcher  # noqa: E402
 
@@ -38,6 +44,18 @@ CAPABILITIES = (REPO / "tests" / "data" / "wms" / "eumetview_capabilities_excerp
 FAILING_LAYER = "msg_fes:rgb_ash"
 SLOW_LAYER = "mtg_fd:rgb_dust"
 RUN = datetime(2026, 9, 25, 0, tzinfo=UTC)
+AWC = REPO / "tests" / "data" / "awc"
+DAAG = {"icao": "DAAG", "name": "Algiers Intl", "lat": 36.691, "lon": 3.215, "elev_m": 18.0, "metar": True, "taf": True}
+
+
+def prepare_observations(data_dir: Path) -> None:
+    store = ObsStore(data_dir, DOMAIN.name)
+    store.write_stations([DAAG], datetime(2026, 9, 26, tzinfo=UTC))
+    store.add_metars([r for r in map(AwcClient._metar, json.loads((AWC / "metar_daag_20260925.json").read_text())) if r])
+    store.write_tafs([r for r in map(AwcClient._taf, json.loads((AWC / "taf_sample_20260926T08.json").read_text()))
+                      if r and r["icao"] == "DAAG"])
+    store.write_status({"ingested_at": "2026-09-26T08:52:54Z", "stations": 1,
+                        "source": "recorded AWC responses (tests/data/awc)"})
 
 
 def transparent_png(size: int = 256) -> bytes:
@@ -68,6 +86,7 @@ def prepare(data_dir: Path) -> Path:
     profile = load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH)
     ingest_run(RUN, [DOMAIN], profile, FixtureFetcher(), data_dir, [0, 3])
     ingest_run(RUN, [WET_DOMAIN], profile, FixtureFetcher(root=WET_FIXTURE), data_dir, [0, 3, 6])
+    prepare_observations(data_dir)
     domains = data_dir / "domains.json"
     domains.write_text(json.dumps({"domains": [
         {"name": d.name, "label": d.label, "south": d.south, "north": d.north, "west": d.west, "east": d.east,

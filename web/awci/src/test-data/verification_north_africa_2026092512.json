@@ -1,0 +1,325 @@
+{
+ "generated_at": "2026-09-26T09:04:39Z",
+ "parameters": {
+  "tolerance_min": 30,
+  "max_elevation_diff_m": 300.0,
+  "thresholds_ft": [
+   500,
+   1000,
+   1500
+  ],
+  "lead_bins_h": [
+   [
+    0,
+    24
+   ],
+   [
+    24,
+    48
+   ],
+   [
+    48,
+    72
+   ]
+  ],
+  "min_observed_events": 10,
+  "convective_min_class": 2,
+  "status": "HYPOTHESIS"
+ },
+ "stations": {
+  "total": 557,
+  "with_pairs": 390
+ },
+ "pairs": 2651,
+ "exclusions": {
+  "no_report_within_tolerance": 1804,
+  "not_yet_observed": 9469,
+  "undecodable": 1,
+  "elevation_mismatch": 140,
+  "ceiling_unknown": 46,
+  "convection_unknown": 143
+ },
+ "events": {
+  "ceiling_below_500ft": {
+   "total": {
+    "a": 2,
+    "b": 25,
+    "c": 14,
+    "d": 2424,
+    "n": 2465,
+    "observed_events": 16,
+    "forecast_events": 27,
+    "pod": 0.125,
+    "far": 0.9259259259259259,
+    "csi": 0.04878048780487805,
+    "bias": 1.6875,
+    "ets": 0.044697067562330446,
+    "sufficient": true
+   },
+   "by_lead": [
+    {
+     "lead": "0-24 h",
+     "a": 2,
+     "b": 25,
+     "c": 14,
+     "d": 2424,
+     "n": 2465,
+     "observed_events": 16,
+     "forecast_events": 27,
+     "pod": 0.125,
+     "far": 0.9259259259259259,
+     "csi": 0.04878048780487805,
+     "bias": 1.6875,
+     "ets": 0.044697067562330446,
+     "sufficient": true
+    },
+    {
+     "lead": "24-48 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    },
+    {
+     "lead": "48-72 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    }
+   ]
+  },
+  "ceiling_below_1000ft": {
+   "total": {
+    "a": 2,
+    "b": 40,
+    "c": 30,
+    "d": 2393,
+    "n": 2465,
+    "observed_events": 32,
+    "forecast_events": 42,
+    "pod": 0.0625,
+    "far": 0.9523809523809523,
+    "csi": 0.027777777777777776,
+    "bias": 1.3125,
+    "ets": 0.020359267838488442,
+    "sufficient": true
+   },
+   "by_lead": [
+    {
+     "lead": "0-24 h",
+     "a": 2,
+     "b": 40,
+     "c": 30,
+     "d": 2393,
+     "n": 2465,
+     "observed_events": 32,
+     "forecast_events": 42,
+     "pod": 0.0625,
+     "far": 0.9523809523809523,
+     "csi": 0.027777777777777776,
+     "bias": 1.3125,
+     "ets": 0.020359267838488442,
+     "sufficient": true
+    },
+    {
+     "lead": "24-48 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    },
+    {
+     "lead": "48-72 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    }
+   ]
+  },
+  "ceiling_below_1500ft": {
+   "total": {
+    "a": 6,
+    "b": 45,
+    "c": 37,
+    "d": 2377,
+    "n": 2465,
+    "observed_events": 43,
+    "forecast_events": 51,
+    "pod": 0.13953488372093023,
+    "far": 0.8823529411764706,
+    "csi": 0.06818181818181818,
+    "bias": 1.186046511627907,
+    "ets": 0.058665188821154304,
+    "sufficient": true
+   },
+   "by_lead": [
+    {
+     "lead": "0-24 h",
+     "a": 6,
+     "b": 45,
+     "c": 37,
+     "d": 2377,
+     "n": 2465,
+     "observed_events": 43,
+     "forecast_events": 51,
+     "pod": 0.13953488372093023,
+     "far": 0.8823529411764706,
+     "csi": 0.06818181818181818,
+     "bias": 1.186046511627907,
+     "ets": 0.058665188821154304,
+     "sufficient": true
+    },
+    {
+     "lead": "24-48 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    },
+    {
+     "lead": "48-72 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    }
+   ]
+  },
+  "convective": {
+   "total": {
+    "a": 28,
+    "b": 188,
+    "c": 24,
+    "d": 2268,
+    "n": 2508,
+    "observed_events": 52,
+    "forecast_events": 216,
+    "pod": 0.5384615384615384,
+    "far": 0.8703703703703703,
+    "csi": 0.11666666666666667,
+    "bias": 4.153846153846154,
+    "ets": 0.09986998212254186,
+    "sufficient": true
+   },
+   "by_lead": [
+    {
+     "lead": "0-24 h",
+     "a": 28,
+     "b": 188,
+     "c": 24,
+     "d": 2268,
+     "n": 2508,
+     "observed_events": 52,
+     "forecast_events": 216,
+     "pod": 0.5384615384615384,
+     "far": 0.8703703703703703,
+     "csi": 0.11666666666666667,
+     "bias": 4.153846153846154,
+     "ets": 0.09986998212254186,
+     "sufficient": true
+    },
+    {
+     "lead": "24-48 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    },
+    {
+     "lead": "48-72 h",
+     "a": 0,
+     "b": 0,
+     "c": 0,
+     "d": 0,
+     "n": 0,
+     "observed_events": 0,
+     "forecast_events": 0,
+     "pod": null,
+     "far": null,
+     "csi": null,
+     "bias": null,
+     "ets": null,
+     "sufficient": false
+    }
+   ]
+  }
+ },
+ "ceiling_base_error_ft": {
+  "n": 73,
+  "mean_error": -1570.2842894347277,
+  "mae": 1743.9269115207085,
+  "definition": "model - observed, both ceilings below 5000 ft"
+ },
+ "observed": "METAR/SPECI, NOAA/NWS Aviation Weather Center (public domain)",
+ "forecast": "AWCI cloud diagnostics on ECMWF IFS 0.25\u00b0 (status HYPOTHESIS)",
+ "domain": "north_africa",
+ "run": "2026092512",
+ "valid_from": "2026-09-25T12:00:00Z",
+ "valid_to": "2026-09-28T12:00:00Z",
+ "observations_ingested_at": "2026-09-26T08:52:54Z"
+}

@@ -3,8 +3,8 @@ import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstac
 import { useEffect } from "react";
 import { ApiError, getField, getJson } from "./client";
 import type {
-  CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload, Registry, RunInfo, Summary,
-  SummarySeries, TimeseriesPayload, WmsLayer, WmsTimes,
+  AirportDetail, AirportsPayload, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
+  Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
 } from "./types";
 
 const IMMUTABLE = { staleTime: Infinity, gcTime: 30 * 60_000 } as const;
@@ -113,3 +113,25 @@ export const useOverlayTimes = (layers: string[]) =>
     queryKey: ["wms-times", layer, 1], staleTime: 60_000, refetchInterval: 120_000, retry: 1,
     queryFn: ({ signal }: { signal: AbortSignal }) => getJson<WmsTimes>("/wms/times", { layer, count: 1 }, signal),
   })) });
+
+// ---- SP3: observations are appended by acf-awci-obs, so they are refreshed (never immutable) ----
+const OBS = { staleTime: 60_000, refetchInterval: 300_000, gcTime: 30 * 60_000 } as const;
+
+/** Aerodromes with the METAR nearest (±30 min) to the valid time on screen. */
+export const useAirports = (domain: string | undefined, time: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ["airports", domain, time], enabled: enabled && !!domain && !!time, ...OBS, retry,
+    placeholderData: keepPreviousData,
+    queryFn: ({ signal }) => getJson<AirportsPayload>("/airports", { domain, time }, signal) });
+
+export const useAirport = (domain: string | undefined, icao: string | undefined, run: string | undefined) =>
+  useQuery({ queryKey: ["airport", domain, icao, run], enabled: !!domain && !!icao && !!run, ...OBS, retry,
+    queryFn: ({ signal }) => getJson<AirportDetail>("/airport", { domain, icao, run }, signal) });
+
+export const useSigmets = (domain: string | undefined, time: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ["sigmets", domain, time], enabled: enabled && !!domain && !!time, ...OBS, retry,
+    placeholderData: keepPreviousData,
+    queryFn: ({ signal }) => getJson<SigmetCollection>("/sigmets", { domain, time }, signal) });
+
+export const useVerification = (domain: string | undefined, run: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ["verification", domain, run], enabled: enabled && !!domain && !!run, ...OBS, retry,
+    queryFn: ({ signal }) => getJson<Verification>("/verification", { domain, run }, signal) });

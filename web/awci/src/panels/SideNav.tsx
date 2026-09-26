@@ -1,4 +1,4 @@
-import { BookOpen, Cloud, Layers, Map as MapIcon } from "lucide-react";
+import { BookOpen, ClipboardCheck, Cloud, Layers, Map as MapIcon } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { GROUP_LABELS, type Group, type LayerDef } from "../map/layers";
 
@@ -23,6 +23,7 @@ export function SideNav({ layers, layer, onLayer, streamlines, onStreamlines, pa
       <ul className="sidenav-sections">
         <li><button type="button" aria-current={!panel ? "page" : undefined} onClick={() => onPanel(undefined)}><MapIcon size={16} aria-hidden="true" />Carte</button></li>
         <li><button type="button" aria-current={panel === "clouds" ? "page" : undefined} onClick={() => onPanel("clouds")}><Cloud size={16} aria-hidden="true" />Nuages</button></li>
+        <li><button type="button" aria-current={panel === "validation" ? "page" : undefined} onClick={() => onPanel("validation")}><ClipboardCheck size={16} aria-hidden="true" />Validation</button></li>
         <li><button type="button" aria-current={panel === "api" ? "page" : undefined} onClick={() => onPanel("api")}><BookOpen size={16} aria-hidden="true" />API et registre</button></li>
       </ul>
       <fieldset className="layer-list" ref={layerListRef} tabIndex={-1}>

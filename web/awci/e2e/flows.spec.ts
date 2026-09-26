@@ -56,7 +56,7 @@ test("observations carry their time and attribution; an unavailable relay is sai
   await open(page, "?domain=fixture&step=3&ov=mtg_fd:ir105_hrfi,msg_fes:rgb_ash");
   await expect(page.locator(".observed-badge")).toContainText(/Observé .* UTC · il y a .* · © EUMETSAT/);
   await expect(page.getByText("EUMETView indisponible")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole("checkbox", { name: /cendres/i })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /MSG Ash RGB/ })).not.toBeChecked();
 });
 
 test("reduced motion disables transitions", async ({ browser }) => {

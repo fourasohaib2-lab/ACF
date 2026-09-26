@@ -87,3 +87,64 @@ export interface Registry {
 }
 export interface WmsLayer { layer: string; label: string; group: string; attribution: string }
 export interface WmsTimes { layer: string; label: string; times: string[]; attribution: string }
+
+// ---- SP3: aeronautical observations (AWC, public domain) and verification ----
+export type FlightCategory = "VFR" | "MVFR" | "IFR" | "LIFR";
+export type CeilingStatus = "value" | "none" | "none_below_5000" | "unknown";
+
+export interface MetarObs {
+  time: string; kind: string; raw: string; auto: boolean; visibility_m: number | null; weather: string[];
+  cavok: boolean; no_sig_cloud: string | null;
+  layers: { cover: string; base_ft: number | null; type: string | null }[];
+  vertical_visibility_ft: number | null; ceiling_status: CeilingStatus; ceiling_ft: number | null;
+  convective: boolean | null; flight_category: FlightCategory | null;
+}
+export interface Airport {
+  icao: string; name: string; lat: number; lon: number; elev_m: number; metar: boolean; taf: boolean;
+  observation: MetarObs | null;
+}
+export interface AirportsPayload {
+  time: string; tolerance_min: number; airports: Airport[]; ingested_at: string | null; attribution: string;
+}
+export interface TafPeriod {
+  from: string; to: string | null; change: string | null; probability: number | null;
+  visibility: string | number | null; weather: string | null;
+  clouds: { cover: string | null; base_ft: number | null; type: string | null }[];
+}
+export interface Taf { icao: string; issued: string | null; valid_from: string; valid_to: string; raw: string; periods: TafPeriod[] }
+export interface AirportModelPoint {
+  step: number; valid_time: string; missing: boolean; ceiling_ft: number | null; convective_class: number | null;
+  surface_height_m: number | null; genus_low: string | null; cloud_cover_low: number | null;
+}
+export interface AirportPair {
+  step: number; valid_time: string; observation: MetarObs | null; model_ceiling_ft: number | null;
+  model_convective: boolean | null;
+}
+export interface AirportDetail {
+  station: Omit<Airport, "observation">; grid: { lat: number; lon: number }; dz_m: number | null;
+  metars: MetarObs[]; taf: Taf | null; model: AirportModelPoint[]; pairs: AirportPair[]; run: string;
+  attribution: string; model_attribution: string | null;
+}
+export interface SigmetProps {
+  hazard: "TS" | "TURB" | "ICE" | "VA" | "TC" | "MTW"; qualifier: string | null; fir: string | null;
+  fir_name: string | null; series: string | null; base_ft: number | null; top_ft: number | null;
+  valid_from: string; valid_to: string; direction: string | null; speed_kt: string | null; change: string | null;
+  raw: string; received: string | null;
+}
+export interface SigmetFeature { type: "Feature"; geometry: { type: "Polygon"; coordinates: number[][][] }; properties: SigmetProps }
+export interface SigmetCollection {
+  type: "FeatureCollection"; features: SigmetFeature[]; time: string; ingested_at: string | null; attribution: string;
+}
+export interface ScoreTable {
+  a: number; b: number; c: number; d: number; n: number; observed_events: number; forecast_events: number;
+  pod: number | null; far: number | null; csi: number | null; bias: number | null; ets: number | null; sufficient: boolean;
+}
+export interface Verification {
+  domain: string; run: string; valid_from: string; valid_to: string; generated_at: string;
+  parameters: { tolerance_min: number; max_elevation_diff_m: number; thresholds_ft: number[]; min_observed_events: number;
+    convective_min_class: number; status: string };
+  stations: { total: number; with_pairs: number }; pairs: number; exclusions: Record<string, number>;
+  events: Record<string, { total: ScoreTable; by_lead: (ScoreTable & { lead: string })[] }>;
+  ceiling_base_error_ft: { n: number; mean_error: number | null; mae: number | null; definition: string };
+  observed: string; forecast: string; observations_ingested_at: string | null;
+}

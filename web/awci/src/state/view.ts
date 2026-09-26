@@ -5,11 +5,18 @@ import { LAYER_DEFS, type LayerDef } from "../map/layers";
 export interface ViewState {
   domain?: string; run?: string; step?: number; level?: number; layer: string;
   lat?: number; lon?: number; ov: string[]; panel?: string;
+  /** Selected aerodrome (ICAO) and visible aeronautical observation layers. */
+  ap?: string; aero: AeroLayer[];
 }
+export type AeroLayer = "metar" | "sigmet";
+export const AERO_DEFAULT: AeroLayer[] = ["metar", "sigmet"];
 export interface Resolved { domain: string; run: string; step: number; level: number; layer: string }
 
 const NAME = /^[a-z0-9_]{1,64}$/;
 const OVERLAY = /^[a-z0-9_]+:[a-z0-9_]+$/;
+const ICAO = /^[A-Z][A-Z0-9]{3}$/;
+const parseAero = (raw: string | null): AeroLayer[] =>
+  raw === null ? [...AERO_DEFAULT] : AERO_DEFAULT.filter((l) => raw.split(",").includes(l));
 const num = (s: string | null) => (s !== null && s.trim() !== "" && Number.isFinite(Number(s)) ? Number(s) : undefined);
 
 export function parseView(search: string): ViewState {
@@ -23,6 +30,7 @@ export function parseView(search: string): ViewState {
     lat: lat !== undefined && Math.abs(lat) <= 90 ? lat : undefined,
     lon: lon !== undefined && Math.abs(lon) <= 180 ? lon : undefined,
     ov: (q.get("ov") ?? "").split(",").filter((o) => OVERLAY.test(o)), panel: text("panel", NAME),
+    ap: text("ap", ICAO), aero: parseAero(q.get("aero")),
   };
 }
 
@@ -30,7 +38,9 @@ export function serializeView(v: ViewState): string {
   const q = new URLSearchParams();
   const set = (k: string, val: string | number | undefined) => { if (val !== undefined && val !== "") q.set(k, String(val)); };
   set("domain", v.domain); set("run", v.run); set("step", v.step); set("level", v.level); set("layer", v.layer);
-  set("lat", v.lat); set("lon", v.lon); set("ov", v.ov.join(",")); set("panel", v.panel);
+  set("lat", v.lat); set("lon", v.lon); set("ov", v.ov.join(",")); set("panel", v.panel); set("ap", v.ap);
+  const aero = AERO_DEFAULT.filter((l) => v.aero.includes(l));
+  if (aero.length !== AERO_DEFAULT.length) set("aero", aero.length ? aero.join(",") : "none");
   return `?${q.toString()}`;
 }
 

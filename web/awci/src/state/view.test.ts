@@ -30,12 +30,12 @@ test("layers absent from the run are not offered", () => {
 });
 
 test("the first interaction pins the run shown, so a new run never shifts the valid time silently", () => {
-  expect(withPinnedRun({ layer: "awci", ov: [] }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
-  expect(withPinnedRun({ layer: "awci", ov: [], run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
+  expect(withPinnedRun({ layer: "awci", ov: [], aero: [] }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
+  expect(withPinnedRun({ layer: "awci", ov: [], aero: [], run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
   // "Maintenant" explicitly un-pins
-  expect(withPinnedRun({ layer: "awci", ov: [], run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
+  expect(withPinnedRun({ layer: "awci", ov: [], aero: [], run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
     .toEqual({ run: undefined, step: undefined });
-  expect(withPinnedRun({ layer: "awci", ov: [] }, undefined, { step: 3 })).toEqual({ step: 3 });
+  expect(withPinnedRun({ layer: "awci", ov: [], aero: [] }, undefined, { step: 3 })).toEqual({ step: 3 });
 });
 
 test("a newer usable run than the pinned one is announced", () => {
@@ -44,4 +44,17 @@ test("a newer usable run than the pinned one is announced", () => {
   expect(newerRun(runs, "2026092506")).toBeUndefined();
   expect(newerRun(runs, undefined)).toBeUndefined();
   expect(newerRun([{ run: "2026092506", status: "failed" }, { run: "2026092500", status: "complete" }] as never, "2026092500")).toBeUndefined();
+});
+
+test("aerodrome and observation layers round-trip through the URL; both layers are on by default", () => {
+  expect(parseView("").aero).toEqual(["metar", "sigmet"]);
+  expect(serializeView(parseView(""))).not.toContain("aero");
+  const v = parseView("?ap=DAAG&aero=sigmet");
+  expect(v.ap).toBe("DAAG");
+  expect(parseView(serializeView(v))).toEqual(v);
+  const none = parseView("?aero=none");
+  expect(none.aero).toEqual([]);
+  expect(parseView(serializeView(none)).aero).toEqual([]);
+  expect(parseView("?ap=../x&aero=evil,metar").ap).toBeUndefined();
+  expect(parseView("?aero=evil,metar").aero).toEqual(["metar"]);
 });
