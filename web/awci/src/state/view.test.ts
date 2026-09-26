@@ -30,12 +30,12 @@ test("layers absent from the run are not offered", () => {
 });
 
 test("the first interaction pins the run shown, so a new run never shifts the valid time silently", () => {
-  expect(withPinnedRun({ layer: "awci", ov: [], aero: [] }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
-  expect(withPinnedRun({ layer: "awci", ov: [], aero: [], run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
+  expect(withPinnedRun({ ...parseView("") }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
+  expect(withPinnedRun({ ...parseView(""), run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
   // "Maintenant" explicitly un-pins
-  expect(withPinnedRun({ layer: "awci", ov: [], aero: [], run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
+  expect(withPinnedRun({ ...parseView(""), run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
     .toEqual({ run: undefined, step: undefined });
-  expect(withPinnedRun({ layer: "awci", ov: [], aero: [] }, undefined, { step: 3 })).toEqual({ step: 3 });
+  expect(withPinnedRun({ ...parseView("") }, undefined, { step: 3 })).toEqual({ step: 3 });
 });
 
 test("a newer usable run than the pinned one is announced", () => {
@@ -57,4 +57,19 @@ test("aerodrome and observation layers round-trip through the URL; both layers a
   expect(parseView(serializeView(none)).aero).toEqual([]);
   expect(parseView("?ap=../x&aero=evil,metar").ap).toBeUndefined();
   expect(parseView("?aero=evil,metar").aero).toEqual(["metar"]);
+});
+
+test("3-D view state round-trips and is clamped; defaults stay out of the URL", () => {
+  const d = parseView("");
+  expect(d.mode3d).toBe(false);
+  expect(d.vol).toEqual(["clouds"]);
+  expect(d.exag).toBe(40);
+  expect(d.cth).toBe(0.625);
+  expect(serializeView(d)).not.toMatch(/view=|vol=|exag=|cth=/);
+  const v = parseView("?view=3d&vol=icing,cat&exag=80&cth=0.875");
+  expect(v).toMatchObject({ mode3d: true, vol: ["icing", "cat"], exag: 80, cth: 0.875 });
+  expect(parseView(serializeView(v))).toEqual(v);
+  expect(parseView("?exag=5000&cth=3").exag).toBe(100);
+  expect(parseView("?exag=5000&cth=3").cth).toBe(1);
+  expect(parseView("?vol=evil,awci,cat,clouds").vol).toEqual(["awci", "clouds"]); // unknown dropped, AWCI+CAT excluded, max 2
 });

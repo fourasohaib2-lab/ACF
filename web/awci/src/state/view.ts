@@ -1,12 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Domain, Meta, RunInfo } from "../api/types";
 import { LAYER_DEFS, type LayerDef } from "../map/layers";
+import { allowedWith, type VolumeLayerId } from "../volume/layers3d";
 
 export interface ViewState {
   domain?: string; run?: string; step?: number; level?: number; layer: string;
   lat?: number; lon?: number; ov: string[]; panel?: string;
   /** Selected aerodrome (ICAO) and visible aeronautical observation layers. */
   ap?: string; aero: AeroLayer[];
+  /** 3-D volume view (SP2B): volume layers (max 2), vertical exaggeration, cloud-fraction threshold. */
+  mode3d: boolean; vol: VolumeLayerId[]; exag: number; cth: number;
+}
+const VOLUME_IDS: VolumeLayerId[] = ["clouds", "icing", "cat", "awci"];
+export const EXAG_DEFAULT = 40;
+export const CTH_DEFAULT = 0.625; // 5/8: broken (BKN)
+const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+function parseVol(raw: string | null): VolumeLayerId[] {
+  if (raw === null) return ["clouds"];
+  const out: VolumeLayerId[] = [];
+  for (const id of raw.split(",")) {
+    if ((VOLUME_IDS as string[]).includes(id) && allowedWith(out, id as VolumeLayerId) && !out.includes(id as VolumeLayerId)) {
+      out.push(id as VolumeLayerId);
+    }
+  }
+  return out;
 }
 export type AeroLayer = "metar" | "sigmet";
 export const AERO_DEFAULT: AeroLayer[] = ["metar", "sigmet"];
@@ -31,6 +48,9 @@ export function parseView(search: string): ViewState {
     lon: lon !== undefined && Math.abs(lon) <= 180 ? lon : undefined,
     ov: (q.get("ov") ?? "").split(",").filter((o) => OVERLAY.test(o)), panel: text("panel", NAME),
     ap: text("ap", ICAO), aero: parseAero(q.get("aero")),
+    mode3d: q.get("view") === "3d", vol: parseVol(q.get("vol")),
+    exag: clamp(Math.round(num(q.get("exag")) ?? EXAG_DEFAULT), 10, 100),
+    cth: clamp(Math.round((num(q.get("cth")) ?? CTH_DEFAULT) * 8) / 8, 0.125, 1),
   };
 }
 
@@ -41,6 +61,10 @@ export function serializeView(v: ViewState): string {
   set("lat", v.lat); set("lon", v.lon); set("ov", v.ov.join(",")); set("panel", v.panel); set("ap", v.ap);
   const aero = AERO_DEFAULT.filter((l) => v.aero.includes(l));
   if (aero.length !== AERO_DEFAULT.length) set("aero", aero.length ? aero.join(",") : "none");
+  if (v.mode3d) set("view", "3d");
+  if (v.vol.join(",") !== "clouds") set("vol", v.vol.length ? v.vol.join(",") : "none");
+  if (v.exag !== EXAG_DEFAULT) set("exag", v.exag);
+  if (v.cth !== CTH_DEFAULT) set("cth", v.cth);
   return `?${q.toString()}`;
 }
 
