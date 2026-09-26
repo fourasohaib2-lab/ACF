@@ -1,11 +1,15 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { useDomains, useField, useMeta, useRegistry, useRuns, useSummary } from "./api/hooks";
+import { useDomains, useField, useMeta, usePoint, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend } from "./map/Legend";
 import { layerDef } from "./map/layers";
 import type { WindGrid } from "./map/streamlines";
+import { AtmoProfile } from "./panels/AtmoProfile";
+import { AwciProfile } from "./panels/AwciProfile";
 import { DataStatus } from "./panels/DataStatus";
+import { Inspector } from "./panels/Inspector";
+import { TimeEvolution } from "./panels/TimeEvolution";
 import { KpiRow } from "./panels/KpiRow";
 import { ModelAgreement } from "./panels/ModelAgreement";
 import { Situation } from "./panels/Situation";
@@ -68,6 +72,11 @@ export function App() {
   const layers = useMemo(() => (meta.data ? availableLayers(meta.data) : []), [meta.data]);
   const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level);
   const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
+  const pointKey = { domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level, lat: view.lat, lon: view.lon };
+  const point = usePoint(pointKey);
+  const profile = useProfile(pointKey);
+  const timeseries = useTimeseries(pointKey);
+  const domainSeries = useSummarySeries(resolved?.domain, resolved?.run, resolved?.level);
   const selectLayer = useCallback((id: string) => {
     if (layers.some((d) => d.id === id)) update({ layer: id });
   }, [layers, update]);
@@ -150,8 +159,17 @@ export function App() {
         {resolved && meta.data && (
           <aside className="side-column" aria-label="Situation et point">
             <Situation summary={summary.data} meta={meta.data} step={resolved.step} domainLabel={domain.label} />
+            {point.isError && <ErrorBox error={point.error} what="Point" />}
+            <Inspector point={point.data} registry={registry.data} />
             <ModelAgreement />
           </aside>
+        )}
+        {resolved && meta.data && (
+          <div className="bottom-row">
+            <TimeEvolution point={timeseries.data} domain={domainSeries.data} meta={meta.data} step={resolved.step} />
+            {profile.data && <AwciProfile profile={profile.data} awciBounds={awciBounds} current={resolved.level} />}
+            {profile.data && <AtmoProfile profile={profile.data} />}
+          </div>
         )}
       </main>
     </div>
