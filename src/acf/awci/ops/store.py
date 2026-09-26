@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -128,9 +129,23 @@ def apply_retention(root: Path, domain: str, keep: int) -> list[str]:
     return removed
 
 
+_OPEN_LOCK = threading.Lock()
+
+
 @lru_cache(maxsize=16)
-def _open(path: str, mtime: float) -> xr.Dataset:
+def _open_cached(path: str, mtime: float) -> xr.Dataset:
     return xr.open_dataset(path, engine="netcdf4", cache=False)
+
+
+def _open(path: str, mtime: float) -> xr.Dataset:
+    """Opened cube shared by all threads. Opening is serialised: lru_cache alone lets several web-handler
+    threads miss together and open the same HDF5 file concurrently, which crashes the process (segfault)
+    or corrupts xarray's file-manager cache. Reads afterwards are serialised by xarray's netCDF4 lock."""
+    with _OPEN_LOCK:
+        return _open_cached(path, mtime)
+
+
+_open.cache_clear = _open_cached.cache_clear  # type: ignore[attr-defined]
 
 
 _RUN_ID_RE = re.compile(r"^\d{10}$")
