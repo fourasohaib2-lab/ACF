@@ -128,18 +128,22 @@ export function splitByBand(v: Voxels, bandDeg: number): Band[] {
     key[j] = b;
     counts.set(b, (counts.get(b) ?? 0) + 1);
   }
-  const bands = new Map<number, Band & { fill: number }>();
+  const bands = new Map<number, Band>();
+  const fill = new Map<number, number>();
   for (const [b, n] of [...counts].sort((x, y) => x[0] - y[0])) {
     bands.set(b, { lat: (b + 0.5) * bandDeg, count: n, positions: new Float32Array(n * 3), thickness: new Float32Array(n),
-      colors: new Uint8Array(n * 4), index: new Uint32Array(n), fill: 0 });
+      colors: new Uint8Array(n * 4), index: new Uint32Array(n) });
+    fill.set(b, 0);
   }
   for (let j = 0; j < v.count; j++) {
-    const band = bands.get(key[j]!)!;
-    const f = band.fill++;
+    const b = key[j]!;
+    const band = bands.get(b)!;
+    const f = fill.get(b)!;
+    fill.set(b, f + 1);
     band.positions.set(v.positions.subarray(j * 3, j * 3 + 3), f * 3);
     band.thickness[f] = v.thickness[j]!;
     band.colors.set(v.colors.subarray(j * 4, j * 4 + 4), f * 4);
     band.index[f] = j;
   }
-  return [...bands.values()].map(({ fill: _fill, ...band }) => band);
+  return [...bands.values()];
 }
