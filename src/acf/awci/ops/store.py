@@ -31,8 +31,19 @@ ATTRIBUTION = "© ECMWF, CC-BY-4.0"
 MODEL = "ECMWF IFS 0.25° Open Data"
 
 
+#: Deterministic models (SP6): IFS cubes at the data root (unchanged layout), other models in a sub-directory.
+MODELS = ("ifs", "gfs")
+
+
 def data_root() -> Path:
     return Path(os.environ.get("ACF_AWCI_DATA_DIR", DEFAULT_DATA_DIR))
+
+
+def model_root(root: Path, model: str) -> Path:
+    """Directory holding a model's cubes: the data root for IFS, <root>/<model> for the others."""
+    if model not in MODELS:
+        raise ValueError(f"unknown model {model!r} (known: {MODELS})")
+    return Path(root) if model == "ifs" else Path(root) / model
 
 
 def run_id(run: datetime) -> str:

@@ -6,6 +6,8 @@ DST = du/dx - dv/dy, DSH = dv/dx + du/dy, CVG = -divergence (IFS field d),
 TI2 = VWS * (DEF + CVG)  [s^-2]; categories use CATIndex's x1e7 thresholds 4/8/12.
 Horizontal derivatives: centred differences on a regular lat/lon grid with real
 metric spacing (spherical Earth, R = 6371 km).
+Horizontal divergence, for models without a divergence field (GFS, SP6), in spherical coordinates:
+div = (1 / (R cos phi)) du/dlambda + (1 / R) dv/dphi - v tan(phi) / R, with the same centred differences.
 """
 
 from __future__ import annotations
@@ -47,6 +49,14 @@ def horizontal_gradients(f: np.ndarray, lats: np.ndarray, lons: np.ndarray) -> t
     df_dy = np.gradient(f, axis=-2) / dy
     df_dx = np.gradient(f, axis=-1) / dx_row[:, None]
     return df_dx, df_dy
+
+
+def horizontal_divergence(u: np.ndarray, v: np.ndarray, lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
+    """Horizontal wind divergence (1/s) on the sphere (see module doc); lats ascending, one value per grid cell."""
+    du_dx, _ = horizontal_gradients(u, lats, lons)
+    _, dv_dy = horizontal_gradients(v, lats, lons)
+    tan_phi = np.tan(np.radians(np.asarray(lats, dtype=float)))[:, None]
+    return du_dx + dv_dy - np.asarray(v, dtype=float) * tan_phi / EARTH_RADIUS_M
 
 
 def ellrod_ti2(

@@ -8,6 +8,12 @@ Vectorized moist thermodynamics (NumPy), consistent with acf.science.
 - LCL height (Espy): 125 m per K of dewpoint depression.
 - q_s = eps e_s / (p - (1 - eps) e_s); Tv = T (1 + (1/eps - 1) q), condensate loading neglected
 - LCL temperature: Bolton (1980) eq. 15, T_L = 1 / (1/(Td - 56) + ln(T/Td)/800) + 56
+- IFS mixed-phase saturation (ECMWF IFS Documentation, Part IV "Physical processes"; Tetens formula with the
+  Buck (1981) constants): e_sat = alpha e_w + (1 - alpha) e_i, e = a1 exp(a3 (T - T0) / (T - a4)),
+  a1 = 611.21 Pa, T0 = 273.16 K; water a3 = 17.502, a4 = 32.19 K; ice a3 = 22.587, a4 = -0.7 K;
+  alpha = 1 above T0, 0 below T_ice = 250.16 K, ((T - T_ice) / (T0 - T_ice))^2 in between. The relative
+  humidity of IFS pressure-level `r` uses it; ifs_relative_humidity_pct gives the same quantity from q, T, p
+  for another model (SP6), so that the IFS-calibrated cloud profile receives what it was calibrated on.
 - model surface height (hypsometric equation): z_s = gh_k - (Rd Tv_mean / g) ln(p_s / p_k),
   k = lowest level above ground, Tv_mean = mean of surface (2t, 2d) and level-k virtual temperatures
 """
@@ -38,6 +44,27 @@ def dewpoint_k_from_vapor_pressure(e_hpa: np.ndarray) -> np.ndarray:
         ln = np.log(e / 6.112)
         td_c = 243.5 * ln / (17.67 - ln)
     return np.where(e > 0.0, td_c + 273.15, np.nan)
+
+
+IFS_A1_PA = 611.21
+IFS_T0_K = 273.16
+IFS_TICE_K = 250.16
+IFS_WATER = (17.502, 32.19)
+IFS_ICE = (22.587, -0.7)
+
+
+def ifs_saturation_vapor_pressure_hpa(t_k: np.ndarray) -> np.ndarray:
+    """Mixed-phase saturation vapour pressure of the IFS (see module doc), hPa."""
+    t = np.asarray(t_k, dtype=float)
+    tetens = lambda a3, a4: IFS_A1_PA * np.exp(a3 * (t - IFS_T0_K) / (t - a4))  # noqa: E731
+    alpha = np.clip((t - IFS_TICE_K) / (IFS_T0_K - IFS_TICE_K), 0.0, 1.0) ** 2
+    return (alpha * tetens(*IFS_WATER) + (1.0 - alpha) * tetens(*IFS_ICE)) / 100.0
+
+
+def ifs_relative_humidity_pct(t_k: np.ndarray, q: np.ndarray, p_hpa: np.ndarray) -> np.ndarray:
+    """Relative humidity with respect to the IFS mixed-phase saturation, from q, T, p (not capped: the IFS `r`
+    exceeds 100 % in ice-supersaturated air)."""
+    return vapor_pressure_hpa(q, p_hpa) / ifs_saturation_vapor_pressure_hpa(t_k) * 100.0
 
 
 def relative_humidity_pct(t_k: np.ndarray, q: np.ndarray, p_hpa: np.ndarray) -> np.ndarray:

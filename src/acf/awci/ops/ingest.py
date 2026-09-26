@@ -1,9 +1,12 @@
 """
 acf-awci-ingest: download one ECMWF IFS run, compute AWCI layers, store cubes.
 
-    acf-awci-ingest [--run latest|YYYYMMDDHH] [--domain NAME|all] [--steps 0-72/3]
+    acf-awci-ingest [--model ifs|gfs] [--run latest|YYYYMMDDHH] [--domain NAME|all] [--steps 0-72/3]
                     [--profile PATH] [--cloud-profile PATH] [--domains-file PATH] [--data-dir PATH]
                     [--keep N] [--force]
+
+--model gfs ingests NOAA GFS 0.25° through the same pipeline (acf.awci.ops.source_gfs, spec SP6) into
+<data>/gfs/; the default stays ECMWF IFS at the data root.
 
 Exit code 0 when every domain is complete or partial, 1 when any failed.
 A failed step never aborts the run; a run with no step at all is 'failed' and not stored.
@@ -36,7 +39,12 @@ from acf.awci.ops.source_ecmwf import (
     fetch_step_messages,
     find_latest_run,
 )
-from acf.awci.ops.store import CubeWriter, apply_retention, data_root
+from acf.awci.ops.source_gfs import ATTRIBUTION as GFS_ATTRIBUTION
+from acf.awci.ops.source_gfs import DIFFERENCES as GFS_DIFFERENCES
+from acf.awci.ops.source_gfs import LICENSE as GFS_LICENSE
+from acf.awci.ops.source_gfs import MODEL as GFS_MODEL
+from acf.awci.ops.source_gfs import GfsRunState, decode_gfs, fetch_gfs_step, gfs_step_urls
+from acf.awci.ops.store import CubeWriter, apply_retention, data_root, model_root
 from acf.awci.terrain_elevation import interpolate_real_terrain_elevation
 
 
@@ -64,7 +72,12 @@ def _consistency(step: int, bias: np.ndarray, cloud_profile: CloudProfile) -> di
 def ingest_run(
     run: datetime, domains: list[Domain], profile: Profile, fetcher: Fetcher, root: Path,
     steps: list[int], keep: int | None = 8, force: bool = False, cloud_profile: CloudProfile | None = None,
+    model: str = "ifs",
 ) -> dict[str, dict[str, Any]]:
+    """Ingest one run of `model` ("ifs" or "gfs") into `root` (the model's own directory, see store.model_root)."""
+    if model not in ("ifs", "gfs"):
+        raise ValueError(f"unknown model {model!r}")
+    gfs_state = GfsRunState()
     started = time.monotonic()
     cloud_profile = cloud_profile or load_cloud_profile(DEFAULT_CLOUD_PROFILE_PATH)
     writers: dict[str, CubeWriter] = {}
@@ -76,7 +89,10 @@ def ingest_run(
     prev_step: int | None = None
     for index, step in enumerate(steps):
         try:
-            per_domain = decode_messages(fetch_step_messages(fetcher, run, step), domains)
+            if model == "gfs":
+                per_domain = decode_gfs(fetch_gfs_step(fetcher, run, step), domains, step, gfs_state)
+            else:
+                per_domain = decode_messages(fetch_step_messages(fetcher, run, step), domains)
         except (FetchError, MissingFieldsError, ValueError) as exc:
             logger.warning("AWCI ingest {} step {}h skipped: {}", run, step, exc)
             missing.append(step)
@@ -112,7 +128,11 @@ def ingest_run(
             "cloud_profile": cloud_profile.name, "cloud_profile_version": cloud_profile.version,
             "accumulation_interval_h": intervals, "cloud_consistency": checks,
             "cloud_status": "degraded" if any(c["status"] == "degraded" for c in checks) else "ok",
+            "model_id": model,
         }
+        if model == "gfs":
+            extra |= {"model": GFS_MODEL, "license": GFS_LICENSE, "attribution": GFS_ATTRIBUTION,
+                      "definition_differences": GFS_DIFFERENCES}
         manifests[domain.name] = writer.finalize(status, missing, extra, force=force)
         apply_retention(root, domain.name, keep)
     return manifests
@@ -120,6 +140,7 @@ def ingest_run(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="acf-awci-ingest", description=__doc__.splitlines()[1])
+    parser.add_argument("--model", choices=("ifs", "gfs"), default="ifs")
     parser.add_argument("--run", default="latest")
     parser.add_argument("--domain", default="all")
     parser.add_argument("--steps", default="0-72/3")
@@ -135,11 +156,13 @@ def main(argv: list[str] | None = None) -> int:
     all_domains = load_domains(args.domains_file)
     domains = list(all_domains.values()) if args.domain == "all" else [all_domains[args.domain]]
     fetcher = UrllibFetcher()
-    run = (find_latest_run(fetcher, datetime.now(UTC), steps[-1]) if args.run == "latest"
+    urls = gfs_step_urls if args.model == "gfs" else None
+    run = ((find_latest_run(fetcher, datetime.now(UTC), steps[-1], urls=urls) if urls else
+            find_latest_run(fetcher, datetime.now(UTC), steps[-1])) if args.run == "latest"
            else datetime.strptime(args.run, "%Y%m%d%H").replace(tzinfo=UTC))
-    root = Path(args.data_dir) if args.data_dir else data_root()
+    root = model_root(Path(args.data_dir) if args.data_dir else data_root(), args.model)
     manifests = ingest_run(run, domains, load_profile(args.profile), fetcher, root, steps, args.keep, args.force,
-                           load_cloud_profile(args.cloud_profile))
+                           load_cloud_profile(args.cloud_profile), model=args.model)
     for name, manifest in manifests.items():
         logger.info("AWCI ingest {} {}: {}", run, name, manifest["status"])
     return 1 if any(m["status"] == "failed" for m in manifests.values()) else 0

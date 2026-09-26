@@ -53,3 +53,26 @@ def ens_member_layers(root: Path, step: int, members: tuple[int, ...]) -> list[d
         elevation = interpolate_real_terrain_elevation(fields.lats, fields.lons)
         out.append(compute_step(fields, elevation, profile))
     return out
+
+
+GFS_FIXTURE = Path(__file__).parent / "data" / "awci_gfs"
+
+
+class GfsFixtureFetcher:
+    """Serve the real cropped GFS fixture (tests/data/awci_gfs) as if it were NOAA Open Data."""
+
+    def __init__(self, fail_steps: tuple[int, ...] = (), root: Path = GFS_FIXTURE) -> None:
+        self.fail_steps, self.root = fail_steps, root
+
+    def _path(self, url: str) -> Path:
+        name = url.rsplit("/", 1)[1]
+        step = int(name.split(".f")[1][:3])
+        if step in self.fail_steps or not (self.root / name).exists():
+            raise FetchError(url)
+        return self.root / name
+
+    def get_text(self, url: str) -> str:
+        return self._path(url).read_text()
+
+    def get_range(self, url: str, offset: int, length: int) -> bytes:
+        return self._path(url).read_bytes()[offset : offset + length]
