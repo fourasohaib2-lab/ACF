@@ -22,3 +22,6 @@ export function rampColor(stops: readonly string[], t: number): Rgb {
   const f = x - i;
   return [0, 1, 2].map((k) => Math.round(a[k]! + (b[k]! - a[k]!) * f)) as Rgb;
 }
+
+/** Chart series colours resolved per theme by CSS (dark or light categorical slots 1-3, both validated). */
+export const SERIES = ["var(--series-1)", "var(--series-2)", "var(--series-3)"] as const;

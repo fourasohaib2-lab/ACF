@@ -18,7 +18,7 @@ export function AwciProfile({ profile, awciBounds, current }: Props) {
             <li key={l.level_hpa} aria-current={l.level_hpa === current ? "true" : undefined}>
               <span className="bar-label num">{flLabel(l.flight_level)} · {l.level_hpa}</span>
               {below ? <span className="bar-track bar-below">sous le relief</span> : (
-                <span className="bar-track"><span className="bar-fill" style={{ width: `${l.awci ?? 0}%`, background: color }} /></span>
+                <span className="bar-track bar-track-dark"><span className="bar-fill" style={{ width: `${l.awci ?? 0}%`, background: color }} /></span>
               )}
               <span className="num">{below ? "" : `${fmt(l.awci, 0)} ${l.awci_level ?? ""}`}</span>
             </li>

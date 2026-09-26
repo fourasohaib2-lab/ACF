@@ -4,6 +4,7 @@ import type { Domain, Meta, RunInfo } from "../api/types";
 import { fr } from "../i18n/fr";
 import { flLabel, stepLabel, utcLabel } from "../lib/format";
 import type { ViewState } from "../state/view";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
   domains: Domain[];
@@ -70,6 +71,7 @@ export function TopBar({ domains, domain, runs, run, meta, step, level, now, onC
       </div>
       <div className="topbar-right">
         {status}
+        <ThemeToggle />
         <span className="clock num" aria-label="Heure UTC courante"><Clock4 size={14} aria-hidden="true" />
           {`${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")} UTC`}</span>
       </div>

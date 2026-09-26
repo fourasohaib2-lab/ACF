@@ -1,7 +1,7 @@
 import type { ProfilePayload } from "../api/types";
 import { DataTable } from "../charts/DataTable";
 import { flLabel, fmt } from "../lib/format";
-import { CATEGORICAL } from "../theme/palette";
+import { SERIES } from "../theme/palette";
 
 const W = 360;
 const H = 300;
@@ -34,12 +34,12 @@ export function AtmoProfile({ profile }: { profile: ProfilePayload }) {
             <text x={sx(t)} y={H - 8} textAnchor="middle" className="chart-tick">{t} °C</text></g>
         ))}
         {rows.map((r) => r.cf === null ? null : (
-          <rect key={`cf-${r.p}`} x={8} y={sy(r.z) - 5} width={10} height={10} fill={CATEGORICAL[0]} opacity={Math.max(0.08, r.cf)}>
+          <rect key={`cf-${r.p}`} x={8} y={sy(r.z) - 5} width={10} height={10} style={{ fill: SERIES[0] }} opacity={Math.max(0.08, r.cf)}>
             <title>{`${flLabel(r.fl)} : ${fmt(r.cf * 8, 1)} octas`}</title>
           </rect>
         ))}
-        <path d={line("t")} fill="none" stroke={CATEGORICAL[1]} strokeWidth={1.8} />
-        <path d={line("td")} fill="none" stroke={CATEGORICAL[2]} strokeWidth={1.8} strokeDasharray="4 3" />
+        <path d={line("t")} fill="none" style={{ stroke: SERIES[1] }} strokeWidth={1.8} />
+        <path d={line("td")} fill="none" style={{ stroke: SERIES[2] }} strokeWidth={1.8} strokeDasharray="4 3" />
         {rows.map((r) => {
           if (r.u === null || r.v === null) return null;
           const speed = Math.hypot(r.u, r.v);
@@ -54,8 +54,8 @@ export function AtmoProfile({ profile }: { profile: ProfilePayload }) {
           );
         })}
       </svg>
-      <p className="chart-legend"><span><i style={{ background: CATEGORICAL[1] }} />T</span>
-        <span><i style={{ background: CATEGORICAL[2] }} />Td (tirets)</span><span><i style={{ background: CATEGORICAL[0] }} />fraction nuageuse</span>
+      <p className="chart-legend"><span><i style={{ background: SERIES[1] }} />T</span>
+        <span><i style={{ background: SERIES[2] }} />Td (tirets)</span><span><i style={{ background: SERIES[0] }} />fraction nuageuse</span>
         <span>flèches : vent (kt au survol)</span></p>
       <details className="chart-data"><summary>Voir les données</summary>
         <DataTable caption="Profil atmosphérique" columns={["Niveau", "Altitude", "T", "Td", "Vent", "Nuages"]}

@@ -60,9 +60,9 @@ export function LineChart({ series, yLabel, format, xFormat = (x) => String(x), 
           <text key={x} x={sx(x)} y={height - 6} textAnchor={i ? "end" : "start"} className="chart-tick">{xFormat(x)}</text>
         ))}
         {xCurrent !== undefined && <line x1={sx(xCurrent)} x2={sx(xCurrent)} y1={PAD.t} y2={height - PAD.b} className="chart-current" />}
-        {series.map((s) => <path key={s.id} d={path(s)} fill="none" stroke={s.color} strokeWidth={1.6} />)}
+        {series.map((s) => <path key={s.id} d={path(s)} fill="none" style={{ stroke: s.color }} strokeWidth={1.6} />)}
         {series.flatMap((s) => s.points.filter((p) => p.y !== null).map((p) =>
-          <circle key={`${s.id}-${p.x}`} cx={sx(p.x)} cy={sy(p.y!)} r={2} fill={s.color} />))}
+          <circle key={`${s.id}-${p.x}`} cx={sx(p.x)} cy={sy(p.y!)} r={2} style={{ fill: s.color }} />))}
         {hover !== null && <line x1={sx(hover)} x2={sx(hover)} y1={PAD.t} y2={height - PAD.b} className="chart-crosshair" />}
       </svg>
       {hover !== null && (

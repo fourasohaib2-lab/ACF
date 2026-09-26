@@ -15,6 +15,9 @@ import { DataStatus } from "./panels/DataStatus";
 import { Inspector } from "./panels/Inspector";
 import { TimeEvolution } from "./panels/TimeEvolution";
 import { KpiRow } from "./panels/KpiRow";
+import { LatestRuns } from "./panels/LatestRuns";
+import { RegistryPage } from "./panels/RegistryPage";
+import { SavedViews } from "./panels/SavedViews";
 import { ModelAgreement } from "./panels/ModelAgreement";
 import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
@@ -159,12 +162,14 @@ export function App() {
       <SideNav layers={layers} layer={def.id} onLayer={(id) => update({ layer: id })} streamlines={streamlines}
                onStreamlines={setStreamlines} panel={view.panel} onPanel={(panel) => update({ panel })} layerListRef={layerListRef}>
         <OverlayPanel layers={wmsLayers.data} active={view.ov} states={overlayStates} onToggle={toggleOverlay} onRetry={retryOverlay} />
+        <SavedViews onApply={(search) => { window.history.replaceState(null, "", search); window.dispatchEvent(new PopStateEvent("popstate")); }} />
       </SideNav>
       <main className="main" id="main">
         {runs.isSuccess && usableRuns.length === 0 && <EmptyRuns domain={domain.name} />}
         {runs.isError && <ErrorBox error={runs.error} what="Runs" />}
         {meta.isError && <ErrorBox error={meta.error} what="Métadonnées du run" />}
         {run?.status === "partial" && <Banner>{fr.partialRun}</Banner>}
+        {view.panel === "api" && <div className="api-overlay"><RegistryPage registry={registry.data} /></div>}
         {resolved && meta.data && (
           <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer} />
         )}
@@ -200,6 +205,7 @@ export function App() {
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
             <ModelAgreement />
+            <LatestRuns runs={runs.data ?? []} now={now} />
           </aside>
         )}
         {resolved && meta.data && (

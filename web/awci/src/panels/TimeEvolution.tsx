@@ -1,7 +1,7 @@
 import type { Meta, SummarySeries, TimeseriesPayload } from "../api/types";
 import { LineChart, type Series } from "../charts/LineChart";
 import { fmt, utcLabel } from "../lib/format";
-import { CATEGORICAL } from "../theme/palette";
+import { SERIES } from "../theme/palette";
 
 interface Props { point: TimeseriesPayload | undefined; domain: SummarySeries | undefined; meta: Meta; step: number }
 
@@ -9,8 +9,8 @@ interface Props { point: TimeseriesPayload | undefined; domain: SummarySeries | 
 export function TimeEvolution({ point, domain, meta, step }: Props) {
   const t = (iso: string) => new Date(iso).getTime();
   const series: Series[] = [];
-  if (point) series.push({ id: "point", label: "AWCI au point", color: CATEGORICAL[0], points: point.points.map((p) => ({ x: t(p.valid_time), y: p.awci })) });
-  if (domain) series.push({ id: "domain", label: "AWCI P95 domaine", color: CATEGORICAL[1],
+  if (point) series.push({ id: "point", label: "AWCI au point", color: SERIES[0], points: point.points.map((p) => ({ x: t(p.valid_time), y: p.awci })) });
+  if (domain) series.push({ id: "domain", label: "AWCI P95 domaine", color: SERIES[1],
     points: domain.points.map((p) => ({ x: t(p.valid_time), y: p.missing ? null : p.awci_p95 ?? null })) });
   const si = meta.steps.indexOf(step);
   return (

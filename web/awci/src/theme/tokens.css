@@ -1,5 +1,8 @@
 /* AWCI Web design tokens. Dark is the default (forecast rooms); light is opt-in via [data-theme="light"].
-   The map/chart surface #0b1220 is the surface the AWCI palette was validated on (dataviz validator). */
+   The map/chart surface #0b1220 is the surface the AWCI palette was validated on (dataviz validator).
+   Light theme (validate_palette.js, 2026-09-26): the AWCI ordinal palette FAILS on a light surface
+   (Extreme #ffd368 at 1.42:1 < 2:1), so the map and AWCI bars keep the dark --surface-0 in both themes;
+   light categorical slots #2a78d6 #eb6834 #1baf7a pass all pairs (aqua 2.82:1 -> direct labels kept). */
 :root {
   color-scheme: dark;
   --surface-0: #0b1220;   /* map and chart surface */
@@ -12,6 +15,9 @@
   --text-2: #c3c2b7;
   --text-muted: #a3a197;
   --accent: #3987e5;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
   --status-ok: #0ca30c;
   --status-attention: #fab219;
   --status-serious: #ec835a;
@@ -31,7 +37,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --surface-0: #fcfcfb;
+  --surface-0: #0b1220; /* map and AWCI bars stay on the validated dark surface */
   --surface-1: #f5f5f2;
   --surface-2: #ffffff;
   --surface-3: #f0efec;
@@ -42,6 +48,10 @@
   --text-muted: #6b6a66;
   --gridline: #e1e0d9;
   --axis: #c3c2b7;
+  --accent: #2a78d6;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
