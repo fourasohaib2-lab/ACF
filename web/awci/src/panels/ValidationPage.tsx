@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ScoreTable, Verification } from "../api/types";
 import { scoreText } from "../lib/aero";
 import { fmt, utcLabel } from "../lib/format";
@@ -31,10 +32,10 @@ function Row({ label, t }: { label: string; t: ScoreTable }) {
   );
 }
 
-interface Props { verification: Verification | undefined; isLoading: boolean; error: unknown }
+interface Props { verification: Verification | undefined; isLoading: boolean; error: unknown; children?: ReactNode }
 
 /** Verification of the run's ceiling and convection against METAR: contingency tables and standard scores. */
-export function ValidationPage({ verification: v, isLoading, error }: Props) {
+export function ValidationPage({ verification: v, isLoading, error, children }: Props) {
   if (error) return <section className="panel validation-page" aria-label="Validation"><ErrorBox error={error} what="Validation" /></section>;
   if (isLoading || !v) return <section className="panel validation-page" aria-label="Validation"><Skeleton height={300} label="Calcul de la validation" /></section>;
   return (
@@ -77,6 +78,7 @@ export function ValidationPage({ verification: v, isLoading, error }: Props) {
           stations à plus de {v.parameters.max_elevation_diff_m} m de la surface modèle exclues du plafond ({v.parameters.status}).</p>
       </details>
       <p className="provenance">Observé : {v.observed} · Prévu : {v.forecast} · calculé {utcLabel(v.generated_at)}</p>
+      {children}
     </section>
   );
 }

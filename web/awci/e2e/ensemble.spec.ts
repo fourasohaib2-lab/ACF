@@ -22,3 +22,15 @@ test("a run without ENS says how to get it, and offers no probability layer", as
   await expect(page.getByRole("region", { name: "Ensemble ECMWF" })).toContainText("acf-awci-ens");
   await expect(page.getByRole("radio", { name: "P(AWCI ≥ High)" })).toHaveCount(0);
 });
+
+test("the validation page scores the ENS probabilities with a reliability diagram, or says there is no ensemble", async ({ page }) => {
+  await open(page, "?domain=fixture&step=0&level=850");
+  await page.getByRole("button", { name: "Validation" }).click();
+  const ens = page.getByRole("region", { name: "Validation de l'ensemble" });
+  await expect(ens.getByRole("table", { name: "P(TCU/Cb réalisé)" })).toBeVisible();
+  await expect(ens.getByRole("img", { name: /^Diagramme de fiabilité : P\(TCU\/Cb réalisé\)/ })).toBeVisible();
+  await expect(ens).toContainText("1 cas");  // DAAG at +0 h: the only ENS step observed in the fixture
+  await open(page, "?domain=fixture_wet&step=3&level=500");
+  await page.getByRole("button", { name: "Validation" }).click();
+  await expect(page.getByRole("region", { name: "Validation de l'ensemble" })).toContainText("Pas d'ensemble calculé");
+});

@@ -5,7 +5,7 @@ import { parseVolume, type Volume } from "../volume/geometry";
 import { ApiError, getEnsField, getField, getJson, getTerrain, getVolume } from "./client";
 import type {
   AirportDetail, AirportsPayload, EnsMeta, EnsPoint, EnsRun, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
-  Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
+  EnsVerification, Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
 } from "./types";
 
 const IMMUTABLE = { staleTime: Infinity, gcTime: 30 * 60_000 } as const;
@@ -179,3 +179,7 @@ export const useEnsPoint = (k: { domain?: string; run?: string; lat?: number; lo
   useQuery({ queryKey: ["ens-point", k.domain, k.run, k.lat, k.lon, k.level], ...IMMUTABLE, retry,
     enabled: enabled && !!k.run && k.lat !== undefined && k.lon !== undefined && k.level !== undefined,
     queryFn: ({ signal }) => getJson<EnsPoint>("/ens/point", { ...k }, signal) });
+
+export const useEnsVerification = (domain: string | undefined, run: string | undefined, enabled: boolean) =>
+  useQuery({ queryKey: ["ens-verification", domain, run], enabled: enabled && !!domain && !!run, ...OBS, retry,
+    queryFn: ({ signal }) => getJson<EnsVerification>("/ens/verification", { domain, run }, signal) });

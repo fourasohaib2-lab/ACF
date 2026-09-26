@@ -162,3 +162,20 @@ export interface EnsPointStep {
   probabilities: Record<EnsProduct, number | null> | null; awci_mean: number | null; awci_std: number | null;
 }
 export interface EnsPoint { lat: number; lon: number; level_hpa: number; points: EnsPointStep[]; run: string; members_requested: number; attribution: string }
+
+// ---- SP5b: probabilistic verification of the ENS against METAR ----
+export interface ReliabilityBin { lower: number; upper: number; n: number; mean_forecast: number | null; observed_frequency: number | null }
+export interface BrierScores {
+  n: number; observed_events: number; sufficient: boolean; observed_frequency?: number; mean_probability?: number;
+  brier: number | null; fair_brier: number | null; uncertainty: number | null; reliability: number | null;
+  resolution: number | null; decomposition_residual: number | null; bss_climatology: number | null;
+  brier_deterministic: number | null; skill_vs_deterministic: number | null; members_min?: number; members_max?: number;
+}
+export interface EnsVerification {
+  domain: string; run: string; generated_at: string; samples: number; exclusions: Record<string, number>;
+  parameters: { tolerance_min: number; max_elevation_diff_m: number; min_observed_events: number; probability_bins: number[];
+    ceiling_threshold_ft: number };
+  events: Record<string, { total: BrierScores & { diagram: ReliabilityBin[] }; by_step: (BrierScores & { step: number })[] }>;
+  cloud_profiles: { ens: string | null; deterministic: string | null }; like_for_like: boolean;
+  observed: string; forecast: string; observations_ingested_at: string | null;
+}

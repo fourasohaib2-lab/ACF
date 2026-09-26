@@ -1,0 +1,368 @@
+{
+ "generated_at": "2026-09-26T15:00:45Z",
+ "parameters": {
+  "tolerance_min": 30,
+  "max_elevation_diff_m": 300.0,
+  "thresholds_ft": [
+   500,
+   1000,
+   1500
+  ],
+  "lead_bins_h": [
+   [
+    0,
+    24
+   ],
+   [
+    24,
+    48
+   ],
+   [
+    48,
+    72
+   ]
+  ],
+  "min_observed_events": 10,
+  "convective_min_class": 2,
+  "status": "HYPOTHESIS",
+  "probability_bins": [
+   0.0,
+   0.1,
+   0.2,
+   0.3,
+   0.4,
+   0.5,
+   0.6,
+   0.7,
+   0.8,
+   0.9,
+   1.0
+  ],
+  "ceiling_threshold_ft": 1500
+ },
+ "samples": 1999,
+ "exclusions": {
+  "not_an_ens_step": 869,
+  "elevation_mismatch": 57,
+  "ceiling_unknown": 23,
+  "convection_unknown": 61,
+  "no_ens_member": 0,
+  "no_report_within_tolerance": 1403,
+  "not_yet_observed": 1671,
+  "undecodable": 0
+ },
+ "events": {
+  "ceiling_below_1500ft": {
+   "total": {
+    "n": 990,
+    "observed_events": 19,
+    "sufficient": true,
+    "observed_frequency": 0.01919191919191919,
+    "mean_probability": 0.018606060606060605,
+    "brier": 0.024531313131313133,
+    "fair_brier": 0.024361987219130077,
+    "uncertainty": 0.018823589429650033,
+    "reliability": 0.006848912988584221,
+    "resolution": 0.001217284015125443,
+    "decomposition_residual": 7.6094728204322e-05,
+    "bss_climatology": -0.3032218548430812,
+    "brier_deterministic": 0.03232323232323232,
+    "skill_vs_deterministic": 0.24106249999999996,
+    "members_min": 50,
+    "members_max": 50,
+    "diagram": [
+     {
+      "lower": 0.0,
+      "upper": 0.1,
+      "n": 949,
+      "mean_forecast": 0.0011801896733403584,
+      "observed_frequency": 0.01685985247629083
+     },
+     {
+      "lower": 0.1,
+      "upper": 0.2,
+      "n": 12,
+      "mean_forecast": 0.13333333333333333,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.2,
+      "upper": 0.3,
+      "n": 7,
+      "mean_forecast": 0.23714285714285713,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.3,
+      "upper": 0.4,
+      "n": 1,
+      "mean_forecast": 0.36,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.4,
+      "upper": 0.5,
+      "n": 3,
+      "mean_forecast": 0.4666666666666666,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.5,
+      "upper": 0.6,
+      "n": 6,
+      "mean_forecast": 0.5333333333333333,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.6,
+      "upper": 0.7,
+      "n": 3,
+      "mean_forecast": 0.6,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.7,
+      "upper": 0.8,
+      "n": 5,
+      "mean_forecast": 0.748,
+      "observed_frequency": 0.4
+     },
+     {
+      "lower": 0.8,
+      "upper": 0.9,
+      "n": 2,
+      "mean_forecast": 0.83,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.9,
+      "upper": 1.0,
+      "n": 2,
+      "mean_forecast": 0.94,
+      "observed_frequency": 0.5
+     }
+    ]
+   },
+   "by_step": [
+    {
+     "step": 0,
+     "n": 298,
+     "observed_events": 5,
+     "sufficient": false,
+     "observed_frequency": 0.016778523489932886,
+     "mean_probability": 0.022684563758389262,
+     "brier": 0.023881879194630876,
+     "fair_brier": 0.023670730036981235,
+     "uncertainty": 0.016497004639430657,
+     "reliability": 0.009112589623797442,
+     "resolution": 0.0015860553188719259,
+     "decomposition_residual": -0.00014165974972529805,
+     "bss_climatology": -0.4476494197952219,
+     "brier_deterministic": 0.0436241610738255,
+     "skill_vs_deterministic": 0.4525538461538461,
+     "members_min": 50,
+     "members_max": 50
+    },
+    {
+     "step": 6,
+     "n": 344,
+     "observed_events": 14,
+     "sufficient": true,
+     "observed_frequency": 0.040697674418604654,
+     "mean_probability": 0.03302325581395349,
+     "brier": 0.049818604651162786,
+     "fair_brier": 0.049530137636449936,
+     "uncertainty": 0.03904137371552191,
+     "reliability": 0.014041923622646732,
+     "resolution": 0.0035278078240490356,
+     "decomposition_residual": 0.0002631151370431836,
+     "bss_climatology": -0.2760464069264066,
+     "brier_deterministic": 0.055232558139534885,
+     "skill_vs_deterministic": 0.09802105263157901,
+     "members_min": 50,
+     "members_max": 50
+    },
+    {
+     "step": 12,
+     "n": 348,
+     "observed_events": 0,
+     "sufficient": false,
+     "observed_frequency": 0.0,
+     "mean_probability": 0.0008620689655172415,
+     "brier": 9.080459770114943e-05,
+     "fair_brier": 7.506450856204553e-05,
+     "uncertainty": 0.0,
+     "reliability": 8.278851903528007e-05,
+     "resolution": 0.0,
+     "decomposition_residual": 8.016078665869363e-06,
+     "bss_climatology": null,
+     "brier_deterministic": 0.0,
+     "skill_vs_deterministic": null,
+     "members_min": 50,
+     "members_max": 50
+    }
+   ]
+  },
+  "convective": {
+   "total": {
+    "n": 1009,
+    "observed_events": 17,
+    "sufficient": true,
+    "observed_frequency": 0.01684836471754212,
+    "mean_probability": 0.01958374628344896,
+    "brier": 0.014321506442021806,
+    "fair_brier": 0.01412511882850266,
+    "uncertainty": 0.016564497323886804,
+    "reliability": 0.0021743829960921713,
+    "resolution": 0.00399802854096753,
+    "decomposition_residual": -0.0004193453369896391,
+    "bss_climatology": 0.13540953510436426,
+    "brier_deterministic": 0.07730426164519326,
+    "skill_vs_deterministic": 0.8147384615384615,
+    "members_min": 50,
+    "members_max": 50,
+    "diagram": [
+     {
+      "lower": 0.0,
+      "upper": 0.1,
+      "n": 961,
+      "mean_forecast": 0.001893860561914672,
+      "observed_frequency": 0.007284079084287201
+     },
+     {
+      "lower": 0.1,
+      "upper": 0.2,
+      "n": 15,
+      "mean_forecast": 0.12933333333333333,
+      "observed_frequency": 0.06666666666666667
+     },
+     {
+      "lower": 0.2,
+      "upper": 0.3,
+      "n": 9,
+      "mean_forecast": 0.24000000000000002,
+      "observed_frequency": 0.1111111111111111
+     },
+     {
+      "lower": 0.3,
+      "upper": 0.4,
+      "n": 8,
+      "mean_forecast": 0.33499999999999996,
+      "observed_frequency": 0.125
+     },
+     {
+      "lower": 0.4,
+      "upper": 0.5,
+      "n": 1,
+      "mean_forecast": 0.4,
+      "observed_frequency": 0.0
+     },
+     {
+      "lower": 0.5,
+      "upper": 0.6,
+      "n": 5,
+      "mean_forecast": 0.536,
+      "observed_frequency": 0.4
+     },
+     {
+      "lower": 0.6,
+      "upper": 0.7,
+      "n": 2,
+      "mean_forecast": 0.65,
+      "observed_frequency": 0.5
+     },
+     {
+      "lower": 0.7,
+      "upper": 0.8,
+      "n": 3,
+      "mean_forecast": 0.7399999999999999,
+      "observed_frequency": 0.3333333333333333
+     },
+     {
+      "lower": 0.8,
+      "upper": 0.9,
+      "n": 3,
+      "mean_forecast": 0.8533333333333334,
+      "observed_frequency": 0.3333333333333333
+     },
+     {
+      "lower": 0.9,
+      "upper": 1.0,
+      "n": 2,
+      "mean_forecast": 1.0,
+      "observed_frequency": 1.0
+     }
+    ]
+   },
+   "by_step": [
+    {
+     "step": 0,
+     "n": 298,
+     "observed_events": 7,
+     "sufficient": false,
+     "observed_frequency": 0.02348993288590604,
+     "mean_probability": 0.02946308724832215,
+     "brier": 0.019566442953020135,
+     "fair_brier": 0.019369949322010683,
+     "uncertainty": 0.02293815593892167,
+     "reliability": 0.006439054690846779,
+     "resolution": 0.009063149989090646,
+     "decomposition_residual": -0.0007476176876576694,
+     "bss_climatology": 0.1469914580265096,
+     "brier_deterministic": 0.06711409395973154,
+     "skill_vs_deterministic": 0.70846,
+     "members_min": 50,
+     "members_max": 50
+    },
+    {
+     "step": 6,
+     "n": 353,
+     "observed_events": 4,
+     "sufficient": false,
+     "observed_frequency": 0.0113314447592068,
+     "mean_probability": 0.011671388101983003,
+     "brier": 0.012836260623229461,
+     "fair_brier": 0.012677342891830954,
+     "uncertainty": 0.011203043118875844,
+     "reliability": 0.0033002546351840645,
+     "resolution": 0.0013632376587239222,
+     "decomposition_residual": -0.00030379947210652444,
+     "bss_climatology": -0.14578338108882516,
+     "brier_deterministic": 0.0708215297450425,
+     "skill_vs_deterministic": 0.818752,
+     "members_min": 50,
+     "members_max": 50
+    },
+    {
+     "step": 12,
+     "n": 358,
+     "observed_events": 6,
+     "sufficient": false,
+     "observed_frequency": 0.01675977653631285,
+     "mean_probability": 0.019162011173184355,
+     "brier": 0.011420111731843575,
+     "fair_brier": 0.011186865807775625,
+     "uncertainty": 0.016478886426765704,
+     "reliability": 0.0032590612334319202,
+     "resolution": 0.008456375746515954,
+     "decomposition_residual": 0.00013853981816190457,
+     "bss_climatology": 0.30698522727272715,
+     "brier_deterministic": 0.09217877094972067,
+     "skill_vs_deterministic": 0.876109090909091,
+     "members_min": 50,
+     "members_max": 50
+    }
+   ]
+  }
+ },
+ "cloud_profiles": {
+  "ens": "1.2.0",
+  "deterministic": "1.1.0"
+ },
+ "like_for_like": false,
+ "observed": "METAR/SPECI, NOAA/NWS Aviation Weather Center (public domain)",
+ "forecast": "AWCI on ECMWF IFS ENS 0.25\u00b0 (50 perturbed members) and IFS 0.25\u00b0 (deterministic)",
+ "domain": "north_africa",
+ "run": "2026092600",
+ "observations_ingested_at": "2026-09-26T14:53:50Z"
+}

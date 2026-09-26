@@ -18,7 +18,7 @@ test("an aerodrome shows its real METAR at the valid time next to the model, and
 test("the validation page shows contingency tables and scores for the run", async ({ page }) => {
   await open(page, "?domain=fixture&step=3&level=700");
   await page.getByRole("button", { name: "Validation" }).click();
-  const v = page.getByRole("region", { name: "Validation" });
+  const v = page.getByRole("region", { name: "Validation", exact: true });
   await expect(v.getByRole("table", { name: /Convection/ })).toBeVisible();
   await expect(v).toContainText("2 paires");
 });

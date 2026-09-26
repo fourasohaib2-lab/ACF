@@ -263,3 +263,22 @@
 .view3d-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .view3d-head h2 { display: flex; gap: 6px; align-items: center; margin: 0; }
 .view3d-camera { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* SP5b: reliability diagram of the ENS probabilities */
+.ens-verification { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 12px; }
+.ens-verif-event { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 16px; }
+.reliability { max-width: 360px; }
+.rel-diagonal { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.rel-climatology { stroke: var(--status-attention); stroke-width: 1; stroke-dasharray: 2 3; }
+.rel-noskill { stroke: var(--status-attention); stroke-width: 1; opacity: 0.6; }
+.rel-line { stroke: var(--accent); stroke-width: 1.6; }
+.rel-point { fill: var(--accent); fill-opacity: 0.85; stroke: var(--accent); }
+.rel-point-thin { fill: none; stroke-width: 1.4; }
+.rel-hist { fill: var(--accent); opacity: 0.55; }
+.chart-legend .rel-key-diagonal { background: var(--text-muted); }
+.chart-legend .rel-key-clim, .chart-legend .rel-key-noskill { background: var(--status-attention); }
+.ens-verif-body { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.ens-verif-body .reliability { flex: 0 1 360px; }
+.ens-verif-reading { flex: 1 1 280px; max-width: 560px; }
+.ens-verif-reading h4 { margin: 0 0 6px; font-size: var(--fs-body); }
+.ens-verif-reading li { margin-bottom: 4px; }

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsPoint, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -29,6 +29,7 @@ import { EnsemblePanel } from "./panels/EnsemblePanel";
 import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { SigmetList } from "./panels/SigmetList";
+import { EnsVerification } from "./panels/EnsVerification";
 import { ValidationPage } from "./panels/ValidationPage";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
@@ -146,6 +147,7 @@ export function App() {
   const sigmetsQ = useSigmets(domain?.name, validTime, view.aero.includes("sigmet"));
   const airportQ = useAirport(domain?.name, view.ap, resolved?.run);
   const verificationQ = useVerification(domain?.name, resolved?.run, view.panel === "validation");
+  const ensVerificationQ = useEnsVerification(domain?.name, resolved?.run, view.panel === "validation" && hasEns);
   const freshAirports = freshData(airportsQ);
   const airportPoints = useMemo(() => (view.aero.includes("metar") ? airportFeatures(freshAirports) : undefined),
     [view.aero, freshAirports]);
@@ -273,7 +275,9 @@ export function App() {
         )}
         {view.panel === "api" && <div className="api-overlay"><RegistryPage registry={registry.data} /></div>}
         {view.panel === "validation" && (
-          <div className="api-overlay"><ValidationPage verification={verificationQ.data} isLoading={verificationQ.isLoading} error={verificationQ.error} /></div>
+          <div className="api-overlay"><ValidationPage verification={verificationQ.data} isLoading={verificationQ.isLoading} error={verificationQ.error}>
+            <EnsVerification report={ensVerificationQ.data} isLoading={ensVerificationQ.isLoading || ensRuns.isLoading} error={ensVerificationQ.error} available={hasEns} />
+          </ValidationPage></div>
         )}
         {resolved && meta.data && (
           <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer}
