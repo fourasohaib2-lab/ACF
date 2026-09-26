@@ -96,8 +96,10 @@ def test_a_published_run_is_ingested_once(tmp_path: Path) -> None:
     report = auto.tick()
     assert rec.det == ["2026092600"] and report["done"]["deterministic"]["status"] == {"fixture": "complete"}
     clock[0] = NOW + timedelta(hours=3)
+    auto.fetcher.probes.clear()
     auto.tick()
     assert rec.det == ["2026092600"]  # complete: never downloaded again
+    assert auto.fetcher.probes == [step_urls(datetime(2026, 9, 26, 12, tzinfo=UTC), 72)[1]]  # only newer runs probed
     status = json.loads((tmp_path / ".auto" / "status.json").read_text())
     assert status["max_age_days"] == 7 and status["ens"] is False
 

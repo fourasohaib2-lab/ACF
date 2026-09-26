@@ -176,9 +176,23 @@ class AutoIngest:
             logger.error("AWCI auto {}: {}", name, exc)
             report["errors"][name] = f"{type(exc).__name__}: {exc}"
 
+    def _newest_complete(self, folders: list[Path]) -> datetime | None:
+        """Newest run complete in every folder: older runs are never probed again."""
+        complete = None
+        for folder in folders:
+            runs = {t for p in folder.iterdir() if (t := _run_time(p.name)) is not None
+                    and (self._manifest(p) or {}).get("status") == "complete"} if folder.exists() else set()
+            complete = runs if complete is None else complete & runs
+        return max(complete) if complete else None
+
+    def _candidates(self, now: datetime, hours: tuple[int, ...], folders: list[Path]) -> list[datetime]:
+        newest = self._newest_complete(folders)
+        return [r for r in candidate_runs(now, hours, self.config.lookback_runs) if newest is None or r > newest]
+
     def _det(self, now: datetime) -> Any:
         c = self.config
-        run = latest_published(self.fetcher, candidate_runs(now, c.run_hours, c.lookback_runs), c.steps[-1], step_urls)
+        candidates = self._candidates(now, c.run_hours, [self.root / d.name for d in c.domains])
+        run = latest_published(self.fetcher, candidates, c.steps[-1], step_urls)
         if run is None:
             return None
         key = f"det/{run_id(run)}"
@@ -190,8 +204,8 @@ class AutoIngest:
 
     def _ens(self, now: datetime) -> Any:
         c = self.config
-        run = latest_published(self.fetcher, candidate_runs(now, c.ens_run_hours, c.lookback_runs), c.ens_steps[-1],
-                               ens_step_urls)
+        candidates = self._candidates(now, c.ens_run_hours, [ens_dir(self.root, d.name) for d in c.domains])
+        run = latest_published(self.fetcher, candidates, c.ens_steps[-1], ens_step_urls)
         if run is None:
             return None
         out = {}

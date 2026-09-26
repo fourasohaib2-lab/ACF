@@ -70,7 +70,7 @@ premier run publié.
 - 41 567 METAR sur 72 h ;
 - run IFS du 26/09 00Z complet.
 
-Un second passage n'a rien retéléchargé (35 s, surtout les interrogations de data.ecmwf.int).
+Un second passage n'a rien retéléchargé et a pris 2,3 s : un run déjà complet n'est plus réinterrogé, et un 404 (run pas encore publié) n'est plus retenté (avant correction : 35 s).
 
 ## Démarrage avec la machine (optionnel)
 

@@ -33,6 +33,10 @@ class FetchError(RuntimeError):
     """A URL could not be fetched after all retries."""
 
 
+class NotPublished(FetchError):
+    """The server answered 404: the file is not (or no longer) published. Never retried."""
+
+
 class MissingFieldsError(RuntimeError):
     """The index lacks required (param, level) messages."""
 
@@ -74,6 +78,12 @@ class UrllibFetcher:
                 if expected_length is not None and len(data) != expected_length:
                     raise FetchError(f"{url}: got {len(data)} bytes, index announced {expected_length}")
                 return data
+            except urllib.error.HTTPError as exc:
+                if exc.code == 404:  # not published (yet): a definitive answer, retrying only wastes 30 s
+                    raise NotPublished(f"{url}: HTTP 404") from exc
+                last_error = exc
+                if attempt < len(self.backoff_s):
+                    self.sleep(self.backoff_s[attempt])
             except (OSError, urllib.error.URLError, FetchError) as exc:
                 last_error = exc
                 if attempt < len(self.backoff_s):

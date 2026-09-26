@@ -11,6 +11,7 @@ from acf.awci.ops.source_ecmwf import (
     SFC_PARAMS,
     FetchError,
     MissingFieldsError,
+    NotPublished,
     UrllibFetcher,
     find_latest_run,
     parse_index,
@@ -111,6 +112,25 @@ def test_urllib_fetcher_retries_then_fails(monkeypatch) -> None:
     with pytest.raises(FetchError):
         fetcher.get_text("https://example.invalid/x")
     assert len(calls) == 5 and sleeps == [2, 4, 8, 16]
+
+
+@pytest.mark.parametrize("code,calls_expected,sleeps_expected", [(404, 1, []), (503, 5, [2, 4, 8, 16])])
+def test_404_is_final_other_http_errors_are_retried(monkeypatch: pytest.MonkeyPatch, code: int, calls_expected: int,
+                                                    sleeps_expected: list[int]) -> None:
+    import urllib.error
+
+    calls, sleeps = [], []
+
+    def http_error(request, timeout):  # noqa: ANN001, ANN202
+        calls.append(request.full_url)
+        raise urllib.error.HTTPError(request.full_url, code, "x", {}, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr("acf.awci.ops.source_ecmwf.urllib.request.urlopen", http_error)
+    fetcher = UrllibFetcher(sleep=sleeps.append)
+    with pytest.raises(FetchError) as info:
+        fetcher.get_text("https://example.invalid/not-yet.index")
+    assert len(calls) == calls_expected and sleeps == sleeps_expected
+    assert isinstance(info.value, NotPublished) == (code == 404)
 
 
 def _ens_index_text(members: tuple[int, ...], drop_member: int | None = None) -> str:
