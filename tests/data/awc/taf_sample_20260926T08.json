@@ -1,0 +1,539 @@
+[
+{
+"icaoId": "HECA",
+"dbPopTime": "2026-09-26T04:30:14.195Z",
+"bulletinTime": "2026-09-26T05:00:00.000Z",
+"issueTime": "2026-09-26T05:00:00.000Z",
+"validTimeFrom": 1790402400,
+"validTimeTo": 1790510400,
+"rawTAF": "TAF HECA 260500Z 2606/2712 07006KT CAVOK BECMG 2609/2611 36010KT",
+"mostRecent": 1,
+"remarks": "",
+"lat": 30.133,
+"lon": 31.405,
+"elev": 142,
+"prior": 0,
+"name": "Cairo Intl",
+"fcsts": [
+{
+"timeFrom": 1790402400,
+"timeTo": 1790413200,
+"timeBec": null,
+"fcstChange": null,
+"probability": null,
+"wdir": 70,
+"wspd": 6,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": "NSW",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790413200,
+"timeTo": 1790510400,
+"timeBec": 1790420400,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 360,
+"wspd": 10,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": "NSW",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+}
+]
+},
+{
+"icaoId": "DTTA",
+"dbPopTime": "2026-09-26T05:56:30.474Z",
+"bulletinTime": "2026-09-26T05:00:00.000Z",
+"issueTime": "2026-09-26T05:00:00.000Z",
+"validTimeFrom": 1790402400,
+"validTimeTo": 1790488800,
+"rawTAF": "TAF DTTA 260500Z 2606/2706 29005KT 9999 FEW023 PROB30 TEMPO 2606/2612 4000 TSRA FEW023CB BECMG 2610/2612 04010KT",
+"mostRecent": 1,
+"remarks": "",
+"lat": 36.851,
+"lon": 10.227,
+"elev": 4,
+"prior": 1,
+"name": "Tunis/Carthage Intl",
+"fcsts": [
+{
+"timeFrom": 1790402400,
+"timeTo": 1790416800,
+"timeBec": null,
+"fcstChange": null,
+"probability": null,
+"wdir": 290,
+"wspd": 5,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790402400,
+"timeTo": 1790424000,
+"timeBec": null,
+"fcstChange": "TEMPO",
+"probability": 30,
+"wdir": null,
+"wspd": null,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": 2.49,
+"altim": null,
+"vertVis": null,
+"wxString": "TSRA",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300,
+"type": "CB"
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790416800,
+"timeTo": 1790488800,
+"timeBec": 1790424000,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 40,
+"wspd": 10,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+}
+]
+},
+{
+"icaoId": "LEMD",
+"dbPopTime": "2026-09-26T05:25:15.521Z",
+"bulletinTime": "2026-09-26T05:00:00.000Z",
+"issueTime": "2026-09-26T05:00:00.000Z",
+"validTimeFrom": 1790402400,
+"validTimeTo": 1790510400,
+"rawTAF": "TAF LEMD 260500Z 2606/2712 VRB04KT CAVOK TX34/2615Z TN15/2606Z TEMPO 2614/2618 21008G18KT PROB30 2621/2624 17010KT",
+"mostRecent": 1,
+"remarks": "",
+"lat": 40.466,
+"lon": -3.555,
+"elev": 589,
+"prior": 0,
+"name": "Madrid/Barajas Arpt",
+"fcsts": [
+{
+"timeFrom": 1790402400,
+"timeTo": 1790510400,
+"timeBec": null,
+"fcstChange": null,
+"probability": null,
+"wdir": "VRB",
+"wspd": 4,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790431200,
+"timeTo": 1790445600,
+"timeBec": null,
+"fcstChange": "TEMPO",
+"probability": null,
+"wdir": 210,
+"wspd": 8,
+"wgst": 18,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790456400,
+"timeTo": 1790467200,
+"timeBec": null,
+"fcstChange": "PROB",
+"probability": 30,
+"wdir": 170,
+"wspd": 10,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [],
+"icgTurb": [],
+"temp": []
+}
+]
+},
+{
+"icaoId": "GMMN",
+"dbPopTime": "2026-09-26T05:30:19.378Z",
+"bulletinTime": "2026-09-26T05:00:00.000Z",
+"issueTime": "2026-09-26T05:00:00.000Z",
+"validTimeFrom": 1790402400,
+"validTimeTo": 1790510400,
+"rawTAF": "TAF GMMN 260500Z 2606/2712 15003KT 1200 BR BKN003 BECMG 2607/2609 CAVOK BECMG 2613/2615 35012KT BECMG 2618/2621 25006KT TEMPO 2702/2708 1200 BR BKN004",
+"mostRecent": 1,
+"remarks": "",
+"lat": 33.367,
+"lon": -7.59,
+"elev": 196,
+"prior": 0,
+"name": "Casablanca Intl",
+"fcsts": [
+{
+"timeFrom": 1790402400,
+"timeTo": 1790406000,
+"timeBec": null,
+"fcstChange": null,
+"probability": null,
+"wdir": 150,
+"wspd": 3,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": 0.75,
+"altim": null,
+"vertVis": null,
+"wxString": "BR",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "BKN",
+"base": 300,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790406000,
+"timeTo": 1790427600,
+"timeBec": 1790413200,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 150,
+"wspd": 3,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": "NSW",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790427600,
+"timeTo": 1790445600,
+"timeBec": 1790434800,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 350,
+"wspd": 12,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": "NSW",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790445600,
+"timeTo": 1790510400,
+"timeBec": 1790456400,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 250,
+"wspd": 6,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": "NSW",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "NSC",
+"base": null,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790474400,
+"timeTo": 1790496000,
+"timeBec": null,
+"fcstChange": "TEMPO",
+"probability": null,
+"wdir": null,
+"wspd": null,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": 0.75,
+"altim": null,
+"vertVis": null,
+"wxString": "BR",
+"notDecoded": null,
+"clouds": [
+{
+"cover": "BKN",
+"base": 400,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+}
+]
+},
+{
+"icaoId": "DAAG",
+"dbPopTime": "2026-09-26T05:31:43.277Z",
+"bulletinTime": "2026-09-26T05:00:00.000Z",
+"issueTime": "2026-09-26T05:00:00.000Z",
+"validTimeFrom": 1790402400,
+"validTimeTo": 1790488800,
+"rawTAF": "TAF DAAG 260500Z 2606/2706 VRB02KT 9999 SCT014 PROB30 2606/2609 BKN014 BECMG 2610/2612 04012KT BECMG 2619/2621 VRB02KT",
+"mostRecent": 1,
+"remarks": "",
+"lat": 36.691,
+"lon": 3.215,
+"elev": 18,
+"prior": 1,
+"name": "Algiers Intl",
+"fcsts": [
+{
+"timeFrom": 1790402400,
+"timeTo": 1790416800,
+"timeBec": null,
+"fcstChange": null,
+"probability": null,
+"wdir": "VRB",
+"wspd": 2,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "SCT",
+"base": 1400,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790402400,
+"timeTo": 1790413200,
+"timeBec": null,
+"fcstChange": "PROB",
+"probability": 30,
+"wdir": null,
+"wspd": null,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "BKN",
+"base": 1400,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790416800,
+"timeTo": 1790449200,
+"timeBec": 1790424000,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": 40,
+"wspd": 12,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "SCT",
+"base": 1400,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+},
+{
+"timeFrom": 1790449200,
+"timeTo": 1790488800,
+"timeBec": 1790456400,
+"fcstChange": "BECMG",
+"probability": null,
+"wdir": "VRB",
+"wspd": 2,
+"wgst": null,
+"wshearHgt": null,
+"wshearDir": null,
+"wshearSpd": null,
+"visib": "6+",
+"altim": null,
+"vertVis": null,
+"wxString": null,
+"notDecoded": null,
+"clouds": [
+{
+"cover": "SCT",
+"base": 1400,
+"type": null
+}
+],
+"icgTurb": [],
+"temp": []
+}
+]
+}
+]

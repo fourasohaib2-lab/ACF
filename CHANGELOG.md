@@ -11,6 +11,74 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
 ## [Unreleased] - 2026-09-06
 
 ### Added
+- AWCI Web SP1 : ingestion ECMWF IFS 0,25° Open Data (`acf-awci-ingest`), dangers
+  vectorisés + AWCI `operational-v1`, API en lecture seule `/api/v1/awci`
+  (`acf-awci-web`). Voir `docs/awci/AWCI_WEB_SP1.md`.
+- AWCI Web SP1C (nuages) : fraction nuageuse par niveau (Sundqvist 1989), couvertures
+  par étage (σ ECMWF, recouvrement maximum-aléatoire) contrôlées contre le `tcc` IFS,
+  couches (base/sommet/octas), plafond OACI, convection (particule de surface, Cu/TCU/Cb),
+  genre OMM probable par couche et par étage, espèces diagnosticables, température
+  d'émission des sommets (OLR), condensat colonne, neige, pluie verglaçante ; routes
+  `/clouds`, `/volume`, `/terrain` ; calibration reproductible de RHc
+  (`tools/awci/calibrate_cloud_rhc.py`). Statut HYPOTHESIS. Voir `docs/awci/AWCI_WEB_SP1.md`.
+- AWCI Web SP2 (front 2D, `web/awci`) : tableau de bord React/MapLibre servi par `acf-awci-web`
+  (même origine) ; champ rééchantillonné en Mercator, hachures « sans donnée », lignes de courant,
+  indicateurs de domaine pondérés par l'aire, inspecteur explicable, profils, panneau Nuages,
+  observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
+  `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
+  `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP6 (second modèle) : NOAA GFS 0,25° par le pipeline inchangé (`acf-awci-ingest --model gfs`,
+  `acf-awci-auto --gfs`), humidité recalculée à la manière de l'IFS, divergence sur la sphère, cumul OLR reconstruit,
+  différences de définition déclarées dans le manifeste ; `model=ifs|gfs` sur toutes les routes du cube ; routes
+  `/compare/field` et `/compare/point` ; sélecteur de modèle, couches « Désaccord IFS–GFS » et panneau « Accord des
+  modèles » ; scores IFS et GFS contre les METAR (`tools/awci/compare_models_verification.py`). Correctifs : périodes
+  wgrib2 en jours, corps HTTP tronqués retentés. Voir `docs/awci/AWCI_WEB_SP6.md`.
+- AWCI Web SP7 (validation contre les radiosondages) : stations IGRA v2 actives du domaine, profils University of
+  Wyoming aux 12 niveaux AWCI sans interpolation (`acf-awci-obs --soundings`, `acf-awci-auto --soundings`) ; biais et
+  RMSE de T, humidité relative sur l'eau, vent (vitesse et vectoriel) et cisaillement vertical, contingence du
+  diagnostic de givrage appliqué au profil observé ; route `/soundings/verification`, section « Radiosondages » de la
+  page Validation, outil de cumul `tools/awci/verify_soundings.py`. Correctif : les tableaux de la page Validation
+  défilent dans leur cadre sur mobile. Voir `docs/awci/AWCI_WEB_SP7.md`.
+- AWCI Web, couleurs : classes AWCI et catégories de danger (CAT, givrage, convection, vue 3D) aux couleurs de la
+  convention de vigilance ONM (vert, jaune, orange, rouge ; Extreme en pourpre au-delà du rouge), sans valeur de
+  vigilance officielle (dit dans la légende). Teintes choisies par mesure (contraste WCAG, CIEDE2000 sous
+  simulations de daltonisme) avec `tools/awci/check_palette.py`. Voir `docs/awci/AWCI_WEB_COLORS.md`.
+- AWCI Web SP4 (route) : route orthodromique tracée sur la carte ou par codes OACI (partagée dans l'URL),
+  coupe verticale de la couche le long de la route (log p, FL ISA, relief du modèle, maille la plus proche tous les
+  10 km, sans interpolation) et météogramme de route (échéance × niveau, AWCI max, parts de route en danger) ;
+  routes `/route/section` et `/route/meteogram`. Voir `docs/awci/AWCI_WEB_SP4.md`.
+- AWCI Web, téléchargement automatique : `acf-awci-auto` (ou `acf-awci-web --auto`, une seule commande) suit
+  les runs IFS publiés sur data.ecmwf.int (00 et 12 UTC par défaut, détection par interrogation), les METAR/TAF/SIGMET
+  toutes les 30 min, l'ensemble en option (`--ens`), et supprime les données de plus de 7 jours (le run le plus
+  récent est toujours gardé). `keep=None` désactive la rétention par nombre de runs. Voir `docs/awci/AWCI_WEB_AUTO.md`.
+- AWCI Web SP5b : validation probabiliste de l'ensemble contre les METAR (Brier, Brier « fair » de Ferro,
+  décomposition de Murphy, diagramme de fiabilité), déterministe noté sur les mêmes paires ; route
+  `/ens/verification`, section de la page Validation, outil `tools/awci/verify_ensemble.py`.
+- AWCI Web SP5 (ensemble ECMWF) : `acf-awci-ens` traite chaque membre de l'IFS ENS (50 membres, 0,25°) par le
+  pipeline déterministe inchangé, en flux, et stocke des comptes exacts ; probabilités de AWCI ≥ High, nuage ≥ 5/8,
+  givrage, turbulence ≥ modérée, TCU/Cb réalisé, plafond < 1500 ft, et moyenne ± écart-type de l'AWCI ; routes
+  `/ens/*` ; couches de probabilité et panneau « Ensemble ECMWF ». Voir `docs/awci/AWCI_WEB_SP5.md`.
+- AWCI Web SP2B (vue volume 3D et lecture 4D) : voxels = mailles IFS réelles entre interfaces de niveaux,
+  relief du modèle, nuages par genre, givrage, turbulence et AWCI (deux couches au plus), exagération
+  toujours énoncée, échelle en hPa, FL et km, clic sur voxel vers l'inspecteur au niveau du voxel,
+  préchargement 4D, message explicite sans WebGL2. deck.gl 9.4 chargé à la demande (203 Ko gz). Voir
+  `docs/awci/AWCI_WEB_SP2B.md`.
+- Diagnostic convectif recalibré contre les METAR (profil nuageux 1.2.0) : TCU et Cb exigent une convection
+  réalisée par l'IFS (précipitation ≥ 0,1 mm/h). Choix fait sur 4 runs, jugé sur 3 runs indépendants :
+  biais de 4,36 à 1,14, ETS de 0,11 à 0,16, POD de 0,58 à 0,31. Outil `tools/awci/calibrate_convection.py`.
+- AWCI Web SP3 (aérodromes, METAR/TAF, SIGMET, validation) : ingestion AWC (`acf-awci-obs`, domaine
+  public) avec pagination au-delà du plafond de 400 éléments ; décodeur METAR (CB/TCU, `///`, CAVOK/NSC/NCD,
+  plafond OACI, convection inconnue pour les stations automatiques) contrôlé sur 400 METAR réels ; validation
+  du plafond et de la convection (POD, FAR, CSI, biais, ETS par échéance) ; routes `/airports`, `/airport`,
+  `/sigmets`, `/verification` ; aérodromes et SIGMET sur la carte à l'heure de validité, panneau Aérodrome,
+  page Validation. Premier résultat réel : convection diagnostiquée environ 4 fois trop fréquente (biais 4,15).
+  Correctif : ouverture concurrente d'un cube sérialisée (plantage du serveur au démarrage).
+  Voir `docs/awci/AWCI_WEB_SP3.md`.
+- AWCI Web SP2, revue finale : un EUMETView lent ne retarde plus la prévision (relais : délai 5 s,
+  concurrence bornée, mémoire des échecs, heures et tuiles validées contre les capacités, cache borné ;
+  navigateur : 3 connexions de tuiles au plus). La carte n'affiche plus le champ d'une autre vue pendant
+  un chargement ; liste des couches utilisable au clavier ; run épinglé dès la première interaction ;
+  « pas de plafond » distingué de « sans donnée ».
 - Table de tiers de maturité/scope (Foundation/Core/Extended/Experimental)
   dans `ARCHITECTURE.md`, couvrant les 62 sous-modules de `src/acf/`.
 - `docs/STATUS.md` : suivi unique et vérifiable de l'avancement réel

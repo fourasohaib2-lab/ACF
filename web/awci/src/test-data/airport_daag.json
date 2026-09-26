@@ -1,0 +1,422 @@
+{
+ "station": {
+  "icao": "DAAG",
+  "name": "Algiers Intl",
+  "lat": 36.691,
+  "lon": 3.215,
+  "elev_m": 18.0,
+  "metar": true,
+  "taf": true
+ },
+ "grid": {
+  "lat": 36.75,
+  "lon": 3.25
+ },
+ "dz_m": 7.9661407470703125,
+ "metars": [
+  {
+   "time": "2026-09-24T23:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 242300Z 00000KT 9999 FEW020 SCT200 21/19 Q1020",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 2000,
+     "type": null
+    },
+    {
+     "cover": "SCT",
+     "base_ft": 20000,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-24T23:30:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 242330Z 17003KT 9999 FEW020 SCT200 21/18 Q1020",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 2000,
+     "type": null
+    },
+    {
+     "cover": "SCT",
+     "base_ft": 20000,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T00:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250000Z 17002KT 9999 FEW020 20/18 Q1020",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 2000,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T00:30:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250030Z 19002KT 9999 FEW020 20/17 Q1020",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 2000,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T01:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250100Z 23003KT 9999 FEW016 20/17 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T01:30:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250130Z 23002KT 9999 FEW016 20/17 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T02:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250200Z 18004KT 9999 FEW016 19/16 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T02:30:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250230Z 18004KT 9999 FEW016 19/16 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T03:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250300Z VRB01KT 9999 FEW016 18/15 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T03:30:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250330Z 00000KT 9999 FEW016 18/15 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  },
+  {
+   "time": "2026-09-25T04:00:00Z",
+   "kind": "METAR",
+   "raw": "METAR DAAG 250400Z 15003KT 9999 FEW016 18/15 Q1019",
+   "auto": false,
+   "visibility_m": 10000.0,
+   "weather": [],
+   "cavok": false,
+   "no_sig_cloud": null,
+   "layers": [
+    {
+     "cover": "FEW",
+     "base_ft": 1600,
+     "type": null
+    }
+   ],
+   "vertical_visibility_ft": null,
+   "ceiling_status": "none",
+   "ceiling_ft": null,
+   "convective": false,
+   "flight_category": "VFR"
+  }
+ ],
+ "taf": {
+  "icao": "DAAG",
+  "issued": "2026-09-26T05:00:00Z",
+  "valid_from": "2026-09-26T06:00:00Z",
+  "valid_to": "2026-09-27T06:00:00Z",
+  "raw": "TAF DAAG 260500Z 2606/2706 VRB02KT 9999 SCT014 PROB30 2606/2609 BKN014 BECMG 2610/2612 04012KT BECMG 2619/2621 VRB02KT",
+  "periods": [
+   {
+    "from": "2026-09-26T06:00:00Z",
+    "to": "2026-09-26T10:00:00Z",
+    "change": null,
+    "probability": null,
+    "visibility": "6+",
+    "weather": null,
+    "clouds": [
+     {
+      "cover": "SCT",
+      "base_ft": 1400,
+      "type": null
+     }
+    ]
+   },
+   {
+    "from": "2026-09-26T06:00:00Z",
+    "to": "2026-09-26T09:00:00Z",
+    "change": "PROB",
+    "probability": 30.0,
+    "visibility": "",
+    "weather": null,
+    "clouds": [
+     {
+      "cover": "BKN",
+      "base_ft": 1400,
+      "type": null
+     }
+    ]
+   },
+   {
+    "from": "2026-09-26T10:00:00Z",
+    "to": "2026-09-26T19:00:00Z",
+    "change": "BECMG",
+    "probability": null,
+    "visibility": "6+",
+    "weather": null,
+    "clouds": [
+     {
+      "cover": "SCT",
+      "base_ft": 1400,
+      "type": null
+     }
+    ]
+   },
+   {
+    "from": "2026-09-26T19:00:00Z",
+    "to": "2026-09-27T06:00:00Z",
+    "change": "BECMG",
+    "probability": null,
+    "visibility": "6+",
+    "weather": null,
+    "clouds": [
+     {
+      "cover": "SCT",
+      "base_ft": 1400,
+      "type": null
+     }
+    ]
+   }
+  ]
+ },
+ "model": [
+  {
+   "step": 0,
+   "valid_time": "2026-09-25T00:00:00Z",
+   "missing": false,
+   "ceiling_ft": null,
+   "convective_class": 0.0,
+   "surface_height_m": 10.033859252929688,
+   "genus_low": "clear",
+   "cloud_cover_low": 0.02634955756366253
+  },
+  {
+   "step": 3,
+   "valid_time": "2026-09-25T03:00:00Z",
+   "missing": false,
+   "ceiling_ft": null,
+   "convective_class": 0.0,
+   "surface_height_m": 9.84528636932373,
+   "genus_low": "clear",
+   "cloud_cover_low": 0.02450048178434372
+  }
+ ],
+ "pairs": [
+  {
+   "step": 0,
+   "valid_time": "2026-09-25T00:00:00Z",
+   "observation": {
+    "time": "2026-09-25T00:00:00Z",
+    "kind": "METAR",
+    "raw": "METAR DAAG 250000Z 17002KT 9999 FEW020 20/18 Q1020",
+    "auto": false,
+    "visibility_m": 10000.0,
+    "weather": [],
+    "cavok": false,
+    "no_sig_cloud": null,
+    "layers": [
+     {
+      "cover": "FEW",
+      "base_ft": 2000,
+      "type": null
+     }
+    ],
+    "vertical_visibility_ft": null,
+    "ceiling_status": "none",
+    "ceiling_ft": null,
+    "convective": false,
+    "flight_category": "VFR"
+   },
+   "model_ceiling_ft": null,
+   "model_convective": false
+  },
+  {
+   "step": 3,
+   "valid_time": "2026-09-25T03:00:00Z",
+   "observation": {
+    "time": "2026-09-25T03:00:00Z",
+    "kind": "METAR",
+    "raw": "METAR DAAG 250300Z VRB01KT 9999 FEW016 18/15 Q1019",
+    "auto": false,
+    "visibility_m": 10000.0,
+    "weather": [],
+    "cavok": false,
+    "no_sig_cloud": null,
+    "layers": [
+     {
+      "cover": "FEW",
+      "base_ft": 1600,
+      "type": null
+     }
+    ],
+    "vertical_visibility_ft": null,
+    "ceiling_status": "none",
+    "ceiling_ft": null,
+    "convective": false,
+    "flight_category": "VFR"
+   },
+   "model_ceiling_ft": null,
+   "model_convective": false
+  }
+ ],
+ "run": "2026092500",
+ "attribution": "Aviation Weather Center, NOAA/NWS \u2014 domaine public",
+ "model_attribution": "\u00a9 ECMWF, CC-BY-4.0"
+}

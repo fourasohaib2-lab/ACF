@@ -1,0 +1,60 @@
+{
+ "lat": 36.5,
+ "lon": 3.0,
+ "level_hpa": 850.0,
+ "step": 3,
+ "run": "2026092500",
+ "valid_time": "2026-09-25T03:00:00+00:00",
+ "models": {
+  "ifs": {
+   "values": {
+    "awci": 14.050308227539062,
+    "icing_potential": 0.0,
+    "cat_category": 0.0,
+    "cloud_fraction": 0.0,
+    "wind_speed": 1.6564091444015503,
+    "t": 291.9133605957031,
+    "r": 25.045427322387695,
+    "convective_class": 0.0,
+    "ceiling_m": null,
+    "precip_rate": 0.0,
+    "mucape": 0.0,
+    "tcc": 0.0
+   },
+   "model": "ECMWF IFS 0.25\u00b0 Open Data",
+   "attribution": "\u00a9 ECMWF, CC-BY-4.0",
+   "cloud_profile_version": "1.2.0"
+  },
+  "gfs": {
+   "values": {
+    "awci": 14.348114967346191,
+    "icing_potential": 0.0,
+    "cat_category": 0.0,
+    "cloud_fraction": 0.0,
+    "wind_speed": 1.4159207344055176,
+    "t": 291.6929016113281,
+    "r": 26.46463966369629,
+    "convective_class": 0.0,
+    "ceiling_m": null,
+    "precip_rate": 0.0,
+    "mucape": 0.0,
+    "tcc": 0.05000000074505806
+   },
+   "model": "NOAA GFS 0.25\u00b0 (NOAA Open Data Dissemination)",
+   "attribution": "NOAA/NCEP GFS, domaine public",
+   "cloud_profile_version": "1.2.0"
+  }
+ },
+ "awci_diff": 0.2978067398071289,
+ "definition_differences": {
+  "10fg": "GFS GUST is instantaneous (IFS: maximum since the previous post-processing)",
+  "d": "horizontal divergence of (u, v), centred differences on the sphere",
+  "lsm": "GFS LAND mask (0/1), not a fraction",
+  "mucape": "GFS CAPE 255-0 hPa above ground (IFS: most unstable parcel in the lowest 350 hPa)",
+  "ptype": "from the GFS categorical types CRAIN, CSNOW, CFRZR, CICEP",
+  "r": "recomputed from q, T, p with the IFS mixed-phase saturation",
+  "sf": "no GFS counterpart: no snowfall layer",
+  "tcw": "PWAT + CWAT: cloud water only, rain and snow excluded",
+  "ttr": "rebuilt from 6-hour bucket averages of top-of-atmosphere upward longwave"
+ }
+}

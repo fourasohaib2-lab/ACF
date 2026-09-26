@@ -1,0 +1,42 @@
+{
+ "lat": 36.5,
+ "lon": 3.0,
+ "level_hpa": 850.0,
+ "points": [
+  {
+   "step": 0,
+   "valid_time": "2026-09-25T00:00:00+00:00",
+   "missing": false,
+   "members": 4,
+   "probabilities": {
+    "p_awci_high": 0.0,
+    "p_cloud_bkn": 0.0,
+    "p_icing": 0.0,
+    "p_cat_moderate": 0.0,
+    "p_convection": 0.0,
+    "p_ceiling_1500ft": 0.0
+   },
+   "awci_mean": 16.551698684692383,
+   "awci_std": 1.0283496379852295
+  },
+  {
+   "step": 6,
+   "valid_time": "2026-09-25T06:00:00+00:00",
+   "missing": false,
+   "members": 4,
+   "probabilities": {
+    "p_awci_high": 0.0,
+    "p_cloud_bkn": 0.0,
+    "p_icing": 0.0,
+    "p_cat_moderate": 0.0,
+    "p_convection": 0.0,
+    "p_ceiling_1500ft": 0.0
+   },
+   "awci_mean": 13.721653938293457,
+   "awci_std": 0.6643971800804138
+  }
+ ],
+ "run": "2026092500",
+ "members_requested": 4,
+ "attribution": "\u00a9 ECMWF, CC-BY-4.0 \u2014 IFS ENS"
+}

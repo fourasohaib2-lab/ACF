@@ -1,0 +1,162 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -90.933,
+       14.683
+      ],
+      [
+       -90.867,
+       14.483
+      ],
+      [
+       -90.883,
+       14.433
+      ],
+      [
+       -91.117,
+       14.533
+      ],
+      [
+       -90.933,
+       14.683
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "hazard": "VA",
+    "qualifier": "FUEGO",
+    "fir": "MHTG",
+    "fir_name": "MHCC CENTRAL AMERICAN",
+    "series": "A1",
+    "base_ft": 0.0,
+    "top_ft": 15000.0,
+    "valid_from": "2026-09-26T02:53:00Z",
+    "valid_to": "2026-09-26T08:53:00Z",
+    "received": "2026-09-26T02:53:12.719Z",
+    "direction": "NW",
+    "speed_kt": "10",
+    "change": null,
+    "raw": "WVHO31 MHTG 260253\nMHTG SIGMET A1 VALID 260253/260853 MHTG-\nMHCC CENTRAL AMERICAN FIR VA FUEGO PSN N1428 W09052\nVA CLD OBS AT 0210Z SFC/FL150 N1441 W09056 - N1429 W09052\n- N1426 W09053 - N1432 W09107 - N1441 W09056 MOV NW 10KT \nFCST 0800Z VA CLD SFC/FL150 N1450 W09104\n- N1429 W09052 - N1426 W09052 - N1437 W09114 - N1450 W09104="
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -78.467,
+       -1.75
+      ],
+      [
+       -78.333,
+       -1.983
+      ],
+      [
+       -78.35,
+       -2.017
+      ],
+      [
+       -78.567,
+       -1.833
+      ],
+      [
+       -78.467,
+       -1.75
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "hazard": "VA",
+    "qualifier": "SANGAY",
+    "fir": "SEFG",
+    "fir_name": "SEFG GUAYAQUIL",
+    "series": "1",
+    "base_ft": 0.0,
+    "top_ft": 20000.0,
+    "valid_from": "2026-09-26T03:34:00Z",
+    "valid_to": "2026-09-26T09:34:00Z",
+    "received": "2026-09-26T03:36:49.267Z",
+    "direction": "NW",
+    "speed_kt": "10",
+    "change": null,
+    "raw": "WVEQ31 SEQU 260334\nSEFG SIGMET 1 VALID 260334/260934 SEGU-\nSEFG GUAYAQUIL FIR VA ERUPTION MT SANGAY PSN S0200 W07820\nVA CLD OBS AT 0250Z WI S0145 W07828 - S0159 W07820 - S0201 W07821 -\nS0150 W07834 - S0145 W07828 SFC/FL200 MOV NW 10KT\nFCST AT 0900Z WI S0141 W07833 - S0159 W07820 - S0201 W07821 - S0150\nW07841 - S0141 W07833="
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -22.833,
+       22.281
+      ],
+      [
+       -22.574,
+       22.073
+      ],
+      [
+       -20.008,
+       19.957
+      ],
+      [
+       -18.979,
+       19.033
+      ],
+      [
+       -17.103,
+       20.757
+      ],
+      [
+       -16.917,
+       21.285
+      ],
+      [
+       -16.917,
+       21.333
+      ],
+      [
+       -22.833,
+       22.333
+      ],
+      [
+       -22.833,
+       22.281
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "hazard": "TS",
+    "qualifier": "EMBD",
+    "fir": "GCCC",
+    "fir_name": "GCCC CANARIAS",
+    "series": "2",
+    "base_ft": null,
+    "top_ft": 45000.0,
+    "valid_from": "2026-09-26T05:00:00Z",
+    "valid_to": "2026-09-26T09:00:00Z",
+    "received": "2026-09-25T23:49:25.227Z",
+    "direction": "N",
+    "speed_kt": "10",
+    "change": "NC",
+    "raw": "WSCR31 LEMM 260210\nGCCC SIGMET 2 VALID 260500/260900 GCGC-\nGCCC CANARIAS FIR/UIR EMBD TS FCST S OF LINE N2120 W01655 -\nN2220 W02250 TOP ABV FL450 MOV N 10KT NC="
+   }
+  }
+ ],
+ "time": "2026-09-26T05:00:00Z",
+ "ingested_at": "2026-09-26T08:52:54Z",
+ "attribution": "Aviation Weather Center, NOAA/NWS \u2014 domaine public"
+}

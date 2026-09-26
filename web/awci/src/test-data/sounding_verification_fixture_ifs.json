@@ -1,0 +1,533 @@
+{
+ "generated_at": "2026-09-26T19:52:05Z",
+ "soundings": 1,
+ "stations": 1,
+ "exclusions": {
+  "no_step_at_nominal_time": 0,
+  "outside_domain": 0
+ },
+ "levels": [
+  {
+   "level_hpa": 1000.0,
+   "t": {
+    "n": 1,
+    "bias": 0.002203369140659106,
+    "rmse": 0.002203369140659106
+   },
+   "rh": {
+    "n": 1,
+    "bias": -8.313987416880167,
+    "rmse": 8.313987416880167
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -1.219912543288765,
+    "rmse": 1.219912543288765
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.004609033377378355,
+    "rmse": 0.004609033377378355
+   },
+   "wind_vector_rmse": 2.0894158856894784,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 925.0,
+   "t": {
+    "n": 1,
+    "bias": -1.0712402343749545,
+    "rmse": 1.0712402343749545
+   },
+   "rh": {
+    "n": 1,
+    "bias": 1.891527509383323,
+    "rmse": 1.891527509383323
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": 0.4537556395450071,
+    "rmse": 0.4537556395450071
+   },
+   "vws": {
+    "n": 1,
+    "bias": 0.0017931556980519976,
+    "rmse": 0.0017931556980519976
+   },
+   "wind_vector_rmse": 1.4264908391168005,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 850.0,
+   "t": {
+    "n": 1,
+    "bias": -0.06285400390623863,
+    "rmse": 0.06285400390623863
+   },
+   "rh": {
+    "n": 1,
+    "bias": -9.061428997519151,
+    "rmse": 9.061428997519151
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": 0.3612425394465155,
+    "rmse": 0.3612425394465155
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.001464068048811073,
+    "rmse": 0.001464068048811073
+   },
+   "wind_vector_rmse": 1.7219203350278978,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 700.0,
+   "t": {
+    "n": 1,
+    "bias": 0.27700195312502274,
+    "rmse": 0.27700195312502274
+   },
+   "rh": {
+    "n": 1,
+    "bias": -5.9717925860319205,
+    "rmse": 5.9717925860319205
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -0.6589654852904694,
+    "rmse": 0.6589654852904694
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.0010749282480081931,
+    "rmse": 0.0010749282480081931
+   },
+   "wind_vector_rmse": 0.7202150336050359,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 600.0,
+   "t": {
+    "n": 1,
+    "bias": 0.4671691894531591,
+    "rmse": 0.4671691894531591
+   },
+   "rh": {
+    "n": 1,
+    "bias": 2.219817091733664,
+    "rmse": 2.219817091733664
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -0.9007534483852364,
+    "rmse": 0.9007534483852364
+   },
+   "vws": {
+    "n": 1,
+    "bias": 6.961441654990564e-06,
+    "rmse": 6.961441654990564e-06
+   },
+   "wind_vector_rmse": 0.9392344125102312,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 500.0,
+   "t": {
+    "n": 1,
+    "bias": -0.1585693359375,
+    "rmse": 0.1585693359375
+   },
+   "rh": {
+    "n": 1,
+    "bias": 0.07174882163678564,
+    "rmse": 0.07174882163678564
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -0.8102145758932267,
+    "rmse": 0.8102145758932267
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.00020520693565751445,
+    "rmse": 0.00020520693565751445
+   },
+   "wind_vector_rmse": 0.9420843445259194,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 400.0,
+   "t": {
+    "n": 1,
+    "bias": 0.04312133789065342,
+    "rmse": 0.04312133789065342
+   },
+   "rh": {
+    "n": 1,
+    "bias": 3.3856818582935926,
+    "rmse": 3.3856818582935926
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -1.0369750439362377,
+    "rmse": 1.0369750439362377
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.00023992503792147042,
+    "rmse": 0.00023992503792147042
+   },
+   "wind_vector_rmse": 1.0576670697498116,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 300.0,
+   "t": {
+    "n": 1,
+    "bias": -0.2714019775390284,
+    "rmse": 0.2714019775390284
+   },
+   "rh": {
+    "n": 1,
+    "bias": 28.4663846632836,
+    "rmse": 28.4663846632836
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": 0.9806949646207705,
+    "rmse": 0.9806949646207705
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.0011188622504766355,
+    "rmse": 0.0011188622504766355
+   },
+   "wind_vector_rmse": 1.8939528472405922,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 250.0,
+   "t": {
+    "n": 1,
+    "bias": -0.011401367187488631,
+    "rmse": 0.011401367187488631
+   },
+   "rh": {
+    "n": 1,
+    "bias": 2.472077482686103,
+    "rmse": 2.472077482686103
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -1.2194695406860205,
+    "rmse": 1.2194695406860205
+   },
+   "vws": {
+    "n": 1,
+    "bias": 0.0007692578653811536,
+    "rmse": 0.0007692578653811536
+   },
+   "wind_vector_rmse": 1.5686115790050106,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 200.0,
+   "t": {
+    "n": 1,
+    "bias": -0.5816833496093636,
+    "rmse": 0.5816833496093636
+   },
+   "rh": {
+    "n": 1,
+    "bias": 13.78032094304779,
+    "rmse": 13.78032094304779
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": 2.0599687115783567,
+    "rmse": 2.0599687115783567
+   },
+   "vws": {
+    "n": 1,
+    "bias": 0.0013894308655661193,
+    "rmse": 0.0013894308655661193
+   },
+   "wind_vector_rmse": 4.629903057340585,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 150.0,
+   "t": {
+    "n": 1,
+    "bias": -1.152359008789034,
+    "rmse": 1.152359008789034
+   },
+   "rh": {
+    "n": 1,
+    "bias": 3.3816457994055416,
+    "rmse": 3.3816457994055416
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -0.16633861527233407,
+    "rmse": 0.16633861527233407
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.0016594675000044896,
+    "rmse": 0.0016594675000044896
+   },
+   "wind_vector_rmse": 2.6170771521575507,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  },
+  {
+   "level_hpa": 100.0,
+   "t": {
+    "n": 1,
+    "bias": -0.2536865234374659,
+    "rmse": 0.2536865234374659
+   },
+   "rh": {
+    "n": 1,
+    "bias": 1.1617535804992087,
+    "rmse": 1.1617535804992087
+   },
+   "wind_speed": {
+    "n": 1,
+    "bias": -0.8755171286628816,
+    "rmse": 0.8755171286628816
+   },
+   "vws": {
+    "n": 1,
+    "bias": -0.0016594675000044896,
+    "rmse": 0.0016594675000044896
+   },
+   "wind_vector_rmse": 2.2386110939252384,
+   "icing": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 1,
+    "n": 1,
+    "observed_events": 0,
+    "forecast_events": 0,
+    "pod": null,
+    "far": null,
+    "csi": null,
+    "bias": null,
+    "ets": null,
+    "sufficient": false
+   }
+  }
+ ],
+ "total": {
+  "t": {
+   "n": 12,
+   "bias": -0.2311416625976316,
+   "rmse": 0.5226474767299739
+  },
+  "rh": {
+   "n": 12,
+   "bias": 2.790312395794864,
+   "rmse": 10.107737591322767
+  },
+  "wind_speed": {
+   "n": 12,
+   "bias": -0.2527070438520435,
+   "rmse": 1.0119483104719516
+  },
+  "vws": {
+   "n": 12,
+   "bias": -0.0006726794189673299,
+   "rmse": 0.0017592393642664509
+  },
+  "wind_vector_rmse": 2.0840000092064073,
+  "icing": {
+   "a": 0,
+   "b": 0,
+   "c": 0,
+   "d": 12,
+   "n": 12,
+   "observed_events": 0,
+   "forecast_events": 0,
+   "pod": null,
+   "far": null,
+   "csi": null,
+   "bias": null,
+   "ets": null,
+   "sufficient": false
+  }
+ },
+ "units": {
+  "t": "K",
+  "rh": "%",
+  "wind_speed": "m/s",
+  "vws": "1/s",
+  "wind_vector_rmse": "m/s"
+ },
+ "definitions": "model - observation; icing reference = ACF diagnostic on the observed profile (status HYPOTHESIS)",
+ "observed": "Radiosondages : University of Wyoming ; stations : NOAA NCEI IGRA v2",
+ "domain": "fixture",
+ "run": "2026092500",
+ "valid_from": "2026-09-25T00:00:00+00:00",
+ "valid_to": "2026-09-25T03:00:00+00:00",
+ "model_id": "ifs",
+ "model": "ECMWF IFS 0.25° Open Data",
+ "stations_known": 1
+}

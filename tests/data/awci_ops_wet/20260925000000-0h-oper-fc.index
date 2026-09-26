@@ -1,0 +1,115 @@
+{"param": "msl", "levtype": "sfc", "_offset": 0, "_length": 333}
+{"param": "sp", "levtype": "sfc", "_offset": 333, "_length": 334}
+{"param": "tcw", "levtype": "sfc", "_offset": 667, "_length": 325}
+{"param": "tp", "levtype": "sfc", "_offset": 992, "_length": 224}
+{"param": "tcwv", "levtype": "sfc", "_offset": 1216, "_length": 313}
+{"param": "gh", "levtype": "pl", "_offset": 1529, "_length": 326, "levelist": "850"}
+{"param": "mucape", "levtype": "sfc", "_offset": 1855, "_length": 384}
+{"param": "gh", "levtype": "pl", "_offset": 2239, "_length": 322, "levelist": "300"}
+{"param": "tcc", "levtype": "sfc", "_offset": 2561, "_length": 200}
+{"param": "t", "levtype": "pl", "_offset": 2761, "_length": 333, "levelist": "850"}
+{"param": "t", "levtype": "pl", "_offset": 3094, "_length": 322, "levelist": "300"}
+{"param": "gh", "levtype": "pl", "_offset": 3416, "_length": 330, "levelist": "600"}
+{"param": "10u", "levtype": "sfc", "_offset": 3746, "_length": 327}
+{"param": "gh", "levtype": "pl", "_offset": 4073, "_length": 325, "levelist": "200"}
+{"param": "gh", "levtype": "pl", "_offset": 4398, "_length": 327, "levelist": "1000"}
+{"param": "q", "levtype": "pl", "_offset": 4725, "_length": 318, "levelist": "850"}
+{"param": "q", "levtype": "pl", "_offset": 5043, "_length": 323, "levelist": "300"}
+{"param": "10v", "levtype": "sfc", "_offset": 5366, "_length": 315}
+{"param": "t", "levtype": "pl", "_offset": 5681, "_length": 331, "levelist": "600"}
+{"param": "t", "levtype": "pl", "_offset": 6012, "_length": 325, "levelist": "200"}
+{"param": "t", "levtype": "pl", "_offset": 6337, "_length": 333, "levelist": "1000"}
+{"param": "2t", "levtype": "sfc", "_offset": 6670, "_length": 328}
+{"param": "w", "levtype": "pl", "_offset": 6998, "_length": 376, "levelist": "850"}
+{"param": "w", "levtype": "pl", "_offset": 7374, "_length": 388, "levelist": "300"}
+{"param": "ptype", "levtype": "sfc", "_offset": 7762, "_length": 200}
+{"param": "2d", "levtype": "sfc", "_offset": 7962, "_length": 321}
+{"param": "q", "levtype": "pl", "_offset": 8283, "_length": 332, "levelist": "200"}
+{"param": "q", "levtype": "pl", "_offset": 8615, "_length": 326, "levelist": "600"}
+{"param": "q", "levtype": "pl", "_offset": 8941, "_length": 324, "levelist": "1000"}
+{"param": "tprate", "levtype": "sfc", "_offset": 9265, "_length": 359}
+{"param": "w", "levtype": "pl", "_offset": 9624, "_length": 385, "levelist": "600"}
+{"param": "w", "levtype": "pl", "_offset": 10009, "_length": 379, "levelist": "1000"}
+{"param": "w", "levtype": "pl", "_offset": 10388, "_length": 380, "levelist": "200"}
+{"param": "rsn", "levtype": "sfc", "_offset": 10768, "_length": 200}
+{"param": "d", "levtype": "pl", "_offset": 10968, "_length": 377, "levelist": "850"}
+{"param": "d", "levtype": "pl", "_offset": 11345, "_length": 387, "levelist": "300"}
+{"param": "lsm", "levtype": "sfc", "_offset": 11732, "_length": 200}
+{"param": "r", "levtype": "pl", "_offset": 11932, "_length": 266, "levelist": "850"}
+{"param": "r", "levtype": "pl", "_offset": 12198, "_length": 283, "levelist": "300"}
+{"param": "d", "levtype": "pl", "_offset": 12481, "_length": 378, "levelist": "1000"}
+{"param": "d", "levtype": "pl", "_offset": 12859, "_length": 388, "levelist": "200"}
+{"param": "d", "levtype": "pl", "_offset": 13247, "_length": 386, "levelist": "600"}
+{"param": "u", "levtype": "pl", "_offset": 13633, "_length": 328, "levelist": "850"}
+{"param": "v", "levtype": "pl", "_offset": 13961, "_length": 331, "levelist": "300"}
+{"param": "r", "levtype": "pl", "_offset": 14292, "_length": 276, "levelist": "1000"}
+{"param": "r", "levtype": "pl", "_offset": 14568, "_length": 290, "levelist": "200"}
+{"param": "r", "levtype": "pl", "_offset": 14858, "_length": 291, "levelist": "600"}
+{"param": "v", "levtype": "pl", "_offset": 15149, "_length": 315, "levelist": "850"}
+{"param": "u", "levtype": "pl", "_offset": 15464, "_length": 331, "levelist": "300"}
+{"param": "ttr", "levtype": "sfc", "_offset": 15795, "_length": 224}
+{"param": "10fg", "levtype": "sfc", "_offset": 16019, "_length": 224}
+{"param": "gh", "levtype": "pl", "_offset": 16243, "_length": 322, "levelist": "500"}
+{"param": "u", "levtype": "pl", "_offset": 16565, "_length": 329, "levelist": "1000"}
+{"param": "gh", "levtype": "pl", "_offset": 16894, "_length": 326, "levelist": "400"}
+{"param": "v", "levtype": "pl", "_offset": 17220, "_length": 331, "levelist": "600"}
+{"param": "v", "levtype": "pl", "_offset": 17551, "_length": 324, "levelist": "200"}
+{"param": "v", "levtype": "pl", "_offset": 17875, "_length": 312, "levelist": "1000"}
+{"param": "u", "levtype": "pl", "_offset": 18187, "_length": 328, "levelist": "600"}
+{"param": "u", "levtype": "pl", "_offset": 18515, "_length": 332, "levelist": "200"}
+{"param": "gh", "levtype": "pl", "_offset": 18847, "_length": 327, "levelist": "925"}
+{"param": "gh", "levtype": "pl", "_offset": 19174, "_length": 329, "levelist": "100"}
+{"param": "gh", "levtype": "pl", "_offset": 19503, "_length": 317, "levelist": "150"}
+{"param": "sd", "levtype": "sfc", "_offset": 19820, "_length": 200}
+{"param": "t", "levtype": "pl", "_offset": 20020, "_length": 337, "levelist": "500"}
+{"param": "t", "levtype": "pl", "_offset": 20357, "_length": 328, "levelist": "400"}
+{"param": "t", "levtype": "pl", "_offset": 20685, "_length": 316, "levelist": "925"}
+{"param": "sf", "levtype": "sfc", "_offset": 21001, "_length": 224}
+{"param": "gh", "levtype": "pl", "_offset": 21225, "_length": 319, "levelist": "250"}
+{"param": "gh", "levtype": "pl", "_offset": 21544, "_length": 332, "levelist": "700"}
+{"param": "q", "levtype": "pl", "_offset": 21876, "_length": 338, "levelist": "500"}
+{"param": "q", "levtype": "pl", "_offset": 22214, "_length": 318, "levelist": "400"}
+{"param": "q", "levtype": "pl", "_offset": 22532, "_length": 313, "levelist": "925"}
+{"param": "t", "levtype": "pl", "_offset": 22845, "_length": 335, "levelist": "100"}
+{"param": "t", "levtype": "pl", "_offset": 23180, "_length": 333, "levelist": "250"}
+{"param": "t", "levtype": "pl", "_offset": 23513, "_length": 318, "levelist": "150"}
+{"param": "w", "levtype": "pl", "_offset": 23831, "_length": 388, "levelist": "400"}
+{"param": "t", "levtype": "pl", "_offset": 24219, "_length": 337, "levelist": "700"}
+{"param": "w", "levtype": "pl", "_offset": 24556, "_length": 379, "levelist": "500"}
+{"param": "q", "levtype": "pl", "_offset": 24935, "_length": 326, "levelist": "100"}
+{"param": "w", "levtype": "pl", "_offset": 25261, "_length": 378, "levelist": "925"}
+{"param": "q", "levtype": "pl", "_offset": 25639, "_length": 334, "levelist": "250"}
+{"param": "q", "levtype": "pl", "_offset": 25973, "_length": 324, "levelist": "150"}
+{"param": "q", "levtype": "pl", "_offset": 26297, "_length": 328, "levelist": "700"}
+{"param": "w", "levtype": "pl", "_offset": 26625, "_length": 382, "levelist": "100"}
+{"param": "w", "levtype": "pl", "_offset": 27007, "_length": 387, "levelist": "250"}
+{"param": "w", "levtype": "pl", "_offset": 27394, "_length": 383, "levelist": "150"}
+{"param": "w", "levtype": "pl", "_offset": 27777, "_length": 380, "levelist": "700"}
+{"param": "d", "levtype": "pl", "_offset": 28157, "_length": 379, "levelist": "500"}
+{"param": "d", "levtype": "pl", "_offset": 28536, "_length": 391, "levelist": "400"}
+{"param": "d", "levtype": "pl", "_offset": 28927, "_length": 378, "levelist": "925"}
+{"param": "r", "levtype": "pl", "_offset": 29305, "_length": 281, "levelist": "500"}
+{"param": "r", "levtype": "pl", "_offset": 29586, "_length": 276, "levelist": "400"}
+{"param": "r", "levtype": "pl", "_offset": 29862, "_length": 259, "levelist": "925"}
+{"param": "d", "levtype": "pl", "_offset": 30121, "_length": 381, "levelist": "100"}
+{"param": "d", "levtype": "pl", "_offset": 30502, "_length": 391, "levelist": "250"}
+{"param": "d", "levtype": "pl", "_offset": 30893, "_length": 388, "levelist": "150"}
+{"param": "d", "levtype": "pl", "_offset": 31281, "_length": 379, "levelist": "700"}
+{"param": "r", "levtype": "pl", "_offset": 31660, "_length": 293, "levelist": "100"}
+{"param": "v", "levtype": "pl", "_offset": 31953, "_length": 327, "levelist": "500"}
+{"param": "v", "levtype": "pl", "_offset": 32280, "_length": 329, "levelist": "400"}
+{"param": "r", "levtype": "pl", "_offset": 32609, "_length": 279, "levelist": "250"}
+{"param": "v", "levtype": "pl", "_offset": 32888, "_length": 316, "levelist": "925"}
+{"param": "u", "levtype": "pl", "_offset": 33204, "_length": 332, "levelist": "500"}
+{"param": "u", "levtype": "pl", "_offset": 33536, "_length": 330, "levelist": "400"}
+{"param": "r", "levtype": "pl", "_offset": 33866, "_length": 288, "levelist": "150"}
+{"param": "r", "levtype": "pl", "_offset": 34154, "_length": 280, "levelist": "700"}
+{"param": "u", "levtype": "pl", "_offset": 34434, "_length": 332, "levelist": "925"}
+{"param": "v", "levtype": "pl", "_offset": 34766, "_length": 335, "levelist": "100"}
+{"param": "u", "levtype": "pl", "_offset": 35101, "_length": 336, "levelist": "250"}
+{"param": "u", "levtype": "pl", "_offset": 35437, "_length": 333, "levelist": "100"}
+{"param": "v", "levtype": "pl", "_offset": 35770, "_length": 338, "levelist": "250"}
+{"param": "u", "levtype": "pl", "_offset": 36108, "_length": 336, "levelist": "150"}
+{"param": "v", "levtype": "pl", "_offset": 36444, "_length": 333, "levelist": "700"}
+{"param": "v", "levtype": "pl", "_offset": 36777, "_length": 327, "levelist": "150"}
+{"param": "u", "levtype": "pl", "_offset": 37104, "_length": 328, "levelist": "700"}

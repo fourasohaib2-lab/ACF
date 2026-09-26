@@ -1,0 +1,111 @@
+import { availableLayers, ensStepAvailable, newerRun, nextLevel, nextStep, parseView, resolveView, serializeView, withPinnedRun } from "./view";
+
+const meta = { steps: [0, 3, 6, 9], missing_steps: [6], valid_times: ["2026-09-25T12:00:00+00:00",
+  "2026-09-25T15:00:00+00:00", "2026-09-25T18:00:00+00:00", "2026-09-25T21:00:00+00:00"],
+  levels_hpa: [1000, 850, 500, 300, 200], level_layers: ["awci", "t"], surface_layers: ["mucape"] } as never;
+
+test("URL round trip keeps every field and drops invalid ones", () => {
+  const v = parseView("?domain=north_africa&run=2026092512&step=9&level=300&layer=awci&lat=36.7&lon=3.2&ov=mtg_fd:ir105_hrfi");
+  expect(parseView(serializeView(v))).toEqual(v);
+  expect(parseView("?run=../../etc&step=abc&layer=<x>").run).toBeUndefined();
+  expect(parseView("?step=abc").step).toBeUndefined();
+});
+test("missing steps are skipped both ways", () => {
+  expect(nextStep(meta, 3, 1)).toBe(9);
+  expect(nextStep(meta, 9, -1)).toBe(3);
+  expect(nextStep(meta, 9, 1)).toBe(9);
+});
+test("levels move up (lower pressure) and down", () => {
+  expect(nextLevel(meta, 500, 1)).toBe(300);
+  expect(nextLevel(meta, 1000, -1)).toBe(1000);
+});
+test("resolveView picks the step nearest to now, never a missing one", () => {
+  const r = resolveView(parseView(""), [{ name: "d", default: true }] as never,
+    [{ run: "2026092512", status: "partial" }] as never, meta, new Date("2026-09-25T18:40:00Z"));
+  // 18:40: +6 h (18:00) is missing; among available steps +9 h (21:00, 2 h 20 away) beats +3 h (15:00, 3 h 40)
+  expect(r).toMatchObject({ domain: "d", run: "2026092512", step: 9, level: 300, layer: "awci" });
+});
+test("layers absent from the run are not offered", () => {
+  expect(availableLayers(meta).map((d) => d.id)).toEqual(["awci", "mucape"]);
+});
+
+test("the first interaction pins the run shown, so a new run never shifts the valid time silently", () => {
+  expect(withPinnedRun({ ...parseView("") }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
+  expect(withPinnedRun({ ...parseView(""), run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
+  // "Maintenant" explicitly un-pins
+  expect(withPinnedRun({ ...parseView(""), run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
+    .toEqual({ run: undefined, step: undefined });
+  expect(withPinnedRun({ ...parseView("") }, undefined, { step: 3 })).toEqual({ step: 3 });
+});
+
+test("a newer usable run than the pinned one is announced", () => {
+  const runs = [{ run: "2026092506", status: "complete" }, { run: "2026092500", status: "complete" }] as never;
+  expect(newerRun(runs, "2026092500")).toBe("2026092506");
+  expect(newerRun(runs, "2026092506")).toBeUndefined();
+  expect(newerRun(runs, undefined)).toBeUndefined();
+  expect(newerRun([{ run: "2026092506", status: "failed" }, { run: "2026092500", status: "complete" }] as never, "2026092500")).toBeUndefined();
+});
+
+test("aerodrome and observation layers round-trip through the URL; both layers are on by default", () => {
+  expect(parseView("").aero).toEqual(["metar", "sigmet"]);
+  expect(serializeView(parseView(""))).not.toContain("aero");
+  const v = parseView("?ap=DAAG&aero=sigmet");
+  expect(v.ap).toBe("DAAG");
+  expect(parseView(serializeView(v))).toEqual(v);
+  const none = parseView("?aero=none");
+  expect(none.aero).toEqual([]);
+  expect(parseView(serializeView(none)).aero).toEqual([]);
+  expect(parseView("?ap=../x&aero=evil,metar").ap).toBeUndefined();
+  expect(parseView("?aero=evil,metar").aero).toEqual(["metar"]);
+});
+
+test("3-D view state round-trips and is clamped; defaults stay out of the URL", () => {
+  const d = parseView("");
+  expect(d.mode3d).toBe(false);
+  expect(d.vol).toEqual(["clouds"]);
+  expect(d.exag).toBe(40);
+  expect(d.cth).toBe(0.625);
+  expect(serializeView(d)).not.toMatch(/view=|vol=|exag=|cth=/);
+  const v = parseView("?view=3d&vol=icing,cat&exag=80&cth=0.875");
+  expect(v).toMatchObject({ mode3d: true, vol: ["icing", "cat"], exag: 80, cth: 0.875 });
+  expect(parseView(serializeView(v))).toEqual(v);
+  expect(parseView("?exag=5000&cth=3").exag).toBe(100);
+  expect(parseView("?exag=5000&cth=3").cth).toBe(1);
+  expect(parseView("?vol=evil,awci,cat,clouds").vol).toEqual(["awci", "clouds"]); // unknown dropped, AWCI+CAT excluded, max 2
+});
+
+test("ENS probability layers are offered only when the run has an ENS run", () => {
+  expect(availableLayers(meta).some((d) => d.source === "ens")).toBe(false);
+  const ens = availableLayers(meta, { steps: [0, 6], missing_steps: [] } as never);
+  const ids = ens.filter((d) => d.source === "ens").map((d) => d.id);
+  expect(ids).toEqual(["p_awci_high", "p_cloud_bkn", "p_icing", "p_cat_moderate", "p_convection", "p_ceiling_1500ft", "awci_std"]);
+  expect(ens.find((d) => d.id === "p_convection")!.perLevel).toBe(false);
+});
+
+test("an ENS layer at a step the ensemble did not compute is flagged, never replaced by a neighbour", () => {
+  const ensMeta = { steps: [0, 6, 12], missing_steps: [12] } as never;
+  expect(ensStepAvailable(ensMeta, 6)).toBe(true);
+  expect(ensStepAvailable(ensMeta, 3)).toBe(false); // ENS every 6 h
+  expect(ensStepAvailable(ensMeta, 12)).toBe(false); // missing
+  expect(ensStepAvailable(undefined, 0)).toBe(false);
+});
+
+describe("route in the URL (SP4)", () => {
+  it("round-trips the waypoints and drops a malformed route", () => {
+    const v = parseView("?route=36.691,3.215;36.851,10.227");
+    expect(v.route).toEqual([[36.691, 3.215], [36.851, 10.227]]);
+    expect(serializeView(v)).toContain("route=36.691%2C3.215%3B36.851%2C10.227");
+    expect(parseView("?route=36,3;x,1").route).toBeUndefined();
+  });
+});
+
+
+describe("model in the URL (SP6)", () => {
+  it("defaults to IFS, keeps GFS, never writes the default", () => {
+    expect(parseView("?domain=x").model).toBe("ifs");
+    expect(parseView("?model=gfs").model).toBe("gfs");
+    expect(parseView("?model=icon").model).toBe("ifs");
+    expect(serializeView(parseView("?model=gfs"))).toContain("model=gfs");
+    expect(serializeView(parseView("?domain=x"))).not.toContain("model=");
+  });
+});
