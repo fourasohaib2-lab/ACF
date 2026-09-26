@@ -316,3 +316,5 @@
 .route-meteogram td.is-missing button { background: repeating-linear-gradient(45deg, rgba(137, 135, 129, 0.5) 0 2px, transparent 2px 5px); cursor: not-allowed; }
 .xs-readout { display: flex; flex-wrap: wrap; gap: 4px 16px; min-height: 22px; font-size: var(--fs-data); color: var(--text-1); }
 .xs-readout-hint { color: var(--text-2); }
+.legend-vigilance { margin-left: 6px; color: var(--text-2); font-size: 11px; }
+.legend-note { margin: 2px 0 0; font-size: 11px; color: var(--text-2); white-space: nowrap; }

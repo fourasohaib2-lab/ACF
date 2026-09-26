@@ -1,7 +1,7 @@
 /* AWCI Web design tokens. Dark is the default (forecast rooms); light is opt-in via [data-theme="light"].
-   The map/chart surface #0b1220 is the surface the AWCI palette was validated on (dataviz validator).
-   Light theme (validate_palette.js, 2026-09-26): the AWCI ordinal palette FAILS on a light surface
-   (Extreme #ffd368 at 1.42:1 < 2:1), so the map and AWCI bars keep the dark --surface-0 in both themes;
+   The map/chart surface #0b1220 is the surface the AWCI palette (ONM vigilance convention) was measured on
+   (tools/awci/check_palette.py, docs/awci/AWCI_WEB_COLORS.md); the map and AWCI bars keep the dark --surface-0
+   in both themes (the yellow class would fall under 2:1 on a light surface);
    light categorical slots #2a78d6 #eb6834 #1baf7a pass all pairs (aqua 2.82:1 -> direct labels kept). */
 :root {
   color-scheme: dark;

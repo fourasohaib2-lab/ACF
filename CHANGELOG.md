@@ -27,6 +27,10 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web, couleurs : classes AWCI et catégories de danger (CAT, givrage, convection, vue 3D) aux couleurs de la
+  convention de vigilance ONM (vert, jaune, orange, rouge ; Extreme en pourpre au-delà du rouge), sans valeur de
+  vigilance officielle (dit dans la légende). Teintes choisies par mesure (contraste WCAG, CIEDE2000 sous
+  simulations de daltonisme) avec `tools/awci/check_palette.py`. Voir `docs/awci/AWCI_WEB_COLORS.md`.
 - AWCI Web SP4 (route) : route orthodromique tracée sur la carte ou par codes OACI (partagée dans l'URL),
   coupe verticale de la couche le long de la route (log p, FL ISA, relief du modèle, maille la plus proche tous les
   10 km, sans interpolation) et météogramme de route (échéance × niveau, AWCI max, parts de route en danger) ;

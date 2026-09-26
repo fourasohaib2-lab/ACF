@@ -1,5 +1,5 @@
 import { fmt } from "../lib/format";
-import { AWCI_CLASS_COLORS, SEQ_BLUE } from "../theme/palette";
+import { AWCI_CLASS_COLORS, AWCI_CLASS_VIGILANCE, SEQ_BLUE } from "../theme/palette";
 import { CATEGORY_COLORS, HAZARDS } from "../lib/aero";
 import { GENUS_FAMILY, type LayerDef } from "./layers";
 
@@ -19,6 +19,7 @@ function Rows({ def, classLabels, awciBounds }: Props) {
           const hi = awciBounds[i];
           return (
             <li key={c}><Swatch color={c} />{classLabels[i] ?? `Classe ${i}`}
+              <span className="legend-vigilance">{AWCI_CLASS_VIGILANCE[i]}</span>
               <span className="legend-range num">{hi === undefined ? `≥ ${lo}` : `${lo}–${hi}`}</span></li>
           );
         })}
@@ -69,6 +70,10 @@ export function ObsLegend({ metar, hazards }: { metar: boolean; hazards: string[
   );
 }
 
+/** Layers drawn with the ONM vigilance colours (AWCI classes, CAT, icing, convection). */
+export const usesVigilance = (def: LayerDef) =>
+  !def.source && (def.render.kind === "awci" || ["cat_category", "icing_potential", "convective_class"].includes(def.id));
+
 export function Legend(props: Props) {
   return (
     <figure className="legend" aria-label={`Légende : ${props.def.label}`}>
@@ -79,6 +84,7 @@ export function Legend(props: Props) {
           ? <li><Swatch />{props.def.nanMeaning} (transparent)</li>
           : <li><Swatch hatch />Sans donnée, sous le relief ou indéterminé</li>}
       </ul>
+      {usesVigilance(props.def) && <p className="legend-note" title="Couleurs de la convention de vigilance ONM (vert, jaune, orange, rouge), sans valeur de vigilance officielle : AWCI n'est pas un produit de vigilance.">Teintes vigilance ONM, non officielles</p>}
     </figure>
   );
 }

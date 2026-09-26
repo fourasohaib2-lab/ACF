@@ -1,6 +1,6 @@
 import type { RouteMeteogram as Payload } from "../api/types";
 import { fmt, utcLabel } from "../lib/format";
-import { AWCI_CLASS_COLORS } from "../theme/palette";
+import { AWCI_CLASS_COLORS, TEXT_ON_AWCI_CLASS } from "../theme/palette";
 
 interface Props {
   meteogram: Payload;
@@ -11,9 +11,6 @@ interface Props {
   onSelect: (step: number, level: number) => void;
 }
 
-/** Cell text colour per AWCI class, WCAG AA (≥ 4.5:1) measured: white on the two darkest classes (6.5, 4.7),
- *  dark surface on the others (5.5 to 13.2). */
-const TEXT_ON_CLASS = ["#ffffff", "#ffffff", "#0b1220", "#0b1220", "#0b1220", "#0b1220"] as const;
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${fmt(v * 100, 0)} %`);
 const stepLabel = (s: number) => `+${s} h`;
 
@@ -49,7 +46,7 @@ export function RouteMeteogram({ meteogram: m, awciBounds, classLabels, currentS
                   <td key={s.step} className={s.missing ? "is-missing" : undefined}>
                     <button type="button" aria-label={label} title={label} aria-pressed={current}
                             disabled={s.missing} onClick={() => onSelect(s.step, p)}
-                            style={max !== null && !s.missing ? { background: AWCI_CLASS_COLORS[cls(max)], color: TEXT_ON_CLASS[cls(max)] } : undefined}>
+                            style={max !== null && !s.missing ? { background: AWCI_CLASS_COLORS[cls(max)], color: TEXT_ON_AWCI_CLASS[cls(max)] } : undefined}>
                       {max !== null && !s.missing ? fmt(max, 0) : ""}
                     </button>
                   </td>

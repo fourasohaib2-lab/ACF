@@ -1,4 +1,4 @@
-import { AWCI_CLASS_COLORS, CATEGORICAL, SEQ_BLUE, hexToRgb, rampColor } from "../theme/palette";
+import { AWCI_CLASS_COLORS, CATEGORICAL, SEQ_BLUE, VIGILANCE as V, hexToRgb, rampColor } from "../theme/palette";
 
 export type Rgba = [number, number, number, number];
 export type Group = "awci" | "hazards" | "clouds" | "surface" | "ensemble";
@@ -25,15 +25,15 @@ const cont = (min: number, max: number, extra: Partial<Extract<Render, { kind: "
 export const LAYER_DEFS: LayerDef[] = [
   { id: "awci", label: "AWCI", group: "awci", perLevel: true, unit: "0–100", render: { kind: "awci" } },
   { id: "cat_category", label: "Turbulence en air clair", group: "hazards", perLevel: true, unit: "classe",
-    render: { kind: "codes", colors: [null, S[6], S[9], S[12]], labels: ["Nulle", "Légère", "Modérée", "Modérée à sévère"] } },
+    render: { kind: "codes", colors: [null, V.yellow, V.orange, V.red], labels: ["Nulle", "Légère", "Modérée", "Modérée à sévère"] } },
   { id: "icing_potential", label: "Givrage potentiel", group: "hazards", perLevel: true, unit: "oui/non",
-    render: { kind: "codes", colors: [null, S[10]], labels: ["Non", "Oui"] } },
+    render: { kind: "codes", colors: [null, V.yellow], labels: ["Non", "Oui"] } },
   { id: "vertical_shear", label: "Cisaillement vertical", group: "hazards", perLevel: true, unit: "10⁻³ s⁻¹",
     render: cont(0, 0.012, { scale: 1000 }) },
   { id: "wind_speed", label: "Vent", group: "hazards", perLevel: true, unit: "m/s", render: cont(0, 80) },
   { id: "mucape", label: "Instabilité (MUCAPE)", group: "hazards", perLevel: false, unit: "J/kg", render: cont(0, 3000) },
   { id: "convective_class", label: "Convection (Cu, TCU, Cb)", group: "clouds", perLevel: false, unit: "classe",
-    render: { kind: "codes", colors: [null, S[5], CATEGORICAL[2], CATEGORICAL[1], CATEGORICAL[1]],
+    render: { kind: "codes", colors: [null, V.green, V.orange, V.red, V.red],
       labels: ["Aucune", "Cu humilis/mediocris", "TCU", "Cb calvus", "Cb capillatus"] } },
   { id: "genus_low", label: "Genre, étage bas", group: "clouds", perLevel: false, unit: "", render: { kind: "genus" } },
   { id: "genus_mid", label: "Genre, étage moyen", group: "clouds", perLevel: false, unit: "", render: { kind: "genus" } },

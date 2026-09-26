@@ -2,7 +2,7 @@
  * Volume layers of the 3-D view (spec SP2B §2). Each selects hazardous or cloudy cells only, so the scene
  * stays readable; colours are chosen so that any two layers allowed together never share a hue.
  */
-import { AWCI_CLASS_COLORS, CATEGORICAL, STATUS, hexToRgb } from "../theme/palette";
+import { AWCI_CLASS_COLORS, CATEGORICAL, VIGILANCE, hexToRgb } from "../theme/palette";
 import type { Rgba } from "./geometry";
 
 export type VolumeLayerId = "clouds" | "icing" | "cat" | "awci";
@@ -35,12 +35,12 @@ export const VOLUME_LAYERS: VolumeLayerDef[] = [
     palette: FAMILIES.flatMap((f) => ALPHA.map((a) => rgba(f.color, a))),
     legend: FAMILIES.map((f) => ({ label: f.label, color: f.color })),
     note: "Fraction nuageuse au niveau ≥ seuil (Sundqvist, HYPOTHESIS) ; opacité croissante avec la couverture." },
-  { id: "icing", label: "Givrage potentiel", source: "icing_potential", palette: [rgba(CATEGORICAL[0], 170)],
-    legend: [{ label: "Givrage potentiel (0 à −20 °C, air saturé)", color: CATEGORICAL[0] }],
+  { id: "icing", label: "Givrage potentiel", source: "icing_potential", palette: [rgba(VIGILANCE.yellow, 170)],
+    legend: [{ label: "Givrage potentiel (0 à −20 °C, air saturé)", color: VIGILANCE.yellow }],
     note: "Niveaux où le givrage potentiel vaut 1 (SP1)." },
   { id: "cat", label: "Turbulence en air clair", source: "cat_category",
-    palette: [rgba(STATUS.attention, 150), rgba(STATUS.serious, 200)],
-    legend: [{ label: "Modérée", color: STATUS.attention }, { label: "Modérée à sévère", color: STATUS.serious }],
+    palette: [rgba(VIGILANCE.orange, 150), rgba(VIGILANCE.red, 200)],
+    legend: [{ label: "Modérée", color: VIGILANCE.orange }, { label: "Modérée à sévère", color: VIGILANCE.red }],
     note: "Indice d'Ellrod TI2, catégorie ≥ modérée." },
   { id: "awci", label: "AWCI ≥ High", source: "awci",
     palette: AWCI_CLASS_COLORS.slice(3).map((c) => rgba(c, 190)),
