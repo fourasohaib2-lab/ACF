@@ -498,3 +498,8 @@ def default_cloud_profile() -> CloudProfile:
 from acf.web.awci_wms import router as _wms_router  # noqa: E402
 
 router.include_router(_wms_router)
+
+# Aeronautical observations (METAR/TAF/SIGMET, verification) read from the acf-awci-obs store.
+from acf.web.awci_obs import router as _obs_router  # noqa: E402
+
+router.include_router(_obs_router)
