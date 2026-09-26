@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { useClouds, useCloudsSeries, useDomains, useField, useMeta, usePoint, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { useClouds, useCloudsSeries, useDomains, useField, useMeta, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -8,6 +8,9 @@ import type { WindGrid } from "./map/streamlines";
 import { AtmoProfile } from "./panels/AtmoProfile";
 import { AwciProfile } from "./panels/AwciProfile";
 import { CloudsPanel } from "./panels/CloudsPanel";
+import { CompareControl } from "./panels/CompareControl";
+import { ObservedBadges } from "./panels/ObservedBadge";
+import { OverlayPanel, type OverlayState } from "./panels/OverlayPanel";
 import { DataStatus } from "./panels/DataStatus";
 import { Inspector } from "./panels/Inspector";
 import { TimeEvolution } from "./panels/TimeEvolution";
@@ -41,7 +44,8 @@ export function App() {
   const [playing, setPlaying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [streamlines, setStreamlines] = useState(true);
-  const [opacity] = useState(0.85);
+  const [opacity, setOpacity] = useState(0.85);
+  const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
   const layerListRef = useRef<HTMLFieldSetElement>(null);
 
   const domains = useDomains();
@@ -81,6 +85,25 @@ export function App() {
   const clouds = useClouds(pointKey, hasClouds);
   const cloudsSeries = useCloudsSeries(pointKey, hasClouds);
   const domainSeries = useSummarySeries(resolved?.domain, resolved?.run, resolved?.level);
+  const wmsLayers = useWmsLayers();
+  const overlayTimes = useOverlayTimes(view.ov);
+  const overlayStates: Record<string, OverlayState> = Object.fromEntries(view.ov.map((layer, i) => {
+    const q = overlayTimes[i];
+    return [layer, { time: q?.data?.times.at(-1), error: !!q?.isError || !!tileErrors[layer], loading: !!q?.isLoading }];
+  }));
+  const overlays = view.ov.filter((l) => overlayStates[l]?.time && !overlayStates[l]?.error)
+    .map((l) => ({ layer: l, time: overlayStates[l]!.time!, opacity: 0.9 }));
+  const labelOf = (l: string) => wmsLayers.data?.find((w) => w.layer === l)?.label ?? l;
+  const toggleOverlay = useCallback((layer: string) => {
+    setTileErrors((e) => ({ ...e, [layer]: false }));
+    update({ ov: view.ov.includes(layer) ? view.ov.filter((l) => l !== layer) : [...view.ov, layer] });
+  }, [update, view.ov]);
+  const retryOverlay = useCallback((layer: string) => {
+    setTileErrors((e) => ({ ...e, [layer]: false }));
+    overlayTimes[view.ov.indexOf(layer)]?.refetch();
+  }, [overlayTimes, view.ov]);
+  const onOverlayError = useCallback((layer: string) => setTileErrors((e) => (e[layer] ? e : { ...e, [layer]: true })), []);
+  const IR = "mtg_fd:ir105_hrfi";
   const selectLayer = useCallback((id: string) => {
     if (layers.some((d) => d.id === id)) update({ layer: id });
   }, [layers, update]);
@@ -134,7 +157,9 @@ export function App() {
               onPrev={() => step(-1)} onNext={() => step(1)} onNow={onNow}
               status={<DataStatus run={run} cloudStatus={meta.data?.cloud_status} now={now} />} />
       <SideNav layers={layers} layer={def.id} onLayer={(id) => update({ layer: id })} streamlines={streamlines}
-               onStreamlines={setStreamlines} panel={view.panel} onPanel={(panel) => update({ panel })} layerListRef={layerListRef} />
+               onStreamlines={setStreamlines} panel={view.panel} onPanel={(panel) => update({ panel })} layerListRef={layerListRef}>
+        <OverlayPanel layers={wmsLayers.data} active={view.ov} states={overlayStates} onToggle={toggleOverlay} onRetry={retryOverlay} />
+      </SideNav>
       <main className="main" id="main">
         {runs.isSuccess && usableRuns.length === 0 && <EmptyRuns domain={domain.name} />}
         {runs.isError && <ErrorBox error={runs.error} what="Runs" />}
@@ -148,14 +173,23 @@ export function App() {
           <section className="map-panel" aria-label="Carte">
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
-                <MapView domain={domain} field={field.data} def={def} awciBounds={awciBounds} wind={wind} overlays={[]}
+                <MapView domain={domain} field={field.data} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
+                         onOverlayError={onOverlayError}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
                          opacity={opacity} onPick={onPick} />
               </Suspense>
               <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />
               {field.isError && <div className="map-error"><ErrorBox error={field.error} what={def.label} /></div>}
               {toast && <div className="toast" role="alert">{toast}</div>}
+              <ObservedBadges items={overlays.map((o) => ({ label: labelOf(o.layer), time: o.time }))} now={now} />
             </div>
+            {def.id === "cloud_top_teff_k" && !view.ov.includes(IR) && (
+              <button type="button" className="text-button" onClick={() => toggleOverlay(IR)}>Comparer à l'observation MTG IR 10,5 µm</button>
+            )}
+            {def.id === "cloud_top_teff_k" && view.ov.includes(IR) && (
+              <CompareControl forecastValid={meta.data.valid_times[meta.data.steps.indexOf(resolved.step)]}
+                              observedAt={overlayStates[IR]?.time} opacity={opacity} onOpacity={setOpacity} />
+            )}
             <TimeBar meta={meta.data} step={resolved.step} onStep={(s) => update({ step: s })} playing={playing}
                      onTogglePlay={() => setPlaying((p) => !p)} />
           </section>

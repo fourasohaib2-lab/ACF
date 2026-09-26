@@ -1,5 +1,5 @@
 /** Data hooks: one TanStack Query per route. Everything that depends on a run is immutable (staleTime Infinity). */
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { ApiError, getField, getJson } from "./client";
 import type {
@@ -88,3 +88,10 @@ export const useWmsLayers = () =>
 export const useWmsTimes = (layer: string | undefined, count = 1) =>
   useQuery({ queryKey: ["wms-times", layer, count], enabled: !!layer, staleTime: 60_000, refetchInterval: 120_000, retry: 1,
     queryFn: ({ signal }) => getJson<WmsTimes>("/wms/times", { layer, count }, signal) });
+
+/** Latest observation time of every active overlay (tiles are then requested at that explicit time). */
+export const useOverlayTimes = (layers: string[]) =>
+  useQueries({ queries: layers.map((layer) => ({
+    queryKey: ["wms-times", layer, 1], staleTime: 60_000, refetchInterval: 120_000, retry: 1,
+    queryFn: ({ signal }: { signal: AbortSignal }) => getJson<WmsTimes>("/wms/times", { layer, count: 1 }, signal),
+  })) });

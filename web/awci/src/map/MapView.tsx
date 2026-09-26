@@ -21,6 +21,7 @@ interface Props {
   point: { lat: number; lon: number } | undefined;
   opacity: number;
   onPick: (lat: number, lon: number) => void;
+  onOverlayError?: (layer: string) => void;
 }
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -43,14 +44,17 @@ function toDataUrl(data: Uint8ClampedArray, width: number, height: number): stri
 
 const spacingForZoom = (z: number) => (z < 4 ? 3 : z < 6 ? 1.5 : 0.75);
 
-export function MapView({ domain, field, def, awciBounds, wind, overlays, point, opacity, onPick }: Props) {
+export function MapView({ domain, field, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const pickRef = useRef(onPick);
+  const overlayErrorRef = useRef(onOverlayError);
+  const overlayLayers = useRef(new Map<string, string>()); // map source id -> WMS layer name
   const [ready, setReady] = useState(false);
   const [spacing, setSpacing] = useState(3);
 
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
+  useEffect(() => { overlayErrorRef.current = onOverlayError; }, [onOverlayError]);
 
   useEffect(() => {
     if (!container.current) return;
@@ -76,6 +80,11 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
     });
     map.on("click", (e: MapMouseEvent) => pickRef.current(e.lngLat.lat, e.lngLat.lng));
     map.on("zoomend", () => setSpacing(spacingForZoom(map.getZoom())));
+    map.on("error", (e) => {
+      const id = (e as { sourceId?: string }).sourceId; // set by MapLibre for source (tile) errors
+      const layer = id ? overlayLayers.current.get(id) : undefined;
+      if (layer) overlayErrorRef.current?.(layer);
+    });
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container.current);
     mapRef.current = map;
@@ -112,6 +121,7 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
     const map = mapRef.current;
     if (!ready || !map) return;
     const wanted = new Map(overlays.map((o) => [`wms-${o.layer}-${o.time}`, o]));
+    overlayLayers.current = new Map([...wanted].map(([id, o]) => [id, o.layer]));
     for (const layer of map.getStyle().layers ?? []) {
       if (layer.id.startsWith("wms-") && !wanted.has(layer.id)) {
         map.removeLayer(layer.id);

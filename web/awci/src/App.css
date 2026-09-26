@@ -200,3 +200,8 @@
 .genus-timeline td.missing { color: var(--text-muted); }
 .genus-timeline [aria-current="true"] { outline: 2px solid var(--text-1); outline-offset: -2px; }
 @media (max-width: 1023px) { .clouds-body { grid-template-columns: minmax(0, 1fr); } }
+.overlay-list { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px; }
+.overlay-error { margin: 0 0 4px 22px; font-size: var(--fs-data); color: var(--status-attention); display: flex; gap: 6px; align-items: center; }
+.observed-badge { display: inline-flex; gap: 4px; align-items: center; }
+.compare-control { display: grid; gap: 4px; }
+.compare-control input[type="range"] { width: 100%; }
