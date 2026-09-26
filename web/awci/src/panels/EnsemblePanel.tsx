@@ -11,14 +11,19 @@ const ROWS: { key: EnsProduct; label: string }[] = [
 ];
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? "—" : `${Math.round(v * 100)} %`);
 
-interface Props { point: EnsPoint | undefined; step: number; deterministicAwci: number | null; unavailable?: boolean }
+interface Props {
+  point: EnsPoint | undefined; step: number; deterministicAwci: number | null; unavailable?: boolean;
+  /** Cloud-profile versions of the ENS and of the deterministic run: different rules make them not comparable. */
+  ensCloudProfile?: string; detCloudProfile?: string;
+}
 
 /**
  * IFS ENS at the selected point and level (spec SP5 §5): probability = share of the members with the event.
  * Replaces the "model agreement" placeholder when the run has an ENS run. A step the ENS did not compute is
  * said so, never borrowed from a neighbouring step.
  */
-export function EnsemblePanel({ point, step, deterministicAwci, unavailable = false }: Props) {
+export function EnsemblePanel({ point, step, deterministicAwci, unavailable = false, ensCloudProfile, detCloudProfile }: Props) {
+  const profileMismatch = !!ensCloudProfile && !!detCloudProfile && ensCloudProfile !== detCloudProfile;
   if (unavailable) {
     return (
       <section className="panel" aria-label="Ensemble ECMWF">
@@ -40,6 +45,10 @@ export function EnsemblePanel({ point, step, deterministicAwci, unavailable = fa
     <section className="panel" aria-label="Ensemble ECMWF">
       <h2>Ensemble ECMWF</h2>
       <p className="panel-note">{fmt(point.lat, 2)}° N · {fmt(point.lon, 2)}° E · {point.level_hpa} hPa</p>
+      {profileMismatch && (
+        <p className="notice">Ensemble calculé avec le profil nuageux {ensCloudProfile}, déterministe avec le {detCloudProfile} :
+          les nuages et la convection ne se comparent pas directement (règles différentes).</p>
+      )}
       {!at || at.missing || !at.probabilities ? (
         <p className="notice">Échéance {stepLabel(step)} pas calculée par l'ensemble (échéances {point.points.filter((p) => !p.missing).map((p) => stepLabel(p.step)).join(", ")}).</p>
       ) : (

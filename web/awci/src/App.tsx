@@ -334,7 +334,8 @@ export function App() {
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
             {view.aero.includes("sigmet") && <SigmetList sigmets={freshSigmets} isError={sigmetsQ.isError} />}
-            <EnsemblePanel point={ensPoint.data} step={resolved.step} deterministicAwci={point.data?.awci ?? null} unavailable={!hasEns} />
+            <EnsemblePanel point={ensPoint.data} step={resolved.step} deterministicAwci={point.data?.awci ?? null} unavailable={!hasEns}
+                           ensCloudProfile={ensMeta.data?.cloud_profile_version} detCloudProfile={meta.data.cloud_profile?.version} />
             <LatestRuns runs={runs.data ?? []} now={now} />
           </aside>
         )}

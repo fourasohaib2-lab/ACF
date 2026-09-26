@@ -25,3 +25,8 @@ test("without ENS for the run the panel says so plainly", () => {
   render(<EnsemblePanel point={undefined} step={3} deterministicAwci={null} unavailable />);
   expect(screen.getByText(/acf-awci-ens/)).toBeInTheDocument();
 });
+
+test("a deterministic run diagnosed with another cloud profile is flagged before any comparison", () => {
+  render(<EnsemblePanel point={p} step={6} deterministicAwci={42} ensCloudProfile="1.2.0" detCloudProfile="1.1.0" />);
+  expect(screen.getByText(/profil nuageux 1\.2\.0.*déterministe.*1\.1\.0/)).toBeInTheDocument();
+});
