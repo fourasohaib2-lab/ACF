@@ -319,3 +319,12 @@
 .legend-vigilance { margin-left: 6px; color: var(--text-2); font-size: 11px; }
 .legend-note { margin: 2px 0 0; font-size: 11px; color: var(--text-2); white-space: nowrap; }
 .legend-key { display: block; margin-top: 2px; font-size: 11px; color: var(--text-2); }
+
+/* SP7: verification against radiosondes */
+.sounding-verification { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 12px; }
+.sounding-profiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin: 8px 0 16px; }
+.vertical-profile { max-width: 340px; }
+.chart-zero { stroke: var(--text-2); stroke-width: 1; }
+.sounding-verification .scores-table { margin-bottom: 12px; }
+.sounding-legend { margin: 8px 0 0; }
+.sounding-verification .scores-table thead tr:first-child th:first-child { text-align: left; }

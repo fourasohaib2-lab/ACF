@@ -39,3 +39,11 @@ test("aerodrome panel and validation page have no serious accessibility violatio
     expect(blocking.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
   }
 });
+
+test("the validation page scores both models against the real Algiers sounding", async ({ page }) => {
+  await open(page, "?domain=fixture&step=3&level=700&panel=validation");
+  const s = page.getByRole("region", { name: "Validation contre les radiosondages" });
+  await expect(s.getByRole("img", { name: /^Température \(K\) selon la pression.*IFS biais, 12 niveaux.*GFS biais, 12 niveaux/ })).toBeVisible();
+  await expect(s.getByRole("table", { name: "Scores sur toute la colonne" }).getByRole("row", { name: /^GFS/ })).toBeVisible();
+  await expect(s).toContainText("IFS : 1 sondage, 1 station");
+});

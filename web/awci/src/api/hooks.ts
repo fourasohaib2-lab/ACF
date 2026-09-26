@@ -5,7 +5,7 @@ import { parseVolume, type Volume } from "../volume/geometry";
 import { ApiError, getCompareField, getEnsField, getField, getJson, getTerrain, getVolume } from "./client";
 import type {
   AirportDetail, AirportsPayload, ComparePoint, EnsMeta, EnsPoint, EnsRun, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
-  EnsVerification, Registry, RouteMeteogram, RouteSection, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
+  EnsVerification, Registry, RouteMeteogram, RouteSection, RunInfo, SigmetCollection, SoundingVerification, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
 } from "./types";
 
 const IMMUTABLE = { staleTime: Infinity, gcTime: 30 * 60_000 } as const;
@@ -211,3 +211,8 @@ export const useComparePoint = (k: { domain?: string; run?: string; step?: numbe
   useQuery({ queryKey: ["compare-point", k.domain, k.run, k.step, k.level, k.lat, k.lon], ...IMMUTABLE, retry,
     enabled: enabled && !!k.run && k.step !== undefined && k.level !== undefined && k.lat !== undefined && k.lon !== undefined,
     queryFn: ({ signal }) => getJson<ComparePoint>("/compare/point", { ...k }, signal) });
+
+// ---- SP7: radiosondes (the archive grows after each 00/12 UTC: observation cache policy) ----
+export const useSoundingVerification = (domain: string | undefined, run: string | undefined, enabled: boolean, model?: CubeModel) =>
+  useQuery({ queryKey: ["sounding-verification", domain, run, model], enabled: enabled && !!domain && !!run, ...OBS, retry,
+    queryFn: ({ signal }) => getJson<SoundingVerification>("/soundings/verification", { domain, run, model }, signal) });

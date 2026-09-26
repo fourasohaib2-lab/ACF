@@ -74,7 +74,7 @@ export function EnsVerification({ report: v, isLoading, error, available }: Prop
       )}
       {Object.entries(v.events).map(([key, e]) => (
         <div key={key} className="ens-verif-event">
-          <table className="values-table scores-table">
+          <div className="table-scroll"><table className="values-table scores-table">
             <caption>{ENS_EVENT_LABELS[key] ?? key}</caption>
             <thead><tr>
               <th scope="col">Échéance</th><th scope="col">n</th><th scope="col">Obs.</th>
@@ -88,7 +88,7 @@ export function EnsVerification({ report: v, isLoading, error, available }: Prop
               {e.by_step.map((s) => <Row key={s.step} label={`+${s.step} h`} s={s} />)}
               <Row label="Total" s={e.total} />
             </tbody>
-          </table>
+          </table></div>
           {e.total.n > 0 && (
             <div className="ens-verif-body">
               <ReliabilityDiagram bins={e.total.diagram} climatology={e.total.observed_frequency ?? null}

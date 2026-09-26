@@ -16,3 +16,6 @@ real IFS 2026-09-25 12Z run, North Africa (© ECMWF CC-BY-4.0).
 `compare_point_fixture.json` is the `/compare/point` response (850 hPa, +3 h, 36.5° N 3.0° E) over the real cropped
 IFS fixture (© ECMWF CC-BY-4.0) and the real cropped GFS fixture of the same run (`tests/data/awci_gfs`, NOAA public
 domain).
+`sounding_verification_fixture_ifs.json` and `sounding_verification_fixture_gfs.json` are the `/soundings/verification`
+responses (model=ifs, model=gfs) over the real cropped IFS and GFS fixtures of run 2026-09-25 00Z against the real
+University of Wyoming sounding of Dar-El-Beida (Algiers, 60390) at 2026-09-25 00 UTC (`tests/data/awci_soundings`).

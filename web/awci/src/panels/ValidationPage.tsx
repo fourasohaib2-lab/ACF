@@ -50,7 +50,7 @@ export function ValidationPage({ verification: v, isLoading, error, children }: 
         ces scores mesurent l'accord du diagnostic avec les aérodromes, pas une vérité ponctuelle.
       </p>
       {Object.entries(v.events).map(([key, e]) => (
-        <table key={key} className="values-table scores-table">
+        <div key={key} className="table-scroll"><table className="values-table scores-table">
           <caption>{EVENT_LABELS[key] ?? key}</caption>
           <thead><tr>
             <th scope="col">Échéance</th><th scope="col">n</th><th scope="col">Obs.</th>
@@ -61,7 +61,7 @@ export function ValidationPage({ verification: v, isLoading, error, children }: 
             {e.by_lead.map((b) => <Row key={b.lead} label={b.lead} t={b} />)}
             <Row label="Total" t={e.total} />
           </tbody>
-        </table>
+        </table></div>
       ))}
       <h3 className="subhead">Base du plafond</h3>
       <p>{v.ceiling_base_error_ft.n

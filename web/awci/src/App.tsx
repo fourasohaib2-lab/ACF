@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useRouteMeteogram, useRouteSection, useComparePoint, type CubeModel, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useSoundingVerification, useEnsPoint, useRouteMeteogram, useRouteSection, useComparePoint, type CubeModel, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -30,6 +30,7 @@ import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { SigmetList } from "./panels/SigmetList";
 import { EnsVerification } from "./panels/EnsVerification";
+import { SoundingVerification } from "./panels/SoundingVerification";
 import { ModelAgreement } from "./panels/ModelAgreement";
 import { RoutePanel } from "./panels/RoutePanel";
 import { ValidationPage } from "./panels/ValidationPage";
@@ -175,6 +176,12 @@ export function App() {
   const sigmetsQ = useSigmets(domain?.name, validTime, view.aero.includes("sigmet"));
   const airportQ = useAirport(domain?.name, view.ap, resolved?.run, cubeModel);
   const verificationQ = useVerification(domain?.name, resolved?.run, view.panel === "validation", cubeModel);
+  // SP7: both models against the radiosondes when both have this run (IFS first, then GFS)
+  const onValidation = view.panel === "validation";
+  const ifsHasRun = !!ifsRuns.data?.some((r) => r.run === resolved?.run);
+  const gfsHasRun = !!gfsRuns.data?.some((r) => r.run === resolved?.run);
+  const soundingIfsQ = useSoundingVerification(domain?.name, resolved?.run, onValidation && ifsHasRun);
+  const soundingGfsQ = useSoundingVerification(domain?.name, resolved?.run, onValidation && gfsHasRun, "gfs");
   const ensVerificationQ = useEnsVerification(domain?.name, resolved?.run, view.panel === "validation" && hasEns);
   const freshAirports = freshData(airportsQ);
   const airportPoints = useMemo(() => (view.aero.includes("metar") ? airportFeatures(freshAirports) : undefined),
@@ -320,6 +327,10 @@ export function App() {
         {view.panel === "validation" && (
           <div className="api-overlay"><ValidationPage verification={verificationQ.data} isLoading={verificationQ.isLoading} error={verificationQ.error}>
             <EnsVerification report={ensVerificationQ.data} isLoading={ensVerificationQ.isLoading || ensRuns.isLoading} error={ensVerificationQ.error} available={hasEns} />
+            <SoundingVerification models={[
+              ...(ifsHasRun ? [{ label: "IFS", color: "var(--series-1)", report: soundingIfsQ.data, isLoading: soundingIfsQ.isLoading, error: soundingIfsQ.error }] : []),
+              ...(gfsHasRun ? [{ label: "GFS", color: "var(--series-2)", report: soundingGfsQ.data, isLoading: soundingGfsQ.isLoading, error: soundingGfsQ.error }] : []),
+            ]} />
           </ValidationPage></div>
         )}
         {resolved && meta.data && (

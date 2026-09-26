@@ -206,3 +206,16 @@ export interface ComparePoint {
   models: { ifs: ComparePointModel; gfs: ComparePointModel }; awci_diff: number | null;
   definition_differences: Record<string, string>;
 }
+
+// ---- SP7: verification against radiosondes ----
+export interface ContinuousScore { n: number; bias: number | null; rmse: number | null }
+export interface SoundingLevelScores {
+  t: ContinuousScore; rh: ContinuousScore; wind_speed: ContinuousScore; vws: ContinuousScore;
+  wind_vector_rmse: number | null; icing: ScoreTable;
+}
+export interface SoundingVerification {
+  domain: string; run: string; model_id: string; model: string; generated_at: string; valid_from: string; valid_to: string;
+  soundings: number; stations: number; stations_known: number; exclusions: Record<string, number>;
+  levels: (SoundingLevelScores & { level_hpa: number })[]; total: SoundingLevelScores;
+  units: Record<string, string>; definitions: string; observed: string;
+}

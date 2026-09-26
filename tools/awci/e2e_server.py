@@ -20,6 +20,9 @@ IFS ENS: the `fixture` domain also gets the real 4-member ENS fixture of the sam
 Aeronautical observations: the `fixture` domain gets the real recorded AWC data of Algiers (DAAG): its
 METAR of 2026-09-24 21Z .. 2026-09-25 14Z and its TAF (tests/data/awc). `fixture_wet` has none, so the
 "no observation ingested" state is exercised too.
+
+Radiosondes (SP7): the `fixture` domain gets the real University of Wyoming sounding of Dar-El-Beida (Algiers,
+2026-09-25 00 UTC) and its IGRA station entry (tests/data/awci_soundings).
 """
 
 from __future__ import annotations
@@ -41,6 +44,7 @@ from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, load_profile  
 from acf.awci.ops.ingest import ingest_run  # noqa: E402
 from acf.web.awci_app import create_awci_app  # noqa: E402
 from acf.awci.obs.source_awc import AwcClient  # noqa: E402
+from acf.awci.obs.sounding import parse_igra_stations, parse_uwyo_csv, stations_in  # noqa: E402
 from acf.awci.obs.store import ObsStore  # noqa: E402
 from acf.awci.ops.ens_ingest import ingest_ens_run  # noqa: E402
 from acf.web.awci_wms import WmsRelay  # noqa: E402
@@ -62,6 +66,11 @@ def prepare_observations(data_dir: Path) -> None:
     store.add_metars([r for r in map(AwcClient._metar, json.loads((AWC / "metar_daag_20260925.json").read_text())) if r])
     store.write_tafs([r for r in map(AwcClient._taf, json.loads((AWC / "taf_sample_20260926T08.json").read_text()))
                       if r and r["icao"] == "DAAG"])
+    soundings = REPO / "tests" / "data" / "awci_soundings"
+    store.add_soundings([parse_uwyo_csv((soundings / "uwyo_60390_2026092500.csv").read_text(), "60390",  # type: ignore[list-item]
+                                        datetime(2026, 9, 25, tzinfo=UTC)) | {"name": "DAR-EL-BEIDA", "elev_m": 25.0}])
+    igra = parse_igra_stations((soundings / "igra2-station-list-excerpt.txt").read_text())
+    store.write_sounding_stations([s.as_dict() for s in stations_in(igra, DOMAIN, 2026)], datetime(2026, 9, 26, tzinfo=UTC))
     store.write_status({"ingested_at": "2026-09-26T08:52:54Z", "stations": 1,
                         "source": "recorded AWC responses (tests/data/awc)"})
 
