@@ -185,3 +185,18 @@
 .inspector-awci { display: flex; gap: 10px; align-items: baseline; margin: 4px 0; }
 .notice { padding: 6px 8px; border-left: 3px solid var(--status-attention); background: var(--surface-3); }
 .provenance { font-size: 11px; color: var(--text-muted); margin: 8px 0 0; }
+
+/* Clouds panel */
+.clouds-panel { grid-column: 1 / -1; }
+.clouds-body { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 16px; align-items: start; }
+.caveat { font-size: var(--fs-data); color: var(--status-attention); margin: 0 0 8px; }
+.cloud-label { fill: var(--text-1); font-size: 11px; }
+.ceiling-line { stroke: var(--status-attention); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.metar { font-size: var(--fs-lead); background: var(--surface-3); padding: 6px 8px; border-radius: 6px; margin: 0 0 8px; }
+.layer-list-text { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 4px; }
+.genus-timeline { border-collapse: collapse; font-size: 11px; margin-top: 8px; width: 100%; }
+.genus-timeline th, .genus-timeline td { border: 1px solid var(--border); padding: 2px 3px; text-align: center; }
+.genus-timeline td { color: #ffffff; font-family: var(--font-mono); }
+.genus-timeline td.missing { color: var(--text-muted); }
+.genus-timeline [aria-current="true"] { outline: 2px solid var(--text-1); outline-offset: -2px; }
+@media (max-width: 1023px) { .clouds-body { grid-template-columns: minmax(0, 1fr); } }

@@ -1,12 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { useDomains, useField, useMeta, usePoint, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { useClouds, useCloudsSeries, useDomains, useField, useMeta, usePoint, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend } from "./map/Legend";
 import { layerDef } from "./map/layers";
 import type { WindGrid } from "./map/streamlines";
 import { AtmoProfile } from "./panels/AtmoProfile";
 import { AwciProfile } from "./panels/AwciProfile";
+import { CloudsPanel } from "./panels/CloudsPanel";
 import { DataStatus } from "./panels/DataStatus";
 import { Inspector } from "./panels/Inspector";
 import { TimeEvolution } from "./panels/TimeEvolution";
@@ -76,6 +77,9 @@ export function App() {
   const point = usePoint(pointKey);
   const profile = useProfile(pointKey);
   const timeseries = useTimeseries(pointKey);
+  const hasClouds = !!meta.data?.level_layers.includes("cloud_fraction");
+  const clouds = useClouds(pointKey, hasClouds);
+  const cloudsSeries = useCloudsSeries(pointKey, hasClouds);
   const domainSeries = useSummarySeries(resolved?.domain, resolved?.run, resolved?.level);
   const selectLayer = useCallback((id: string) => {
     if (layers.some((d) => d.id === id)) update({ layer: id });
@@ -169,6 +173,13 @@ export function App() {
             <TimeEvolution point={timeseries.data} domain={domainSeries.data} meta={meta.data} step={resolved.step} />
             {profile.data && <AwciProfile profile={profile.data} awciBounds={awciBounds} current={resolved.level} />}
             {profile.data && <AtmoProfile profile={profile.data} />}
+            {view.lat !== undefined && (
+              <CloudsPanel clouds={clouds.data} series={cloudsSeries.data} currentStep={resolved.step} unavailable={!hasClouds} />
+            )}
+            {view.lat === undefined && view.panel === "clouds" && (
+              <section className="panel clouds-panel"><h2>Nuages</h2><p className="panel-note">Cliquer sur la carte pour afficher les couches nuageuses d'un point.</p></section>
+            )}
+            {clouds.isError && <ErrorBox error={clouds.error} what="Nuages" />}
           </div>
         )}
       </main>
