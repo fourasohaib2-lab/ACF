@@ -508,3 +508,7 @@ router.include_router(_obs_router)
 from acf.web.awci_ens import router as _ens_router  # noqa: E402
 
 router.include_router(_ens_router)
+
+from acf.web.awci_route import router as _route_router  # noqa: E402
+
+router.include_router(_route_router)
