@@ -1,0 +1,9878 @@
+[
+{
+"id": "GMMH",
+"icaoId": "GMMH",
+"iataId": "VIL",
+"faaId": null,
+"wmoId": "60034",
+"site": "Dakhla Intl",
+"lat": 23.718,
+"lon": -15.932,
+"elev": 11,
+"state": "DA",
+"country": "EH",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GOOG",
+"icaoId": "GOOG",
+"iataId": null,
+"faaId": null,
+"wmoId": "61627",
+"site": "Lingu\u00e8re Arpt",
+"lat": 15.4,
+"lon": -15.084,
+"elev": 38,
+"state": "KG",
+"country": "SN",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GOSM",
+"icaoId": "GOSM",
+"iataId": "MAX",
+"faaId": null,
+"wmoId": "61630",
+"site": "Matam/Ouro Sogui Arpt",
+"lat": 15.597,
+"lon": -13.326,
+"elev": 28,
+"state": "SL",
+"country": "SN",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GOSP",
+"icaoId": "GOSP",
+"iataId": "POD",
+"faaId": null,
+"wmoId": "61612",
+"site": "Podor Arpt",
+"lat": 16.677,
+"lon": -14.964,
+"elev": 10,
+"state": "SL",
+"country": "SN",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GOSS",
+"icaoId": "GOSS",
+"iataId": "XLS",
+"faaId": null,
+"wmoId": "61600",
+"site": "Saint Louis Arpt",
+"lat": 16.051,
+"lon": -16.461,
+"elev": 3,
+"state": "SL",
+"country": "SN",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GQNB",
+"icaoId": "GQNB",
+"iataId": "OTL",
+"faaId": null,
+"wmoId": "61461",
+"site": "Boutilimit",
+"lat": 17.538,
+"lon": -14.688,
+"elev": 48,
+"state": "TR",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQND",
+"icaoId": "GQND",
+"iataId": "TIY",
+"faaId": null,
+"wmoId": "61450",
+"site": "Tidjikja",
+"lat": 18.57,
+"lon": -11.424,
+"elev": 413,
+"state": "TA",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNF",
+"icaoId": "GQNF",
+"iataId": "KFA",
+"faaId": null,
+"wmoId": "61498",
+"site": "Kiffa Arpt",
+"lat": 16.593,
+"lon": -11.4,
+"elev": 132,
+"state": "AS",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNJ",
+"icaoId": "GQNJ",
+"iataId": "AJJ",
+"faaId": null,
+"wmoId": "61437",
+"site": "Akjoujt",
+"lat": 19.728,
+"lon": -14.378,
+"elev": 122,
+"state": "IN",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNK",
+"icaoId": "GQNK",
+"iataId": "KED",
+"faaId": null,
+"wmoId": null,
+"site": "Ka\u00e9di",
+"lat": 16.156,
+"lon": -13.51,
+"elev": 18,
+"state": "GO",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNO",
+"icaoId": "GQNO",
+"iataId": "NKC",
+"faaId": null,
+"wmoId": null,
+"site": "Nouakchott/Oumtounsy Arpt",
+"lat": 18.31,
+"lon": -15.97,
+"elev": 1,
+"state": "TR",
+"country": "MR",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GQNR",
+"icaoId": "GQNR",
+"iataId": null,
+"faaId": null,
+"wmoId": "61489",
+"site": "Rosso",
+"lat": 16.5,
+"lon": -15.817,
+"elev": 4,
+"state": "SL",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQPA",
+"icaoId": "GQPA",
+"iataId": "ATR",
+"faaId": null,
+"wmoId": "61421",
+"site": "Atar Arpt",
+"lat": 20.507,
+"lon": -13.043,
+"elev": 228,
+"state": "AD",
+"country": "MR",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQPP",
+"icaoId": "GQPP",
+"iataId": "NDB",
+"faaId": null,
+"wmoId": "61415",
+"site": "Nouadhibou Arpt",
+"lat": 20.929,
+"lon": -17.031,
+"elev": 5,
+"state": "DN",
+"country": "MR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GQPZ",
+"icaoId": "GQPZ",
+"iataId": "OUZ",
+"faaId": null,
+"wmoId": null,
+"site": "Zouerat/Tazadit Arpt",
+"lat": 22.757,
+"lon": -12.484,
+"elev": 344,
+"state": "TZ",
+"country": "MR",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GSVO",
+"icaoId": "GSVO",
+"iataId": null,
+"faaId": null,
+"wmoId": "60096",
+"site": "Dakhla Arpt",
+"lat": 23.711,
+"lon": -15.931,
+"elev": 9,
+"state": "",
+"country": "EH",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GAGO",
+"icaoId": "GAGO",
+"iataId": "GAQ",
+"faaId": null,
+"wmoId": "61226",
+"site": "Gao Arpt",
+"lat": 16.247,
+"lon": -0.006,
+"elev": 262,
+"state": "GA",
+"country": "ML",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GAHB",
+"icaoId": "GAHB",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Hombori",
+"lat": 15.286,
+"lon": -1.703,
+"elev": 289,
+"state": "MP",
+"country": "ML",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GANK",
+"icaoId": "GANK",
+"iataId": "NRM",
+"faaId": null,
+"wmoId": "61233",
+"site": "Nara",
+"lat": 15.167,
+"lon": -7.283,
+"elev": 265,
+"state": "BK",
+"country": "ML",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GANR",
+"icaoId": "GANR",
+"iataId": "NIX",
+"faaId": null,
+"wmoId": "61230",
+"site": "Nioro Du Sahel Arpt",
+"lat": 15.237,
+"lon": -9.577,
+"elev": 237,
+"state": "KY",
+"country": "ML",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GATB",
+"icaoId": "GATB",
+"iataId": "TOM",
+"faaId": null,
+"wmoId": "61223",
+"site": "Tombouctou Arpt",
+"lat": 16.73,
+"lon": -3.008,
+"elev": 268,
+"state": "GA",
+"country": "ML",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNA",
+"icaoId": "GQNA",
+"iataId": "AEO",
+"faaId": null,
+"wmoId": "61499",
+"site": "Aioun El Atrous Arpt",
+"lat": 16.715,
+"lon": -9.637,
+"elev": 292,
+"state": "HG",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GQNI",
+"icaoId": "GQNI",
+"iataId": "EMN",
+"faaId": null,
+"wmoId": "61497",
+"site": "N\u00e9ma",
+"lat": 16.607,
+"lon": -7.282,
+"elev": 248,
+"state": "HC",
+"country": "MR",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAAJ",
+"icaoId": "DAAJ",
+"iataId": "DJG",
+"faaId": null,
+"wmoId": "60670",
+"site": "Djanet/Tiska Arpt",
+"lat": 24.286,
+"lon": 9.464,
+"elev": 962,
+"state": "IL",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAT",
+"icaoId": "DAAT",
+"iataId": "TMR",
+"faaId": null,
+"wmoId": null,
+"site": "Tamanrasset/Aguenar-Hadj Bei Arpt",
+"lat": 22.824,
+"lon": 5.452,
+"elev": 1372,
+"state": "TA",
+"country": "DZ",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DATM",
+"icaoId": "DATM",
+"iataId": "BMW",
+"faaId": null,
+"wmoId": null,
+"site": "Bordj Mokhtar Arpt",
+"lat": 21.375,
+"lon": 0.924,
+"elev": 398,
+"state": "AD",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DRZA",
+"icaoId": "DRZA",
+"iataId": "AJY",
+"faaId": null,
+"wmoId": "61024",
+"site": "Agadez Arpt",
+"lat": 16.964,
+"lon": 7.989,
+"elev": 506,
+"state": "AG",
+"country": "NE",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GAKL",
+"icaoId": "GAKL",
+"iataId": null,
+"faaId": null,
+"wmoId": "61214",
+"site": "Kidal",
+"lat": 18.433,
+"lon": 1.35,
+"elev": 502,
+"state": "GA",
+"country": "ML",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GAMK",
+"icaoId": "GAMK",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Menaka",
+"lat": 15.916,
+"lon": 2.398,
+"elev": 316,
+"state": "GA",
+"country": "ML",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GATS",
+"icaoId": "GATS",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Tessalit",
+"lat": 20.252,
+"lon": 0.984,
+"elev": 490,
+"state": "GA",
+"country": "ML",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DRRI",
+"icaoId": "DRRI",
+"iataId": null,
+"faaId": null,
+"wmoId": "61017",
+"site": "Bilma",
+"lat": 18.683,
+"lon": 12.917,
+"elev": 355,
+"state": "AG",
+"country": "NE",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "FTTY",
+"icaoId": "FTTY",
+"iataId": "FYT",
+"faaId": null,
+"wmoId": "64753",
+"site": "Faya-Largeau Arpt",
+"lat": 17.918,
+"lon": 19.107,
+"elev": 234,
+"state": "BD",
+"country": "TD",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HEOW",
+"icaoId": "HEOW",
+"iataId": "GSQ",
+"faaId": null,
+"wmoId": "62425",
+"site": "Oweinat Arpt",
+"lat": 22.583,
+"lon": 28.716,
+"elev": 259,
+"state": "WA",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLKF",
+"icaoId": "HLKF",
+"iataId": "AKF",
+"faaId": null,
+"wmoId": "62271",
+"site": "Kufra",
+"lat": 24.217,
+"lon": 23.3,
+"elev": 381,
+"state": "KF",
+"country": "LY",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HAAG",
+"icaoId": "HAAG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Agordat",
+"lat": 15.55,
+"lon": 37.88,
+"elev": 626,
+"state": "",
+"country": "ET",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HAMS",
+"icaoId": "HAMS",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Massawa",
+"lat": 15.62,
+"lon": 39.45,
+"elev": 10,
+"state": "",
+"country": "ET",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HATS",
+"icaoId": "HATS",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Tessenei",
+"lat": 15.11,
+"lon": 36.68,
+"elev": 615,
+"state": "",
+"country": "ET",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HEBL",
+"icaoId": "HEBL",
+"iataId": "ABS",
+"faaId": null,
+"wmoId": "62419",
+"site": "Abu Simbel Arpt",
+"lat": 22.376,
+"lon": 31.612,
+"elev": 184,
+"state": "AS",
+"country": "EG",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESN",
+"icaoId": "HESN",
+"iataId": "ASW",
+"faaId": null,
+"wmoId": "62414",
+"site": "Aswan Intl",
+"lat": 23.964,
+"lon": 32.82,
+"elev": 197,
+"state": "AS",
+"country": "EG",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HHAS",
+"icaoId": "HHAS",
+"iataId": "ASM",
+"faaId": null,
+"wmoId": "63021",
+"site": "Asmara Intl",
+"lat": 15.292,
+"lon": 38.911,
+"elev": 2356,
+"state": "MA",
+"country": "ER",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HSAT",
+"icaoId": "HSAT",
+"iataId": "ATB",
+"faaId": null,
+"wmoId": null,
+"site": "Atbara",
+"lat": 17.65,
+"lon": 33.991,
+"elev": 351,
+"state": "NR",
+"country": "SD",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HSDN",
+"icaoId": "HSDN",
+"iataId": "DOG",
+"faaId": null,
+"wmoId": "62650",
+"site": "Dongola",
+"lat": 19.151,
+"lon": 30.431,
+"elev": 235,
+"state": "NO",
+"country": "SD",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HSKA",
+"icaoId": "HSKA",
+"iataId": "KSL",
+"faaId": null,
+"wmoId": null,
+"site": "Kassala",
+"lat": 15.467,
+"lon": 36.4,
+"elev": 509,
+"state": "KA",
+"country": "SD",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HSPN",
+"icaoId": "HSPN",
+"iataId": "PZU",
+"faaId": null,
+"wmoId": null,
+"site": "Port Sudan Intl",
+"lat": 19.434,
+"lon": 37.234,
+"elev": 43,
+"state": "RS",
+"country": "SD",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HSSK",
+"icaoId": "HSSK",
+"iataId": "KRT",
+"faaId": null,
+"wmoId": "62721",
+"site": "Khartoum Intl",
+"lat": 15.589,
+"lon": 32.553,
+"elev": 380,
+"state": "KH",
+"country": "SD",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HSSP",
+"icaoId": "HSSP",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Port Sudan",
+"lat": 19.576,
+"lon": 37.216,
+"elev": 8,
+"state": "RS",
+"country": "SD",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HSSS",
+"icaoId": "HSSS",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Khartoum Intl",
+"lat": 15.589,
+"lon": 32.553,
+"elev": 387,
+"state": "KH",
+"country": "SD",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HSSW",
+"icaoId": "HSSW",
+"iataId": "WHF",
+"faaId": null,
+"wmoId": null,
+"site": "Wadi Halfa",
+"lat": 21.797,
+"lon": 31.362,
+"elev": 181,
+"state": "NO",
+"country": "SD",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OEJD",
+"icaoId": "OEJD",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Jeddah",
+"lat": 21.5,
+"lon": 39.2,
+"elev": 14,
+"state": "ML",
+"country": "SA",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEJN",
+"icaoId": "OEJN",
+"iataId": "JED",
+"faaId": null,
+"wmoId": "41024",
+"site": "Jeddah/King Abdulaziz Intl",
+"lat": 21.685,
+"lon": 39.166,
+"elev": 8,
+"state": "ML",
+"country": "SA",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEMA",
+"icaoId": "OEMA",
+"iataId": "MED",
+"faaId": null,
+"wmoId": "40430",
+"site": "Madinah/Abdulaziz Intl",
+"lat": 24.553,
+"lon": 39.705,
+"elev": 639,
+"state": "MD",
+"country": "SA",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEMK",
+"icaoId": "OEMK",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Makkah/Mecca Arpt",
+"lat": 21.439,
+"lon": 39.995,
+"elev": 367,
+"state": "ML",
+"country": "SA",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OEYN",
+"icaoId": "OEYN",
+"iataId": "YNB",
+"faaId": null,
+"wmoId": "40439",
+"site": "Yenbo/Moshin Bin Arpt",
+"lat": 24.144,
+"lon": 38.063,
+"elev": 20,
+"state": "MD",
+"country": "SA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCFV",
+"icaoId": "GCFV",
+"iataId": "FUE",
+"faaId": null,
+"wmoId": "60035",
+"site": "Fuerteventura Arpt",
+"lat": 28.445,
+"lon": -13.863,
+"elev": 11,
+"state": "CR",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCGM",
+"icaoId": "GCGM",
+"iataId": "GMZ",
+"faaId": null,
+"wmoId": null,
+"site": "Alajero/La Gomera Arpt",
+"lat": 28.032,
+"lon": -17.211,
+"elev": 217,
+"state": "CR",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCHI",
+"icaoId": "GCHI",
+"iataId": "VDE",
+"faaId": null,
+"wmoId": "60001",
+"site": "Valverde/Hierro Arpt",
+"lat": 27.819,
+"lon": -17.889,
+"elev": 21,
+"state": "CR",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCLA",
+"icaoId": "GCLA",
+"iataId": "SPC",
+"faaId": null,
+"wmoId": "60005",
+"site": "La Palma Arpt",
+"lat": 28.633,
+"lon": -17.755,
+"elev": 20,
+"state": "CR",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCLP",
+"icaoId": "GCLP",
+"iataId": "LPA",
+"faaId": null,
+"wmoId": "60030",
+"site": "Grand Canaria Arpt",
+"lat": 27.923,
+"lon": -15.389,
+"elev": 16,
+"state": "CR",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCRR",
+"icaoId": "GCRR",
+"iataId": "ACE",
+"faaId": null,
+"wmoId": "60040",
+"site": "Arrecife/Lanzarote Arpt",
+"lat": 28.952,
+"lon": -13.6,
+"elev": 9,
+"state": "CR",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCTS",
+"icaoId": "GCTS",
+"iataId": "TFS",
+"faaId": null,
+"wmoId": "60025",
+"site": "Tenerife/South Arpt",
+"lat": 28.047,
+"lon": -16.561,
+"elev": 59,
+"state": "CR",
+"country": "ES",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GCXO",
+"icaoId": "GCXO",
+"iataId": "TFN",
+"faaId": null,
+"wmoId": "60015",
+"site": "Tenerife/North Arpt",
+"lat": 28.483,
+"lon": -16.342,
+"elev": 623,
+"state": "CR",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMAG",
+"icaoId": "GMAG",
+"iataId": null,
+"faaId": null,
+"wmoId": "60280",
+"site": "Guelmim Arpt",
+"lat": 29.031,
+"lon": -10.051,
+"elev": 333,
+"state": "GU",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMAT",
+"icaoId": "GMAT",
+"iataId": "TTA",
+"faaId": null,
+"wmoId": "60285",
+"site": "Tan-Tan/Blanche Arpt",
+"lat": 28.446,
+"lon": -11.158,
+"elev": 192,
+"state": "GU",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMF",
+"icaoId": "GMMF",
+"iataId": "SII",
+"faaId": null,
+"wmoId": "60060",
+"site": "Sidi Ifni",
+"lat": 29.369,
+"lon": -10.18,
+"elev": 66,
+"state": "SM",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMML",
+"icaoId": "GMML",
+"iataId": "EUN",
+"faaId": null,
+"wmoId": "60033",
+"site": "La\u00e2youne/Hassan Arpt",
+"lat": 27.141,
+"lon": -13.23,
+"elev": 63,
+"state": "LA",
+"country": "EH",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GQPT",
+"icaoId": "GQPT",
+"iataId": null,
+"faaId": null,
+"wmoId": "61401",
+"site": "Bir Moghrein",
+"lat": 25.233,
+"lon": -11.588,
+"elev": 365,
+"state": "TZ",
+"country": "MR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LPMA",
+"icaoId": "LPMA",
+"iataId": "FNC",
+"faaId": null,
+"wmoId": null,
+"site": "Madeira Arpt",
+"lat": 32.698,
+"lon": -16.774,
+"elev": 54,
+"state": "MD",
+"country": "PT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPPS",
+"icaoId": "LPPS",
+"iataId": "PXO",
+"faaId": null,
+"wmoId": "08524",
+"site": "Porto Santo Isl Arpt",
+"lat": 33.073,
+"lon": -16.35,
+"elev": 89,
+"state": "MD",
+"country": "PT",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAY",
+"icaoId": "DAAY",
+"iataId": "MZW",
+"faaId": null,
+"wmoId": "60549",
+"site": "Mecheria/Bouamama Arpt",
+"lat": 33.532,
+"lon": -0.248,
+"elev": 1116,
+"state": "SB",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOF",
+"icaoId": "DAOF",
+"iataId": "TIN",
+"faaId": null,
+"wmoId": "60656",
+"site": "Tindouf Arpt",
+"lat": 27.7,
+"lon": -8.167,
+"elev": 441,
+"state": "TI",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOR",
+"icaoId": "DAOR",
+"iataId": "CBH",
+"faaId": null,
+"wmoId": "60571",
+"site": "B\u00e9cha/Ali Lolfi Arpt",
+"lat": 31.65,
+"lon": -2.261,
+"elev": 809,
+"state": "BE",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUA",
+"icaoId": "DAUA",
+"iataId": "AZR",
+"faaId": null,
+"wmoId": "60620",
+"site": "Adrar/Belkebir Arpt",
+"lat": 27.839,
+"lon": -0.186,
+"elev": 278,
+"state": "AD",
+"country": "DZ",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMAA",
+"icaoId": "GMAA",
+"iataId": null,
+"faaId": null,
+"wmoId": "60250",
+"site": "Agadir",
+"lat": 30.383,
+"lon": -9.567,
+"elev": 22,
+"state": "SM",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMAD",
+"icaoId": "GMAD",
+"iataId": "AGA",
+"faaId": null,
+"wmoId": "60252",
+"site": "Agadir/Al Massira Arpt",
+"lat": 30.325,
+"lon": -9.413,
+"elev": 66,
+"state": "SM",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMAZ",
+"icaoId": "GMAZ",
+"iataId": "OZG",
+"faaId": null,
+"wmoId": "60275",
+"site": "Zagora Arpt",
+"lat": 30.266,
+"lon": -5.854,
+"elev": 729,
+"state": "SO",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMFB",
+"icaoId": "GMFB",
+"iataId": "UAR",
+"faaId": null,
+"wmoId": "60200",
+"site": "Bouarfa Intl",
+"lat": 32.514,
+"lon": -1.978,
+"elev": 1106,
+"state": "FI",
+"country": "MA",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMFF",
+"icaoId": "GMFF",
+"iataId": "FEZ",
+"faaId": null,
+"wmoId": "60141",
+"site": "Fes/Sa\u00efss Arpt",
+"lat": 33.929,
+"lon": -4.976,
+"elev": 575,
+"state": "FE",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMFI",
+"icaoId": "GMFI",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Ifrane",
+"lat": 33.505,
+"lon": -5.153,
+"elev": 1658,
+"state": "MK",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMFK",
+"icaoId": "GMFK",
+"iataId": "ERH",
+"faaId": null,
+"wmoId": "60210",
+"site": "Errachidia/Cherif Arpt",
+"lat": 31.946,
+"lon": -4.399,
+"elev": 1033,
+"state": "MK",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMFM",
+"icaoId": "GMFM",
+"iataId": "MEK",
+"faaId": null,
+"wmoId": "60150",
+"site": "Meknes/Bassatine Arpt",
+"lat": 33.875,
+"lon": -5.52,
+"elev": 569,
+"state": "MK",
+"country": "MA",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMFN",
+"icaoId": "GMFN",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Nador Arpt",
+"lat": 34.991,
+"lon": -3.026,
+"elev": 177,
+"state": "TA",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMFO",
+"icaoId": "GMFO",
+"iataId": "OUD",
+"faaId": null,
+"wmoId": "60115",
+"site": "Oujda/Angads Arpt",
+"lat": 34.787,
+"lon": -1.924,
+"elev": 452,
+"state": "RA",
+"country": "MA",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMFZ",
+"icaoId": "GMFZ",
+"iataId": null,
+"faaId": null,
+"wmoId": "60127",
+"site": "Taza Arpt",
+"lat": 34.232,
+"lon": -3.947,
+"elev": 561,
+"state": "ER",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMB",
+"icaoId": "GMMB",
+"iataId": "GMD",
+"faaId": null,
+"wmoId": null,
+"site": "Ben Slimane Arpt",
+"lat": 33.655,
+"lon": -7.221,
+"elev": 191,
+"state": "SO",
+"country": "MA",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMC",
+"icaoId": "GMMC",
+"iataId": "CAS",
+"faaId": null,
+"wmoId": "60155",
+"site": "Casablanca/Anfa Arpt",
+"lat": 33.557,
+"lon": -7.66,
+"elev": 62,
+"state": "CB",
+"country": "MA",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMD",
+"icaoId": "GMMD",
+"iataId": "BEM",
+"faaId": null,
+"wmoId": "60191",
+"site": "Beni-Mellal Arpt",
+"lat": 32.403,
+"lon": -6.316,
+"elev": 515,
+"state": "DA",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMME",
+"icaoId": "GMME",
+"iataId": "RBA",
+"faaId": null,
+"wmoId": "60135",
+"site": "Rabat-Sal\u00e9 Arpt",
+"lat": 34.051,
+"lon": -6.752,
+"elev": 84,
+"state": "RS",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMMI",
+"icaoId": "GMMI",
+"iataId": "ESU",
+"faaId": null,
+"wmoId": "60220",
+"site": "Essaouira/Mogador Arpt",
+"lat": 31.406,
+"lon": -9.687,
+"elev": 102,
+"state": "MR",
+"country": "MA",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMMN",
+"icaoId": "GMMN",
+"iataId": "CMN",
+"faaId": null,
+"wmoId": "60156",
+"site": "Casablanca Intl",
+"lat": 33.367,
+"lon": -7.59,
+"elev": 196,
+"state": "ME",
+"country": "MA",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMMP",
+"icaoId": "GMMP",
+"iataId": null,
+"faaId": null,
+"wmoId": "60120",
+"site": "Kenitra",
+"lat": 34.3,
+"lon": -6.595,
+"elev": 4,
+"state": "RS",
+"country": "MA",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMS",
+"icaoId": "GMMS",
+"iataId": null,
+"faaId": null,
+"wmoId": "60185",
+"site": "Safi",
+"lat": 32.283,
+"lon": -9.233,
+"elev": 52,
+"state": "ME",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMW",
+"icaoId": "GMMW",
+"iataId": "NDR",
+"faaId": null,
+"wmoId": "60340",
+"site": "Nador/Aroui Intl",
+"lat": 34.993,
+"lon": -3.025,
+"elev": 174,
+"state": "TA",
+"country": "MA",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMMX",
+"icaoId": "GMMX",
+"iataId": "RAK",
+"faaId": null,
+"wmoId": "60230",
+"site": "Marrakesh/Menara Intl",
+"lat": 31.607,
+"lon": -8.036,
+"elev": 465,
+"state": "ME",
+"country": "MA",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMMY",
+"icaoId": "GMMY",
+"iataId": "NNA",
+"faaId": null,
+"wmoId": null,
+"site": "Kenitra",
+"lat": 34.299,
+"lon": -6.596,
+"elev": 6,
+"state": "OR",
+"country": "MA",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "GMMZ",
+"icaoId": "GMMZ",
+"iataId": "OZZ",
+"faaId": null,
+"wmoId": "60265",
+"site": "Ouarzazate Arpt",
+"lat": 30.939,
+"lon": -6.909,
+"elev": 1139,
+"state": "SO",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAF",
+"icaoId": "DAAF",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Aoulef",
+"lat": 26.967,
+"lon": 1.083,
+"elev": 285,
+"state": "TA",
+"country": "DZ",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAAP",
+"icaoId": "DAAP",
+"iataId": "VVZ",
+"faaId": null,
+"wmoId": "60640",
+"site": "Illizi/Takhamalt Arpt",
+"lat": 26.724,
+"lon": 8.622,
+"elev": 542,
+"state": "IL",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAEF",
+"icaoId": "DAEF",
+"iataId": null,
+"faaId": null,
+"wmoId": "60638",
+"site": "Tinfouye Arpt",
+"lat": 28.437,
+"lon": 7.549,
+"elev": 475,
+"state": "IL",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAEN",
+"icaoId": "DAEN",
+"iataId": null,
+"faaId": null,
+"wmoId": "60603",
+"site": "Rhourd Nouss Arpt",
+"lat": 29.731,
+"lon": 6.712,
+"elev": 252,
+"state": "OU",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAFH",
+"icaoId": "DAFH",
+"iataId": "HRM",
+"faaId": null,
+"wmoId": null,
+"site": "Tilrempt/Mei Arpt",
+"lat": 32.93,
+"lon": 3.312,
+"elev": 774,
+"state": "LA",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAFI",
+"icaoId": "DAFI",
+"iataId": null,
+"faaId": null,
+"wmoId": "60535",
+"site": "Djelfa",
+"lat": 34.683,
+"lon": 3.25,
+"elev": 1131,
+"state": "DJ",
+"country": "DZ",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAMH",
+"icaoId": "DAMH",
+"iataId": null,
+"faaId": null,
+"wmoId": "60601",
+"site": "Hamra Arpt",
+"lat": 29.226,
+"lon": 6.494,
+"elev": 294,
+"state": "",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAOY",
+"icaoId": "DAOY",
+"iataId": "EBH",
+"faaId": null,
+"wmoId": "60550",
+"site": "El Bayadh Arpt",
+"lat": 33.721,
+"lon": 1.091,
+"elev": 1340,
+"state": "EL",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUB",
+"icaoId": "DAUB",
+"iataId": "BSK",
+"faaId": null,
+"wmoId": "60525",
+"site": "Biskra Arpt",
+"lat": 34.793,
+"lon": 5.738,
+"elev": 75,
+"state": "BI",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUE",
+"icaoId": "DAUE",
+"iataId": "ELG",
+"faaId": null,
+"wmoId": "60590",
+"site": "El Golea Intl",
+"lat": 30.571,
+"lon": 2.86,
+"elev": 396,
+"state": "GH",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUG",
+"icaoId": "DAUG",
+"iataId": "GHA",
+"faaId": null,
+"wmoId": "60566",
+"site": "Gharda\u00efa/Noum\u00e9rat Arpt",
+"lat": 32.384,
+"lon": 3.794,
+"elev": 444,
+"state": "GH",
+"country": "DZ",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUH",
+"icaoId": "DAUH",
+"iataId": "HME",
+"faaId": null,
+"wmoId": "60581",
+"site": "Hassi-Messaoud/Belkacem Arpt",
+"lat": 31.673,
+"lon": 6.14,
+"elev": 141,
+"state": "OU",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUI",
+"icaoId": "DAUI",
+"iataId": "INZ",
+"faaId": null,
+"wmoId": null,
+"site": "In Salah Arpt",
+"lat": 27.251,
+"lon": 2.512,
+"elev": 271,
+"state": "TA",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUK",
+"icaoId": "DAUK",
+"iataId": "TGR",
+"faaId": null,
+"wmoId": "60555",
+"site": "Touggourt/Madhi Arpt",
+"lat": 33.068,
+"lon": 6.089,
+"elev": 83,
+"state": "OU",
+"country": "DZ",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUL",
+"icaoId": "DAUL",
+"iataId": "LOO",
+"faaId": null,
+"wmoId": "60545",
+"site": "Laghouat/L'Mekrareg Arpt",
+"lat": 33.764,
+"lon": 2.928,
+"elev": 755,
+"state": "LA",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUO",
+"icaoId": "DAUO",
+"iataId": "ELU",
+"faaId": null,
+"wmoId": "60559",
+"site": "El Oued/Guemar Arpt",
+"lat": 33.513,
+"lon": 6.782,
+"elev": 55,
+"state": "EO",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUT",
+"icaoId": "DAUT",
+"iataId": "TMX",
+"faaId": null,
+"wmoId": "60607",
+"site": "Timimoun Arpt",
+"lat": 29.237,
+"lon": 0.276,
+"elev": 307,
+"state": "AD",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUU",
+"icaoId": "DAUU",
+"iataId": "OGX",
+"faaId": null,
+"wmoId": "60580",
+"site": "Ouargla Arpt",
+"lat": 31.917,
+"lon": 5.413,
+"elev": 147,
+"state": "OU",
+"country": "DZ",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAUZ",
+"icaoId": "DAUZ",
+"iataId": "IAM",
+"faaId": null,
+"wmoId": "60611",
+"site": "In Am\u00e9nas Arpt",
+"lat": 28.052,
+"lon": 9.643,
+"elev": 567,
+"state": "IL",
+"country": "DZ",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTF",
+"icaoId": "DTTF",
+"iataId": "GAF",
+"faaId": null,
+"wmoId": "60745",
+"site": "Gafsa/Ksar Intl",
+"lat": 34.422,
+"lon": 8.822,
+"elev": 314,
+"state": "GF",
+"country": "TN",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTG",
+"icaoId": "DTTG",
+"iataId": "GAE",
+"faaId": null,
+"wmoId": "60765",
+"site": "Gabes/Matmata Intl",
+"lat": 33.733,
+"lon": 9.918,
+"elev": 120,
+"state": "GB",
+"country": "TN",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTR",
+"icaoId": "DTTR",
+"iataId": "EBM",
+"faaId": null,
+"wmoId": "60780",
+"site": "El Borma Arpt",
+"lat": 31.703,
+"lon": 9.257,
+"elev": 253,
+"state": "TA",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTZ",
+"icaoId": "DTTZ",
+"iataId": "TOE",
+"faaId": null,
+"wmoId": "60760",
+"site": "Tozeur/Nefta Arpt",
+"lat": 33.94,
+"lon": 8.111,
+"elev": 87,
+"state": "TI",
+"country": "TN",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLTD",
+"icaoId": "HLTD",
+"iataId": "LTD",
+"faaId": null,
+"wmoId": "62103",
+"site": "Ghadames",
+"lat": 30.132,
+"lon": 9.513,
+"elev": 330,
+"state": "NL",
+"country": "LY",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTD",
+"icaoId": "DTTD",
+"iataId": null,
+"faaId": null,
+"wmoId": "60775",
+"site": "Remada Arpt",
+"lat": 32.312,
+"lon": 10.386,
+"elev": 306,
+"state": "TA",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTJ",
+"icaoId": "DTTJ",
+"iataId": "DJE",
+"faaId": null,
+"wmoId": "60769",
+"site": "Djerba/Zarzis Intl",
+"lat": 33.875,
+"lon": 10.775,
+"elev": 3,
+"state": "ME",
+"country": "TN",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTX",
+"icaoId": "DTTX",
+"iataId": "SFA",
+"faaId": null,
+"wmoId": "60750",
+"site": "Sfax/Thyna Arpt",
+"lat": 34.718,
+"lon": 10.691,
+"elev": 17,
+"state": "SF",
+"country": "TN",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLGT",
+"icaoId": "HLGT",
+"iataId": "GHT",
+"faaId": null,
+"wmoId": "62212",
+"site": "Ghat",
+"lat": 25.146,
+"lon": 10.143,
+"elev": 701,
+"state": "GT",
+"country": "LY",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLLM",
+"icaoId": "HLLM",
+"iataId": "MJI",
+"faaId": null,
+"wmoId": null,
+"site": "Tripoli/Mitiga Intl",
+"lat": 32.894,
+"lon": 13.276,
+"elev": 8,
+"state": "TB",
+"country": "LY",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLLS",
+"icaoId": "HLLS",
+"iataId": "SEB",
+"faaId": null,
+"wmoId": "62124",
+"site": "Sebha Arpt",
+"lat": 26.994,
+"lon": 14.464,
+"elev": 431,
+"state": "SB",
+"country": "LY",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HLLT",
+"icaoId": "HLLT",
+"iataId": "TIP",
+"faaId": null,
+"wmoId": "62010",
+"site": "Tripoli Intl",
+"lat": 32.663,
+"lon": 13.159,
+"elev": 79,
+"state": "TB",
+"country": "LY",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEAL",
+"icaoId": "HEAL",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "El Alamein Intl",
+"lat": 30.924,
+"lon": 28.461,
+"elev": 44,
+"state": "MT",
+"country": "EG",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEAX",
+"icaoId": "HEAX",
+"iataId": "HBE",
+"faaId": null,
+"wmoId": null,
+"site": "Alexandria Intl",
+"lat": 30.918,
+"lon": 29.696,
+"elev": 41,
+"state": "ID",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEMM",
+"icaoId": "HEMM",
+"iataId": "MUH",
+"faaId": null,
+"wmoId": "62306",
+"site": "Mersa Matruh Intl",
+"lat": 31.325,
+"lon": 27.222,
+"elev": 26,
+"state": "MA",
+"country": "EG",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESW",
+"icaoId": "HESW",
+"iataId": null,
+"faaId": null,
+"wmoId": "62416",
+"site": "Siwa Oasis Arpt",
+"lat": 29.346,
+"lon": 25.507,
+"elev": 101,
+"state": "",
+"country": "EG",
+"priority": 2,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HLLB",
+"icaoId": "HLLB",
+"iataId": "BEN",
+"faaId": null,
+"wmoId": "62053",
+"site": "Benghazi/Benina Intl",
+"lat": 32.097,
+"lon": 20.27,
+"elev": 122,
+"state": "BA",
+"country": "LY",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEAR",
+"icaoId": "HEAR",
+"iataId": "AAC",
+"faaId": null,
+"wmoId": "62337",
+"site": "El Arish Intl",
+"lat": 31.041,
+"lon": 33.817,
+"elev": 36,
+"state": "SH",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEAT",
+"icaoId": "HEAT",
+"iataId": "ATZ",
+"faaId": null,
+"wmoId": "62393",
+"site": "Assiut Arpt",
+"lat": 27.049,
+"lon": 31.014,
+"elev": 229,
+"state": "WJ",
+"country": "EG",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HECA",
+"icaoId": "HECA",
+"iataId": "CAI",
+"faaId": null,
+"wmoId": "62366",
+"site": "Cairo Intl",
+"lat": 30.133,
+"lon": 31.405,
+"elev": 142,
+"state": "QH",
+"country": "EG",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HECP",
+"icaoId": "HECP",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Cairo/Capital Intl",
+"lat": 30.072,
+"lon": 31.838,
+"elev": 240,
+"state": "QH",
+"country": "EG",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HEGN",
+"icaoId": "HEGN",
+"iataId": "HRG",
+"faaId": null,
+"wmoId": "62463",
+"site": "Hurguada Arpt",
+"lat": 27.179,
+"lon": 33.801,
+"elev": 14,
+"state": "BA",
+"country": "EG",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEIS",
+"icaoId": "HEIS",
+"iataId": null,
+"faaId": null,
+"wmoId": "62440",
+"site": "Ismailia Arpt",
+"lat": 30.592,
+"lon": 32.247,
+"elev": 14,
+"state": "IM",
+"country": "EG",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HELX",
+"icaoId": "HELX",
+"iataId": "LXR",
+"faaId": null,
+"wmoId": "62405",
+"site": "Luxor Intl",
+"lat": 25.671,
+"lon": 32.706,
+"elev": 86,
+"state": "QI",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEMA",
+"icaoId": "HEMA",
+"iataId": "RMF",
+"faaId": null,
+"wmoId": null,
+"site": "Marsa Alam Intl",
+"lat": 25.557,
+"lon": 34.584,
+"elev": 77,
+"state": "BA",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HEOC",
+"icaoId": "HEOC",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "October Arpt",
+"lat": 29.812,
+"lon": 30.823,
+"elev": 246,
+"state": "GZ",
+"country": "EG",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "HEPS",
+"icaoId": "HEPS",
+"iataId": "PSD",
+"faaId": null,
+"wmoId": null,
+"site": "Port Said Arpt",
+"lat": 31.279,
+"lon": 32.238,
+"elev": 2,
+"state": "BS",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESC",
+"icaoId": "HESC",
+"iataId": "SKV",
+"faaId": null,
+"wmoId": null,
+"site": "St Catherine Intl",
+"lat": 28.685,
+"lon": 34.062,
+"elev": 1332,
+"state": "JN",
+"country": "EG",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESG",
+"icaoId": "HESG",
+"iataId": null,
+"faaId": null,
+"wmoId": "62398",
+"site": "Sohag Intl",
+"lat": 26.343,
+"lon": 31.743,
+"elev": 70,
+"state": "WA",
+"country": "EG",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESH",
+"icaoId": "HESH",
+"iataId": "SSH",
+"faaId": null,
+"wmoId": null,
+"site": "Sharm El Sheikh Intl",
+"lat": 27.977,
+"lon": 34.395,
+"elev": 50,
+"state": "JN",
+"country": "EG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HESX",
+"icaoId": "HESX",
+"iataId": "SPX",
+"faaId": null,
+"wmoId": null,
+"site": "Cairo/Sphinx Intl",
+"lat": 30.108,
+"lon": 30.896,
+"elev": 168,
+"state": "GZ",
+"country": "EG",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HETB",
+"icaoId": "HETB",
+"iataId": "TCP",
+"faaId": null,
+"wmoId": null,
+"site": "Taba Intl",
+"lat": 29.588,
+"lon": 34.778,
+"elev": 738,
+"state": "SH",
+"country": "EG",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "HETR",
+"icaoId": "HETR",
+"iataId": "ELT",
+"faaId": null,
+"wmoId": "62459",
+"site": "El Tor/Sanai Arpt",
+"lat": 28.209,
+"lon": 33.646,
+"elev": 35,
+"state": "JN",
+"country": "EG",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LCLK",
+"icaoId": "LCLK",
+"iataId": "LCA",
+"faaId": null,
+"wmoId": "17609",
+"site": "Larnaca Intl",
+"lat": 34.874,
+"lon": 33.617,
+"elev": 2,
+"state": "LA",
+"country": "CY",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LCPH",
+"icaoId": "LCPH",
+"iataId": "PFO",
+"faaId": null,
+"wmoId": "17600",
+"site": "Paphos Intl",
+"lat": 34.715,
+"lon": 32.479,
+"elev": 8,
+"state": "PA",
+"country": "CY",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LCRA",
+"icaoId": "LCRA",
+"iataId": "AKT",
+"faaId": null,
+"wmoId": "17601",
+"site": "Akrotiri Arpt",
+"lat": 34.59,
+"lon": 32.988,
+"elev": 23,
+"state": "LE",
+"country": "CY",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LLBG",
+"icaoId": "LLBG",
+"iataId": "TLV",
+"faaId": null,
+"wmoId": "40180",
+"site": "Tel Aviv/Ben Gurion Arpt",
+"lat": 32.011,
+"lon": 34.887,
+"elev": 35,
+"state": "C",
+"country": "IL",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LLBS",
+"icaoId": "LLBS",
+"iataId": "BEV",
+"faaId": null,
+"wmoId": null,
+"site": "Beer-Sheva Arpt",
+"lat": 31.287,
+"lon": 34.723,
+"elev": 193,
+"state": "S",
+"country": "IL",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LLER",
+"icaoId": "LLER",
+"iataId": "ETM",
+"faaId": null,
+"wmoId": null,
+"site": "Eilat/Ramone Arpt",
+"lat": 29.722,
+"lon": 35.012,
+"elev": 88,
+"state": "S",
+"country": "IL",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LLHA",
+"icaoId": "LLHA",
+"iataId": "HFA",
+"faaId": null,
+"wmoId": "40155",
+"site": "Haifa Intl",
+"lat": 32.809,
+"lon": 35.043,
+"elev": 3,
+"state": "HA",
+"country": "IL",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LLIB",
+"icaoId": "LLIB",
+"iataId": "RPN",
+"faaId": null,
+"wmoId": null,
+"site": "Rosh Pina Arpt",
+"lat": 32.981,
+"lon": 35.572,
+"elev": 268,
+"state": "H",
+"country": "IL",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LLOV",
+"icaoId": "LLOV",
+"iataId": "VDA",
+"faaId": null,
+"wmoId": null,
+"site": "Ovda Arpt",
+"lat": 29.94,
+"lon": 34.941,
+"elev": 442,
+"state": "S",
+"country": "IL",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEAO",
+"icaoId": "OEAO",
+"iataId": "ULH",
+"faaId": null,
+"wmoId": "40401",
+"site": "Alula Intl",
+"lat": 26.483,
+"lon": 38.117,
+"elev": 615,
+"state": "AM",
+"country": "SA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEGT",
+"icaoId": "OEGT",
+"iataId": "URY",
+"faaId": null,
+"wmoId": "40360",
+"site": "Guriat Arpt",
+"lat": 31.412,
+"lon": 37.279,
+"elev": 512,
+"state": "TB",
+"country": "SA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OENN",
+"icaoId": "OENN",
+"iataId": "NUM",
+"faaId": null,
+"wmoId": null,
+"site": "Neom Bay Arpt",
+"lat": 27.924261,
+"lon": 35.29358,
+"elev": 9,
+"state": "07",
+"country": "SA",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OETB",
+"icaoId": "OETB",
+"iataId": "TUU",
+"faaId": null,
+"wmoId": "40375",
+"site": "Tabuk Arpt",
+"lat": 28.366,
+"lon": 36.619,
+"elev": 770,
+"state": "TB",
+"country": "SA",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OETR",
+"icaoId": "OETR",
+"iataId": "TUI",
+"faaId": null,
+"wmoId": "40356",
+"site": "Turaif Arpt",
+"lat": 31.693,
+"lon": 38.731,
+"elev": 854,
+"state": "HS",
+"country": "SA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OEWJ",
+"icaoId": "OEWJ",
+"iataId": "EJH",
+"faaId": null,
+"wmoId": "40400",
+"site": "Al Wejh Arpt",
+"lat": 26.199,
+"lon": 36.476,
+"elev": 8,
+"state": "TB",
+"country": "SA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OJAI",
+"icaoId": "OJAI",
+"iataId": "AMM",
+"faaId": null,
+"wmoId": "40272",
+"site": "Amman/Alia Intl",
+"lat": 31.723,
+"lon": 35.993,
+"elev": 723,
+"state": "AM",
+"country": "JO",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OJAM",
+"icaoId": "OJAM",
+"iataId": "ADJ",
+"faaId": null,
+"wmoId": "40270",
+"site": "Amman Arpt",
+"lat": 31.973,
+"lon": 35.992,
+"elev": 765,
+"state": "AM",
+"country": "JO",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OJAQ",
+"icaoId": "OJAQ",
+"iataId": "AQJ",
+"faaId": null,
+"wmoId": "40340",
+"site": "Aqaba/Hussein Intl",
+"lat": 29.612,
+"lon": 35.018,
+"elev": 45,
+"state": "MN",
+"country": "JO",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OJBD",
+"icaoId": "OJBD",
+"iataId": null,
+"faaId": null,
+"wmoId": "40255",
+"site": "Irbid",
+"lat": 32.55,
+"lon": 35.85,
+"elev": 570,
+"state": "IR",
+"country": "JO",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OJHF",
+"icaoId": "OJHF",
+"iataId": null,
+"faaId": null,
+"wmoId": "40260",
+"site": "H-Safawi/Hassan",
+"lat": 32.161,
+"lon": 37.149,
+"elev": 673,
+"state": "MF",
+"country": "JO",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OJHR",
+"icaoId": "OJHR",
+"iataId": null,
+"faaId": null,
+"wmoId": "40250",
+"site": "Ruwaished",
+"lat": 32.5,
+"lon": 38.2,
+"elev": 691,
+"state": "MF",
+"country": "JO",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OJMF",
+"icaoId": "OJMF",
+"iataId": "OMF",
+"faaId": null,
+"wmoId": "40265",
+"site": "Mafraq",
+"lat": 32.356,
+"lon": 36.259,
+"elev": 676,
+"state": "MF",
+"country": "JO",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OJMN",
+"icaoId": "OJMN",
+"iataId": "MPQ",
+"faaId": null,
+"wmoId": "40310",
+"site": "Malan",
+"lat": 30.196,
+"lon": 35.729,
+"elev": 1120,
+"state": "MN",
+"country": "JO",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "OLBA",
+"icaoId": "OLBA",
+"iataId": "BEY",
+"faaId": null,
+"wmoId": "40100",
+"site": "Beirut Intl",
+"lat": 33.82,
+"lon": 35.491,
+"elev": 29,
+"state": "JL",
+"country": "LB",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OSDI",
+"icaoId": "OSDI",
+"iataId": "DAM",
+"faaId": null,
+"wmoId": "40080",
+"site": "Damascus Intl",
+"lat": 33.411,
+"lon": 36.516,
+"elev": 614,
+"state": "DI",
+"country": "SY",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OSPR",
+"icaoId": "OSPR",
+"iataId": "PMS",
+"faaId": null,
+"wmoId": null,
+"site": "Palmyra",
+"lat": 34.557,
+"lon": 38.309,
+"elev": 402,
+"state": "HI",
+"country": "SY",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAOL",
+"icaoId": "DAOL",
+"iataId": "TAF",
+"faaId": null,
+"wmoId": null,
+"site": "Oran/Benbella Arpt",
+"lat": 35.542,
+"lon": -0.532,
+"elev": 103,
+"state": "OR",
+"country": "DZ",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DAON",
+"icaoId": "DAON",
+"iataId": "TLM",
+"faaId": null,
+"wmoId": "60531",
+"site": "Tlemcen/Zenata Arpt",
+"lat": 35.013,
+"lon": -1.457,
+"elev": 245,
+"state": "TL",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOO",
+"icaoId": "DAOO",
+"iataId": "ORN",
+"faaId": null,
+"wmoId": "60490",
+"site": "Oran/Es-S\u00e9nia Arpt",
+"lat": 35.623,
+"lon": -0.624,
+"elev": 87,
+"state": "OR",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "EQYR",
+"icaoId": "EQYR",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Rota ",
+"lat": 36.647,
+"lon": -6.347,
+"elev": 26,
+"state": "",
+"country": "ES",
+"priority": 8,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GECE",
+"icaoId": "GECE",
+"iataId": null,
+"faaId": null,
+"wmoId": "60320",
+"site": "Ceuta Heliport",
+"lat": 35.893,
+"lon": -5.306,
+"elev": 2,
+"state": "CU",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GEML",
+"icaoId": "GEML",
+"iataId": "MLN",
+"faaId": null,
+"wmoId": "60338",
+"site": "Melilla Arpt",
+"lat": 35.278,
+"lon": -2.956,
+"elev": 48,
+"state": "ML",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMTA",
+"icaoId": "GMTA",
+"iataId": "AHU",
+"faaId": null,
+"wmoId": "60107",
+"site": "Al Hoceima/Idrissi Arpt",
+"lat": 35.177,
+"lon": -3.84,
+"elev": 14,
+"state": "TA",
+"country": "MA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMTN",
+"icaoId": "GMTN",
+"iataId": null,
+"faaId": null,
+"wmoId": "60318",
+"site": "Tetouan/Sania Ramel Arpt",
+"lat": 35.594,
+"lon": -5.32,
+"elev": 10,
+"state": "TA",
+"country": "MA",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "GMTT",
+"icaoId": "GMTT",
+"iataId": "TNG",
+"faaId": null,
+"wmoId": "60101",
+"site": "Tangier/Batouta Arpt",
+"lat": 35.727,
+"lon": -5.917,
+"elev": 19,
+"state": "TA",
+"country": "MA",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAB",
+"icaoId": "LEAB",
+"iataId": "ABC",
+"faaId": null,
+"wmoId": "08280",
+"site": "Albacete Arpt",
+"lat": 38.952,
+"lon": -1.863,
+"elev": 704,
+"state": "CM",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAG",
+"icaoId": "LEAG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Algeciras",
+"lat": 36.129,
+"lon": -5.441,
+"elev": 4,
+"state": "AN",
+"country": "ES",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAL",
+"icaoId": "LEAL",
+"iataId": "ALC",
+"faaId": null,
+"wmoId": "08360",
+"site": "Alicante Arpt",
+"lat": 38.282,
+"lon": -0.558,
+"elev": 26,
+"state": "VC",
+"country": "ES",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAM",
+"icaoId": "LEAM",
+"iataId": "LEI",
+"faaId": null,
+"wmoId": "08487",
+"site": "Almer\u00eda Arpt",
+"lat": 36.846,
+"lon": -2.357,
+"elev": 16,
+"state": "AN",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAO",
+"icaoId": "LEAO",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Ciudad Real",
+"lat": 38.953,
+"lon": -3.741,
+"elev": 621,
+"state": "CM",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEAS",
+"icaoId": "LEAS",
+"iataId": "OVD",
+"faaId": null,
+"wmoId": "08011",
+"site": "Aviles/Asturias Arpt",
+"lat": 43.567,
+"lon": -6.044,
+"elev": 120,
+"state": "O",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEBA",
+"icaoId": "LEBA",
+"iataId": "ODB",
+"faaId": null,
+"wmoId": "08410",
+"site": "C\u00f3rdoba Arpt",
+"lat": 37.842,
+"lon": -4.849,
+"elev": 88,
+"state": "AN",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEBB",
+"icaoId": "LEBB",
+"iataId": "BIO",
+"faaId": null,
+"wmoId": "08025",
+"site": "Bilbao Arpt",
+"lat": 43.298,
+"lon": -2.906,
+"elev": 38,
+"state": "PV",
+"country": "ES",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEBG",
+"icaoId": "LEBG",
+"iataId": "RGS",
+"faaId": null,
+"wmoId": "08075",
+"site": "Burgos Arpt",
+"lat": 42.356,
+"lon": -3.622,
+"elev": 892,
+"state": "CL",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEBR",
+"icaoId": "LEBR",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Bardenas",
+"lat": 42.2,
+"lon": -1.43,
+"elev": 347,
+"state": "NA",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEBT",
+"icaoId": "LEBT",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Valencia/Betera",
+"lat": 39.58,
+"lon": -0.45,
+"elev": 50,
+"state": "VC",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LEBZ",
+"icaoId": "LEBZ",
+"iataId": "BJZ",
+"faaId": null,
+"wmoId": "08330",
+"site": "Badajoz Arpt",
+"lat": 38.883,
+"lon": -6.814,
+"elev": 183,
+"state": "EX",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LECO",
+"icaoId": "LECO",
+"iataId": "LCG",
+"faaId": null,
+"wmoId": "08002",
+"site": "A Coru\u00f1a Arpt",
+"lat": 43.307,
+"lon": -8.372,
+"elev": 80,
+"state": "GA",
+"country": "ES",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LECV",
+"icaoId": "LECV",
+"iataId": null,
+"faaId": null,
+"wmoId": "08219",
+"site": "Madrid-Colmenar",
+"lat": 40.696,
+"lon": -3.765,
+"elev": 995,
+"state": "M",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEEC",
+"icaoId": "LEEC",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Sevilla/El Copero",
+"lat": 37.313,
+"lon": -5.999,
+"elev": 7,
+"state": "SE",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEGA",
+"icaoId": "LEGA",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Granada/Armilla",
+"lat": 37.136,
+"lon": -3.633,
+"elev": 684,
+"state": "AM",
+"country": "ES",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEGR",
+"icaoId": "LEGR",
+"iataId": "GRX",
+"faaId": null,
+"wmoId": "08419",
+"site": "Granada/Lorca Arpt",
+"lat": 37.19,
+"lon": -3.789,
+"elev": 560,
+"state": "AN",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEGT",
+"icaoId": "LEGT",
+"iataId": null,
+"faaId": null,
+"wmoId": "08224",
+"site": "Madrid/Getafe Arpt",
+"lat": 40.299,
+"lon": -3.723,
+"elev": 619,
+"state": "M",
+"country": "ES",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEHC",
+"icaoId": "LEHC",
+"iataId": "HSK",
+"faaId": null,
+"wmoId": "08094",
+"site": "Huesca/Pirineos Arpt",
+"lat": 42.082,
+"lon": -0.324,
+"elev": 540,
+"state": "AR",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEHI",
+"icaoId": "LEHI",
+"iataId": null,
+"faaId": null,
+"wmoId": "08335",
+"site": "Hinojosa Del Duque",
+"lat": 38.511,
+"lon": -5.11,
+"elev": 552,
+"state": "AN",
+"country": "ES",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LEJR",
+"icaoId": "LEJR",
+"iataId": "XRY",
+"faaId": null,
+"wmoId": "08451",
+"site": "Jerez Arpt",
+"lat": 36.751,
+"lon": -6.056,
+"elev": 25,
+"state": "AN",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LELC",
+"icaoId": "LELC",
+"iataId": "MJV",
+"faaId": null,
+"wmoId": "08433",
+"site": "San Javier Arpt",
+"lat": 37.775,
+"lon": -0.812,
+"elev": 3,
+"state": "MU",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LELN",
+"icaoId": "LELN",
+"iataId": "LEN",
+"faaId": null,
+"wmoId": "08055",
+"site": "Le\u00f3n Arpt",
+"lat": 42.588,
+"lon": -5.651,
+"elev": 911,
+"state": "CL",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LELO",
+"icaoId": "LELO",
+"iataId": "RJL",
+"faaId": null,
+"wmoId": "08084",
+"site": "Logrono Arpt",
+"lat": 42.452,
+"lon": -2.331,
+"elev": 352,
+"state": "LO",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEMD",
+"icaoId": "LEMD",
+"iataId": "MAD",
+"faaId": null,
+"wmoId": "08221",
+"site": "Madrid/Barajas Arpt",
+"lat": 40.466,
+"lon": -3.555,
+"elev": 589,
+"state": "M",
+"country": "ES",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEMG",
+"icaoId": "LEMG",
+"iataId": "AGP",
+"faaId": null,
+"wmoId": "08482",
+"site": "M\u00e1laga Arpt",
+"lat": 36.666,
+"lon": -4.482,
+"elev": 5,
+"state": "AN",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEMI",
+"icaoId": "LEMI",
+"iataId": "RMU",
+"faaId": null,
+"wmoId": null,
+"site": "Murcia Intl",
+"lat": 37.803,
+"lon": -1.125,
+"elev": 193,
+"state": "MU",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEMO",
+"icaoId": "LEMO",
+"iataId": "OZP",
+"faaId": null,
+"wmoId": "08397",
+"site": "Mor\u00f3n",
+"lat": 37.175,
+"lon": -5.616,
+"elev": 82,
+"state": "AN",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEPP",
+"icaoId": "LEPP",
+"iataId": "PNA",
+"faaId": null,
+"wmoId": "08085",
+"site": "Pamplona Arpt",
+"lat": 42.777,
+"lon": -1.65,
+"elev": 448,
+"state": "NA",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LERI",
+"icaoId": "LERI",
+"iataId": null,
+"faaId": null,
+"wmoId": "08429",
+"site": "Alcantarilla",
+"lat": 37.958,
+"lon": -1.229,
+"elev": 74,
+"state": "MU",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LERL",
+"icaoId": "LERL",
+"iataId": "CQM",
+"faaId": null,
+"wmoId": "08348",
+"site": "Cuidad Real Arpt",
+"lat": 38.862,
+"lon": -3.993,
+"elev": 621,
+"state": "CM",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LERT",
+"icaoId": "LERT",
+"iataId": "ROZ",
+"faaId": null,
+"wmoId": "08449",
+"site": "Rota)",
+"lat": 36.645,
+"lon": -6.349,
+"elev": 27,
+"state": "AN",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LESA",
+"icaoId": "LESA",
+"iataId": "SLM",
+"faaId": null,
+"wmoId": "08202",
+"site": "Salamanca Arpt",
+"lat": 40.96,
+"lon": -5.498,
+"elev": 788,
+"state": "CL",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LESO",
+"icaoId": "LESO",
+"iataId": "EAS",
+"faaId": null,
+"wmoId": "08029",
+"site": "San Sebastian Arpt",
+"lat": 43.361,
+"lon": -1.787,
+"elev": 3,
+"state": "PV",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEST",
+"icaoId": "LEST",
+"iataId": "SCQ",
+"faaId": null,
+"wmoId": "08042",
+"site": "Santiago Arpt",
+"lat": 42.888,
+"lon": -8.411,
+"elev": 363,
+"state": "GA",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LETL",
+"icaoId": "LETL",
+"iataId": "TEV",
+"faaId": null,
+"wmoId": null,
+"site": "Teruel Arpt",
+"lat": 40.404,
+"lon": -1.218,
+"elev": 1024,
+"state": "AR",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LETO",
+"icaoId": "LETO",
+"iataId": "TOJ",
+"faaId": null,
+"wmoId": "08227",
+"site": "Torrejon ",
+"lat": 40.489,
+"lon": -3.451,
+"elev": 598,
+"state": "M",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEVC",
+"icaoId": "LEVC",
+"iataId": "VLC",
+"faaId": null,
+"wmoId": "08284",
+"site": "Valencia Arpt",
+"lat": 39.489,
+"lon": -0.482,
+"elev": 58,
+"state": "VC",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEVD",
+"icaoId": "LEVD",
+"iataId": "VLL",
+"faaId": null,
+"wmoId": "08140",
+"site": "Valladolid Arpt",
+"lat": 41.706,
+"lon": -4.852,
+"elev": 844,
+"state": "CL",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEVS",
+"icaoId": "LEVS",
+"iataId": null,
+"faaId": null,
+"wmoId": "08223",
+"site": "Madrid/Vientos Arpt",
+"lat": 40.371,
+"lon": -3.785,
+"elev": 683,
+"state": "M",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEVT",
+"icaoId": "LEVT",
+"iataId": "VIT",
+"faaId": null,
+"wmoId": "08080",
+"site": "Vitoria Arpt",
+"lat": 42.872,
+"lon": -2.733,
+"elev": 501,
+"state": "PV",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEVX",
+"icaoId": "LEVX",
+"iataId": "VGO",
+"faaId": null,
+"wmoId": "08045",
+"site": "Vigo/Peinador Arpt",
+"lat": 42.239,
+"lon": -8.624,
+"elev": 253,
+"state": "GA",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEXJ",
+"icaoId": "LEXJ",
+"iataId": "SDR",
+"faaId": null,
+"wmoId": "08021",
+"site": "Santander/Ballesteros Arpt",
+"lat": 43.429,
+"lon": -3.831,
+"elev": 1,
+"state": "S",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEZA",
+"icaoId": "LEZA",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Zaragoza )",
+"lat": 41.667,
+"lon": -1.05,
+"elev": 262,
+"state": "AR",
+"country": "ES",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LEZG",
+"icaoId": "LEZG",
+"iataId": "ZAZ",
+"faaId": null,
+"wmoId": "08160",
+"site": "Zaragoza Arpt",
+"lat": 41.661,
+"lon": -1.004,
+"elev": 245,
+"state": "AR",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEZL",
+"icaoId": "LEZL",
+"iataId": "SVQ",
+"faaId": null,
+"wmoId": "08391",
+"site": "Seville/San Pablo Arpt",
+"lat": 37.418,
+"lon": -5.893,
+"elev": 26,
+"state": "AN",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBC",
+"icaoId": "LFBC",
+"iataId": null,
+"faaId": null,
+"wmoId": "07502",
+"site": "Cazaux Pond",
+"lat": 44.533,
+"lon": -1.125,
+"elev": 22,
+"state": "NA",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBD",
+"icaoId": "LFBD",
+"iataId": "BOD",
+"faaId": null,
+"wmoId": "07510",
+"site": "Bordeaux/M\u00e9rignac Arpt",
+"lat": 44.831,
+"lon": -0.691,
+"elev": 48,
+"state": "NA",
+"country": "FR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBM",
+"icaoId": "LFBM",
+"iataId": null,
+"faaId": null,
+"wmoId": "07607",
+"site": "Mont-de-Marsan Arpt",
+"lat": 43.912,
+"lon": -0.507,
+"elev": 56,
+"state": "NA",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBP",
+"icaoId": "LFBP",
+"iataId": "PUF",
+"faaId": null,
+"wmoId": "07610",
+"site": "Pau/Uzein Arpt",
+"lat": 43.385,
+"lon": -0.416,
+"elev": 182,
+"state": "NA",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBS",
+"icaoId": "LFBS",
+"iataId": null,
+"faaId": null,
+"wmoId": "07503",
+"site": "Biscarosse Arpt",
+"lat": 44.368,
+"lon": -1.132,
+"elev": 30,
+"state": "NA",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFBT",
+"icaoId": "LFBT",
+"iataId": "LDE",
+"faaId": null,
+"wmoId": "07621",
+"site": "Tarbes/Ossun Arpt",
+"lat": 43.189,
+"lon": 0,
+"elev": 359,
+"state": "OC",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBY",
+"icaoId": "LFBY",
+"iataId": null,
+"faaId": null,
+"wmoId": "07603",
+"site": "Dax/Seyresse Arpt",
+"lat": 43.69,
+"lon": -1.07,
+"elev": 32,
+"state": "NA",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBZ",
+"icaoId": "LFBZ",
+"iataId": "BIQ",
+"faaId": null,
+"wmoId": "07602",
+"site": "Biarritz/Parme Arpt",
+"lat": 43.469,
+"lon": -1.534,
+"elev": 70,
+"state": "NA",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPAR",
+"icaoId": "LPAR",
+"iataId": null,
+"faaId": null,
+"wmoId": "08537",
+"site": "Alverca Arpt",
+"lat": 38.887,
+"lon": -9.03,
+"elev": 2,
+"state": "LI",
+"country": "PT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPBG",
+"icaoId": "LPBG",
+"iataId": "BGC",
+"faaId": null,
+"wmoId": "08575",
+"site": "Bragan\u00e7a Arpt",
+"lat": 41.856,
+"lon": -6.706,
+"elev": 675,
+"state": "BG",
+"country": "PT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LPBJ",
+"icaoId": "LPBJ",
+"iataId": "BYJ",
+"faaId": null,
+"wmoId": "08562",
+"site": "Beja Arpt",
+"lat": 38.073,
+"lon": -7.931,
+"elev": 196,
+"state": "BE",
+"country": "PT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPCS",
+"icaoId": "LPCS",
+"iataId": "CAT",
+"faaId": null,
+"wmoId": null,
+"site": "Cascais Arpt",
+"lat": 38.725,
+"lon": -9.355,
+"elev": 99,
+"state": "LI",
+"country": "PT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPFR",
+"icaoId": "LPFR",
+"iataId": "FAO",
+"faaId": null,
+"wmoId": "08554",
+"site": "Faro Arpt",
+"lat": 37.014,
+"lon": -7.966,
+"elev": 3,
+"state": "FA",
+"country": "PT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPMR",
+"icaoId": "LPMR",
+"iataId": "QLR",
+"faaId": null,
+"wmoId": "08540",
+"site": "Monte Real",
+"lat": 39.831,
+"lon": -8.887,
+"elev": 50,
+"state": "LE",
+"country": "PT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPMT",
+"icaoId": "LPMT",
+"iataId": null,
+"faaId": null,
+"wmoId": "08534",
+"site": "Montijo",
+"lat": 38.704,
+"lon": -9.036,
+"elev": 4,
+"state": "SE",
+"country": "PT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPOV",
+"icaoId": "LPOV",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Ovar",
+"lat": 40.916,
+"lon": -8.646,
+"elev": 16,
+"state": "AV",
+"country": "PT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPPR",
+"icaoId": "LPPR",
+"iataId": "OPO",
+"faaId": null,
+"wmoId": "08545",
+"site": "Porto/Cameriro Arpt",
+"lat": 41.235,
+"lon": -8.684,
+"elev": 64,
+"state": "PT",
+"country": "PT",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPPT",
+"icaoId": "LPPT",
+"iataId": "LIS",
+"faaId": null,
+"wmoId": "08536",
+"site": "Lisbon Arpt",
+"lat": 38.781,
+"lon": -9.136,
+"elev": 98,
+"state": "LI",
+"country": "PT",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPST",
+"icaoId": "LPST",
+"iataId": null,
+"faaId": null,
+"wmoId": "08532",
+"site": "Sintra",
+"lat": 38.831,
+"lon": -9.34,
+"elev": 129,
+"state": "LI",
+"country": "PT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LPVR",
+"icaoId": "LPVR",
+"iataId": "VRL",
+"faaId": null,
+"wmoId": "08567",
+"site": "Vila Real",
+"lat": 41.274,
+"lon": -7.717,
+"elev": 560,
+"state": "VR",
+"country": "PT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LXGB",
+"icaoId": "LXGB",
+"iataId": "GIB",
+"faaId": null,
+"wmoId": "08495",
+"site": "Gibraltar Arpt",
+"lat": 36.151,
+"lon": -5.35,
+"elev": 5,
+"state": "",
+"country": "GI",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAD",
+"icaoId": "DAAD",
+"iataId": "BUJ",
+"faaId": null,
+"wmoId": "60515",
+"site": "Bou Saada Arpt",
+"lat": 35.333,
+"lon": 4.206,
+"elev": 461,
+"state": "BL",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAE",
+"icaoId": "DAAE",
+"iataId": "BJA",
+"faaId": null,
+"wmoId": "60402",
+"site": "B\u00e9ja\u00efa Arpt",
+"lat": 36.712,
+"lon": 5.07,
+"elev": 1,
+"state": "BE",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAG",
+"icaoId": "DAAG",
+"iataId": "ALG",
+"faaId": null,
+"wmoId": "60390",
+"site": "Algiers Intl",
+"lat": 36.691,
+"lon": 3.215,
+"elev": 18,
+"state": "BM",
+"country": "DZ",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAS",
+"icaoId": "DAAS",
+"iataId": "QSF",
+"faaId": null,
+"wmoId": "60445",
+"site": "S\u00e9tif/Arnat Arpt",
+"lat": 36.18,
+"lon": 5.33,
+"elev": 1012,
+"state": "BB",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAAV",
+"icaoId": "DAAV",
+"iataId": "GJL",
+"faaId": null,
+"wmoId": "60351",
+"site": "Jijel/Achouat Arpt",
+"lat": 36.795,
+"lon": 5.877,
+"elev": 11,
+"state": "JI",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DABB",
+"icaoId": "DABB",
+"iataId": "AAE",
+"faaId": null,
+"wmoId": "60360",
+"site": "Annaba/Bitat Arpt",
+"lat": 36.822,
+"lon": 7.809,
+"elev": 3,
+"state": "ET",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DABC",
+"icaoId": "DABC",
+"iataId": "CZL",
+"faaId": null,
+"wmoId": "60419",
+"site": "Constantine/Boudiaf Arpt",
+"lat": 36.278,
+"lon": 6.629,
+"elev": 686,
+"state": "CO",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DABP",
+"icaoId": "DABP",
+"iataId": "SKI",
+"faaId": null,
+"wmoId": "60355",
+"site": "Skikda",
+"lat": 36.87,
+"lon": 6.912,
+"elev": 11,
+"state": "SK",
+"country": "DZ",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DABS",
+"icaoId": "DABS",
+"iataId": "TEE",
+"faaId": null,
+"wmoId": "60475",
+"site": "Tebassa/Tebessi Arpt",
+"lat": 35.432,
+"lon": 8.121,
+"elev": 806,
+"state": "TE",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DABT",
+"icaoId": "DABT",
+"iataId": "BLJ",
+"faaId": null,
+"wmoId": "60468",
+"site": "Batna/Boulaid Arpt",
+"lat": 35.752,
+"lon": 6.309,
+"elev": 813,
+"state": "BA",
+"country": "DZ",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOB",
+"icaoId": "DAOB",
+"iataId": "TID",
+"faaId": null,
+"wmoId": "60511",
+"site": "Tiaret/Bou Arpt",
+"lat": 35.345,
+"lon": 1.476,
+"elev": 976,
+"state": "TI",
+"country": "DZ",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOI",
+"icaoId": "DAOI",
+"iataId": "CFK",
+"faaId": null,
+"wmoId": "60425",
+"site": "Chlef/Belkaid Arpt",
+"lat": 36.213,
+"lon": 1.332,
+"elev": 141,
+"state": "CH",
+"country": "DZ",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DAOV",
+"icaoId": "DAOV",
+"iataId": "MUW",
+"faaId": null,
+"wmoId": "60507",
+"site": "Mascara/Ghriss Arpt",
+"lat": 35.208,
+"lon": 0.147,
+"elev": 506,
+"state": "MA",
+"country": "DZ",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTKA",
+"icaoId": "DTKA",
+"iataId": "TBJ",
+"faaId": null,
+"wmoId": "60710",
+"site": "Tabarka Intl",
+"lat": 36.98,
+"lon": 8.877,
+"elev": 70,
+"state": "JE",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTB",
+"icaoId": "DTTB",
+"iataId": null,
+"faaId": null,
+"wmoId": "60714",
+"site": "Bizerte Arpt",
+"lat": 37.245,
+"lon": 9.791,
+"elev": 4,
+"state": "BI",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTN",
+"icaoId": "DTTN",
+"iataId": null,
+"faaId": null,
+"wmoId": "60725",
+"site": "Jendouba",
+"lat": 36.483,
+"lon": 8.8,
+"elev": 145,
+"state": "JE",
+"country": "TN",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LEBL",
+"icaoId": "LEBL",
+"iataId": "BCN",
+"faaId": null,
+"wmoId": "08181",
+"site": "Barcelona/Prat Arpt",
+"lat": 41.293,
+"lon": 2.07,
+"elev": 2,
+"state": "CT",
+"country": "ES",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LECH",
+"icaoId": "LECH",
+"iataId": null,
+"faaId": null,
+"wmoId": "08233",
+"site": "Castell\u00f3n Arpt",
+"lat": 40.211,
+"lon": 0.067,
+"elev": 360,
+"state": "VC",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEDA",
+"icaoId": "LEDA",
+"iataId": "ILD",
+"faaId": null,
+"wmoId": null,
+"site": "Lleida-Alguaire Arpt",
+"lat": 41.734,
+"lon": 0.538,
+"elev": 352,
+"state": "CT",
+"country": "ES",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEGE",
+"icaoId": "LEGE",
+"iataId": "GRO",
+"faaId": null,
+"wmoId": "08184",
+"site": "Gerona/Costa Brava Arpt",
+"lat": 41.911,
+"lon": 2.763,
+"elev": 140,
+"state": "CT",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEIB",
+"icaoId": "LEIB",
+"iataId": "IBZ",
+"faaId": null,
+"wmoId": "08373",
+"site": "Ibiza Arpt",
+"lat": 38.876,
+"lon": 1.384,
+"elev": 4,
+"state": "IB",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LELL",
+"icaoId": "LELL",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Sabadell Arpt",
+"lat": 41.521,
+"lon": 2.105,
+"elev": 136,
+"state": "CT",
+"country": "ES",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEMH",
+"icaoId": "LEMH",
+"iataId": "MAH",
+"faaId": null,
+"wmoId": "08314",
+"site": "Mahon/Menorca Arpt",
+"lat": 39.855,
+"lon": 4.216,
+"elev": 82,
+"state": "IB",
+"country": "ES",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LEPA",
+"icaoId": "LEPA",
+"iataId": "PMI",
+"faaId": null,
+"wmoId": "08306",
+"site": "Palma De Mallorca Arpr",
+"lat": 39.561,
+"lon": 2.737,
+"elev": 8,
+"state": "IB",
+"country": "ES",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LERS",
+"icaoId": "LERS",
+"iataId": "REU",
+"faaId": null,
+"wmoId": "08175",
+"site": "Reus Arpt",
+"lat": 41.15,
+"lon": 1.179,
+"elev": 68,
+"state": "CT",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LESB",
+"icaoId": "LESB",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Mallorca/Son Bonet Arpt",
+"lat": 39.599,
+"lon": 2.703,
+"elev": 48,
+"state": "IB",
+"country": "ES",
+"priority": 7,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LESU",
+"icaoId": "LESU",
+"iataId": "LEU",
+"faaId": null,
+"wmoId": null,
+"site": "La Seu Arpt",
+"lat": 42.337,
+"lon": 1.406,
+"elev": 802,
+"state": "CT",
+"country": "ES",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBA",
+"icaoId": "LFBA",
+"iataId": "AGF",
+"faaId": null,
+"wmoId": "07524",
+"site": "Agen/La Garenne Arpt",
+"lat": 44.176,
+"lon": 0.593,
+"elev": 68,
+"state": "NA",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBE",
+"icaoId": "LFBE",
+"iataId": "EGC",
+"faaId": null,
+"wmoId": "07530",
+"site": "Bergerac/Perigord Arpt",
+"lat": 44.826,
+"lon": 0.516,
+"elev": 49,
+"state": "NA",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFBF",
+"icaoId": "LFBF",
+"iataId": null,
+"faaId": null,
+"wmoId": "07631",
+"site": "Toulouse/Francazai Arpt",
+"lat": 43.546,
+"lon": 1.367,
+"elev": 159,
+"state": "OC",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFBO",
+"icaoId": "LFBO",
+"iataId": "TLS",
+"faaId": null,
+"wmoId": "07630",
+"site": "Toulouse/Blagnac Arpt",
+"lat": 43.621,
+"lon": 1.379,
+"elev": 150,
+"state": "OC",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFCG",
+"icaoId": "LFCG",
+"iataId": null,
+"faaId": null,
+"wmoId": "07627",
+"site": "St Girons/Antichan Arpt",
+"lat": 43.009,
+"lon": 1.104,
+"elev": 410,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFCI",
+"icaoId": "LFCI",
+"iataId": "LBI",
+"faaId": null,
+"wmoId": "07632",
+"site": "Albi/Le Sequestre",
+"lat": 43.914,
+"lon": 2.113,
+"elev": 170,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFCK",
+"icaoId": "LFCK",
+"iataId": "DCM",
+"faaId": null,
+"wmoId": null,
+"site": "Castres/Mazamet Arpt",
+"lat": 43.556,
+"lon": 2.289,
+"elev": 223,
+"state": "OC",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFCR",
+"icaoId": "LFCR",
+"iataId": "RDZ",
+"faaId": null,
+"wmoId": "07552",
+"site": "Rodez/Marcillac Arpt",
+"lat": 44.41,
+"lon": 2.483,
+"elev": 576,
+"state": "OC",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFDB",
+"icaoId": "LFDB",
+"iataId": null,
+"faaId": null,
+"wmoId": "07540",
+"site": "Montauban/Morin-Vedi",
+"lat": 44.026,
+"lon": 1.378,
+"elev": 107,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFDH",
+"icaoId": "LFDH",
+"iataId": null,
+"faaId": null,
+"wmoId": "07622",
+"site": "Auch/Lamothe Arpt",
+"lat": 43.689,
+"lon": 0.601,
+"elev": 121,
+"state": "OC",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFIG",
+"icaoId": "LFIG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Cassagnes-Begonhes Arpt",
+"lat": 44.178,
+"lon": 2.515,
+"elev": 609,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFKB",
+"icaoId": "LFKB",
+"iataId": "BIA",
+"faaId": null,
+"wmoId": "07790",
+"site": "Bastia/Poretta Arpt",
+"lat": 42.553,
+"lon": 9.484,
+"elev": 7,
+"state": "OC",
+"country": "FR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFKC",
+"icaoId": "LFKC",
+"iataId": "CLY",
+"faaId": null,
+"wmoId": "07754",
+"site": "Calvi/St Catherine Arpt",
+"lat": 42.531,
+"lon": 8.793,
+"elev": 38,
+"state": "CO",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFKF",
+"icaoId": "LFKF",
+"iataId": "FSC",
+"faaId": null,
+"wmoId": "07780",
+"site": "Figari/Corse Arpt",
+"lat": 41.501,
+"lon": 9.098,
+"elev": 15,
+"state": "CO",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFKJ",
+"icaoId": "LFKJ",
+"iataId": "AJA",
+"faaId": null,
+"wmoId": "07761",
+"site": "Ajaccio/Oro Arpt",
+"lat": 41.924,
+"lon": 8.803,
+"elev": 9,
+"state": "CO",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFKS",
+"icaoId": "LFKS",
+"iataId": "SOZ",
+"faaId": null,
+"wmoId": "07765",
+"site": "Solenzara",
+"lat": 41.924,
+"lon": 9.406,
+"elev": 22,
+"state": "CO",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFLQ",
+"icaoId": "LFLQ",
+"iataId": null,
+"faaId": null,
+"wmoId": "07577",
+"site": "Montelimar/Ancone Arpt",
+"lat": 44.581,
+"lon": 4.733,
+"elev": 72,
+"state": "AR",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFLU",
+"icaoId": "LFLU",
+"iataId": "VAF",
+"faaId": null,
+"wmoId": null,
+"site": "Valence-Chabeuil Arpt",
+"lat": 44.922,
+"lon": 4.97,
+"elev": 162,
+"state": "AR",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFLW",
+"icaoId": "LFLW",
+"iataId": "AUR",
+"faaId": null,
+"wmoId": "07549",
+"site": "Aurillac Arpt",
+"lat": 44.899,
+"lon": 2.421,
+"elev": 638,
+"state": "AR",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMA",
+"icaoId": "LFMA",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Aix Les Milles",
+"lat": 43.506,
+"lon": 5.368,
+"elev": 103,
+"state": "PA",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFMC",
+"icaoId": "LFMC",
+"iataId": null,
+"faaId": null,
+"wmoId": "07675",
+"site": "Le Luc Arpt",
+"lat": 43.383,
+"lon": 6.386,
+"elev": 79,
+"state": "PA",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMD",
+"icaoId": "LFMD",
+"iataId": "CEQ",
+"faaId": null,
+"wmoId": "07684",
+"site": "Cannes/Mandelieu Arpt",
+"lat": 43.544,
+"lon": 6.953,
+"elev": 2,
+"state": "PA",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFME",
+"icaoId": "LFME",
+"iataId": null,
+"faaId": null,
+"wmoId": "07645",
+"site": "Nimes/Courbessac",
+"lat": 43.854,
+"lon": 4.413,
+"elev": 57,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFMI",
+"icaoId": "LFMI",
+"iataId": null,
+"faaId": null,
+"wmoId": "07647",
+"site": "Istres/Le Tube",
+"lat": 43.516,
+"lon": 4.935,
+"elev": 20,
+"state": "PA",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMK",
+"icaoId": "LFMK",
+"iataId": "CCF",
+"faaId": null,
+"wmoId": "07635",
+"site": "Carcassonne/Salvaza Arpt",
+"lat": 43.214,
+"lon": 2.31,
+"elev": 124,
+"state": "OC",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFML",
+"icaoId": "LFML",
+"iataId": "MRS",
+"faaId": null,
+"wmoId": "07650",
+"site": "Marseille Arpt",
+"lat": 43.438,
+"lon": 5.216,
+"elev": 20,
+"state": "PA",
+"country": "FR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMN",
+"icaoId": "LFMN",
+"iataId": "NCE",
+"faaId": null,
+"wmoId": "07690",
+"site": "Nice/C\u00f4te d'Azur Arpt",
+"lat": 43.658,
+"lon": 7.216,
+"elev": 4,
+"state": "PA",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMO",
+"icaoId": "LFMO",
+"iataId": null,
+"faaId": null,
+"wmoId": "07579",
+"site": "Orange/Caritat",
+"lat": 44.144,
+"lon": 4.861,
+"elev": 56,
+"state": "PA",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMP",
+"icaoId": "LFMP",
+"iataId": "PGF",
+"faaId": null,
+"wmoId": "07747",
+"site": "Perpignan/Rivesaltes Arpt",
+"lat": 42.737,
+"lon": 2.873,
+"elev": 41,
+"state": "OC",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMT",
+"icaoId": "LFMT",
+"iataId": "MPL",
+"faaId": null,
+"wmoId": "07643",
+"site": "Montpellier/M\u00e9diterranee Arpt",
+"lat": 43.577,
+"lon": 3.963,
+"elev": 1,
+"state": "OC",
+"country": "FR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMU",
+"icaoId": "LFMU",
+"iataId": "BZR",
+"faaId": null,
+"wmoId": null,
+"site": "B\u00e9ziers/Cap d'Agde",
+"lat": 43.322,
+"lon": 3.353,
+"elev": 14,
+"state": "OC",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMV",
+"icaoId": "LFMV",
+"iataId": "AVN",
+"faaId": null,
+"wmoId": "07476",
+"site": "Avignon/Caumont Arpt",
+"lat": 43.911,
+"lon": 4.903,
+"elev": 33,
+"state": "PA",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFMX",
+"icaoId": "LFMX",
+"iataId": null,
+"faaId": null,
+"wmoId": "07588",
+"site": "St-Auban-Sur-Duranc",
+"lat": 44.062,
+"lon": 5.99,
+"elev": 442,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFMY",
+"icaoId": "LFMY",
+"iataId": null,
+"faaId": null,
+"wmoId": "07648",
+"site": "Salon de Provence",
+"lat": 43.604,
+"lon": 5.108,
+"elev": 57,
+"state": "PA",
+"country": "FR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFNB",
+"icaoId": "LFNB",
+"iataId": "MEN",
+"faaId": null,
+"wmoId": null,
+"site": "Mende/Brenoux",
+"lat": 44.502,
+"lon": 3.533,
+"elev": 1010,
+"state": "OC",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFTH",
+"icaoId": "LFTH",
+"iataId": "TLN",
+"faaId": null,
+"wmoId": "07667",
+"site": "Toulon/Hy\u00e8res Arpt",
+"lat": 43.094,
+"lon": 6.146,
+"elev": 3,
+"state": "PA",
+"country": "FR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFTU",
+"icaoId": "LFTU",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "St-Raphael",
+"lat": 43.417,
+"lon": 6.736,
+"elev": 6,
+"state": "PA",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LFTW",
+"icaoId": "LFTW",
+"iataId": "FNI",
+"faaId": null,
+"wmoId": "07646",
+"site": "Nimes/Garons Arpt",
+"lat": 43.757,
+"lon": 4.416,
+"elev": 91,
+"state": "OC",
+"country": "FR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LFXI",
+"icaoId": "LFXI",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Saint Christol Arpt",
+"lat": 44.058,
+"lon": 5.495,
+"elev": 833,
+"state": "PA",
+"country": "FR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEA",
+"icaoId": "LIEA",
+"iataId": "AHO",
+"faaId": null,
+"wmoId": "16520",
+"site": "Alghero/Fertilia Arpt",
+"lat": 40.631,
+"lon": 8.289,
+"elev": 22,
+"state": "SS",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIEB",
+"icaoId": "LIEB",
+"iataId": null,
+"faaId": null,
+"wmoId": "16550",
+"site": "Cape Bellavista",
+"lat": 39.931,
+"lon": 9.713,
+"elev": 126,
+"state": "OG",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEC",
+"icaoId": "LIEC",
+"iataId": null,
+"faaId": null,
+"wmoId": "16564",
+"site": "Cape Carbonara",
+"lat": 39.104,
+"lon": 9.514,
+"elev": 90,
+"state": "CA",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIED",
+"icaoId": "LIED",
+"iataId": "DCI",
+"faaId": null,
+"wmoId": "16546",
+"site": "Decimomannu",
+"lat": 39.354,
+"lon": 8.973,
+"elev": 26,
+"state": "CA",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIEE",
+"icaoId": "LIEE",
+"iataId": "CAG",
+"faaId": null,
+"wmoId": "16560",
+"site": "Cagliari/Elmas Arpt",
+"lat": 39.243,
+"lon": 9.06,
+"elev": 1,
+"state": "CA",
+"country": "IT",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIEF",
+"icaoId": "LIEF",
+"iataId": null,
+"faaId": null,
+"wmoId": "16539",
+"site": "Capo Frasca",
+"lat": 39.74,
+"lon": 8.46,
+"elev": 90,
+"state": "VS",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEG",
+"icaoId": "LIEG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Guardiavecchia",
+"lat": 41.217,
+"lon": 9.4,
+"elev": 89,
+"state": "OT",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEH",
+"icaoId": "LIEH",
+"iataId": null,
+"faaId": null,
+"wmoId": "16522",
+"site": "Capo Caccia",
+"lat": 40.561,
+"lon": 8.163,
+"elev": 125,
+"state": "SS",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEL",
+"icaoId": "LIEL",
+"iataId": null,
+"faaId": null,
+"wmoId": "16542",
+"site": "Capo S Lorenzo",
+"lat": 39.498,
+"lon": 9.629,
+"elev": 8,
+"state": "CA",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEN",
+"icaoId": "LIEN",
+"iataId": null,
+"faaId": null,
+"wmoId": "16538",
+"site": "Fonni",
+"lat": 40.117,
+"lon": 9.25,
+"elev": 1009,
+"state": "NU",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIEO",
+"icaoId": "LIEO",
+"iataId": "OLB",
+"faaId": null,
+"wmoId": "16531",
+"site": "Olbia/Costa Smeralda Arpt",
+"lat": 40.899,
+"lon": 9.518,
+"elev": 8,
+"state": "OT",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIEP",
+"icaoId": "LIEP",
+"iataId": null,
+"faaId": null,
+"wmoId": "16541",
+"site": "Perdasdefogu",
+"lat": 39.675,
+"lon": 9.443,
+"elev": 602,
+"state": "OG",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIMG",
+"icaoId": "LIMG",
+"iataId": "ALL",
+"faaId": null,
+"wmoId": "16122",
+"site": "Albenga",
+"lat": 44.046,
+"lon": 8.126,
+"elev": 41,
+"state": "SV",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIMJ",
+"icaoId": "LIMJ",
+"iataId": "GOA",
+"faaId": null,
+"wmoId": "16120",
+"site": "Genoa/Colombo Arpt",
+"lat": 44.413,
+"lon": 8.838,
+"elev": 3,
+"state": "GE",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIMS",
+"icaoId": "LIMS",
+"iataId": null,
+"faaId": null,
+"wmoId": "16084",
+"site": "Piacenza ",
+"lat": 44.913,
+"lon": 9.723,
+"elev": 132,
+"state": "PC",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIMT",
+"icaoId": "LIMT",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Passo della Cisa",
+"lat": 44.472,
+"lon": 9.929,
+"elev": 1032,
+"state": "MS",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIMU",
+"icaoId": "LIMU",
+"iataId": null,
+"faaId": null,
+"wmoId": "16153",
+"site": "Cape Mele",
+"lat": 43.958,
+"lon": 8.17,
+"elev": 215,
+"state": "SV",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIMV",
+"icaoId": "LIMV",
+"iataId": null,
+"faaId": null,
+"wmoId": "16119",
+"site": "Passo de Giovi",
+"lat": 44.552,
+"lon": 8.938,
+"elev": 474,
+"state": "GE",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIMY",
+"icaoId": "LIMY",
+"iataId": null,
+"faaId": null,
+"wmoId": "16115",
+"site": "Monte Malanotte",
+"lat": 44.258,
+"lon": 7.794,
+"elev": 1742,
+"state": "GE",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIMZ",
+"icaoId": "LIMZ",
+"iataId": "CUF",
+"faaId": null,
+"wmoId": null,
+"site": "Cuneo/Levaldigi Arpt",
+"lat": 44.547,
+"lon": 7.623,
+"elev": 377,
+"state": "CN",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIQP",
+"icaoId": "LIQP",
+"iataId": null,
+"faaId": null,
+"wmoId": "16129",
+"site": "Isola di Palmaria",
+"lat": 44.067,
+"lon": 9.816,
+"elev": 497,
+"state": "SP",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQW",
+"icaoId": "LIQW",
+"iataId": null,
+"faaId": null,
+"wmoId": "16125",
+"site": "Sarzana/Luni",
+"lat": 44.088,
+"lon": 9.987,
+"elev": 6,
+"state": "SP",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTMB",
+"icaoId": "DTMB",
+"iataId": "MIR",
+"faaId": null,
+"wmoId": null,
+"site": "Monastir/Bourguiba Intl",
+"lat": 35.758,
+"lon": 10.755,
+"elev": 1,
+"state": "MO",
+"country": "TN",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTNH",
+"icaoId": "DTNH",
+"iataId": "NBE",
+"faaId": null,
+"wmoId": "60731",
+"site": "Enfidha/Mammamet Arpt",
+"lat": 36.074,
+"lon": 10.436,
+"elev": 1,
+"state": "SO",
+"country": "TN",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTA",
+"icaoId": "DTTA",
+"iataId": "TUN",
+"faaId": null,
+"wmoId": "60715",
+"site": "Tunis/Carthage Intl",
+"lat": 36.851,
+"lon": 10.227,
+"elev": 4,
+"state": "AR",
+"country": "TN",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "DTTK",
+"icaoId": "DTTK",
+"iataId": null,
+"faaId": null,
+"wmoId": "60735",
+"site": "Kairouan",
+"lat": 35.667,
+"lon": 10.1,
+"elev": 65,
+"state": "KR",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DTTL",
+"icaoId": "DTTL",
+"iataId": null,
+"faaId": null,
+"wmoId": "60720",
+"site": "Kelibia",
+"lat": 36.85,
+"lon": 11.083,
+"elev": 18,
+"state": "NA",
+"country": "TN",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "DTTM",
+"icaoId": "DTTM",
+"iataId": null,
+"faaId": null,
+"wmoId": "60740",
+"site": "Monastir-Skanes",
+"lat": 35.667,
+"lon": 10.754,
+"elev": 12,
+"state": "MO",
+"country": "TN",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "EQYS",
+"icaoId": "EQYS",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Signoella ",
+"lat": 37.4,
+"lon": 14.92,
+"elev": 25,
+"state": "",
+"country": "IT",
+"priority": 8,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LATI",
+"icaoId": "LATI",
+"iataId": "TIA",
+"faaId": null,
+"wmoId": "13615",
+"site": "Tirana Intl",
+"lat": 41.419,
+"lon": 19.716,
+"elev": 32,
+"state": "TR",
+"country": "AL",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDDU",
+"icaoId": "LDDU",
+"iataId": "DBV",
+"faaId": null,
+"wmoId": "14474",
+"site": "Dubrovnik Arpt",
+"lat": 42.56,
+"lon": 18.269,
+"elev": 156,
+"state": "DU",
+"country": "HR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDLO",
+"icaoId": "LDLO",
+"iataId": "LSZ",
+"faaId": null,
+"wmoId": null,
+"site": "Losinj Isl Arpt",
+"lat": 44.569,
+"lon": 14.394,
+"elev": 46,
+"state": "LI",
+"country": "HR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDPL",
+"icaoId": "LDPL",
+"iataId": "PUY",
+"faaId": null,
+"wmoId": "14307",
+"site": "Pula Arpt",
+"lat": 44.894,
+"lon": 13.922,
+"elev": 63,
+"state": "IS",
+"country": "HR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDSB",
+"icaoId": "LDSB",
+"iataId": "BWK",
+"faaId": null,
+"wmoId": "14446",
+"site": "Brac/Bol Arpt",
+"lat": 43.286,
+"lon": 16.68,
+"elev": 525,
+"state": "SP",
+"country": "HR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDSP",
+"icaoId": "LDSP",
+"iataId": "SPU",
+"faaId": null,
+"wmoId": "14444",
+"site": "Split Arpt",
+"lat": 43.539,
+"lon": 16.301,
+"elev": 16,
+"state": "SP",
+"country": "HR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LDZD",
+"icaoId": "LDZD",
+"iataId": "ZAD",
+"faaId": null,
+"wmoId": "14431",
+"site": "Zadar Arpt",
+"lat": 44.108,
+"lon": 15.347,
+"elev": 82,
+"state": "ZG",
+"country": "HR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKR",
+"icaoId": "LGKR",
+"iataId": "CFU",
+"faaId": null,
+"wmoId": "16641",
+"site": "Corfu/Kapodistinas Arpt",
+"lat": 39.61,
+"lon": 19.913,
+"elev": 2,
+"state": "L",
+"country": "GR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBA",
+"icaoId": "LIBA",
+"iataId": null,
+"faaId": null,
+"wmoId": "16261",
+"site": "Amendola",
+"lat": 41.538,
+"lon": 15.714,
+"elev": 55,
+"state": "PU",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBC",
+"icaoId": "LIBC",
+"iataId": "CRV",
+"faaId": null,
+"wmoId": "16350",
+"site": "Crotone Arpt",
+"lat": 38.997,
+"lon": 17.079,
+"elev": 158,
+"state": "CI",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBD",
+"icaoId": "LIBD",
+"iataId": "BRI",
+"faaId": null,
+"wmoId": "16270",
+"site": "Bari/Palese Arpt",
+"lat": 41.138,
+"lon": 16.765,
+"elev": 42,
+"state": "PU",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBE",
+"icaoId": "LIBE",
+"iataId": null,
+"faaId": null,
+"wmoId": "16231",
+"site": "Monte Sant Angelo",
+"lat": 41.708,
+"lon": 15.948,
+"elev": 836,
+"state": "PU",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBF",
+"icaoId": "LIBF",
+"iataId": "FOG",
+"faaId": null,
+"wmoId": "16260",
+"site": "Foggia/Lisa Arpt",
+"lat": 41.433,
+"lon": 15.535,
+"elev": 81,
+"state": "PU",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBG",
+"icaoId": "LIBG",
+"iataId": "TAR",
+"faaId": null,
+"wmoId": "16324",
+"site": "Grottaglie Arpt",
+"lat": 40.517,
+"lon": 17.403,
+"elev": 64,
+"state": "PU",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBH",
+"icaoId": "LIBH",
+"iataId": null,
+"faaId": null,
+"wmoId": "16325",
+"site": "Marina di Ginos",
+"lat": 40.424,
+"lon": 16.887,
+"elev": 4,
+"state": "PU",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBN",
+"icaoId": "LIBN",
+"iataId": "LCC",
+"faaId": null,
+"wmoId": "16332",
+"site": "Lecce",
+"lat": 40.238,
+"lon": 18.138,
+"elev": 46,
+"state": "PU",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBP",
+"icaoId": "LIBP",
+"iataId": "PSR",
+"faaId": null,
+"wmoId": "16230",
+"site": "Pescara/Abruzzo Arpt",
+"lat": 42.432,
+"lon": 14.181,
+"elev": 10,
+"state": "AB",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBQ",
+"icaoId": "LIBQ",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Scuro Mountain",
+"lat": 39.331,
+"lon": 16.396,
+"elev": 1660,
+"state": "CI",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBR",
+"icaoId": "LIBR",
+"iataId": "BDS",
+"faaId": null,
+"wmoId": "16320",
+"site": "Brindisi/Casale Arpt",
+"lat": 40.658,
+"lon": 17.951,
+"elev": 5,
+"state": "PU",
+"country": "IT",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBS",
+"icaoId": "LIBS",
+"iataId": null,
+"faaId": null,
+"wmoId": "16252",
+"site": "Campobasso",
+"lat": 41.564,
+"lon": 14.655,
+"elev": 776,
+"state": "CB",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBT",
+"icaoId": "LIBT",
+"iataId": null,
+"faaId": null,
+"wmoId": "16232",
+"site": "Termoli",
+"lat": 42.004,
+"lon": 14.996,
+"elev": 19,
+"state": "CB",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBU",
+"icaoId": "LIBU",
+"iataId": null,
+"faaId": null,
+"wmoId": "16317",
+"site": "Latronico",
+"lat": 40.087,
+"lon": 16.014,
+"elev": 868,
+"state": "PZ",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBV",
+"icaoId": "LIBV",
+"iataId": null,
+"faaId": null,
+"wmoId": "16312",
+"site": "Gioia Del Colle",
+"lat": 40.766,
+"lon": 16.935,
+"elev": 344,
+"state": "PU",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIBW",
+"icaoId": "LIBW",
+"iataId": null,
+"faaId": null,
+"wmoId": "16337",
+"site": "Bonifati",
+"lat": 39.585,
+"lon": 15.891,
+"elev": 487,
+"state": "CI",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBY",
+"icaoId": "LIBY",
+"iataId": null,
+"faaId": null,
+"wmoId": "16360",
+"site": "Santa Maria di Leuca",
+"lat": 39.811,
+"lon": 18.342,
+"elev": 105,
+"state": "PU",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIBZ",
+"icaoId": "LIBZ",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Potenza",
+"lat": 40.633,
+"lon": 15.8,
+"elev": 787,
+"state": "PZ",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICA",
+"icaoId": "LICA",
+"iataId": "SUF",
+"faaId": null,
+"wmoId": "16362",
+"site": "Lamezia Terme Arpt",
+"lat": 38.908,
+"lon": 16.242,
+"elev": 7,
+"state": "CA",
+"country": "IT",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICB",
+"icaoId": "LICB",
+"iataId": "CIY",
+"faaId": null,
+"wmoId": "16475",
+"site": "Comiso Arpt",
+"lat": 36.994,
+"lon": 14.606,
+"elev": 212,
+"state": "RG",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICC",
+"icaoId": "LICC",
+"iataId": "CTA",
+"faaId": null,
+"wmoId": "16460",
+"site": "Catania/Fontanarossa Arpt",
+"lat": 37.467,
+"lon": 15.064,
+"elev": 6,
+"state": "CT",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICD",
+"icaoId": "LICD",
+"iataId": "LMP",
+"faaId": null,
+"wmoId": "16490",
+"site": "Lampedusa Island Arpt",
+"lat": 35.498,
+"lon": 12.618,
+"elev": 20,
+"state": "AG",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICE",
+"icaoId": "LICE",
+"iataId": null,
+"faaId": null,
+"wmoId": "16450",
+"site": "Enna",
+"lat": 37.568,
+"lon": 14.28,
+"elev": 928,
+"state": "EN",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICF",
+"icaoId": "LICF",
+"iataId": null,
+"faaId": null,
+"wmoId": "16420",
+"site": "Messina",
+"lat": 38.2,
+"lon": 15.549,
+"elev": 66,
+"state": "ME",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICG",
+"icaoId": "LICG",
+"iataId": "PNL",
+"faaId": null,
+"wmoId": "16470",
+"site": "Pantelleria Arpt",
+"lat": 36.814,
+"lon": 11.971,
+"elev": 192,
+"state": "TP",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICJ",
+"icaoId": "LICJ",
+"iataId": "PMO",
+"faaId": null,
+"wmoId": "16405",
+"site": "Palermo Arpt",
+"lat": 38.176,
+"lon": 13.091,
+"elev": 20,
+"state": "PA",
+"country": "IT",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICL",
+"icaoId": "LICL",
+"iataId": null,
+"faaId": null,
+"wmoId": "16453",
+"site": "Gela",
+"lat": 37.076,
+"lon": 14.225,
+"elev": 59,
+"state": "CL",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICM",
+"icaoId": "LICM",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Calopezzati",
+"lat": 39.55,
+"lon": 16.8,
+"elev": 179,
+"state": "CS",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICO",
+"icaoId": "LICO",
+"iataId": null,
+"faaId": null,
+"wmoId": "16480",
+"site": "Cozzo Spadaro",
+"lat": 36.686,
+"lon": 15.131,
+"elev": 45,
+"state": "PU",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICP",
+"icaoId": "LICP",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Palmero/Boccadifal",
+"lat": 38.111,
+"lon": 13.313,
+"elev": 105,
+"state": "PA",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICR",
+"icaoId": "LICR",
+"iataId": "REG",
+"faaId": null,
+"wmoId": "16422",
+"site": "Reggio Calabria Arpt",
+"lat": 38.072,
+"lon": 15.654,
+"elev": 16,
+"state": "RE",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICT",
+"icaoId": "LICT",
+"iataId": "TPS",
+"faaId": null,
+"wmoId": "16429",
+"site": "Trapani/Birgi Arpt",
+"lat": 37.911,
+"lon": 12.488,
+"elev": 4,
+"state": "TP",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LICU",
+"icaoId": "LICU",
+"iataId": null,
+"faaId": null,
+"wmoId": "16400",
+"site": "Ustica",
+"lat": 38.707,
+"lon": 13.177,
+"elev": 239,
+"state": "PA",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LICZ",
+"icaoId": "LICZ",
+"iataId": "NSY",
+"faaId": null,
+"wmoId": "16459",
+"site": "Sigonella",
+"lat": 37.406,
+"lon": 14.919,
+"elev": 22,
+"state": "CT",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIMP",
+"icaoId": "LIMP",
+"iataId": "PMF",
+"faaId": null,
+"wmoId": null,
+"site": "Parma Arpt",
+"lat": 44.825,
+"lon": 10.296,
+"elev": 41,
+"state": "PR",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPC",
+"icaoId": "LIPC",
+"iataId": null,
+"faaId": null,
+"wmoId": "16148",
+"site": "Cervia",
+"lat": 44.224,
+"lon": 12.307,
+"elev": 10,
+"state": "RV",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPE",
+"icaoId": "LIPE",
+"iataId": "BLQ",
+"faaId": null,
+"wmoId": "16140",
+"site": "Bologna/Marconi Arpt",
+"lat": 44.531,
+"lon": 11.297,
+"elev": 37,
+"state": "BO",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPF",
+"icaoId": "LIPF",
+"iataId": null,
+"faaId": null,
+"wmoId": "16138",
+"site": "Ferrara Arpt",
+"lat": 44.814,
+"lon": 11.61,
+"elev": 5,
+"state": "FE",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPK",
+"icaoId": "LIPK",
+"iataId": "FRL",
+"faaId": null,
+"wmoId": "16147",
+"site": "Forli/Ridolfi Arpt",
+"lat": 44.196,
+"lon": 12.07,
+"elev": 24,
+"state": "FC",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPR",
+"icaoId": "LIPR",
+"iataId": "RMI",
+"faaId": null,
+"wmoId": "16149",
+"site": "Rimini/Miramare Arpt",
+"lat": 44.02,
+"lon": 12.612,
+"elev": 10,
+"state": "RN",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIPY",
+"icaoId": "LIPY",
+"iataId": "AOI",
+"faaId": null,
+"wmoId": "16191",
+"site": "Falconara/Ancona Arpt",
+"lat": 43.617,
+"lon": 13.36,
+"elev": 11,
+"state": "AN",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIQB",
+"icaoId": "LIQB",
+"iataId": null,
+"faaId": null,
+"wmoId": "16172",
+"site": "Arezzo",
+"lat": 43.455,
+"lon": 11.848,
+"elev": 248,
+"state": "AR",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQC",
+"icaoId": "LIQC",
+"iataId": null,
+"faaId": null,
+"wmoId": "16294",
+"site": "Capri Island",
+"lat": 40.558,
+"lon": 14.201,
+"elev": 154,
+"state": "NA",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQD",
+"icaoId": "LIQD",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Porretta Pass",
+"lat": 44.03,
+"lon": 10.93,
+"elev": 932,
+"state": "",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQI",
+"icaoId": "LIQI",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Gran Sasso Moun",
+"lat": 42.45,
+"lon": 13.7,
+"elev": 2138,
+"state": "",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQJ",
+"icaoId": "LIQJ",
+"iataId": null,
+"faaId": null,
+"wmoId": "16215",
+"site": "Civitavecchia",
+"lat": 42.033,
+"lon": 11.833,
+"elev": 5,
+"state": "RM",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQK",
+"icaoId": "LIQK",
+"iataId": null,
+"faaId": null,
+"wmoId": "16310",
+"site": "Capo Palinuro",
+"lat": 40.025,
+"lon": 15.281,
+"elev": 165,
+"state": "SA",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQN",
+"icaoId": "LIQN",
+"iataId": null,
+"faaId": null,
+"wmoId": "16221",
+"site": "Rieti Arpt",
+"lat": 42.427,
+"lon": 12.85,
+"elev": 387,
+"state": "RI",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQO",
+"icaoId": "LIQO",
+"iataId": null,
+"faaId": null,
+"wmoId": "16168",
+"site": "Mount Argentario",
+"lat": 42.387,
+"lon": 11.17,
+"elev": 627,
+"state": "GR",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQR",
+"icaoId": "LIQR",
+"iataId": null,
+"faaId": null,
+"wmoId": "16204",
+"site": "Radicofani",
+"lat": 42.896,
+"lon": 11.768,
+"elev": 783,
+"state": "SI",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQV",
+"icaoId": "LIQV",
+"iataId": null,
+"faaId": null,
+"wmoId": "16164",
+"site": "Volterra",
+"lat": 43.402,
+"lon": 10.86,
+"elev": 536,
+"state": "PI",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIQZ",
+"icaoId": "LIQZ",
+"iataId": null,
+"faaId": null,
+"wmoId": "16280",
+"site": "Ponza Isl",
+"lat": 40.912,
+"lon": 12.957,
+"elev": 187,
+"state": "SP",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRA",
+"icaoId": "LIRA",
+"iataId": "CIA",
+"faaId": null,
+"wmoId": "16239",
+"site": "Rome/Ciampino Arpt",
+"lat": 41.808,
+"lon": 12.585,
+"elev": 101,
+"state": "RM",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRB",
+"icaoId": "LIRB",
+"iataId": null,
+"faaId": null,
+"wmoId": "16224",
+"site": "Vigna Di Valle",
+"lat": 42.08,
+"lon": 12.211,
+"elev": 257,
+"state": "RM",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRE",
+"icaoId": "LIRE",
+"iataId": null,
+"faaId": null,
+"wmoId": "16245",
+"site": "Pratica di Mare",
+"lat": 41.656,
+"lon": 12.449,
+"elev": 16,
+"state": "RM",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRF",
+"icaoId": "LIRF",
+"iataId": "FCO",
+"faaId": null,
+"wmoId": "16242",
+"site": "Rome/Fiumicino",
+"lat": 41.8,
+"lon": 12.239,
+"elev": 2,
+"state": "RM",
+"country": "IT",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRG",
+"icaoId": "LIRG",
+"iataId": null,
+"faaId": null,
+"wmoId": "16234",
+"site": "Guidonia",
+"lat": 41.996,
+"lon": 12.735,
+"elev": 82,
+"state": "RM",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRH",
+"icaoId": "LIRH",
+"iataId": null,
+"faaId": null,
+"wmoId": "16244",
+"site": "Frosinone",
+"lat": 41.646,
+"lon": 13.3,
+"elev": 183,
+"state": "FR",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRI",
+"icaoId": "LIRI",
+"iataId": "QSR",
+"faaId": null,
+"wmoId": null,
+"site": "Pontecagnano Arpt",
+"lat": 40.62,
+"lon": 14.911,
+"elev": 31,
+"state": "SA",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRJ",
+"icaoId": "LIRJ",
+"iataId": "EBA",
+"faaId": null,
+"wmoId": null,
+"site": "Elba Arpt",
+"lat": 42.762,
+"lon": 10.239,
+"elev": 4,
+"state": "EL",
+"country": "IT",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRK",
+"icaoId": "LIRK",
+"iataId": null,
+"faaId": null,
+"wmoId": "16219",
+"site": "Monte Terminillo",
+"lat": 42.466,
+"lon": 12.979,
+"elev": 1721,
+"state": "RI",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRL",
+"icaoId": "LIRL",
+"iataId": null,
+"faaId": null,
+"wmoId": "16243",
+"site": "Latina Arpt",
+"lat": 41.545,
+"lon": 12.91,
+"elev": 23,
+"state": "LT",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRM",
+"icaoId": "LIRM",
+"iataId": null,
+"faaId": null,
+"wmoId": "16253",
+"site": "Grazzanise",
+"lat": 41.061,
+"lon": 14.082,
+"elev": 6,
+"state": "CE",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRN",
+"icaoId": "LIRN",
+"iataId": "NAP",
+"faaId": null,
+"wmoId": "16289",
+"site": "Naples Intl",
+"lat": 40.885,
+"lon": 14.292,
+"elev": 76,
+"state": "NA",
+"country": "IT",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRP",
+"icaoId": "LIRP",
+"iataId": "PSA",
+"faaId": null,
+"wmoId": "16158",
+"site": "Pisa/Galilei Arpt",
+"lat": 43.684,
+"lon": 10.393,
+"elev": 1,
+"state": "PI",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRQ",
+"icaoId": "LIRQ",
+"iataId": "FLR",
+"faaId": null,
+"wmoId": "16170",
+"site": "Florence/Peretola Arpt",
+"lat": 43.81,
+"lon": 11.205,
+"elev": 33,
+"state": "FI",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRS",
+"icaoId": "LIRS",
+"iataId": "GRS",
+"faaId": null,
+"wmoId": "16206",
+"site": "Grosseto",
+"lat": 42.76,
+"lon": 11.072,
+"elev": 3,
+"state": "GR",
+"country": "IT",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRT",
+"icaoId": "LIRT",
+"iataId": null,
+"faaId": null,
+"wmoId": "16263",
+"site": "Trevico",
+"lat": 41.047,
+"lon": 15.233,
+"elev": 1058,
+"state": "AV",
+"country": "IT",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRU",
+"icaoId": "LIRU",
+"iataId": null,
+"faaId": null,
+"wmoId": "16235",
+"site": "Rome/Urbe",
+"lat": 41.953,
+"lon": 12.5,
+"elev": 16,
+"state": "RM",
+"country": "IT",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRV",
+"icaoId": "LIRV",
+"iataId": null,
+"faaId": null,
+"wmoId": "16216",
+"site": "Viterbo",
+"lat": 42.43,
+"lon": 12.064,
+"elev": 294,
+"state": "VT",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIRX",
+"icaoId": "LIRX",
+"iataId": null,
+"faaId": null,
+"wmoId": "16197",
+"site": "Monte Calamita",
+"lat": 42.731,
+"lon": 10.396,
+"elev": 397,
+"state": "LI",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIRZ",
+"icaoId": "LIRZ",
+"iataId": "PEG",
+"faaId": null,
+"wmoId": "16181",
+"site": "Perugia/Egidio Arpt",
+"lat": 43.097,
+"lon": 12.51,
+"elev": 206,
+"state": "PG",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LIVC",
+"icaoId": "LIVC",
+"iataId": null,
+"faaId": null,
+"wmoId": "16134",
+"site": "Monte Cimone",
+"lat": 44.194,
+"lon": 10.7,
+"elev": 2139,
+"state": "MO",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIVF",
+"icaoId": "LIVF",
+"iataId": null,
+"faaId": null,
+"wmoId": "16179",
+"site": "Frontone",
+"lat": 43.517,
+"lon": 12.728,
+"elev": 549,
+"state": "PU",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LIVM",
+"icaoId": "LIVM",
+"iataId": null,
+"faaId": null,
+"wmoId": "16146",
+"site": "Punta Marina",
+"lat": 44.441,
+"lon": 12.296,
+"elev": 6,
+"state": "RA",
+"country": "IT",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LMML",
+"icaoId": "LMML",
+"iataId": "MLA",
+"faaId": null,
+"wmoId": "16597",
+"site": "Malta Intl",
+"lat": 35.858,
+"lon": 14.477,
+"elev": 78,
+"state": "LU",
+"country": "MT",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LQBK",
+"icaoId": "LQBK",
+"iataId": "BNX",
+"faaId": null,
+"wmoId": "13242",
+"site": "Banja Luka Intl",
+"lat": 44.937,
+"lon": 17.299,
+"elev": 114,
+"state": "SR",
+"country": "BA",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LQMO",
+"icaoId": "LQMO",
+"iataId": "OMO",
+"faaId": null,
+"wmoId": "13348",
+"site": "Mostar Intl",
+"lat": 43.285,
+"lon": 17.84,
+"elev": 49,
+"state": "BI",
+"country": "BA",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LQSA",
+"icaoId": "LQSA",
+"iataId": "SJJ",
+"faaId": null,
+"wmoId": "13353",
+"site": "Sarajevo Intl",
+"lat": 43.825,
+"lon": 18.331,
+"elev": 505,
+"state": "BI",
+"country": "BA",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LQTZ",
+"icaoId": "LQTZ",
+"iataId": "TZL",
+"faaId": null,
+"wmoId": "14557",
+"site": "Tuzla Intl",
+"lat": 44.461,
+"lon": 18.728,
+"elev": 242,
+"state": "BI",
+"country": "BA",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYPG",
+"icaoId": "LYPG",
+"iataId": "TGD",
+"faaId": null,
+"wmoId": null,
+"site": "Podgorica Arpt",
+"lat": 42.359,
+"lon": 19.252,
+"elev": 32,
+"state": "PO",
+"country": "ME",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYTI",
+"icaoId": "LYTI",
+"iataId": null,
+"faaId": null,
+"wmoId": "13462",
+"site": "Podgorica Arpt",
+"lat": 42.367,
+"lon": 19.25,
+"elev": 29,
+"state": "PO",
+"country": "ME",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LYTV",
+"icaoId": "LYTV",
+"iataId": "TIV",
+"faaId": null,
+"wmoId": "13457",
+"site": "Tivat Arpt",
+"lat": 42.405,
+"lon": 18.723,
+"elev": 3,
+"state": "TI",
+"country": "ME",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYUZ",
+"icaoId": "LYUZ",
+"iataId": "UZC",
+"faaId": null,
+"wmoId": null,
+"site": "Uzice/Ponikve Arpt",
+"lat": 43.901,
+"lon": 19.679,
+"elev": 914,
+"state": "ZL",
+"country": "RS",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "BKPR",
+"icaoId": "BKPR",
+"iataId": "PRN",
+"faaId": null,
+"wmoId": null,
+"site": "Pristina Intl",
+"lat": 42.576,
+"lon": 21.03,
+"elev": 545,
+"state": "PR",
+"country": "XK",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "EQYG",
+"icaoId": "EQYG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Souda Bay",
+"lat": 35.53,
+"lon": 24.15,
+"elev": 142,
+"state": "M",
+"country": "GR",
+"priority": 8,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LAKU",
+"icaoId": "LAKU",
+"iataId": "KFZ",
+"faaId": null,
+"wmoId": "13610",
+"site": "Kukes Arpt",
+"lat": 42.034,
+"lon": 20.416,
+"elev": 354,
+"state": "KU",
+"country": "AL",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBBG",
+"icaoId": "LBBG",
+"iataId": "BOJ",
+"faaId": null,
+"wmoId": "15655",
+"site": "Burgas Arpt",
+"lat": 42.569,
+"lon": 27.514,
+"elev": 41,
+"state": "BU",
+"country": "BG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBGO",
+"icaoId": "LBGO",
+"iataId": "GOZ",
+"faaId": null,
+"wmoId": null,
+"site": "Gorna Orechovista Arpt",
+"lat": 43.151,
+"lon": 25.713,
+"elev": 84,
+"state": "LO",
+"country": "BG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBIA",
+"icaoId": "LBIA",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Bezmer",
+"lat": 42.456,
+"lon": 26.352,
+"elev": 155,
+"state": "BU",
+"country": "BG",
+"priority": 4,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LBPD",
+"icaoId": "LBPD",
+"iataId": "PDV",
+"faaId": null,
+"wmoId": "15625",
+"site": "Plovdiv Arpt",
+"lat": 42.064,
+"lon": 24.86,
+"elev": 182,
+"state": "PL",
+"country": "BG",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBPG",
+"icaoId": "LBPG",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Graf Ignatievo",
+"lat": 42.289,
+"lon": 24.714,
+"elev": 198,
+"state": "PL",
+"country": "BG",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBPL",
+"icaoId": "LBPL",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Dola Mitropoliya",
+"lat": 43.453,
+"lon": 24.504,
+"elev": 93,
+"state": "LO",
+"country": "BG",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LBRS",
+"icaoId": "LBRS",
+"iataId": "ROU",
+"faaId": null,
+"wmoId": null,
+"site": "Rousse/Ruse Arpt",
+"lat": 43.692,
+"lon": 26.051,
+"elev": 179,
+"state": "RA",
+"country": "BG",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LBSF",
+"icaoId": "LBSF",
+"iataId": "SOF",
+"faaId": null,
+"wmoId": "15614",
+"site": "Sofia Intl",
+"lat": 42.694,
+"lon": 23.414,
+"elev": 531,
+"state": "SO",
+"country": "BG",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LBWB",
+"icaoId": "LBWB",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Balchik",
+"lat": 43.425,
+"lon": 28.175,
+"elev": 190,
+"state": "VA",
+"country": "BG",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LBWN",
+"icaoId": "LBWN",
+"iataId": "VAR",
+"faaId": null,
+"wmoId": "15552",
+"site": "Varna Intl",
+"lat": 43.232,
+"lon": 27.825,
+"elev": 74,
+"state": "VA",
+"country": "BG",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGAD",
+"icaoId": "LGAD",
+"iataId": "PYR",
+"faaId": null,
+"wmoId": "16682",
+"site": "Andravida Arpt",
+"lat": 37.923,
+"lon": 21.287,
+"elev": 8,
+"state": "J",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGAL",
+"icaoId": "LGAL",
+"iataId": "AXD",
+"faaId": null,
+"wmoId": "16627",
+"site": "Alexandroupolis/Dimokritos Arpt",
+"lat": 40.856,
+"lon": 25.945,
+"elev": 5,
+"state": "A",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGAV",
+"icaoId": "LGAV",
+"iataId": "ATH",
+"faaId": null,
+"wmoId": null,
+"site": "Athens/Venizelos Intl",
+"lat": 37.936,
+"lon": 23.945,
+"elev": 83,
+"state": "I",
+"country": "GR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGBL",
+"icaoId": "LGBL",
+"iataId": "VOL",
+"faaId": null,
+"wmoId": "16665",
+"site": "Nea Anchialos Arpt",
+"lat": 39.22,
+"lon": 22.794,
+"elev": 13,
+"state": "E",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGEL",
+"icaoId": "LGEL",
+"iataId": null,
+"faaId": null,
+"wmoId": "16718",
+"site": "Elefsis",
+"lat": 38.064,
+"lon": 23.556,
+"elev": 21,
+"state": "I",
+"country": "GR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGHI",
+"icaoId": "LGHI",
+"iataId": "JKH",
+"faaId": null,
+"wmoId": "16706",
+"site": "Chios Isl Arpt",
+"lat": 38.343,
+"lon": 26.141,
+"elev": 6,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGIO",
+"icaoId": "LGIO",
+"iataId": "IOA",
+"faaId": null,
+"wmoId": "16642",
+"site": "Ioannina Arpt",
+"lat": 39.696,
+"lon": 20.823,
+"elev": 476,
+"state": "D",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGIR",
+"icaoId": "LGIR",
+"iataId": "HER",
+"faaId": null,
+"wmoId": "16754",
+"site": "Iraklion Intl",
+"lat": 35.337,
+"lon": 25.173,
+"elev": 37,
+"state": "M",
+"country": "GR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKC",
+"icaoId": "LGKC",
+"iataId": "KIT",
+"faaId": null,
+"wmoId": "16743",
+"site": "Kythira Arpt",
+"lat": 36.274,
+"lon": 23.017,
+"elev": 313,
+"state": "J",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKF",
+"icaoId": "LGKF",
+"iataId": "EFL",
+"faaId": null,
+"wmoId": "16685",
+"site": "Cephalonia Arpt",
+"lat": 38.12,
+"lon": 20.5,
+"elev": 14,
+"state": "F",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKL",
+"icaoId": "LGKL",
+"iataId": "KLX",
+"faaId": null,
+"wmoId": "16726",
+"site": "Kalamata Arpt",
+"lat": 37.068,
+"lon": 22.026,
+"elev": 4,
+"state": "J",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKO",
+"icaoId": "LGKO",
+"iataId": "KGS",
+"faaId": null,
+"wmoId": "16742",
+"site": "Kos Arpt",
+"lat": 36.801,
+"lon": 27.091,
+"elev": 130,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKP",
+"icaoId": "LGKP",
+"iataId": "AOK",
+"faaId": null,
+"wmoId": null,
+"site": "Karpathos Isl Arpt",
+"lat": 35.421,
+"lon": 27.146,
+"elev": 20,
+"state": "M",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKV",
+"icaoId": "LGKV",
+"iataId": "KVA",
+"faaId": null,
+"wmoId": "16624",
+"site": "Kavala Intl",
+"lat": 40.915,
+"lon": 24.622,
+"elev": 5,
+"state": "A",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGKZ",
+"icaoId": "LGKZ",
+"iataId": "KZI",
+"faaId": null,
+"wmoId": "16632",
+"site": "Kozani/Filippos Arpt",
+"lat": 40.288,
+"lon": 21.842,
+"elev": 615,
+"state": "C",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LGLM",
+"icaoId": "LGLM",
+"iataId": "LXS",
+"faaId": null,
+"wmoId": "16650",
+"site": "Limnos Island Arpt",
+"lat": 39.917,
+"lon": 25.236,
+"elev": 4,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGMK",
+"icaoId": "LGMK",
+"iataId": "JMK",
+"faaId": null,
+"wmoId": null,
+"site": "Mykonos Arpt",
+"lat": 37.435,
+"lon": 25.348,
+"elev": 126,
+"state": "K",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGMT",
+"icaoId": "LGMT",
+"iataId": "MJT",
+"faaId": null,
+"wmoId": "16667",
+"site": "Mitilini Arpt",
+"lat": 39.054,
+"lon": 26.604,
+"elev": 4,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGNX",
+"icaoId": "LGNX",
+"iataId": "JNX",
+"faaId": null,
+"wmoId": null,
+"site": "Naxos Arpt",
+"lat": 37.081,
+"lon": 25.369,
+"elev": 3,
+"state": "K",
+"country": "GR",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LGPA",
+"icaoId": "LGPA",
+"iataId": "PAS",
+"faaId": null,
+"wmoId": null,
+"site": "Paros/Kratikos Arpt",
+"lat": 37.022,
+"lon": 25.114,
+"elev": 42,
+"state": "K",
+"country": "GR",
+"priority": 5,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LGPZ",
+"icaoId": "LGPZ",
+"iataId": "PVK",
+"faaId": null,
+"wmoId": "16643",
+"site": "Preveza/Aktion Arpt",
+"lat": 38.921,
+"lon": 20.761,
+"elev": 3,
+"state": "G",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGRP",
+"icaoId": "LGRP",
+"iataId": "RHO",
+"faaId": null,
+"wmoId": "16749",
+"site": "Rhodes/Diagoras Arpt",
+"lat": 36.405,
+"lon": 28.086,
+"elev": 3,
+"state": "K",
+"country": "GR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGRX",
+"icaoId": "LGRX",
+"iataId": "GPA",
+"faaId": null,
+"wmoId": "16687",
+"site": "Araxos Arpt",
+"lat": 38.151,
+"lon": 21.426,
+"elev": 16,
+"state": "J",
+"country": "GR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGSA",
+"icaoId": "LGSA",
+"iataId": "CHQ",
+"faaId": null,
+"wmoId": "16746",
+"site": "Souda Bay/Chania Intl",
+"lat": 35.54,
+"lon": 24.141,
+"elev": 122,
+"state": "M",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGSK",
+"icaoId": "LGSK",
+"iataId": "JSI",
+"faaId": null,
+"wmoId": null,
+"site": "Skiathos Isl Arpt",
+"lat": 39.177,
+"lon": 23.504,
+"elev": 13,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGSM",
+"icaoId": "LGSM",
+"iataId": "SMI",
+"faaId": null,
+"wmoId": "16723",
+"site": "Samos Arpt",
+"lat": 37.69,
+"lon": 26.912,
+"elev": 5,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGSO",
+"icaoId": "LGSO",
+"iataId": "JSY",
+"faaId": null,
+"wmoId": null,
+"site": "Syros Island Arpt",
+"lat": 37.422,
+"lon": 24.95,
+"elev": 71,
+"state": "K",
+"country": "GR",
+"priority": 6,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LGSR",
+"icaoId": "LGSR",
+"iataId": "JTR",
+"faaId": null,
+"wmoId": null,
+"site": "Santorini Isl Arpt",
+"lat": 36.399,
+"lon": 25.479,
+"elev": 31,
+"state": "K",
+"country": "GR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGSY",
+"icaoId": "LGSY",
+"iataId": "SKU",
+"faaId": null,
+"wmoId": "16684",
+"site": "Skiros Arpt",
+"lat": 38.968,
+"lon": 24.487,
+"elev": 12,
+"state": "H",
+"country": "GR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGTS",
+"icaoId": "LGTS",
+"iataId": "SKG",
+"faaId": null,
+"wmoId": "16622",
+"site": "Thessaloniki Intl",
+"lat": 40.52,
+"lon": 22.971,
+"elev": 4,
+"state": "A",
+"country": "GR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LGZA",
+"icaoId": "LGZA",
+"iataId": "ZTH",
+"faaId": null,
+"wmoId": null,
+"site": "Zakinthos/Salomos Arpt",
+"lat": 37.751,
+"lon": 20.884,
+"elev": 3,
+"state": "J",
+"country": "GR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LRBS",
+"icaoId": "LRBS",
+"iataId": "BBU",
+"faaId": null,
+"wmoId": "15420",
+"site": "Bucharest/B\u0103neasa Intl",
+"lat": 44.511,
+"lon": 26.078,
+"elev": 91,
+"state": "B",
+"country": "RO",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LRCK",
+"icaoId": "LRCK",
+"iataId": "CND",
+"faaId": null,
+"wmoId": "15481",
+"site": "Constanta/Kog\u0103lniceanu Arpt",
+"lat": 44.362,
+"lon": 28.488,
+"elev": 108,
+"state": "CT",
+"country": "RO",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LRCV",
+"icaoId": "LRCV",
+"iataId": "CRA",
+"faaId": null,
+"wmoId": "15450",
+"site": "Craiova Arpt",
+"lat": 44.31,
+"lon": 23.867,
+"elev": 192,
+"state": "DO",
+"country": "RO",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LROP",
+"icaoId": "LROP",
+"iataId": "OTP",
+"faaId": null,
+"wmoId": "15421",
+"site": "Bucharest/Coand\u0103 Intl",
+"lat": 44.572,
+"lon": 26.102,
+"elev": 92,
+"state": "B",
+"country": "RO",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAY",
+"icaoId": "LTAY",
+"iataId": "DNZ",
+"faaId": null,
+"wmoId": null,
+"site": "\u00c7ardak Arpt",
+"lat": 37.785,
+"lon": 29.701,
+"elev": 851,
+"state": "DE",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBA",
+"icaoId": "LTBA",
+"iataId": "ISL",
+"faaId": null,
+"wmoId": "17060",
+"site": "Istanbul/Ataturk Intl",
+"lat": 40.982,
+"lon": 28.821,
+"elev": 33,
+"state": "IS",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBD",
+"icaoId": "LTBD",
+"iataId": "CII",
+"faaId": null,
+"wmoId": "17234",
+"site": "Aydin/\u00c7\u0131ld\u0131r Arpt",
+"lat": 37.816,
+"lon": 27.886,
+"elev": 29,
+"state": "AY",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBE",
+"icaoId": "LTBE",
+"iataId": null,
+"faaId": null,
+"wmoId": "17116",
+"site": "Bursa Arpt",
+"lat": 40.233,
+"lon": 29.009,
+"elev": 97,
+"state": "BR",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LTBF",
+"icaoId": "LTBF",
+"iataId": "BZI",
+"faaId": null,
+"wmoId": "17150",
+"site": "Balikesir Arpt",
+"lat": 39.619,
+"lon": 27.926,
+"elev": 95,
+"state": "BA",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBG",
+"icaoId": "LTBG",
+"iataId": "BDM",
+"faaId": null,
+"wmoId": "17115",
+"site": "Bandirma Arpt",
+"lat": 40.318,
+"lon": 27.978,
+"elev": 42,
+"state": "BA",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBH",
+"icaoId": "LTBH",
+"iataId": "CKZ",
+"faaId": null,
+"wmoId": "17112",
+"site": "\u00c7anakkale Arpt",
+"lat": 40.14,
+"lon": 26.425,
+"elev": 8,
+"state": "CK",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBJ",
+"icaoId": "LTBJ",
+"iataId": "ADB",
+"faaId": null,
+"wmoId": "17219",
+"site": "Izmir/Menderes Arpt",
+"lat": 38.285,
+"lon": 27.155,
+"elev": 123,
+"state": "IZ",
+"country": "TR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBL",
+"icaoId": "LTBL",
+"iataId": "IGL",
+"faaId": null,
+"wmoId": "17218",
+"site": "Izmir/Cigli",
+"lat": 38.513,
+"lon": 27.01,
+"elev": 5,
+"state": "IZ",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBO",
+"icaoId": "LTBO",
+"iataId": "USQ",
+"faaId": null,
+"wmoId": "17188",
+"site": "U\u015fak Arpt",
+"lat": 38.68,
+"lon": 29.483,
+"elev": 868,
+"state": "US",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBR",
+"icaoId": "LTBR",
+"iataId": "YEI",
+"faaId": null,
+"wmoId": "17118",
+"site": "Bursa/Yenisehir Arpt",
+"lat": 40.255,
+"lon": 29.562,
+"elev": 233,
+"state": "BR",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBS",
+"icaoId": "LTBS",
+"iataId": "DLM",
+"faaId": null,
+"wmoId": "17295",
+"site": "Dalaman Arpt",
+"lat": 36.713,
+"lon": 28.793,
+"elev": 2,
+"state": "MU",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBT",
+"icaoId": "LTBT",
+"iataId": null,
+"faaId": null,
+"wmoId": "17184",
+"site": "Akhisar Arpt",
+"lat": 38.809,
+"lon": 27.834,
+"elev": 81,
+"state": "MA",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBU",
+"icaoId": "LTBU",
+"iataId": "TEQ",
+"faaId": null,
+"wmoId": "17054",
+"site": "Corlu Arpt",
+"lat": 41.139,
+"lon": 27.919,
+"elev": 165,
+"state": "TE",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFA",
+"icaoId": "LTFA",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Izmir/Kaklic",
+"lat": 38.511,
+"lon": 26.978,
+"elev": 4,
+"state": "IZ",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFB",
+"icaoId": "LTFB",
+"iataId": null,
+"faaId": null,
+"wmoId": "17232",
+"site": "Izmir-Selcuk/Efes Arpt",
+"lat": 37.951,
+"lon": 27.333,
+"elev": 3,
+"state": "IZ",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFD",
+"icaoId": "LTFD",
+"iataId": "EDO",
+"faaId": null,
+"wmoId": "17145",
+"site": "Balikesir/Seyit Arpt",
+"lat": 39.559,
+"lon": 27.025,
+"elev": 15,
+"state": "BA",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFE",
+"icaoId": "LTFE",
+"iataId": "BJV",
+"faaId": null,
+"wmoId": "17291",
+"site": "Milas-Bodrun Arpt",
+"lat": 37.245,
+"lon": 27.673,
+"elev": 6,
+"state": "MU",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFJ",
+"icaoId": "LTFJ",
+"iataId": "SAW",
+"faaId": null,
+"wmoId": "17063",
+"site": "Istanbul/Gokcen Intl",
+"lat": 40.899,
+"lon": 29.309,
+"elev": 83,
+"state": "KO",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFK",
+"icaoId": "LTFK",
+"iataId": "GKD",
+"faaId": null,
+"wmoId": null,
+"site": "Gokceada Arpt",
+"lat": 40.2,
+"lon": 25.883,
+"elev": 21,
+"state": "IM",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFM",
+"icaoId": "LTFM",
+"iataId": "IST",
+"faaId": null,
+"wmoId": null,
+"site": "Istanbul Arpt",
+"lat": 41.262,
+"lon": 28.74,
+"elev": 99,
+"state": "IS",
+"country": "TR",
+"priority": 0,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LWOH",
+"icaoId": "LWOH",
+"iataId": "OHD",
+"faaId": null,
+"wmoId": "13578",
+"site": "Ohrid Arpt",
+"lat": 41.181,
+"lon": 20.744,
+"elev": 700,
+"state": "DB",
+"country": "MK",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LWSK",
+"icaoId": "LWSK",
+"iataId": "SKP",
+"faaId": null,
+"wmoId": "13586",
+"site": "Skopje Intl",
+"lat": 41.952,
+"lon": 21.627,
+"elev": 232,
+"state": "IL",
+"country": "MK",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYBE",
+"icaoId": "LYBE",
+"iataId": "BEG",
+"faaId": null,
+"wmoId": "13272",
+"site": "Belgrade/Tesla Arpt",
+"lat": 44.824,
+"lon": 20.291,
+"elev": 93,
+"state": "BE",
+"country": "RS",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYBT",
+"icaoId": "LYBT",
+"iataId": "BJY",
+"faaId": null,
+"wmoId": null,
+"site": "Batajnica",
+"lat": 44.935,
+"lon": 20.258,
+"elev": 78,
+"state": "VO",
+"country": "RS",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYKV",
+"icaoId": "LYKV",
+"iataId": "KVO",
+"faaId": null,
+"wmoId": "13376",
+"site": "Kraljevo/Ladevci Arpt",
+"lat": 43.818,
+"lon": 20.587,
+"elev": 209,
+"state": "RA",
+"country": "RS",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LYNI",
+"icaoId": "LYNI",
+"iataId": "INI",
+"faaId": null,
+"wmoId": "13388",
+"site": "Ni\u0161 Arpt",
+"lat": 43.338,
+"lon": 21.863,
+"elev": 197,
+"state": "NI",
+"country": "RS",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LCEN",
+"icaoId": "LCEN",
+"iataId": "ECN",
+"faaId": null,
+"wmoId": null,
+"site": "Ercan Arpt",
+"lat": 35.155,
+"lon": 33.496,
+"elev": 91,
+"state": "LE",
+"country": "CY",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LCNC",
+"icaoId": "LCNC",
+"iataId": "NIC",
+"faaId": null,
+"wmoId": "17607",
+"site": "Nicosia/Athalassa",
+"lat": 35.141,
+"lon": 33.396,
+"elev": 159,
+"state": "LE",
+"country": "CY",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAB",
+"icaoId": "LTAB",
+"iataId": null,
+"faaId": null,
+"wmoId": "17131",
+"site": "Ankara/Guvercin Lik",
+"lat": 39.934,
+"lon": 32.739,
+"elev": 820,
+"state": "AN",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAC",
+"icaoId": "LTAC",
+"iataId": "ESB",
+"faaId": null,
+"wmoId": "17128",
+"site": "Ankara/Esenbo\u011fa Intl",
+"lat": 40.128,
+"lon": 32.995,
+"elev": 952,
+"state": "AN",
+"country": "TR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAD",
+"icaoId": "LTAD",
+"iataId": "ANK",
+"faaId": null,
+"wmoId": "17129",
+"site": "Ankara/Etimesgut Arpt",
+"lat": 39.95,
+"lon": 32.689,
+"elev": 813,
+"state": "AN",
+"country": "TR",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAE",
+"icaoId": "LTAE",
+"iataId": null,
+"faaId": null,
+"wmoId": "17127",
+"site": "Murted )",
+"lat": 40.079,
+"lon": 32.566,
+"elev": 836,
+"state": "AN",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAF",
+"icaoId": "LTAF",
+"iataId": "ADA",
+"faaId": null,
+"wmoId": "17352",
+"site": "Adana Arpt",
+"lat": 36.989,
+"lon": 35.293,
+"elev": 19,
+"state": "AD",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAG",
+"icaoId": "LTAG",
+"iataId": "UAB",
+"faaId": null,
+"wmoId": "17350",
+"site": "Adana/Incirlik",
+"lat": 37.002,
+"lon": 35.426,
+"elev": 62,
+"state": "AD",
+"country": "TR",
+"priority": 6,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAH",
+"icaoId": "LTAH",
+"iataId": "AFY",
+"faaId": null,
+"wmoId": "17190",
+"site": "Afyon Arpt",
+"lat": 38.735,
+"lon": 30.596,
+"elev": 1004,
+"state": "AF",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAI",
+"icaoId": "LTAI",
+"iataId": "AYT",
+"faaId": null,
+"wmoId": "17300",
+"site": "Antalya Arpt",
+"lat": 36.9,
+"lon": 30.798,
+"elev": 50,
+"state": "AN",
+"country": "TR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAJ",
+"icaoId": "LTAJ",
+"iataId": "GZT",
+"faaId": null,
+"wmoId": "17260",
+"site": "Gaziantep Arpt",
+"lat": 36.947,
+"lon": 37.479,
+"elev": 684,
+"state": "GA",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAK",
+"icaoId": "LTAK",
+"iataId": null,
+"faaId": null,
+"wmoId": "17370",
+"site": "Iskenderun",
+"lat": 36.592,
+"lon": 36.158,
+"elev": 2,
+"state": "HT",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LTAL",
+"icaoId": "LTAL",
+"iataId": "KFS",
+"faaId": null,
+"wmoId": "17074",
+"site": "Kastamonu Arpt",
+"lat": 41.305,
+"lon": 33.792,
+"elev": 1074,
+"state": "KA",
+"country": "TR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAN",
+"icaoId": "LTAN",
+"iataId": "KYA",
+"faaId": null,
+"wmoId": "17244",
+"site": "Konya Arpt",
+"lat": 37.979,
+"lon": 32.562,
+"elev": 1029,
+"state": "KA",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAP",
+"icaoId": "LTAP",
+"iataId": "MZH",
+"faaId": null,
+"wmoId": "17082",
+"site": "Merzifon Arpt",
+"lat": 40.826,
+"lon": 35.52,
+"elev": 536,
+"state": "AM",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAQ",
+"icaoId": "LTAQ",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Samsun Arpt",
+"lat": 41.278,
+"lon": 36.305,
+"elev": 168,
+"state": "",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LTAR",
+"icaoId": "LTAR",
+"iataId": "VAS",
+"faaId": null,
+"wmoId": "17090",
+"site": "Sivas Arpt",
+"lat": 39.798,
+"lon": 36.894,
+"elev": 1601,
+"state": "SI",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAS",
+"icaoId": "LTAS",
+"iataId": "ONQ",
+"faaId": null,
+"wmoId": "17022",
+"site": "Zonguldak/\u00c7aycuma Arpt",
+"lat": 41.507,
+"lon": 32.089,
+"elev": 13,
+"state": "ZO",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAT",
+"icaoId": "LTAT",
+"iataId": "MLX",
+"faaId": null,
+"wmoId": "17200",
+"site": "Malatya Arpt",
+"lat": 38.435,
+"lon": 38.092,
+"elev": 850,
+"state": "MA",
+"country": "TR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAU",
+"icaoId": "LTAU",
+"iataId": "ASR",
+"faaId": null,
+"wmoId": "17195",
+"site": "Kayseri Intl",
+"lat": 38.77,
+"lon": 35.495,
+"elev": 1053,
+"state": "KA",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAV",
+"icaoId": "LTAV",
+"iataId": null,
+"faaId": null,
+"wmoId": null,
+"site": "Sivrihisar",
+"lat": 39.453,
+"lon": 31.369,
+"elev": 976,
+"state": "ES",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAW",
+"icaoId": "LTAW",
+"iataId": "TJK",
+"faaId": null,
+"wmoId": "17086",
+"site": "Tokat Arpt",
+"lat": 40.308,
+"lon": 36.368,
+"elev": 561,
+"state": "TO",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTAZ",
+"icaoId": "LTAZ",
+"iataId": "NAV",
+"faaId": null,
+"wmoId": "17194",
+"site": "Nevsehir Arpt",
+"lat": 38.771,
+"lon": 34.521,
+"elev": 944,
+"state": "NE",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBI",
+"icaoId": "LTBI",
+"iataId": "ESK",
+"faaId": null,
+"wmoId": "17124",
+"site": "Eskisehir ",
+"lat": 39.781,
+"lon": 30.58,
+"elev": 785,
+"state": "ES",
+"country": "TR",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBM",
+"icaoId": "LTBM",
+"iataId": null,
+"faaId": null,
+"wmoId": "17240",
+"site": "Isparta",
+"lat": 37.75,
+"lon": 30.55,
+"elev": 1116,
+"state": "IS",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR"
+]
+},
+{
+"id": "LTBQ",
+"icaoId": "LTBQ",
+"iataId": "KCO",
+"faaId": null,
+"wmoId": null,
+"site": "Topel Arpt)",
+"lat": 40.735,
+"lon": 30.083,
+"elev": 51,
+"state": "KO",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBY",
+"icaoId": "LTBY",
+"iataId": "AOE",
+"faaId": null,
+"wmoId": null,
+"site": "Eskisehir/Polatkan Arpt",
+"lat": 39.81,
+"lon": 30.519,
+"elev": 788,
+"state": "ES",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTBZ",
+"icaoId": "LTBZ",
+"iataId": "KZR",
+"faaId": null,
+"wmoId": null,
+"site": "Zafer Arpt",
+"lat": 39.114,
+"lon": 30.13,
+"elev": 1010,
+"state": "MA",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCA",
+"icaoId": "LTCA",
+"iataId": "EZS",
+"faaId": null,
+"wmoId": "17202",
+"site": "Elaz\u0131\u011f Arpt",
+"lat": 38.607,
+"lon": 39.291,
+"elev": 887,
+"state": "EL",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCB",
+"icaoId": "LTCB",
+"iataId": "OGU",
+"faaId": null,
+"wmoId": null,
+"site": "Ordu/Giresun Arpt",
+"lat": 40.967,
+"lon": 38.081,
+"elev": 5,
+"state": "GI",
+"country": "TR",
+"priority": 7,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCD",
+"icaoId": "LTCD",
+"iataId": "ERC",
+"faaId": null,
+"wmoId": "17092",
+"site": "Erzincan Arpt",
+"lat": 39.71,
+"lon": 39.527,
+"elev": 1146,
+"state": "EZ",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCG",
+"icaoId": "LTCG",
+"iataId": "TZX",
+"faaId": null,
+"wmoId": "17038",
+"site": "Trabzon Arpt",
+"lat": 40.995,
+"lon": 39.782,
+"elev": 28,
+"state": "TR",
+"country": "TR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCH",
+"icaoId": "LTCH",
+"iataId": "SFQ",
+"faaId": null,
+"wmoId": null,
+"site": "\u015eanl\u0131urfa",
+"lat": 37.133,
+"lon": 38.767,
+"elev": 550,
+"state": "SA",
+"country": "TR",
+"priority": 9,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCM",
+"icaoId": "LTCM",
+"iataId": "NOP",
+"faaId": null,
+"wmoId": null,
+"site": "Sinop Arpt",
+"lat": 42.019,
+"lon": 35.072,
+"elev": 7,
+"state": "SI",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCN",
+"icaoId": "LTCN",
+"iataId": "KCM",
+"faaId": null,
+"wmoId": "17255",
+"site": "Kahramanmara\u015f Arpt",
+"lat": 37.539,
+"lon": 36.953,
+"elev": 505,
+"state": "KA",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCP",
+"icaoId": "LTCP",
+"iataId": "ADF",
+"faaId": null,
+"wmoId": "17265",
+"site": "Adiyaman Arpt",
+"lat": 37.731,
+"lon": 38.469,
+"elev": 672,
+"state": "AD",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTCS",
+"icaoId": "LTCS",
+"iataId": "GNY",
+"faaId": null,
+"wmoId": "17271",
+"site": "\u015eanl\u0131urfa GAP Arpt",
+"lat": 37.445,
+"lon": 38.904,
+"elev": 825,
+"state": "SA",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTDA",
+"icaoId": "LTDA",
+"iataId": "HTY",
+"faaId": null,
+"wmoId": null,
+"site": "Hatay Arpt",
+"lat": 36.361,
+"lon": 36.283,
+"elev": 80,
+"state": "HT",
+"country": "TR",
+"priority": 4,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTDB",
+"icaoId": "LTDB",
+"iataId": "COV",
+"faaId": null,
+"wmoId": null,
+"site": "Tarsus/\u00c7ukurova Intl",
+"lat": 36.89385,
+"lon": 35.06999,
+"elev": 6,
+"state": "ME",
+"country": "TR",
+"priority": 1,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFC",
+"icaoId": "LTFC",
+"iataId": "ISE",
+"faaId": null,
+"wmoId": "17241",
+"site": "Isparta/Demirel Arpt",
+"lat": 37.855,
+"lon": 30.368,
+"elev": 862,
+"state": "IZ",
+"country": "TR",
+"priority": 5,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFG",
+"icaoId": "LTFG",
+"iataId": "GZP",
+"faaId": null,
+"wmoId": null,
+"site": "Gazipasa Arpt",
+"lat": 36.299,
+"lon": 32.3,
+"elev": 26,
+"state": "AN",
+"country": "TR",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "LTFH",
+"icaoId": "LTFH",
+"iataId": "SZF",
+"faaId": null,
+"wmoId": "17031",
+"site": "Samsun-\u00c7ar\u015famba Arpt",
+"lat": 41.255,
+"lon": 36.567,
+"elev": 7,
+"state": "SA",
+"country": "TR",
+"priority": 2,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OSAP",
+"icaoId": "OSAP",
+"iataId": "ALP",
+"faaId": null,
+"wmoId": "40007",
+"site": "Aleppo Intl",
+"lat": 36.183,
+"lon": 37.218,
+"elev": 390,
+"state": "HL",
+"country": "SY",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "OSLK",
+"icaoId": "OSLK",
+"iataId": "LTK",
+"faaId": null,
+"wmoId": "40025",
+"site": "Latakia/Assad Intl",
+"lat": 35.402,
+"lon": 35.949,
+"elev": 47,
+"state": "LA",
+"country": "SY",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "URKA",
+"icaoId": "URKA",
+"iataId": "AAQ",
+"faaId": null,
+"wmoId": "37001",
+"site": "Anapa Arpt",
+"lat": 44.995,
+"lon": 37.341,
+"elev": 41,
+"state": "KD",
+"country": "RU",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+},
+{
+"id": "URSS",
+"icaoId": "URSS",
+"iataId": "AER",
+"faaId": null,
+"wmoId": "37171",
+"site": "Sochi Intl",
+"lat": 43.438,
+"lon": 39.926,
+"elev": 4,
+"state": "KD",
+"country": "RU",
+"priority": 3,
+"siteType": [
+"METAR",
+"TAF"
+]
+}
+]

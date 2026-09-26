@@ -1,0 +1,6599 @@
+[
+{
+"icaoId": "GMTA",
+"obsTime": 1790412000,
+"rawOb": "SPECI GMTA 260840Z 36003KT 320V100 6000 SCT005 23/20 Q1019 NOSIG B2",
+"clouds": [
+{
+"cover": "SCT",
+"base": 500
+}
+],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "SPECI",
+"lat": 35.177,
+"lon": -3.84,
+"elev": 14,
+"name": "Al Hoceima/Idrissi Arpt, TA, MA"
+},
+{
+"icaoId": "LEVC",
+"obsTime": 1790411400,
+"rawOb": "METAR LEVC 260830Z 31004KT 270V340 9999 SCT011 23/13 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1100
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.489,
+"lon": -0.482,
+"elev": 58,
+"name": "Valencia Arpt, VC, ES"
+},
+{
+"icaoId": "DAOO",
+"obsTime": 1790411400,
+"rawOb": "METAR DAOO 260830Z VRB01KT 6000 FEW013 24/18 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+}
+],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 35.623,
+"lon": -0.624,
+"elev": 87,
+"name": "Oran/Es-S\u00e9nia Arpt, OR, DZ"
+},
+{
+"icaoId": "GMMX",
+"obsTime": 1790411400,
+"rawOb": "METAR GMMX 260830Z 28003KT 230V310 CAVOK 25/14 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.607,
+"lon": -8.036,
+"elev": 465,
+"name": "Marrakesh/Menara Intl, ME, MA"
+},
+{
+"icaoId": "LEZG",
+"obsTime": 1790411400,
+"rawOb": "METAR LEZG 260830Z 30011KT 270V330 CAVOK 20/13 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.661,
+"lon": -1.004,
+"elev": 245,
+"name": "Zaragoza Arpt, AR, ES"
+},
+{
+"icaoId": "DABC",
+"obsTime": 1790411400,
+"rawOb": "METAR DABC 260830Z VRB02KT CAVOK 21/09 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.278,
+"lon": 6.629,
+"elev": 686,
+"name": "Constantine/Boudiaf Arpt, CO, DZ"
+},
+{
+"icaoId": "LEAS",
+"obsTime": 1790411400,
+"rawOb": "METAR LEAS 260830Z 15003KT 100V180 9999 SCT036 19/15 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.567,
+"lon": -6.044,
+"elev": 120,
+"name": "Aviles/Asturias Arpt, O, ES"
+},
+{
+"icaoId": "LEGR",
+"obsTime": 1790411400,
+"rawOb": "METAR LEGR 260830Z 00000KT CAVOK 21/07 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.19,
+"lon": -3.789,
+"elev": 560,
+"name": "Granada/Lorca Arpt, AN, ES"
+},
+{
+"icaoId": "LEAL",
+"obsTime": 1790411400,
+"rawOb": "METAR LEAL 260830Z VRB02KT 9999 FEW020 27/22 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.282,
+"lon": -0.558,
+"elev": 26,
+"name": "Alicante Arpt, VC, ES"
+},
+{
+"icaoId": "LFKJ",
+"obsTime": 1790411400,
+"rawOb": "METAR LFKJ 260830Z AUTO 20005KT 170V230 CAVOK 26/19 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.924,
+"lon": 8.803,
+"elev": 9,
+"name": "Ajaccio/Oro Arpt, CO, FR"
+},
+{
+"icaoId": "LEAB",
+"obsTime": 1790411400,
+"rawOb": "METAR LEAB 260830Z 15007KT 110V180 CAVOK 24/11 Q1024 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.952,
+"lon": -1.863,
+"elev": 704,
+"name": "Albacete Arpt, CM, ES"
+},
+{
+"icaoId": "LBPD",
+"obsTime": 1790411400,
+"rawOb": "METAR LBPD 260830Z AUTO 32006KT 9999 BKN039/// BKN048/// OVC058/// 17/09 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3900
+},
+{
+"cover": "BKN",
+"base": 4800
+},
+{
+"cover": "OVC",
+"base": 5800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.064,
+"lon": 24.86,
+"elev": 182,
+"name": "Plovdiv Arpt, PL, BG"
+},
+{
+"icaoId": "LPFR",
+"obsTime": 1790411400,
+"rawOb": "METAR LPFR 260830Z VRB02KT CAVOK 29/11 Q1017",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.014,
+"lon": -7.966,
+"elev": 3,
+"name": "Faro Arpt, FA, PT"
+},
+{
+"icaoId": "LRCV",
+"obsTime": 1790411400,
+"rawOb": "METAR LRCV 260830Z 09008KT CAVOK 18/10 Q1025",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.31,
+"lon": 23.867,
+"elev": 192,
+"name": "Craiova Arpt, DO, RO"
+},
+{
+"icaoId": "LRCK",
+"obsTime": 1790411400,
+"rawOb": "METAR LRCK 260830Z 03013KT CAVOK 20/13 Q1024 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.362,
+"lon": 28.488,
+"elev": 108,
+"name": "Constanta/Kog\u0103lniceanu Arpt, CT, RO"
+},
+{
+"icaoId": "LCPH",
+"obsTime": 1790411400,
+"rawOb": "METAR LCPH 260830Z 21007KT 170V250 9999 FEW030 27/17 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.715,
+"lon": 32.479,
+"elev": 8,
+"name": "Paphos Intl, PA, CY"
+},
+{
+"icaoId": "LQSA",
+"obsTime": 1790411400,
+"rawOb": "METAR LQSA 260830Z VRB02KT 9999 SCT035 BKN045 13/08 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3500
+},
+{
+"cover": "BKN",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.825,
+"lon": 18.331,
+"elev": 505,
+"name": "Sarajevo Intl, BI, BA"
+},
+{
+"icaoId": "LDSP",
+"obsTime": 1790411400,
+"rawOb": "METAR LDSP 260830Z 06010KT 030V090 CAVOK 22/06 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.539,
+"lon": 16.301,
+"elev": 16,
+"name": "Split Arpt, SP, HR"
+},
+{
+"icaoId": "LYNI",
+"obsTime": 1790411400,
+"rawOb": "METAR LYNI 260830Z 33013KT 9999 SCT013 BKN070 14/11 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1300
+},
+{
+"cover": "BKN",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.338,
+"lon": 21.863,
+"elev": 197,
+"name": "Ni\u0161 Arpt, NI, RS"
+},
+{
+"icaoId": "LYKV",
+"obsTime": 1790411400,
+"rawOb": "METAR LYKV 260830Z VRB02KT 9999 SCT019 BKN047 14/12 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1900
+},
+{
+"cover": "BKN",
+"base": 4700
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.818,
+"lon": 20.587,
+"elev": 209,
+"name": "Kraljevo/Ladevci Arpt, RA, RS"
+},
+{
+"icaoId": "LYBE",
+"obsTime": 1790411400,
+"rawOb": "METAR LYBE 260830Z VRB02KT CAVOK 15/11 Q1026 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.824,
+"lon": 20.291,
+"elev": 93,
+"name": "Belgrade/Tesla Arpt, BE, RS"
+},
+{
+"icaoId": "LQBK",
+"obsTime": 1790411400,
+"rawOb": "METAR LQBK 260830Z VRB03KT CAVOK 14/09 Q1026 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.937,
+"lon": 17.299,
+"elev": 114,
+"name": "Banja Luka Intl, SR, BA"
+},
+{
+"icaoId": "LDPL",
+"obsTime": 1790411400,
+"rawOb": "METAR LDPL 260830Z 04007KT 010V100 CAVOK 21/06 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.894,
+"lon": 13.922,
+"elev": 63,
+"name": "Pula Arpt, IS, HR"
+},
+{
+"icaoId": "LFMP",
+"obsTime": 1790411400,
+"rawOb": "METAR LFMP 260830Z AUTO 02003KT 320V080 CAVOK 25/15 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.737,
+"lon": 2.873,
+"elev": 41,
+"name": "Perpignan/Rivesaltes Arpt, OC, FR"
+},
+{
+"icaoId": "LFMN",
+"obsTime": 1790411400,
+"rawOb": "METAR LFMN 260830Z 11011KT 9999 FEW036 BKN046 25/15 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3600
+},
+{
+"cover": "BKN",
+"base": 4600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.658,
+"lon": 7.216,
+"elev": 4,
+"name": "Nice/C\u00f4te d'Azur Arpt, PA, FR"
+},
+{
+"icaoId": "LFCR",
+"obsTime": 1790411400,
+"rawOb": "METAR LFCR 260830Z AUTO VRB02KT 9999 SCT003 SCT007 OVC029 16/15 Q1025 TEMPO BKN007",
+"clouds": [
+{
+"cover": "SCT",
+"base": 300
+},
+{
+"cover": "SCT",
+"base": 700
+},
+{
+"cover": "OVC",
+"base": 2900
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.41,
+"lon": 2.483,
+"elev": 576,
+"name": "Rodez/Marcillac Arpt, OC, FR"
+},
+{
+"icaoId": "LEGE",
+"obsTime": 1790411400,
+"rawOb": "METAR LEGE 260830Z 18003KT 150V250 CAVOK 23/16 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.911,
+"lon": 2.763,
+"elev": 140,
+"name": "Gerona/Costa Brava Arpt, CT, ES"
+},
+{
+"icaoId": "LFMT",
+"obsTime": 1790411400,
+"rawOb": "METAR LFMT 260830Z AUTO 05004KT 350V100 9999 FEW009 23/19 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.577,
+"lon": 3.963,
+"elev": 1,
+"name": "Montpellier/M\u00e9diterranee Arpt, OC, FR"
+},
+{
+"icaoId": "HECA",
+"obsTime": 1790411400,
+"rawOb": "METAR HECA 260830Z 35006KT 9999 FEW025 SCT200 26/13 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.133,
+"lon": 31.405,
+"elev": 142,
+"name": "Cairo Intl, QH, EG"
+},
+{
+"icaoId": "LPPR",
+"obsTime": 1790411400,
+"rawOb": "METAR LPPR 260830Z VRB01KT CAVOK 18/15 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.235,
+"lon": -8.684,
+"elev": 64,
+"name": "Porto/Cameriro Arpt, PT, PT"
+},
+{
+"icaoId": "GCRR",
+"obsTime": 1790411400,
+"rawOb": "METAR GCRR 260830Z 36010KT 330V030 9999 FEW020 25/21 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.952,
+"lon": -13.6,
+"elev": 9,
+"name": "Arrecife/Lanzarote Arpt, CR, ES"
+},
+{
+"icaoId": "DTMB",
+"obsTime": 1790411400,
+"rawOb": "METAR DTMB 260830Z 33010KT 9999 SCT026 26/21 Q1018",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.758,
+"lon": 10.755,
+"elev": 1,
+"name": "Monastir/Bourguiba Intl, MO, TN"
+},
+{
+"icaoId": "LPPS",
+"obsTime": 1790411400,
+"rawOb": "METAR LPPS 260830Z 07005KT 040V110 CAVOK 25/11 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.073,
+"lon": -16.35,
+"elev": 89,
+"name": "Porto Santo Isl Arpt, MD, PT"
+},
+{
+"icaoId": "DABB",
+"obsTime": 1790411400,
+"rawOb": "METAR DABB 260830Z 21010KT 9999 FEW020 FEW026TCU 26/18 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "FEW",
+"base": 2600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.822,
+"lon": 7.809,
+"elev": 3,
+"name": "Annaba/Bitat Arpt, ET, DZ"
+},
+{
+"icaoId": "DAAG",
+"obsTime": 1790411400,
+"rawOb": "METAR DAAG 260830Z VRB02KT 9999 FEW020 26/17 Q1021",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.691,
+"lon": 3.215,
+"elev": 18,
+"name": "Algiers Intl, BM, DZ"
+},
+{
+"icaoId": "LPPT",
+"obsTime": 1790411400,
+"rawOb": "METAR LPPT 260830Z VRB03G17KT CAVOK 20/15 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.781,
+"lon": -9.136,
+"elev": 98,
+"name": "Lisbon Arpt, LI, PT"
+},
+{
+"icaoId": "LFML",
+"obsTime": 1790411400,
+"rawOb": "METAR LFML 260830Z AUTO 30003KT 280V340 CAVOK 25/17 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 5.216,
+"elev": 20,
+"name": "Marseille Arpt, PA, FR"
+},
+{
+"icaoId": "GCLP",
+"obsTime": 1790411400,
+"rawOb": "METAR GCLP 260830Z 02017KT CAVOK 27/15 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.923,
+"lon": -15.389,
+"elev": 16,
+"name": "Grand Canaria Arpt, CR, ES"
+},
+{
+"icaoId": "LFBO",
+"obsTime": 1790411400,
+"rawOb": "METAR LFBO 260830Z AUTO VRB02KT 9999 SCT023 OVC039 21/15 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2300
+},
+{
+"cover": "OVC",
+"base": 3900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.621,
+"lon": 1.379,
+"elev": 150,
+"name": "Toulouse/Blagnac Arpt, OC, FR"
+},
+{
+"icaoId": "LFKB",
+"obsTime": 1790411400,
+"rawOb": "METAR LFKB 260830Z AUTO 02008KT CAVOK 24/10 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.553,
+"lon": 9.484,
+"elev": 7,
+"name": "Bastia/Poretta Arpt, OC, FR"
+},
+{
+"icaoId": "LEIB",
+"obsTime": 1790411400,
+"rawOb": "METAR LEIB 260830Z 07007KT 030V100 CAVOK 26/22 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.876,
+"lon": 1.384,
+"elev": 4,
+"name": "Ibiza Arpt, IB, ES"
+},
+{
+"icaoId": "LECH",
+"obsTime": 1790411400,
+"rawOb": "METAR LECH 260830Z AUTO 03005KT 340V070 CAVOK 23/19 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.211,
+"lon": 0.067,
+"elev": 360,
+"name": "Castell\u00f3n Arpt, VC, ES"
+},
+{
+"icaoId": "LBSF",
+"obsTime": 1790411400,
+"rawOb": "METAR LBSF 260830Z VRB03KT 9999 FEW022 BKN088 15/10 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2200
+},
+{
+"cover": "BKN",
+"base": 8800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.694,
+"lon": 23.414,
+"elev": 531,
+"name": "Sofia Intl, SO, BG"
+},
+{
+"icaoId": "LEBL",
+"obsTime": 1790411400,
+"rawOb": "METAR LEBL 260830Z 34005KT 9999 FEW020 24/16 Q1022",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.293,
+"lon": 2.07,
+"elev": 2,
+"name": "Barcelona/Prat Arpt, CT, ES"
+},
+{
+"icaoId": "GMFO",
+"obsTime": 1790411400,
+"rawOb": "METAR GMFO 260830Z VRB02KT CAVOK 26/04 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.787,
+"lon": -1.924,
+"elev": 452,
+"name": "Oujda/Angads Arpt, RA, MA"
+},
+{
+"icaoId": "GCHI",
+"obsTime": 1790411400,
+"rawOb": "METAR GCHI 260830Z 01006KT 330V040 CAVOK 26/19 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.819,
+"lon": -17.889,
+"elev": 21,
+"name": "Valverde/Hierro Arpt, CR, ES"
+},
+{
+"icaoId": "LEAM",
+"obsTime": 1790411400,
+"rawOb": "METAR LEAM 260830Z 32006KT 250V350 CAVOK 26/18 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.846,
+"lon": -2.357,
+"elev": 16,
+"name": "Almer\u00eda Arpt, AN, ES"
+},
+{
+"icaoId": "LETL",
+"obsTime": 1790411400,
+"rawOb": "METAR LETL 260830Z AUTO 14007KT CAVOK 19/07 Q1025",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.404,
+"lon": -1.218,
+"elev": 1024,
+"name": "Teruel Arpt, AR, ES"
+},
+{
+"icaoId": "LEBB",
+"obsTime": 1790411400,
+"rawOb": "METAR LEBB 260830Z 11004KT 060V140 9999 OVC038 20/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.298,
+"lon": -2.906,
+"elev": 38,
+"name": "Bilbao Arpt, PV, ES"
+},
+{
+"icaoId": "LECO",
+"obsTime": 1790411400,
+"rawOb": "METAR LECO 260830Z VRB02KT CAVOK 14/13 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.307,
+"lon": -8.372,
+"elev": 80,
+"name": "A Coru\u00f1a Arpt, GA, ES"
+},
+{
+"icaoId": "LFBT",
+"obsTime": 1790411400,
+"rawOb": "METAR LFBT 260830Z AUTO VRB02KT 9999 FEW013 OVC032 19/15 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+},
+{
+"cover": "OVC",
+"base": 3200
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.189,
+"lon": 0,
+"elev": 359,
+"name": "Tarbes/Ossun Arpt, OC, FR"
+},
+{
+"icaoId": "LEZL",
+"obsTime": 1790411400,
+"rawOb": "METAR LEZL 260830Z 03007KT 350V060 CAVOK 26/11 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.418,
+"lon": -5.893,
+"elev": 26,
+"name": "Seville/San Pablo Arpt, AN, ES"
+},
+{
+"icaoId": "LBBG",
+"obsTime": 1790411400,
+"rawOb": "METAR LBBG 260830Z AUTO 02011KT 9000 -SHRA SCT027/// BKN047/// 17/15 Q1021 TEMPO 5000 SHRA FEW025",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2700
+},
+{
+"cover": "BKN",
+"base": 4700
+}
+],
+"fltCat": "VFR",
+"visib": 5.59,
+"metarType": "METAR",
+"lat": 42.569,
+"lon": 27.514,
+"elev": 41,
+"name": "Burgas Arpt, BU, BG"
+},
+{
+"icaoId": "LEVX",
+"obsTime": 1790411400,
+"rawOb": "METAR LEVX 260830Z 19007KT 150V220 CAVOK 17/12 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.239,
+"lon": -8.624,
+"elev": 253,
+"name": "Vigo/Peinador Arpt, GA, ES"
+},
+{
+"icaoId": "LEVD",
+"obsTime": 1790411400,
+"rawOb": "METAR LEVD 260830Z 07007KT 030V090 CAVOK 15/10 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.706,
+"lon": -4.852,
+"elev": 844,
+"name": "Valladolid Arpt, CL, ES"
+},
+{
+"icaoId": "LEMD",
+"obsTime": 1790411400,
+"rawOb": "METAR LEMD 260830Z VRB01KT CAVOK 21/04 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.466,
+"lon": -3.555,
+"elev": 589,
+"name": "Madrid/Barajas Arpt, M, ES"
+},
+{
+"icaoId": "LCLK",
+"obsTime": 1790411400,
+"rawOb": "METAR LCLK 260830Z 19007KT 130V220 9999 FEW030 28/20 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.874,
+"lon": 33.617,
+"elev": 2,
+"name": "Larnaca Intl, LA, CY"
+},
+{
+"icaoId": "URSS",
+"obsTime": 1790411400,
+"rawOb": "METAR URSS 260830Z 16002MPS 110V230 9999 FEW033 24/16 Q1019 R02/010070 R06/010070 NOSIG RMK R06/16002G05MPS MT OBSC QFE763",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 39.926,
+"elev": 4,
+"name": "Sochi Intl, KD, RU"
+},
+{
+"icaoId": "GMMN",
+"obsTime": 1790411400,
+"rawOb": "METAR GMMN 260830Z VRB02KT CAVOK 24/22 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.367,
+"lon": -7.59,
+"elev": 196,
+"name": "Casablanca Intl, ME, MA"
+},
+{
+"icaoId": "URKA",
+"obsTime": 1790411400,
+"rawOb": "METAR URKA 260830Z 08008MPS CAVOK 21/14 Q1020 R03/010065 NOSIG RMK QFE761/1015",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.995,
+"lon": 37.341,
+"elev": 41,
+"name": "Anapa Arpt, KD, RU"
+},
+{
+"icaoId": "GQNO",
+"obsTime": 1790411400,
+"rawOb": "METAR GQNO 260830Z 04006KT 7000 FEW020 25/23 Q1013 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "MVFR",
+"visib": 4.35,
+"metarType": "METAR",
+"lat": 18.31,
+"lon": -15.97,
+"elev": 1,
+"name": "Nouakchott/Oumtounsy Arpt, TR, MR"
+},
+{
+"icaoId": "GMAD",
+"obsTime": 1790411400,
+"rawOb": "METAR GMAD 260830Z 21004KT 160V240 5000 BKN008 20/18 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 800
+}
+],
+"fltCat": "IFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 30.325,
+"lon": -9.413,
+"elev": 66,
+"name": "Agadir/Al Massira Arpt, SM, MA"
+},
+{
+"icaoId": "GMME",
+"obsTime": 1790411400,
+"rawOb": "METAR GMME 260830Z 00000KT 5000 FEW003 22/22 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 300
+}
+],
+"fltCat": "MVFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 34.051,
+"lon": -6.752,
+"elev": 84,
+"name": "Rabat-Sal\u00e9 Arpt, RS, MA"
+},
+{
+"icaoId": "GMFF",
+"obsTime": 1790411400,
+"rawOb": "METAR GMFF 260830Z VRB02KT CAVOK 27/05 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.929,
+"lon": -4.976,
+"elev": 575,
+"name": "Fes/Sa\u00efss Arpt, FE, MA"
+},
+{
+"icaoId": "LROP",
+"obsTime": 1790411400,
+"rawOb": "METAR LROP 260830Z 05010KT CAVOK 19/12 Q1025 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.572,
+"lon": 26.102,
+"elev": 92,
+"name": "Bucharest/Coand\u0103 Intl, B, RO"
+},
+{
+"icaoId": "LBGO",
+"obsTime": 1790411400,
+"rawOb": "METAR LBGO 260830Z AUTO 28005KT 9999 BKN030/// OVC045/// 16/10 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3000
+},
+{
+"cover": "OVC",
+"base": 4500
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.151,
+"lon": 25.713,
+"elev": 84,
+"name": "Gorna Orechovista Arpt, LO, BG"
+},
+{
+"icaoId": "DAAT",
+"obsTime": 1790411400,
+"rawOb": "METAR DAAT 260830Z 13007KT 090V150 CAVOK 27/04 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 22.824,
+"lon": 5.452,
+"elev": 1372,
+"name": "Tamanrasset/Aguenar-Hadj Bei Arpt, TA, DZ"
+},
+{
+"icaoId": "LEPA",
+"obsTime": 1790411400,
+"rawOb": "METAR LEPA 260830Z 06010KT 9999 FEW018 25/20 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.561,
+"lon": 2.737,
+"elev": 8,
+"name": "Palma De Mallorca Arpr, IB, ES"
+},
+{
+"icaoId": "LEMH",
+"obsTime": 1790411400,
+"rawOb": "METAR LEMH 260830Z 03014KT 360V070 9999 FEW023 27/20 Q1021",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.855,
+"lon": 4.216,
+"elev": 82,
+"name": "Mahon/Menorca Arpt, IB, ES"
+},
+{
+"icaoId": "LFBA",
+"obsTime": 1790411400,
+"rawOb": "METAR LFBA 260830Z AUTO VRB03KT 9999 FEW016 OVC038 21/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1600
+},
+{
+"cover": "OVC",
+"base": 3800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.176,
+"lon": 0.593,
+"elev": 68,
+"name": "Agen/La Garenne Arpt, NA, FR"
+},
+{
+"icaoId": "LFBD",
+"obsTime": 1790411400,
+"rawOb": "METAR LFBD 260830Z AUTO VRB02KT 9999 OVC036 21/14 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.831,
+"lon": -0.691,
+"elev": 48,
+"name": "Bordeaux/M\u00e9rignac Arpt, NA, FR"
+},
+{
+"icaoId": "DTTA",
+"obsTime": 1790411400,
+"rawOb": "METAR DTTA 260830Z 29008KT 9999 SCT023 26/21 Q1019",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.851,
+"lon": 10.227,
+"elev": 4,
+"name": "Tunis/Carthage Intl, AR, TN"
+},
+{
+"icaoId": "GCTS",
+"obsTime": 1790411400,
+"rawOb": "METAR GCTS 260830Z 10003KT 010V170 9999 BKN110 29/18 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 11000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.047,
+"lon": -16.561,
+"elev": 59,
+"name": "Tenerife/South Arpt, CR, ES"
+},
+{
+"icaoId": "LYTV",
+"obsTime": 1790411400,
+"rawOb": "METAR LYTV 260830Z 34005G16KT 9999 FEW060 23/07 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 6000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.405,
+"lon": 18.723,
+"elev": 3,
+"name": "Tivat Arpt, TI, ME"
+},
+{
+"icaoId": "LICC",
+"obsTime": 1790410800,
+"rawOb": "METAR LICC 260820Z VRB02KT 9999 VCSH FEW020 SCT050 21/14 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "SCT",
+"base": 5000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.467,
+"lon": 15.064,
+"elev": 6,
+"name": "Catania/Fontanarossa Arpt, CT, IT"
+},
+{
+"icaoId": "LGMK",
+"obsTime": 1790410800,
+"rawOb": "METAR LGMK 260820Z 01007KT 9999 FEW020 22/14 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.435,
+"lon": 25.348,
+"elev": 126,
+"name": "Mykonos Arpt, K, GR"
+},
+{
+"icaoId": "LTCG",
+"obsTime": 1790410800,
+"rawOb": "METAR LTCG 260820Z 36003KT 320V020 9999 BKN035 21/17 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.995,
+"lon": 39.782,
+"elev": 28,
+"name": "Trabzon Arpt, TR, TR"
+},
+{
+"icaoId": "LGBL",
+"obsTime": 1790410800,
+"rawOb": "METAR LGBL 260820Z 26007KT 9999 FEW012 SCT025 BKN080 17/16 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1200
+},
+{
+"cover": "SCT",
+"base": 2500
+},
+{
+"cover": "BKN",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.22,
+"lon": 22.794,
+"elev": 13,
+"name": "Nea Anchialos Arpt, E, GR"
+},
+{
+"icaoId": "LTAT",
+"obsTime": 1790410800,
+"rawOb": "METAR LTAT 260820Z 10004KT 060V170 9999 FEW040 26/09 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.435,
+"lon": 38.092,
+"elev": 850,
+"name": "Malatya Arpt, MA, TR"
+},
+{
+"icaoId": "LLBG",
+"obsTime": 1790410800,
+"rawOb": "METAR LLBG 260820Z 26006KT 210V310 9999 SCT038 28/17 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 32.011,
+"lon": 34.887,
+"elev": 35,
+"name": "Tel Aviv/Ben Gurion Arpt, C, IL"
+},
+{
+"icaoId": "LIMJ",
+"obsTime": 1790410800,
+"rawOb": "METAR LIMJ 260820Z 06012KT CAVOK 22/10 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.413,
+"lon": 8.838,
+"elev": 3,
+"name": "Genoa/Colombo Arpt, GE, IT"
+},
+{
+"icaoId": "LTAI",
+"obsTime": 1790410800,
+"rawOb": "METAR LTAI 260820Z 04003KT 310V110 9999 FEW030 BKN180 28/10 Q1014 BECMG TL0900 17010KT",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.9,
+"lon": 30.798,
+"elev": 50,
+"name": "Antalya Arpt, AN, TR"
+},
+{
+"icaoId": "LWSK",
+"obsTime": 1790410800,
+"rawOb": "METAR LWSK 260820Z VRB01KT 9999 FEW013 SCT050 BKN090 16/12 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+},
+{
+"cover": "SCT",
+"base": 5000
+},
+{
+"cover": "BKN",
+"base": 9000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.952,
+"lon": 21.627,
+"elev": 232,
+"name": "Skopje Intl, IL, MK"
+},
+{
+"icaoId": "LGKP",
+"obsTime": 1790410800,
+"rawOb": "METAR LGKP 260820Z 28009KT 9999 FEW025 24/14 Q1016",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.421,
+"lon": 27.146,
+"elev": 20,
+"name": "Karpathos Isl Arpt, M, GR"
+},
+{
+"icaoId": "LTAJ",
+"obsTime": 1790410800,
+"rawOb": "METAR LTAJ 260820Z VRB03KT 9999 FEW040 SCT180 29/11 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "SCT",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.947,
+"lon": 37.479,
+"elev": 684,
+"name": "Gaziantep Arpt, GA, TR"
+},
+{
+"icaoId": "LTAU",
+"obsTime": 1790410800,
+"rawOb": "METAR LTAU 260820Z 05004KT 350V110 CAVOK 21/11 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.77,
+"lon": 35.495,
+"elev": 1053,
+"name": "Kayseri Intl, KA, TR"
+},
+{
+"icaoId": "LGKR",
+"obsTime": 1790410800,
+"rawOb": "METAR LGKR 260820Z 13004KT 9999 FEW015 SCT080 21/15 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.61,
+"lon": 19.913,
+"elev": 2,
+"name": "Corfu/Kapodistinas Arpt, L, GR"
+},
+{
+"icaoId": "LGAV",
+"obsTime": 1790410800,
+"rawOb": "METAR LGAV 260820Z 03008KT 9999 FEW025 SCT040 21/09 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.936,
+"lon": 23.945,
+"elev": 83,
+"name": "Athens/Venizelos Intl, I, GR"
+},
+{
+"icaoId": "LIRQ",
+"obsTime": 1790410800,
+"rawOb": "METAR LIRQ 260820Z VRB07KT CAVOK 22/08 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.81,
+"lon": 11.205,
+"elev": 33,
+"name": "Florence/Peretola Arpt, FI, IT"
+},
+{
+"icaoId": "LTBJ",
+"obsTime": 1790410800,
+"rawOb": "METAR LTBJ 260820Z VRB01KT CAVOK 22/09 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.285,
+"lon": 27.155,
+"elev": 123,
+"name": "Izmir/Menderes Arpt, IZ, TR"
+},
+{
+"icaoId": "LIEE",
+"obsTime": 1790410800,
+"rawOb": "METAR LIEE 260820Z VRB02KT CAVOK 25/17 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.243,
+"lon": 9.06,
+"elev": 1,
+"name": "Cagliari/Elmas Arpt, CA, IT"
+},
+{
+"icaoId": "LGRP",
+"obsTime": 1790410800,
+"rawOb": "METAR LGRP 260820Z 28008KT 9999 FEW025 24/14 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.405,
+"lon": 28.086,
+"elev": 3,
+"name": "Rhodes/Diagoras Arpt, K, GR"
+},
+{
+"icaoId": "LGAD",
+"obsTime": 1790410800,
+"rawOb": "METAR LGAD 260820Z 02004KT 9999 FEW018 SCT070 22/15 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1800
+},
+{
+"cover": "SCT",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.923,
+"lon": 21.287,
+"elev": 8,
+"name": "Andravida Arpt, J, GR"
+},
+{
+"icaoId": "LTAC",
+"obsTime": 1790410800,
+"rawOb": "METAR LTAC 260820Z 04006KT 350V090 9999 SCT033 BKN200 17/09 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3300
+},
+{
+"cover": "BKN",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.128,
+"lon": 32.995,
+"elev": 952,
+"name": "Ankara/Esenbo\u011fa Intl, AN, TR"
+},
+{
+"icaoId": "LTCS",
+"obsTime": 1790410800,
+"rawOb": "METAR LTCS 260820Z 02008KT 330V050 CAVOK 30/08 Q1017",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.445,
+"lon": 38.904,
+"elev": 825,
+"name": "\u015eanl\u0131urfa GAP Arpt, SA, TR"
+},
+{
+"icaoId": "LGTS",
+"obsTime": 1790410800,
+"rawOb": "METAR LGTS 260820Z 33016KT 9999 FEW008 SCT020 18/17 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 800
+},
+{
+"cover": "SCT",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.52,
+"lon": 22.971,
+"elev": 4,
+"name": "Thessaloniki Intl, A, GR"
+},
+{
+"icaoId": "LICJ",
+"obsTime": 1790410800,
+"rawOb": "METAR LICJ 260820Z 07014KT 9999 FEW030 25/17 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.176,
+"lon": 13.091,
+"elev": 20,
+"name": "Palermo Arpt, PA, IT"
+},
+{
+"icaoId": "LICG",
+"obsTime": 1790410800,
+"rawOb": "METAR LICG 260820Z AUTO 36011KT 9999 FEW021/// 25/18 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2100
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.814,
+"lon": 11.971,
+"elev": 192,
+"name": "Pantelleria Arpt, TP, IT"
+},
+{
+"icaoId": "LTDB",
+"obsTime": 1790410800,
+"rawOb": "METAR LTDB 260820Z 30003KT 250V020 CAVOK 29/17 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.8939,
+"lon": 35.07,
+"elev": 6,
+"name": "Tarsus/\u00c7ukurova Intl, ME, TR"
+},
+{
+"icaoId": "LIRN",
+"obsTime": 1790410800,
+"rawOb": "METAR LIRN 260820Z 06010KT 020V100 CAVOK 21/09 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.885,
+"lon": 14.292,
+"elev": 76,
+"name": "Naples Intl, NA, IT"
+},
+{
+"icaoId": "LICD",
+"obsTime": 1790410800,
+"rawOb": "METAR LICD 260820Z AUTO 36011KT 9999 NCD 27/19 Q1016",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.498,
+"lon": 12.618,
+"elev": 20,
+"name": "Lampedusa Island Arpt, AG, IT"
+},
+{
+"icaoId": "LICA",
+"obsTime": 1790410800,
+"rawOb": "METAR LICA 260820Z AUTO 06003KT 340V140 9999 NCD 23/08 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.908,
+"lon": 16.242,
+"elev": 7,
+"name": "Lamezia Terme Arpt, CA, IT"
+},
+{
+"icaoId": "LIBR",
+"obsTime": 1790410800,
+"rawOb": "METAR LIBR 260820Z 03019KT 9999 FEW035 22/13 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.658,
+"lon": 17.951,
+"elev": 5,
+"name": "Brindisi/Casale Arpt, PU, IT"
+},
+{
+"icaoId": "LGAL",
+"obsTime": 1790410800,
+"rawOb": "METAR LGAL 260820Z 05016KT 9999 FEW020 23/13 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.856,
+"lon": 25.945,
+"elev": 5,
+"name": "Alexandroupolis/Dimokritos Arpt, A, GR"
+},
+{
+"icaoId": "LIRF",
+"obsTime": 1790410800,
+"rawOb": "METAR LIRF 260820Z 04009KT 9999 SCT040 22/06 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.8,
+"lon": 12.239,
+"elev": 2,
+"name": "Rome/Fiumicino, RM, IT"
+},
+{
+"icaoId": "LIPY",
+"obsTime": 1790410800,
+"rawOb": "METAR LIPY 260820Z AUTO 30007KT 9999 NCD 20/13 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.617,
+"lon": 13.36,
+"elev": 11,
+"name": "Falconara/Ancona Arpt, AN, IT"
+},
+{
+"icaoId": "LGIR",
+"obsTime": 1790410800,
+"rawOb": "METAR LGIR 260820Z VRB02KT 9999 FEW020 SCT080 23/12 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.337,
+"lon": 25.173,
+"elev": 37,
+"name": "Iraklion Intl, M, GR"
+},
+{
+"icaoId": "LIEO",
+"obsTime": 1790410800,
+"rawOb": "METAR LIEO 260820Z 35006KT 320V020 CAVOK 24/13 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.899,
+"lon": 9.518,
+"elev": 8,
+"name": "Olbia/Costa Smeralda Arpt, OT, IT"
+},
+{
+"icaoId": "LIEA",
+"obsTime": 1790410800,
+"rawOb": "METAR LIEA 260820Z 05006KT CAVOK 26/13 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.631,
+"lon": 8.289,
+"elev": 22,
+"name": "Alghero/Fertilia Arpt, SS, IT"
+},
+{
+"icaoId": "LTFM",
+"obsTime": 1790410800,
+"rawOb": "METAR LTFM 260820Z 06016KT 9999 SCT025 BKN180 22/15 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2500
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.262,
+"lon": 28.74,
+"elev": 99,
+"name": "Istanbul Arpt, IS, TR"
+},
+{
+"icaoId": "LXGB",
+"obsTime": 1790410800,
+"rawOb": "METAR LXGB 260820Z 08007KT 9000 BR FEW002 BKN003 21/19 Q1019 BECMG BKN007",
+"clouds": [
+{
+"cover": "FEW",
+"base": 200
+},
+{
+"cover": "BKN",
+"base": 300
+}
+],
+"fltCat": "LIFR",
+"visib": 5.59,
+"metarType": "METAR",
+"lat": 36.151,
+"lon": -5.35,
+"elev": 5,
+"name": "Gibraltar Arpt, , GI"
+},
+{
+"icaoId": "LGSA",
+"obsTime": 1790410800,
+"rawOb": "METAR LGSA 260820Z 04006KT 9999 FEW025 SCT080 25/14 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.54,
+"lon": 24.141,
+"elev": 122,
+"name": "Souda Bay/Chania Intl, M, GR"
+},
+{
+"icaoId": "LGKZ",
+"obsTime": 1790410800,
+"rawOb": "METAR LGKZ 260820Z AUTO 03007KT //// -RA ////// 11/10 Q1021 RE//",
+"clouds": null,
+"fltCat": null,
+"visib": null,
+"metarType": "METAR",
+"lat": 40.288,
+"lon": 21.842,
+"elev": 615,
+"name": "Kozani/Filippos Arpt, C, GR"
+},
+{
+"icaoId": "LMML",
+"obsTime": 1790410500,
+"rawOb": "METAR LMML 260815Z 02006KT 320V080 9999 FEW025 25/19 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.858,
+"lon": 14.477,
+"elev": 78,
+"name": "Malta Intl, LU, MT"
+},
+{
+"icaoId": "OEJN",
+"obsTime": 1790409600,
+"rawOb": "METAR OEJN 260800Z 32008KT CAVOK 37/25 Q1007 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 21.685,
+"lon": 39.166,
+"elev": 8,
+"name": "Jeddah/King Abdulaziz Intl, ML, SA"
+},
+{
+"icaoId": "LECH",
+"obsTime": 1790409600,
+"rawOb": "METAR LECH 260800Z AUTO 03006KT 340V060 9000 FEW006 SCT011 21/18 Q1023",
+"clouds": [
+{
+"cover": "FEW",
+"base": 600
+},
+{
+"cover": "SCT",
+"base": 1100
+}
+],
+"fltCat": "VFR",
+"visib": 5.59,
+"metarType": "METAR",
+"lat": 40.211,
+"lon": 0.067,
+"elev": 360,
+"name": "Castell\u00f3n Arpt, VC, ES"
+},
+{
+"icaoId": "OSDI",
+"obsTime": 1790409600,
+"rawOb": "METAR OSDI 260800Z 04004KT CAVOK 27/14 Q1016",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.411,
+"lon": 36.516,
+"elev": 614,
+"name": "Damascus Intl, DI, SY"
+},
+{
+"icaoId": "HEBL",
+"obsTime": 1790409600,
+"rawOb": "METAR HEBL 260800Z 36008KT CAVOK 33/14 Q1012 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 22.376,
+"lon": 31.612,
+"elev": 184,
+"name": "Abu Simbel Arpt, AS, EG"
+},
+{
+"icaoId": "HLMS",
+"obsTime": 1790409600,
+"rawOb": "METAR HLMS 260800Z 30005KT 8000 FEW020 27/17 Q1016",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "MVFR",
+"visib": 4.97,
+"metarType": "METAR",
+"lat": 32.324,
+"lon": 15.062,
+"elev": 7,
+"name": "Misrata Intl, MI, LY"
+},
+{
+"icaoId": "LBBG",
+"obsTime": 1790409600,
+"rawOb": "METAR LBBG 260800Z AUTO 04011KT 9999 -SHRA FEW019/// SCT046/// 17/15 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1900
+},
+{
+"cover": "SCT",
+"base": 4600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.569,
+"lon": 27.514,
+"elev": 41,
+"name": "Burgas Arpt, BU, BG"
+},
+{
+"icaoId": "OSAP",
+"obsTime": 1790409600,
+"rawOb": "METAR OSAP 260800Z 29004KT CAVOK 30/17 Q1016",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.183,
+"lon": 37.218,
+"elev": 390,
+"name": "Aleppo Intl, HL, SY"
+},
+{
+"icaoId": "LBPL",
+"obsTime": 1790409600,
+"rawOb": "METAR LBPL 260800Z 00000KT 9999 BKN040 OVC100 16/11 Q1024 RMK T01640114",
+"clouds": [
+{
+"cover": "BKN",
+"base": 4000
+},
+{
+"cover": "OVC",
+"base": 10000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.453,
+"lon": 24.504,
+"elev": 93,
+"name": "Dola Mitropoliya, LO, BG"
+},
+{
+"icaoId": "LPPR",
+"obsTime": 1790409600,
+"rawOb": "METAR LPPR 260800Z 10003KT 020V140 9000 NSC 17/15 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": 5.59,
+"metarType": "METAR",
+"lat": 41.235,
+"lon": -8.684,
+"elev": 64,
+"name": "Porto/Cameriro Arpt, PT, PT"
+},
+{
+"icaoId": "LPPS",
+"obsTime": 1790409600,
+"rawOb": "METAR LPPS 260800Z 12004KT CAVOK 25/16 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.073,
+"lon": -16.35,
+"elev": 89,
+"name": "Porto Santo Isl Arpt, MD, PT"
+},
+{
+"icaoId": "LPPT",
+"obsTime": 1790409600,
+"rawOb": "METAR LPPT 260800Z 08004KT 030V110 CAVOK 20/15 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.781,
+"lon": -9.136,
+"elev": 98,
+"name": "Lisbon Arpt, LI, PT"
+},
+{
+"icaoId": "LPMR",
+"obsTime": 1790409600,
+"rawOb": "METAR LPMR 260800Z 14002KT 0400 FG VV/// 15/15 Q1019",
+"clouds": [],
+"fltCat": "LIFR",
+"visib": 0.25,
+"metarType": "METAR",
+"lat": 39.831,
+"lon": -8.887,
+"elev": 50,
+"name": "Monte Real, LE, PT"
+},
+{
+"icaoId": "LBSF",
+"obsTime": 1790409600,
+"rawOb": "METAR LBSF 260800Z VRB01KT 9999 FEW026 BKN089 13/09 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2600
+},
+{
+"cover": "BKN",
+"base": 8900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.694,
+"lon": 23.414,
+"elev": 531,
+"name": "Sofia Intl, SO, BG"
+},
+{
+"icaoId": "HEMA",
+"obsTime": 1790409600,
+"rawOb": "METAR HEMA 260800Z 33020KT CAVOK 30/18 Q1012 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 25.557,
+"lon": 34.584,
+"elev": 77,
+"name": "Marsa Alam Intl, BA, EG"
+},
+{
+"icaoId": "GCHI",
+"obsTime": 1790409600,
+"rawOb": "METAR GCHI 260800Z 34013KT CAVOK 28/15 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.819,
+"lon": -17.889,
+"elev": 21,
+"name": "Valverde/Hierro Arpt, CR, ES"
+},
+{
+"icaoId": "GMFK",
+"obsTime": 1790409600,
+"rawOb": "METAR GMFK 260800Z VRB02KT CAVOK 23/02 Q1024 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.946,
+"lon": -4.399,
+"elev": 1033,
+"name": "Errachidia/Cherif Arpt, MK, MA"
+},
+{
+"icaoId": "GMMX",
+"obsTime": 1790409600,
+"rawOb": "METAR GMMX 260800Z 26003KT 230V290 CAVOK 24/13 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.607,
+"lon": -8.036,
+"elev": 465,
+"name": "Marrakesh/Menara Intl, ME, MA"
+},
+{
+"icaoId": "GOOG",
+"obsTime": 1790409600,
+"rawOb": "METAR GOOG 260800Z 16004KT 9999 BKN013 25/25 Q1011",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1300
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 15.4,
+"lon": -15.084,
+"elev": 38,
+"name": "Lingu\u00e8re Arpt, KG, SN"
+},
+{
+"icaoId": "GOSP",
+"obsTime": 1790409600,
+"rawOb": "METAR GOSP 260800Z 36002KT CAVOK 25/24 Q1013",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 16.677,
+"lon": -14.964,
+"elev": 10,
+"name": "Podor Arpt, SL, SN"
+},
+{
+"icaoId": "HESN",
+"obsTime": 1790409600,
+"rawOb": "METAR HESN 260800Z 01009KT CAVOK 33/14 Q1013 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 23.964,
+"lon": 32.82,
+"elev": 197,
+"name": "Aswan Intl, AS, EG"
+},
+{
+"icaoId": "HESH",
+"obsTime": 1790409600,
+"rawOb": "METAR HESH 260800Z 36013KT CAVOK 31/19 Q1011 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.977,
+"lon": 34.395,
+"elev": 50,
+"name": "Sharm El Sheikh Intl, JN, EG"
+},
+{
+"icaoId": "LCLK",
+"obsTime": 1790409600,
+"rawOb": "METAR LCLK 260800Z 17006KT 130V230 9999 FEW030 28/20 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.874,
+"lon": 33.617,
+"elev": 2,
+"name": "Larnaca Intl, LA, CY"
+},
+{
+"icaoId": "URKA",
+"obsTime": 1790409600,
+"rawOb": "METAR URKA 260800Z 08008MPS CAVOK 20/13 Q1019 R03/010065 NOSIG RMK QFE761/1014",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.995,
+"lon": 37.341,
+"elev": 41,
+"name": "Anapa Arpt, KD, RU"
+},
+{
+"icaoId": "GMAD",
+"obsTime": 1790409600,
+"rawOb": "METAR GMAD 260800Z 20003KT 5000 BKN008 20/18 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 800
+}
+],
+"fltCat": "IFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 30.325,
+"lon": -9.413,
+"elev": 66,
+"name": "Agadir/Al Massira Arpt, SM, MA"
+},
+{
+"icaoId": "GMAT",
+"obsTime": 1790409600,
+"rawOb": "METAR GMAT 260800Z 06010KT 6000 BKN010 20/19 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1000
+}
+],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 28.446,
+"lon": -11.158,
+"elev": 192,
+"name": "Tan-Tan/Blanche Arpt, GU, MA"
+},
+{
+"icaoId": "GMAZ",
+"obsTime": 1790409600,
+"rawOb": "METAR GMAZ 260800Z AUTO VRB02KT CAVOK 27/07 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.266,
+"lon": -5.854,
+"elev": 729,
+"name": "Zagora Arpt, SO, MA"
+},
+{
+"icaoId": "GQNO",
+"obsTime": 1790409600,
+"rawOb": "METAR GQNO 260800Z 04005KT 7000 FEW020 24/23 Q1013 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "MVFR",
+"visib": 4.35,
+"metarType": "METAR",
+"lat": 18.31,
+"lon": -15.97,
+"elev": 1,
+"name": "Nouakchott/Oumtounsy Arpt, TR, MR"
+},
+{
+"icaoId": "LEMD",
+"obsTime": 1790409600,
+"rawOb": "METAR LEMD 260800Z VRB02KT CAVOK 18/04 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.466,
+"lon": -3.555,
+"elev": 589,
+"name": "Madrid/Barajas Arpt, M, ES"
+},
+{
+"icaoId": "LEVD",
+"obsTime": 1790409600,
+"rawOb": "METAR LEVD 260800Z 07007KT CAVOK 14/10 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.706,
+"lon": -4.852,
+"elev": 844,
+"name": "Valladolid Arpt, CL, ES"
+},
+{
+"icaoId": "LEVX",
+"obsTime": 1790409600,
+"rawOb": "METAR LEVX 260800Z 21006KT CAVOK 16/12 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.239,
+"lon": -8.624,
+"elev": 253,
+"name": "Vigo/Peinador Arpt, GA, ES"
+},
+{
+"icaoId": "LEZL",
+"obsTime": 1790409600,
+"rawOb": "METAR LEZL 260800Z 02005KT 350V050 CAVOK 24/11 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.418,
+"lon": -5.893,
+"elev": 26,
+"name": "Seville/San Pablo Arpt, AN, ES"
+},
+{
+"icaoId": "LECO",
+"obsTime": 1790409600,
+"rawOb": "METAR LECO 260800Z 16003KT CAVOK 12/12 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.307,
+"lon": -8.372,
+"elev": 80,
+"name": "A Coru\u00f1a Arpt, GA, ES"
+},
+{
+"icaoId": "LEGR",
+"obsTime": 1790409600,
+"rawOb": "METAR LEGR 260800Z 00000KT CAVOK 19/08 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.19,
+"lon": -3.789,
+"elev": 560,
+"name": "Granada/Lorca Arpt, AN, ES"
+},
+{
+"icaoId": "LEAS",
+"obsTime": 1790409600,
+"rawOb": "METAR LEAS 260800Z 00000KT 9999 BKN038 18/15 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.567,
+"lon": -6.044,
+"elev": 120,
+"name": "Aviles/Asturias Arpt, O, ES"
+},
+{
+"icaoId": "DAOO",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOO 260800Z VRB02KT 3000 BR BKN013 20/20 Q1019",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1300
+}
+],
+"fltCat": "IFR",
+"visib": 1.86,
+"metarType": "METAR",
+"lat": 35.623,
+"lon": -0.624,
+"elev": 87,
+"name": "Oran/Es-S\u00e9nia Arpt, OR, DZ"
+},
+{
+"icaoId": "DAUA",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUA 260800Z 05007KT CAVOK 26/07 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.839,
+"lon": -0.186,
+"elev": 278,
+"name": "Adrar/Belkebir Arpt, AD, DZ"
+},
+{
+"icaoId": "LEVC",
+"obsTime": 1790409600,
+"rawOb": "METAR LEVC 260800Z 32004KT 290V350 9999 SCT011 22/13 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1100
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.489,
+"lon": -0.482,
+"elev": 58,
+"name": "Valencia Arpt, VC, ES"
+},
+{
+"icaoId": "LEBB",
+"obsTime": 1790409600,
+"rawOb": "METAR LEBB 260800Z VRB02KT 9999 OVC037 20/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3700
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.298,
+"lon": -2.906,
+"elev": 38,
+"name": "Bilbao Arpt, PV, ES"
+},
+{
+"icaoId": "LEAL",
+"obsTime": 1790409600,
+"rawOb": "METAR LEAL 260800Z 24001KT CAVOK 27/22 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.282,
+"lon": -0.558,
+"elev": 26,
+"name": "Alicante Arpt, VC, ES"
+},
+{
+"icaoId": "LETL",
+"obsTime": 1790409600,
+"rawOb": "METAR LETL 260800Z AUTO 14005KT CAVOK 17/06 Q1025",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.404,
+"lon": -1.218,
+"elev": 1024,
+"name": "Teruel Arpt, AR, ES"
+},
+{
+"icaoId": "DAUB",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUB 260800Z VRB02KT CAVOK 27/08 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.793,
+"lon": 5.738,
+"elev": 75,
+"name": "Biskra Arpt, BI, DZ"
+},
+{
+"icaoId": "LEBL",
+"obsTime": 1790409600,
+"rawOb": "METAR LEBL 260800Z COR 33007KT 250V360 9999 FEW018 22/15 Q1022",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.293,
+"lon": 2.07,
+"elev": 2,
+"name": "Barcelona/Prat Arpt, CT, ES"
+},
+{
+"icaoId": "LEIB",
+"obsTime": 1790409600,
+"rawOb": "METAR LEIB 260800Z 06006KT 040V100 CAVOK 26/22 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.876,
+"lon": 1.384,
+"elev": 4,
+"name": "Ibiza Arpt, IB, ES"
+},
+{
+"icaoId": "LFKB",
+"obsTime": 1790409600,
+"rawOb": "METAR LFKB 260800Z AUTO 03006KT 360V060 CAVOK 24/10 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.553,
+"lon": 9.484,
+"elev": 7,
+"name": "Bastia/Poretta Arpt, OC, FR"
+},
+{
+"icaoId": "LFBO",
+"obsTime": 1790409600,
+"rawOb": "METAR LFBO 260800Z AUTO VRB01KT 9999 FEW028 OVC039 21/15 Q1024 TEMPO BKN008",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2800
+},
+{
+"cover": "OVC",
+"base": 3900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.621,
+"lon": 1.379,
+"elev": 150,
+"name": "Toulouse/Blagnac Arpt, OC, FR"
+},
+{
+"icaoId": "LFML",
+"obsTime": 1790409600,
+"rawOb": "METAR LFML 260800Z AUTO VRB02KT CAVOK 24/17 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 5.216,
+"elev": 20,
+"name": "Marseille Arpt, PA, FR"
+},
+{
+"icaoId": "DAAG",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAG 260800Z 28003KT 220V330 9999 FEW020 24/17 Q1021",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.691,
+"lon": 3.215,
+"elev": 18,
+"name": "Algiers Intl, BM, DZ"
+},
+{
+"icaoId": "DABB",
+"obsTime": 1790409600,
+"rawOb": "METAR DABB 260800Z 19009KT 170V230 9999 FEW020 FEW023TCU 25/18 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "FEW",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.822,
+"lon": 7.809,
+"elev": 3,
+"name": "Annaba/Bitat Arpt, ET, DZ"
+},
+{
+"icaoId": "DTMB",
+"obsTime": 1790409600,
+"rawOb": "METAR DTMB 260800Z 33008KT 9999 SCT026 26/21 Q1018",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.758,
+"lon": 10.755,
+"elev": 1,
+"name": "Monastir/Bourguiba Intl, MO, TN"
+},
+{
+"icaoId": "LFMT",
+"obsTime": 1790409600,
+"rawOb": "METAR LFMT 260800Z AUTO 02005KT 350V050 9999 BKN019 22/18 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1900
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.577,
+"lon": 3.963,
+"elev": 1,
+"name": "Montpellier/M\u00e9diterranee Arpt, OC, FR"
+},
+{
+"icaoId": "LEGE",
+"obsTime": 1790409600,
+"rawOb": "METAR LEGE 260800Z VRB02KT CAVOK 21/14 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.911,
+"lon": 2.763,
+"elev": 140,
+"name": "Gerona/Costa Brava Arpt, CT, ES"
+},
+{
+"icaoId": "DAAE",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAE 260800Z 25010KT 9999 FEW020 23/14 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.712,
+"lon": 5.07,
+"elev": 1,
+"name": "B\u00e9ja\u00efa Arpt, BE, DZ"
+},
+{
+"icaoId": "LFCR",
+"obsTime": 1790409600,
+"rawOb": "METAR LFCR 260800Z AUTO 11003KT 5000 BR OVC003 15/15 Q1025 BECMG BKN007",
+"clouds": [
+{
+"cover": "OVC",
+"base": 300
+}
+],
+"fltCat": "LIFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 44.41,
+"lon": 2.483,
+"elev": 576,
+"name": "Rodez/Marcillac Arpt, OC, FR"
+},
+{
+"icaoId": "DAOB",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOB 260800Z 18003KT CAVOK 23/04 Q1025",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.345,
+"lon": 1.476,
+"elev": 976,
+"name": "Tiaret/Bou Arpt, TI, DZ"
+},
+{
+"icaoId": "DAOI",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOI 260800Z 05005KT CAVOK 23/09 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.213,
+"lon": 1.332,
+"elev": 141,
+"name": "Chlef/Belkaid Arpt, CH, DZ"
+},
+{
+"icaoId": "LFMN",
+"obsTime": 1790409600,
+"rawOb": "METAR LFMN 260800Z 10012KT 9999 BKN046 SCT260 25/16 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 4600
+},
+{
+"cover": "SCT",
+"base": 26000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.658,
+"lon": 7.216,
+"elev": 4,
+"name": "Nice/C\u00f4te d'Azur Arpt, PA, FR"
+},
+{
+"icaoId": "LFMP",
+"obsTime": 1790409600,
+"rawOb": "METAR LFMP 260800Z AUTO 33006KT 260V050 CAVOK 24/15 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.737,
+"lon": 2.873,
+"elev": 41,
+"name": "Perpignan/Rivesaltes Arpt, OC, FR"
+},
+{
+"icaoId": "HESW",
+"obsTime": 1790409600,
+"rawOb": "METAR HESW 260800Z 13015KT 9999 FEW025 27/14 Q1016",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 29.346,
+"lon": 25.507,
+"elev": 101,
+"name": "Siwa Oasis Arpt, , EG"
+},
+{
+"icaoId": "LDPL",
+"obsTime": 1790409600,
+"rawOb": "METAR LDPL 260800Z 05008KT 010V080 CAVOK 20/07 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.894,
+"lon": 13.922,
+"elev": 63,
+"name": "Pula Arpt, IS, HR"
+},
+{
+"icaoId": "LQBK",
+"obsTime": 1790409600,
+"rawOb": "METAR LQBK 260800Z VRB02KT CAVOK 14/09 Q1026 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.937,
+"lon": 17.299,
+"elev": 114,
+"name": "Banja Luka Intl, SR, BA"
+},
+{
+"icaoId": "LYBE",
+"obsTime": 1790409600,
+"rawOb": "METAR LYBE 260800Z VRB01KT CAVOK 15/11 Q1025 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.824,
+"lon": 20.291,
+"elev": 93,
+"name": "Belgrade/Tesla Arpt, BE, RS"
+},
+{
+"icaoId": "LYKV",
+"obsTime": 1790409600,
+"rawOb": "METAR LYKV 260800Z VRB02KT 9999 FEW019 BKN047 14/12 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1900
+},
+{
+"cover": "BKN",
+"base": 4700
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.818,
+"lon": 20.587,
+"elev": 209,
+"name": "Kraljevo/Ladevci Arpt, RA, RS"
+},
+{
+"icaoId": "LYNI",
+"obsTime": 1790409600,
+"rawOb": "METAR LYNI 260800Z 32011KT 9999 FEW010 BKN080 14/11 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1000
+},
+{
+"cover": "BKN",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.338,
+"lon": 21.863,
+"elev": 197,
+"name": "Ni\u0161 Arpt, NI, RS"
+},
+{
+"icaoId": "DAOF",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOF 260800Z 20005KT 9999 FEW046 SCT233 28/05 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4600
+},
+{
+"cover": "SCT",
+"base": 23300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.7,
+"lon": -8.167,
+"elev": 441,
+"name": "Tindouf Arpt, TI, DZ"
+},
+{
+"icaoId": "DAAJ",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAJ 260800Z 10006KT 8000 SCT046 23/15 Q1020",
+"clouds": [
+{
+"cover": "SCT",
+"base": 4600
+}
+],
+"fltCat": "MVFR",
+"visib": 4.97,
+"metarType": "METAR",
+"lat": 24.286,
+"lon": 9.464,
+"elev": 962,
+"name": "Djanet/Tiska Arpt, IL, DZ"
+},
+{
+"icaoId": "DAAP",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAP 260800Z 09005KT CAVOK 26/15 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 26.724,
+"lon": 8.622,
+"elev": 542,
+"name": "Illizi/Takhamalt Arpt, IL, DZ"
+},
+{
+"icaoId": "LDSP",
+"obsTime": 1790409600,
+"rawOb": "METAR LDSP 260800Z 07009KT 040V110 CAVOK 21/06 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.539,
+"lon": 16.301,
+"elev": 16,
+"name": "Split Arpt, SP, HR"
+},
+{
+"icaoId": "LQSA",
+"obsTime": 1790409600,
+"rawOb": "METAR LQSA 260800Z VRB03KT 9999 FEW035 BKN045 13/09 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3500
+},
+{
+"cover": "BKN",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.825,
+"lon": 18.331,
+"elev": 505,
+"name": "Sarajevo Intl, BI, BA"
+},
+{
+"icaoId": "LCPH",
+"obsTime": 1790409600,
+"rawOb": "METAR LCPH 260800Z 17006KT 150V240 9999 FEW030 26/17 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.715,
+"lon": 32.479,
+"elev": 8,
+"name": "Paphos Intl, PA, CY"
+},
+{
+"icaoId": "LRCK",
+"obsTime": 1790409600,
+"rawOb": "METAR LRCK 260800Z 03012KT CAVOK 19/13 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.362,
+"lon": 28.488,
+"elev": 108,
+"name": "Constanta/Kog\u0103lniceanu Arpt, CT, RO"
+},
+{
+"icaoId": "LRCV",
+"obsTime": 1790409600,
+"rawOb": "METAR LRCV 260800Z 10009KT CAVOK 17/10 Q1024",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.31,
+"lon": 23.867,
+"elev": 192,
+"name": "Craiova Arpt, DO, RO"
+},
+{
+"icaoId": "LPBJ",
+"obsTime": 1790409600,
+"rawOb": "METAR LPBJ 260800Z 30003KT CAVOK 19/09 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.073,
+"lon": -7.931,
+"elev": 196,
+"name": "Beja Arpt, BE, PT"
+},
+{
+"icaoId": "LPFR",
+"obsTime": 1790409600,
+"rawOb": "METAR LPFR 260800Z 04005KT 360V080 CAVOK 26/17 Q1016",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.014,
+"lon": -7.966,
+"elev": 3,
+"name": "Faro Arpt, FA, PT"
+},
+{
+"icaoId": "GMTA",
+"obsTime": 1790409600,
+"rawOb": "METAR GMTA 260800Z VRB02KT 2000 BR BKN005 21/19 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 500
+}
+],
+"fltCat": "IFR",
+"visib": 1.24,
+"metarType": "METAR",
+"lat": 35.177,
+"lon": -3.84,
+"elev": 14,
+"name": "Al Hoceima/Idrissi Arpt, TA, MA"
+},
+{
+"icaoId": "HEPS",
+"obsTime": 1790409600,
+"rawOb": "METAR HEPS 260800Z 27007KT 9999 FEW025 27/16 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.279,
+"lon": 32.238,
+"elev": 2,
+"name": "Port Said Arpt, BS, EG"
+},
+{
+"icaoId": "LBPD",
+"obsTime": 1790409600,
+"rawOb": "METAR LBPD 260800Z AUTO 30007KT 9999 BKN036/// OVC043/// 17/10 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3600
+},
+{
+"cover": "OVC",
+"base": 4300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.064,
+"lon": 24.86,
+"elev": 182,
+"name": "Plovdiv Arpt, PL, BG"
+},
+{
+"icaoId": "LEAB",
+"obsTime": 1790409600,
+"rawOb": "METAR LEAB 260800Z 13007KT 100V160 CAVOK 22/10 Q1024 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.952,
+"lon": -1.863,
+"elev": 704,
+"name": "Albacete Arpt, CM, ES"
+},
+{
+"icaoId": "LFKJ",
+"obsTime": 1790409600,
+"rawOb": "METAR LFKJ 260800Z AUTO VRB01KT CAVOK 26/17 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.924,
+"lon": 8.803,
+"elev": 9,
+"name": "Ajaccio/Oro Arpt, CO, FR"
+},
+{
+"icaoId": "OJAI",
+"obsTime": 1790409600,
+"rawOb": "METAR OJAI 260800Z 29005KT 5000 HZ NSC 25/13 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 31.723,
+"lon": 35.993,
+"elev": 723,
+"name": "Amman/Alia Intl, AM, JO"
+},
+{
+"icaoId": "OJAQ",
+"obsTime": 1790409600,
+"rawOb": "METAR OJAQ 260800Z 36020KT 6000 NSC 28/16 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 29.612,
+"lon": 35.018,
+"elev": 45,
+"name": "Aqaba/Hussein Intl, MN, JO"
+},
+{
+"icaoId": "GMAG",
+"obsTime": 1790409600,
+"rawOb": "METAR GMAG 260800Z 08003KT 030V090 4000 BR NSC 20/17 Q1017",
+"clouds": [],
+"fltCat": "IFR",
+"visib": 2.49,
+"metarType": "METAR",
+"lat": 29.031,
+"lon": -10.051,
+"elev": 333,
+"name": "Guelmim Arpt, GU, MA"
+},
+{
+"icaoId": "LYTV",
+"obsTime": 1790409600,
+"rawOb": "METAR LYTV 260800Z 36005KT 290V060 9999 FEW060 22/07 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 6000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.405,
+"lon": 18.723,
+"elev": 3,
+"name": "Tivat Arpt, TI, ME"
+},
+{
+"icaoId": "GCTS",
+"obsTime": 1790409600,
+"rawOb": "METAR GCTS 260800Z 08016KT 9999 BKN120 28/18 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 12000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.047,
+"lon": -16.561,
+"elev": 59,
+"name": "Tenerife/South Arpt, CR, ES"
+},
+{
+"icaoId": "OEGT",
+"obsTime": 1790409600,
+"rawOb": "METAR OEGT 260800Z 32008KT CAVOK 28/14 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.412,
+"lon": 37.279,
+"elev": 512,
+"name": "Guriat Arpt, TB, SA"
+},
+{
+"icaoId": "OEAO",
+"obsTime": 1790409600,
+"rawOb": "METAR OEAO 260800Z 29002KT CAVOK 36/10 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 26.483,
+"lon": 38.117,
+"elev": 615,
+"name": "Alula Intl, AM, SA"
+},
+{
+"icaoId": "OEYN",
+"obsTime": 1790409600,
+"rawOb": "METAR OEYN 260800Z 29010KT CAVOK 40/11 Q1005 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 24.144,
+"lon": 38.063,
+"elev": 20,
+"name": "Yenbo/Moshin Bin Arpt, MD, SA"
+},
+{
+"icaoId": "OEMA",
+"obsTime": 1790409600,
+"rawOb": "METAR OEMA 260800Z VRB03KT CAVOK 38/00 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 24.553,
+"lon": 39.705,
+"elev": 639,
+"name": "Madinah/Abdulaziz Intl, MD, SA"
+},
+{
+"icaoId": "HEAR",
+"obsTime": 1790409600,
+"rawOb": "METAR HEAR 260800Z 22004KT 9999 BKN020 26/18 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 2000
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.041,
+"lon": 33.817,
+"elev": 36,
+"name": "El Arish Intl, SH, EG"
+},
+{
+"icaoId": "HEAT",
+"obsTime": 1790409600,
+"rawOb": "METAR HEAT 260800Z 02009KT CAVOK 28/17 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.049,
+"lon": 31.014,
+"elev": 229,
+"name": "Assiut Arpt, WJ, EG"
+},
+{
+"icaoId": "GQPP",
+"obsTime": 1790409600,
+"rawOb": "METAR GQPP 260800Z 01013KT 7000 NSC 24/20 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 4.35,
+"metarType": "METAR",
+"lat": 20.929,
+"lon": -17.031,
+"elev": 5,
+"name": "Nouadhibou Arpt, DN, MR"
+},
+{
+"icaoId": "DTTA",
+"obsTime": 1790409600,
+"rawOb": "METAR DTTA 260800Z 28008KT 250V310 9999 SCT023 25/21 Q1018",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.851,
+"lon": 10.227,
+"elev": 4,
+"name": "Tunis/Carthage Intl, AR, TN"
+},
+{
+"icaoId": "LFBD",
+"obsTime": 1790409600,
+"rawOb": "METAR LFBD 260800Z AUTO VRB03KT 9999 BKN036 20/14 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.831,
+"lon": -0.691,
+"elev": 48,
+"name": "Bordeaux/M\u00e9rignac Arpt, NA, FR"
+},
+{
+"icaoId": "DAAY",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAY 260800Z 02004KT CAVOK 19/03 Q1026",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.532,
+"lon": -0.248,
+"elev": 1116,
+"name": "Mecheria/Bouamama Arpt, SB, DZ"
+},
+{
+"icaoId": "LFBA",
+"obsTime": 1790409600,
+"rawOb": "METAR LFBA 260800Z AUTO 29003KT 250V340 9999 FEW016 OVC036 20/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1600
+},
+{
+"cover": "OVC",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.176,
+"lon": 0.593,
+"elev": 68,
+"name": "Agen/La Garenne Arpt, NA, FR"
+},
+{
+"icaoId": "LEMH",
+"obsTime": 1790409600,
+"rawOb": "METAR LEMH 260800Z 03015KT 360V060 9999 FEW023 26/19 Q1020",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.855,
+"lon": 4.216,
+"elev": 82,
+"name": "Mahon/Menorca Arpt, IB, ES"
+},
+{
+"icaoId": "LEPA",
+"obsTime": 1790409600,
+"rawOb": "METAR LEPA 260800Z 06006KT 9999 FEW013 24/20 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.561,
+"lon": 2.737,
+"elev": 8,
+"name": "Palma De Mallorca Arpr, IB, ES"
+},
+{
+"icaoId": "DTTZ",
+"obsTime": 1790409600,
+"rawOb": "METAR DTTZ 260800Z 08007KT CAVOK 27/18 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.94,
+"lon": 8.111,
+"elev": 87,
+"name": "Tozeur/Nefta Arpt, TI, TN"
+},
+{
+"icaoId": "DAOR",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOR 260800Z 23004KT CAVOK 26/09 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.65,
+"lon": -2.261,
+"elev": 809,
+"name": "B\u00e9cha/Ali Lolfi Arpt, BE, DZ"
+},
+{
+"icaoId": "OETB",
+"obsTime": 1790409600,
+"rawOb": "METAR OETB 260800Z 00000KT CAVOK 28/12 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.366,
+"lon": 36.619,
+"elev": 770,
+"name": "Tabuk Arpt, TB, SA"
+},
+{
+"icaoId": "OETR",
+"obsTime": 1790409600,
+"rawOb": "METAR OETR 260800Z 30006KT CAVOK 31/08 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.693,
+"lon": 38.731,
+"elev": 854,
+"name": "Turaif Arpt, HS, SA"
+},
+{
+"icaoId": "OEWJ",
+"obsTime": 1790409600,
+"rawOb": "METAR OEWJ 260800Z 30013KT CAVOK 31/25 Q1010 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 26.199,
+"lon": 36.476,
+"elev": 8,
+"name": "Al Wejh Arpt, TB, SA"
+},
+{
+"icaoId": "DATM",
+"obsTime": 1790409600,
+"rawOb": "METAR DATM 260800Z 02013KT CAVOK 28/10 Q1014",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 21.375,
+"lon": 0.924,
+"elev": 398,
+"name": "Bordj Mokhtar Arpt, AD, DZ"
+},
+{
+"icaoId": "DAUI",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUI 260800Z 04013KT CAVOK 28/10 Q1017",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.251,
+"lon": 2.512,
+"elev": 271,
+"name": "In Salah Arpt, TA, DZ"
+},
+{
+"icaoId": "DAUG",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUG 260800Z 01005KT CAVOK 25/11 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 32.384,
+"lon": 3.794,
+"elev": 444,
+"name": "Gharda\u00efa/Noum\u00e9rat Arpt, GH, DZ"
+},
+{
+"icaoId": "DRZA",
+"obsTime": 1790409600,
+"rawOb": "METAR DRZA 260800Z 11004KT 4500 DU NSC 34/14 Q1013",
+"clouds": [],
+"fltCat": "IFR",
+"visib": 2.8,
+"metarType": "METAR",
+"lat": 16.964,
+"lon": 7.989,
+"elev": 506,
+"name": "Agadez Arpt, AG, NE"
+},
+{
+"icaoId": "DTTG",
+"obsTime": 1790409600,
+"rawOb": "METAR DTTG 260800Z 00000KT 8000 NSC 26/20 Q1019",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 4.97,
+"metarType": "METAR",
+"lat": 33.733,
+"lon": 9.918,
+"elev": 120,
+"name": "Gabes/Matmata Intl, GB, TN"
+},
+{
+"icaoId": "DAAT",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAT 260800Z 13005KT CAVOK 27/05 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 22.824,
+"lon": 5.452,
+"elev": 1372,
+"name": "Tamanrasset/Aguenar-Hadj Bei Arpt, TA, DZ"
+},
+{
+"icaoId": "DAUZ",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUZ 260800Z 08011KT 9999 FEW040 22/16 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.052,
+"lon": 9.643,
+"elev": 567,
+"name": "In Am\u00e9nas Arpt, IL, DZ"
+},
+{
+"icaoId": "DAUO",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUO 260800Z 00000KT CAVOK 27/15 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.513,
+"lon": 6.782,
+"elev": 55,
+"name": "El Oued/Guemar Arpt, EO, DZ"
+},
+{
+"icaoId": "DAUL",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUL 260800Z 00000KT CAVOK 25/08 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.764,
+"lon": 2.928,
+"elev": 755,
+"name": "Laghouat/L'Mekrareg Arpt, LA, DZ"
+},
+{
+"icaoId": "DAOY",
+"obsTime": 1790409600,
+"rawOb": "METAR DAOY 260800Z VRB01KT CAVOK 24/01 Q1024",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.721,
+"lon": 1.091,
+"elev": 1340,
+"name": "El Bayadh Arpt, EL, DZ"
+},
+{
+"icaoId": "DAUE",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUE 260800Z 33004KT 270V350 CAVOK 24/12 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.571,
+"lon": 2.86,
+"elev": 396,
+"name": "El Golea Intl, GH, DZ"
+},
+{
+"icaoId": "DAUT",
+"obsTime": 1790409600,
+"rawOb": "METAR DAUT 260800Z 36004KT CAVOK 26/09 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 29.237,
+"lon": 0.276,
+"elev": 307,
+"name": "Timimoun Arpt, AD, DZ"
+},
+{
+"icaoId": "LBGO",
+"obsTime": 1790409600,
+"rawOb": "METAR LBGO 260800Z AUTO 28005KT 250V310 9999 -SHRA FEW032/// BKN062/// OVC090/// 16/10 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3200
+},
+{
+"cover": "BKN",
+"base": 6200
+},
+{
+"cover": "OVC",
+"base": 9000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.151,
+"lon": 25.713,
+"elev": 84,
+"name": "Gorna Orechovista Arpt, LO, BG"
+},
+{
+"icaoId": "LROP",
+"obsTime": 1790409600,
+"rawOb": "METAR LROP 260800Z 05009KT CAVOK 18/12 Q1025 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.572,
+"lon": 26.102,
+"elev": 92,
+"name": "Bucharest/Coand\u0103 Intl, B, RO"
+},
+{
+"icaoId": "GMFF",
+"obsTime": 1790409600,
+"rawOb": "METAR GMFF 260800Z VRB01KT CAVOK 26/05 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.929,
+"lon": -4.976,
+"elev": 575,
+"name": "Fes/Sa\u00efss Arpt, FE, MA"
+},
+{
+"icaoId": "GMME",
+"obsTime": 1790409600,
+"rawOb": "METAR GMME 260800Z 00000KT 5000 FEW003 21/21 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 300
+}
+],
+"fltCat": "MVFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 34.051,
+"lon": -6.752,
+"elev": 84,
+"name": "Rabat-Sal\u00e9 Arpt, RS, MA"
+},
+{
+"icaoId": "GMMN",
+"obsTime": 1790409600,
+"rawOb": "METAR GMMN 260800Z VRB02KT CAVOK 20/20 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.367,
+"lon": -7.59,
+"elev": 196,
+"name": "Casablanca Intl, ME, MA"
+},
+{
+"icaoId": "URSS",
+"obsTime": 1790409600,
+"rawOb": "METAR URSS 260800Z VRB02MPS 9999 FEW033 23/16 Q1019 R02/010070 R06/010070 NOSIG RMK R06/13002MPS MT OBSC QFE763",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 39.926,
+"elev": 4,
+"name": "Sochi Intl, KD, RU"
+},
+{
+"icaoId": "GMMH",
+"obsTime": 1790409600,
+"rawOb": "METAR GMMH 260800Z 06012KT 6000 FEW008 BKN100 23/20 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 800
+},
+{
+"cover": "BKN",
+"base": 10000
+}
+],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 23.718,
+"lon": -15.932,
+"elev": 11,
+"name": "Dakhla Intl, DA, EH"
+},
+{
+"icaoId": "GMML",
+"obsTime": 1790409600,
+"rawOb": "METAR GMML 260800Z 33009KT 8000 NSC 23/19 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 4.97,
+"metarType": "METAR",
+"lat": 27.141,
+"lon": -13.23,
+"elev": 63,
+"name": "La\u00e2youne/Hassan Arpt, LA, EH"
+},
+{
+"icaoId": "GMMZ",
+"obsTime": 1790409600,
+"rawOb": "METAR GMMZ 260800Z 30005KT 9999 FEW050 SCT200 23/04 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 5000
+},
+{
+"cover": "SCT",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.939,
+"lon": -6.909,
+"elev": 1139,
+"name": "Ouarzazate Arpt, SO, MA"
+},
+{
+"icaoId": "LEZG",
+"obsTime": 1790409600,
+"rawOb": "METAR LEZG 260800Z 29007KT 260V320 CAVOK 20/13 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.661,
+"lon": -1.004,
+"elev": 245,
+"name": "Zaragoza Arpt, AR, ES"
+},
+{
+"icaoId": "LEAM",
+"obsTime": 1790409600,
+"rawOb": "METAR LEAM 260800Z 32006KT 280V350 CAVOK 25/18 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.846,
+"lon": -2.357,
+"elev": 16,
+"name": "Almer\u00eda Arpt, AN, ES"
+},
+{
+"icaoId": "GMFO",
+"obsTime": 1790409600,
+"rawOb": "METAR GMFO 260800Z VRB02KT CAVOK 24/04 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.787,
+"lon": -1.924,
+"elev": 452,
+"name": "Oujda/Angads Arpt, RA, MA"
+},
+{
+"icaoId": "GMMD",
+"obsTime": 1790409600,
+"rawOb": "METAR GMMD 260800Z VRB01KT CAVOK 26/11 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 32.403,
+"lon": -6.316,
+"elev": 515,
+"name": "Beni-Mellal Arpt, DA, MA"
+},
+{
+"icaoId": "HEMM",
+"obsTime": 1790409600,
+"rawOb": "METAR HEMM 260800Z 01007KT 9999 SCT020 25/16 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.325,
+"lon": 27.222,
+"elev": 26,
+"name": "Mersa Matruh Intl, MA, EG"
+},
+{
+"icaoId": "GCLP",
+"obsTime": 1790409600,
+"rawOb": "METAR GCLP 260800Z 03017KT CAVOK 27/17 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.923,
+"lon": -15.389,
+"elev": 16,
+"name": "Grand Canaria Arpt, CR, ES"
+},
+{
+"icaoId": "GCRR",
+"obsTime": 1790409600,
+"rawOb": "METAR GCRR 260800Z 36006KT 330V060 9999 FEW017 25/21 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1700
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.952,
+"lon": -13.6,
+"elev": 9,
+"name": "Arrecife/Lanzarote Arpt, CR, ES"
+},
+{
+"icaoId": "HECA",
+"obsTime": 1790409600,
+"rawOb": "METAR HECA 260800Z 36006KT 9999 FEW025 SCT200 25/14 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.133,
+"lon": 31.405,
+"elev": 142,
+"name": "Cairo Intl, QH, EG"
+},
+{
+"icaoId": "HELX",
+"obsTime": 1790409600,
+"rawOb": "METAR HELX 260800Z 07004KT CAVOK 33/13 Q1013 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 25.671,
+"lon": 32.706,
+"elev": 86,
+"name": "Luxor Intl, QI, EG"
+},
+{
+"icaoId": "GAGO",
+"obsTime": 1790409600,
+"rawOb": "METAR GAGO 260800Z 04005KT 6000 NSC 33/17 Q1012",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 16.247,
+"lon": -0.006,
+"elev": 262,
+"name": "Gao Arpt, GA, ML"
+},
+{
+"icaoId": "LFBT",
+"obsTime": 1790409600,
+"rawOb": "METAR LFBT 260800Z AUTO 18001KT 9999 FEW013 OVC033 18/16 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+},
+{
+"cover": "OVC",
+"base": 3300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.189,
+"lon": 0,
+"elev": 359,
+"name": "Tarbes/Ossun Arpt, OC, FR"
+},
+{
+"icaoId": "DAAD",
+"obsTime": 1790409600,
+"rawOb": "METAR DAAD 260800Z VRB02KT CAVOK 26/M01 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.333,
+"lon": 4.206,
+"elev": 461,
+"name": "Bou Saada Arpt, BL, DZ"
+},
+{
+"icaoId": "DABC",
+"obsTime": 1790409600,
+"rawOb": "METAR DABC 260800Z VRB02KT CAVOK 19/08 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.278,
+"lon": 6.629,
+"elev": 686,
+"name": "Constantine/Boudiaf Arpt, CO, DZ"
+},
+{
+"icaoId": "DABS",
+"obsTime": 1790409600,
+"rawOb": "METAR DABS 260800Z VRB02KT CAVOK 20/12 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.432,
+"lon": 8.121,
+"elev": 806,
+"name": "Tebassa/Tebessi Arpt, TE, DZ"
+},
+{
+"icaoId": "GOSS",
+"obsTime": 1790409600,
+"rawOb": "METAR GOSS 260800Z 22004KT 180V290 CAVOK 27/25 Q1013",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 16.051,
+"lon": -16.461,
+"elev": 3,
+"name": "Saint Louis Arpt, SL, SN"
+},
+{
+"icaoId": "HEAX",
+"obsTime": 1790409600,
+"rawOb": "METAR HEAX 260800Z 00000KT 9999 FEW020 24/16 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.918,
+"lon": 29.696,
+"elev": 41,
+"name": "Alexandria Intl, ID, EG"
+},
+{
+"icaoId": "LIRS",
+"obsTime": 1790409300,
+"rawOb": "METAR LIRS 260755Z 04014KT CAVOK 21/12 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.76,
+"lon": 11.072,
+"elev": 3,
+"name": "Grosseto, GR, IT"
+},
+{
+"icaoId": "LXGB",
+"obsTime": 1790409000,
+"rawOb": "METAR LXGB 260750Z 07006KT 5000 1500W BR VCFG BKN001 20/20 Q1019 BECMG 3000 BKN003",
+"clouds": [
+{
+"cover": "BKN",
+"base": 100
+}
+],
+"fltCat": "LIFR",
+"visib": 3.11,
+"metarType": "METAR",
+"lat": 36.151,
+"lon": -5.35,
+"elev": 5,
+"name": "Gibraltar Arpt, , GI"
+},
+{
+"icaoId": "LTAI",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAI 260750Z 36004KT 300V070 9999 FEW030 BKN180 27/11 Q1014 BECMG TL0900 17010KT",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.9,
+"lon": 30.798,
+"elev": 50,
+"name": "Antalya Arpt, AN, TR"
+},
+{
+"icaoId": "LIRQ",
+"obsTime": 1790409000,
+"rawOb": "METAR LIRQ 260750Z 21004KT 160V310 CAVOK 21/10 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.81,
+"lon": 11.205,
+"elev": 33,
+"name": "Florence/Peretola Arpt, FI, IT"
+},
+{
+"icaoId": "LTCD",
+"obsTime": 1790409000,
+"rawOb": "METAR LTCD 260750Z VRB01KT CAVOK 23/10 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.71,
+"lon": 39.527,
+"elev": 1146,
+"name": "Erzincan Arpt, EZ, TR"
+},
+{
+"icaoId": "LGKP",
+"obsTime": 1790409000,
+"rawOb": "METAR LGKP 260750Z 29010KT 9999 FEW025 24/13 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.421,
+"lon": 27.146,
+"elev": 20,
+"name": "Karpathos Isl Arpt, M, GR"
+},
+{
+"icaoId": "LGSA",
+"obsTime": 1790409000,
+"rawOb": "METAR LGSA 260750Z 00000KT 9999 FEW025 SCT080 24/13 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.54,
+"lon": 24.141,
+"elev": 122,
+"name": "Souda Bay/Chania Intl, M, GR"
+},
+{
+"icaoId": "LGMK",
+"obsTime": 1790409000,
+"rawOb": "METAR LGMK 260750Z 02005KT CAVOK 23/13 Q1015",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.435,
+"lon": 25.348,
+"elev": 126,
+"name": "Mykonos Arpt, K, GR"
+},
+{
+"icaoId": "LTCG",
+"obsTime": 1790409000,
+"rawOb": "METAR LTCG 260750Z 36003KT 300V050 9999 BKN035 21/17 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.995,
+"lon": 39.782,
+"elev": 28,
+"name": "Trabzon Arpt, TR, TR"
+},
+{
+"icaoId": "LGAD",
+"obsTime": 1790409000,
+"rawOb": "METAR LGAD 260750Z 03005KT 9999 FEW018 SCT070 22/14 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1800
+},
+{
+"cover": "SCT",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.923,
+"lon": 21.287,
+"elev": 8,
+"name": "Andravida Arpt, J, GR"
+},
+{
+"icaoId": "LTAY",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAY 260750Z 05003KT 350V120 CAVOK 19/05 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.785,
+"lon": 29.701,
+"elev": 851,
+"name": "\u00c7ardak Arpt, DE, TR"
+},
+{
+"icaoId": "LIMP",
+"obsTime": 1790409000,
+"rawOb": "METAR LIMP 260750Z VRB01KT CAVOK 19/10 Q1024",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.825,
+"lon": 10.296,
+"elev": 41,
+"name": "Parma Arpt, PR, IT"
+},
+{
+"icaoId": "LGRP",
+"obsTime": 1790409000,
+"rawOb": "METAR LGRP 260750Z 27007KT 240V300 9999 FEW025 24/14 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.405,
+"lon": 28.086,
+"elev": 3,
+"name": "Rhodes/Diagoras Arpt, K, GR"
+},
+{
+"icaoId": "LIEA",
+"obsTime": 1790409000,
+"rawOb": "METAR LIEA 260750Z 05007KT CAVOK 24/14 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.631,
+"lon": 8.289,
+"elev": 22,
+"name": "Alghero/Fertilia Arpt, SS, IT"
+},
+{
+"icaoId": "LICJ",
+"obsTime": 1790409000,
+"rawOb": "METAR LICJ 260750Z 07014KT 9999 FEW030 25/17 Q1017",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.176,
+"lon": 13.091,
+"elev": 20,
+"name": "Palermo Arpt, PA, IT"
+},
+{
+"icaoId": "LTAU",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAU 260750Z 05005KT 010V100 CAVOK 20/11 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.77,
+"lon": 35.495,
+"elev": 1053,
+"name": "Kayseri Intl, KA, TR"
+},
+{
+"icaoId": "LIEO",
+"obsTime": 1790409000,
+"rawOb": "METAR LIEO 260750Z 32004KT 280V350 CAVOK 23/14 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.899,
+"lon": 9.518,
+"elev": 8,
+"name": "Olbia/Costa Smeralda Arpt, OT, IT"
+},
+{
+"icaoId": "LTCS",
+"obsTime": 1790409000,
+"rawOb": "METAR LTCS 260750Z 01008KT CAVOK 28/09 Q1017",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.445,
+"lon": 38.904,
+"elev": 825,
+"name": "\u015eanl\u0131urfa GAP Arpt, SA, TR"
+},
+{
+"icaoId": "LICG",
+"obsTime": 1790409000,
+"rawOb": "METAR LICG 260750Z AUTO 01010KT 9999 SCT020/// 24/20 Q1018",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.814,
+"lon": 11.971,
+"elev": 192,
+"name": "Pantelleria Arpt, TP, IT"
+},
+{
+"icaoId": "LWSK",
+"obsTime": 1790409000,
+"rawOb": "METAR LWSK 260750Z VRB01KT 9999 FEW013 SCT050 BKN090 15/12 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+},
+{
+"cover": "SCT",
+"base": 5000
+},
+{
+"cover": "BKN",
+"base": 9000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.952,
+"lon": 21.627,
+"elev": 232,
+"name": "Skopje Intl, IL, MK"
+},
+{
+"icaoId": "LTBJ",
+"obsTime": 1790409000,
+"rawOb": "METAR LTBJ 260750Z 36003KT 250V040 CAVOK 21/09 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.285,
+"lon": 27.155,
+"elev": 123,
+"name": "Izmir/Menderes Arpt, IZ, TR"
+},
+{
+"icaoId": "LTAT",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAT 260750Z VRB04KT CAVOK 26/09 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.435,
+"lon": 38.092,
+"elev": 850,
+"name": "Malatya Arpt, MA, TR"
+},
+{
+"icaoId": "LIRN",
+"obsTime": 1790409000,
+"rawOb": "METAR LIRN 260750Z 04012KT CAVOK 21/09 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.885,
+"lon": 14.292,
+"elev": 76,
+"name": "Naples Intl, NA, IT"
+},
+{
+"icaoId": "LICD",
+"obsTime": 1790409000,
+"rawOb": "METAR LICD 260750Z AUTO 36012KT 9999 FEW031/// 27/19 Q1016",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3100
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.498,
+"lon": 12.618,
+"elev": 20,
+"name": "Lampedusa Island Arpt, AG, IT"
+},
+{
+"icaoId": "LTAS",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAS 260750Z VRB01KT 9999 FEW040 BKN180 19/12 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.507,
+"lon": 32.089,
+"elev": 13,
+"name": "Zonguldak/\u00c7aycuma Arpt, ZO, TR"
+},
+{
+"icaoId": "LICC",
+"obsTime": 1790409000,
+"rawOb": "METAR LICC 260750Z 30004KT 270V330 9999 FEW020 BKN050 20/14 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "BKN",
+"base": 5000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.467,
+"lon": 15.064,
+"elev": 6,
+"name": "Catania/Fontanarossa Arpt, CT, IT"
+},
+{
+"icaoId": "LTDB",
+"obsTime": 1790409000,
+"rawOb": "METAR LTDB 260750Z VRB03KT CAVOK 29/17 Q1014 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.8939,
+"lon": 35.07,
+"elev": 6,
+"name": "Tarsus/\u00c7ukurova Intl, ME, TR"
+},
+{
+"icaoId": "LTAR",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAR 260750Z COR VRB03KT 9999 FEW035 SCT100 17/10 Q1023",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3500
+},
+{
+"cover": "SCT",
+"base": 10000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.798,
+"lon": 36.894,
+"elev": 1601,
+"name": "Sivas Arpt, SI, TR"
+},
+{
+"icaoId": "LICA",
+"obsTime": 1790409000,
+"rawOb": "METAR LICA 260750Z AUTO 10006KT 9999 NCD 21/10 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.908,
+"lon": 16.242,
+"elev": 7,
+"name": "Lamezia Terme Arpt, CA, IT"
+},
+{
+"icaoId": "LIEE",
+"obsTime": 1790409000,
+"rawOb": "METAR LIEE 260750Z 02004KT 340V060 CAVOK 24/16 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.243,
+"lon": 9.06,
+"elev": 1,
+"name": "Cagliari/Elmas Arpt, CA, IT"
+},
+{
+"icaoId": "LGIR",
+"obsTime": 1790409000,
+"rawOb": "METAR LGIR 260750Z 00000KT 9999 FEW020 SCT080 23/12 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.337,
+"lon": 25.173,
+"elev": 37,
+"name": "Iraklion Intl, M, GR"
+},
+{
+"icaoId": "LGAL",
+"obsTime": 1790409000,
+"rawOb": "METAR LGAL 260750Z 04015KT 9999 FEW020 22/13 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.856,
+"lon": 25.945,
+"elev": 5,
+"name": "Alexandroupolis/Dimokritos Arpt, A, GR"
+},
+{
+"icaoId": "LTAC",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAC 260750Z 06008KT 360V090 9999 FEW040 SCT200 17/09 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "SCT",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.128,
+"lon": 32.995,
+"elev": 952,
+"name": "Ankara/Esenbo\u011fa Intl, AN, TR"
+},
+{
+"icaoId": "LTBY",
+"obsTime": 1790409000,
+"rawOb": "METAR LTBY 260750Z 11005KT 050V150 CAVOK 17/07 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.81,
+"lon": 30.519,
+"elev": 788,
+"name": "Eskisehir/Polatkan Arpt, ES, TR"
+},
+{
+"icaoId": "LTFD",
+"obsTime": 1790409000,
+"rawOb": "METAR LTFD 260750Z 08011KT 9999 FEW035 BKN200 22/13 Q1016",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3500
+},
+{
+"cover": "BKN",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.559,
+"lon": 27.025,
+"elev": 15,
+"name": "Balikesir/Seyit Arpt, BA, TR"
+},
+{
+"icaoId": "LTAN",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAN 260750Z 02006KT 320V080 CAVOK 18/08 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.979,
+"lon": 32.562,
+"elev": 1029,
+"name": "Konya Arpt, KA, TR"
+},
+{
+"icaoId": "LIMJ",
+"obsTime": 1790409000,
+"rawOb": "METAR LIMJ 260750Z 06012KT CAVOK 21/10 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.413,
+"lon": 8.838,
+"elev": 3,
+"name": "Genoa/Colombo Arpt, GE, IT"
+},
+{
+"icaoId": "LIBR",
+"obsTime": 1790409000,
+"rawOb": "METAR LIBR 260750Z 03021KT 9999 FEW045 21/12 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.658,
+"lon": 17.951,
+"elev": 5,
+"name": "Brindisi/Casale Arpt, PU, IT"
+},
+{
+"icaoId": "LGTS",
+"obsTime": 1790409000,
+"rawOb": "METAR LGTS 260750Z 32015KT 9999 FEW010 SCT020 17/17 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1000
+},
+{
+"cover": "SCT",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.52,
+"lon": 22.971,
+"elev": 4,
+"name": "Thessaloniki Intl, A, GR"
+},
+{
+"icaoId": "LTAP",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAP 260750Z 20004KT 140V250 9999 SCT036 19/12 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.826,
+"lon": 35.52,
+"elev": 536,
+"name": "Merzifon Arpt, AM, TR"
+},
+{
+"icaoId": "LGBL",
+"obsTime": 1790409000,
+"rawOb": "METAR LGBL 260750Z 25006KT 9999 FEW012 SCT025 BKN080 16/16 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1200
+},
+{
+"cover": "SCT",
+"base": 2500
+},
+{
+"cover": "BKN",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.22,
+"lon": 22.794,
+"elev": 13,
+"name": "Nea Anchialos Arpt, E, GR"
+},
+{
+"icaoId": "LLBG",
+"obsTime": 1790409000,
+"rawOb": "METAR LLBG 260750Z VRB03KT 9999 SCT038 29/17 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 3800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 32.011,
+"lon": 34.887,
+"elev": 35,
+"name": "Tel Aviv/Ben Gurion Arpt, C, IL"
+},
+{
+"icaoId": "LGAV",
+"obsTime": 1790409000,
+"rawOb": "METAR LGAV 260750Z 01008KT 9999 FEW025 SCT035 BKN070 21/10 Q1017 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 3500
+},
+{
+"cover": "BKN",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.936,
+"lon": 23.945,
+"elev": 83,
+"name": "Athens/Venizelos Intl, I, GR"
+},
+{
+"icaoId": "LIRF",
+"obsTime": 1790409000,
+"rawOb": "METAR LIRF 260750Z 05011KT 9999 SCT040 21/06 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.8,
+"lon": 12.239,
+"elev": 2,
+"name": "Rome/Fiumicino, RM, IT"
+},
+{
+"icaoId": "LGKR",
+"obsTime": 1790409000,
+"rawOb": "METAR LGKR 260750Z 00000KT 9999 FEW015TCU SCT080 21/15 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.61,
+"lon": 19.913,
+"elev": 2,
+"name": "Corfu/Kapodistinas Arpt, L, GR"
+},
+{
+"icaoId": "LTAJ",
+"obsTime": 1790409000,
+"rawOb": "METAR LTAJ 260750Z VRB02KT 9999 FEW040 SCT180 29/12 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "SCT",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.947,
+"lon": 37.479,
+"elev": 684,
+"name": "Gaziantep Arpt, GA, TR"
+},
+{
+"icaoId": "LTFG",
+"obsTime": 1790409000,
+"rawOb": "METAR LTFG 260750Z 24006KT 210V280 9999 FEW030 26/17 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.299,
+"lon": 32.3,
+"elev": 26,
+"name": "Gazipasa Arpt, AN, TR"
+},
+{
+"icaoId": "LIPY",
+"obsTime": 1790409000,
+"rawOb": "METAR LIPY 260750Z AUTO 26006KT 220V290 9999 NCD 20/13 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.617,
+"lon": 13.36,
+"elev": 11,
+"name": "Falconara/Ancona Arpt, AN, IT"
+},
+{
+"icaoId": "LTFH",
+"obsTime": 1790409000,
+"rawOb": "METAR LTFH 260750Z 29003KT 240V330 9999 FEW008 BKN033 20/17 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 800
+},
+{
+"cover": "BKN",
+"base": 3300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.255,
+"lon": 36.567,
+"elev": 7,
+"name": "Samsun-\u00c7ar\u015famba Arpt, SA, TR"
+},
+{
+"icaoId": "LGKZ",
+"obsTime": 1790409000,
+"rawOb": "METAR LGKZ 260750Z AUTO 05008KT //// -RA ////// 11/10 Q1021 RE//",
+"clouds": null,
+"fltCat": null,
+"visib": null,
+"metarType": "METAR",
+"lat": 40.288,
+"lon": 21.842,
+"elev": 615,
+"name": "Kozani/Filippos Arpt, C, GR"
+},
+{
+"icaoId": "LTFM",
+"obsTime": 1790409000,
+"rawOb": "METAR LTFM 260750Z 06016KT 9999 SCT025 BKN180 22/15 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2500
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.262,
+"lon": 28.74,
+"elev": 99,
+"name": "Istanbul Arpt, IS, TR"
+},
+{
+"icaoId": "LMML",
+"obsTime": 1790408700,
+"rawOb": "METAR LMML 260745Z 36004KT 310V040 9999 FEW028 25/20 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.858,
+"lon": 14.477,
+"elev": 78,
+"name": "Malta Intl, LU, MT"
+},
+{
+"icaoId": "LEBB",
+"obsTime": 1790407800,
+"rawOb": "METAR LEBB 260730Z 10003KT 060V140 9999 OVC036 19/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.298,
+"lon": -2.906,
+"elev": 38,
+"name": "Bilbao Arpt, PV, ES"
+},
+{
+"icaoId": "DABC",
+"obsTime": 1790407800,
+"rawOb": "METAR DABC 260730Z 18003KT 150V220 CAVOK 18/08 Q1023",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.278,
+"lon": 6.629,
+"elev": 686,
+"name": "Constantine/Boudiaf Arpt, CO, DZ"
+},
+{
+"icaoId": "LEVC",
+"obsTime": 1790407800,
+"rawOb": "METAR LEVC 260730Z 32006KT 9999 FEW015 20/13 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.489,
+"lon": -0.482,
+"elev": 58,
+"name": "Valencia Arpt, VC, ES"
+},
+{
+"icaoId": "GMMN",
+"obsTime": 1790407800,
+"rawOb": "METAR GMMN 260730Z VRB02KT 6000 NSC 18/18 Q1017 BECMG 6000 NSC",
+"clouds": [],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 33.367,
+"lon": -7.59,
+"elev": 196,
+"name": "Casablanca Intl, ME, MA"
+},
+{
+"icaoId": "LEPA",
+"obsTime": 1790407800,
+"rawOb": "METAR LEPA 260730Z 04005KT 340V070 9999 FEW013 22/19 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.561,
+"lon": 2.737,
+"elev": 8,
+"name": "Palma De Mallorca Arpr, IB, ES"
+},
+{
+"icaoId": "DAOO",
+"obsTime": 1790407800,
+"rawOb": "METAR DAOO 260730Z VRB01KT 0600 FG BKN013 20/20 Q1019",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1300
+}
+],
+"fltCat": "LIFR",
+"visib": 0.37,
+"metarType": "METAR",
+"lat": 35.623,
+"lon": -0.624,
+"elev": 87,
+"name": "Oran/Es-S\u00e9nia Arpt, OR, DZ"
+},
+{
+"icaoId": "GMMX",
+"obsTime": 1790407800,
+"rawOb": "METAR GMMX 260730Z 26004KT 230V300 CAVOK 23/14 Q1016 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 31.607,
+"lon": -8.036,
+"elev": 465,
+"name": "Marrakesh/Menara Intl, ME, MA"
+},
+{
+"icaoId": "LEAS",
+"obsTime": 1790407800,
+"rawOb": "METAR LEAS 260730Z VRB01KT 9999 BKN039 17/15 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.567,
+"lon": -6.044,
+"elev": 120,
+"name": "Aviles/Asturias Arpt, O, ES"
+},
+{
+"icaoId": "LDSP",
+"obsTime": 1790407800,
+"rawOb": "METAR LDSP 260730Z 04013KT 020V080 CAVOK 20/06 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.539,
+"lon": 16.301,
+"elev": 16,
+"name": "Split Arpt, SP, HR"
+},
+{
+"icaoId": "LEGR",
+"obsTime": 1790407800,
+"rawOb": "METAR LEGR 260730Z 00000KT CAVOK 17/08 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.19,
+"lon": -3.789,
+"elev": 560,
+"name": "Granada/Lorca Arpt, AN, ES"
+},
+{
+"icaoId": "LECO",
+"obsTime": 1790407800,
+"rawOb": "METAR LECO 260730Z VRB02KT 9999 2000SE R21/P2000 R03/0900D BCFG NSC 12/12 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.307,
+"lon": -8.372,
+"elev": 80,
+"name": "A Coru\u00f1a Arpt, GA, ES"
+},
+{
+"icaoId": "LRCV",
+"obsTime": 1790407800,
+"rawOb": "METAR LRCV 260730Z 10009KT CAVOK 17/10 Q1024",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.31,
+"lon": 23.867,
+"elev": 192,
+"name": "Craiova Arpt, DO, RO"
+},
+{
+"icaoId": "GCLP",
+"obsTime": 1790407800,
+"rawOb": "METAR GCLP 260730Z 03015KT CAVOK 27/17 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.923,
+"lon": -15.389,
+"elev": 16,
+"name": "Grand Canaria Arpt, CR, ES"
+},
+{
+"icaoId": "LFMT",
+"obsTime": 1790407800,
+"rawOb": "METAR LFMT 260730Z AUTO 01006KT 9999 BKN019 20/17 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 1900
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.577,
+"lon": 3.963,
+"elev": 1,
+"name": "Montpellier/M\u00e9diterranee Arpt, OC, FR"
+},
+{
+"icaoId": "GMTA",
+"obsTime": 1790407800,
+"rawOb": "SPECI GMTA 260730Z 12003KT 080V150 2000 BR BKN005 21/18 Q1018 NOSIG M2",
+"clouds": [
+{
+"cover": "BKN",
+"base": 500
+}
+],
+"fltCat": "IFR",
+"visib": 1.24,
+"metarType": "SPECI",
+"lat": 35.177,
+"lon": -3.84,
+"elev": 14,
+"name": "Al Hoceima/Idrissi Arpt, TA, MA"
+},
+{
+"icaoId": "LEZL",
+"obsTime": 1790407800,
+"rawOb": "METAR LEZL 260730Z 05005KT CAVOK 22/11 Q1017 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.418,
+"lon": -5.893,
+"elev": 26,
+"name": "Seville/San Pablo Arpt, AN, ES"
+},
+{
+"icaoId": "LEVX",
+"obsTime": 1790407800,
+"rawOb": "METAR LEVX 260730Z 21005KT 170V240 CAVOK 15/12 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.239,
+"lon": -8.624,
+"elev": 253,
+"name": "Vigo/Peinador Arpt, GA, ES"
+},
+{
+"icaoId": "LBPD",
+"obsTime": 1790407800,
+"rawOb": "METAR LBPD 260730Z AUTO 30008KT 9999 BKN038/// OVC045/// 17/10 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 3800
+},
+{
+"cover": "OVC",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.064,
+"lon": 24.86,
+"elev": 182,
+"name": "Plovdiv Arpt, PL, BG"
+},
+{
+"icaoId": "LQSA",
+"obsTime": 1790407800,
+"rawOb": "METAR LQSA 260730Z VRB03KT 9999 FEW033 BKN045 12/09 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3300
+},
+{
+"cover": "BKN",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.825,
+"lon": 18.331,
+"elev": 505,
+"name": "Sarajevo Intl, BI, BA"
+},
+{
+"icaoId": "LEVD",
+"obsTime": 1790407800,
+"rawOb": "METAR LEVD 260730Z 07006KT 040V100 CAVOK 13/11 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.706,
+"lon": -4.852,
+"elev": 844,
+"name": "Valladolid Arpt, CL, ES"
+},
+{
+"icaoId": "LBBG",
+"obsTime": 1790407800,
+"rawOb": "METAR LBBG 260730Z AUTO 04012KT 9999 -SHRA SCT017/// OVC022/// 16/15 Q1021 RESHRA TEMPO 5000 SHRA FEW025CB",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1700
+},
+{
+"cover": "OVC",
+"base": 2200
+}
+],
+"fltCat": "MVFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.569,
+"lon": 27.514,
+"elev": 41,
+"name": "Burgas Arpt, BU, BG"
+},
+{
+"icaoId": "LCLK",
+"obsTime": 1790407800,
+"rawOb": "METAR LCLK 260730Z 16005KT 120V190 9999 FEW030 28/20 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.874,
+"lon": 33.617,
+"elev": 2,
+"name": "Larnaca Intl, LA, CY"
+},
+{
+"icaoId": "LEMD",
+"obsTime": 1790407800,
+"rawOb": "METAR LEMD 260730Z VRB02KT CAVOK 17/04 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.466,
+"lon": -3.555,
+"elev": 589,
+"name": "Madrid/Barajas Arpt, M, ES"
+},
+{
+"icaoId": "LCPH",
+"obsTime": 1790407800,
+"rawOb": "METAR LCPH 260730Z 17007KT 9999 FEW030 26/17 Q1014 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.715,
+"lon": 32.479,
+"elev": 8,
+"name": "Paphos Intl, PA, CY"
+},
+{
+"icaoId": "LEAB",
+"obsTime": 1790407800,
+"rawOb": "METAR LEAB 260730Z 12005KT CAVOK 19/09 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.952,
+"lon": -1.863,
+"elev": 704,
+"name": "Albacete Arpt, CM, ES"
+},
+{
+"icaoId": "LFKJ",
+"obsTime": 1790407800,
+"rawOb": "METAR LFKJ 260730Z AUTO VRB03KT 9999 FEW033 23/17 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.924,
+"lon": 8.803,
+"elev": 9,
+"name": "Ajaccio/Oro Arpt, CO, FR"
+},
+{
+"icaoId": "DTTA",
+"obsTime": 1790407800,
+"rawOb": "METAR DTTA 260730Z 28008KT 250V310 9999 FEW023 25/21 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2300
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.851,
+"lon": 10.227,
+"elev": 4,
+"name": "Tunis/Carthage Intl, AR, TN"
+},
+{
+"icaoId": "DTMB",
+"obsTime": 1790407800,
+"rawOb": "METAR DTMB 260730Z 29008KT 9999 SCT026 25/20 Q1018",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.758,
+"lon": 10.755,
+"elev": 1,
+"name": "Monastir/Bourguiba Intl, MO, TN"
+},
+{
+"icaoId": "LECH",
+"obsTime": 1790407800,
+"rawOb": "METAR LECH 260730Z AUTO 02006KT 350V060 9999 FEW008 20/16 Q1023",
+"clouds": [
+{
+"cover": "FEW",
+"base": 800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.211,
+"lon": 0.067,
+"elev": 360,
+"name": "Castell\u00f3n Arpt, VC, ES"
+},
+{
+"icaoId": "URKA",
+"obsTime": 1790407800,
+"rawOb": "METAR URKA 260730Z 07008MPS CAVOK 19/13 Q1020 R03/010065 NOSIG RMK QFE761/1015",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.995,
+"lon": 37.341,
+"elev": 41,
+"name": "Anapa Arpt, KD, RU"
+},
+{
+"icaoId": "LEAM",
+"obsTime": 1790407800,
+"rawOb": "METAR LEAM 260730Z 01003KT 330V060 CAVOK 25/20 Q1019",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.846,
+"lon": -2.357,
+"elev": 16,
+"name": "Almer\u00eda Arpt, AN, ES"
+},
+{
+"icaoId": "GQNO",
+"obsTime": 1790407800,
+"rawOb": "METAR GQNO 260730Z 03005KT 7000 FEW020 24/22 Q1013 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "MVFR",
+"visib": 4.35,
+"metarType": "METAR",
+"lat": 18.31,
+"lon": -15.97,
+"elev": 1,
+"name": "Nouakchott/Oumtounsy Arpt, TR, MR"
+},
+{
+"icaoId": "LEMH",
+"obsTime": 1790407800,
+"rawOb": "METAR LEMH 260730Z 04014KT 010V070 9999 FEW022 26/20 Q1020",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2200
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.855,
+"lon": 4.216,
+"elev": 82,
+"name": "Mahon/Menorca Arpt, IB, ES"
+},
+{
+"icaoId": "LEZG",
+"obsTime": 1790407800,
+"rawOb": "METAR LEZG 260730Z 29008KT CAVOK 18/12 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.661,
+"lon": -1.004,
+"elev": 245,
+"name": "Zaragoza Arpt, AR, ES"
+},
+{
+"icaoId": "LPPR",
+"obsTime": 1790407800,
+"rawOb": "METAR LPPR 260730Z VRB01KT 9000 NSC 17/15 Q1020",
+"clouds": [],
+"fltCat": "VFR",
+"visib": 5.59,
+"metarType": "METAR",
+"lat": 41.235,
+"lon": -8.684,
+"elev": 64,
+"name": "Porto/Cameriro Arpt, PT, PT"
+},
+{
+"icaoId": "GCTS",
+"obsTime": 1790407800,
+"rawOb": "METAR GCTS 260730Z 07016KT 9999 BKN120 28/17 Q1018 NOSIG",
+"clouds": [
+{
+"cover": "BKN",
+"base": 12000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.047,
+"lon": -16.561,
+"elev": 59,
+"name": "Tenerife/South Arpt, CR, ES"
+},
+{
+"icaoId": "DAAG",
+"obsTime": 1790407800,
+"rawOb": "METAR DAAG 260730Z 26003KT 220V280 9999 FEW020 22/16 Q1021",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.691,
+"lon": 3.215,
+"elev": 18,
+"name": "Algiers Intl, BM, DZ"
+},
+{
+"icaoId": "DABB",
+"obsTime": 1790407800,
+"rawOb": "METAR DABB 260730Z 20008KT 9999 FEW020 FEW026TCU 23/18 Q1019",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "FEW",
+"base": 2600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.822,
+"lon": 7.809,
+"elev": 3,
+"name": "Annaba/Bitat Arpt, ET, DZ"
+},
+{
+"icaoId": "LYTV",
+"obsTime": 1790407800,
+"rawOb": "METAR LYTV 260730Z COR 01009KT 320V080 9999 FEW060 21/07 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 6000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.405,
+"lon": 18.723,
+"elev": 3,
+"name": "Tivat Arpt, TI, ME"
+},
+{
+"icaoId": "LFMN",
+"obsTime": 1790407800,
+"rawOb": "METAR LFMN 260730Z 09012KT 9999 SCT045 24/15 Q1022 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.658,
+"lon": 7.216,
+"elev": 4,
+"name": "Nice/C\u00f4te d'Azur Arpt, PA, FR"
+},
+{
+"icaoId": "LBGO",
+"obsTime": 1790407800,
+"rawOb": "METAR LBGO 260730Z AUTO 27006KT 240V300 9999 FEW034/// SCT077/// OVC088/// 16/10 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3400
+},
+{
+"cover": "SCT",
+"base": 7700
+},
+{
+"cover": "OVC",
+"base": 8800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.151,
+"lon": 25.713,
+"elev": 84,
+"name": "Gorna Orechovista Arpt, LO, BG"
+},
+{
+"icaoId": "GMFO",
+"obsTime": 1790407800,
+"rawOb": "METAR GMFO 260730Z 23003KT 190V260 CAVOK 21/04 Q1021 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 34.787,
+"lon": -1.924,
+"elev": 452,
+"name": "Oujda/Angads Arpt, RA, MA"
+},
+{
+"icaoId": "LPPS",
+"obsTime": 1790407800,
+"rawOb": "METAR LPPS 260730Z VRB02KT 9999 FEW015 24/16 Q1020",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.073,
+"lon": -16.35,
+"elev": 89,
+"name": "Porto Santo Isl Arpt, MD, PT"
+},
+{
+"icaoId": "LFMP",
+"obsTime": 1790407800,
+"rawOb": "METAR LFMP 260730Z AUTO 30007KT 270V330 CAVOK 23/15 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.737,
+"lon": 2.873,
+"elev": 41,
+"name": "Perpignan/Rivesaltes Arpt, OC, FR"
+},
+{
+"icaoId": "LFML",
+"obsTime": 1790407800,
+"rawOb": "METAR LFML 260730Z AUTO VRB02KT CAVOK 23/17 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 5.216,
+"elev": 20,
+"name": "Marseille Arpt, PA, FR"
+},
+{
+"icaoId": "GMAD",
+"obsTime": 1790407800,
+"rawOb": "METAR GMAD 260730Z 00000KT 6000 SCT008 18/17 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 800
+}
+],
+"fltCat": "MVFR",
+"visib": 3.73,
+"metarType": "METAR",
+"lat": 30.325,
+"lon": -9.413,
+"elev": 66,
+"name": "Agadir/Al Massira Arpt, SM, MA"
+},
+{
+"icaoId": "LPPT",
+"obsTime": 1790407800,
+"rawOb": "METAR LPPT 260730Z 07005KT 010V110 CAVOK 21/14 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.781,
+"lon": -9.136,
+"elev": 98,
+"name": "Lisbon Arpt, LI, PT"
+},
+{
+"icaoId": "LFBO",
+"obsTime": 1790407800,
+"rawOb": "METAR LFBO 260730Z AUTO VRB02KT 9999 FEW013 OVC041 20/15 Q1024 TEMPO BKN008",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1300
+},
+{
+"cover": "OVC",
+"base": 4100
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.621,
+"lon": 1.379,
+"elev": 150,
+"name": "Toulouse/Blagnac Arpt, OC, FR"
+},
+{
+"icaoId": "LFBD",
+"obsTime": 1790407800,
+"rawOb": "METAR LFBD 260730Z AUTO 23003KT 9999 OVC036 20/14 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.831,
+"lon": -0.691,
+"elev": 48,
+"name": "Bordeaux/M\u00e9rignac Arpt, NA, FR"
+},
+{
+"icaoId": "URSS",
+"obsTime": 1790407800,
+"rawOb": "METAR URSS 260730Z 12003MPS 090V160 9999 SCT048 23/16 Q1019 R02/010070 R06/010070 NOSIG RMK R06/12003MPS QFE763",
+"clouds": [
+{
+"cover": "SCT",
+"base": 4800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.438,
+"lon": 39.926,
+"elev": 4,
+"name": "Sochi Intl, KD, RU"
+},
+{
+"icaoId": "LFBA",
+"obsTime": 1790407800,
+"rawOb": "METAR LFBA 260730Z AUTO 00000KT 9999 FEW026 OVC039 20/17 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2600
+},
+{
+"cover": "OVC",
+"base": 3900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.176,
+"lon": 0.593,
+"elev": 68,
+"name": "Agen/La Garenne Arpt, NA, FR"
+},
+{
+"icaoId": "LFCR",
+"obsTime": 1790407800,
+"rawOb": "METAR LFCR 260730Z AUTO 12002KT 2200 BR OVC002 15/15 Q1025 BECMG 9999 NSW BKN007",
+"clouds": [
+{
+"cover": "OVC",
+"base": 200
+}
+],
+"fltCat": "LIFR",
+"visib": 1.37,
+"metarType": "METAR",
+"lat": 44.41,
+"lon": 2.483,
+"elev": 576,
+"name": "Rodez/Marcillac Arpt, OC, FR"
+},
+{
+"icaoId": "LDPL",
+"obsTime": 1790407800,
+"rawOb": "METAR LDPL 260730Z 05008KT 360V080 CAVOK 19/07 Q1023 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.894,
+"lon": 13.922,
+"elev": 63,
+"name": "Pula Arpt, IS, HR"
+},
+{
+"icaoId": "LBSF",
+"obsTime": 1790407800,
+"rawOb": "METAR LBSF 260730Z VRB02KT 9999 FEW020 SCT078 BKN089 13/09 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "SCT",
+"base": 7800
+},
+{
+"cover": "BKN",
+"base": 8900
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.694,
+"lon": 23.414,
+"elev": 531,
+"name": "Sofia Intl, SO, BG"
+},
+{
+"icaoId": "LFKB",
+"obsTime": 1790407800,
+"rawOb": "METAR LFKB 260730Z AUTO 03007KT CAVOK 23/11 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 42.553,
+"lon": 9.484,
+"elev": 7,
+"name": "Bastia/Poretta Arpt, OC, FR"
+},
+{
+"icaoId": "LQBK",
+"obsTime": 1790407800,
+"rawOb": "METAR LQBK 260730Z VRB01KT CAVOK 13/09 Q1026 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.937,
+"lon": 17.299,
+"elev": 114,
+"name": "Banja Luka Intl, SR, BA"
+},
+{
+"icaoId": "LEGE",
+"obsTime": 1790407800,
+"rawOb": "METAR LEGE 260730Z VRB01KT CAVOK 19/13 Q1022 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.911,
+"lon": 2.763,
+"elev": 140,
+"name": "Gerona/Costa Brava Arpt, CT, ES"
+},
+{
+"icaoId": "LEIB",
+"obsTime": 1790407800,
+"rawOb": "METAR LEIB 260730Z 05004KT 010V080 CAVOK 25/22 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.876,
+"lon": 1.384,
+"elev": 4,
+"name": "Ibiza Arpt, IB, ES"
+},
+{
+"icaoId": "GMFF",
+"obsTime": 1790407800,
+"rawOb": "METAR GMFF 260730Z 17004KT CAVOK 23/06 Q1019 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 33.929,
+"lon": -4.976,
+"elev": 575,
+"name": "Fes/Sa\u00efss Arpt, FE, MA"
+},
+{
+"icaoId": "LYBE",
+"obsTime": 1790407800,
+"rawOb": "METAR LYBE 260730Z VRB02KT CAVOK 14/11 Q1025 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.824,
+"lon": 20.291,
+"elev": 93,
+"name": "Belgrade/Tesla Arpt, BE, RS"
+},
+{
+"icaoId": "LFBT",
+"obsTime": 1790407800,
+"rawOb": "METAR LFBT 260730Z AUTO 00000KT 9999 OVC032 18/16 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "OVC",
+"base": 3200
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.189,
+"lon": 0,
+"elev": 359,
+"name": "Tarbes/Ossun Arpt, OC, FR"
+},
+{
+"icaoId": "LPFR",
+"obsTime": 1790407800,
+"rawOb": "METAR LPFR 260730Z 10006KT CAVOK 24/18 Q1016",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.014,
+"lon": -7.966,
+"elev": 3,
+"name": "Faro Arpt, FA, PT"
+},
+{
+"icaoId": "LEBL",
+"obsTime": 1790407800,
+"rawOb": "METAR LEBL 260730Z VRB08KT CAVOK 21/15 Q1021",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.293,
+"lon": 2.07,
+"elev": 2,
+"name": "Barcelona/Prat Arpt, CT, ES"
+},
+{
+"icaoId": "HECA",
+"obsTime": 1790407800,
+"rawOb": "METAR HECA 260730Z 36005KT CAVOK 25/14 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 30.133,
+"lon": 31.405,
+"elev": 142,
+"name": "Cairo Intl, QH, EG"
+},
+{
+"icaoId": "GCRR",
+"obsTime": 1790407800,
+"rawOb": "METAR GCRR 260730Z 35005KT 290V030 9999 FEW015 24/21 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 28.952,
+"lon": -13.6,
+"elev": 9,
+"name": "Arrecife/Lanzarote Arpt, CR, ES"
+},
+{
+"icaoId": "LRCK",
+"obsTime": 1790407800,
+"rawOb": "METAR LRCK 260730Z 01010KT 9999 FEW048 18/13 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.362,
+"lon": 28.488,
+"elev": 108,
+"name": "Constanta/Kog\u0103lniceanu Arpt, CT, RO"
+},
+{
+"icaoId": "LETL",
+"obsTime": 1790407800,
+"rawOb": "METAR LETL 260730Z AUTO 16004KT CAVOK 15/06 Q1025",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.404,
+"lon": -1.218,
+"elev": 1024,
+"name": "Teruel Arpt, AR, ES"
+},
+{
+"icaoId": "GCHI",
+"obsTime": 1790407800,
+"rawOb": "METAR GCHI 260730Z 34017KT CAVOK 28/14 Q1018",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 27.819,
+"lon": -17.889,
+"elev": 21,
+"name": "Valverde/Hierro Arpt, CR, ES"
+},
+{
+"icaoId": "LYKV",
+"obsTime": 1790407800,
+"rawOb": "METAR LYKV 260730Z 31005KT 270V330 9999 FEW020 BKN045 13/12 Q1025 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "BKN",
+"base": 4500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.818,
+"lon": 20.587,
+"elev": 209,
+"name": "Kraljevo/Ladevci Arpt, RA, RS"
+},
+{
+"icaoId": "GMME",
+"obsTime": 1790407800,
+"rawOb": "METAR GMME 260730Z 00000KT 4000 BR FEW003 20/20 Q1015 BECMG 5000",
+"clouds": [
+{
+"cover": "FEW",
+"base": 300
+}
+],
+"fltCat": "IFR",
+"visib": 2.49,
+"metarType": "METAR",
+"lat": 34.051,
+"lon": -6.752,
+"elev": 84,
+"name": "Rabat-Sal\u00e9 Arpt, RS, MA"
+},
+{
+"icaoId": "DAAT",
+"obsTime": 1790407800,
+"rawOb": "METAR DAAT 260730Z VRB02KT 9999 FEW046 23/04 Q1020",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4600
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 22.824,
+"lon": 5.452,
+"elev": 1372,
+"name": "Tamanrasset/Aguenar-Hadj Bei Arpt, TA, DZ"
+},
+{
+"icaoId": "LYNI",
+"obsTime": 1790407800,
+"rawOb": "METAR LYNI 260730Z 33010KT 300V360 9999 FEW010 BKN070 13/11 Q1024 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1000
+},
+{
+"cover": "BKN",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.338,
+"lon": 21.863,
+"elev": 197,
+"name": "Ni\u0161 Arpt, NI, RS"
+},
+{
+"icaoId": "LROP",
+"obsTime": 1790407800,
+"rawOb": "METAR LROP 260730Z 06009KT 020V080 CAVOK 17/12 Q1025 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 44.572,
+"lon": 26.102,
+"elev": 92,
+"name": "Bucharest/Coand\u0103 Intl, B, RO"
+},
+{
+"icaoId": "LEAL",
+"obsTime": 1790407800,
+"rawOb": "METAR LEAL 260730Z VRB01KT CAVOK 26/21 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.282,
+"lon": -0.558,
+"elev": 26,
+"name": "Alicante Arpt, VC, ES"
+},
+{
+"icaoId": "LTBJ",
+"obsTime": 1790407200,
+"rawOb": "METAR LTBJ 260720Z 26003KT 150V320 CAVOK 20/10 Q1015 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.285,
+"lon": 27.155,
+"elev": 123,
+"name": "Izmir/Menderes Arpt, IZ, TR"
+},
+{
+"icaoId": "LGAD",
+"obsTime": 1790407200,
+"rawOb": "METAR LGAD 260720Z 05004KT 9999 FEW020 SCT070 21/15 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "SCT",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.923,
+"lon": 21.287,
+"elev": 8,
+"name": "Andravida Arpt, J, GR"
+},
+{
+"icaoId": "LGRP",
+"obsTime": 1790407200,
+"rawOb": "METAR LGRP 260720Z 25007KT 9999 FEW025 23/14 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.405,
+"lon": 28.086,
+"elev": 3,
+"name": "Rhodes/Diagoras Arpt, K, GR"
+},
+{
+"icaoId": "LTAU",
+"obsTime": 1790407200,
+"rawOb": "METAR LTAU 260720Z 05008KT 030V090 CAVOK 18/11 Q1020 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.77,
+"lon": 35.495,
+"elev": 1053,
+"name": "Kayseri Intl, KA, TR"
+},
+{
+"icaoId": "LWSK",
+"obsTime": 1790407200,
+"rawOb": "METAR LWSK 260720Z VRB02KT 9999 FEW007 SCT050 BKN080 15/12 Q1023 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 700
+},
+{
+"cover": "SCT",
+"base": 5000
+},
+{
+"cover": "BKN",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.952,
+"lon": 21.627,
+"elev": 232,
+"name": "Skopje Intl, IL, MK"
+},
+{
+"icaoId": "LTAT",
+"obsTime": 1790407200,
+"rawOb": "METAR LTAT 260720Z VRB03KT CAVOK 25/09 Q1018 NOSIG",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 38.435,
+"lon": 38.092,
+"elev": 850,
+"name": "Malatya Arpt, MA, TR"
+},
+{
+"icaoId": "LICC",
+"obsTime": 1790407200,
+"rawOb": "METAR LICC 260720Z 26005KT 9999 FEW015 BKN040 19/13 Q1017",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+},
+{
+"cover": "BKN",
+"base": 4000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.467,
+"lon": 15.064,
+"elev": 6,
+"name": "Catania/Fontanarossa Arpt, CT, IT"
+},
+{
+"icaoId": "LGIR",
+"obsTime": 1790407200,
+"rawOb": "METAR LGIR 260720Z VRB03KT 9999 FEW020 BKN080 22/13 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+},
+{
+"cover": "BKN",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.337,
+"lon": 25.173,
+"elev": 37,
+"name": "Iraklion Intl, M, GR"
+},
+{
+"icaoId": "LGAL",
+"obsTime": 1790407200,
+"rawOb": "METAR LGAL 260720Z 04015KT 9999 FEW020 22/13 Q1018",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.856,
+"lon": 25.945,
+"elev": 5,
+"name": "Alexandroupolis/Dimokritos Arpt, A, GR"
+},
+{
+"icaoId": "LTAC",
+"obsTime": 1790407200,
+"rawOb": "METAR LTAC 260720Z 09006KT 030V130 9999 FEW040 SCT200 16/10 Q1021 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "SCT",
+"base": 20000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.128,
+"lon": 32.995,
+"elev": 952,
+"name": "Ankara/Esenbo\u011fa Intl, AN, TR"
+},
+{
+"icaoId": "LGTS",
+"obsTime": 1790407200,
+"rawOb": "METAR LGTS 260720Z 33015KT 9999 FEW012 SCT020 17/16 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1200
+},
+{
+"cover": "SCT",
+"base": 2000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.52,
+"lon": 22.971,
+"elev": 4,
+"name": "Thessaloniki Intl, A, GR"
+},
+{
+"icaoId": "LGAV",
+"obsTime": 1790407200,
+"rawOb": "METAR LGAV 260720Z VRB01KT 9999 FEW025 SCT035 BKN070 19/14 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 2500
+},
+{
+"cover": "SCT",
+"base": 3500
+},
+{
+"cover": "BKN",
+"base": 7000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.936,
+"lon": 23.945,
+"elev": 83,
+"name": "Athens/Venizelos Intl, I, GR"
+},
+{
+"icaoId": "LGKR",
+"obsTime": 1790407200,
+"rawOb": "METAR LGKR 260720Z 00000KT 9999 FEW015TCU SCT080 16/13 Q1015 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1500
+},
+{
+"cover": "SCT",
+"base": 8000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 39.61,
+"lon": 19.913,
+"elev": 2,
+"name": "Corfu/Kapodistinas Arpt, L, GR"
+},
+{
+"icaoId": "LTAJ",
+"obsTime": 1790407200,
+"rawOb": "METAR LTAJ 260720Z 18003KT 130V230 9999 FEW040 SCT180 29/12 Q1016 NOSIG",
+"clouds": [
+{
+"cover": "FEW",
+"base": 4000
+},
+{
+"cover": "SCT",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.947,
+"lon": 37.479,
+"elev": 684,
+"name": "Gaziantep Arpt, GA, TR"
+},
+{
+"icaoId": "LGKZ",
+"obsTime": 1790407200,
+"rawOb": "METAR LGKZ 260720Z AUTO 04004KT 020V080 //// -RA ////// 11/11 Q1021 RE//",
+"clouds": null,
+"fltCat": null,
+"visib": null,
+"metarType": "METAR",
+"lat": 40.288,
+"lon": 21.842,
+"elev": 615,
+"name": "Kozani/Filippos Arpt, C, GR"
+},
+{
+"icaoId": "LTAI",
+"obsTime": 1790407200,
+"rawOb": "METAR LTAI 260720Z 36005KT 320V030 9999 FEW030 BKN180 26/11 Q1015 BECMG TL0900 17010KT",
+"clouds": [
+{
+"cover": "FEW",
+"base": 3000
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 36.9,
+"lon": 30.798,
+"elev": 50,
+"name": "Antalya Arpt, AN, TR"
+},
+{
+"icaoId": "LIRQ",
+"obsTime": 1790407200,
+"rawOb": "METAR LIRQ 260720Z VRB05KT CAVOK 19/10 Q1022",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 43.81,
+"lon": 11.205,
+"elev": 33,
+"name": "Florence/Peretola Arpt, FI, IT"
+},
+{
+"icaoId": "LTCG",
+"obsTime": 1790407200,
+"rawOb": "METAR LTCG 260720Z 35003KT 310V030 9999 SCT016 BKN035 21/17 Q1020 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 1600
+},
+{
+"cover": "BKN",
+"base": 3500
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 40.995,
+"lon": 39.782,
+"elev": 28,
+"name": "Trabzon Arpt, TR, TR"
+},
+{
+"icaoId": "LGKP",
+"obsTime": 1790407200,
+"rawOb": "METAR LGKP 260720Z 28010KT 9999 FEW018 23/14 Q1015",
+"clouds": [
+{
+"cover": "FEW",
+"base": 1800
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 35.421,
+"lon": 27.146,
+"elev": 20,
+"name": "Karpathos Isl Arpt, M, GR"
+},
+{
+"icaoId": "LGMK",
+"obsTime": 1790407200,
+"rawOb": "METAR LGMK 260720Z 02006KT CAVOK 22/13 Q1015",
+"clouds": [],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 37.435,
+"lon": 25.348,
+"elev": 126,
+"name": "Mykonos Arpt, K, GR"
+},
+{
+"icaoId": "LTFM",
+"obsTime": 1790407200,
+"rawOb": "METAR LTFM 260720Z 06015KT 9999 SCT025 BKN180 21/15 Q1019 NOSIG",
+"clouds": [
+{
+"cover": "SCT",
+"base": 2500
+},
+{
+"cover": "BKN",
+"base": 18000
+}
+],
+"fltCat": "VFR",
+"visib": "6+",
+"metarType": "METAR",
+"lat": 41.262,
+"lon": 28.74,
+"elev": 99,
+"name": "Istanbul Arpt, IS, TR"
+},
+{
+"icaoId": "LXGB",
+"obsTime": 1790407200,
+"rawOb": "METAR LXGB 260720Z 08008KT 8000 1500E BR VCFG SCT001 BKN004 20/19 Q1018 TEMPO 2000 SCT002",
+"clouds": [
+{
+"cover": "SCT",
+"base": 100
+},
+{
+"cover": "BKN",
+"base": 400
+}
+],
+"fltCat": "LIFR",
+"visib": 4.97,
+"metarType": "METAR",
+"lat": 36.151,
+"lon": -5.35,
+"elev": 5,
+"name": "Gibraltar Arpt, , GI"
+}
+]
