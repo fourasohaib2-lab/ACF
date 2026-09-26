@@ -19,7 +19,7 @@ test("the IFS-GFS difference layer and the agreement panel compare both models a
   await open(page, "?domain=fixture&step=3&level=850&lat=36.5&lon=3");
   await page.getByRole("radio", { name: "Écart d'AWCI (GFS − IFS)" }).check();
   await expect(page).toHaveURL(/layer=awci_diff/);
-  await expect(page.getByRole("figure", { name: /Écart d'AWCI/ })).toContainText("GFS plus haut");
+  await expect(page.getByRole("figure", { name: /Écart d'AWCI/ })).toContainText("orange : GFS plus haut");
   const panel = page.getByRole("region", { name: "Accord des modèles" });
   await expect(panel.getByRole("table", { name: "Valeurs IFS et GFS au point" })).toBeVisible();
   await expect(panel.getByRole("status")).toContainText("classe AWCI");

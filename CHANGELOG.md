@@ -27,6 +27,12 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP6 (second modèle) : NOAA GFS 0,25° par le pipeline inchangé (`acf-awci-ingest --model gfs`,
+  `acf-awci-auto --gfs`), humidité recalculée à la manière de l'IFS, divergence sur la sphère, cumul OLR reconstruit,
+  différences de définition déclarées dans le manifeste ; `model=ifs|gfs` sur toutes les routes du cube ; routes
+  `/compare/field` et `/compare/point` ; sélecteur de modèle, couches « Désaccord IFS–GFS » et panneau « Accord des
+  modèles » ; scores IFS et GFS contre les METAR (`tools/awci/compare_models_verification.py`). Correctifs : périodes
+  wgrib2 en jours, corps HTTP tronqués retentés. Voir `docs/awci/AWCI_WEB_SP6.md`.
 - AWCI Web, couleurs : classes AWCI et catégories de danger (CAT, givrage, convection, vue 3D) aux couleurs de la
   convention de vigilance ONM (vert, jaune, orange, rouge ; Extreme en pourpre au-delà du rouge), sans valeur de
   vigilance officielle (dit dans la légende). Teintes choisies par mesure (contraste WCAG, CIEDE2000 sous

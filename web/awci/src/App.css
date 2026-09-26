@@ -318,3 +318,4 @@
 .xs-readout-hint { color: var(--text-2); }
 .legend-vigilance { margin-left: 6px; color: var(--text-2); font-size: 11px; }
 .legend-note { margin: 2px 0 0; font-size: 11px; color: var(--text-2); white-space: nowrap; }
+.legend-key { display: block; margin-top: 2px; font-size: 11px; color: var(--text-2); }

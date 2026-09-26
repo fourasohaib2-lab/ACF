@@ -38,7 +38,8 @@ function Rows({ def, classLabels, awciBounds }: Props) {
     return (
       <li className="legend-ramp">
         <span className="legend-gradient" style={{ background: `linear-gradient(to right, ${DIVERGING_IFS_GFS.join(",")})` }} aria-hidden="true" />
-        <span className="legend-ends num"><span>≤ −{r.limit} (GFS plus bas)</span><span>0</span><span>≥ +{r.limit} (GFS plus haut)</span></span>
+        <span className="legend-ends num"><span>≤ −{r.limit}</span><span>0</span><span>≥ +{r.limit}</span></span>
+        <span className="legend-key">bleu : GFS plus bas · orange : GFS plus haut</span>
       </li>
     );
   }

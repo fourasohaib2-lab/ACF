@@ -46,6 +46,7 @@ premier run publié.
 | `--run-hours` | `0,12` | runs déterministes suivis (UTC). `0,6,12,18` pour les quatre runs quotidiens |
 | `--steps` | `0-72/3` | échéances du déterministe |
 | `--obs-every-min` | 30 | fréquence des observations (10 à 180) |
+| `--gfs` | désactivé | suit aussi NOAA GFS 0,25° (second modèle, SP6), stocké dans `<données>/gfs/` |
 | `--ens` | désactivé | calcule l'ensemble ECMWF |
 | `--ens-run-hours`, `--ens-steps`, `--ens-members` | `0`, `0-24/6`, `1-50` | réglages de l'ensemble |
 | `--max-age-days` | 7 | durée de conservation (1 à 30 jours) |
