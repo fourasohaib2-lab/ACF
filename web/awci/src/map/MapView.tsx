@@ -1,5 +1,7 @@
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "maplibre-gl";
+// MapLibre 6 runs its tile/GeoJSON work in a module worker that the bundler must emit as its own file.
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef, useState } from "react";
 import type { Domain, FieldData } from "../api/types";
 import { fr } from "../i18n/fr";
@@ -20,6 +22,8 @@ interface Props {
   opacity: number;
   onPick: (lat: number, lon: number) => void;
 }
+
+maplibregl.setWorkerUrl(workerUrl);
 
 const EMPTY_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const EMPTY = { type: "FeatureCollection" as const, features: [] };

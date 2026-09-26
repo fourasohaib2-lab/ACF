@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react()],
   server: { proxy: { "/api": "http://127.0.0.1:8091" } },
   build: { sourcemap: true, chunkSizeWarningLimit: 1200 },
+  // MapLibre's module worker imports a shared chunk: bundle it as an ES worker (see MapView setWorkerUrl).
+  worker: { format: "es" },
   test: {
     globals: true,
     environment: "jsdom",
