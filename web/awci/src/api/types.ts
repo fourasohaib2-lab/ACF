@@ -179,3 +179,20 @@ export interface EnsVerification {
   cloud_profiles: { ens: string | null; deterministic: string | null }; like_for_like: boolean;
   observed: string; forecast: string; observations_ingested_at: string | null;
 }
+
+// ---- SP4: route cross-section and route meteogram ----
+export interface RouteWaypoint { index: number; distance_km: number; lat: number; lon: number }
+interface RouteGeometry {
+  length_km: number; spacing_km: number; distance_km: number[]; lat: number[]; lon: number[]; grid_lat: number[]; grid_lon: number[];
+  waypoints: RouteWaypoint[]; levels_hpa: number[]; flight_levels: number[];
+}
+export interface RouteSection extends RouteGeometry {
+  layer: string; unit: string; values: (number | null)[][]; surface_pressure_hpa: (number | null)[] | null;
+  surface_height_m: (number | null)[] | null; provenance: Provenance;
+}
+export interface RouteMeteogramStep {
+  step: number; valid_time: string; missing: boolean; awci_max: (number | null)[] | null; awci_median: (number | null)[] | null;
+  frac_awci_high: (number | null)[] | null; frac_icing: (number | null)[] | null; frac_cat_moderate: (number | null)[] | null;
+  frac_cloud_bkn: (number | null)[] | null;
+}
+export interface RouteMeteogram extends RouteGeometry { awci_high_lower_bound: number; steps: RouteMeteogramStep[]; provenance: Provenance }

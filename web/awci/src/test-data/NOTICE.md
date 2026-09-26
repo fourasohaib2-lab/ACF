@@ -10,3 +10,6 @@ fixture (`tests/data/awci_ens`, © ECMWF CC-BY-4.0).
 `ens_verification_north_africa_2026092600.json` is the `/ens/verification` response for the real IFS ENS 2026-09-26 00Z run
 over North Africa (50 members, +0..+24 h / 6 h, © ECMWF CC-BY-4.0) against the AWC METAR archive (public domain), with
 the deterministic cube of the same run built with cloud profile 1.1.0 (hence `like_for_like: false`).
+`route_section_gmmn_heca.json` and `route_meteogram_gmmn_heca.json` are `/route/section` (AWCI, +12 h) and
+`/route/meteogram` responses for the route Casablanca GMMN → Algiers DAAG → Tunis DTTA → Cairo HECA (3 770 km) over the
+real IFS 2026-09-25 12Z run, North Africa (© ECMWF CC-BY-4.0).

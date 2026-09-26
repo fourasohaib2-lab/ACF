@@ -8,6 +8,7 @@ import { fr } from "../i18n/fr";
 import { gridEdges, renderField } from "./fieldRaster";
 import { CATEGORY_COLORS, HAZARDS, type AirportPoint } from "../lib/aero";
 import { colorFn, type LayerDef } from "./layers";
+import { greatCircleLine, type LatLon } from "../lib/route";
 import { streamlineFeatures, type WindGrid } from "./streamlines";
 import { baseStyle, wmsTileUrl } from "./style";
 
@@ -32,6 +33,9 @@ interface Props {
   /** 3-D volume view: tilted camera and rotation; the 2-D field and streamlines are hidden (SP2B). */
   mode3d?: boolean;
   onMap?: (map: MlMap | null) => void;
+  /** Route waypoints (SP4), drawn along their great circles; while `routeEditing`, clicks add points. */
+  route?: LatLon[];
+  routeEditing?: boolean;
 }
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -50,7 +54,7 @@ const HAZARD_IDS = Object.keys(HAZARDS) as (keyof typeof HAZARDS)[];
 const PICK_PX = 6;
 
 export function MapView({ domain, field, stale = false, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError,
-  airports, sigmets, onPickAirport, mode3d = false, onMap }: Props) {
+  airports, sigmets, onPickAirport, mode3d = false, onMap, route, routeEditing = false }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const pickRef = useRef(onPick);
@@ -106,6 +110,13 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
           "circle-color": ["match", ["get", "category"], "VFR", CATEGORY_COLORS.VFR, "MVFR", CATEGORY_COLORS.MVFR,
             "IFR", CATEGORY_COLORS.IFR, "LIFR", CATEGORY_COLORS.LIFR, "rgba(0,0,0,0)"],
           "circle-stroke-color": ["case", ["get", "observed"], "#0b1220", "#8a94a8"], "circle-stroke-width": 1.5 } });
+      map.addSource("route", { type: "geojson", data: EMPTY });
+      map.addLayer({ id: "route-casing", type: "line", source: "route", filter: ["==", ["geometry-type"], "LineString"],
+        paint: { "line-color": "#0b1220", "line-width": 5, "line-opacity": 0.7 } });
+      map.addLayer({ id: "route-line", type: "line", source: "route", filter: ["==", ["geometry-type"], "LineString"],
+        paint: { "line-color": "#ffffff", "line-width": 2.5 } });
+      map.addLayer({ id: "route-points", type: "circle", source: "route", filter: ["==", ["geometry-type"], "Point"],
+        paint: { "circle-radius": 5, "circle-color": "#ffffff", "circle-stroke-color": "#0b1220", "circle-stroke-width": 2 } });
       map.addSource("point", { type: "geojson", data: EMPTY });
       map.addLayer({ id: "point", type: "circle", source: "point",
         paint: { "circle-radius": 6, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
@@ -183,6 +194,20 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
   }, [ready, sigmets]);
 
   useEffect(() => {
+    const source = ready ? (mapRef.current?.getSource("route") as GeoJSONSource | undefined) : undefined;
+    const pts = route ?? [];
+    source?.setData({ type: "FeatureCollection", features: [
+      ...(pts.length >= 2 ? [{ type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: greatCircleLine(pts) } }] : []),
+      ...pts.map(([la, lo], i) => ({ type: "Feature" as const, properties: { n: i + 1 }, geometry: { type: "Point" as const, coordinates: [lo, la] } })),
+    ] } as never);
+  }, [ready, route]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (ready && map) map.getCanvas().style.cursor = routeEditing ? "crosshair" : "";
+  }, [ready, routeEditing]);
+
+  useEffect(() => {
     const source = ready ? (mapRef.current?.getSource("point") as GeoJSONSource | undefined) : undefined;
     source?.setData(point ? { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [point.lon, point.lat] } } : EMPTY);
   }, [ready, point]);
@@ -228,7 +253,7 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
   return (
     <div className="map-view">
       <div ref={container} className="map-canvas" role="application" tabIndex={0}
-           aria-label={`Carte ${def.label}${e ? `, domaine ${e.south.toFixed(1)}–${e.north.toFixed(1)}° N` : ""}. Cliquer pour inspecter un point.`} />
+           aria-label={`Carte ${def.label}${e ? `, domaine ${e.south.toFixed(1)}–${e.north.toFixed(1)}° N` : ""}. ${routeEditing ? "Cliquer pour ajouter un point de route." : "Cliquer pour inspecter un point."}`} />
     </div>
   );
 }

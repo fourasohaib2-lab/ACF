@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useEnsMeta, useEnsVerification, useEnsPoint, useRouteMeteogram, useRouteSection, useEnsRuns, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -30,12 +30,14 @@ import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { SigmetList } from "./panels/SigmetList";
 import { EnsVerification } from "./panels/EnsVerification";
+import { RoutePanel } from "./panels/RoutePanel";
 import { ValidationPage } from "./panels/ValidationPage";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
 import { TopBar } from "./panels/TopBar";
 import { runLabel, stepLabel } from "./lib/format";
 import { ownsKeys } from "./lib/keys";
+import { MAX_WAYPOINTS, serializeRoute } from "./lib/route";
 import { availableLayers, ensStepAvailable, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
 
 const MapView = lazy(() => import("./map/MapView").then((m) => ({ default: m.MapView })));
@@ -58,6 +60,7 @@ export function App() {
   const now = useNow();
   const [playing, setPlaying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [routeEditing, setRouteEditing] = useState(false);
   const [streamlines, setStreamlines] = useState(true);
   const [opacity, setOpacity] = useState(FIELD_OPACITY);
   const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
@@ -107,6 +110,12 @@ export function App() {
   const classes = useMemo(() => registry.data?.classes ?? [], [registry.data]);
   const awciBounds = useMemo(() => classes.filter((c) => c.upper_bound !== null).map((c) => c.upper_bound as number), [classes]);
   const classLabels = useMemo(() => classes.map((c) => c.label), [classes]);
+  // SP4: the section shows the map layer when it is a deterministic per-level layer, else the AWCI (said so)
+  const sectionDef = def.perLevel && !def.source ? def : layerDef("awci");
+  const routePoints = view.route && view.route.length >= 2 ? serializeRoute(view.route) : undefined;
+  const routeSection = useRouteSection({ domain: resolved?.domain, run: resolved?.run, step: resolved?.step, layer: sectionDef.id,
+    points: routePoints }, !!routePoints);
+  const routeMeteogram = useRouteMeteogram({ domain: resolved?.domain, run: resolved?.run, points: routePoints }, !!routePoints);
   const layers = useMemo(() => (meta.data ? availableLayers(meta.data, ensMeta.data) : []), [meta.data, ensMeta.data]);
   const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level, neighbours);
   const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
@@ -220,7 +229,10 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { update({ lat: undefined, lon: undefined, panel: undefined, ap: undefined }); setToast(null); return; }
+      if (e.key === "Escape") {
+        if (routeEditing) { setRouteEditing(false); return; } // Escape ends the route drawing only
+        update({ lat: undefined, lon: undefined, panel: undefined, ap: undefined }); setToast(null); return;
+      }
       if (ownsKeys(e.target) || e.ctrlKey || e.metaKey || e.altKey || !meta.data || !resolved) return;
       if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
       else if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
@@ -231,7 +243,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [meta.data, resolved, step, update]);
+  }, [meta.data, resolved, step, update, routeEditing]);
 
   const onPick = useCallback((lat: number, lon: number) => {
     if (!domain || lat < domain.south || lat > domain.north || lon < domain.west || lon > domain.east) {
@@ -239,8 +251,18 @@ export function App() {
       return;
     }
     setToast(null);
+    if (routeEditing) {
+      // functional update: two quick clicks before a re-render must both add their point
+      setView((old) => withPinnedRun(old, shownRun.current,
+        (old.route?.length ?? 0) < MAX_WAYPOINTS ? { route: [...(old.route ?? []), [lat, lon]] } : {}));
+      return;
+    }
     update({ lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 });
-  }, [domain, update]);
+  }, [domain, update, routeEditing, setView]);
+  const onPickAirportOrWaypoint = useCallback((icao: string) => {
+    const a = airportsQ.data?.airports.find((x) => x.icao === icao);
+    if (routeEditing && a) onPick(a.lat, a.lon); else selectAirport(icao);
+  }, [routeEditing, airportsQ.data, onPick, selectAirport]);
 
   const onNow = useCallback(() => update({ run: undefined, step: undefined }), [update]);
 
@@ -289,7 +311,8 @@ export function App() {
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
                 <MapView domain={domain} field={ensGap ? undefined : fieldData} stale={!ensGap && field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
-                         onOverlayError={onOverlayError} airports={airportPoints} sigmets={sigmetShapes} onPickAirport={selectAirport}
+                         onOverlayError={onOverlayError} airports={airportPoints} sigmets={sigmetShapes} onPickAirport={onPickAirportOrWaypoint}
+                         route={view.route} routeEditing={routeEditing && !mode3d}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
                          opacity={fieldOpacity(comparing, opacity)} onPick={mode3d ? noPick : onPick} mode3d={mode3d} onMap={setMapInstance} />
               </Suspense>
@@ -302,6 +325,8 @@ export function App() {
               <div className="map-toolbar">
                 <button type="button" className="text-button" aria-pressed={mode3d} disabled={!webgl2}
                         onClick={() => update({ mode3d: !view.mode3d })}>{mode3d ? "Vue 2D" : "Vue 3D"}</button>
+                <button type="button" className="text-button" aria-pressed={routeEditing} disabled={mode3d}
+                        onClick={() => setRouteEditing((e) => !e)}>{routeEditing ? "Terminer la route" : "Route"}</button>
               </div>
               {!mode3d && <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />}
               {field.isPlaceholderData && !ensGap && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
@@ -345,6 +370,14 @@ export function App() {
         )}
         {resolved && meta.data && (
           <div className="bottom-row">
+            {(view.route?.length || routeEditing) ? (
+              <RoutePanel route={view.route} editing={routeEditing} onEditing={setRouteEditing}
+                          onRoute={(route) => update({ route })} airports={airportsQ.data?.airports ?? []}
+                          section={routeSection} meteogram={routeMeteogram} def={sectionDef}
+                          substituted={sectionDef.id !== def.id ? def.label : undefined} awciBounds={awciBounds}
+                          classLabels={classLabels} step={resolved.step} level={resolved.level}
+                          onSelect={(s, level) => update({ step: s, level })} />
+            ) : null}
             {view.ap && <AirportPanel detail={airportQ.data} currentStep={resolved.step} now={now} loading={airportQ.isLoading} />}
             {view.ap && airportQ.isError && <ErrorBox error={airportQ.error} what={`Aérodrome ${view.ap}`} />}
             <TimeEvolution point={timeseries.data} domain={domainSeries.data} meta={meta.data} step={resolved.step} />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Domain, EnsMeta, Meta, RunInfo } from "../api/types";
 import { ENS_LAYER_DEFS, LAYER_DEFS, type LayerDef } from "../map/layers";
+import { parseRoute, serializeRoute, type LatLon } from "../lib/route";
 import { allowedWith, type VolumeLayerId } from "../volume/layers3d";
 
 export interface ViewState {
@@ -10,6 +11,8 @@ export interface ViewState {
   ap?: string; aero: AeroLayer[];
   /** 3-D volume view (SP2B): volume layers (max 2), vertical exaggeration, cloud-fraction threshold. */
   mode3d: boolean; vol: VolumeLayerId[]; exag: number; cth: number;
+  /** Route waypoints [lat, lon] (SP4): cross-section and route meteogram. */
+  route?: LatLon[];
 }
 const VOLUME_IDS: VolumeLayerId[] = ["clouds", "icing", "cat", "awci"];
 export const EXAG_DEFAULT = 40;
@@ -51,6 +54,7 @@ export function parseView(search: string): ViewState {
     mode3d: q.get("view") === "3d", vol: parseVol(q.get("vol")),
     exag: clamp(Math.round(num(q.get("exag")) ?? EXAG_DEFAULT), 10, 100),
     cth: clamp(Math.round((num(q.get("cth")) ?? CTH_DEFAULT) * 8) / 8, 0.125, 1),
+    route: parseRoute(q.get("route")),
   };
 }
 
@@ -65,6 +69,7 @@ export function serializeView(v: ViewState): string {
   if (v.vol.join(",") !== "clouds") set("vol", v.vol.length ? v.vol.join(",") : "none");
   if (v.exag !== EXAG_DEFAULT) set("exag", v.exag);
   if (v.cth !== CTH_DEFAULT) set("cth", v.cth);
+  if (v.route?.length) set("route", serializeRoute(v.route));
   return `?${q.toString()}`;
 }
 

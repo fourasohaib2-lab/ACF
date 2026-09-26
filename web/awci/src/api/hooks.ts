@@ -5,7 +5,7 @@ import { parseVolume, type Volume } from "../volume/geometry";
 import { ApiError, getEnsField, getField, getJson, getTerrain, getVolume } from "./client";
 import type {
   AirportDetail, AirportsPayload, EnsMeta, EnsPoint, EnsRun, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
-  EnsVerification, Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
+  EnsVerification, Registry, RouteMeteogram, RouteSection, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
 } from "./types";
 
 const IMMUTABLE = { staleTime: Infinity, gcTime: 30 * 60_000 } as const;
@@ -183,3 +183,14 @@ export const useEnsPoint = (k: { domain?: string; run?: string; lat?: number; lo
 export const useEnsVerification = (domain: string | undefined, run: string | undefined, enabled: boolean) =>
   useQuery({ queryKey: ["ens-verification", domain, run], enabled: enabled && !!domain && !!run, ...OBS, retry,
     queryFn: ({ signal }) => getJson<EnsVerification>("/ens/verification", { domain, run }, signal) });
+
+// ---- SP4: route (a run's content is immutable) ----
+export const useRouteSection = (k: { domain?: string; run?: string; step?: number; layer?: string; points?: string }, enabled: boolean) =>
+  useQuery({ queryKey: ["route-section", k.domain, k.run, k.step, k.layer, k.points], ...IMMUTABLE, retry,
+    placeholderData: keepPreviousData, enabled: enabled && !!k.domain && !!k.run && k.step !== undefined && !!k.layer && !!k.points,
+    queryFn: ({ signal }) => getJson<RouteSection>("/route/section", { ...k }, signal) });
+
+export const useRouteMeteogram = (k: { domain?: string; run?: string; points?: string }, enabled: boolean) =>
+  useQuery({ queryKey: ["route-meteogram", k.domain, k.run, k.points], ...IMMUTABLE, retry,
+    enabled: enabled && !!k.domain && !!k.run && !!k.points,
+    queryFn: ({ signal }) => getJson<RouteMeteogram>("/route/meteogram", { ...k }, signal) });

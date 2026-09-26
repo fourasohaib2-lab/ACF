@@ -89,3 +89,13 @@ test("an ENS layer at a step the ensemble did not compute is flagged, never repl
   expect(ensStepAvailable(ensMeta, 12)).toBe(false); // missing
   expect(ensStepAvailable(undefined, 0)).toBe(false);
 });
+
+describe("route in the URL (SP4)", () => {
+  it("round-trips the waypoints and drops a malformed route", () => {
+    const v = parseView("?route=36.691,3.215;36.851,10.227");
+    expect(v.route).toEqual([[36.691, 3.215], [36.851, 10.227]]);
+    expect(serializeView(v)).toContain("route=36.691%2C3.215%3B36.851%2C10.227");
+    expect(parseView("?route=36,3;x,1").route).toBeUndefined();
+  });
+});
+
