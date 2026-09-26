@@ -27,6 +27,10 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP4 (route) : route orthodromique tracée sur la carte ou par codes OACI (partagée dans l'URL),
+  coupe verticale de la couche le long de la route (log p, FL ISA, relief du modèle, maille la plus proche tous les
+  10 km, sans interpolation) et météogramme de route (échéance × niveau, AWCI max, parts de route en danger) ;
+  routes `/route/section` et `/route/meteogram`. Voir `docs/awci/AWCI_WEB_SP4.md`.
 - AWCI Web, téléchargement automatique : `acf-awci-auto` (ou `acf-awci-web --auto`, une seule commande) suit
   les runs IFS publiés sur data.ecmwf.int (00 et 12 UTC par défaut, détection par interrogation), les METAR/TAF/SIGMET
   toutes les 30 min, l'ensemble en option (`--ens`), et supprime les données de plus de 7 jours (le run le plus
