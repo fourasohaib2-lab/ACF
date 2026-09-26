@@ -119,6 +119,14 @@ def wind_components(speed_ms: float, direction_deg: float) -> tuple[float, float
     return -speed_ms * math.sin(d), -speed_ms * math.cos(d)
 
 
+def _no_data(exc: urllib.error.HTTPError) -> bool:
+    try:
+        body = exc.read(512).decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    return body.startswith("Unable to retrieve the data")
+
+
 class UwyoClient:
     """Sequential client for the Wyoming service (academic: one request at a time, a pause between requests)."""
 
@@ -131,13 +139,15 @@ class UwyoClient:
 
     @staticmethod
     def _http_get(url: str) -> str:
-        """The response body; "" when the service answers 404 ("Data Not Found": no sounding at that time)."""
+        """The response body; "" when the service has no sounding at that time: 404 "Data Not Found", or 400 whose
+        body reads "Unable to retrieve the data for <id> at <time>" (measured 2026-09-26 on 15 stations of the
+        domain). Any other 400 is a real error."""
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 return str(response.read().decode("utf-8", errors="replace"))
         except urllib.error.HTTPError as exc:
-            if exc.code == 404:
+            if exc.code == 404 or (exc.code == 400 and _no_data(exc)):
                 return ""
             raise SoundingError(f"{url}: {exc}") from exc
         except (OSError, urllib.error.URLError) as exc:

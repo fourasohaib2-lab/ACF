@@ -1,6 +1,7 @@
 """SP7 radiosondes: IGRA station list and Wyoming CSV (real fixtures), wind convention, observed shear, client
 behaviour (missing profile, failed request), ingestion, pairing on the real IFS fixture, scores, API."""
 
+import io
 import math
 import urllib.error
 from datetime import UTC, datetime
@@ -92,16 +93,30 @@ def test_observed_shear_is_the_model_definition(tmp_path: Path) -> None:
     np.testing.assert_allclose(obs["wind_speed"], np.hypot(obs["u"], obs["v"]), rtol=1e-12)
 
 
-def _http_error(code: int) -> urllib.error.HTTPError:
-    return urllib.error.HTTPError("https://weather.uwyo.edu/x", code, "Data Not Found", {}, None)  # type: ignore[arg-type]
+def _http_error(code: int, body: bytes = b"") -> urllib.error.HTTPError:
+    return urllib.error.HTTPError("https://weather.uwyo.edu/x", code, "Data Not Found", {},  # type: ignore[arg-type]
+                                  io.BytesIO(body))
 
 
-def test_a_404_means_no_sounding(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_404_and_unable_to_retrieve_mean_no_sounding(monkeypatch: pytest.MonkeyPatch) -> None:
     def not_found(request: Any, timeout: float) -> Any:
         raise _http_error(404)
 
     monkeypatch.setattr("urllib.request.urlopen", not_found)
     assert UwyoClient._http_get("https://weather.uwyo.edu/x") == ""
+
+    def unable(request: Any, timeout: float) -> Any:  # the service's own "no data" answer, as measured
+        raise _http_error(400, b"Unable to retrieve the data for 16716 at 2026-09-25 00:00:00.\n")
+
+    monkeypatch.setattr("urllib.request.urlopen", unable)
+    assert UwyoClient._http_get("https://weather.uwyo.edu/x") == ""
+
+    def bad_request(request: Any, timeout: float) -> Any:
+        raise _http_error(400, b"Invalid datetime")
+
+    monkeypatch.setattr("urllib.request.urlopen", bad_request)
+    with pytest.raises(SoundingError, match="400"):
+        UwyoClient._http_get("https://weather.uwyo.edu/x")
 
     def server_error(request: Any, timeout: float) -> Any:
         raise _http_error(503)
