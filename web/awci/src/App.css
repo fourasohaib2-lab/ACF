@@ -98,7 +98,7 @@
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 6px 12px;
   background: var(--surface-3); border: 1px solid var(--status-attention); border-radius: 6px;
 }
-.observed-badges { position: absolute; top: 10px; left: 10px; display: grid; gap: 4px; }
+.observed-badges { position: absolute; bottom: 40px; left: 10px; display: grid; gap: 4px; }
 .observed-badge { background: rgba(11, 18, 32, 0.9); border: 1px solid var(--border-strong); border-radius: 6px; padding: 3px 8px; font-size: var(--fs-data); }
 
 /* Time bar */
@@ -143,6 +143,11 @@
 .kpi-title { font-size: var(--fs-data); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
 .kpi-value { font-size: var(--fs-hero); font-weight: 600; line-height: 1.1; }
 .kpi-note { font-size: var(--fs-data); color: var(--text-muted); }
+.kpi-row { position: relative; }
+.kpi-row.is-stale .kpi-card { opacity: 0.55; }
+.kpi-stale { position: absolute; top: -2px; right: 8px; margin: 0; font-size: var(--fs-data); color: var(--text-muted); }
+.map-loading { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3; padding: 4px 10px;
+  border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: var(--fs-data); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .kpi-gauge { align-items: center; }
 .kpi-class { font-weight: 600; }
 .gauge { width: 110px; height: 64px; }

@@ -23,3 +23,7 @@ export function ageLabel(iso: string, now: Date): string {
   const m = minutes % 60;
   return m ? `il y a ${h} h ${p2(m)}` : `il y a ${h} h`;
 }
+
+/** Run id "YYYYMMDDHH" as the same UTC label as the run selector. */
+export const runLabel = (run: string) =>
+  utcLabel(`${run.slice(0, 4)}-${run.slice(4, 6)}-${run.slice(6, 8)}T${run.slice(8, 10)}:00:00Z`);

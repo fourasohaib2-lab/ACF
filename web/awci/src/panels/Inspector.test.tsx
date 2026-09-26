@@ -14,3 +14,11 @@ test("inspector explains the composite and flags missing inputs", () => {
   expect(screen.getByText(/HYPOTHESIS/)).toBeInTheDocument();
   expect(screen.getByText(/© ECMWF/)).toBeInTheDocument();
 });
+
+test("a null ceiling reads 'no ceiling', not a missing value", () => {
+  render(<Inspector point={{ lat: 36.75, lon: 3, level_hpa: 300, flight_level: 301, awci: 10, awci_level: "Low",
+    modules: {}, missing_inputs: [], present_weight: 1, decomposition: {}, level_layers: { gh: 9400 },
+    surface_layers: { ceiling_m: null }, scientific_status: {},
+    provenance: { run: "2026092512", step: 24, valid_time: null, attribution: "© ECMWF" } } as never} registry={undefined} />);
+  expect(screen.getByRole("row", { name: /Plafond/ })).toHaveTextContent(/pas de plafond/i);
+});

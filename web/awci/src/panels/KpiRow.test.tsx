@@ -15,3 +15,17 @@ test("KPI cards show value, unit, text badge and select their layer", async () =
   await userEvent.click(screen.getByRole("button", { name: /turbulence/i }));
   expect(onSelect).toHaveBeenCalledWith("cat_category");
 });
+
+test("while the next step loads, the previous values are marked as being updated", () => {
+  render(<KpiRow classIndex={null} stale summary={{ awci_p95: 57.2, awci_class: "Moderate", badges: {}, awci_p95_by_level: [] } as never}
+                 onSelectLayer={vi.fn()} />);
+  expect(screen.getByRole("region", { name: /Indicateurs du domaine/ })).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByText(/mise à jour/i)).toBeInTheDocument();
+});
+
+test("the accessible name of a card carries its status and the gauge its value", () => {
+  render(<KpiRow classIndex={2} summary={{ awci_p95: 57.2, awci_class: "Moderate", turbulence_area_pct: 18.4,
+    badges: { turbulence_area_pct: "serious" }, awci_p95_by_level: [] } as never} onSelectLayer={vi.fn()} />);
+  expect(screen.getByRole("button", { name: /Turbulence CAT.*18,4.*sérieux/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /AWCI P95 du domaine.*57.*Moderate/ })).toBeInTheDocument();
+});

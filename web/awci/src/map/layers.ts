@@ -5,9 +5,12 @@ export type Group = "awci" | "hazards" | "clouds" | "surface";
 export type Render =
   | { kind: "awci" }
   | { kind: "codes"; colors: (string | null)[]; labels: string[] }
-  | { kind: "continuous"; min: number; max: number; invert?: boolean; scale?: number; unitLabel?: string }
+  | { kind: "continuous"; min: number; max: number; invert?: boolean; scale?: number; unitLabel?: string; openEnd?: boolean }
   | { kind: "genus" };
-export interface LayerDef { id: string; label: string; group: Group; perLevel: boolean; unit: string; render: Render }
+/** `nanMeaning`: what an empty (NaN) cell means when it is an answer rather than missing data; drawn transparent. */
+export interface LayerDef {
+  id: string; label: string; group: Group; perLevel: boolean; unit: string; render: Render; nanMeaning?: string;
+}
 
 export const GROUP_LABELS: Record<Group, string> = {
   awci: "AWCI", hazards: "Dangers", clouds: "Nuages", surface: "Surface et précipitations",
@@ -36,7 +39,8 @@ export const LAYER_DEFS: LayerDef[] = [
   { id: "cloud_cover_mid", label: "Couverture moyenne", group: "clouds", perLevel: false, unit: "octas", render: cont(0, 1, { scale: 8 }) },
   { id: "cloud_cover_high", label: "Couverture haute", group: "clouds", perLevel: false, unit: "octas", render: cont(0, 1, { scale: 8 }) },
   { id: "cloud_fraction", label: "Fraction nuageuse au niveau", group: "clouds", perLevel: true, unit: "octas", render: cont(0, 1, { scale: 8 }) },
-  { id: "ceiling_m", label: "Plafond (OACI)", group: "clouds", perLevel: false, unit: "ft", render: cont(0, 3048, { invert: true, scale: 1 / 0.3048 }) },
+  { id: "ceiling_m", label: "Plafond (OACI)", group: "clouds", perLevel: false, unit: "ft", render: cont(0, 3048, { invert: true, scale: 1 / 0.3048, openEnd: true }),
+    nanMeaning: "Pas de plafond (aucune couche BKN/OVC sous 6000 m)" },
   { id: "cloud_top_teff_k", label: "Température des sommets (OLR)", group: "clouds", perLevel: false, unit: "°C",
     render: cont(200, 300, { invert: true }) },
   { id: "column_condensate", label: "Condensat colonne", group: "clouds", perLevel: false, unit: "kg/m²", render: cont(0, 5) },

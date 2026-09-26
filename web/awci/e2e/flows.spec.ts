@@ -66,3 +66,31 @@ test("reduced motion disables transitions", async ({ browser }) => {
   expect(duration).toBe("0s");
   await page.close();
 });
+
+test("a slow EUMETView never delays the forecast", async ({ page }) => {
+  await open(page, "?domain=fixture&step=3&level=300&ov=mtg_fd:rgb_dust");
+  // Zoom out until the slow overlay has dozens of tiles in flight, as over a real 30x60 degree domain.
+  const box = (await page.getByRole("application").boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 400); await page.waitForTimeout(250); }
+  await page.waitForTimeout(500);
+  const started = Date.now();
+  const field = page.waitForResponse((r) => r.url().includes("/api/v1/awci/field") && r.url().includes("level=250"));
+  await page.locator("body").press("ArrowUp");
+  await field;
+  expect(Date.now() - started).toBeLessThan(2000);
+});
+
+test("the layer list is operable from the keyboard (L, arrows, Space)", async ({ page }) => {
+  await open(page, "?domain=fixture&step=3&level=700");
+  await page.locator("body").press("l");
+  await expect(page.getByRole("radio", { name: "AWCI" })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page).not.toHaveURL(/layer=awci/);
+  await expect(page).toHaveURL(/level=700/); // the arrows moved the radio selection, not the level
+  const lines = page.getByRole("checkbox", { name: /lignes de courant/i });
+  await lines.focus();
+  const before = await lines.isChecked();
+  await page.keyboard.press(" ");
+  expect(await lines.isChecked()).toBe(!before);
+});

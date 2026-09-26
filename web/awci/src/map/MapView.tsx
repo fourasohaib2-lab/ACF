@@ -13,7 +13,9 @@ import { baseStyle, wmsTileUrl } from "./style";
 export interface Overlay { layer: string; time: string; opacity: number }
 interface Props {
   domain: Domain;
+  /** Field of the current view only; undefined while it loads (`stale`) or when it failed (canvas cleared). */
   field: FieldData | undefined;
+  stale?: boolean;
   def: LayerDef;
   awciBounds: number[];
   wind: WindGrid | undefined;
@@ -25,6 +27,9 @@ interface Props {
 }
 
 maplibregl.setWorkerUrl(workerUrl);
+// Observation tiles and the forecast API share one origin, where HTTP/1.1 browsers open 6 connections: tiles
+// may use at most 3 of them, so a slow EUMETView can never queue /field, /summary or /point behind it.
+maplibregl.setMaxParallelImageRequests(3);
 
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
@@ -33,14 +38,16 @@ const domainCorners = (d: Domain): [[number, number], [number, number], [number,
 
 const spacingForZoom = (z: number) => (z < 4 ? 3 : z < 6 ? 1.5 : 0.75);
 
-export function MapView({ domain, field, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError }: Props) {
+export function MapView({ domain, field, stale = false, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const pickRef = useRef(onPick);
   const overlayErrorRef = useRef(onOverlayError);
   const overlayLayers = useRef(new Map<string, string>()); // map source id -> WMS layer name
   // The field is drawn into one canvas read by a MapLibre canvas source: no PNG encode/decode per step.
-  const canvasRef = useRef<HTMLCanvasElement>(document.createElement("canvas"));
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  canvasRef.current ??= document.createElement("canvas");
+  const drawnLayer = useRef<string | null>(null); // layer whose values the canvas currently holds
   const [ready, setReady] = useState(false);
   const [spacing, setSpacing] = useState(3);
 
@@ -58,9 +65,9 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "nautical" }), "bottom-left");
     map.on("load", () => {
-      canvasRef.current.width = 1;
-      canvasRef.current.height = 1;
-      map.addSource("field", { type: "canvas", canvas: canvasRef.current, coordinates: domainCorners(domain), animate: false });
+      canvasRef.current!.width = 1;
+      canvasRef.current!.height = 1;
+      map.addSource("field", { type: "canvas", canvas: canvasRef.current!, coordinates: domainCorners(domain), animate: false });
       map.addLayer({ id: "field", type: "raster", source: "field",
         paint: { "raster-resampling": "nearest", "raster-opacity": 0.85, "raster-fade-duration": 0 } }, "coastline");
       map.addSource("streamlines", { type: "geojson", data: EMPTY });
@@ -86,26 +93,39 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !field) return;
+    if (!ready || !map) return;
+    const canvas = canvasRef.current!;
+    const source = map.getSource("field") as CanvasSource;
+    const refresh = (coordinates: Parameters<CanvasSource["setCoordinates"]>[0]) => {
+      source.setCoordinates(coordinates); // also makes a static canvas source re-read its pixels
+      source.play();
+      requestAnimationFrame(() => source.pause());
+    };
+    if (!field) {
+      // Loading the same quantity: keep the previous image, dimmed (see opacity). Anything else (another layer,
+      // a failed request) must not leave foreign values on the map: clear it.
+      if (stale && drawnLayer.current === def.id) return;
+      canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+      drawnLayer.current = null;
+      refresh(domainCorners(domain));
+      return;
+    }
     const values = def.render.kind === "genus"
       ? field.values.map((v) => (v === -2 ? Number.NaN : v)) // indeterminate genus is hatched like no-data
       : field.values;
-    const image = renderField({ ...field, values }, colorFn(def, awciBounds));
-    const canvas = canvasRef.current;
+    const image = renderField({ ...field, values }, colorFn(def, awciBounds), 4, { nanTransparent: !!def.nanMeaning });
     if (canvas.width !== image.width || canvas.height !== image.height) {
       canvas.width = image.width;
       canvas.height = image.height;
     }
-    canvas.getContext("2d")?.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.width, image.height), 0, 0);
-    const source = map.getSource("field") as CanvasSource;
-    source.setCoordinates(image.coordinates); // also makes a static canvas source re-read its pixels
-    source.play();
-    requestAnimationFrame(() => source.pause());
-  }, [ready, field, def, awciBounds]);
+    canvas.getContext("2d")?.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0);
+    drawnLayer.current = def.id;
+    refresh(image.coordinates);
+  }, [ready, field, stale, def, awciBounds, domain]);
 
   useEffect(() => {
-    if (ready) mapRef.current?.setPaintProperty("field", "raster-opacity", opacity);
-  }, [ready, opacity]);
+    if (ready) mapRef.current?.setPaintProperty("field", "raster-opacity", stale ? opacity * 0.35 : opacity);
+  }, [ready, opacity, stale]);
 
   useEffect(() => {
     const source = ready ? (mapRef.current?.getSource("streamlines") as GeoJSONSource | undefined) : undefined;

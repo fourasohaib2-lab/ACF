@@ -30,7 +30,7 @@ export function OverlayPanel({ layers, active, states, onToggle, onRetry }: Prop
               return (
                 <div key={l.layer}>
                   <label className="layer-option">
-                    <input type="checkbox" checked={active.includes(l.layer) && !failed} onChange={() => onToggle(l.layer)} />
+                    <input type="checkbox" checked={active.includes(l.layer) && !failed} onChange={() => (failed && active.includes(l.layer) ? onRetry(l.layer) : onToggle(l.layer))} />
                     <span>{l.label}</span>
                   </label>
                   {failed && (

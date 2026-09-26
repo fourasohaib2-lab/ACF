@@ -75,16 +75,33 @@ export function resolveView(v: ViewState, domains: Domain[], runs: RunInfo[], me
   return { domain, run, step, level, layer };
 }
 
-export function useViewState(): [ViewState, (patch: Partial<ViewState>) => void] {
+/**
+ * Pins the run on screen at the first interaction: stepping writes the run into the URL, so a newer run
+ * ingested meanwhile never changes the valid time silently. A patch that sets `run` itself (even to
+ * undefined, "Maintenant") is left as is.
+ */
+export function withPinnedRun(view: ViewState, shown: string | undefined, patch: Partial<ViewState>): Partial<ViewState> {
+  return "run" in patch || view.run !== undefined || shown === undefined ? patch : { ...patch, run: shown };
+}
+
+/** The latest usable run when it is newer than the pinned one. */
+export function newerRun(runs: RunInfo[], pinned: string | undefined): string | undefined {
+  const latest = runs.find((r) => r.status !== "failed")?.run;
+  return pinned !== undefined && latest !== undefined && latest > pinned ? latest : undefined;
+}
+
+export type ViewPatch = Partial<ViewState> | ((old: ViewState) => Partial<ViewState>);
+
+export function useViewState(): [ViewState, (patch: ViewPatch) => void] {
   const [view, setView] = useState<ViewState>(() => parseView(window.location.search));
   useEffect(() => {
     const onPop = () => setView(parseView(window.location.search));
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
-  const update = useCallback((patch: Partial<ViewState>) => {
+  const update = useCallback((patch: ViewPatch) => {
     setView((old) => {
-      const next = { ...old, ...patch };
+      const next = { ...old, ...(typeof patch === "function" ? patch(old) : patch) };
       window.history.replaceState(null, "", serializeView(next));
       return next;
     });

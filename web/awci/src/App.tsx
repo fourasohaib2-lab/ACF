@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { useClouds, useCloudsSeries, useDomains, useField, useMeta, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useClouds, useCloudsSeries, useDomains, useField, useMeta, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend } from "./map/Legend";
 import { layerDef } from "./map/layers";
@@ -8,7 +8,7 @@ import type { WindGrid } from "./map/streamlines";
 import { AtmoProfile } from "./panels/AtmoProfile";
 import { AwciProfile } from "./panels/AwciProfile";
 import { CloudsPanel } from "./panels/CloudsPanel";
-import { CompareControl } from "./panels/CompareControl";
+import { CompareControl, FIELD_OPACITY, fieldOpacity } from "./panels/CompareControl";
 import { ObservedBadges } from "./panels/ObservedBadge";
 import { OverlayPanel, type OverlayState } from "./panels/OverlayPanel";
 import { DataStatus } from "./panels/DataStatus";
@@ -24,7 +24,9 @@ import { SideNav } from "./panels/SideNav";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
 import { TopBar } from "./panels/TopBar";
-import { availableLayers, nextLevel, nextStep, resolveView, useViewState } from "./state/view";
+import { runLabel } from "./lib/format";
+import { ownsKeys } from "./lib/keys";
+import { availableLayers, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
 
 const MapView = lazy(() => import("./map/MapView").then((m) => ({ default: m.MapView })));
 
@@ -37,17 +39,13 @@ function useNow(periodMs = 30_000): Date {
   return now;
 }
 
-const isTyping = (t: EventTarget | null) =>
-  t instanceof HTMLElement && (t.tagName === "INPUT" && (t as HTMLInputElement).type !== "radio" && (t as HTMLInputElement).type !== "checkbox"
-    || t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.isContentEditable);
-
 export function App() {
-  const [view, update] = useViewState();
+  const [view, setView] = useViewState();
   const now = useNow();
   const [playing, setPlaying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [streamlines, setStreamlines] = useState(true);
-  const [opacity, setOpacity] = useState(0.85);
+  const [opacity, setOpacity] = useState(FIELD_OPACITY);
   const [tileErrors, setTileErrors] = useState<Record<string, boolean>>({});
   const layerListRef = useRef<HTMLFieldSetElement>(null);
 
@@ -60,6 +58,11 @@ export function App() {
   const registry = useRegistry();
   const resolved = domains.data && runs.data ? resolveView(view, domains.data, runs.data, meta.data, now) : null;
   const run = usableRuns.find((r) => r.run === resolved?.run);
+  const shownRun = useRef<string | undefined>(undefined);
+  useEffect(() => { shownRun.current = resolved?.run; }, [resolved?.run]);
+  // Any interaction pins the run on screen (see withPinnedRun); "Maintenant" and the run selector set it explicitly.
+  const update = useCallback((patch: Partial<ViewState>) => setView((old) => withPinnedRun(old, shownRun.current, patch)), [setView]);
+  const newer = newerRun(runs.data ?? [], view.run);
 
   const def = layerDef(resolved?.layer ?? "awci");
   const neighbours = useMemo(() => (meta.data && resolved
@@ -71,8 +74,13 @@ export function App() {
     step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
   const vField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "v" : undefined,
     step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
-  const wind = useMemo<WindGrid | undefined>(() => (streamlines && uField.data && vField.data
-    ? { ...uField.data, u: uField.data.values, v: vField.data.values } : undefined), [streamlines, uField.data, vField.data]);
+  // Only data of the current key reaches the map: a neighbour's field kept as placeholder is never drawn as current,
+  // and u and v always come from the same step and level.
+  const fieldData = freshData(field);
+  const u = freshData(uField);
+  const v = freshData(vField);
+  const wind = useMemo<WindGrid | undefined>(() => (streamlines && u && v ? { ...u, u: u.values, v: v.values } : undefined),
+    [streamlines, u, v]);
 
   const classes = useMemo(() => registry.data?.classes ?? [], [registry.data]);
   const awciBounds = useMemo(() => classes.filter((c) => c.upper_bound !== null).map((c) => c.upper_bound as number), [classes]);
@@ -94,8 +102,12 @@ export function App() {
     const q = overlayTimes[i];
     return [layer, { time: q?.data?.times.at(-1), error: !!q?.isError || !!tileErrors[layer], loading: !!q?.isLoading }];
   }));
-  const overlays = view.ov.filter((l) => overlayStates[l]?.time && !overlayStates[l]?.error)
-    .map((l) => ({ layer: l, time: overlayStates[l]!.time!, opacity: 0.9 }));
+  const overlayKey = view.ov.filter((l) => overlayStates[l]?.time && !overlayStates[l]?.error)
+    .map((l) => `${l}@${overlayStates[l]!.time!}`).join(",");
+  const overlays = useMemo(() => (overlayKey ? overlayKey.split(",") : []).map((k) => {
+    const [layer, time] = k.split("@") as [string, string];
+    return { layer, time, opacity: 0.9 };
+  }), [overlayKey]);
   const labelOf = (l: string) => wmsLayers.data?.find((w) => w.layer === l)?.label ?? l;
   const toggleOverlay = useCallback((layer: string) => {
     setTileErrors((e) => ({ ...e, [layer]: false }));
@@ -107,6 +119,7 @@ export function App() {
   }, [overlayTimes, view.ov]);
   const onOverlayError = useCallback((layer: string) => setTileErrors((e) => (e[layer] ? e : { ...e, [layer]: true })), []);
   const IR = "mtg_fd:ir105_hrfi";
+  const comparing = def.id === "cloud_top_teff_k" && view.ov.includes(IR);
   const selectLayer = useCallback((id: string) => {
     if (layers.some((d) => d.id === id)) update({ layer: id });
   }, [layers, update]);
@@ -126,14 +139,14 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey || !meta.data || !resolved) return;
+      if (e.key === "Escape") { update({ lat: undefined, lon: undefined, panel: undefined }); setToast(null); return; }
+      if (ownsKeys(e.target) || e.ctrlKey || e.metaKey || e.altKey || !meta.data || !resolved) return;
       if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
       else if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
       else if (e.key === "ArrowUp") { update({ level: nextLevel(meta.data, resolved.level, 1) }); e.preventDefault(); }
       else if (e.key === "ArrowDown") { update({ level: nextLevel(meta.data, resolved.level, -1) }); e.preventDefault(); }
       else if (e.key === " " && !(e.target instanceof HTMLButtonElement)) { setPlaying((p) => !p); e.preventDefault(); }
       else if (e.key.toLowerCase() === "l") layerListRef.current?.querySelector<HTMLInputElement>("input:checked")?.focus();
-      else if (e.key === "Escape") { update({ lat: undefined, lon: undefined, panel: undefined }); setToast(null); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -169,21 +182,31 @@ export function App() {
         {runs.isError && <ErrorBox error={runs.error} what="Runs" />}
         {meta.isError && <ErrorBox error={meta.error} what="Métadonnées du run" />}
         {run?.status === "partial" && <Banner>{fr.partialRun}</Banner>}
+        {newer && (
+          <Banner>
+            Run plus récent disponible : {runLabel(newer)}. La vue reste sur le run {runLabel(view.run!)}.{" "}
+            <button type="button" className="text-button" onClick={() => update({ run: newer, step: undefined })}>
+              Afficher le run {runLabel(newer)} (échéance la plus proche de maintenant)
+            </button>
+          </Banner>
+        )}
         {view.panel === "api" && <div className="api-overlay"><RegistryPage registry={registry.data} /></div>}
         {resolved && meta.data && (
-          <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer} />
+          <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer}
+                  stale={summary.isPlaceholderData} />
         )}
         {summary.isError && <ErrorBox error={summary.error} what="Indicateurs du domaine" />}
         {resolved && meta.data && (
           <section className="map-panel" aria-label="Carte">
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
-                <MapView domain={domain} field={field.data} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
+                <MapView domain={domain} field={fieldData} stale={field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
                          onOverlayError={onOverlayError}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
-                         opacity={opacity} onPick={onPick} />
+                         opacity={fieldOpacity(comparing, opacity)} onPick={onPick} />
               </Suspense>
               <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />
+              {field.isPlaceholderData && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
               {field.isError && <div className="map-error"><ErrorBox error={field.error} what={def.label} /></div>}
               {toast && <div className="toast" role="alert">{toast}</div>}
               <ObservedBadges items={overlays.map((o) => ({ label: labelOf(o.layer), time: o.time }))} now={now} />
@@ -191,7 +214,7 @@ export function App() {
             {def.id === "cloud_top_teff_k" && !view.ov.includes(IR) && (
               <button type="button" className="text-button" onClick={() => toggleOverlay(IR)}>Comparer à l'observation MTG IR 10,5 µm</button>
             )}
-            {def.id === "cloud_top_teff_k" && view.ov.includes(IR) && (
+            {comparing && (
               <CompareControl forecastValid={meta.data.valid_times[meta.data.steps.indexOf(resolved.step)]}
                               observedAt={overlayStates[IR]?.time} opacity={opacity} onOpacity={setOpacity} />
             )}
@@ -201,7 +224,7 @@ export function App() {
         )}
         {resolved && meta.data && (
           <aside className="side-column" aria-label="Situation et point">
-            <Situation summary={summary.data} meta={meta.data} step={resolved.step} domainLabel={domain.label} />
+            <Situation summary={freshData(summary)} meta={meta.data} step={resolved.step} domainLabel={domain.label} />
             {point.isError && <ErrorBox error={point.error} what="Point" />}
             <Inspector point={point.data} registry={registry.data} />
             <ModelAgreement />

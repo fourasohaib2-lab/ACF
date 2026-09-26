@@ -34,11 +34,13 @@ function Rows({ def, classLabels, awciBounds }: Props) {
   }
   const scale = r.scale ?? 1;
   const [lo, hi] = r.invert ? [r.max, r.min] : [r.min, r.max];
-  const show = (v: number) => (def.id === "cloud_top_teff_k" ? fmt(v - 273.15, 0) : fmt(v * scale, scale < 1 ? 0 : 1));
+  // openEnd: the ramp saturates at its maximum, which then reads "≥ max" (e.g. ceilings above 10 000 ft)
+  const end = (v: number) => `${r.openEnd && v === r.max ? "≥ " : ""}${show(v)}`;
+  const show = (v: number) => (def.id === "cloud_top_teff_k" ? fmt(v - 273.15, 0) : fmt(v * scale, scale === 1 ? 1 : 0));
   return (
     <li className="legend-ramp">
       <span className="legend-gradient" style={{ background: `linear-gradient(to right, ${SEQ_BLUE.join(",")})` }} aria-hidden="true" />
-      <span className="legend-ends num"><span>{show(lo)}</span><span>{show(hi)} {def.unit}</span></span>
+      <span className="legend-ends num"><span>{end(lo)}</span><span>{`${end(hi)} ${def.unit}`}</span></span>
     </li>
   );
 }
@@ -49,7 +51,9 @@ export function Legend(props: Props) {
       <figcaption>{props.def.label}{props.def.unit && props.def.render.kind === "continuous" ? "" : props.def.unit ? ` (${props.def.unit})` : ""}</figcaption>
       <ul>
         <Rows {...props} />
-        <li><Swatch hatch />Sans donnée, sous le relief ou indéterminé</li>
+        {props.def.nanMeaning
+          ? <li><Swatch />{props.def.nanMeaning} (transparent)</li>
+          : <li><Swatch hatch />Sans donnée, sous le relief ou indéterminé</li>}
       </ul>
     </figure>
   );

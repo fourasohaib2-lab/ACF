@@ -30,8 +30,12 @@ export function mercatorRowIndex(g: Grid, outRows: number): Int32Array {
   return idx;
 }
 
-/** Nearest-cell raster (no value invented between grid points), NaN hatched, in the map's Mercator geometry. */
-export function renderField(g: Grid, color: (v: number) => Rgba | null, cellPx = 4): RasterImage {
+/**
+ * Nearest-cell raster (no value invented between grid points) in the map's Mercator geometry. NaN is hatched
+ * as "no data" unless `nanTransparent`, for layers where NaN is itself an answer (ceiling: no ceiling).
+ */
+export function renderField(g: Grid, color: (v: number) => Rgba | null, cellPx = 4,
+                            { nanTransparent = false }: { nanTransparent?: boolean } = {}): RasterImage {
   const e = gridEdges(g);
   const width = g.nx * cellPx;
   const height = Math.max(1, Math.round(((mercY(e.north) - mercY(e.south)) / (e.dx * RAD)) * cellPx));
@@ -50,7 +54,7 @@ export function renderField(g: Grid, color: (v: number) => Rgba | null, cellPx =
     for (let x = 0; x < width; x++) {
       const cell = base + Math.floor(x / cellPx);
       const o = (r * width + x) * 4;
-      if (nan[cell]) { if ((x + r) % 6 < 2) data.set(HATCH, o); } else data.set(cells.subarray(cell * 4, cell * 4 + 4), o);
+      if (nan[cell]) { if (!nanTransparent && (x + r) % 6 < 2) data.set(HATCH, o); } else data.set(cells.subarray(cell * 4, cell * 4 + 4), o);
     }
   }
   return { data, width, height, coordinates: [[e.west, e.north], [e.east, e.north], [e.east, e.south], [e.west, e.south]] };

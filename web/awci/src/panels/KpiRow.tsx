@@ -12,17 +12,24 @@ const CARDS: Card[] = [
     note: (s) => `MUCAPE ≥ 1 000 J/kg · max ${fmt(s.mucape_max, 0, "J/kg")}` },
   { key: "icing_area_pct", title: "Givrage", layer: "icing_potential", unit: "%", digits: 1, note: () => "aire au niveau" },
   { key: "shear_p95", title: "Cisaillement vertical", layer: "vertical_shear", unit: "10⁻³ s⁻¹", digits: 1, scale: 1000, note: () => "P95 au niveau" },
-  { key: "low_ceiling_area_pct", title: "Plafond < 1000 ft", layer: "ceiling_m", unit: "%", digits: 1, note: () => "définition OACI" },
+  { key: "low_ceiling_area_pct", title: "Plafond < 1000 ft", layer: "ceiling_m", unit: "%", digits: 1, note: () => "plafond OACI · seuil IFR (FAA)" },
   { key: "cb_area_pct", title: "Cb", layer: "convective_class", unit: "%", digits: 1, note: () => "aire, diagnostic modèle" },
 ];
 
-interface Props { summary: Summary | undefined; classIndex: number | null; onSelectLayer: (layer: string) => void }
+interface Props { summary: Summary | undefined; classIndex: number | null; onSelectLayer: (layer: string) => void; stale?: boolean }
 
-/** Domain KPI row (/summary): area-weighted percentages and percentiles, each card opens its map layer. */
-export function KpiRow({ summary, classIndex, onSelectLayer }: Props) {
+/**
+ * Domain KPI row (/summary): area-weighted percentages and percentiles, each card opens its map layer.
+ * `stale`: the values shown are the previous step's while the current one loads; they are dimmed and said so.
+ */
+export function KpiRow({ summary, classIndex, onSelectLayer, stale = false }: Props) {
+  const gauge = summary?.awci_p95 === null || summary?.awci_p95 === undefined ? fr.unavailable
+    : `${fmt(summary.awci_p95, 0)}, ${summary.awci_class ?? ""}`;
   return (
-    <section className="kpi-row" aria-label="Indicateurs du domaine">
-      <button type="button" className="kpi-card kpi-gauge" onClick={() => onSelectLayer("awci")} aria-label="AWCI P95 du domaine">
+    <section className={`kpi-row${stale ? " is-stale" : ""}`} aria-label="Indicateurs du domaine" aria-busy={stale}>
+      {stale && <p className="kpi-stale" role="status">Mise à jour des indicateurs…</p>}
+      <button type="button" className="kpi-card kpi-gauge" onClick={() => onSelectLayer("awci")}
+              aria-label={`AWCI P95 du domaine : ${gauge}`}>
         <span className="kpi-title">AWCI P95</span>
         <Gauge value={summary?.awci_p95 ?? null} classIndex={classIndex} label={summary?.awci_class ?? null} />
         <span className="kpi-class">{summary?.awci_class ?? "—"}</span>
@@ -32,7 +39,8 @@ export function KpiRow({ summary, classIndex, onSelectLayer }: Props) {
         const value = raw === null || raw === undefined ? null : raw * (c.scale ?? 1);
         return (
           <button type="button" key={c.key} className="kpi-card" onClick={() => onSelectLayer(c.layer)}
-                  aria-label={`${c.title} : ${value === null ? fr.unavailable : fmt(value, c.digits, c.unit)}`}>
+                  aria-label={`${c.title} : ${value === null ? fr.unavailable : fmt(value, c.digits, c.unit)}${
+                    summary?.badges[c.key] ? `, ${fr.badge[summary.badges[c.key]!]}` : ""}`}>
             <span className="kpi-title">{c.title}</span>
             <span className="kpi-value num">{value === null ? "—" : <>{fmt(value, c.digits)}<span className="kpi-unit"> {c.unit}</span></>}</span>
             <span className="kpi-note">{summary && value !== null ? c.note?.(summary) : fr.unavailable}</span>

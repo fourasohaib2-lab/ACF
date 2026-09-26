@@ -25,3 +25,8 @@ test("NaN cells are hatched, null colours transparent, values coloured", () => {
   expect(alpha(8, 0)).toBe(255);
   expect(img.coordinates[0]).toEqual([-0.5, 1.5]);
 });
+test("a layer where NaN is a real answer (no ceiling) leaves it transparent, never hatched", () => {
+  const g: Grid = { values: new Float32Array([Number.NaN, Number.NaN, Number.NaN, Number.NaN]), ny: 2, nx: 2, lat0: 0, lat1: 1, lon0: 0, lon1: 1 };
+  const img = renderField(g, () => [255, 0, 0, 255], 6, { nanTransparent: true });
+  expect(Array.from(img.data).every((v) => v === 0)).toBe(true);
+});

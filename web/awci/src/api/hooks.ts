@@ -8,6 +8,10 @@ import type {
 } from "./types";
 
 const IMMUTABLE = { staleTime: Infinity, gcTime: 30 * 60_000 } as const;
+
+/** Data of the query's current key only: the previous key's data kept as a placeholder is never "current". */
+export const freshData = <T,>(q: { data?: T; isPlaceholderData: boolean }): T | undefined =>
+  (q.isPlaceholderData ? undefined : q.data);
 /** Retry transient failures only: a 4xx is an answer, not an outage. */
 const retry = (count: number, error: unknown) => count < 2 && !(error instanceof ApiError && error.status < 500);
 

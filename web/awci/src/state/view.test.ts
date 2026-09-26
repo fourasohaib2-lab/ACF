@@ -1,4 +1,4 @@
-import { availableLayers, nextLevel, nextStep, parseView, resolveView, serializeView } from "./view";
+import { availableLayers, newerRun, nextLevel, nextStep, parseView, resolveView, serializeView, withPinnedRun } from "./view";
 
 const meta = { steps: [0, 3, 6, 9], missing_steps: [6], valid_times: ["2026-09-25T12:00:00+00:00",
   "2026-09-25T15:00:00+00:00", "2026-09-25T18:00:00+00:00", "2026-09-25T21:00:00+00:00"],
@@ -27,4 +27,21 @@ test("resolveView picks the step nearest to now, never a missing one", () => {
 });
 test("layers absent from the run are not offered", () => {
   expect(availableLayers(meta).map((d) => d.id)).toEqual(["awci", "mucape"]);
+});
+
+test("the first interaction pins the run shown, so a new run never shifts the valid time silently", () => {
+  expect(withPinnedRun({ layer: "awci", ov: [] }, "2026092500", { step: 12 })).toEqual({ step: 12, run: "2026092500" });
+  expect(withPinnedRun({ layer: "awci", ov: [], run: "2026092418" }, "2026092418", { step: 12 })).toEqual({ step: 12 });
+  // "Maintenant" explicitly un-pins
+  expect(withPinnedRun({ layer: "awci", ov: [], run: "2026092418" }, "2026092418", { run: undefined, step: undefined }))
+    .toEqual({ run: undefined, step: undefined });
+  expect(withPinnedRun({ layer: "awci", ov: [] }, undefined, { step: 3 })).toEqual({ step: 3 });
+});
+
+test("a newer usable run than the pinned one is announced", () => {
+  const runs = [{ run: "2026092506", status: "complete" }, { run: "2026092500", status: "complete" }] as never;
+  expect(newerRun(runs, "2026092500")).toBe("2026092506");
+  expect(newerRun(runs, "2026092506")).toBeUndefined();
+  expect(newerRun(runs, undefined)).toBeUndefined();
+  expect(newerRun([{ run: "2026092506", status: "failed" }, { run: "2026092500", status: "complete" }] as never, "2026092500")).toBeUndefined();
 });
