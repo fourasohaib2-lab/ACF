@@ -27,6 +27,14 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP3 (aérodromes, METAR/TAF, SIGMET, validation) : ingestion AWC (`acf-awci-obs`, domaine
+  public) avec pagination au-delà du plafond de 400 éléments ; décodeur METAR (CB/TCU, `///`, CAVOK/NSC/NCD,
+  plafond OACI, convection inconnue pour les stations automatiques) contrôlé sur 400 METAR réels ; validation
+  du plafond et de la convection (POD, FAR, CSI, biais, ETS par échéance) ; routes `/airports`, `/airport`,
+  `/sigmets`, `/verification` ; aérodromes et SIGMET sur la carte à l'heure de validité, panneau Aérodrome,
+  page Validation. Premier résultat réel : convection diagnostiquée environ 4 fois trop fréquente (biais 4,15).
+  Correctif : ouverture concurrente d'un cube sérialisée (plantage du serveur au démarrage).
+  Voir `docs/awci/AWCI_WEB_SP3.md`.
 - AWCI Web SP2, revue finale : un EUMETView lent ne retarde plus la prévision (relais : délai 5 s,
   concurrence bornée, mémoire des échecs, heures et tuiles validées contre les capacités, cache borné ;
   navigateur : 3 connexions de tuiles au plus). La carte n'affiche plus le champ d'une autre vue pendant

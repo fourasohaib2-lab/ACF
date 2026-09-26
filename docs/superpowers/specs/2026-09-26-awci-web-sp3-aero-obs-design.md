@@ -143,3 +143,18 @@ dernière ingestion des observations.
   montrer, pas le masquer.
 - Représentativité : maille 25 km contre observation ponctuelle ; relief ; heure METAR ± 30 min.
 - Disponibilité AWC : l'ingestion échoue proprement, le front affiche l'âge des observations.
+
+## 10. Écarts de mise en œuvre
+
+- SIGMET archivés par **jour UTC de début de validité** (et non de réception) : la lecture « valides à t »
+  n'ouvre ainsi que deux fichiers.
+- Stations : celles que `stationinfo` ne liste pas comme site METAR sont ignorées (HLMS dans le corpus),
+  même si l'AWC diffuse leurs METAR.
+- Exclusions : les échéances postérieures à la dernière observation archivée sont comptées à part
+  (`not_yet_observed`), pour ne pas passer pour des METAR manquants.
+- Carte : pas d'indicatif en étiquette (pas de glyphes locaux) ; choix de l'aérodrome par liste
+  déroulante accessible au clavier, en plus du clic.
+- Légende des observations sous la carte (dans la carte, elle masquait le champ sur petit écran).
+- Validation calculée à la demande et mise en cache (4,3 s au premier appel sur le cube réel).
+- Correctif transverse : ouverture concurrente du cube sérialisée (défaut SP1 rendu fréquent par SP3).
+- Résultats réels et lecture : `docs/awci/AWCI_WEB_SP3.md`.

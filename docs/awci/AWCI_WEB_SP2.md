@@ -73,9 +73,9 @@ quadruple. Le critère des 300 ms doit être mesuré sur le poste prévisionnist
 
 ```bash
 cd web/awci
-npm test                 # Vitest + Testing Library (46 tests)
+npm test                 # Vitest + Testing Library (60 tests, SP3 compris)
 npm run lint && npm run build
-npm run e2e              # Playwright (15 tests) sur tools/awci/e2e_server.py
+npm run e2e              # Playwright (19 tests, SP3 compris) sur tools/awci/e2e_server.py
 ```
 
 Le serveur d'e2e ingère les **vraies** fixtures IFS découpées (domaine `fixture` complet ; `fixture_wet`
