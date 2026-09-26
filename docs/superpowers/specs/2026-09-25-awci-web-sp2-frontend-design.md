@@ -247,3 +247,10 @@ texte ≥ 12 px (données) / 14 px (corps).
   fond clair) ; voir `docs/awci/AWCI_WEB_SP2.md`.
 - Mesures : premier affichage 0,36 s (critère tenu) ; changement d'échéance non vérifiable dans un
   conteneur sans GPU (rendu logiciel), recette manuelle sur poste cible.
+- Relais EUMETView (§5.2), durci après la revue finale : délai d'attente de 5 s (au lieu de 20 s), au
+  plus 4 requêtes amont simultanées (au-delà, échec immédiat « busy »), une couche en échec est
+  refusée 60 s sans contacter l'amont, capacités conservées si leur rafraîchissement échoue. Seules les
+  heures offertes par GetCapabilities et les emprises de tuiles XYZ (zoom 0–12) sont relayées. Cache
+  disque : 24 h pour toute tuile (l'heure « dernière » est résolue en heure explicite avant la clé),
+  5000 fichiers au plus. Motif : un amont lent monopolisait les fils du serveur et retardait `/field`
+  de 19,5 s (mesuré, test e2e « a slow EUMETView never delays the forecast »).

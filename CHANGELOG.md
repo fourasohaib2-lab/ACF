@@ -27,6 +27,11 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
   `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
   `docs/awci/AWCI_WEB_SP2.md`.
+- AWCI Web SP2, revue finale : un EUMETView lent ne retarde plus la prévision (relais : délai 5 s,
+  concurrence bornée, mémoire des échecs, heures et tuiles validées contre les capacités, cache borné ;
+  navigateur : 3 connexions de tuiles au plus). La carte n'affiche plus le champ d'une autre vue pendant
+  un chargement ; liste des couches utilisable au clavier ; run épinglé dès la première interaction ;
+  « pas de plafond » distingué de « sans donnée ».
 - Table de tiers de maturité/scope (Foundation/Core/Extended/Experimental)
   dans `ARCHITECTURE.md`, couvrant les 62 sous-modules de `src/acf/`.
 - `docs/STATUS.md` : suivi unique et vérifiable de l'avancement réel

@@ -32,8 +32,27 @@ acf-awci-web                               # 127.0.0.1:8091 : API + front sur la
 | Rangée basse | évolution temporelle (point + P95 domaine), profil vertical AWCI (« sous le relief »), profil atmosphérique (T, Td serveur, vent, fraction nuageuse), **panneau Nuages** (colonne en altitude, genres, espèces, octas, plafond, sommet convectif, T sommets OLR, ligne « MODEL … », frise des genres par étage et par échéance) |
 | API et registre | toutes les couches servies : unité, équation, source, statut ; lien OpenAPI `/docs` |
 
-Clavier : ←/→ échéance (les échéances manquantes sont sautées), ↑/↓ niveau, `L` couches, Espace
-lecture 1 pas/s, Échap efface le point. L'URL reproduit exactement la vue (partageable).
+Clavier : ←/→ échéance (les échéances manquantes sont sautées), ↑/↓ niveau, `L` place le focus sur la
+couche active (puis ↑/↓ changent de couche), Espace lecture 1 pas/s, Échap efface le point. Ces raccourcis
+cèdent la main aux contrôles de formulaire et à la carte (où les flèches déplacent la vue). L'URL
+reproduit exactement la vue (partageable).
+
+Cohérence de l'affichage :
+- La carte ne dessine que le champ de la vue courante. Pendant un chargement, l'image précédente de la
+  même couche reste visible, atténuée, sous « Chargement : … ». Un changement de couche ou une erreur
+  efface le champ. Les lignes de courant n'utilisent que u et v du même pas et du même niveau.
+- Les indicateurs de la vue précédente sont atténués pendant la mise à jour (`aria-busy`).
+- Dès la première interaction, le run affiché est inscrit dans l'URL : l'ingestion d'un run plus récent
+  ne change jamais l'heure de validité à l'écran ; un bandeau l'annonce et propose de l'afficher.
+- Le fondu prévision ↔ observation ne s'applique qu'en mode comparaison.
+- Plafond : une maille sans plafond (aucune couche BKN/OVC sous 6000 m) est transparente, légendée
+  « Pas de plafond », jamais hachurée comme « sans donnée ». La rampe sature à « ≥ 10 000 ft ».
+
+Relais EUMETView : délai amont de 5 s, au plus 4 requêtes amont simultanées (au-delà, refus immédiat), une
+couche en échec est refusée 60 s sans contacter l'amont. Seules les heures annoncées par GetCapabilities et
+les emprises de tuiles XYZ sont relayées. Cache disque 24 h, 5000 tuiles au plus. Côté navigateur, les
+tuiles utilisent au plus 3 connexions. Un EUMETView lent ne retarde donc pas la prévision : sans ces
+limites, `/field` attendait 19,5 s derrière les tuiles ; avec elles, moins de 2 s (test e2e).
 
 ## Mesures (conteneur sans GPU, Chromium + SwiftShader, cube réel `north_africa` 2026-09-25 12Z)
 
@@ -54,18 +73,19 @@ quadruple. Le critère des 300 ms doit être mesuré sur le poste prévisionnist
 
 ```bash
 cd web/awci
-npm test                 # Vitest + Testing Library (33 tests)
+npm test                 # Vitest + Testing Library (46 tests)
 npm run lint && npm run build
-npm run e2e              # Playwright (13 tests) sur tools/awci/e2e_server.py
+npm run e2e              # Playwright (15 tests) sur tools/awci/e2e_server.py
 ```
 
 Le serveur d'e2e ingère les **vraies** fixtures IFS découpées (domaine `fixture` complet ; `fixture_wet`
 partiel, échéance +6 h absente) et remplace EUMETView par un relais hors ligne, construit sur l'extrait réel
-des capacités. La couche cendres y échoue toujours, pour tester l'état « EUMETView indisponible ». Les
-e2e couvrent :
+des capacités. La couche cendres y échoue toujours, pour tester l'état « EUMETView indisponible ». La couche
+Dust RGB y attend jusqu'au délai amont, comme un EUMETView lent. Les e2e couvrent :
 - les parcours échéance, niveau et couche, le clic sur un point et le rechargement de l'URL ;
 - le run partiel, le clic hors domaine et le niveau sous le relief ;
-- les observations (heure et attribution) et le relais en échec ;
+- les observations (heure et attribution), le relais en échec et le relais lent (`/field` < 2 s) ;
+- la liste des couches au clavier (`L`, flèches, Espace) ;
 - `prefers-reduced-motion` ;
 - l'accessibilité (axe : aucune violation sérieuse ou critique, thèmes sombre et clair) ;
 - la mise en page à 900, 1440, 1920 et 2560 px : zones présentes, pas de défilement horizontal, captures
@@ -90,3 +110,6 @@ e2e couvrent :
 - Relecture animée des éclairs sur 1 h (`/wms/times` la permet) non proposée en SP2.
 - Libellés du registre en anglais : ce sont ceux du serveur (`/registry`).
 - Le critère de 300 ms par changement d'échéance reste à mesurer sur le poste cible (voir Mesures).
+- EUMETView annonce `nearestValue` : si une heure pourtant listée dans les capacités n'est pas encore
+  disponible, l'amont peut renvoyer l'image la plus proche sous cette heure. L'en-tête `Warning` de l'amont
+  n'est pas encore lu.
