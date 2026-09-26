@@ -2,7 +2,7 @@
 acf-awci-auto: automatic download of the real data AWCI Web needs, and deletion after a week.
 
     acf-awci-auto [--domain NAME|all] [--run-hours 0,12] [--steps 0-72/3] [--obs-every-min 30]
-                  [--ens] [--ens-run-hours 0] [--ens-steps 0-24/6] [--ens-members 1-50]
+                  [--gfs] [--ens] [--ens-run-hours 0] [--ens-steps 0-24/6] [--ens-members 1-50]
                   [--max-age-days 7] [--check-every-min 15] [--data-dir DIR] [--once]
 
 Every `check-every-min` minutes, one pass:
@@ -11,8 +11,9 @@ Every `check-every-min` minutes, one pass:
 2. the deterministic IFS run: the most recent run among `run-hours` whose last step is published on
    data.ecmwf.int (probed, never guessed from a timetable) is ingested unless already complete; a partial
    run is retried after `retry` (1 h), a run that failed likewise;
-3. the IFS ENS run (opt-in `--ens`: about 19 GB downloaded per run for +0..+24 h / 6 h), same rule;
-4. deletion of everything older than `max-age-days`: deterministic and ENS runs whose run time is older,
+3. with `--gfs` (SP6), the NOAA GFS 0.25° run by the same rule, stored in <data>/gfs;
+4. the IFS ENS run (opt-in `--ens`: about 19 GB downloaded per run for +0..+24 h / 6 h), same rule;
+5. deletion of everything older than `max-age-days`: IFS, GFS and ENS runs whose run time is older,
    METAR/SIGMET day files, and abandoned temporary directories (`<run>.tmp`, `<run>.old` untouched for a
    day). The most recent run of each kind is kept whatever its age, so that the dashboard is never emptied
    by a machine that stayed offline for a week.
@@ -44,7 +45,8 @@ from acf.awci.ops.domains import DEFAULT_DOMAINS_PATH, Domain, load_domains
 from acf.awci.ops.ens_store import ens_dir
 from acf.awci.ops.ingest import parse_steps
 from acf.awci.ops.source_ecmwf import RUN_HOURS, Fetcher, FetchError, ens_step_urls, step_urls
-from acf.awci.ops.store import data_root, run_id
+from acf.awci.ops.source_gfs import gfs_step_urls
+from acf.awci.ops.store import data_root, model_root, run_id
 
 STALE_TMP = timedelta(days=1)
 FIRST_OBS_HOURS = 72
@@ -58,6 +60,7 @@ class AutoConfig:
     run_hours: tuple[int, ...] = (0, 12)
     obs_every: timedelta = timedelta(minutes=30)
     ens: bool = False
+    gfs: bool = False  # SP6: also follow NOAA GFS 0.25° (same run hours and steps), stored in <data>/gfs
     ens_steps: list[int] = field(default_factory=lambda: parse_steps("0-24/6"))
     ens_run_hours: tuple[int, ...] = (0,)
     ens_members: list[int] = field(default_factory=lambda: list(range(1, 51)))
@@ -127,12 +130,13 @@ def apply_age_retention(root: Path, domains: list[Domain], max_age: timedelta, n
     for d in domains:
         removed[f"{d.name}/runs"] = _prune_runs(Path(root) / d.name, limit, now)
         removed[f"{d.name}/ens"] = _prune_runs(ens_dir(root, d.name), limit, now)
+        removed[f"{d.name}/gfs"] = _prune_runs(model_root(Path(root), "gfs") / d.name, limit, now)
         removed[f"{d.name}/obs"] = ObsStore(root, d.name).apply_retention(max(1, max_age.days), now)
     return {k: v for k, v in removed.items() if v}
 
 
 # Task callables (injected, so that the scheduling is tested without network): they raise on failure.
-IngestDet = Callable[[datetime, list[Domain], list[int]], dict[str, dict[str, Any]]]
+IngestDet = Callable[..., dict[str, dict[str, Any]]]  # (run, domains, steps, model="ifs") -> manifests per domain
 IngestEns = Callable[[datetime, Domain, list[int], list[int]], dict[str, Any]]
 IngestObs = Callable[[Domain, int, datetime], dict[str, Any]]
 
@@ -189,17 +193,19 @@ class AutoIngest:
         newest = self._newest_complete(folders)
         return [r for r in candidate_runs(now, hours, self.config.lookback_runs) if newest is None or r > newest]
 
-    def _det(self, now: datetime) -> Any:
+    def _det(self, now: datetime, model: str = "ifs") -> Any:
         c = self.config
-        candidates = self._candidates(now, c.run_hours, [self.root / d.name for d in c.domains])
-        run = latest_published(self.fetcher, candidates, c.steps[-1], step_urls)
+        root = model_root(self.root, model)
+        candidates = self._candidates(now, c.run_hours, [root / d.name for d in c.domains])
+        run = latest_published(self.fetcher, candidates, c.steps[-1], gfs_step_urls if model == "gfs" else step_urls)
         if run is None:
             return None
-        key = f"det/{run_id(run)}"
-        if not self._due(key, [self._manifest(self.root / d.name / run_id(run)) for d in c.domains], now):
+        key = f"{model}/{run_id(run)}"
+        if not self._due(key, [self._manifest(root / d.name / run_id(run)) for d in c.domains], now):
             return None
         self.attempts[key] = now
-        manifests = self.ingest_det(run, c.domains, c.steps)
+        manifests = self.ingest_det(run, c.domains, c.steps, model=model) if model != "ifs" else \
+            self.ingest_det(run, c.domains, c.steps)
         return {"run": run_id(run), "status": {name: m.get("status") for name, m in manifests.items()}}
 
     def _ens(self, now: datetime) -> Any:
@@ -230,6 +236,8 @@ class AutoIngest:
         report: dict[str, Any] = {"at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "done": {}, "errors": {}}
         self._task(report, "observations", lambda: self._obs(now))
         self._task(report, "deterministic", lambda: self._det(now))
+        if self.config.gfs:
+            self._task(report, "gfs", lambda: self._det(now, "gfs"))
         if self.config.ens:
             self._task(report, "ensemble", lambda: self._ens(now))
         self._task(report, "retention", lambda: apply_age_retention(self.root, self.config.domains,
@@ -237,7 +245,8 @@ class AutoIngest:
         status_dir = self.root / ".auto"
         status_dir.mkdir(parents=True, exist_ok=True)
         tmp = status_dir / "status.json.tmp"
-        tmp.write_text(json.dumps(report | {"max_age_days": self.config.max_age.days, "ens": self.config.ens}, indent=1))
+        tmp.write_text(json.dumps(report | {"max_age_days": self.config.max_age.days, "ens": self.config.ens,
+                                         "gfs": self.config.gfs}, indent=1))
         os.replace(tmp, status_dir / "status.json")
         return report
 
@@ -278,9 +287,9 @@ def _real_tasks(root: Path, connections: int, max_age: timedelta) -> tuple[Fetch
 
     fetcher = UrllibFetcher()
 
-    def det(run: datetime, domains: list[Domain], steps: list[int]) -> dict[str, dict[str, Any]]:
-        return ingest_run(run, domains, load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH), fetcher, root, steps,
-                          keep=None, cloud_profile=load_cloud_profile(DEFAULT_CLOUD_PROFILE_PATH))
+    def det(run: datetime, domains: list[Domain], steps: list[int], model: str = "ifs") -> dict[str, dict[str, Any]]:
+        return ingest_run(run, domains, load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH), fetcher, model_root(root, model),
+                          steps, keep=None, cloud_profile=load_cloud_profile(DEFAULT_CLOUD_PROFILE_PATH), model=model)
 
     def ens(run: datetime, domain: Domain, steps: list[int], members: list[int]) -> dict[str, Any]:
         return ingest_ens_run(run, domain, fetcher, root, steps, members, connections=connections, keep=None)
@@ -323,6 +332,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--steps", default="0-72/3")
     parser.add_argument("--obs-every-min", type=int, default=30)
     parser.add_argument("--ens", action="store_true", help="also compute the IFS ENS (≈19 GB downloaded per run)")
+    parser.add_argument("--gfs", action="store_true", help="also follow NOAA GFS 0.25° (second model, SP6)")
     parser.add_argument("--ens-run-hours", default="0")
     parser.add_argument("--ens-steps", default="0-24/6")
     parser.add_argument("--ens-members", default="1-50")
@@ -350,7 +360,7 @@ def config_from_args(args: argparse.Namespace) -> AutoConfig:
     if not 1 <= args.connections <= 32:
         raise ValueError("--connections must lie within 1-32 (be fair to data.ecmwf.int)")
     return AutoConfig(domains=domains, steps=parse_steps(args.steps), run_hours=_hours(args.run_hours),
-                      obs_every=timedelta(minutes=args.obs_every_min), ens=args.ens,
+                      obs_every=timedelta(minutes=args.obs_every_min), ens=args.ens, gfs=args.gfs,
                       ens_steps=parse_steps(args.ens_steps), ens_run_hours=_hours(args.ens_run_hours),
                       ens_members=parse_members(args.ens_members), max_age=timedelta(days=args.max_age_days))
 

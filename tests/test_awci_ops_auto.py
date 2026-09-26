@@ -23,6 +23,7 @@ from acf.awci.ops.auto import (
     latest_published,
 )
 from acf.awci.ops.source_ecmwf import FetchError, ens_step_urls, step_urls
+from acf.awci.ops.source_gfs import gfs_step_urls
 from tests.awci_ops_support import DOMAIN
 
 NOW = datetime(2026, 9, 26, 15, 7, tzinfo=UTC)
@@ -56,12 +57,12 @@ class Recorder:
         self.ens: list[str] = []
         self.obs: list[int] = []
 
-    def ingest_det(self, run: datetime, domains: list, steps: list[int]) -> dict[str, dict[str, Any]]:
-        self.det.append(f"{run:%Y%m%d%H}")
+    def ingest_det(self, run: datetime, domains: list, steps: list[int], model: str = "ifs") -> dict[str, dict[str, Any]]:
+        self.det.append(f"{run:%Y%m%d%H}" if model == "ifs" else f"{model}:{run:%Y%m%d%H}")
         if self.fail:
             raise FetchError("data.ecmwf.int unreachable")
         for d in domains:
-            _manifest(self.root / d.name / f"{run:%Y%m%d%H}", self.status)
+            _manifest((self.root if model == "ifs" else self.root / model) / d.name / f"{run:%Y%m%d%H}", self.status)
         return {d.name: {"status": self.status} for d in domains}
 
     def ingest_ens(self, run: datetime, domain: Any, steps: list[int], members: list[int]) -> dict[str, Any]:
@@ -229,3 +230,23 @@ def test_the_downloader_stops_when_its_parent_is_gone() -> None:
     assert wait(30, gone.pid, slice_s=0.01) is False  # returns at once, not after 30 s
     assert wait(0.02, None, slice_s=0.01) is True
     assert wait(0.02, os.getppid(), slice_s=0.01) is True  # our own parent is alive
+
+
+def test_gfs_is_followed_on_request_into_its_own_directory(tmp_path: Path) -> None:
+    run = datetime(2026, 9, 26, tzinfo=UTC)
+    published = {step_urls(run, 72)[1], gfs_step_urls(run, 72)[1]}
+    rec = Recorder(tmp_path)
+    _auto(tmp_path, rec, published, [NOW]).tick()
+    assert rec.det == ["2026092600"]  # GFS is opt-in
+    rec = Recorder(tmp_path / "g")
+    auto = _auto(tmp_path / "g", rec, published, [NOW], gfs=True)
+    report = auto.tick()
+    auto.tick()
+    assert rec.det == ["2026092600", "gfs:2026092600"] and report["done"]["gfs"]["run"] == "2026092600"
+    assert (tmp_path / "g" / "gfs" / "fixture" / "2026092600" / "manifest.json").exists()
+
+
+def test_age_retention_also_prunes_gfs(tmp_path: Path) -> None:
+    for run in ("2026091800", "2026092600"):
+        _manifest(tmp_path / "gfs" / "fixture" / run, "complete")
+    assert apply_age_retention(tmp_path, [DOMAIN], timedelta(days=7), NOW)["fixture/gfs"] == ["2026091800"]
