@@ -134,12 +134,13 @@ def fetch_step_messages(fetcher: Fetcher, run: datetime, step: int, max_workers:
         return list(pool.map(lambda e: fetcher.get_range(grib_url, e.offset, e.length), entries))
 
 
-def find_latest_run(fetcher: Fetcher, now: datetime, last_step: int, max_lookback_runs: int = 8) -> datetime:
+def find_latest_run(fetcher: Fetcher, now: datetime, last_step: int, max_lookback_runs: int = 8,
+                    urls: Callable[[datetime, int], tuple[str, str]] = step_urls) -> datetime:
     run = now.replace(minute=0, second=0, microsecond=0)
     run = run.replace(hour=max(h for h in RUN_HOURS if h <= run.hour))
     for _ in range(max_lookback_runs):
         try:
-            fetcher.get_text(step_urls(run, last_step)[1])
+            fetcher.get_text(urls(run, last_step)[1])
             return run
         except FetchError:
             run -= timedelta(hours=6)

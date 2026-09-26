@@ -159,6 +159,7 @@ acf-web = "acf.web.hpc_dashboard_server:run"
 acf-awci = "acf.awci_app:main"
 acf-awci-ingest = "acf.awci.ops.ingest:main"
 acf-awci-obs = "acf.awci.obs.ingest:main"
+acf-awci-ens = "acf.awci.ops.ens_ingest:main"
 acf-awci-web = "acf.web.awci_app:run"
 
 [tool.setuptools]
