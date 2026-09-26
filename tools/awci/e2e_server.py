@@ -3,8 +3,9 @@ End-to-end test server for web/awci (Playwright `webServer`).
 
 Ingests the real cropped IFS fixtures into a data directory, then serves the API and the built
 front with an offline EUMETView relay: capabilities come from the real excerpt in tests/data/wms,
-tiles are transparent PNGs, and `msg_fes:rgb_ash` always fails so the "EUMETView unavailable"
-state can be exercised. No network access.
+tiles are transparent PNGs, `msg_fes:rgb_ash` always fails so the "EUMETView unavailable" state can
+be exercised, and `mtg_fd:rgb_dust` hangs until the relay's upstream timeout, like a slow EUMETView,
+so the forecast's independence from the relay can be measured. No network access.
 
     .venv/bin/python tools/awci/e2e_server.py --port 8099 [--data-dir DIR] [--web-dist DIR]
 
@@ -19,6 +20,7 @@ import json
 import struct
 import sys
 import tempfile
+import time
 import zlib
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,6 +36,7 @@ from tests.awci_ops_support import DOMAIN, WET_DOMAIN, WET_FIXTURE, FixtureFetch
 
 CAPABILITIES = (REPO / "tests" / "data" / "wms" / "eumetview_capabilities_excerpt.xml").read_bytes()
 FAILING_LAYER = "msg_fes:rgb_ash"
+SLOW_LAYER = "mtg_fd:rgb_dust"
 RUN = datetime(2026, 9, 25, 0, tzinfo=UTC)
 
 
@@ -55,6 +58,9 @@ class OfflineWmsFetcher:
             return "text/xml", CAPABILITIES
         if FAILING_LAYER.replace(":", "%3A") in url:
             raise OSError("offline test relay: simulated EUMETView failure")
+        if SLOW_LAYER.replace(":", "%3A") in url:
+            time.sleep(timeout)
+            raise TimeoutError("offline test relay: simulated slow EUMETView")
         return "image/png", self.tile
 
 

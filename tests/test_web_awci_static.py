@@ -3,6 +3,7 @@
 from fastapi.testclient import TestClient
 
 from acf.web.awci_app import create_awci_app
+from acf.web.awci_wms import tile_bbox
 
 
 def test_serves_index_and_keeps_api(tmp_path) -> None:
@@ -34,6 +35,6 @@ def test_e2e_server_prepares_a_complete_and_a_partial_run(tmp_path) -> None:
     assert c.get("/api/v1/awci/runs", params={"domain": "fixture"}).json()[0]["status"] == "complete"
     wet = c.get("/api/v1/awci/runs", params={"domain": "fixture_wet"}).json()[0]
     assert wet["status"] == "partial" and wet["missing_steps"] == [6]
-    tile = {"bbox": "0,4000000,500000,4500000", "width": 256, "height": 256}
+    tile = {"bbox": ",".join(f"{v:.6f}" for v in tile_bbox(6, 32, 25)), "width": 256, "height": 256}
     assert c.get("/api/v1/awci/wms", params=tile | {"layer": "mtg_fd:ir105_hrfi"}).status_code == 200
     assert c.get("/api/v1/awci/wms", params=tile | {"layer": "msg_fes:rgb_ash"}).status_code == 502
