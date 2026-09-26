@@ -1,11 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { useDomains, useField, useMeta, useRegistry, useRuns } from "./api/hooks";
+import { useDomains, useField, useMeta, useRegistry, useRuns, useSummary } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend } from "./map/Legend";
 import { layerDef } from "./map/layers";
 import type { WindGrid } from "./map/streamlines";
 import { DataStatus } from "./panels/DataStatus";
+import { KpiRow } from "./panels/KpiRow";
+import { ModelAgreement } from "./panels/ModelAgreement";
+import { Situation } from "./panels/Situation";
 import { SideNav } from "./panels/SideNav";
 import { Banner, EmptyRuns, ErrorBox, Skeleton } from "./panels/StateViews";
 import { TimeBar } from "./panels/TimeBar";
@@ -63,6 +66,11 @@ export function App() {
   const awciBounds = useMemo(() => classes.filter((c) => c.upper_bound !== null).map((c) => c.upper_bound as number), [classes]);
   const classLabels = useMemo(() => classes.map((c) => c.label), [classes]);
   const layers = useMemo(() => (meta.data ? availableLayers(meta.data) : []), [meta.data]);
+  const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level);
+  const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
+  const selectLayer = useCallback((id: string) => {
+    if (layers.some((d) => d.id === id)) update({ layer: id });
+  }, [layers, update]);
 
   const step = useCallback((dir: 1 | -1) => {
     if (meta.data && resolved) update({ step: nextStep(meta.data, resolved.step, dir) });
@@ -120,6 +128,10 @@ export function App() {
         {meta.isError && <ErrorBox error={meta.error} what="Métadonnées du run" />}
         {run?.status === "partial" && <Banner>{fr.partialRun}</Banner>}
         {resolved && meta.data && (
+          <KpiRow summary={summary.data} classIndex={classIndex >= 0 ? classIndex : null} onSelectLayer={selectLayer} />
+        )}
+        {summary.isError && <ErrorBox error={summary.error} what="Indicateurs du domaine" />}
+        {resolved && meta.data && (
           <section className="map-panel" aria-label="Carte">
             <div className="map-stage">
               <Suspense fallback={<Skeleton height={420} label="Chargement de la carte" />}>
@@ -134,6 +146,12 @@ export function App() {
             <TimeBar meta={meta.data} step={resolved.step} onStep={(s) => update({ step: s })} playing={playing}
                      onTogglePlay={() => setPlaying((p) => !p)} />
           </section>
+        )}
+        {resolved && meta.data && (
+          <aside className="side-column" aria-label="Situation et point">
+            <Situation summary={summary.data} meta={meta.data} step={resolved.step} domainLabel={domain.label} />
+            <ModelAgreement />
+          </aside>
         )}
       </main>
     </div>
