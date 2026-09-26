@@ -108,3 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             except subprocess.TimeoutExpired:
                 child.kill()
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

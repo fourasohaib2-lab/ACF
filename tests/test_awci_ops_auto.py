@@ -4,6 +4,7 @@ deletion after a week (the newest run always kept), single instance, and the acf
 import json
 import os
 import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -297,3 +298,8 @@ def test_failed_sounding_ingestion_is_retried_after_an_hour(tmp_path: Path) -> N
     auto.tick()
     assert calls == [NOW, NOW + timedelta(minutes=61)]
     assert config_from_args(build_parser().parse_args(["--soundings"])).soundings is True
+
+
+def test_the_web_module_runs_with_python_dash_m() -> None:
+    result = subprocess.run([sys.executable, "-m", "acf.web.awci_app", "--help"], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0 and "--auto" in result.stdout
