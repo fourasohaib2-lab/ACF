@@ -1,4 +1,4 @@
-import { bandVertices, buildVoxels, levelInterfaces, METERS_PER_DEGREE, parseVolume, splitByBand, type Volume } from "./geometry";
+import { bandVertices, buildVoxels, levelInterfaces, METERS_PER_DEGREE, parseVolume, splitByBand, terrainVoxels, type Volume } from "./geometry";
 
 // 3 levels (1000, 850, 500 hPa) over a 2 x 2 grid; gh level-major (level, lat, lon)
 const gh = new Float32Array([
@@ -79,4 +79,14 @@ test("voxels are grouped by latitude band so each band gets its own cell footpri
     expect(b0.positions[j * 3 + 1]).toBe(v.positions[g * 3 + 1]);
     expect(b0.thickness[j]).toBe(v.thickness[g]);
   }
+});
+
+test("terrain is drawn as columns of the model surface height; the sea (<= 5 m) is left out", () => {
+  const field = { values: new Float32Array([0, 250, Number.NaN, 2400]), ny: 2, nx: 2, lat0: 35, lat1: 35.25, lon0: 2, lon1: 2.25, unit: "m" };
+  const t = terrainVoxels(field);
+  expect(t.count).toBe(2);
+  expect(Array.from(t.thickness)).toEqual([250, 2400]);
+  expect(Array.from(t.positions.slice(0, 3))).toEqual([2.25, 35, 0]);
+  expect(t.colors[3]).toBeLessThan(255); // translucent: coastlines stay visible
+  expect(t.colors[4 + 0]).toBeGreaterThan(t.colors[0]!); // higher relief is lighter
 });

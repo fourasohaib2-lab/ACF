@@ -1,7 +1,8 @@
 /** Data hooks: one TanStack Query per route. Everything that depends on a run is immutable (staleTime Infinity). */
 import { keepPreviousData, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ApiError, getField, getJson } from "./client";
+import { parseVolume, type Volume } from "../volume/geometry";
+import { ApiError, getField, getJson, getTerrain, getVolume } from "./client";
 import type {
   AirportDetail, AirportsPayload, CloudsPayload, CloudsSeries, Domain, FieldData, Meta, PointPayload, ProfilePayload,
   Registry, RunInfo, SigmetCollection, Summary, SummarySeries, TimeseriesPayload, Verification, WmsLayer, WmsTimes,
@@ -135,3 +136,31 @@ export const useSigmets = (domain: string | undefined, time: string | undefined,
 export const useVerification = (domain: string | undefined, run: string | undefined, enabled = true) =>
   useQuery({ queryKey: ["verification", domain, run], enabled: enabled && !!domain && !!run, ...OBS, retry,
     queryFn: ({ signal }) => getJson<Verification>("/verification", { domain, run }, signal) });
+
+// ---- SP2B: 3-D volume view. Volumes are immutable per (run, layer, step, stride). ----
+interface VolumeKey { domain?: string; run?: string; layer?: string; step?: number; stride: number }
+const volumeQuery = (k: VolumeKey) => ({
+  queryKey: ["volume", k.domain, k.run, k.layer, k.step, k.stride],
+  queryFn: async ({ signal }: { signal: AbortSignal }): Promise<Volume> => {
+    const { body, headers } = await getVolume({ domain: k.domain, run: k.run, layer: k.layer, step: k.step, stride: k.stride }, signal);
+    return parseVolume(body, headers);
+  },
+  ...IMMUTABLE, gcTime: 5 * 60_000, retry,
+});
+
+/** One volume at the valid time on screen; the next two steps are preloaded for the 4-D playback (spec §3). */
+export function useVolume(k: VolumeKey, next: number[] = [], enabled = true) {
+  const client = useQueryClient();
+  const ready = enabled && !!k.domain && !!k.run && !!k.layer && k.step !== undefined;
+  const query = useQuery<Volume>({ ...volumeQuery(k), enabled: ready, placeholderData: keepPreviousData });
+  const key = next.join(",");
+  useEffect(() => {
+    if (!ready) return;
+    for (const step of key ? key.split(",").map(Number) : []) void client.prefetchQuery(volumeQuery({ ...k, step }));
+  }, [client, ready, key, k.domain, k.run, k.layer, k.stride]); // eslint-disable-line react-hooks/exhaustive-deps
+  return query;
+}
+
+export const useTerrain = (domain: string | undefined, run: string | undefined, stride: number, enabled = true) =>
+  useQuery({ queryKey: ["terrain", domain, run, stride], enabled: enabled && !!domain && !!run, ...IMMUTABLE, retry,
+    queryFn: ({ signal }) => getTerrain({ domain, run, stride }, signal) });

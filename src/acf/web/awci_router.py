@@ -472,8 +472,8 @@ def volume(request: Request, domain: str, run: RunId, layer: str, step: int = Qu
 
 @router.get("/terrain", response_model=None)
 def terrain(request: Request, domain: str, run: RunId, stride: Stride = 1) -> Response:
-    """Surface height (m AMSL: SRTM15+ over land, 0 m over sea) of the run's grid, float32 (lat, lon).
-    Runs ingested before SP1C only have the raw SRTM15+ elevation, bathymetry included: 404."""
+    """IFS model surface height (m AMSL, hypsometric from surface pressure: acf.awci.ops.thermo.model_surface_height_m)
+    of the run's grid, float32 (lat, lon). Runs ingested before SP1C have no surface_height_m: 404."""
     _check_stride(stride)
     m = _manifest(request, domain, run)
     _require_layer(m, "surface_height_m")

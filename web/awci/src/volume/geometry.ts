@@ -147,3 +147,36 @@ export function splitByBand(v: Voxels, bandDeg: number): Band[] {
   }
   return [...bands.values()];
 }
+
+/** Height above which a cell is land for the terrain view (m); IFS surface heights over sea are ~0. */
+export const SEA_MAX_M = 5;
+const TERRAIN_LOW: Rgba = [58, 74, 107, 255]; // basemap coast colour (#3a4a6b)
+const TERRAIN_HIGH: Rgba = [140, 150, 170, 255];
+/** Partly transparent so the basemap coastlines and borders stay readable under the relief. */
+const TERRAIN_ALPHA = 150;
+const TERRAIN_TOP_M = 3000;
+
+/** Model surface as columns from sea level (same cell footprint as the voxels); lighter with height. */
+export function terrainVoxels(f: { values: Float32Array; ny: number; nx: number; lat0: number; lat1: number; lon0: number; lon1: number }): Voxels {
+  const dLat = f.ny > 1 ? (f.lat1 - f.lat0) / (f.ny - 1) : 0;
+  const dLon = f.nx > 1 ? (f.lon1 - f.lon0) / (f.nx - 1) : 0;
+  let n = 0;
+  for (let i = 0; i < f.values.length; i++) if (f.values[i]! > SEA_MAX_M) n++;
+  const out: Voxels = { count: n, positions: new Float32Array(n * 3), thickness: new Float32Array(n), colors: new Uint8Array(n * 4),
+    level: new Uint8Array(n), cell: new Uint32Array(n), row: new Uint16Array(n) };
+  for (let i = 0, j = 0; i < f.values.length; i++) {
+    const h = f.values[i]!;
+    if (!(h > SEA_MAX_M)) continue;
+    const r = Math.floor(i / f.nx);
+    out.positions[j * 3] = f.lon0 + (i - r * f.nx) * dLon;
+    out.positions[j * 3 + 1] = f.lat0 + r * dLat;
+    out.thickness[j] = h;
+    const t = Math.min(1, h / TERRAIN_TOP_M);
+    for (let c = 0; c < 3; c++) out.colors[j * 4 + c] = Math.round(TERRAIN_LOW[c]! + t * (TERRAIN_HIGH[c]! - TERRAIN_LOW[c]!));
+    out.colors[j * 4 + 3] = TERRAIN_ALPHA;
+    out.cell[j] = i;
+    out.row[j] = r;
+    j++;
+  }
+  return out;
+}

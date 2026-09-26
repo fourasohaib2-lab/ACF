@@ -254,3 +254,12 @@
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #0b1220; display: inline-block; }
 .legend-dot-empty { background: transparent; border-color: #8a94a8; }
 .legend-dot-ring { background: transparent; border: 2px solid var(--status-critical); }
+
+/* ---- SP2B: 3-D view ---- */
+.map-toolbar { position: absolute; top: 10px; right: 56px; z-index: 3; }
+.map-toolbar .text-button { background: var(--surface-2); border: 1px solid var(--border-strong); padding: 4px 10px; border-radius: 4px; }
+.map-toolbar .text-button[aria-pressed="true"] { outline: 2px solid var(--accent); }
+.view3d-controls { margin-top: 8px; display: grid; gap: 8px; }
+.view3d-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.view3d-head h2 { display: flex; gap: 6px; align-items: center; margin: 0; }
+.view3d-camera { display: flex; gap: 8px; flex-wrap: wrap; }

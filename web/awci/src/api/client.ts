@@ -46,3 +46,17 @@ export async function getField(params: Params, signal?: AbortSignal): Promise<Fi
   if (!r.ok) return fail(r);
   return parseField(r.headers, await r.arrayBuffer());
 }
+
+/** 3-D field (level, lat, lon) followed by gh (SP1C /volume), split by acf volume/geometry.parseVolume. */
+export async function getVolume(params: Params, signal?: AbortSignal): Promise<{ body: ArrayBuffer; headers: Headers }> {
+  const r = await fetch(`${API_BASE}/volume${query(params)}`, { signal });
+  if (!r.ok) return fail(r);
+  return { body: await r.arrayBuffer(), headers: r.headers };
+}
+
+/** Model surface height (m AMSL) of the run's grid: same binary layout as a 2-D field. */
+export async function getTerrain(params: Params, signal?: AbortSignal): Promise<FieldData> {
+  const r = await fetch(`${API_BASE}/terrain${query(params)}`, { signal });
+  if (!r.ok) return fail(r);
+  return parseField(r.headers, await r.arrayBuffer());
+}

@@ -1,10 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useVerification, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
+import { freshData, useAirport, useAirports, useClouds, useCloudsSeries, useDomains, useField, useMeta, useSigmets, useTerrain, useVerification, useVolume, useOverlayTimes, usePoint, useWmsLayers, useProfile, useRegistry, useRuns, useSummary, useSummarySeries, useTimeseries } from "./api/hooks";
 import { fr } from "./i18n/fr";
 import { Legend, ObsLegend } from "./map/Legend";
 import { layerDef } from "./map/layers";
+import type { Map as MlMap } from "maplibre-gl";
 import type { WindGrid } from "./map/streamlines";
+import { hasWebGL2 } from "./lib/webgl";
+import { VOLUME_LAYERS } from "./volume/layers3d";
+import { View3DControls, type CameraPreset } from "./volume/View3DControls";
 import { airportFeatures } from "./lib/aero";
 import { AeroControls } from "./panels/AeroControls";
 import { AirportPanel } from "./panels/AirportPanel";
@@ -34,6 +38,10 @@ import { ownsKeys } from "./lib/keys";
 import { availableLayers, newerRun, nextLevel, nextStep, resolveView, useViewState, withPinnedRun, type ViewState } from "./state/view";
 
 const MapView = lazy(() => import("./map/MapView").then((m) => ({ default: m.MapView })));
+const Volume3D = lazy(() => import("./volume/Volume3D"));
+const CAMERA: Record<CameraPreset, { pitch: number; bearing: number }> = {
+  top: { pitch: 0, bearing: 0 }, south: { pitch: 55, bearing: 0 }, west: { pitch: 55, bearing: 90 },
+};
 
 function useNow(periodMs = 30_000): Date {
   const [now, setNow] = useState(() => new Date());
@@ -138,6 +146,48 @@ export function App() {
     const a = icao ? airportsQ.data?.airports.find((x) => x.icao === icao) : undefined;
     update(a ? { ap: a.icao, lat: Math.round(a.lat * 100) / 100, lon: Math.round(a.lon * 100) / 100 } : { ap: undefined });
   }, [airportsQ.data, update]);
+  // SP2B: 3-D volume view. Volumes of the valid time on screen only (freshData); the next two steps preloaded.
+  const [mapInstance, setMapInstance] = useState<MlMap | null>(null);
+  const [webgl2] = useState(hasWebGL2);
+  const mode3d = view.mode3d && webgl2;
+  const volDefs = VOLUME_LAYERS.filter((d) => view.vol.includes(d.id));
+  const next3d = useMemo(() => {
+    if (!meta.data || !resolved) return [];
+    const a = nextStep(meta.data, resolved.step, 1);
+    const b = nextStep(meta.data, a, 1);
+    return [a, b].filter((s, i, all) => s !== resolved.step && all.indexOf(s) === i);
+  }, [meta.data, resolved?.step]); // eslint-disable-line react-hooks/exhaustive-deps
+  const volKey = (layer: string | undefined) => ({ domain: resolved?.domain, run: resolved?.run, layer, step: resolved?.step, stride: 1 });
+  const vol0 = useVolume(volKey(volDefs[0]?.source), next3d, mode3d && !!volDefs[0]);
+  const aux0 = useVolume(volKey(volDefs[0]?.aux), next3d, mode3d && !!volDefs[0]?.aux);
+  const vol1 = useVolume(volKey(volDefs[1]?.source), next3d, mode3d && !!volDefs[1]);
+  const aux1 = useVolume(volKey(volDefs[1]?.aux), next3d, mode3d && !!volDefs[1]?.aux);
+  const terrain = useTerrain(resolved?.domain, resolved?.run, 1, mode3d);
+  const volIds = view.vol.join(",");
+  const volumeInputs = useMemo(() => {
+    const volDefs = VOLUME_LAYERS.filter((d) => volIds.split(",").includes(d.id));
+    const slots = [[vol0, aux0], [vol1, aux1]] as const;
+    const out = [];
+    for (const [i, d] of volDefs.entries()) {
+      const [v, a] = slots[i]!;
+      const volume = freshData(v);
+      const aux = d.aux ? freshData(a) : undefined;
+      if (!volume || (d.aux && !aux)) continue;
+      out.push({ def: d, volume, aux });
+    }
+    return out;
+  }, [volIds, vol0.data, aux0.data, vol1.data, aux1.data, vol0.isPlaceholderData, aux0.isPlaceholderData, vol1.isPlaceholderData, aux1.isPlaceholderData]); // eslint-disable-line react-hooks/exhaustive-deps
+  const volumeLoading = [vol0, aux0, vol1, aux1].some((q) => q.isFetching && (q.isPlaceholderData || !q.data));
+  const flightLevels = useMemo(() => Object.fromEntries((meta.data?.levels_hpa ?? []).map((p, i) => [p, meta.data!.flight_levels[i]!])),
+    [meta.data]);
+  const onPickVoxel = useCallback((lat: number, lon: number, levelHpa: number) =>
+    update({ lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100, level: levelHpa }), [update]);
+  // In 3-D a ground click would pick the point under the perspective, not the voxel seen: only voxels pick.
+  const noPick = useCallback(() => undefined, []);
+  const onCamera = useCallback((preset: CameraPreset) => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    mapInstance?.easeTo({ ...CAMERA[preset], duration: reduce ? 0 : 600 });
+  }, [mapInstance]);
   const IR = "mtg_fd:ir105_hrfi";
   const comparing = def.id === "cloud_top_teff_k" && view.ov.includes(IR);
   const selectLayer = useCallback((id: string) => {
@@ -228,9 +278,19 @@ export function App() {
                 <MapView domain={domain} field={fieldData} stale={field.isPlaceholderData} def={def} awciBounds={awciBounds} wind={wind} overlays={overlays}
                          onOverlayError={onOverlayError} airports={airportPoints} sigmets={sigmetShapes} onPickAirport={selectAirport}
                          point={view.lat !== undefined && view.lon !== undefined ? { lat: view.lat, lon: view.lon } : undefined}
-                         opacity={fieldOpacity(comparing, opacity)} onPick={onPick} />
+                         opacity={fieldOpacity(comparing, opacity)} onPick={mode3d ? noPick : onPick} mode3d={mode3d} onMap={setMapInstance} />
               </Suspense>
-              <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />
+              {mode3d && mapInstance && (
+                <Suspense fallback={<div className="map-loading" role="status">Chargement de la vue 3D…</div>}>
+                  <Volume3D map={mapInstance} inputs={volumeInputs} terrain={terrain.data} exaggeration={view.exag}
+                            threshold={view.cth} awciBounds={awciBounds} flightLevels={flightLevels} onPickVoxel={onPickVoxel} />
+                </Suspense>
+              )}
+              <div className="map-toolbar">
+                <button type="button" className="text-button" aria-pressed={mode3d} disabled={!webgl2}
+                        onClick={() => update({ mode3d: !view.mode3d })}>{mode3d ? "Vue 2D" : "Vue 3D"}</button>
+              </div>
+              {!mode3d && <Legend def={def} classLabels={classLabels} awciBounds={awciBounds} />}
               {field.isPlaceholderData && <div className="map-loading" role="status">Chargement : {def.label}…</div>}
               {field.isError && <div className="map-error"><ErrorBox error={field.error} what={def.label} /></div>}
               {toast && <div className="toast" role="alert">{toast}</div>}
@@ -238,6 +298,11 @@ export function App() {
             </div>
             {def.id === "cloud_top_teff_k" && !view.ov.includes(IR) && (
               <button type="button" className="text-button" onClick={() => toggleOverlay(IR)}>Comparer à l'observation MTG IR 10,5 µm</button>
+            )}
+            {view.mode3d && !webgl2 && <p className="notice">Vue 3D indisponible : ce navigateur ne fournit pas WebGL2.</p>}
+            {mode3d && (
+              <View3DControls vol={view.vol} exag={view.exag} cth={view.cth} loading={volumeLoading}
+                              onChange={(patch) => update(patch)} onCamera={onCamera} onExit={() => update({ mode3d: false })} />
             )}
             <ObsLegend metar={view.aero.includes("metar")}
                        hazards={[...new Set((sigmetShapes?.features ?? []).map((f) => f.properties.hazard))]} />

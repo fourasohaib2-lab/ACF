@@ -1,6 +1,6 @@
 # AWCI Web — SP2B : vue volume 3D et lecture 4D — design
 
-**Date :** 2026-09-25 · **Statut :** en revue · **Sous-projet :** 2B (après SP2, avant SP3)
+**Date :** 2026-09-25 · **Statut :** implémenté le 2026-09-26 (écarts au §7) · **Sous-projet :** 2B (après SP2, avant SP3)
 **Entrées :** spec SP2 (front 2D), spec SP1C (`/volume`, nuages), maquette (bascule 2D/3D/4D,
 empilement « AWCI Vertical Profile »).
 
@@ -103,3 +103,31 @@ quantitative médiocre. D'où la décision :
 | Bundle (+ deck.gl ≈ 300 Ko gz) | chargement différé du module 3D à la première bascule |
 | GPU faibles | stride automatique, seuil relevé, avertissement de performance |
 | Voxels « en escalier » jugés peu esthétiques | c'est la résolution réelle du modèle ; ce choix est assumé et expliqué dans l'aide |
+
+## 7. Écarts de mise en œuvre (2026-09-26)
+
+- **Superposition non entrelacée** (`MapboxOverlay({interleaved: false})`) : le mode entrelacé de deck.gl 9.4
+  plante avec MapLibre GL 6 (erreur d'exécution mesurée). deck.gl dessine donc sur son propre canevas,
+  synchronisé avec la caméra de la carte. Le champ 2D et les lignes de courant sont masqués en 3D ; les
+  aérodromes et les SIGMET restent visibles au sol.
+- **Relief** : c'est la surface du modèle IFS (`/terrain`, calculée par l'équation hypsométrique depuis SP1C),
+  et non le relief SRTM. Il est dessiné en colonnes de la taille des mailles, translucides pour laisser lire
+  les côtes, et non en maillage : c'est cohérent avec les voxels et plus simple.
+- **Emprise d'un voxel** : c'est exactement la maille de 0,25°. La largeur en mètres varie avec cos(lat) ; elle
+  est calculée par bande de latitude de 2°, soit une erreur de largeur inférieure à 3,5 % dans une bande.
+- **Pas de Web Worker** : la construction des voxels d'un volume complet (12 × 121 × 241 = 350 000 cellules)
+  prend 17 à 38 ms, mesurés après optimisation (la première version, qui allouait une couleur par voxel,
+  prenait environ 150 ms).
+- **Sommets convectifs** : la couche de colonnes « LCL → sommet » n'est pas ajoutée. Les Cb apparaissent déjà
+  en colonnes dans « Nuages par genre », niveau par niveau.
+- **Couleurs** : nuages stratiformes gris clair, Cu/TCU vert, Cb orange-rouge ; givrage bleu ; turbulence
+  ambre et orange ; AWCI dans sa palette. AWCI et turbulence ne se combinent pas (l'AWCI contient la
+  turbulence et leurs teintes sont proches).
+- **URL** : `view=3d`, `vol`, `exag` et `cth` y figurent ; la caméra (pitch, bearing) n'y figure pas, les
+  préréglages la restituent.
+- **Clic en 3D** : seul un voxel sélectionne un point. Il donne le point et le niveau du voxel. Un clic au sol
+  donnerait le point sous la perspective, pas celui qu'on voit ; les aérodromes restent cliquables.
+- **Échelle verticale** : graduations 850, 700, 500, 300, 200 et 100 hPa, avec le FL du run et la hauteur
+  géopotentielle moyenne en km, toujours au premier plan. Les 12 niveaux se superposaient.
+- **Performance** : le rendu 60 i/s ne peut pas être mesuré ici (SwiftShader, sans GPU). C'est une recette
+  manuelle sur le poste cible, comme pour le critère de 300 ms de SP2.

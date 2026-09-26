@@ -29,6 +29,9 @@ interface Props {
   airports?: { type: "FeatureCollection"; features: AirportPoint[] };
   sigmets?: { type: "FeatureCollection"; features: SigmetFeature[] };
   onPickAirport?: (icao: string) => void;
+  /** 3-D volume view: tilted camera and rotation; the 2-D field and streamlines are hidden (SP2B). */
+  mode3d?: boolean;
+  onMap?: (map: MlMap | null) => void;
 }
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -47,7 +50,7 @@ const HAZARD_IDS = Object.keys(HAZARDS) as (keyof typeof HAZARDS)[];
 const PICK_PX = 6;
 
 export function MapView({ domain, field, stale = false, def, awciBounds, wind, overlays, point, opacity, onPick, onOverlayError,
-  airports, sigmets, onPickAirport }: Props) {
+  airports, sigmets, onPickAirport, mode3d = false, onMap }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const pickRef = useRef(onPick);
@@ -62,13 +65,15 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
 
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
   useEffect(() => { overlayErrorRef.current = onOverlayError; }, [onOverlayError]);
+  const onMapRef = useRef(onMap);
+  useEffect(() => { onMapRef.current = onMap; }, [onMap]);
   const pickAirportRef = useRef(onPickAirport);
   useEffect(() => { pickAirportRef.current = onPickAirport; }, [onPickAirport]);
 
   useEffect(() => {
     if (!container.current) return;
     const map = new maplibregl.Map({
-      container: container.current, style: baseStyle(domain), dragRotate: false, pitchWithRotate: false,
+      container: container.current, style: baseStyle(domain), dragRotate: false, pitchWithRotate: true, maxPitch: 70,
       bounds: [[domain.west, domain.south], [domain.east, domain.north]], fitBoundsOptions: { padding: 16 },
       attributionControl: { compact: true, customAttribution: "© ECMWF CC-BY-4.0 · Natural Earth" },
     });
@@ -122,7 +127,8 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container.current);
     mapRef.current = map;
-    return () => { observer.disconnect(); map.remove(); mapRef.current = null; setReady(false); };
+    onMapRef.current?.(map);
+    return () => { observer.disconnect(); onMapRef.current?.(null); map.remove(); mapRef.current = null; setReady(false); };
   }, [domain]);
 
   useEffect(() => {
@@ -201,6 +207,22 @@ export function MapView({ domain, field, stale = false, def, awciBounds, wind, o
       }
     }
   }, [ready, overlays]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    for (const id of ["field", "streamlines"]) map.setLayoutProperty(id, "visibility", mode3d ? "none" : "visible");
+    if (mode3d) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      map.easeTo({ pitch: 55, bearing: -15, duration: reduce ? 0 : 600 });
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      map.easeTo({ pitch: 0, bearing: 0, duration: reduce ? 0 : 400 });
+    }
+  }, [ready, mode3d]);
 
   const e = field ? gridEdges(field) : undefined;
   return (
