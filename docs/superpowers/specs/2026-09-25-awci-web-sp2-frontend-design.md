@@ -1,6 +1,6 @@
 # AWCI Web — SP2 : front (coque, carte, observation satellite & foudre, inspecteur) — design
 
-**Date :** 2026-09-25 · **Statut :** en revue · **Sous-projet :** 2 / 6
+**Date :** 2026-09-25 · **Statut :** implémenté (écarts §12) · **Sous-projet :** 2 / 6
 **Entrées :** spec SP1 (`2026-09-25-awci-web-sp1-data-science-design.md`), API `/api/v1/awci/*` (PR #6),
 spec SP1C nuages (`2026-09-25-awci-web-sp1c-clouds-design.md`, prérequis des couches nuageuses),
 maquette de référence fournie par l'utilisateur (dashboard « AWCI – Aviation Weather Complexity Index »,
@@ -236,3 +236,14 @@ texte ≥ 12 px (données) / 14 px (corps).
 | Taille du bundle (MapLibre ~200 Ko gz) | découpage du code par panneau ; cible < 600 Ko gz au total |
 | Lisibilité de la palette pour des prévisionnistes habitués au rouge = sévère | libellés texte systématiques ; retour utilisateur prévu avant figer |
 | Maquette plus riche que la donnée | correspondance §3 explicite ; aucun élément fictif |
+
+## 12. Écarts de mise en œuvre
+
+- React 19 (au lieu de 18) : version stable courante au moment de l'implémentation.
+- `/summary` sans cache serveur : p95 mesuré 35 ms sur le cube réel ; le cache est côté navigateur
+  (cube immuable), avec préchargement des échéances voisines.
+- Comparaison modèle/observation par fondu (et non balayage), heures et écart affichés.
+- Thème clair : carte et barres AWCI conservent la surface sombre validée (la palette AWCI échoue sur
+  fond clair) ; voir `docs/awci/AWCI_WEB_SP2.md`.
+- Mesures : premier affichage 0,36 s (critère tenu) ; changement d'échéance non vérifiable dans un
+  conteneur sans GPU (rendu logiciel), recette manuelle sur poste cible.

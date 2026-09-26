@@ -21,6 +21,12 @@ Toutes les modifications importantes du projet ACF sont documentées ici.
   d'émission des sommets (OLR), condensat colonne, neige, pluie verglaçante ; routes
   `/clouds`, `/volume`, `/terrain` ; calibration reproductible de RHc
   (`tools/awci/calibrate_cloud_rhc.py`). Statut HYPOTHESIS. Voir `docs/awci/AWCI_WEB_SP1.md`.
+- AWCI Web SP2 (front 2D, `web/awci`) : tableau de bord React/MapLibre servi par `acf-awci-web`
+  (même origine) ; champ rééchantillonné en Mercator, hachures « sans donnée », lignes de courant,
+  indicateurs de domaine pondérés par l'aire, inspecteur explicable, profils, panneau Nuages,
+  observations EUMETView relayées avec heure d'observation, thème clair validé ; nouvelles routes
+  `/summary`, `/summary/series`, `/clouds/series`, `/wms`, `/wms/times`, `/wms/layers`. Voir
+  `docs/awci/AWCI_WEB_SP2.md`.
 - Table de tiers de maturité/scope (Foundation/Core/Extended/Experimental)
   dans `ARCHITECTURE.md`, couvrant les 62 sous-modules de `src/acf/`.
 - `docs/STATUS.md` : suivi unique et vérifiable de l'avancement réel

@@ -1,5 +1,5 @@
 import * as maplibregl from "maplibre-gl";
-import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "maplibre-gl";
+import type { CanvasSource, GeoJSONSource, Map as MlMap } from "maplibre-gl";
 // MapLibre 6 runs its tile/GeoJSON work in a module worker that the bundler must emit as its own file.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef, useState } from "react";
@@ -26,21 +26,10 @@ interface Props {
 
 maplibregl.setWorkerUrl(workerUrl);
 
-const EMPTY_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
 const domainCorners = (d: Domain): [[number, number], [number, number], [number, number], [number, number]] =>
   [[d.west, d.north], [d.east, d.north], [d.east, d.south], [d.west, d.south]];
-
-function toDataUrl(data: Uint8ClampedArray, width: number, height: number): string {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return EMPTY_PNG;
-  ctx.putImageData(new ImageData(new Uint8ClampedArray(data), width, height), 0, 0);
-  return canvas.toDataURL("image/png");
-}
 
 const spacingForZoom = (z: number) => (z < 4 ? 3 : z < 6 ? 1.5 : 0.75);
 
@@ -50,6 +39,8 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
   const pickRef = useRef(onPick);
   const overlayErrorRef = useRef(onOverlayError);
   const overlayLayers = useRef(new Map<string, string>()); // map source id -> WMS layer name
+  // The field is drawn into one canvas read by a MapLibre canvas source: no PNG encode/decode per step.
+  const canvasRef = useRef<HTMLCanvasElement>(document.createElement("canvas"));
   const [ready, setReady] = useState(false);
   const [spacing, setSpacing] = useState(3);
 
@@ -67,7 +58,9 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "nautical" }), "bottom-left");
     map.on("load", () => {
-      map.addSource("field", { type: "image", url: EMPTY_PNG, coordinates: domainCorners(domain) });
+      canvasRef.current.width = 1;
+      canvasRef.current.height = 1;
+      map.addSource("field", { type: "canvas", canvas: canvasRef.current, coordinates: domainCorners(domain), animate: false });
       map.addLayer({ id: "field", type: "raster", source: "field",
         paint: { "raster-resampling": "nearest", "raster-opacity": 0.85, "raster-fade-duration": 0 } }, "coastline");
       map.addSource("streamlines", { type: "geojson", data: EMPTY });
@@ -78,7 +71,7 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
         paint: { "circle-radius": 6, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
       setReady(true);
     });
-    map.on("click", (e: MapMouseEvent) => pickRef.current(e.lngLat.lat, e.lngLat.lng));
+    map.on("click", (e) => pickRef.current(e.lngLat.lat, e.lngLat.lng));
     map.on("zoomend", () => setSpacing(spacingForZoom(map.getZoom())));
     map.on("error", (e) => {
       const id = (e as { sourceId?: string }).sourceId; // set by MapLibre for source (tile) errors
@@ -98,9 +91,16 @@ export function MapView({ domain, field, def, awciBounds, wind, overlays, point,
       ? field.values.map((v) => (v === -2 ? Number.NaN : v)) // indeterminate genus is hatched like no-data
       : field.values;
     const image = renderField({ ...field, values }, colorFn(def, awciBounds));
-    (map.getSource("field") as ImageSource).updateImage({
-      url: toDataUrl(image.data, image.width, image.height), coordinates: image.coordinates,
-    });
+    const canvas = canvasRef.current;
+    if (canvas.width !== image.width || canvas.height !== image.height) {
+      canvas.width = image.width;
+      canvas.height = image.height;
+    }
+    canvas.getContext("2d")?.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.width, image.height), 0, 0);
+    const source = map.getSource("field") as CanvasSource;
+    source.setCoordinates(image.coordinates); // also makes a static canvas source re-read its pixels
+    source.play();
+    requestAnimationFrame(() => source.pause());
   }, [ready, field, def, awciBounds]);
 
   useEffect(() => {

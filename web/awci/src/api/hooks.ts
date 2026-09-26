@@ -43,10 +43,24 @@ export function useField(k: FieldKey, neighbours: number[] = []) {
   return query;
 }
 
-export const useSummary = (domain?: string, run?: string, step?: number, level?: number) =>
-  useQuery({ queryKey: ["summary", domain, run, step, level], enabled: !!run && step !== undefined && level !== undefined,
-    ...IMMUTABLE, retry, placeholderData: keepPreviousData,
-    queryFn: ({ signal }) => getJson<Summary>("/summary", { domain, run, step, level }, signal) });
+const summaryQuery = (domain?: string, run?: string, step?: number, level?: number) => ({
+  queryKey: ["summary", domain, run, step, level],
+  queryFn: ({ signal }: { signal: AbortSignal }) => getJson<Summary>("/summary", { domain, run, step, level }, signal),
+  ...IMMUTABLE, retry,
+});
+
+/** Domain KPIs of the step, with the neighbouring steps prefetched so stepping stays instant. */
+export function useSummary(domain?: string, run?: string, step?: number, level?: number, neighbours: number[] = []) {
+  const client = useQueryClient();
+  const ready = !!run && step !== undefined && level !== undefined;
+  const query = useQuery({ ...summaryQuery(domain, run, step, level), enabled: ready, placeholderData: keepPreviousData });
+  const key = neighbours.join(",");
+  useEffect(() => {
+    if (!ready) return;
+    for (const s of key ? key.split(",").map(Number) : []) void client.prefetchQuery(summaryQuery(domain, run, s, level));
+  }, [client, ready, key, domain, run, level]);
+  return query;
+}
 
 export const useSummarySeries = (domain?: string, run?: string, level?: number) =>
   useQuery({ queryKey: ["summary-series", domain, run, level], enabled: !!run && level !== undefined, ...IMMUTABLE, retry,

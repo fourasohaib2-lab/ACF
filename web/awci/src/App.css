@@ -108,7 +108,7 @@
   min-width: 44px; min-height: 28px; font-size: var(--fs-data); background: var(--surface-3);
   border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
 }
-.timebar-step[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
+.timebar-step[aria-current="step"] { background: #256abf; border-color: #256abf; color: #ffffff; font-weight: 600; } /* white on #256abf: 5.39:1 */
 .timebar-step:disabled { cursor: not-allowed; opacity: 0.45; text-decoration: line-through; }
 .timebar-valid { font-size: var(--fs-data); color: var(--text-2); }
 

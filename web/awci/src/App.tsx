@@ -68,9 +68,9 @@ export function App() {
   const field = useField({ domain: resolved?.domain, run: resolved?.run, layer: resolved?.layer, step: resolved?.step,
     level: resolved?.level, perLevel: def.perLevel }, neighbours);
   const uField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "u" : undefined,
-    step: resolved?.step, level: resolved?.level, perLevel: true });
+    step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
   const vField = useField({ domain: resolved?.domain, run: resolved?.run, layer: streamlines ? "v" : undefined,
-    step: resolved?.step, level: resolved?.level, perLevel: true });
+    step: resolved?.step, level: resolved?.level, perLevel: true }, neighbours);
   const wind = useMemo<WindGrid | undefined>(() => (streamlines && uField.data && vField.data
     ? { ...uField.data, u: uField.data.values, v: vField.data.values } : undefined), [streamlines, uField.data, vField.data]);
 
@@ -78,7 +78,7 @@ export function App() {
   const awciBounds = useMemo(() => classes.filter((c) => c.upper_bound !== null).map((c) => c.upper_bound as number), [classes]);
   const classLabels = useMemo(() => classes.map((c) => c.label), [classes]);
   const layers = useMemo(() => (meta.data ? availableLayers(meta.data) : []), [meta.data]);
-  const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level);
+  const summary = useSummary(resolved?.domain, resolved?.run, resolved?.step, resolved?.level, neighbours);
   const classIndex = summary.data?.awci_class ? classLabels.indexOf(summary.data.awci_class) : -1;
   const pointKey = { domain: resolved?.domain, run: resolved?.run, step: resolved?.step, level: resolved?.level, lat: view.lat, lon: view.lon };
   const point = usePoint(pointKey);
