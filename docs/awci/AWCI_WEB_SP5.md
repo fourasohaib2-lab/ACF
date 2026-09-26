@@ -49,10 +49,30 @@ jamais calculée sur n = 0. Avec 50 membres, sa résolution est de 2 %.
     échéance voisine n'est substituée.
 - **Panneau « Ensemble ECMWF »** : il remplace l'ancien encart mono-modèle. Au point et au niveau, il donne les
   probabilités, le nombre de membres, et la moyenne ± l'écart-type de l'AWCI à côté de la valeur déterministe.
+  Si les versions du profil nuageux de l'ensemble et du déterministe diffèrent, un avertissement le signale.
 
 ## Mesures (conteneur, 4 cœurs, data.ecmwf.int)
 
-Run réel en cours (IFS 2026-09-26 00Z, 50 membres, +0 à +24 h) : mesures consignées à la fin du run.
+Run réel : IFS ENS 2026-09-26 00Z, domaine `north_africa`, 50 membres, échéances +0 à +24 h toutes les 6 h,
+16 connexions.
+
+| Mesure | Valeur |
+|---|---|
+| Statut | `complete`, 50 membres à chacune des 5 échéances, aucun membre en échec |
+| Durée totale | 1851,9 s, soit environ 6,2 min par échéance, dominée par le téléchargement (~77 Mo par membre) |
+| Cube stocké | 11 Mo |
+| Extrapolation +0 à +48 h / 6 h (9 échéances) | environ 56 min, à débit égal |
+
+**Cohérence avec le déterministe du même run** (nuage ≥ 5/8) :
+- à tous les niveaux, la probabilité moyenne de l'ensemble est proche de la fréquence déterministe ;
+- là où le déterministe prévoit BKN, P(BKN) vaut 65 à 75 % à +0 h et 13 à 36 % à +24 h. La divergence
+  croissante des membres est celle attendue.
+
+**Convection** : le déterministe diagnostiquait TCU/Cb sur 12 à 22 % des mailles, contre 3 à 4 % pour
+l'ensemble. L'écart ne vient pas de l'ensemble. Le cube déterministe avait été produit avec le profil nuageux
+1.1.0, avant le recalibrage contre les METAR, et l'ensemble avec le 1.2.0. Le panneau affiche désormais un
+avertissement quand les deux versions de profil diffèrent. Les nuages et la convection ne s'y comparent alors
+pas directement.
 
 ## Tests
 
