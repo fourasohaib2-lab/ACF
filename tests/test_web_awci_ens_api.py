@@ -1,5 +1,6 @@
 """ENS API: runs, manifest, probability fields (count / n, never over n = 0) and point series."""
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -7,11 +8,16 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from acf.awci.obs.source_awc import AwcClient
+from acf.awci.obs.store import ObsStore
+from acf.awci.ops.engine import DEFAULT_OPERATIONAL_PROFILE_PATH, load_profile
 from acf.awci.ops.ens_ingest import ingest_ens_run
 from acf.awci.ops.ens_store import EnsStore
+from acf.awci.ops.ingest import ingest_run
 from acf.web.awci_app import create_awci_app
 from tests.awci_ops_support import DOMAIN, ENS_FIXTURE, FixtureFetcher
 
+AWC = Path(__file__).parent / "data" / "awc"
 DOMAINS = '{"domains": [{"name": "fixture", "label": "f", "south": 35, "north": 37, "west": 2, "east": 4, "default": true}]}'
 
 
@@ -86,3 +92,28 @@ def test_point_series(setup: tuple[TestClient, Path]) -> None:
 def test_unknown_run_is_404(setup: tuple[TestClient, Path]) -> None:
     client, _ = setup
     assert client.get("/api/v1/awci/ens/meta", params={"domain": "fixture", "run": "2020010100"}).status_code == 404
+
+
+def test_verification_needs_the_deterministic_run(setup: tuple[TestClient, Path]) -> None:
+    client, _ = setup  # ENS only in this data directory
+    r = client.get("/api/v1/awci/ens/verification", params={"domain": "fixture", "run": "2026092500"})
+    assert r.status_code == 404 and "deterministic" in r.json()["detail"]
+
+
+def test_verification_against_real_daag_metars(tmp_path: Path) -> None:
+    run = datetime(2026, 9, 25, tzinfo=UTC)
+    ingest_run(run, [DOMAIN], load_profile(DEFAULT_OPERATIONAL_PROFILE_PATH), FixtureFetcher(), tmp_path, [0, 3])
+    ingest_ens_run(run, DOMAIN, FixtureFetcher(root=ENS_FIXTURE), tmp_path, steps=[0, 6], members=[1, 2, 3, 4])
+    store = ObsStore(tmp_path, "fixture")
+    store.write_stations([{"icao": "DAAG", "name": "Algiers", "lat": 36.691, "lon": 3.215, "elev_m": 18.0,
+                           "metar": True, "taf": True}], datetime(2026, 9, 26, tzinfo=UTC))
+    store.add_metars([r for r in map(AwcClient._metar, json.loads((AWC / "metar_daag_20260925.json").read_text())) if r])
+    store.write_status({"ingested_at": "2026-09-26T08:52:54Z", "stations": 1})
+    (tmp_path / "domains.json").write_text(DOMAINS)
+    client = TestClient(create_awci_app(data_dir=tmp_path, domains_file=tmp_path / "domains.json"))
+    body = client.get("/api/v1/awci/ens/verification", params={"domain": "fixture", "run": "2026092500"}).json()
+    assert body["run"] == "2026092500" and body["like_for_like"] is True
+    conv = body["events"]["convective"]["total"]
+    assert conv["n"] == 1 and conv["members_min"] == 4 and 0 <= conv["brier"] <= 1  # DAAG at +0 h only
+    assert body["exclusions"]["not_an_ens_step"] == 1 and len(conv["diagram"]) == 10
+    assert body["observations_ingested_at"] == "2026-09-26T08:52:54Z"

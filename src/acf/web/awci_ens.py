@@ -7,15 +7,21 @@ finite value, or the step was not computed). Nothing is interpolated between ENS
 
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Any
 
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
 
+from acf.awci.obs.store import ObsStore
 from acf.awci.ops.domains import Domain
-from acf.awci.ops.ens_store import EnsStore
+from acf.awci.ops.ens_store import EnsStore, ens_dir
 from acf.awci.ops.ensemble import ENS_LEVEL_PRODUCTS, ENS_STATISTICS, ENS_SURFACE_PRODUCTS
+from acf.awci.ops.verify import VerifyConfig
+from acf.awci.ops.verify_ens import run_samples, verify_ens_run
 
 router = APIRouter()
 RunId = Annotated[str, Query(pattern=r"^\d{10}$")]
@@ -126,3 +132,27 @@ def ens_point(request: Request, domain: str, run: RunId, lat: float, lon: float,
                        "awci_std": _num(float(ds["awci_std"].isel(stat).values))})
     return {"lat": float(ds["lat"].values[i]), "lon": float(ds["lon"].values[j]), "level_hpa": level, "points": points,
             "run": m["run"], "members_requested": len(m["members_requested"]), "attribution": m["attribution"]}
+
+
+@lru_cache(maxsize=16)
+def _verification(root: str, domain: Domain, run: str, mtimes: tuple[float, float, float]) -> str:
+    config = VerifyConfig()
+    samples, exclusions, profiles = run_samples(Path(root), domain, run, config)
+    report = verify_ens_run(samples, exclusions, config, profiles)
+    return json.dumps(report | {"domain": domain.name, "run": run,
+                                "observations_ingested_at": ObsStore(root, domain.name).status().get("ingested_at")})
+
+
+@router.get("/ens/verification")
+def ens_verification(request: Request, domain: str, run: RunId) -> dict[str, Any]:
+    """Brier scores and reliability of the run's ENS ceiling and convection probabilities against METAR, next to
+    the deterministic run on the same pairs (spec SP5b); cached until a cube or the archive changes."""
+    d = _domain(request, domain)
+    root = Path(request.app.state.awci_store.root)
+    cube, ens_cube = root / d.name / run / "cube.nc", ens_dir(root, d.name) / run / "cube.nc"
+    for path, what in ((cube, "deterministic run"), (ens_cube, "ENS run")):
+        if not path.exists():
+            raise HTTPException(404, f"no {what} {run!r} for domain {domain!r}")
+    mtimes = (cube.stat().st_mtime, ens_cube.stat().st_mtime, ObsStore(root, d.name).mtime())
+    report: dict[str, Any] = json.loads(_verification(str(root), d, run, mtimes))
+    return report
