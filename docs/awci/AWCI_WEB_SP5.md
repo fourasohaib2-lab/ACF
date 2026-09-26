@@ -74,6 +74,65 @@ l'ensemble. L'écart ne vient pas de l'ensemble. Le cube déterministe avait ét
 avertissement quand les deux versions de profil diffèrent. Les nuages et la convection ne s'y comparent alors
 pas directement.
 
+## Validation probabiliste contre les METAR (SP5b)
+
+Code :
+- `src/acf/awci/ops/verify_ens.py` : scores ;
+- route `/ens/verification` ;
+- `tools/awci/verify_ensemble.py` : cumul sur plusieurs runs ;
+- section « Ensemble ECMWF » de la page Validation.
+
+**Paires** : celles de la validation déterministe (SP3), restreintes aux échéances de l'ensemble. Le déterministe
+du même run est noté sur ces mêmes paires, comme une probabilité 0 ou 1.
+
+**Scores** :
+- score de Brier (Brier 1950) ;
+- Brier « fair » (Ferro 2014), corrigé de la taille finie de l'ensemble ;
+- BSS contre la fréquence observée de l'échantillon ;
+- décomposition de Murphy (1973), dont le résidu de classement est affiché ;
+- diagramme de fiabilité et netteté (histogramme des probabilités émises).
+
+Aucun intervalle de confiance n'est donné : les cas ne sont indépendants ni dans l'espace ni dans le temps.
+
+### Résultats (4 runs réels, profils nuageux identiques 1.2.0 pour l'ensemble et le déterministe)
+
+Runs IFS ENS du 24/09 12Z, du 25/09 00Z et 12Z et du 26/09 00Z, domaine Afrique du Nord, +0 à +24 h toutes les
+6 h, 50 membres. Observations : ≈ 560 aérodromes (AWC). Commande :
+`tools/awci/verify_ensemble.py --runs 2026092412,2026092500,2026092512,2026092600`.
+
+| Événement | Cas | Observés | BS ensemble | BS fair | BS déterministe | BSS / climatologie | Gain / déterministe |
+|---|---|---|---|---|---|---|---|
+| Plafond < 1500 ft | 6 046 | 90 (1,5 %) | 0,020 | 0,020 | 0,029 | −0,36 | +0,32 |
+| TCU/Cb réalisé | 6 170 | 131 (2,1 %) | 0,021 | 0,021 | 0,033 | −0,03 | +0,35 |
+
+Fiabilité (cumul des 4 runs) :
+
+| P prévue | Plafond : cas / fréq. observée | Convection : cas / fréq. observée |
+|---|---|---|
+| 0–10 % (moyenne 0,1–0,2 %) | 5 814 / 1,1 % | 5 762 / 0,9 % |
+| 10–30 % | 88 / 1,1 % | 198 / 13,1 % |
+| 30–50 % | 42 / 2,4 % | 90 / 16,7 % |
+| 50–70 % | 43 / 11,6 % | 71 / 22,5 % |
+| 70–90 % | 36 / 25,0 % | 35 / 45,7 % |
+| 90–100 % | 23 / 39,1 % | 14 / 42,9 % |
+
+Lecture :
+- **Contre le déterministe** : l'ensemble réduit l'erreur de Brier d'un tiers sur les deux événements, et ce sur
+  chacun des 4 runs (+0,24 à +0,38). Sur ces cas, une probabilité vaut mieux qu'un oui/non déterministe.
+- **Contre la climatologie** : la convection est au niveau de la fréquence observée (BSS −0,03), le plafond bas
+  en dessous (BSS −0,36). Aucune compétence propre n'est donc démontrée à l'échelle de l'aérodrome.
+- **Sur-confiance** : aux fortes probabilités, l'événement n'est observé qu'une fois sur deux à trois. Aux faibles
+  probabilités (sous 10 %), il est observé 4,5 fois (convection) à 11 fois (plafond) plus souvent qu'annoncé.
+- **Causes plausibles, non séparées ici** :
+  - la représentativité : maille de 25 km contre une observation ponctuelle ;
+  - la résolution verticale : 12 niveaux ne résolvent pas les plafonds bas (SP3) ;
+  - la dispersion insuffisante de l'ensemble aux petites échelles.
+- **Conséquence opérationnelle** : les probabilités d'ensemble se lisent comme un signal relatif (où et quand le
+  risque augmente), pas comme une fréquence attendue. La page Validation l'écrit automatiquement lorsque le BSS
+  est négatif.
+- **Suite** : une calibration statistique (fiabilité) sur plusieurs semaines d'archive, que le téléchargement
+  automatique constitue, avec validation hors échantillon comme pour la convection en SP3.
+
 ## Tests
 
 - **Python** :
@@ -89,7 +148,7 @@ pas directement.
 
 ## Limites
 
-- Pas encore de validation probabiliste contre les METAR (score de Brier, diagramme de fiabilité) : prévue en
-  SP5b, avec l'archive d'observations de SP3.
+- Probabilités non calibrées : l'ensemble est trop confiant à l'échelle de l'aérodrome (voir « Validation
+  probabiliste »). À n'utiliser qu'avec le diagramme de fiabilité.
 - Pas de cumuls neige et verglas pour l'ensemble.
 - Le coût est dominé par le téléchargement : les champs globaux ne se découpent pas par plage d'octets.
